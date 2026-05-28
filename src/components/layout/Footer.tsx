@@ -140,26 +140,26 @@ export const Footer = () => {
               </a>
 
               {/* Merchant Trust Signals */}
-              <div className="mt-4 space-y-2 text-xs text-background/60">
+              <div className={premium ? "mt-4 space-y-2 text-[11px] text-background/50" : "mt-4 space-y-2 text-xs text-background/60"}>
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-3 h-3 text-primary flex-shrink-0" />
+                  <Clock className={`w-3 h-3 flex-shrink-0 ${premium ? 'text-background/40' : 'text-primary'}`} />
                   <span>Customer support responds within 24 hours</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3 h-3 text-primary flex-shrink-0" />
+                  <ShieldCheck className={`w-3 h-3 flex-shrink-0 ${premium ? 'text-background/40' : 'text-primary'}`} />
                   <span>Secure checkout &amp; encrypted payments</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <ReturnIcon className="w-3 h-3 text-primary flex-shrink-0" />
+                  <ReturnIcon className={`w-3 h-3 flex-shrink-0 ${premium ? 'text-background/40' : 'text-primary'}`} />
                   <span>{RETURN_WINDOW_DAYS}-day returns policy</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Truck className="w-3 h-3 text-primary flex-shrink-0" />
+                  <Truck className={`w-3 h-3 flex-shrink-0 ${premium ? 'text-background/40' : 'text-primary'}`} />
                   <span>Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-background/40 mt-3 leading-relaxed">
+              <p className={premium ? "text-[11px] text-background/30 mt-3 leading-relaxed" : "text-xs text-background/40 mt-3 leading-relaxed"}>
                 GetPawsy LLC is a US-based online pet supply store serving customers across the United States. Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
               </p>
 
