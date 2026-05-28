@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { trackSearch } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface Product {
   id: string;
@@ -57,6 +58,7 @@ export const EnhancedSearch = ({
   onClose,
   variant = 'default',
 }: EnhancedSearchProps) => {
+  const premium = getConversionFlag('premiumSearchUI');
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -237,7 +239,9 @@ export const EnhancedSearch = ({
             'pl-12 pr-10 h-12 rounded-full border-2 transition-all duration-200',
             variant === 'hero' && 'h-14 text-lg shadow-soft',
             variant === 'navbar' && 'h-10',
-            isOpen && 'ring-2 ring-primary/20 border-primary'
+            isOpen && 'ring-2 ring-primary/20 border-primary',
+            premium && 'border border-border/60 rounded-full',
+            premium && isOpen && 'ring-0 border-foreground/40'
           )}
         />
         {query && (
@@ -263,7 +267,12 @@ export const EnhancedSearch = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-background border-2 border-border rounded-2xl shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto"
+            className={cn(
+              'absolute top-full left-0 right-0 mt-2 bg-background overflow-hidden z-50 max-h-[70vh] overflow-y-auto',
+              premium
+                ? 'border border-border/60 rounded-2xl shadow-sm'
+                : 'border-2 border-border rounded-2xl shadow-lg'
+            )}
           >
             {/* Loading */}
             {isLoading && query.length >= 2 && (
@@ -334,13 +343,30 @@ export const EnhancedSearch = ({
             {/* No results */}
             {!isLoading && query.length >= 2 && suggestions.length === 0 && (
               <div className="p-6 text-center">
-                <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground mb-3">
-                  No products found for "{query}"
-                </p>
+                {premium ? (
+                  <>
+                    <div className="w-10 h-10 mx-auto mb-3 rounded-full border border-border/60 flex items-center justify-center">
+                      <Package className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                      No matches
+                    </p>
+                    <p className="text-sm text-foreground mb-4">
+                      Nothing for &ldquo;{query}&rdquo;
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      No products found for "{query}"
+                    </p>
+                  </>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
+                  className={cn(premium && 'rounded-full')}
                   onClick={() => {
                     setQuery('');
                     setIsOpen(false);
@@ -360,10 +386,17 @@ export const EnhancedSearch = ({
                 {recentSearches.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <Clock className="w-4 h-4" />
-                        Recent searches
-                      </div>
+                      {premium ? (
+                        <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                          <Clock className="w-3 h-3" strokeWidth={1.75} />
+                          Recent
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          Recent searches
+                        </div>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -377,8 +410,13 @@ export const EnhancedSearch = ({
                       {recentSearches.map((term, index) => (
                         <Badge
                           key={index}
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                          variant={premium ? 'outline' : 'secondary'}
+                          className={cn(
+                            'cursor-pointer transition-colors',
+                            premium
+                              ? 'border-border/60 hover:bg-muted/50 font-normal'
+                              : 'hover:bg-secondary/80'
+                          )}
                           onClick={() => handleSearch(term)}
                         >
                           {term}
@@ -390,19 +428,31 @@ export const EnhancedSearch = ({
 
                 {/* Popular Searches */}
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Popular searches
-                  </div>
+                  {premium ? (
+                    <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                      <TrendingUp className="w-3 h-3" strokeWidth={1.75} />
+                      Popular
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Popular searches
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     {popularSearches.map((term, index) => (
                       <Badge
                         key={index}
                         variant="outline"
-                        className="cursor-pointer hover:bg-muted transition-colors"
+                        className={cn(
+                          'cursor-pointer transition-colors',
+                          premium
+                            ? 'border-border/60 hover:bg-muted/50 font-normal'
+                            : 'hover:bg-muted'
+                        )}
                         onClick={() => handleSearch(term)}
                       >
-                        <Sparkles className="w-3 h-3 mr-1" />
+                        {!premium && <Sparkles className="w-3 h-3 mr-1" />}
                         {term}
                       </Badge>
                     ))}
@@ -412,19 +462,37 @@ export const EnhancedSearch = ({
                 {/* Quick Category Links */}
                 {categories.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                      <Tag className="w-4 h-4" />
-                      Categories
-                    </div>
+                    {premium ? (
+                      <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                        <Tag className="w-3 h-3" strokeWidth={1.75} />
+                        Categories
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                        <Tag className="w-4 h-4" />
+                        Categories
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       {categories.slice(0, 6).map((category) => (
                         <button
                           key={category.id}
                           onClick={() => handleCategorySelect(category)}
-                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-left text-sm"
+                          className={cn(
+                            'flex items-center gap-2 p-2 rounded-lg transition-colors text-left text-sm',
+                            premium ? 'hover:bg-muted/50' : 'hover:bg-muted'
+                          )}
                         >
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Tag className="w-4 h-4 text-primary" />
+                          <div className={cn(
+                            'w-8 h-8 rounded-lg flex items-center justify-center',
+                            premium
+                              ? 'border border-border/60'
+                              : 'bg-primary/10'
+                          )}>
+                            <Tag className={cn(
+                              'w-4 h-4',
+                              premium ? 'text-muted-foreground' : 'text-primary'
+                            )} strokeWidth={premium ? 1.5 : 2} />
                           </div>
                           <span className="truncate">{category.name}</span>
                         </button>
