@@ -52,7 +52,7 @@ export default function MostPopularMonthly() {
         {products.map((product, idx) => (
           <a
             key={product.id}
-            href={`/product/${product.slug}`}
+            href={`/products/${product.slug}`}
             className="group block bg-card rounded-xl border border-border/60 overflow-hidden hover:shadow-lg transition-shadow"
             data-seo-slot={`most-popular-${idx}`}
           >

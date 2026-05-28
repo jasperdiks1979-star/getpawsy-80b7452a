@@ -178,16 +178,16 @@ export function generateScalingTargets(): ScalingTarget[] {
 
 export function generateRevenueMatrix(): RevenueMatrixItem[] {
   return [
-    { url: '/product/luxury-cat-tree-xl', keyword: 'large cat tree', category: 'Cat Trees', impressions: 278, clicks: 11, avgPosition: 14.6, ctr: 4.0, revenue: 1240, conversionRate: 3.1, addToCartRate: 8.2, revenuePerSession: 1.42, matrix: 'priority' },
-    { url: '/product/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', category: 'Dog Beds', impressions: 156, clicks: 9, avgPosition: 11.2, ctr: 5.8, revenue: 1680, conversionRate: 4.2, addToCartRate: 9.1, revenuePerSession: 2.18, matrix: 'priority' },
-    { url: '/product/sisal-scratching-post', keyword: 'sisal scratching post', category: 'Cat Trees', impressions: 89, clicks: 3, avgPosition: 22.1, ctr: 3.4, revenue: 1120, conversionRate: 5.8, addToCartRate: 12.5, revenuePerSession: 3.85, matrix: 'visibility' },
-    { url: '/product/interactive-dog-toy', keyword: 'interactive dog toy', category: 'Dog Activities', impressions: 45, clicks: 1, avgPosition: 28.4, ctr: 2.2, revenue: 980, conversionRate: 4.9, addToCartRate: 11.2, revenuePerSession: 4.12, matrix: 'visibility' },
-    { url: '/product/self-cleaning-litter-box', keyword: 'self cleaning litter box', category: 'Cat Litter', impressions: 312, clicks: 14, avgPosition: 16.8, ctr: 4.5, revenue: 420, conversionRate: 1.1, addToCartRate: 3.2, revenuePerSession: 0.31, matrix: 'conversion' },
-    { url: '/product/dog-cooling-mat', keyword: 'dog cooling mat', category: 'Dog Comfort', impressions: 198, clicks: 5, avgPosition: 20.1, ctr: 2.5, revenue: 280, conversionRate: 1.5, addToCartRate: 4.2, revenuePerSession: 0.58, matrix: 'conversion' },
-    { url: '/product/cat-window-perch', keyword: 'cat window perch', category: 'Cat Trees', impressions: 234, clicks: 0, avgPosition: 19.5, ctr: 0, revenue: 0, conversionRate: 0, addToCartRate: 0, revenuePerSession: 0, matrix: 'underperforming' },
-    { url: '/product/elevated-dog-bowl', keyword: 'elevated dog bowl', category: 'Dog Feeding', impressions: 178, clicks: 6, avgPosition: 15.3, ctr: 3.4, revenue: 340, conversionRate: 2.1, addToCartRate: 5.1, revenuePerSession: 0.62, matrix: 'conversion' },
-    { url: '/product/modern-cat-condo', keyword: 'modern cat condo', category: 'Cat Trees', impressions: 167, clicks: 7, avgPosition: 13.5, ctr: 4.2, revenue: 890, conversionRate: 2.8, addToCartRate: 6.8, revenuePerSession: 1.48, matrix: 'priority' },
-    { url: '/product/heated-cat-bed', keyword: 'heated cat bed', category: 'Cat Comfort', impressions: 142, clicks: 4, avgPosition: 17.9, ctr: 2.8, revenue: 560, conversionRate: 3.4, addToCartRate: 7.3, revenuePerSession: 1.45, matrix: 'priority' },
+    { url: '/products/luxury-cat-tree-xl', keyword: 'large cat tree', category: 'Cat Trees', impressions: 278, clicks: 11, avgPosition: 14.6, ctr: 4.0, revenue: 1240, conversionRate: 3.1, addToCartRate: 8.2, revenuePerSession: 1.42, matrix: 'priority' },
+    { url: '/products/orthopedic-dog-bed-large', keyword: 'orthopedic dog bed large', category: 'Dog Beds', impressions: 156, clicks: 9, avgPosition: 11.2, ctr: 5.8, revenue: 1680, conversionRate: 4.2, addToCartRate: 9.1, revenuePerSession: 2.18, matrix: 'priority' },
+    { url: '/products/sisal-scratching-post', keyword: 'sisal scratching post', category: 'Cat Trees', impressions: 89, clicks: 3, avgPosition: 22.1, ctr: 3.4, revenue: 1120, conversionRate: 5.8, addToCartRate: 12.5, revenuePerSession: 3.85, matrix: 'visibility' },
+    { url: '/products/interactive-dog-toy', keyword: 'interactive dog toy', category: 'Dog Activities', impressions: 45, clicks: 1, avgPosition: 28.4, ctr: 2.2, revenue: 980, conversionRate: 4.9, addToCartRate: 11.2, revenuePerSession: 4.12, matrix: 'visibility' },
+    { url: '/products/self-cleaning-litter-box', keyword: 'self cleaning litter box', category: 'Cat Litter', impressions: 312, clicks: 14, avgPosition: 16.8, ctr: 4.5, revenue: 420, conversionRate: 1.1, addToCartRate: 3.2, revenuePerSession: 0.31, matrix: 'conversion' },
+    { url: '/products/dog-cooling-mat', keyword: 'dog cooling mat', category: 'Dog Comfort', impressions: 198, clicks: 5, avgPosition: 20.1, ctr: 2.5, revenue: 280, conversionRate: 1.5, addToCartRate: 4.2, revenuePerSession: 0.58, matrix: 'conversion' },
+    { url: '/products/cat-window-perch', keyword: 'cat window perch', category: 'Cat Trees', impressions: 234, clicks: 0, avgPosition: 19.5, ctr: 0, revenue: 0, conversionRate: 0, addToCartRate: 0, revenuePerSession: 0, matrix: 'underperforming' },
+    { url: '/products/elevated-dog-bowl', keyword: 'elevated dog bowl', category: 'Dog Feeding', impressions: 178, clicks: 6, avgPosition: 15.3, ctr: 3.4, revenue: 340, conversionRate: 2.1, addToCartRate: 5.1, revenuePerSession: 0.62, matrix: 'conversion' },
+    { url: '/products/modern-cat-condo', keyword: 'modern cat condo', category: 'Cat Trees', impressions: 167, clicks: 7, avgPosition: 13.5, ctr: 4.2, revenue: 890, conversionRate: 2.8, addToCartRate: 6.8, revenuePerSession: 1.48, matrix: 'priority' },
+    { url: '/products/heated-cat-bed', keyword: 'heated cat bed', category: 'Cat Comfort', impressions: 142, clicks: 4, avgPosition: 17.9, ctr: 2.8, revenue: 560, conversionRate: 3.4, addToCartRate: 7.3, revenuePerSession: 1.45, matrix: 'priority' },
   ];
 }
 
@@ -202,7 +202,7 @@ export function generateWeeklyLoop(): WeeklyLoopAction[] {
     { id: 'w5', type: 'content_expansion', title: 'Create "Best Cooling Dog Beds for Summer" guide', description: 'Seasonal opportunity with 720 monthly search volume. Peak May–August.', target: 'Dog Beds cluster', impact: 'medium', status: 'pending' },
     { id: 'w6', type: 'authority_reinforcement', title: 'Add internal links to "indoor cat enrichment"', description: 'Only 2 inbound links. Add 4 contextual links from related cat guides.', target: '/guides/indoor-cat-enrichment', impact: 'high', status: 'pending' },
     { id: 'w7', type: 'authority_reinforcement', title: 'Repair orphan: "cat tree safety tips"', description: 'Zero inbound links detected. Add links from cornerstone + 2 product pages.', target: '/guides/cat-tree-safety-tips', impact: 'medium', status: 'pending' },
-    { id: 'w8', type: 'revenue_optimization', title: 'Optimize "self-cleaning litter box" conversion', description: 'High traffic (312 imp) but 1.1% conversion. Improve CTA placement and add trust signals.', target: '/product/self-cleaning-litter-box', impact: 'high', status: 'pending' },
+    { id: 'w8', type: 'revenue_optimization', title: 'Optimize "self-cleaning litter box" conversion', description: 'High traffic (312 imp) but 1.1% conversion. Improve CTA placement and add trust signals.', target: '/products/self-cleaning-litter-box', impact: 'high', status: 'pending' },
   ];
 }
 

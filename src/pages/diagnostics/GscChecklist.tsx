@@ -57,7 +57,7 @@ export default function GscChecklist() {
           .limit(4);
 
         (products || []).forEach(p => {
-          if (p.slug) entries.push({ url: `${CANONICAL}/product/${p.slug}`, category: 'Product' });
+          if (p.slug) entries.push({ url: `${CANONICAL}/products/${p.slug}`, category: 'Product' });
         });
 
         // Dedupe & limit to 20

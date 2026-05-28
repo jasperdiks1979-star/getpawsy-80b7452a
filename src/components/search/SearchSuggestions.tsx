@@ -88,7 +88,7 @@ export const SearchSuggestions = ({ query, onSelect, isVisible }: SearchSuggesti
                 transition={{ delay: index * 0.05 }}
               >
                 <Link
-                  to={`/product/${product.id}`}
+                  to={`/products/${product.id}`}
                   onClick={onSelect}
                   className="flex items-center gap-4 p-3 hover:bg-muted/50 transition-colors group"
                 >

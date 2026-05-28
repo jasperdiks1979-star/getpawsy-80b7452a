@@ -20,7 +20,7 @@ const AccordionContent = lazy(() => import('@/components/ui/accordion').then(m =
 const AccordionItem = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionItem })));
 const AccordionTrigger = lazy(() => import('@/components/ui/accordion').then(m => ({ default: m.AccordionTrigger })));
 
-const PRODUCT_LINK = '/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
+const PRODUCT_LINK = '/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat';
 
 const REAL_PRODUCT = {
   main: '/images/products/self-cleaning-litter-box.webp',

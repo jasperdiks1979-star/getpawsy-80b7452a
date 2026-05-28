@@ -62,7 +62,7 @@ const NOINDEX_PATHS = [
 
 function classifyUrl(path: string): LinkNode['pageType'] {
   if (path === '/' || path === '') return 'hub';
-  if (path.startsWith('/product/') || path.startsWith('/product-')) return 'product';
+  if (path.startsWith('/products/') || path.startsWith('/product-')) return 'product';
   if (path.startsWith('/blog/') || path === '/blog') return 'blog';
   if (path.startsWith('/guides/') || path === '/guides') return 'guide';
   if (path.startsWith('/collections/') || path.startsWith('/c/')) return 'collection';

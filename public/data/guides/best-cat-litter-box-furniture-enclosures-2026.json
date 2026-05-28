@@ -24,17 +24,17 @@
     "bestOverall": {
       "name": "Cat Litter Box Enclosure with Drawers & Storage",
       "reason": "All-in-one design with anti-tip kit, drawers for supplies, and a 39\" interior that fits jumbo litter pans.",
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
     },
     "bestBudget": {
       "name": "PawHut Enclosure with Barn Door",
       "reason": "Stylish barn door access at the lowest price in our lineup, fitting most standard litter boxes.",
-      "link": "/product/pawhut-cat-litter-box-enclosure-with-barn-door-cat-hole-white"
+      "link": "/products/pawhut-cat-litter-box-enclosure-with-barn-door-cat-hole-white"
     },
     "bestPremium": {
       "name": "Wooden 2-Room Enclosure (Black)",
       "reason": "Solid wood construction with two private rooms that reduce tracking and contain odor beautifully.",
-      "link": "/product/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black"
+      "link": "/products/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black"
     }
   },
   "comparisonProducts": [
@@ -48,7 +48,7 @@
         "Built-in storage drawers",
         "39\" width fits jumbo pans"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
@@ -62,7 +62,7 @@
         "Solid wood build",
         "Reduces litter tracking"
       ],
-      "link": "/product/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
+      "link": "/products/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
       "badge": "Best Premium",
       "availability": "InStock"
     },
@@ -76,7 +76,7 @@
         "Budget-friendly",
         "Generous interior"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
+      "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Budget",
       "availability": "InStock"
     }

@@ -192,7 +192,7 @@ export const EnhancedSearch = ({
     setIsOpen(false);
     setQuery('');
     onClose?.();
-    navigate(`/product/${product.id}`);
+    navigate(`/products/${product.id}`);
   };
 
   const handleCategorySelect = (category: Category) => {

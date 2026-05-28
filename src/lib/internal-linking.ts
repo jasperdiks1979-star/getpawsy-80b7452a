@@ -374,7 +374,7 @@ export const generateProductKeywords = (products: Product[]): LinkableKeyword[] 
   products.forEach((product) => {
     if (!product.name || !product.slug) return;
     
-    const productUrl = `/product/${product.slug}`;
+    const productUrl = `/products/${product.slug}`;
     const productNameLower = product.name.toLowerCase().trim();
     
     // Add full product name as keyword (highest priority)

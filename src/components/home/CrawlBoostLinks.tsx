@@ -18,7 +18,7 @@ const CATEGORY_LINKS = [
 ] as const;
 
 const FEATURED_PRODUCT = {
-  href: '/product/automatic-cat-litter-box-self-cleaning-app-control',
+  href: '/products/automatic-cat-litter-box-self-cleaning-app-control',
   title: 'Automatic Self-Cleaning Cat Litter Box',
   description: 'Smart app-controlled litter box with infrared sensor, deodorizing system and multi-cat support. Our #1 bestseller.',
 };

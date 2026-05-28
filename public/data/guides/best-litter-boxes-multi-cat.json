@@ -23,17 +23,17 @@
     "bestOverall": {
       "name": "Cat Litter Box Enclosure with Drawers & Storage",
       "reason": "39\" width gives large cats room; drawers keep multiple scoops, bags, and supplies organized for quick multi-box maintenance.",
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
     },
     "bestBudget": {
       "name": "PawHut Enclosure with Barn Door",
       "reason": "At $171.99, you can afford 2-3 of these for proper multi-cat coverage without breaking your budget.",
-      "link": "/product/pawhut-cat-litter-box-enclosure-with-barn-door-cat-hole-white"
+      "link": "/products/pawhut-cat-litter-box-enclosure-with-barn-door-cat-hole-white"
     },
     "bestPremium": {
       "name": "60L Automatic Smart Litter Box",
       "reason": "Self-cleaning after every use means one less box to scoop in a busy multi-cat home. App tracks which cat uses it most.",
-      "link": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
     }
   },
   "comparisonProducts": [
@@ -47,7 +47,7 @@
         "Built-in supply storage",
         "Anti-tip safety for active homes"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
@@ -61,7 +61,7 @@
         "Tracks usage per cat via app",
         "60L handles heavy use"
       ],
-      "link": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
       "badge": "Best Automatic",
       "availability": "InStock"
     },
@@ -75,7 +75,7 @@
         "Built-in scratching pad",
         "Wide cat entry"
       ],
-      "link": "/product/cat-litter-box-enclosure-end-side-table-with-scratching-pad-white",
+      "link": "/products/cat-litter-box-enclosure-end-side-table-with-scratching-pad-white",
       "availability": "InStock"
     }
   ],

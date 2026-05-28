@@ -217,7 +217,7 @@ const PinterestLandingPage = () => {
         </section>
 
         <div className="text-center mb-12">
-          <Link to={`/product/${product.slug}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+          <Link to={`/products/${product.slug}`} className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             View full product details <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

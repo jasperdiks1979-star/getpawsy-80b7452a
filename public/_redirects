@@ -2,8 +2,8 @@
 # GetPawsy 301 Redirects — Single-hop, no chains
 # ═══════════════════════════════════════════════════════════════
 
-# ── Canonical product URL redirect (plural → singular) ──
-/products/:slug /product/:slug 301
+# ── Canonical product URL redirect (singular → plural) ──
+/product/:slug /products/:slug 301
 
 # ── Legacy collection singular → plural ──
 /collection/:slug /collections/:slug 301
@@ -77,8 +77,8 @@
 /collections/chicken-* /products 301
 
 # ── Bestseller detail → canonical product URL ──
-/bestseller/:slug /product/:slug 301
-/bestsellers/:slug /product/:slug 301
+/bestseller/:slug /products/:slug 301
+/bestsellers/:slug /products/:slug 301
 
 # ── Static XML + feed diagnostics must bypass SPA fallback ──
 /google-feed.xml /google-feed.xml 200

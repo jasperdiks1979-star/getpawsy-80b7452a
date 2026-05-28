@@ -146,7 +146,7 @@ function getSitemapPriorityFallback(url: string): number {
   if (url.startsWith('/collections/')) return SITEMAP_WEIGHTS.standardCollection;
   if (url.startsWith('/guides/') || url.startsWith('/dog/') || url.startsWith('/cat/')) return SITEMAP_WEIGHTS.pillarGuide;
   if (url.startsWith('/blog/')) return SITEMAP_WEIGHTS.blogPost;
-  if (url.startsWith('/product/')) return SITEMAP_WEIGHTS.productPage;
+  if (url.startsWith('/products/')) return SITEMAP_WEIGHTS.productPage;
   
   return SITEMAP_WEIGHTS.utilityPage;
 }

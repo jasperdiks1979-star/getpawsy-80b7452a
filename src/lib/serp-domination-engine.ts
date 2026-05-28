@@ -195,7 +195,7 @@ export function generateCollectionSchema(config: CategorySerpConfig, products: a
         position: i + 1,
         item: {
           '@type': 'Product',
-          '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
+          '@id': `https://getpawsy.pet/products/${p.slug || p.id}`,
           name: p.name,
           image: p.image_url || p.images?.[0],
           ...((p.price && Number(p.price) > 0) ? {

@@ -244,7 +244,7 @@ function BestOverallHero({ pick, products, categories, species }: { pick: BestOv
           {/* CTA */}
           <div className="flex flex-wrap gap-3 items-center">
             {pick.productSlug ? (
-              <Link to={`/product/${pick.productSlug}`}>
+              <Link to={`/products/${pick.productSlug}`}>
                 <Button className="gap-2 bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white">
                   <ShoppingCart className="w-4 h-4" /> Buy Now — Free Shipping
                 </Button>
@@ -509,7 +509,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                     </div>
                     <p className="text-xs text-muted-foreground mb-4 flex-1">{pick.bestFor}</p>
                     {pick.productSlug ? (
-                      <Link to={`/product/${pick.productSlug}`}>
+                      <Link to={`/products/${pick.productSlug}`}>
                         <Button size="sm" className="w-full gap-1.5 text-xs">
                           <ExternalLink className="w-3 h-3" /> {pick.cta || 'Check Price'}
                         </Button>
@@ -578,7 +578,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                         )}
                         <span className="font-medium text-foreground">
                           {p.productSlug ? (
-                            <Link to={`/product/${p.productSlug}`} className="hover:text-primary transition-colors">{p.name}</Link>
+                            <Link to={`/products/${p.productSlug}`} className="hover:text-primary transition-colors">{p.name}</Link>
                           ) : p.name}
                         </span>
                       </div>
@@ -593,7 +593,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                     <td className="p-3 font-medium text-foreground whitespace-nowrap">{p.priceRange}</td>
                     <td className="p-3">
                       {p.productSlug ? (
-                        <Link to={`/product/${p.productSlug}`}>
+                        <Link to={`/products/${p.productSlug}`}>
                           <Button size="sm" className="gap-1 text-xs">
                             <ShoppingCart className="w-3 h-3" /> Check Price
                           </Button>
@@ -635,7 +635,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 </div>
                 <div className="mt-3">
                   {p.productSlug ? (
-                    <Link to={`/product/${p.productSlug}`}>
+                    <Link to={`/products/${p.productSlug}`}>
                       <Button size="sm" className="w-full gap-1.5 text-xs">
                         <ShoppingCart className="w-3 h-3" /> Check Price
                       </Button>
@@ -712,7 +712,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 {/* CTA for each product */}
                 <div className="flex flex-wrap gap-3 items-center">
                   {p.productSlug ? (
-                    <Link to={`/product/${p.productSlug}`}>
+                    <Link to={`/products/${p.productSlug}`}>
                       <Button size="sm" className="gap-2">
                         <ShoppingCart className="w-4 h-4" /> Check Price
                       </Button>

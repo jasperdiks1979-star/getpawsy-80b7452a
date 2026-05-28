@@ -262,16 +262,16 @@ export function generateMockAuthorityPages(): AuthorityPageData[] {
     { url: '/cat-trees-condos', type: 'category', tier: 1, inboundLinks: 12, outboundLinks: 24, crawlDepth: 1, isOrphan: false, authorityScore: 82, clusterName: 'Cat Trees' },
     { url: '/guides/best-cat-trees-2026', type: 'guide', tier: 1, inboundLinks: 9, outboundLinks: 8, crawlDepth: 2, isOrphan: false, authorityScore: 78, clusterName: 'Cat Trees' },
     { url: '/guides/best-dog-bed-2026', type: 'guide', tier: 1, inboundLinks: 8, outboundLinks: 6, crawlDepth: 2, isOrphan: false, authorityScore: 75, clusterName: 'Dog Beds' },
-    { url: '/product/luxury-cat-tree-xl', type: 'product', tier: 2, inboundLinks: 4, outboundLinks: 3, crawlDepth: 2, isOrphan: false, authorityScore: 62, clusterName: 'Cat Trees' },
-    { url: '/product/modern-cat-condo', type: 'product', tier: 2, inboundLinks: 3, outboundLinks: 2, crawlDepth: 2, isOrphan: false, authorityScore: 55, clusterName: 'Cat Trees' },
-    { url: '/product/sisal-scratching-post', type: 'product', tier: 2, inboundLinks: 2, outboundLinks: 2, crawlDepth: 3, isOrphan: false, authorityScore: 48, clusterName: 'Cat Trees' },
-    { url: '/product/orthopedic-dog-bed-large', type: 'product', tier: 2, inboundLinks: 5, outboundLinks: 3, crawlDepth: 2, isOrphan: false, authorityScore: 60, clusterName: 'Dog Beds' },
+    { url: '/products/luxury-cat-tree-xl', type: 'product', tier: 2, inboundLinks: 4, outboundLinks: 3, crawlDepth: 2, isOrphan: false, authorityScore: 62, clusterName: 'Cat Trees' },
+    { url: '/products/modern-cat-condo', type: 'product', tier: 2, inboundLinks: 3, outboundLinks: 2, crawlDepth: 2, isOrphan: false, authorityScore: 55, clusterName: 'Cat Trees' },
+    { url: '/products/sisal-scratching-post', type: 'product', tier: 2, inboundLinks: 2, outboundLinks: 2, crawlDepth: 3, isOrphan: false, authorityScore: 48, clusterName: 'Cat Trees' },
+    { url: '/products/orthopedic-dog-bed-large', type: 'product', tier: 2, inboundLinks: 5, outboundLinks: 3, crawlDepth: 2, isOrphan: false, authorityScore: 60, clusterName: 'Dog Beds' },
     { url: '/guides/indoor-cat-enrichment', type: 'guide', tier: 3, inboundLinks: 2, outboundLinks: 4, crawlDepth: 3, isOrphan: false, authorityScore: 38, clusterName: 'Cat Trees' },
     { url: '/guides/cat-tree-safety-tips', type: 'guide', tier: 3, inboundLinks: 1, outboundLinks: 3, crawlDepth: 3, isOrphan: true, authorityScore: 22, clusterName: 'Cat Trees' },
     { url: '/guides/best-cat-litter-box-2026', type: 'guide', tier: 1, inboundLinks: 7, outboundLinks: 5, crawlDepth: 2, isOrphan: false, authorityScore: 72, clusterName: 'Cat Litter' },
-    { url: '/product/self-cleaning-litter-box', type: 'product', tier: 2, inboundLinks: 1, outboundLinks: 2, crawlDepth: 3, isOrphan: false, authorityScore: 35, clusterName: 'Cat Litter' },
+    { url: '/products/self-cleaning-litter-box', type: 'product', tier: 2, inboundLinks: 1, outboundLinks: 2, crawlDepth: 3, isOrphan: false, authorityScore: 35, clusterName: 'Cat Litter' },
     { url: '/guides/outdoor-dog-games-2026', type: 'guide', tier: 2, inboundLinks: 3, outboundLinks: 5, crawlDepth: 2, isOrphan: false, authorityScore: 45, clusterName: 'Dog Activities' },
-    { url: '/product/interactive-dog-toy', type: 'product', tier: 3, inboundLinks: 0, outboundLinks: 1, crawlDepth: 4, isOrphan: true, authorityScore: 12, clusterName: 'Dog Activities' },
+    { url: '/products/interactive-dog-toy', type: 'product', tier: 3, inboundLinks: 0, outboundLinks: 1, crawlDepth: 4, isOrphan: true, authorityScore: 12, clusterName: 'Dog Activities' },
     { url: '/guides/choosing-right-litter', type: 'guide', tier: 3, inboundLinks: 0, outboundLinks: 2, crawlDepth: 4, isOrphan: true, authorityScore: 15, clusterName: 'Cat Litter' },
   ];
 }
@@ -301,7 +301,7 @@ export function generateMockRankPages(): RankAccelerationPage[] {
       { type: 'meta_optimization', description: 'Rewrite meta description with action verbs', impact: 'medium' },
       { type: 'internal_link_boost', description: 'Needs 4+ more inbound links', impact: 'high' },
     ]},
-    { url: '/product/luxury-cat-tree-xl', keyword: 'large cat tree', avgPosition: 22.6, impressions: 201, ctr: 1.5, clicks: 3, internalLinks: 4, isIndexed: true, pushPriority: 'medium', suggestions: [
+    { url: '/products/luxury-cat-tree-xl', keyword: 'large cat tree', avgPosition: 22.6, impressions: 201, ctr: 1.5, clicks: 3, internalLinks: 4, isIndexed: true, pushPriority: 'medium', suggestions: [
       { type: 'homepage_rotation', description: 'Add to bestseller rotation on homepage', impact: 'medium' },
     ]},
   ];

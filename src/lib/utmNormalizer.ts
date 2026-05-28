@@ -5,7 +5,7 @@
  * utm_content stay consistent end-to-end.
  *
  * Why this exists:
- *   The TikTok funnel (TikTok ad → /go → /products/:slug → /product/:slug
+ *   The TikTok funnel (TikTok ad → /go → /products/:slug
  *   → checkout) historically dropped UTMs at every redirect/rewrite. Each
  *   page reinvented its own merge logic, causing PDP visits to lose
  *   utm_campaign=hookN and the dashboard to under-report. This module

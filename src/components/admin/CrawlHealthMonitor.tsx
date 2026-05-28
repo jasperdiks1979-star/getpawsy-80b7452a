@@ -336,7 +336,7 @@ export function CrawlHealthMonitor() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span><code>/products/:slug</code> → <code>/product/:slug</code> 301 redirect active</span>
+                  <span><code>/product/:slug</code> → <code>/products/:slug</code> 301 redirect active</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />

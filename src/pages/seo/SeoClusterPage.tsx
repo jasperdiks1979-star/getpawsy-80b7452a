@@ -105,7 +105,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
                   </div>
                 </div>
                 {pick.productSlug && (
-                  <Link to={`/product/${pick.productSlug}`}>
+                  <Link to={`/products/${pick.productSlug}`}>
                     <Button size="sm" className="gap-1 text-xs"><ShoppingCart className="w-3 h-3" /> Shop</Button>
                   </Link>
                 )}
