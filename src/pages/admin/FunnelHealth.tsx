@@ -116,7 +116,7 @@ async function loadIntel(r: Range): Promise<FunnelIntel> {
       }
     } else if (ev === 'cart_open') {
       cart_opens++;
-    } else if (ev === 'payment_success_view') {
+    } else if (ev === 'payment_success' || ev === 'payment_success_view') {
       payment_success++;
     } else if (ev === 'session_bounce') {
       bounces++;
