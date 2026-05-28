@@ -245,16 +245,70 @@ export default function AiRevenuePage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Brain className="w-6 h-6" /> AI Revenue Operator</h1>
-          <p className="text-sm text-muted-foreground">Live funnel intelligence and AI-generated growth recommendations.</p>
+          <p className="text-sm text-muted-foreground">
+            Live funnel intelligence and AI-generated growth recommendations.
+            {(fromDate || toDate || source !== 'all') && (
+              <span className="ml-2 text-foreground">
+                · Filtered{fromDate || toDate ? ` ${fromDate ? format(fromDate, 'MMM d') : '…'} → ${toDate ? format(toDate, 'MMM d') : '…'}` : ''}
+                {source !== 'all' ? ` · ${SOURCE_OPTIONS.find(s => s.value === source)?.label}` : ''}
+              </span>
+            )}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={range} onValueChange={(v) => { setFromDate(undefined); setToDate(undefined); setRange(v as Range); }}>
             <TabsList>
               <TabsTrigger value="24h">24h</TabsTrigger>
               <TabsTrigger value="7d">7d</TabsTrigger>
               <TabsTrigger value="30d">30d</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('justify-start text-left font-normal', !fromDate && 'text-muted-foreground')}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                {fromDate ? format(fromDate, 'MMM d') : 'From'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={fromDate} onSelect={setFromDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('justify-start text-left font-normal', !toDate && 'text-muted-foreground')}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                {toDate ? format(toDate, 'MMM d') : 'To'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={toDate} onSelect={setToDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+            </PopoverContent>
+          </Popover>
+
+          {(fromDate || toDate) && (
+            <Button size="sm" variant="ghost" onClick={() => { setFromDate(undefined); setToDate(undefined); }} title="Clear dates">
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+
+          <Select value={source} onValueChange={(v) => setSource(v as SourceFilter)}>
+            <SelectTrigger className="w-[160px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SOURCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
           <Button size="sm" variant="outline" onClick={() => loadSummary(range)} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
