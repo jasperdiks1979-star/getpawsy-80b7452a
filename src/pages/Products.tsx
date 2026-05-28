@@ -13,6 +13,8 @@ import { QuickViewModal } from '@/components/products/QuickViewModal';
 import { TrustBadgesBlock } from '@/components/shared/TrustBadgesBlock';
 import { SubcategoryGrid } from '@/components/products/SubcategoryGrid';
 import { CategoryEmptyState } from '@/components/products/CategoryEmptyState';
+import { SearchEmptyState } from '@/components/search/SearchEmptyState';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import { DidYouMeanSection } from '@/components/products/DidYouMeanSection';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -993,6 +995,16 @@ const Products = () => {
             {/* Empty State - Enhanced with recommendations */}
             {!isLoading && filteredProducts.length === 0 && (
               (() => {
+                // CI-15 — search-specific empty state when the user has an
+                // active query. Category empty state is unchanged otherwise.
+                if (getConversionFlag('premiumSearchEmpty') && searchQuery.trim().length > 0) {
+                  return (
+                    <SearchEmptyState
+                      query={searchQuery.trim()}
+                      onClear={clearAllFilters}
+                    />
+                  );
+                }
                 // Get parent category info for recommendations
                 const currentCategory = categoryParam ? categories?.find(c => 
                   c.slug === categoryParam || normalizeCategory(c.name) === normalizeCategory(categoryParam)
