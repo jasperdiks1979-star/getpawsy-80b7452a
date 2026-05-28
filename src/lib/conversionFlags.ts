@@ -19,6 +19,7 @@ export type ConversionFlagKey =
   | 'premiumCard'
   | 'premiumHero'
   | 'premiumCheckoutCart'
+  | 'premiumPdpV2'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -44,6 +45,13 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // and the duplicate sidebar upsell suppressed on mobile. Pure presentation
   // and ordering; pricing, shipping math, Stripe and checkout untouched.
   premiumCheckoutCart: true,
+  // CI-9: PDP → ATC polish v2 — sticky bar that hides on scroll-down /
+  // reveals on scroll-up, haptic on tap, larger touch target, semantic
+  // color tokens. Above-the-fold cleanup suppresses the duplicate mobile
+  // trust bar + emotional hook (already represented by subline + chips),
+  // and the gallery uses a calmer zoom hint. Pure presentation; flip to
+  // false to restore CI-2/CI-7 behavior instantly.
+  premiumPdpV2: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
