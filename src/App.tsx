@@ -1736,6 +1736,22 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ai-creatives"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiCreativesPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="ai-seo"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiSeoPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="momentum"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
