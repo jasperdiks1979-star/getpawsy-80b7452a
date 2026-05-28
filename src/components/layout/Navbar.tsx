@@ -616,11 +616,11 @@ export const Navbar = () => {
 
                       {/* Mobile Categories */}
                       <div className="mb-2">
-                        <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        <p className={`px-4 ${premiumMobileNavV2 ? 'text-[10px] font-medium tracking-[0.22em]' : 'text-xs font-semibold tracking-wider'} text-muted-foreground uppercase mb-2`}>
                           Categories
                         </p>
                       </div>
-                      <div className="rounded-xl border bg-card overflow-hidden">
+                      <div className={premiumMobileNavV2 ? 'rounded-xl border border-border/50 bg-card overflow-hidden' : 'rounded-xl border bg-card overflow-hidden'}>
                         {categoryTree.map((category) => (
                           <MobileCategoryItem
                             key={category.key}
