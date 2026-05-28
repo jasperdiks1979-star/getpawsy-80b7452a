@@ -11,6 +11,7 @@ import { useCollectionIntegrityCheck } from '@/lib/collection-integrity';
 import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-slug-resolver';
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import { Layout } from '@/components/layout/Layout';
 import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { CrossCollectionLinks } from '@/components/seo/CrossCollectionLinks';
