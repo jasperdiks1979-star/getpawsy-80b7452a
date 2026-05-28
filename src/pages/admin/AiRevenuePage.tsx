@@ -505,7 +505,46 @@ export default function AiRevenuePage() {
               <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts, payload } = buildExportPayload(); downloadJson(`ai-revenue-${ts}.json`, payload); }}>
                 <Download className="w-3 h-3 mr-2" /> Full report (JSON)
               </Button>
-              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.top_products.map(p => ({ id: p.id, name: p.name, views: p.views, atc: p.atc, atc_rate_pct: p.atc_rate, dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1), rage_clicks: p.rage_clicks, sessions: p.sessions })) : []; downloadCsv(`products-${ts}.csv`, rows); }}>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => {
+                const { ts } = buildExportPayload();
+                const buckets: Array<[string, ProductRow[] | undefined]> = summary ? [
+                  ['top', summary.top_products],
+                  ['winner', summary.winner_products],
+                  ['breakout', summary.breakout_products],
+                  ['rising', summary.rising_products],
+                  ['falling', summary.falling_products],
+                ] : [];
+                const seen = new Set<string>();
+                const rows: Array<Record<string, string | number | null | undefined>> = [];
+                for (const [bucket, list] of buckets) {
+                  for (const p of (list ?? [])) {
+                    const key = `${bucket}:${p.id}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    rows.push({
+                      bucket,
+                      id: p.id,
+                      name: p.name,
+                      classification: p.classification ?? '',
+                      is_new: p.is_new ? 1 : 0,
+                      views: p.views,
+                      prior_views: p.prior_views ?? '',
+                      views_delta_pct: p.views_delta_pct ?? '',
+                      views_z: p.views_z ?? '',
+                      atc: p.atc,
+                      atc_rate_pct: p.atc_rate,
+                      prior_atc_rate_pct: p.prior_atc_rate ?? '',
+                      atc_rate_delta_pp: p.atc_rate_delta_pp ?? '',
+                      atc_rate_z: p.atc_rate_z ?? '',
+                      wilson_atc_lower_pct: p.wilson_atc_lower ?? '',
+                      dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1),
+                      rage_clicks: p.rage_clicks,
+                      sessions: p.sessions,
+                    });
+                  }
+                }
+                downloadCsv(`products-${ts}.csv`, rows);
+              }}>
                 <Download className="w-3 h-3 mr-2" /> Product data (CSV)
               </Button>
               <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.traffic_quality.map(t => ({ source: t.source, sessions: t.sessions, views: t.views, atc_rate_pct: t.atc_rate, bounce_rate_pct: t.bounce_rate, avg_dwell_sec: (t.avg_dwell_ms / 1000).toFixed(1) })) : []; downloadCsv(`traffic-${ts}.csv`, rows); }}>
