@@ -1,19 +1,25 @@
 /**
- * MobileStickyTrustBar — slim, top-anchored trust strip on mobile.
+ * MobileStickyTrustBar — ultra-subtle, top-anchored trust whisper on mobile.
  *
- * Compliance:
- *   - All strings come from `merchant-policy` / `shipping-constants`.
- *   - No fake urgency, no countdowns, no review counts.
- *   - ≤32px tall so it never competes with the header CTA.
- *   - Hides on scroll-down, reappears on scroll-up so it never blocks PDP UI.
+ * Premium-DTC posture:
+ *   - 24px tall, neutral palette (no primary fill, no badge energy).
+ *   - One refined line, three quiet anchors separated by hairline dots.
+ *   - Auto-hides on scroll-down, returns on scroll-up.
+ *   - All copy is policy-approved; no urgency, no countdowns, no review counts.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 import { getConversionFlag } from '@/lib/conversionFlags';
+
+const Dot = () => (
+  <span
+    aria-hidden
+    className="inline-block h-[3px] w-[3px] rounded-full bg-muted-foreground/40"
+  />
+);
 
 export function MobileStickyTrustBar() {
   const [visible, setVisible] = useState(true);
@@ -22,7 +28,6 @@ export function MobileStickyTrustBar() {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      // Visible when at top OR scrolling up
       setVisible(y < 80 || y < lastY.current);
       lastY.current = y;
     };
@@ -41,17 +46,16 @@ export function MobileStickyTrustBar() {
       }`}
       style={{ contain: 'layout' }}
     >
-      <div className="h-8 flex items-center justify-between gap-3 px-3 bg-primary/95 text-primary-foreground text-[11px] font-medium backdrop-blur">
-        <span className="flex items-center gap-1">
-          <Truck className="w-3 h-3" aria-hidden />
-          Free ship ${FREE_SHIPPING_THRESHOLD}+
+      <div className="h-6 flex items-center justify-center gap-3 px-4 bg-background/85 supports-[backdrop-filter]:bg-background/70 backdrop-blur-md border-b border-border/50">
+        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
+          Free shipping ${FREE_SHIPPING_THRESHOLD}+
         </span>
-        <span className="flex items-center gap-1">
-          <RotateCcw className="w-3 h-3" aria-hidden />
+        <Dot />
+        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
           {RETURN_WINDOW_DAYS}-day returns
         </span>
-        <span className="flex items-center gap-1">
-          <ShieldCheck className="w-3 h-3" aria-hidden />
+        <Dot />
+        <span className="text-[10.5px] font-medium tracking-[0.06em] text-foreground/80">
           Secure checkout
         </span>
       </div>
