@@ -57,10 +57,9 @@ interface SessionRow {
   source_quality?: string | null;
   in_app_browser?: boolean | null;
   referrer?: string | null;
-  utm_source?: string | null;
-  duration_seconds?: number | null;
-  max_scroll_pct?: number | null;
-  atc_count?: number | null;
+  last_touch_source?: string | null;
+  started_at?: string | null;
+  last_seen_at?: string | null;
 }
 
 const CRAWLER_UA = /(bot|crawler|spider|scraper|headless|phantom|selenium|puppeteer|playwright|lighthouse|pagespeed|curl|wget|python-requests|go-http-client|okhttp|facebookexternalhit|twitterbot|pinterestbot|tiktokbot|bytespider|googlebot|bingbot|ahrefsbot|semrushbot|yandexbot|duckduckbot|slurp|baiduspider|gptbot|claudebot|perplexitybot)/i;
@@ -91,22 +90,32 @@ function classify(row: SessionRow): QualityClass {
  */
 function scoreSourceQuality(row: SessionRow, cls: QualityClass): SourceQuality | null {
   if (cls === 'crawler' || cls === 'likely_bot') return 'suspicious';
-  const dwell = row.duration_seconds ?? 0;
-  const scroll = row.max_scroll_pct ?? 0;
-  const atc = row.atc_count ?? 0;
+  let dwell = 0;
+  if (row.started_at && row.last_seen_at) {
+    dwell = Math.max(
+      0,
+      (new Date(row.last_seen_at).getTime() - new Date(row.started_at).getTime()) / 1000,
+    );
+  }
   const events = row.event_count ?? 0;
   const pvs = row.page_view_count ?? 0;
   const inApp = row.in_app_browser === true;
   const geo = (row.geo_quality || '').toLowerCase();
+  const src = (row.last_touch_source || '').toLowerCase();
 
   // Not enough signal yet — let the next pass classify.
   if (events === 0 && pvs <= 1 && dwell < 5) return null;
 
-  if (atc > 0 && dwell >= 30 && scroll >= 40 && geo !== 'low') return 'premium';
-  if ((dwell >= 45 || scroll >= 60 || pvs >= 3) && geo !== 'low') return 'good';
-  if (inApp && dwell < 15 && atc === 0) return 'curiosity_only';
-  if (dwell < 10 && scroll < 25 && atc === 0) return 'curiosity_only';
+  // High intent — multi-page, long dwell, real geo, organic/direct preferred.
+  if (pvs >= 4 && dwell >= 60 && geo !== 'low') return 'premium';
+  if (pvs >= 3 || dwell >= 45) return geo === 'low' ? 'weak' : 'good';
+  if (inApp && dwell < 15) return 'curiosity_only';
+  if (dwell < 10 && pvs <= 1) return 'curiosity_only';
   if (geo === 'low') return 'weak';
+  // Pinterest/social drive-bys with a single view → curiosity-only.
+  if ((/pinterest|tiktok|instagram|facebook/.test(src)) && pvs <= 1 && dwell < 20) {
+    return 'curiosity_only';
+  }
   return 'weak';
 }
 
@@ -164,7 +173,7 @@ Deno.serve(async (req) => {
 
     let query = admin
       .from('sessions')
-      .select('session_id, is_bot, bot_reason, traffic_quality_score, geo_quality, user_agent, page_view_count, event_count, quality_class, source_quality, in_app_browser, referrer, utm_source, duration_seconds, max_scroll_pct, atc_count')
+      .select('session_id, is_bot, bot_reason, traffic_quality_score, geo_quality, user_agent, page_view_count, event_count, quality_class, source_quality, in_app_browser, referrer, last_touch_source, started_at, last_seen_at')
       .gte('started_at', since)
       .order('started_at', { ascending: false })
       .limit(limit);
