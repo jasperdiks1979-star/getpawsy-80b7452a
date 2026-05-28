@@ -98,6 +98,8 @@ import { ConversionBlock } from "@/components/products/ConversionBlock";
 import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
 import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
 import { useAdIntent } from "@/hooks/useAdIntent";
+import { computeIntentMatch } from "@/lib/intentMatch";
+import { getConversionFlag } from "@/lib/conversionFlags";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
 import { TikTokHero } from "@/components/products/TikTokHero";
@@ -405,6 +407,21 @@ const ProductDetail = () => {
 
   // Ad intent detection — ?kw= param or category fallback
   const adIntent = useAdIntent(product?.category);
+  // CI-3 — gate ad-driven overrides by intent strength. Weak/no-match traffic
+  // sees the baseline PDP so we never surface a "cooling" headline to a
+  // winter cat-tree shopper.
+  const intentMatch = useMemo(
+    () => computeIntentMatch(adIntent, product?.category),
+    [adIntent, product?.category],
+  );
+  const intentGatingOn = getConversionFlag('intentGating');
+  const allowHeadlineOverride =
+    !intentGatingOn || intentMatch.allowHeadlineOverride;
+  const allowPinterestBanner =
+    !intentGatingOn ||
+    (intentMatch.source === 'pinterest' && intentMatch.tier !== 'weak');
+  const allowReassuranceStack =
+    !intentGatingOn || intentMatch.allowEmotionalStack;
   const { isTikTok, scrollToBuy } = useTikTokLanding();
 
   // Phase 4+5 — additive funnel instrumentation (lazy, never blocks render)
