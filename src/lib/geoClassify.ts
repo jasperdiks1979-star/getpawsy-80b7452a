@@ -9,10 +9,12 @@
  * when the cache key is missing — falls back to `"unknown"`).
  */
 import { supabase } from '@/integrations/supabase/client';
+import { getDeviceClassification } from '@/lib/deviceClassify';
 
 const QUALITY_KEY = 'gp_geo_quality_v1';
 const COUNTRY_KEY = 'gp_geo_country_v1';
 const INFLIGHT_KEY = 'gp_geo_inflight_v1';
+const DEVICE_PRIMED_KEY = 'gp_device_primed_v1';
 
 let inflight: Promise<void> | null = null;
 
@@ -45,6 +47,15 @@ function schedule(cb: () => void): void {
  */
 export function ensureGeoClassified(): void {
   if (typeof window === 'undefined') return;
+  // Always prime the device cache early so funnel writers can read it sync.
+  try {
+    if (!sessionStorage.getItem(DEVICE_PRIMED_KEY)) {
+      getDeviceClassification();
+      sessionStorage.setItem(DEVICE_PRIMED_KEY, '1');
+    }
+  } catch {
+    /* ignore */
+  }
   if (alreadyCached()) return;
   if (inflight) return;
   try {
