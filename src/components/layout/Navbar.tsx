@@ -40,6 +40,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FloatingCartPreview } from '@/components/cart/FloatingCartPreview';
 import { buildCategoryTree, type CategoryTreeNode } from '@/lib/canonical-category-registry';
 import logoIcon from '@/assets/logo-getpawsy.png';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -219,6 +221,19 @@ export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isCartPreviewOpen, setIsCartPreviewOpen] = useState(false);
+  // CI-11: hide-on-scroll-down / reveal-on-scroll-up. Gated behind
+  // `premiumNav` so it can be flipped off instantly.
+  const scrollDir = useScrollDirection(8);
+  const premiumNav = getConversionFlag('premiumNav');
+  const isHidden =
+    premiumNav &&
+    scrollDir === 'down' &&
+    isScrolled &&
+    !isMobileMenuOpen &&
+    !isMegaMenuOpen &&
+    !isSearchOpen &&
+    typeof window !== 'undefined' &&
+    window.scrollY > 120;
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(() => {
     return localStorage.getItem('promo-banner-dismissed') === 'true';
@@ -303,11 +318,11 @@ export const Navbar = () => {
       </div>
 
       <header 
-        className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-all duration-300 ${
+        className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden transition-[transform,background-color,box-shadow] duration-300 ease-out ${
           isScrolled 
-            ? 'bg-background/95 backdrop-blur-xl shadow-soft border-b border-border/50' 
+            ? 'bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-[0_1px_0_0_hsl(var(--border)/0.4)]' 
             : 'bg-background/80 backdrop-blur-lg'
-        }`}
+        } ${isHidden ? '-translate-y-full' : 'translate-y-0'}`}
       >
         <div className="container flex h-18 items-center justify-between px-4 md:px-6 py-3 max-w-full">
           {/* Logo */}

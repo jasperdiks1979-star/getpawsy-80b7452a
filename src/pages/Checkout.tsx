@@ -24,6 +24,8 @@ import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
 import { splitKlarnaInstallments, formatKlarnaInstallment } from '@/lib/klarna';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -185,6 +187,15 @@ const Checkout = () => {
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
+  const scrollDir = useScrollDirection(8);
+  const premiumCheckoutV2 = getConversionFlag('premiumCheckoutV2');
+  const hideMobileBar =
+    premiumCheckoutV2 &&
+    scrollDir === 'down' &&
+    typeof window !== 'undefined' &&
+    window.scrollY > 200;
 
   // Valid discount codes
   const VALID_DISCOUNT_CODES: Record<string, { discount: number; label: string }> = {
@@ -735,9 +746,11 @@ const Checkout = () => {
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Discover</div>
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Link</div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Apple Pay & Google Pay appear automatically on supported devices for 1-tap checkout.
-                </p>
+                {!premiumCheckoutV2 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Apple Pay & Google Pay appear automatically on supported devices for 1-tap checkout.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -811,11 +824,17 @@ const Checkout = () => {
                 </div>
                 
                 {!acceptedTerms && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                    <p className="text-xs text-amber-800 dark:text-amber-200">
-                      ⚠️ You must accept the terms and conditions to proceed with your order.
+                  premiumCheckoutV2 ? (
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground border-t border-border/40 pt-3 mt-1">
+                      Accept the terms above to continue
                     </p>
-                  </div>
+                  ) : (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                        ⚠️ You must accept the terms and conditions to proceed with your order.
+                      </p>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -1006,24 +1025,30 @@ const Checkout = () => {
               )}
 
               {/* Trust Signals - Checkout Reassurance */}
-              <div className="mt-4 pt-4 border-t space-y-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Lock className="w-4 h-4 text-success flex-shrink-0" />
-                  <span>Secure checkout powered by Stripe</span>
+              {premiumCheckoutV2 ? (
+                <p className="mt-4 pt-4 border-t border-border/40 text-[11px] uppercase tracking-wider text-muted-foreground text-center">
+                  Secure Stripe checkout · Free US shipping ${FREE_SHIPPING_THRESHOLD}+ · {DELIVERY_TIME_STANDARD} · {RETURNS_POLICY_SHORT}
+                </p>
+              ) : (
+                <div className="mt-4 pt-4 border-t space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Lock className="w-4 h-4 text-success flex-shrink-0" />
+                    <span>Secure checkout powered by Stripe</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Truck className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD} • ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Package className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>Shipping to the US • {DELIVERY_TIME_STANDARD}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{RETURNS_POLICY_SHORT}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Truck className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>Free shipping on eligible orders over ${FREE_SHIPPING_THRESHOLD} • ${FLAT_SHIPPING_RATE.toFixed(2)} flat rate under</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Package className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>Shipping to the US • {DELIVERY_TIME_STANDARD}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>{RETURNS_POLICY_SHORT}</span>
-                </div>
-              </div>
+              )}
               
               {/* Compact Upsell */}
               <div className="mt-6 pt-6 border-t">
@@ -1039,7 +1064,7 @@ const Checkout = () => {
         
         {/* Mobile Fixed Checkout Bar - positioned above safe area */}
         <div 
-          className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg lg:hidden z-40"
+          className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/40 lg:hidden z-40 transition-transform duration-300 ease-out ${hideMobileBar ? 'translate-y-full' : 'translate-y-0'}`}
           style={{ 
             width: '100%', 
             maxWidth: '100%', 
