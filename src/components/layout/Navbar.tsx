@@ -225,6 +225,7 @@ export const Navbar = () => {
   // `premiumNav` so it can be flipped off instantly.
   const scrollDir = useScrollDirection(8);
   const premiumNav = getConversionFlag('premiumNav');
+  const premiumMobileNavV2 = getConversionFlag('premiumMobileNavV2');
   const isHidden =
     premiumNav &&
     scrollDir === 'down' &&
