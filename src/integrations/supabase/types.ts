@@ -15550,6 +15550,7 @@ export type Database = {
           last_touch_medium: string | null
           last_touch_source: string | null
           page_view_count: number
+          quality_class: string | null
           referrer: string | null
           session_id: string
           started_at: string
@@ -15571,6 +15572,7 @@ export type Database = {
           last_touch_medium?: string | null
           last_touch_source?: string | null
           page_view_count?: number
+          quality_class?: string | null
           referrer?: string | null
           session_id: string
           started_at?: string
@@ -15592,6 +15594,7 @@ export type Database = {
           last_touch_medium?: string | null
           last_touch_source?: string | null
           page_view_count?: number
+          quality_class?: string | null
           referrer?: string | null
           session_id?: string
           started_at?: string
