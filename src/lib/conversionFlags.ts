@@ -43,6 +43,8 @@ export type ConversionFlagKey =
   | 'premiumSearchUI'
   | 'premiumGuidesHub'
   | 'premiumNewsletter'
+  | 'premiumCartCheckoutV5'
+  | 'premiumAuthV2'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -185,6 +187,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // caps eyebrow, calmer icon ring, refined success state. Pure presentation;
   // signup handler, Supabase insert, and welcome email flow untouched.
   premiumNewsletter: true,
+  // CI-22: cart + checkout polish v5 — micro-caps section eyebrows ("Your cart",
+  // "Order summary"), font-display semibold titles, hairline separators between
+  // summary rows, calmer quantity stepper (border-border/60), and hairline
+  // checkout item rows. Pure presentation; pricing, Stripe, and validation
+  // untouched. Flip to false to restore CI-17/v4 behavior instantly.
+  premiumCartCheckoutV5: true,
+  // CI-22: auth page polish v2 — hairline underlined tabs (no filled pill),
+  // dynamic font-display heading per tab ("Sign in" / "Create account"), and
+  // a tighter card padding. Auth flow, validation, OAuth handlers untouched.
+  premiumAuthV2: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
