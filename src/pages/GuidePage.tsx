@@ -18,6 +18,8 @@ import { AUTHOR, getAuthorSchema, getPublisherSchema } from '@/lib/author-entity
 import { getClusterRelatedGuides, injectGuideLinks } from '@/lib/guide-link-injector';
 import { getSeoTitle } from '@/lib/seo-title-ab';
 import { RecommendedProductsBlock } from '@/components/seo/RecommendedProductsBlock';
+import { ReadingProgressBar } from '@/components/reading/ReadingProgressBar';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import { ReadNextGuideCTA } from '@/components/guides/ReadNextGuideCTA';
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
@@ -535,6 +537,7 @@ const GuidePage = () => {
       </Helmet>
 
       <article className="container mx-auto px-4 py-12 max-w-3xl">
+        <ReadingProgressBar />
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
           <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -548,17 +551,30 @@ const GuidePage = () => {
         <GuideMoneyLinks currentSlug={guide.slug} position="top" relatedCategories={safeRelatedCategories} />
         <header className="mb-12">
           <div className="flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground mb-5">
-            <span className="bg-gradient-to-r from-primary/15 to-primary/5 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ring-1 ring-primary/10">
-              {guide.category}
-            </span>
+            {getConversionFlag('premiumReading') ? (
+              <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+                {guide.category}
+              </span>
+            ) : (
+              <span className="bg-gradient-to-r from-primary/15 to-primary/5 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ring-1 ring-primary/10">
+                {guide.category}
+              </span>
+            )}
             <span className="flex items-center gap-1.5 font-medium">
               <Clock className="w-3.5 h-3.5" />
               {guide.readingTime} min read
             </span>
-            <span className="flex items-center gap-1.5 bg-accent/60 text-accent-foreground px-2.5 py-1 rounded-full text-xs font-semibold">
-              <RefreshCw className="w-3 h-3" />
-              Updated {updatedYear}
-            </span>
+            {getConversionFlag('premiumReading') ? (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <RefreshCw className="w-3 h-3" strokeWidth={1.75} />
+                Updated {updatedYear}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 bg-accent/60 text-accent-foreground px-2.5 py-1 rounded-full text-xs font-semibold">
+                <RefreshCw className="w-3 h-3" />
+                Updated {updatedYear}
+              </span>
+            )}
           </div>
 
           <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-[1.15] tracking-tight">

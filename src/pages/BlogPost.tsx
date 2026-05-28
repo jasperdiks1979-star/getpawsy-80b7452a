@@ -18,6 +18,8 @@ import { ArticleSchema } from '@/components/seo/ArticleSchema';
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 import { BlogCategoryLinks } from '@/components/seo/BlogCategoryLinks';
 import { getBlogRedirectTarget, isBlogNoindexed } from '@/lib/blog-consolidation';
+import { ReadingProgressBar } from '@/components/reading/ReadingProgressBar';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -353,6 +355,7 @@ const BlogPostPage = () => {
       />
 
       <article className="container max-w-4xl py-8">
+        <ReadingProgressBar />
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
@@ -385,28 +388,46 @@ const BlogPostPage = () => {
 
         {/* Header */}
         <header className="mb-8">
-          <Badge className={`mb-4 capitalize ${categoryColors[post.category] || 'bg-muted'}`}>
-            {post.category}
-          </Badge>
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
+          {getConversionFlag('premiumReading') ? (
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-4 capitalize">
+              {post.category}
+            </p>
+          ) : (
+            <Badge className={`mb-4 capitalize ${categoryColors[post.category] || 'bg-muted'}`}>
+              {post.category}
+            </Badge>
+          )}
+          <h1 className={
+            getConversionFlag('premiumReading')
+              ? 'text-3xl md:text-5xl font-display font-semibold tracking-tight leading-[1.15] mb-4'
+              : 'text-3xl md:text-4xl font-display font-bold mb-4'
+          }>
             {post.title}
           </h1>
-          <p className="text-lg text-muted-foreground mb-6">
+          <p className={
+            getConversionFlag('premiumReading')
+              ? 'text-base md:text-lg text-muted-foreground mb-6 leading-relaxed max-w-2xl'
+              : 'text-lg text-muted-foreground mb-6'
+          }>
             {post.excerpt}
           </p>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          <div className={
+            getConversionFlag('premiumReading')
+              ? 'flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pt-4 border-t border-border/40'
+              : 'flex flex-wrap items-center gap-4 text-sm text-muted-foreground'
+          }>
             <span className="flex items-center gap-1">
-              <User className="w-4 h-4" />
+              <User className="w-3.5 h-3.5" strokeWidth={1.75} />
               {post.author_name}
             </span>
             <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} />
               {post.published_at && new Date(post.published_at).getFullYear() > 1971
                 ? format(new Date(post.published_at), 'MMMM d, yyyy', { locale: enUS })
                 : format(new Date(post.created_at), 'MMMM d, yyyy', { locale: enUS })}
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
               {post.reading_time_minutes} min read
             </span>
             <Button variant="ghost" size="sm" onClick={handleShare} className="ml-auto">

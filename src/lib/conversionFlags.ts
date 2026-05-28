@@ -27,6 +27,8 @@ export type ConversionFlagKey =
   | 'premiumThankYou'
   | 'premiumPdpStickyV2'
   | 'premiumPostPurchase'
+  | 'premiumHomeAboveFold'
+  | 'premiumReading'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -95,6 +97,14 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // on the homepage for ~30 days after the most recent successful purchase.
   // Both are dismissable / additive. Tracking and conversion events untouched.
   premiumPostPurchase: true,
+  // CI-14: homepage above-the-fold polish v2 — tightens hero subline measure
+  // and replaces the chunky benefit cards with a calmer hairline list under
+  // a micro-caps eyebrow. Headline, CTA, image, and link targets unchanged.
+  premiumHomeAboveFold: true,
+  // CI-14: guide + blog reading polish — sticky reading-progress bar, calmer
+  // editorial header (micro-caps category eyebrow instead of chunky badges,
+  // tighter meta row). Content rendering, schema, and links untouched.
+  premiumReading: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to

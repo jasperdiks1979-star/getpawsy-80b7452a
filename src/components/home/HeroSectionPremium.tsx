@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
 import { trackHomepageVariant } from '@/lib/homepagePersonalization';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 // Public-dir hero images so index.html preload tags still hit (no Vite hash).
 const heroDesktop = '/hero/cat-litter-box-hero.webp';
@@ -40,6 +41,7 @@ export function HeroSectionPremium({
 }: HeroSectionPremiumProps = {}) {
   const heroCategory = category || 'cat-litter-boxes';
   const heroHref = `/collections/${heroCategory}`;
+  const aboveFoldV2 = getConversionFlag('premiumHomeAboveFold');
   const handlePrimary = () => {
     trackEvent('hero_cta_click', {
       cta_id: 'shop_litter_boxes',
@@ -89,7 +91,11 @@ export function HeroSectionPremium({
         )}
 
         {/* Sub — solution + outcome, one sentence, generous line-height. */}
-        <p className="mt-5 text-[15px] md:text-lg text-white/85 max-w-lg mx-auto leading-relaxed">
+        <p className={
+          aboveFoldV2
+            ? "mt-5 text-[15px] md:text-[17px] text-white/80 max-w-md mx-auto leading-relaxed"
+            : "mt-5 text-[15px] md:text-lg text-white/85 max-w-lg mx-auto leading-relaxed"
+        }>
           {subheadline ||
             'Self-cleaning litter boxes designed for the way you live — quiet, modern, and made to disappear into your home.'}
         </p>
