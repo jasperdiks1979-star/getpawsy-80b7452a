@@ -287,3 +287,234 @@ export function fireCheckoutRedirect(input: Omit<CheckoutEventInput, 'step'>): v
 export function fireCheckoutError(input: Omit<CheckoutEventInput, 'step'>): void {
   fireCheckoutEvent({ ...input, step: 'checkout_error' });
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Phase 4+5 additive event helpers — production-safe, never throws,
+ * never blocks render, never touches Stripe / checkout creation logic.
+ * All rows land in `lp_funnel_events` reusing existing schema + raw_payload.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function detectDeviceType(): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
+  try {
+    const ua = navigator.userAgent || '';
+    if (/iPad|tablet|Tablet/i.test(ua)) return 'tablet';
+    if (/Mobi|Android|iPhone|iPod/i.test(ua)) return 'mobile';
+    return 'desktop';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function detectOs(): string {
+  try {
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+    if (/Android/i.test(ua)) return 'android';
+    if (/Mac OS X/i.test(ua)) return 'macos';
+    if (/Windows/i.test(ua)) return 'windows';
+    if (/Linux/i.test(ua)) return 'linux';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function insertLpEvent(row: Record<string, unknown>): void {
+  try {
+    void supabase.from('lp_funnel_events').insert(row as never).then(({ error }) => {
+      if (error && error.code !== '23505') {
+        console.debug('[funnelEvents] insert failed:', error.message);
+      }
+    });
+  } catch (e) {
+    console.debug('[funnelEvents] insert threw:', e);
+  }
+}
+
+/** Generic additive event writer (used by all Phase 4+5 helpers). */
+function fireLpEvent(opts: {
+  event_name: string;
+  source_component: string;
+  product_id?: string | null;
+  product_name?: string | null;
+  value?: number | null;
+  extra?: Record<string, unknown>;
+  /** When true, skip the 10s idempotency dedupe (use for high-frequency signals like scroll). */
+  skipDedupe?: boolean;
+}): void {
+  try {
+    const env = envelope({
+      event_source: 'user_click',
+      source_component: opts.source_component,
+      product_id: opts.product_id ?? null,
+      event: opts.event_name,
+    });
+    if (env.is_bot) return;
+    if (!opts.skipDedupe && env.deduped) return;
+
+    const last = getLastTouch() ?? classifySource();
+    const first = getFirstTouch() ?? last;
+
+    insertLpEvent({
+      session_id: env.session_id,
+      event_name: opts.event_name,
+      page_path: typeof window !== 'undefined' ? window.location.pathname : null,
+      product_id: opts.product_id ?? null,
+      product_name: opts.product_name ?? null,
+      value: opts.value ?? null,
+      utm_source: last.source,
+      utm_medium: last.medium,
+      utm_campaign: last.campaign,
+      event_source: env.event_source,
+      user_action_id: env.user_action_id,
+      idempotency_key: opts.skipDedupe ? null : env.idempotency_key,
+      source_component: env.source_component,
+      is_bot: env.is_bot,
+      bot_reason: env.bot_reason,
+      geo_quality: env.geo_quality,
+      traffic_quality_score: env.traffic_quality_score,
+      deduped: false,
+      validation_status: 'verified',
+      raw_payload: {
+        device_type: detectDeviceType(),
+        os: detectOs(),
+        first_touch: first,
+        last_touch: last,
+        ...(opts.extra ?? {}),
+      },
+    });
+  } catch (e) {
+    console.debug('[funnelEvents] fireLpEvent threw:', e);
+  }
+}
+
+/** PDP loaded + visible to the user. Fires once per (session, product). */
+export function firePdpView(input: {
+  product_id: string;
+  product_name?: string | null;
+  price?: number | null;
+}): void {
+  fireLpEvent({
+    event_name: 'pdp_view',
+    source_component: 'pdp',
+    product_id: input.product_id,
+    product_name: input.product_name ?? null,
+    value: input.price ?? null,
+  });
+}
+
+/** Scroll-depth milestone (25/50/75/100). One row per milestone per session+page. */
+export function fireScrollDepth(input: {
+  product_id?: string | null;
+  depth: 25 | 50 | 75 | 100;
+  source_component?: string;
+}): void {
+  fireLpEvent({
+    event_name: `scroll_depth_${input.depth}`,
+    source_component: input.source_component ?? 'pdp',
+    product_id: input.product_id ?? null,
+    extra: { depth: input.depth },
+  });
+}
+
+/** Image gallery interaction (swipe, zoom, click). */
+export function fireImageInteraction(input: {
+  product_id: string;
+  interaction: 'swipe' | 'zoom' | 'click' | 'thumbnail';
+  image_index?: number;
+}): void {
+  fireLpEvent({
+    event_name: 'image_interaction',
+    source_component: 'pdp_gallery',
+    product_id: input.product_id,
+    extra: { interaction: input.interaction, image_index: input.image_index ?? null },
+  });
+}
+
+/** Cart drawer/page opened (distinct from add-to-cart). */
+export function fireCartOpen(input: {
+  item_count?: number;
+  source_component?: string;
+}): void {
+  fireLpEvent({
+    event_name: 'cart_open',
+    source_component: input.source_component ?? 'cart_drawer',
+    extra: { item_count: input.item_count ?? null },
+  });
+}
+
+/** Payment success fired client-side from the success page only.
+ * Reliable conversion truth still comes from Stripe webhooks — this is for
+ * funnel-completion visibility in the admin dashboard only. */
+export function firePaymentSuccess(input: {
+  order_total?: number;
+  currency?: string;
+  stripe_session_id?: string;
+}): void {
+  fireLpEvent({
+    event_name: 'payment_success_view',
+    source_component: 'payment_success_page',
+    value: input.order_total ?? null,
+    extra: {
+      currency: input.currency ?? 'USD',
+      stripe_session_id: input.stripe_session_id ?? null,
+    },
+  });
+}
+
+/** Sticky add-to-cart bar became visible (engagement signal, not a click). */
+export function fireStickyAtcView(input: { product_id: string }): void {
+  fireLpEvent({
+    event_name: 'sticky_atc_visible',
+    source_component: 'pdp_sticky_cta',
+    product_id: input.product_id,
+  });
+}
+
+/** Rage click — ≥3 clicks within 800ms on the same target. */
+export function fireRageClick(input: {
+  product_id?: string | null;
+  target_selector?: string;
+}): void {
+  fireLpEvent({
+    event_name: 'rage_click',
+    source_component: 'pdp',
+    product_id: input.product_id ?? null,
+    extra: { target_selector: input.target_selector ?? null },
+    skipDedupe: true,
+  });
+}
+
+/** Return visit — same session_id reused across days, or visitor_id from localStorage. */
+export function fireReturnVisit(input: { visit_count: number }): void {
+  fireLpEvent({
+    event_name: 'return_visit',
+    source_component: 'session_bootstrap',
+    extra: { visit_count: input.visit_count },
+  });
+}
+
+/** Session-end signal — dwell time + bounce classification.
+ * Fired from beforeunload / visibilitychange with sendBeacon-friendly insert. */
+export function fireSessionEnd(input: {
+  dwell_ms: number;
+  page_views: number;
+  interactions: number;
+  /** True when dwell<10s and interactions<2 (heuristic). */
+  bounced: boolean;
+  exit_page?: string;
+}): void {
+  fireLpEvent({
+    event_name: input.bounced ? 'session_bounce' : 'session_end',
+    source_component: 'session_lifecycle',
+    value: input.dwell_ms,
+    skipDedupe: true,
+    extra: {
+      dwell_ms: input.dwell_ms,
+      page_views: input.page_views,
+      interactions: input.interactions,
+      bounced: input.bounced,
+      exit_page: input.exit_page ?? (typeof window !== 'undefined' ? window.location.pathname : null),
+    },
+  });
+}
