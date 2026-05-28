@@ -208,6 +208,19 @@ Deno.serve(async (req) => {
       return (data || []);
     };
 
+    // Companion fetch — counts bot-flagged events in the same window so the
+    // dashboard can show bot_filtered_pct without trusting client signals.
+    const countBotEvents = async (gte: string, lte: string | null): Promise<number> => {
+      let q = supabase
+        .from('lp_funnel_events')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', gte)
+        .eq('is_bot', true);
+      if (lte) q = q.lte('created_at', lte);
+      const { count } = await q;
+      return count ?? 0;
+    };
+
     // --- Product drilldown mode -------------------------------------------
     // Lightweight, focused payload for the UI's per-product comparison panel.
     if (drilldownId) {
@@ -328,9 +341,10 @@ Deno.serve(async (req) => {
     // --- end drilldown mode -----------------------------------------------
 
     // 1. Pull current + prior funnel events in parallel
-    const [currentEvents, priorEvents] = await Promise.all([
+    const [currentEvents, priorEvents, botEventCount] = await Promise.all([
       fetchEvents(since, until),
       fetchEvents(priorSince, priorUntil),
+      countBotEvents(since, until).catch(() => 0),
     ]);
     const events = currentEvents;
 
@@ -369,6 +383,52 @@ Deno.serve(async (req) => {
       deviceCount[dev] = (deviceCount[dev] || 0) + 1;
       osCount[os] = (osCount[os] || 0) + 1;
     }
+
+    // 3b. Device / OS conversion splits (mobile vs desktop, iOS vs Android).
+    // Each slice tracks PDP views + ATCs so we can show actual conversion
+    // rates, not just raw event counts. Sessions are deduped per slice.
+    type Slice = { views: number; atc: number; checkouts: number; sessions: Set<string> };
+    const mkSlice = (): Slice => ({ views: 0, atc: 0, checkouts: 0, sessions: new Set() });
+    const devSlices: Record<string, Slice> = {};
+    const osSlices: Record<string, Slice> = {};
+    const normOs = (raw: string): string => {
+      const o = (raw || '').toLowerCase();
+      if (o.includes('ios') || o.includes('iphone') || o.includes('ipad')) return 'ios';
+      if (o.includes('android')) return 'android';
+      if (o.includes('mac')) return 'macos';
+      if (o.includes('win')) return 'windows';
+      if (o.includes('linux')) return 'linux';
+      return 'other';
+    };
+    const normDev = (raw: string): string => {
+      const d = (raw || '').toLowerCase();
+      if (d.includes('mobile') || d.includes('phone')) return 'mobile';
+      if (d.includes('tablet') || d.includes('ipad')) return 'tablet';
+      if (d.includes('desktop')) return 'desktop';
+      return 'other';
+    };
+    for (const r of rows) {
+      const d = normDev(r.raw_payload?.device || 'unknown');
+      const o = normOs(r.raw_payload?.os || 'unknown');
+      const ds = devSlices[d] || (devSlices[d] = mkSlice());
+      const os2 = osSlices[o] || (osSlices[o] = mkSlice());
+      ds.sessions.add(r.session_id);
+      os2.sessions.add(r.session_id);
+      if (r.event_name === 'pdp_view' || r.event_name === 'view_item') { ds.views++; os2.views++; }
+      if (r.event_name === 'add_to_cart') { ds.atc++; os2.atc++; }
+      if (r.event_name === 'begin_checkout') { ds.checkouts++; os2.checkouts++; }
+    }
+    const sliceToRow = (k: string, s: Slice) => ({
+      key: k,
+      sessions: s.sessions.size,
+      views: s.views,
+      atc: s.atc,
+      checkouts: s.checkouts,
+      atc_rate_pct: pct(s.atc, s.views),
+      checkout_rate_pct: pct(s.checkouts, s.atc),
+    });
+    const deviceSplit = Object.entries(devSlices).map(([k, s]) => sliceToRow(k, s)).sort((a, b) => b.sessions - a.sessions);
+    const osSplit = Object.entries(osSlices).map(([k, s]) => sliceToRow(k, s)).sort((a, b) => b.sessions - a.sessions);
 
     // 4. Source breakdown
     const sourceCounts: Record<string, { sessions: Set<string>; views: number; atc: number; bounce: number; dwellSum: number; dwellN: number }> = {};
@@ -486,6 +546,59 @@ Deno.serve(async (req) => {
     const topLanding = Object.entries(landing).map(([p, c]) => ({ path: p, count: c })).sort((a, b) => b.count - a.count).slice(0, 10);
     const topExit = Object.entries(exit).map(([p, c]) => ({ path: p, count: c })).sort((a, b) => b.count - a.count).slice(0, 10);
 
+    // 7. Derived quality scores (0-100). Each is a clamped, weighted blend of
+    // signals already computed above. These are *directional* — they help
+    // operators spot regressions; they are not statistical truth.
+    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+    const score100 = (n: number) => Math.round(clamp01(n) * 100);
+
+    // Funnel friction: penalises drop-offs at each stage + rage clicks.
+    const pdpAtc01 = pdpViews ? atcs / pdpViews : 0;
+    const atcCo01 = atcs ? checkouts / atcs : 0;
+    const coPay01 = checkouts ? payments / checkouts : 0;
+    const ragePenalty = totalSessions ? Math.min(1, rage / totalSessions) : 0;
+    const funnelFrictionScore = score100(
+      0.30 * pdpAtc01 * 5 + // ATC rates are small — scale up
+      0.30 * atcCo01 +
+      0.25 * coPay01 +
+      0.15 * (1 - ragePenalty)
+    );
+
+    // PDP quality: dwell + ATC rate + low rage.
+    const avgDwellMs = (() => {
+      const arr = rows.map(r => (typeof r.dwell_ms === 'number' ? r.dwell_ms : null)).filter((v): v is number => v != null);
+      return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    })();
+    const pdpQualityScore = score100(
+      0.40 * Math.min(1, avgDwellMs / 30000) + // 30s = perfect
+      0.40 * pdpAtc01 * 5 +
+      0.20 * (1 - ragePenalty)
+    );
+
+    // Mobile conversion: ATC rate of mobile slice relative to overall.
+    const mobileSlice = devSlices['mobile'];
+    const mobileAtc01 = mobileSlice && mobileSlice.views ? mobileSlice.atc / mobileSlice.views : 0;
+    const mobileConversionScore = score100(
+      0.60 * mobileAtc01 * 5 +
+      0.40 * (mobileSlice ? mobileSlice.sessions.size / Math.max(1, totalSessions) : 0)
+    );
+
+    // Traffic quality: low bounce + decent dwell + low bot %.
+    const botFilteredPct = pct(botEventCount, botEventCount + rows.length);
+    const bouncePenalty = totalSessions ? Math.min(1, bounces / totalSessions) : 0;
+    const trafficQualityScore = score100(
+      0.45 * (1 - bouncePenalty) +
+      0.30 * Math.min(1, avgDwellMs / 20000) +
+      0.25 * (1 - Math.min(1, botFilteredPct / 50))
+    );
+
+    const qualityScores = {
+      funnel_friction: funnelFrictionScore,
+      pdp_quality: pdpQualityScore,
+      mobile_conversion: mobileConversionScore,
+      traffic_quality: trafficQualityScore,
+    };
+
     const summary = {
       range,
       since,
@@ -493,6 +606,11 @@ Deno.serve(async (req) => {
       source: sourceFilter,
       total_events: rows.length,
       total_sessions: totalSessions,
+      bot_filtered_events: botEventCount,
+      bot_filtered_pct: botFilteredPct,
+      quality_scores: qualityScores,
+      device_split: deviceSplit,
+      os_split: osSplit,
       baselines: {
         prior_mode: priorMode === 'custom' && priorFromParam && priorToParam ? 'custom' : 'equal',
         prior_since: priorSince,

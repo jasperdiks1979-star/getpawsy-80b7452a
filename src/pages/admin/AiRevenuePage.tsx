@@ -96,6 +96,16 @@ interface Summary {
   range: Range;
   total_events: number;
   total_sessions: number;
+  bot_filtered_events?: number;
+  bot_filtered_pct?: number;
+  quality_scores?: {
+    funnel_friction: number;
+    pdp_quality: number;
+    mobile_conversion: number;
+    traffic_quality: number;
+  };
+  device_split?: Array<{ key: string; sessions: number; views: number; atc: number; checkouts: number; atc_rate_pct: number; checkout_rate_pct: number }>;
+  os_split?: Array<{ key: string; sessions: number; views: number; atc: number; checkouts: number; atc_rate_pct: number; checkout_rate_pct: number }>;
   baselines?: {
     prior_since: string;
     prior_until: string;
@@ -672,13 +682,39 @@ export default function AiRevenuePage() {
               <StatCard label="Return visits" value={`${summary.behavior.return_visit_pct}%`} />
               <StatCard label="Sticky ATC views" value={summary.behavior.sticky_atc_views} />
             </div>
+            {summary.quality_scores && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <StatCard label="Funnel friction score" value={`${summary.quality_scores.funnel_friction}`} sub="0–100 · higher = healthier funnel" />
+                <StatCard label="PDP quality score" value={`${summary.quality_scores.pdp_quality}`} sub="dwell + ATC − rage" />
+                <StatCard label="Mobile conversion score" value={`${summary.quality_scores.mobile_conversion}`} sub="mobile ATC vs traffic share" />
+                <StatCard label="Traffic quality score" value={`${summary.quality_scores.traffic_quality}`} sub={`${summary.bot_filtered_pct ?? 0}% bot-filtered`} />
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Card><CardHeader><CardTitle className="text-sm">Devices</CardTitle></CardHeader><CardContent className="text-sm space-y-1">
-                {Object.entries(summary.devices).map(([k, v]) => <div key={k} className="flex justify-between"><span className="capitalize">{k}</span><span className="tabular-nums">{v}</span></div>)}
-              </CardContent></Card>
-              <Card><CardHeader><CardTitle className="text-sm">Operating systems</CardTitle></CardHeader><CardContent className="text-sm space-y-1">
-                {Object.entries(summary.os).map(([k, v]) => <div key={k} className="flex justify-between"><span className="capitalize">{k}</span><span className="tabular-nums">{v}</span></div>)}
-              </CardContent></Card>
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Device conversion</CardTitle><CardDescription className="text-xs">Sessions · ATC % · Checkout %</CardDescription></CardHeader>
+                <CardContent className="text-sm space-y-1">
+                  {(summary.device_split ?? []).map(d => (
+                    <div key={d.key} className="flex justify-between gap-2">
+                      <span className="capitalize">{d.key}</span>
+                      <span className="tabular-nums text-muted-foreground">{d.sessions} · {d.atc_rate_pct}% · {d.checkout_rate_pct}%</span>
+                    </div>
+                  ))}
+                  {(!summary.device_split || summary.device_split.length === 0) && Object.entries(summary.devices).map(([k, v]) => <div key={k} className="flex justify-between"><span className="capitalize">{k}</span><span className="tabular-nums">{v}</span></div>)}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-sm">OS conversion (iOS vs Android)</CardTitle><CardDescription className="text-xs">Sessions · ATC % · Checkout %</CardDescription></CardHeader>
+                <CardContent className="text-sm space-y-1">
+                  {(summary.os_split ?? []).map(o => (
+                    <div key={o.key} className="flex justify-between gap-2">
+                      <span className="capitalize">{o.key}</span>
+                      <span className="tabular-nums text-muted-foreground">{o.sessions} · {o.atc_rate_pct}% · {o.checkout_rate_pct}%</span>
+                    </div>
+                  ))}
+                  {(!summary.os_split || summary.os_split.length === 0) && Object.entries(summary.os).map(([k, v]) => <div key={k} className="flex justify-between"><span className="capitalize">{k}</span><span className="tabular-nums">{v}</span></div>)}
+                </CardContent>
+              </Card>
             </div>
           </section>
 
