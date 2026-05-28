@@ -949,14 +949,7 @@ export default function AiRevenuePage() {
         </div>
       </section>
 
-      {/* Saved Recommendations */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
       {/* Iteration B — Saved AI Insights (gemini-2.5-pro, persisted, dedupe 24h) */}
-        </div>
-      </section>
-
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2">
