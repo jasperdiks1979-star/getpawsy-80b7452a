@@ -1767,6 +1767,10 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Who Is This For? — audience targeting */}
+        <ReassuranceCallout
+          category={product.category || undefined}
+          productName={product.name}
+        />
         <ProductIdealFor productName={product.name} category={product.category || ""} />
 
         {/* 1. Problem → Solution Block */}
