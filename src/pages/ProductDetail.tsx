@@ -104,6 +104,12 @@ import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
+import { EmotionalHook } from "@/components/pdp/emotional/EmotionalHook";
+import { SwipeBenefitChips } from "@/components/pdp/emotional/SwipeBenefitChips";
+import { MobileStickyTrustBar } from "@/components/pdp/emotional/MobileStickyTrustBar";
+import { ReassuranceCallout } from "@/components/pdp/emotional/ReassuranceCallout";
+import { getEmotionalCopy } from "@/lib/categoryEmotional";
+import { getConversionFlag } from "@/lib/conversionFlags";
 import {
   LitterBoxConversionBoost,
   LitterBoxLovedSection,
@@ -976,7 +982,12 @@ const ProductDetail = () => {
           >
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
-              <MobileProductGallery
+              <>
+                <SwipeBenefitChips
+                  category={product.category || undefined}
+                  productName={product.name}
+                />
+                <MobileProductGallery
                 images={images}
                 productName={safeString(product.name)}
                 category={product.category || undefined}
@@ -986,7 +997,8 @@ const ProductDetail = () => {
                   setSelectedImage(index);
                   setLightboxOpen(true);
                 }}
-              />
+                />
+              </>
             ) : (
               <DesktopProductGallery
                 images={images}
@@ -1058,6 +1070,14 @@ const ProductDetail = () => {
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
                 {adIntent.subline || generateClarityIntro(product.name, product.category || "")}
               </p>
+
+              {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
+              <div className="mt-3">
+                <EmotionalHook
+                  category={product.category || undefined}
+                  productName={product.name}
+                />
+              </div>
 
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
@@ -1747,6 +1767,10 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Who Is This For? — audience targeting */}
+        <ReassuranceCallout
+          category={product.category || undefined}
+          productName={product.name}
+        />
         <ProductIdealFor productName={product.name} category={product.category || ""} />
 
         {/* 1. Problem → Solution Block */}
@@ -1798,8 +1822,16 @@ const ProductDetail = () => {
             onCtaClick={handleAddToCart}
             inStock={inStock}
             price={activePrice}
+            ctaLabel={
+              getConversionFlag('dynamicAtcLabel')
+                ? getEmotionalCopy(product.category, product.name).ctaLabel
+                : undefined
+            }
           />
         )}
+
+        {/* CI-2: Slim mobile top trust strip. Hides on scroll-down. */}
+        {!showTikTokVariant && <MobileStickyTrustBar />}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
         {isLitterBoxProduct && <LitterBoxLovedSection />}
