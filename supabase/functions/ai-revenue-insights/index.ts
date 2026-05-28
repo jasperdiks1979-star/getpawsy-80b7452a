@@ -134,6 +134,9 @@ Deno.serve(async (req) => {
     const toParam = url.searchParams.get('to');
     // Optional source filter: tiktok | pinterest | google | organic | direct | other | all
     const sourceFilter = (url.searchParams.get('source') || 'all').toLowerCase();
+    // Optional product drilldown — when set, the function returns a focused
+    // current-vs-prior comparison for that single product plus example sessions.
+    const drilldownId = url.searchParams.get('drilldown');
 
     // Adjustable significance thresholds for product classification. Each
     // has a sensible default but can be overridden per request from the
@@ -184,6 +187,125 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return (data || []);
     };
+
+    // --- Product drilldown mode -------------------------------------------
+    // Lightweight, focused payload for the UI's per-product comparison panel.
+    if (drilldownId) {
+      const [curAll, priAll] = await Promise.all([
+        fetchEvents(since, until),
+        fetchEvents(priorSince, priorUntil),
+      ]);
+      const applySource = (arr: any[]) =>
+        sourceFilter && sourceFilter !== 'all'
+          ? arr.filter((r) => classifySource(r) === sourceFilter)
+          : arr;
+      const curRows = applySource(curAll);
+      const priRows = applySource(priAll);
+
+      // Sessions that touched this product, with their full event timeline
+      // (so we can show what happened around the views/ATCs/rage clicks).
+      const productSessionIds = new Set(
+        curRows.filter((r) => r.product_id === drilldownId).map((r) => r.session_id),
+      );
+      const sessionEvents = new Map<string, any[]>();
+      for (const r of curRows) {
+        if (!productSessionIds.has(r.session_id)) continue;
+        const arr = sessionEvents.get(r.session_id) || [];
+        arr.push(r);
+        sessionEvents.set(r.session_id, arr);
+      }
+
+      const summarizeFor = (rows: any[]) => {
+        const own = rows.filter((r) => r.product_id === drilldownId);
+        const views = own.filter(
+          (r) => r.event_name === 'pdp_view' || r.event_name === 'view_item',
+        ).length;
+        const atc = own.filter((r) => r.event_name === 'add_to_cart').length;
+        const rage = own.filter((r) => r.event_name === 'rage_click').length;
+        const sessions = new Set(own.map((r) => r.session_id)).size;
+        const dwellVals = own
+          .map((r) => (typeof r.dwell_ms === 'number' ? r.dwell_ms : null))
+          .filter((v): v is number => v != null);
+        const avgDwell = dwellVals.length
+          ? Math.round(dwellVals.reduce((a, b) => a + b, 0) / dwellVals.length)
+          : 0;
+        return {
+          views,
+          atc,
+          atc_rate_pct: pct(atc, views),
+          rage_clicks: rage,
+          avg_dwell_ms: avgDwell,
+          sessions,
+        };
+      };
+
+      const current = summarizeFor(curRows);
+      const prior = summarizeFor(priRows);
+      const productName =
+        curRows.find((r) => r.product_id === drilldownId)?.product_name ||
+        priRows.find((r) => r.product_id === drilldownId)?.product_name ||
+        drilldownId;
+
+      // Pick up to 6 example sessions — prioritise those that ATC'd, then by
+      // event depth, so reviewers see meaningful funnels first.
+      const exampleSessions = Array.from(sessionEvents.entries())
+        .map(([sid, evts]) => {
+          const sorted = [...evts].sort(
+            (a, b) => +new Date(a.created_at) - +new Date(b.created_at),
+          );
+          const own = sorted.filter((r) => r.product_id === drilldownId);
+          return {
+            session_id: sid,
+            started_at: sorted[0]?.created_at ?? null,
+            ended_at: sorted[sorted.length - 1]?.created_at ?? null,
+            event_count: sorted.length,
+            views: own.filter((r) => r.event_name === 'pdp_view' || r.event_name === 'view_item').length,
+            atc: own.filter((r) => r.event_name === 'add_to_cart').length,
+            rage: own.filter((r) => r.event_name === 'rage_click').length,
+            source: classifySource(sorted[0] || {}),
+            landing_path: sorted[0]?.page_path ?? null,
+            timeline: sorted.slice(0, 25).map((r) => ({
+              event: r.event_name,
+              path: r.page_path,
+              dwell_ms: r.dwell_ms ?? null,
+              product_id: r.product_id ?? null,
+              at: r.created_at,
+            })),
+          };
+        })
+        .sort((a, b) => (b.atc - a.atc) || (b.event_count - a.event_count))
+        .slice(0, 6);
+
+      const deltas = {
+        views_delta_pct: deltaPct(current.views, prior.views),
+        atc_delta_pct: deltaPct(current.atc, prior.atc),
+        atc_rate_delta_pp:
+          Math.round((current.atc_rate_pct - prior.atc_rate_pct) * 10) / 10,
+        dwell_delta_pct: deltaPct(current.avg_dwell_ms, prior.avg_dwell_ms),
+        rage_delta_pct: deltaPct(current.rage_clicks, prior.rage_clicks),
+        sessions_delta_pct: deltaPct(current.sessions, prior.sessions),
+      };
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          traceId,
+          drilldown: {
+            product_id: drilldownId,
+            product_name: productName,
+            window: { since, until: until ?? new Date(untilMs).toISOString() },
+            prior_window: { since: priorSince, until: priorUntil },
+            source: sourceFilter,
+            current,
+            prior,
+            deltas,
+            example_sessions: exampleSessions,
+          },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    // --- end drilldown mode -----------------------------------------------
 
     // 1. Pull current + prior funnel events in parallel
     const [currentEvents, priorEvents] = await Promise.all([
