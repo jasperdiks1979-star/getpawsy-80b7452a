@@ -1208,6 +1208,21 @@ export default function AiRevenuePage() {
               {drillRow?.classification && drillRow.classification !== 'stable' && (
                 <Badge variant="outline" className="uppercase text-[10px]">{drillRow.classification}</Badge>
               )}
+              {drillRow?.winner_score !== undefined && (
+                <Badge variant="secondary" className="text-[10px]" title="Winner Score (0-100): composite of statistical strength, ATC confidence, and traffic volume.">
+                  Winner {drillRow.winner_score}
+                </Badge>
+              )}
+              {drillRow?.trend_velocity !== undefined && (
+                <Badge variant="secondary" className="text-[10px]" title="Trend Velocity (0-100): momentum of view growth vs prior window.">
+                  Velocity {drillRow.trend_velocity}
+                </Badge>
+              )}
+              {drillRow?.conversion_momentum !== undefined && (
+                <Badge variant="secondary" className="text-[10px]" title="Conversion Momentum (0-100): change in ATC rate normalised to overall rate.">
+                  Momentum {drillRow.conversion_momentum}
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription>
               Current window vs equal-length prior period. Click a session to inspect its event timeline.
