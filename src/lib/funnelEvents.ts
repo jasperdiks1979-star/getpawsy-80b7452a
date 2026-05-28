@@ -12,6 +12,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getBotClassification, recordEventTimingSample } from '@/lib/botDetection';
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
+import { ensureGeoClassified } from '@/lib/geoClassify';
 
 const SESSION_KEY = 'gp_session_id';
 const DEDUPE_PREFIX = 'gp_fe_dedupe_';
@@ -76,6 +77,8 @@ function isDuplicate(key: string): boolean {
 
 function getGeoQuality(): string {
   try {
+    // Kick off geo classification once per session (idle-scheduled, non-blocking).
+    ensureGeoClassified();
     const cached = sessionStorage.getItem('gp_geo_quality_v1');
     if (cached) return cached;
   } catch {
@@ -463,11 +466,11 @@ export function firePaymentSuccess(input: {
 }
 
 /** Sticky add-to-cart bar became visible (engagement signal, not a click). */
-export function fireStickyAtcView(input: { product_id: string }): void {
+export function fireStickyAtcView(input: { product_id?: string | null; source_component?: string }): void {
   fireLpEvent({
     event_name: 'sticky_atc_visible',
-    source_component: 'pdp_sticky_cta',
-    product_id: input.product_id,
+    source_component: input.source_component ?? 'pdp_sticky_cta',
+    product_id: input.product_id ?? null,
   });
 }
 
