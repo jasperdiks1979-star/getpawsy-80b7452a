@@ -736,7 +736,7 @@ const Products = () => {
       </Helmet>
       <div className="container px-4 md:px-6 py-8">
         {/* Breadcrumbs */}
-        <Breadcrumb className="mb-6">
+        <Breadcrumb className={premiumFilters ? 'mb-6 [&_li]:text-[12px] [&_a]:text-muted-foreground/80 hover:[&_a]:text-foreground' : 'mb-6'}>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -801,8 +801,18 @@ const Products = () => {
           )}
           {/* Enhanced SEO content block for key categories */}
           {categoryParam && <CategorySeoContent categorySlug={categoryParam} />}
-          <p className="text-sm text-muted-foreground">
-            Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}
+          <p className={premiumFilters
+            ? 'text-[11px] uppercase tracking-[0.2em] text-muted-foreground'
+            : 'text-sm text-muted-foreground'}>
+            {premiumFilters ? (
+              <>
+                <span>{displayCount > totalCount ? totalCount : displayCount} of {totalCount}</span>
+                <span aria-hidden="true" className="opacity-60 mx-2">·</span>
+                <span>{totalCount === 1 ? 'product' : 'products'}</span>
+              </>
+            ) : (
+              <>Showing {displayCount > totalCount ? totalCount : displayCount} of {totalCount} product{totalCount !== 1 ? 's' : ''}</>
+            )}
           </p>
         </div>
 
@@ -842,7 +852,7 @@ const Products = () => {
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {searchQuery && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant={premiumFilters ? 'outline' : 'secondary'} className={premiumFilters ? 'gap-1.5 rounded-full px-3 py-1 border-border/60 font-normal text-[12px] text-muted-foreground' : 'gap-1'}>
                 Search: {searchQuery}
                 <X 
                   className="w-3 h-3 cursor-pointer" 
@@ -854,7 +864,7 @@ const Products = () => {
               </Badge>
             )}
             {selectedCategories.map(cat => (
-              <Badge key={cat} variant="secondary" className="gap-1">
+              <Badge key={cat} variant={premiumFilters ? 'outline' : 'secondary'} className={premiumFilters ? 'gap-1.5 rounded-full px-3 py-1 border-border/60 font-normal text-[12px] text-muted-foreground' : 'gap-1'}>
                 {cat}
                 <X 
                   className="w-3 h-3 cursor-pointer" 
@@ -863,7 +873,7 @@ const Products = () => {
               </Badge>
             ))}
             {(priceRange[0] > 0 || priceRange[1] < maxPrice) && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant={premiumFilters ? 'outline' : 'secondary'} className={premiumFilters ? 'gap-1.5 rounded-full px-3 py-1 border-border/60 font-normal text-[12px] text-muted-foreground' : 'gap-1'}>
                 ${priceRange[0]} - ${priceRange[1]}
                 <X 
                   className="w-3 h-3 cursor-pointer" 
@@ -874,10 +884,10 @@ const Products = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 text-xs"
+              className={premiumFilters ? 'h-7 text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground' : 'h-6 text-xs'}
               onClick={clearAllFilters}
             >
-              Clear All
+              {premiumFilters ? 'Clear all' : 'Clear All'}
             </Button>
           </div>
         )}
@@ -949,7 +959,7 @@ const Products = () => {
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className={premiumFilters ? 'w-[180px] rounded-full border-border/60 text-[13px]' : 'w-[180px]'}>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
