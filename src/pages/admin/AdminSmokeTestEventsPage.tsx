@@ -385,6 +385,19 @@ export default function AdminSmokeTestEventsPage() {
             )}
             Genereer rapport (XLSX)
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generateCsvReport}
+            disabled={csvGenerating || loading || runs.length === 0}
+          >
+            {csvGenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4 mr-2" />
+            )}
+            Download CSV
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/payments">
               <ExternalLink className="h-4 w-4 mr-2" />
