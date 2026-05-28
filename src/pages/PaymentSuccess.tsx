@@ -17,6 +17,7 @@ import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -27,6 +28,18 @@ const PaymentSuccess = () => {
   const purchasedIdsRef = useRef<string[]>([]);
   const lpFiredRef = useRef(false);
   const premiumThankYou = getConversionFlag('premiumThankYou');
+  const premiumPostPurchase = getConversionFlag('premiumPostPurchase');
+
+  // Mark a recent successful purchase so the homepage can show a quiet
+  // returning-visitor welcome strip for ~30 days. Storage only — no PII.
+  useEffect(() => {
+    if (!sessionId) return;
+    try {
+      window.localStorage.setItem('gp_recent_purchase_ts', String(Date.now()));
+    } catch {
+      /* ignore quota / privacy mode */
+    }
+  }, [sessionId]);
 
   // Fire lp_funnel_events `payment_success` once per mount with the
   // Stripe session id from the URL. Purely additive — does NOT modify
@@ -291,6 +304,18 @@ const PaymentSuccess = () => {
           {purchasedIdsRef.current.length > 0 && (
             <div className="max-w-md mx-auto mb-8">
               <PostPurchaseOffer purchasedProductIds={purchasedIdsRef.current} />
+            </div>
+          )}
+
+          {/* CI-13: soft email capture — trust-first, no popup. Shown only
+              when the premium post-purchase flag is on. */}
+          {premiumPostPurchase && (
+            <div className="max-w-md mx-auto mb-8 text-left">
+              <SoftEmailCapture
+                variant="collection"
+                headline="Want updates on your order?"
+                description="Optional — drop your email for shipping updates and the occasional helpful guide. No spam."
+              />
             </div>
           )}
 
