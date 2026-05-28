@@ -869,8 +869,13 @@ const Checkout = () => {
 
           {/* Right side - Order Summary */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-xl shadow-card p-4 sm:p-6 lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+            <div className={`bg-card p-4 sm:p-6 lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] lg:max-h-none overflow-y-auto lg:overflow-visible ${premiumV5 ? 'rounded-2xl border border-border/60 shadow-none' : 'rounded-xl shadow-card'}`}>
+              {premiumV5 && (
+                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-1.5">Order summary</p>
+              )}
+              <h2 className={premiumV5 ? 'font-display text-[19px] font-semibold tracking-tight mb-4' : 'text-xl font-bold mb-4'}>
+                {premiumV5 ? 'Review your order' : 'Order Summary'}
+              </h2>
               
               {/* Items */}
               <div className="space-y-3 mb-4">
