@@ -13526,6 +13526,33 @@ export type Database = {
           },
         ]
       }
+      product_priority: {
+        Row: {
+          created_at: string
+          notes: string | null
+          product_id: string
+          tier: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          notes?: string | null
+          product_id: string
+          tier: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          notes?: string | null
+          product_id?: string
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       product_qa_results: {
         Row: {
           add_to_cart_check: boolean | null
@@ -15690,18 +15717,22 @@ export type Database = {
       sessions: {
         Row: {
           bot_reason: string | null
+          browser_family: string | null
           country: string | null
+          device_confidence: number | null
           event_count: number
           first_touch_campaign: string | null
           first_touch_medium: string | null
           first_touch_source: string | null
           geo_quality: string | null
+          in_app_browser: string | null
           is_bot: boolean | null
           landing_page: string | null
           last_seen_at: string
           last_touch_campaign: string | null
           last_touch_medium: string | null
           last_touch_source: string | null
+          os_family: string | null
           page_view_count: number
           quality_class: string | null
           referrer: string | null
@@ -15712,18 +15743,22 @@ export type Database = {
         }
         Insert: {
           bot_reason?: string | null
+          browser_family?: string | null
           country?: string | null
+          device_confidence?: number | null
           event_count?: number
           first_touch_campaign?: string | null
           first_touch_medium?: string | null
           first_touch_source?: string | null
           geo_quality?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           landing_page?: string | null
           last_seen_at?: string
           last_touch_campaign?: string | null
           last_touch_medium?: string | null
           last_touch_source?: string | null
+          os_family?: string | null
           page_view_count?: number
           quality_class?: string | null
           referrer?: string | null
@@ -15734,18 +15769,22 @@ export type Database = {
         }
         Update: {
           bot_reason?: string | null
+          browser_family?: string | null
           country?: string | null
+          device_confidence?: number | null
           event_count?: number
           first_touch_campaign?: string | null
           first_touch_medium?: string | null
           first_touch_source?: string | null
           geo_quality?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           landing_page?: string | null
           last_seen_at?: string
           last_touch_campaign?: string | null
           last_touch_medium?: string | null
           last_touch_source?: string | null
+          os_family?: string | null
           page_view_count?: number
           quality_class?: string | null
           referrer?: string | null
