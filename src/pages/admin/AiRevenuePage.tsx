@@ -460,13 +460,19 @@ export default function AiRevenuePage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Insights</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" disabled={aiBusy || !summary} onClick={() => runAi(false)}>
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Generate
             </Button>
             <Button size="sm" disabled={aiBusy || !summary} onClick={() => runAi(true)}>
               Save as recommendations
             </Button>
+            {insights.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`insights-${ts}.json`, insights); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+                <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = insights.map(it => ({ title: it.title, category: it.category, severity: it.severity, body: it.body, product_id: it.product_id ?? '' })); downloadCsv(`insights-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+              </>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
