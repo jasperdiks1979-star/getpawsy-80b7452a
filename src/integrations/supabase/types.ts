@@ -651,6 +651,159 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_executive_snapshots: {
+        Row: {
+          ai_summary: string | null
+          anomalies: Json
+          generated_at: string
+          generated_by: string | null
+          id: string
+          losers: Json
+          revenue_health: Json
+          snapshot_date: string
+          top_sources: Json
+          traffic_quality: Json
+          window_days: number
+          winners: Json
+        }
+        Insert: {
+          ai_summary?: string | null
+          anomalies?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          losers?: Json
+          revenue_health?: Json
+          snapshot_date?: string
+          top_sources?: Json
+          traffic_quality?: Json
+          window_days?: number
+          winners?: Json
+        }
+        Update: {
+          ai_summary?: string | null
+          anomalies?: Json
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          losers?: Json
+          revenue_health?: Json
+          snapshot_date?: string
+          top_sources?: Json
+          traffic_quality?: Json
+          window_days?: number
+          winners?: Json
+        }
+        Relationships: []
+      }
+      ai_merchandising_recommendations: {
+        Row: {
+          confidence: number | null
+          current_state: Json | null
+          evidence: Json
+          expected_impact: number | null
+          generated_at: string
+          id: string
+          reason: string | null
+          rec_type: string
+          status: string
+          suggested_state: Json
+          target_ref: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          current_state?: Json | null
+          evidence?: Json
+          expected_impact?: number | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          rec_type: string
+          status?: string
+          suggested_state?: Json
+          target_ref?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          current_state?: Json | null
+          evidence?: Json
+          expected_impact?: number | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          rec_type?: string
+          status?: string
+          suggested_state?: Json
+          target_ref?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_priority_queue: {
+        Row: {
+          category: string
+          confidence: number | null
+          dedupe_key: string | null
+          difficulty: number | null
+          evidence: Json
+          expected_revenue_impact: number | null
+          generated_at: string
+          id: string
+          priority_score: number
+          recommended_action: string | null
+          snooze_until: string | null
+          source_kind: string
+          source_ref: string | null
+          status: string
+          summary: string | null
+          title: string
+          traffic_size: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          confidence?: number | null
+          dedupe_key?: string | null
+          difficulty?: number | null
+          evidence?: Json
+          expected_revenue_impact?: number | null
+          generated_at?: string
+          id?: string
+          priority_score?: number
+          recommended_action?: string | null
+          snooze_until?: string | null
+          source_kind: string
+          source_ref?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          traffic_size?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          confidence?: number | null
+          dedupe_key?: string | null
+          difficulty?: number | null
+          evidence?: Json
+          expected_revenue_impact?: number | null
+          generated_at?: string
+          id?: string
+          priority_score?: number
+          recommended_action?: string | null
+          snooze_until?: string | null
+          source_kind?: string
+          source_ref?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          traffic_size?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_revenue_insights: {
         Row: {
           body: string
