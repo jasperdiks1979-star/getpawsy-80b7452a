@@ -43,6 +43,7 @@ import { useCartAnimation } from "@/contexts/CartAnimationContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
+import { usePdpFunnelTracking } from "@/hooks/usePdpFunnelTracking";
 import { useRecentlyViewedProducts } from "@/hooks/useRecentlyViewedProducts";
 import { useHaptic } from "@/hooks/useHaptic";
 import { supabase } from "@/integrations/supabase/client";
@@ -399,6 +400,14 @@ const ProductDetail = () => {
   // Ad intent detection — ?kw= param or category fallback
   const adIntent = useAdIntent(product?.category);
   const { isTikTok, scrollToBuy } = useTikTokLanding();
+
+  // Phase 4+5 — additive funnel instrumentation (lazy, never blocks render)
+  usePdpFunnelTracking({
+    productId: product?.id ?? null,
+    productName: product?.name ?? null,
+    price: product?.price ?? null,
+  });
+
   const isLitterBoxProduct =
     !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
   const showTikTokVariant = isTikTok && isLitterBoxProduct;
