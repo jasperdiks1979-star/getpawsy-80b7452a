@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,11 +136,12 @@ ProfileSkeleton.displayName = 'ProfileSkeleton';
 const Profile = () => {
   const { user, isAdmin, isLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const premiumProfile = getConversionFlag('premiumProfile');
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-    toast.success('Je bent uitgelogd');
+    toast.success(premiumProfile ? "You've been signed out" : 'Je bent uitgelogd');
   };
 
   useEffect(() => {
@@ -174,11 +176,22 @@ const Profile = () => {
           Back
         </Button>
 
-        <h1 className="text-3xl font-display font-bold mb-6">My Profile</h1>
+        {premiumProfile ? (
+          <div className="mb-8">
+            <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">
+              Account
+            </p>
+            <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight">
+              My Profile
+            </h1>
+          </div>
+        ) : (
+          <h1 className="text-3xl font-display font-bold mb-6">My Profile</h1>
+        )}
 
         <div className="space-y-6">
           {/* Account Info Card */}
-          <Card>
+          <Card className={premiumProfile ? 'border-border/60 shadow-none' : ''}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -236,7 +249,7 @@ const Profile = () => {
           </Card>
 
           {/* Orders Link */}
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className={premiumProfile ? 'border-border/60 shadow-none hover:bg-muted/30 transition-colors' : 'hover:shadow-md transition-shadow'}>
             <Link to="/orders">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
@@ -304,20 +317,20 @@ const Profile = () => {
           </Card>
 
           {/* Sign Out */}
-          <Card>
+          <Card className={premiumProfile ? 'border-border/60 shadow-none' : ''}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LogOut className="w-5 h-5" />
-                Uitloggen
+                {premiumProfile ? 'Sign out' : 'Uitloggen'}
               </CardTitle>
               <CardDescription>
-                Log uit van je account
+                {premiumProfile ? 'Sign out of your account' : 'Log uit van je account'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="outline" onClick={handleSignOut} className="gap-2">
                 <LogOut className="w-4 h-4" />
-                Uitloggen
+                {premiumProfile ? 'Sign out' : 'Uitloggen'}
               </Button>
             </CardContent>
           </Card>
