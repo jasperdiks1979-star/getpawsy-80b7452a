@@ -17,6 +17,7 @@ import { PasskeyButton } from '@/components/auth/PasskeyButton';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { trackLogin, trackSignUp } from '@/lib/analytics';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
@@ -26,6 +27,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const premium = getConversionFlag('premiumAuth');
   const nextPath = useMemo(() => {
     const next = searchParams.get('next');
     return next && next.startsWith('/') ? next : '/';
@@ -126,20 +128,27 @@ const Auth = () => {
       <div className="container max-w-md mx-auto px-4 py-16">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6"
+          className={premium
+            ? "inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.18em] text-muted-foreground hover:text-primary mb-8 transition-colors"
+            : "inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-6"}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          {premium ? 'Back home' : 'Back to Home'}
         </Link>
 
-        <Card>
+        <Card className={premium ? "border border-border/60 shadow-none" : undefined}>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <img src={logoIcon} alt="GetPawsy" className="w-16 h-16 rounded-2xl shadow-soft" />
+              <img src={logoIcon} alt="GetPawsy" className={premium ? "w-14 h-14 rounded-2xl" : "w-16 h-16 rounded-2xl shadow-soft"} />
             </div>
-            <CardTitle className="text-2xl">Welcome to GetPawsy</CardTitle>
-            <CardDescription>
-              Sign in to your account or create a new one
+            {premium && (
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">Account</p>
+            )}
+            <CardTitle className={premium ? "text-2xl font-display" : "text-2xl"}>
+              {premium ? 'Welcome to GetPawsy' : 'Welcome to GetPawsy'}
+            </CardTitle>
+            <CardDescription className={premium ? "text-sm" : undefined}>
+              {premium ? 'Sign in or create an account to continue' : 'Sign in to your account or create a new one'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -150,7 +159,7 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="login" className="mt-6 space-y-4">
-                <GoogleButton label="Doorgaan met Google" mode="login" />
+                <GoogleButton label={premium ? 'Continue with Google' : 'Doorgaan met Google'} mode="login" />
 
                 <PasskeyButton 
                   email={loginEmail} 
@@ -165,8 +174,8 @@ const Auth = () => {
                   <div className="absolute inset-0 flex items-center">
                     <Separator className="w-full" />
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Of met wachtwoord</span>
+                  <div className={premium ? "relative flex justify-center text-[10px] uppercase tracking-[0.22em]" : "relative flex justify-center text-xs uppercase"}>
+                    <span className="bg-card px-2 text-muted-foreground">{premium ? 'Or with password' : 'Of met wachtwoord'}</span>
                   </div>
                 </div>
 
@@ -203,7 +212,7 @@ const Auth = () => {
                       htmlFor="remember-me" 
                       className="text-sm font-normal cursor-pointer"
                     >
-                      Blijf ingelogd
+                      {premium ? 'Keep me signed in' : 'Blijf ingelogd'}
                     </Label>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -214,14 +223,14 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="signup" className="mt-6 space-y-4">
-                <GoogleButton label="Registreer met Google" mode="signup" />
+                <GoogleButton label={premium ? 'Sign up with Google' : 'Registreer met Google'} mode="signup" />
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <Separator className="w-full" />
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Of met email</span>
+                  <div className={premium ? "relative flex justify-center text-[10px] uppercase tracking-[0.22em]" : "relative flex justify-center text-xs uppercase"}>
+                    <span className="bg-card px-2 text-muted-foreground">{premium ? 'Or with email' : 'Of met email'}</span>
                   </div>
                 </div>
 
