@@ -2061,7 +2061,7 @@ const ProductDetail = () => {
       <AnimatePresence>
         {showStickyBar && (() => {
           const pdpStickyV2 = getConversionFlag('premiumPdpStickyV2');
-          const hideOnScroll = pdpStickyV2 && stickyScrollDir === 'down' && stickyScrollY > 240;
+          const hideOnScroll = pdpStickyV2 && stickyScrollDir === 'down';
           return (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
