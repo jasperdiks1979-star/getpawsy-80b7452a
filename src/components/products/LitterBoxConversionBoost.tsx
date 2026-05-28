@@ -80,8 +80,7 @@ export function LitterBoxConversionBoost({
                   src={cycleImages[activeIdx]}
                   alt={`${productName} — view ${activeIdx + 1}`}
                   className="h-full w-full object-cover"
-                  loading="eager"
-                  fetchPriority="high"
+                  priority
                 />
               </motion.div>
             </AnimatePresence>
