@@ -103,6 +103,10 @@ import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
+import {
+  LitterBoxConversionBoost,
+  LitterBoxLovedSection,
+} from "@/components/products/LitterBoxConversionBoost";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
