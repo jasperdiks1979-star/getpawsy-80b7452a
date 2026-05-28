@@ -30,6 +30,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Auth gate: this endpoint may only be called by the internal cron / admins.
+    // Fail-closed if INTERNAL_FUNCTION_SECRET is not configured.
+    const expectedSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const providedSecret = req.headers.get("x-internal-secret") ?? "";
+    if (!expectedSecret || providedSecret !== expectedSecret) {
+      console.warn("[send-abandoned-cart-email] Unauthorized invocation blocked");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
@@ -59,6 +71,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     const results: { email: string; success: boolean; error?: string }[] = [];
 
+    // HTML entity encoder — prevents injection through cart_items fields that
+    // were inserted by anonymous users via the public abandoned_carts INSERT policy.
+    const he = (s: unknown): string =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
     for (const cart of (abandonedCarts as AbandonedCart[]) || []) {
       try {
         const items = Array.isArray(cart.cart_items) ? cart.cart_items : [];
@@ -69,20 +91,28 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // Build email HTML
-        const itemsHtml = items.map((item: CartItem) => `
-          <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">
-              ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">` : ''}
-            </td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">
-              <strong>${item.name}</strong><br>
-              <span style="color: #666;">Qty: ${item.quantity}</span>
-            </td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">
-              $${(item.price * item.quantity).toFixed(2)}
-            </td>
-          </tr>
-        `).join("");
+        const itemsHtml = items.map((item: CartItem) => {
+          const safeName = he(item.name);
+          const safeImage = typeof item.image === "string" && /^https?:\/\//i.test(item.image)
+            ? he(item.image)
+            : "";
+          const qty = Number.isFinite(item.quantity) ? Math.max(0, Math.floor(item.quantity)) : 0;
+          const price = Number.isFinite(item.price) ? item.price : 0;
+          return `
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                ${safeImage ? `<img src="${safeImage}" alt="${safeName}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">` : ''}
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                <strong>${safeName}</strong><br>
+                <span style="color: #666;">Qty: ${qty}</span>
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">
+                $${(price * qty).toFixed(2)}
+              </td>
+            </tr>
+          `;
+        }).join("");
 
         const isFirstReminder = cart.reminder_count === 0;
         const subject = isFirstReminder 
@@ -122,7 +152,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td colspan="2" style="padding: 16px 12px; font-weight: bold; font-size: 18px;">Total:</td>
                       <td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #C44569;">
-                        $${cart.cart_total.toFixed(2)}
+                        $${(Number.isFinite(cart.cart_total) ? cart.cart_total : 0).toFixed(2)}
                       </td>
                     </tr>
                   </tfoot>
