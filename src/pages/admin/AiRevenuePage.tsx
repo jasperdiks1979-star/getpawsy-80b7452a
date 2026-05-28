@@ -522,6 +522,14 @@ export default function AiRevenuePage() {
                   prior window {summary.baselines.prior_events} events
                 </p>
               )}
+              {summary.thresholds && (
+                <p className="text-[11px] text-muted-foreground">
+                  Cutoffs · winner: views ≥ {summary.thresholds.min_views}, views z ≥ {summary.thresholds.winner_views_z}, ATC z ≥ {summary.thresholds.winner_atc_z} ·
+                  breakout: views z ≥ {summary.thresholds.breakout_views_z} or Δ ≥ {summary.thresholds.breakout_views_delta_pct}% ·
+                  rising: views ≥ {summary.thresholds.rising_min_views}, ATC z ≥ {summary.thresholds.rising_atc_z} ·
+                  falling: prior ≥ {summary.thresholds.min_prior_views}, Δ ≤ {summary.thresholds.falling_delta_pct}%
+                </p>
+              )}
             </div>
             <Tabs defaultValue="top">
               <TabsList className="flex-wrap">
