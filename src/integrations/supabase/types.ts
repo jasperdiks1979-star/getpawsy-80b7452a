@@ -696,6 +696,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_homepage_variants: {
+        Row: {
+          active: boolean
+          atc: number
+          bounce_delta: number
+          clicks: number
+          confidence_score: number
+          created_at: string
+          device_quality: string | null
+          emotional_angle: string | null
+          geo_tier: string | null
+          headline: string | null
+          hero_category: string | null
+          hero_product_id: string | null
+          id: string
+          impressions: number
+          performance_score: number
+          primary_cta: string | null
+          purchases: number
+          subheadline: string | null
+          traffic_source: string | null
+          updated_at: string
+          variant_key: string
+        }
+        Insert: {
+          active?: boolean
+          atc?: number
+          bounce_delta?: number
+          clicks?: number
+          confidence_score?: number
+          created_at?: string
+          device_quality?: string | null
+          emotional_angle?: string | null
+          geo_tier?: string | null
+          headline?: string | null
+          hero_category?: string | null
+          hero_product_id?: string | null
+          id?: string
+          impressions?: number
+          performance_score?: number
+          primary_cta?: string | null
+          purchases?: number
+          subheadline?: string | null
+          traffic_source?: string | null
+          updated_at?: string
+          variant_key: string
+        }
+        Update: {
+          active?: boolean
+          atc?: number
+          bounce_delta?: number
+          clicks?: number
+          confidence_score?: number
+          created_at?: string
+          device_quality?: string | null
+          emotional_angle?: string | null
+          geo_tier?: string | null
+          headline?: string | null
+          hero_category?: string | null
+          hero_product_id?: string | null
+          id?: string
+          impressions?: number
+          performance_score?: number
+          primary_cta?: string | null
+          purchases?: number
+          subheadline?: string | null
+          traffic_source?: string | null
+          updated_at?: string
+          variant_key?: string
+        }
+        Relationships: []
+      }
       ai_merchandising_recommendations: {
         Row: {
           confidence: number | null
@@ -6354,6 +6426,33 @@ export type Database = {
           keywords_processed?: string[] | null
           run_at?: string
           triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      homepage_variant_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          product_id: string | null
+          session_id: string | null
+          variant_key: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          product_id?: string | null
+          session_id?: string | null
+          variant_key: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          product_id?: string | null
+          session_id?: string | null
+          variant_key?: string
         }
         Relationships: []
       }
@@ -17227,6 +17326,25 @@ export type Database = {
       }
     }
     Views: {
+      ai_homepage_variant_stats: {
+        Row: {
+          active: boolean | null
+          atc_24h: number | null
+          bounces_24h: number | null
+          device_quality: string | null
+          emotional_angle: string | null
+          geo_tier: string | null
+          headline: string | null
+          hero_clicks_24h: number | null
+          impressions_24h: number | null
+          pdp_views_24h: number | null
+          performance_score: number | null
+          purchases_24h: number | null
+          traffic_source: string | null
+          variant_key: string | null
+        }
+        Relationships: []
+      }
       cinematic_ad_failure_breakdown: {
         Row: {
           category: string | null
