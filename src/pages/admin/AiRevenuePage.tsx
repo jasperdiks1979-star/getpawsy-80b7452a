@@ -433,12 +433,78 @@ export default function AiRevenuePage() {
     }
   }
 
+  async function loadStoredInsights() {
+    setStoredBusy(true);
+    try {
+      const nowIso = new Date().toISOString();
+      let q = supabase
+        .from('ai_revenue_insights' as any)
+        .select('id,scope,scope_ref,insight_type,severity,title,body,evidence,recommendations,model,generated_at,dismissed_at,snoozed_until')
+        .is('dismissed_at', null)
+        .or(`snoozed_until.is.null,snoozed_until.lt.${nowIso}`)
+        .order('generated_at', { ascending: false })
+        .limit(50);
+      if (storedSeverity !== 'all') q = q.eq('severity', storedSeverity);
+      const { data, error } = await q;
+      if (error) throw error;
+      setStoredInsights((data || []) as unknown as StoredInsight[]);
+    } catch (e: any) {
+      toast.error('Could not load saved insights: ' + (e?.message || 'error'));
+    } finally {
+      setStoredBusy(false);
+    }
+  }
+
+  async function generateStoredInsights(force = false) {
+    setGenInsightsBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-insights-generate', {
+        body: { range, source, force },
+      });
+      if (error) throw error;
+      if (!data?.ok) {
+        if (data?.rate_limited) toast.error('AI rate-limited. Try again in a minute.');
+        else if (data?.credits_exhausted) toast.error('AI credits exhausted. Add funds in Workspace.');
+        else if (data?.deduped) toast.message(data?.message || 'Recent insights already exist.');
+        else throw new Error(data?.message || 'AI failed');
+        return;
+      }
+      toast.success(`Saved ${data.inserted ?? 0} new insights`);
+      loadStoredInsights();
+    } catch (e: any) {
+      toast.error('AI insights failed: ' + (e?.message || 'error'));
+    } finally {
+      setGenInsightsBusy(false);
+    }
+  }
+
+  async function dismissStoredInsight(id: string) {
+    const { error } = await supabase
+      .from('ai_revenue_insights' as any)
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setStoredInsights(prev => prev.filter(i => i.id !== id));
+  }
+
+  async function snoozeStoredInsight(id: string, days: number) {
+    const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from('ai_revenue_insights' as any)
+      .update({ snoozed_until: until })
+      .eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setStoredInsights(prev => prev.filter(i => i.id !== id));
+    toast.success(`Snoozed ${days}d`);
+  }
+
   useEffect(() => {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range, fromDate, toDate, source, thresholds, priorMode, priorFrom, priorTo]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
+  useEffect(() => { loadStoredInsights(); /* eslint-disable-next-line */ }, [storedSeverity]);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
   const breakouts = useMemo(() => summary?.breakout_products ?? [], [summary]);
