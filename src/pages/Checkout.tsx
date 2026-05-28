@@ -191,6 +191,7 @@ const Checkout = () => {
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
   const premiumCheckoutV2 = getConversionFlag('premiumCheckoutV2');
+  const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
   const hideMobileBar =
     premiumCheckoutV2 &&
     scrollDir === 'down' &&
