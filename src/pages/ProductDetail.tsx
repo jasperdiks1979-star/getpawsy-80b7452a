@@ -299,6 +299,7 @@ const ProductDetail = () => {
   const [autoplayPaused, setAutoplayPaused] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [volumeDiscount, setVolumeDiscount] = useState(0);
+  const stickyScrollDir = useScrollDirection(10);
   const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
