@@ -98,6 +98,7 @@ import { ConversionBlock } from "@/components/products/ConversionBlock";
 import { WhyCustomersChoose } from "@/components/products/WhyCustomersChoose";
 import { MicroFrictionBlock } from "@/components/products/MicroFrictionBlock";
 import { useAdIntent } from "@/hooks/useAdIntent";
+import { computeIntentMatch } from "@/lib/intentMatch";
 import { CrawlableRelatedLinks } from "@/components/products/CrawlableRelatedLinks";
 import { PinterestLandingBanner } from "@/components/products/PinterestLandingBanner";
 import { TikTokHero } from "@/components/products/TikTokHero";
@@ -405,6 +406,21 @@ const ProductDetail = () => {
 
   // Ad intent detection — ?kw= param or category fallback
   const adIntent = useAdIntent(product?.category);
+  // CI-3 — gate ad-driven overrides by intent strength. Weak/no-match traffic
+  // sees the baseline PDP so we never surface a "cooling" headline to a
+  // winter cat-tree shopper.
+  const intentMatch = useMemo(
+    () => computeIntentMatch(adIntent, product?.category),
+    [adIntent, product?.category],
+  );
+  const intentGatingOn = getConversionFlag('intentGating');
+  const allowHeadlineOverride =
+    !intentGatingOn || intentMatch.allowHeadlineOverride;
+  const allowPinterestBanner =
+    !intentGatingOn ||
+    (intentMatch.source === 'pinterest' && intentMatch.tier !== 'weak');
+  const allowReassuranceStack =
+    !intentGatingOn || intentMatch.allowEmotionalStack;
   const { isTikTok, scrollToBuy } = useTikTokLanding();
 
   // Phase 4+5 — additive funnel instrumentation (lazy, never blocks render)
@@ -1044,7 +1060,7 @@ const ProductDetail = () => {
                 />
               )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
-              {adIntent.source === 'pinterest' && (
+              {adIntent.source === 'pinterest' && allowPinterestBanner && (
                 <div className="mb-3">
                   <PinterestLandingBanner hook={adIntent.keyword} />
                 </div>
@@ -1062,14 +1078,15 @@ const ProductDetail = () => {
                 {safeString(product.name)}
               </h1>
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
-              {adIntent.headline && (
+              {adIntent.headline && allowHeadlineOverride && (
                 <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
                   {adIntent.headline}
                 </p>
               )}
               {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
-                {adIntent.subline || generateClarityIntro(product.name, product.category || "")}
+                {(allowHeadlineOverride && adIntent.subline) ||
+                  generateClarityIntro(product.name, product.category || "")}
               </p>
 
               {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
@@ -1768,10 +1785,12 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Who Is This For? — audience targeting */}
-        <ReassuranceCallout
-          category={product.category || undefined}
-          productName={product.name}
-        />
+        {allowReassuranceStack && (
+          <ReassuranceCallout
+            category={product.category || undefined}
+            productName={product.name}
+          />
+        )}
         <ProductIdealFor productName={product.name} category={product.category || ""} />
 
         {/* 1. Problem → Solution Block */}

@@ -13,7 +13,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-interface AdIntent {
+export interface AdIntent {
   keyword: string | null;
   headline: string;
   subline: string;

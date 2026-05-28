@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Sparkles, RefreshCw, Copy as CopyIcon, Check, X, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
+import LandingMatchAnalyzer from '@/components/admin/analytics/LandingMatchAnalyzer';
 
 type CreativeKind =
   | 'tiktok_hook' | 'pinterest_concept' | 'meta_angle' | 'hero_copy'
@@ -195,6 +196,8 @@ export default function AiCreativesPage() {
             </div>
           </CardContent>
         </Card>
+
+        <LandingMatchAnalyzer />
 
         <Card>
           <CardHeader>
