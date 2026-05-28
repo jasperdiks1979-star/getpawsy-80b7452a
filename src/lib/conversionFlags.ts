@@ -34,6 +34,8 @@ export type ConversionFlagKey =
   | 'premiumSearchEmpty'
   | 'premiumFooter'
   | 'premiumAuth'
+  | 'premiumCartCheckoutV4'
+  | 'premiumMobileNavV2'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -128,6 +130,18 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // micro-caps eyebrow, tighter spacing, English labels on password divider
   // + remember-me. Auth flow, validation, and OAuth handlers untouched.
   premiumAuth: true,
+  // CI-17: cart + checkout polish v4 — premium empty states (Compass icon,
+  // hairline circle, micro-caps eyebrow), calmer cart item rows (hairline
+  // border + lighter qty stepper), refined checkout typography (micro-caps
+  // section eyebrow above each card title, English-only labels, tighter
+  // form labels). Pure presentation; pricing, validation, Stripe redirect,
+  // and abandoned-cart logic untouched.
+  premiumCartCheckoutV4: true,
+  // CI-17: mobile nav drawer polish — hairline dividers between sections,
+  // micro-caps section eyebrows (Browse / Categories / Account), calmer
+  // link typography, premium search bar treatment. Pure presentation;
+  // nav links, routes, sign-out, and admin entries untouched.
+  premiumMobileNavV2: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
