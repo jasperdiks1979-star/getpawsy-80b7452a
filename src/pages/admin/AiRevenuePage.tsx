@@ -31,6 +31,30 @@ import { toast } from 'sonner';
 type Range = '24h' | '7d' | '30d';
 type SourceFilter = 'all' | 'tiktok' | 'pinterest' | 'google' | 'organic' | 'direct' | 'other';
 
+interface Thresholds {
+  min_views: number;
+  min_prior_views: number;
+  winner_atc_z: number;
+  winner_views_z: number;
+  breakout_views_z: number;
+  breakout_views_delta_pct: number;
+  rising_atc_z: number;
+  rising_min_views: number;
+  falling_delta_pct: number;
+}
+
+const DEFAULT_THRESHOLDS: Thresholds = {
+  min_views: 5,
+  min_prior_views: 5,
+  winner_atc_z: 1,
+  winner_views_z: 0,
+  breakout_views_z: 1,
+  breakout_views_delta_pct: 200,
+  rising_atc_z: 0.5,
+  rising_min_views: 3,
+  falling_delta_pct: -30,
+};
+
 const SOURCE_OPTIONS: Array<{ value: SourceFilter; label: string }> = [
   { value: 'all', label: 'All sources' },
   { value: 'tiktok', label: 'TikTok' },
@@ -126,6 +150,7 @@ export default function AiRevenuePage() {
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const [source, setSource] = useState<SourceFilter>('all');
+  const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -151,6 +176,13 @@ export default function AiRevenuePage() {
       params.set('range', r);
     }
     if (source && source !== 'all') params.set('source', source);
+    // Pass classification thresholds through to the edge function so winner /
+    // breakout / rising / falling cutoffs are tunable per request.
+    for (const [k, v] of Object.entries(thresholds)) {
+      if (v !== (DEFAULT_THRESHOLDS as Record<string, number>)[k]) {
+        params.set(k, String(v));
+      }
+    }
     for (const [k, v] of Object.entries(extra)) params.set(k, v);
     return params.toString();
   }
@@ -188,7 +220,7 @@ export default function AiRevenuePage() {
 
   function buildExportPayload() {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source } } };
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds } } };
   }
 
   async function loadSummary(r: Range) {
@@ -283,7 +315,7 @@ export default function AiRevenuePage() {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range, fromDate, toDate, source]);
+  }, [range, fromDate, toDate, source, thresholds]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
