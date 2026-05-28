@@ -29,6 +29,9 @@ export type ConversionFlagKey =
   | 'premiumPostPurchase'
   | 'premiumHomeAboveFold'
   | 'premiumReading'
+  | 'premiumNotFound'
+  | 'premiumSkeleton'
+  | 'premiumSearchEmpty'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -105,6 +108,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // editorial header (micro-caps category eyebrow instead of chunky badges,
   // tighter meta row). Content rendering, schema, and links untouched.
   premiumReading: true,
+  // CI-15: calmer 404 — hairline circle + Compass icon, micro-caps eyebrow,
+  // hairline link chips. Routing, SEO meta, and logging untouched.
+  premiumNotFound: true,
+  // CI-15: quieter product skeletons — hairline border instead of soft shadow,
+  // lower-contrast bars. Identical footprint so layout doesn't shift on swap.
+  premiumSkeleton: true,
+  // CI-15: search-specific empty state — calmer copy, shows the query, popular
+  // category chips, and a clear browse-all CTA. Only triggers when the user
+  // has an active search query; category empty state is unchanged.
+  premiumSearchEmpty: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
