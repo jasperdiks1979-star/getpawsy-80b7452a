@@ -349,6 +349,63 @@ export default function AdminSmokeTestEventsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="from-date" className="text-xs">From</Label>
+            <Input
+              id="from-date"
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="to-date" className="text-xs">To</Label>
+            <Input
+              id="to-date"
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="h-9 w-[160px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="max-runs" className="text-xs">Max runs (1–500)</Label>
+            <Input
+              id="max-runs"
+              type="number"
+              min={1}
+              max={500}
+              value={maxRuns}
+              onChange={(e) => setMaxRuns(Number(e.target.value) || 30)}
+              className="h-9 w-[140px]"
+            />
+          </div>
+          <Button variant="secondary" size="sm" onClick={fetchAll} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Apply filters
+          </Button>
+          {(fromDate || toDate || maxRuns !== 30) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFromDate(''); setToDate(''); setMaxRuns(30); }}
+              disabled={loading}
+            >
+              Reset
+            </Button>
+          )}
+          <div className="ml-auto text-xs text-muted-foreground">
+            {runs.length} run{runs.length === 1 ? '' : 's'} loaded
+          </div>
+        </CardContent>
+      </Card>
+
       {loading && runs.length === 0 && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading smoke test runs…
