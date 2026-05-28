@@ -164,7 +164,9 @@ const Cart = () => {
               <div
                 key={item.id}
                 className={
-                  premium
+                  premiumV4
+                    ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/50'
+                    : premium
                     ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/60'
                     : 'flex gap-4 p-4 bg-card rounded-xl shadow-card'
                 }
@@ -206,7 +208,7 @@ const Cart = () => {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <div className="flex items-center border rounded-lg">
+                  <div className={premiumV4 ? 'flex items-center border border-border/50 rounded-full' : 'flex items-center border rounded-lg'}>
                     <Button
                       variant="ghost"
                       size="icon"
