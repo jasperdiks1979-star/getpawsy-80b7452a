@@ -18,7 +18,8 @@ export type ConversionFlagKey =
   | 'intentGating'
   | 'premiumCard'
   | 'premiumHero'
-  | 'premiumCheckoutCart';
+  | 'premiumCheckoutCart'
+  | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   emotionalHook: true,
@@ -43,6 +44,11 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // and the duplicate sidebar upsell suppressed on mobile. Pure presentation
   // and ordering; pricing, shipping math, Stripe and checkout untouched.
   premiumCheckoutCart: true,
+  // CI-8: AI homepage personalization (winner routing + emotional angle).
+  // Default OFF — flip in admin after QA. Engine failure always falls back
+  // to the static premium hero / default block order, so this is safe to
+  // enable per-segment without storefront risk.
+  aiHomepage: false,
 };
 
 const LS_KEY = 'gp_conversion_flags_v1';
