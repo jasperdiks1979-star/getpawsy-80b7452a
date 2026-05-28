@@ -15737,6 +15737,7 @@ export type Database = {
           quality_class: string | null
           referrer: string | null
           session_id: string
+          source_quality: string | null
           started_at: string
           traffic_quality_score: number | null
           user_agent: string | null
@@ -15763,6 +15764,7 @@ export type Database = {
           quality_class?: string | null
           referrer?: string | null
           session_id: string
+          source_quality?: string | null
           started_at?: string
           traffic_quality_score?: number | null
           user_agent?: string | null
@@ -15789,6 +15791,7 @@ export type Database = {
           quality_class?: string | null
           referrer?: string | null
           session_id?: string
+          source_quality?: string | null
           started_at?: string
           traffic_quality_score?: number | null
           user_agent?: string | null
