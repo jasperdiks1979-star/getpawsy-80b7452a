@@ -130,6 +130,42 @@ export default function AiRevenuePage() {
     return params.toString();
   }
 
+  function downloadJson(filename: string, data: unknown) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function toCsv(rows: Array<Record<string, string | number | null | undefined>>) {
+    if (!rows.length) return '';
+    const headers = Object.keys(rows[0]);
+    const escape = (v: unknown) => {
+      const s = v == null ? '' : String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    return [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))].join('\n');
+  }
+
+  function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
+    const blob = new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildExportPayload() {
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source } } };
+  }
+
   async function loadSummary(r: Range) {
     setLoading(true);
     try {
