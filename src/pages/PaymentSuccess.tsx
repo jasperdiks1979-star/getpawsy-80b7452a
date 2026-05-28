@@ -12,6 +12,7 @@ import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
+import { firePaymentSuccess } from '@/lib/funnelEvents';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
@@ -23,6 +24,27 @@ const PaymentSuccess = () => {
   const abTest = useBundleABTest();
   const [tracked, setTracked] = useState(false);
   const purchasedIdsRef = useRef<string[]>([]);
+  const lpFiredRef = useRef(false);
+
+  // Fire lp_funnel_events `payment_success_view` once per mount with the
+  // Stripe session id from the URL. Purely additive — does NOT modify
+  // Stripe webhook, checkout, or refund logic. Reliable conversion truth
+  // still comes from the server-side webhook; this is for client-side
+  // funnel-completion visibility in the /admin/funnel-health dashboard.
+  useEffect(() => {
+    if (lpFiredRef.current) return;
+    if (!sessionId) return;
+    lpFiredRef.current = true;
+    try {
+      firePaymentSuccess({
+        order_total: typeof totalPrice === 'number' ? totalPrice : undefined,
+        currency: 'USD',
+        stripe_session_id: sessionId,
+      });
+    } catch {
+      /* analytics never breaks UX */
+    }
+  }, [sessionId, totalPrice]);
 
   useEffect(() => {
     // Track purchase conversion and clear cart only once

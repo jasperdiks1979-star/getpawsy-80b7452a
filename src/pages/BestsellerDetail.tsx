@@ -859,6 +859,7 @@ const BestsellerDetail = () => {
                     images={images}
                     productName={product.name}
                     discount={discount}
+                    productId={product.id}
                     onImageClick={(index) => {
                       setSelectedImage(index);
                       setLightboxOpen(true);
@@ -882,6 +883,7 @@ const BestsellerDetail = () => {
                     images={images}
                     productName={product.name}
                     discount={discount}
+                    productId={product.id}
                     onImageClick={(index) => {
                       setSelectedImage(index);
                       setLightboxOpen(true);

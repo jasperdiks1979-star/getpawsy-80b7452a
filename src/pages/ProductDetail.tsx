@@ -981,6 +981,7 @@ const ProductDetail = () => {
                 productName={safeString(product.name)}
                 category={product.category || undefined}
                 discount={discount}
+                productId={product.id}
                 onImageClick={(index) => {
                   setSelectedImage(index);
                   setLightboxOpen(true);
@@ -992,6 +993,7 @@ const ProductDetail = () => {
                 productName={safeString(product.name)}
                 category={product.category || undefined}
                 discount={discount}
+                productId={product.id}
                 onImageClick={(index) => {
                   setSelectedImage(index);
                   setLightboxOpen(true);

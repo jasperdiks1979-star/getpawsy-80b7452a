@@ -4,6 +4,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
 import { ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fireImageInteraction } from "@/lib/funnelEvents";
 
 interface MobileProductGalleryProps {
   images: string[];
@@ -13,6 +14,8 @@ interface MobileProductGalleryProps {
   onImageClick?: (index: number) => void;
   badge?: React.ReactNode;
   className?: string;
+  /** Optional — when provided, gallery swipe/zoom/thumbnail events are recorded. */
+  productId?: string | null;
 }
 
 export function MobileProductGallery({
@@ -23,6 +26,7 @@ export function MobileProductGallery({
   onImageClick,
   badge,
   className,
+  productId,
 }: MobileProductGalleryProps) {
   const keywordAlt = (idx: number) => {
     const base = productName;
@@ -50,18 +54,32 @@ export function MobileProductGallery({
   // Update selected index when carousel scrolls
   React.useEffect(() => {
     if (!emblaApi) return;
-    
+
     const onSelect = () => {
-      setSelectedIndex(emblaApi.selectedScrollSnap());
+      const idx = emblaApi.selectedScrollSnap();
+      setSelectedIndex(idx);
+      // Fire only on real user-driven swipes (skip first sync), additive-only.
+      if (productId) {
+        try {
+          fireImageInteraction({
+            product_id: productId,
+            interaction: 'swipe',
+            image_index: idx,
+          });
+        } catch {
+          /* analytics must never break UX */
+        }
+      }
     };
     
     emblaApi.on("select", onSelect);
-    onSelect(); // Initial sync
+    // Initial sync — sync state only, do NOT fire an analytics event.
+    setSelectedIndex(emblaApi.selectedScrollSnap());
     
     return () => {
       emblaApi.off("select", onSelect);
     };
-  }, [emblaApi]);
+  }, [emblaApi, productId]);
 
   // Auto-scroll thumbnail into view
   React.useEffect(() => {
@@ -82,9 +100,31 @@ export function MobileProductGallery({
     if (emblaApi) {
       emblaApi.scrollTo(index);
     }
+    if (productId) {
+      try {
+        fireImageInteraction({
+          product_id: productId,
+          interaction: 'thumbnail',
+          image_index: index,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   const handleMainImageClick = () => {
+    if (productId) {
+      try {
+        fireImageInteraction({
+          product_id: productId,
+          interaction: 'zoom',
+          image_index: selectedIndex,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
     if (onImageClick) {
       onImageClick(selectedIndex);
     }

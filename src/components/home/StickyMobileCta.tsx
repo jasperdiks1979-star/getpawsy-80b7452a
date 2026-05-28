@@ -4,10 +4,13 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { fireStickyAtcView } from '@/lib/funnelEvents';
 
 export function StickyMobileCta() {
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     const onScroll = () => {
@@ -19,8 +22,35 @@ export function StickyMobileCta() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Track first time the sticky CTA is actually visible in the viewport.
+  // Passive IntersectionObserver, fires at most once per session via centralized dedupe.
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && !firedRef.current) {
+            firedRef.current = true;
+            try {
+              fireStickyAtcView({ source_component: 'sticky_mobile_cta' });
+            } catch {
+              /* analytics never breaks UX */
+            }
+            io.disconnect();
+            return;
+          }
+        }
+      },
+      { threshold: [0, 0.5, 1] },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <div
+      ref={barRef}
       className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ${
         visible ? 'translate-y-0' : 'translate-y-full'
       }`}

@@ -5,6 +5,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { fireImageInteraction } from "@/lib/funnelEvents";
 
 interface DesktopProductGalleryProps {
   images: string[];
@@ -14,6 +15,8 @@ interface DesktopProductGalleryProps {
   onImageClick?: (index: number) => void;
   badge?: React.ReactNode;
   className?: string;
+  /** Optional — when provided, gallery swipe/zoom/thumbnail events are recorded. */
+  productId?: string | null;
 }
 
 export function DesktopProductGallery({
@@ -24,6 +27,7 @@ export function DesktopProductGallery({
   onImageClick,
   badge,
   className,
+  productId,
 }: DesktopProductGalleryProps) {
   const keywordAlt = (idx: number) => {
     const base = productName;
@@ -50,16 +54,41 @@ export function DesktopProductGallery({
   const handlePrevImage = React.useCallback(() => {
     setDirection(-1);
     setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  }, [images.length]);
+    if (productId) {
+      try {
+        fireImageInteraction({ product_id: productId, interaction: 'swipe' });
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [images.length, productId]);
 
   const handleNextImage = React.useCallback(() => {
     setDirection(1);
     setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  }, [images.length]);
+    if (productId) {
+      try {
+        fireImageInteraction({ product_id: productId, interaction: 'swipe' });
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [images.length, productId]);
 
   const handleThumbnailClick = (index: number) => {
     setDirection(index > selectedImage ? 1 : -1);
     setSelectedImage(index);
+    if (productId) {
+      try {
+        fireImageInteraction({
+          product_id: productId,
+          interaction: 'thumbnail',
+          image_index: index,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   // Hover zoom handlers - desktop only
@@ -67,6 +96,17 @@ export function DesktopProductGallery({
     // Only enable zoom on desktop (≥1024px) and non-touch devices
     if (window.innerWidth >= 1024 && !('ontouchstart' in window)) {
       setIsHovering(true);
+      if (productId) {
+        try {
+          fireImageInteraction({
+            product_id: productId,
+            interaction: 'zoom',
+            image_index: selectedImage,
+          });
+        } catch {
+          /* ignore */
+        }
+      }
     }
   };
 
@@ -159,6 +199,17 @@ export function DesktopProductGallery({
   }, [selectedImage]);
 
   const handleMainImageClick = () => {
+    if (productId) {
+      try {
+        fireImageInteraction({
+          product_id: productId,
+          interaction: 'click',
+          image_index: selectedImage,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
     if (onImageClick) {
       onImageClick(selectedImage);
     }
