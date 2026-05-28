@@ -23,17 +23,17 @@
     "bestOverall": {
       "name": "Cat Litter Box Enclosure with Drawers & Storage (39\")",
       "reason": "The widest enclosure we tested at 39\", fitting jumbo pans that most enclosures can't accommodate. Ideal for cats 15+ pounds.",
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white"
     },
     "bestBudget": {
       "name": "Cat Litter Box Enclosure with Barn Door",
       "reason": "31.5\" x 21\" interior fits large pans at an accessible price point for big cat owners on a budget.",
-      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white"
+      "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white"
     },
     "bestPremium": {
       "name": "60L Automatic Smart Litter Box",
       "reason": "60-liter capacity handles cats up to 18 lbs with room to spare. Self-cleaning means no daily scooping of oversized waste.",
-      "link": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
     }
   },
   "comparisonProducts": [
@@ -47,7 +47,7 @@
         "Anti-tip for heavy cats",
         "Storage for supplies"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
+      "link": "/products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white",
       "badge": "Best for Large Cats",
       "availability": "InStock"
     },
@@ -61,7 +61,7 @@
         "Handles cats up to 18 lbs",
         "Self-cleaning automation"
       ],
-      "link": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
       "badge": "Best Automatic",
       "availability": "InStock"
     },
@@ -75,7 +75,7 @@
         "Affordable for big cats",
         "Wide barn door access"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
+      "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Budget",
       "availability": "InStock"
     }

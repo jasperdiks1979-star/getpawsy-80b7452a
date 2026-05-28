@@ -30,17 +30,17 @@
     "bestOverall": {
       "name": "Litter Box Enclosure with Barn Door",
       "reason": "Farmhouse style, barn door access, fits most litter boxes. Perfect balance of style and function.",
-      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white"
+      "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white"
     },
     "bestBudget": {
       "name": "Covered Cat Litter Box (Gray)",
       "reason": "Full enclosure with deodorizing bags at under $90.",
-      "link": "/product/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g"
+      "link": "/products/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g"
     },
     "bestPremium": {
       "name": "32\" Litter Box Enclosure with Scratching Mat",
       "reason": "Largest enclosure with built-in scratching mat. Premium quality at $206.99.",
-      "link": "/product/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress"
+      "link": "/products/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress"
     }
   },
   "comparisonProducts": [
@@ -55,7 +55,7 @@
         "Fits standard litter boxes",
         "Farmhouse style"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
+      "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Overall",
       "availability": "InStock"
     },
@@ -70,7 +70,7 @@
         "Fits large boxes",
         "Dual function"
       ],
-      "link": "/product/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress",
+      "link": "/products/32-cat-litter-box-enclosure-with-scratching-mat-cat-entrance-fit-most-of-cat-and-litter-box-distress",
       "badge": "Best Premium",
       "availability": "InStock"
     },
@@ -85,7 +85,7 @@
         "Scratching board",
         "Modern design"
       ],
-      "link": "/product/cat-litter-box-enclosure-with-scratching-board-cat-washroom-end-side-table-31-5-x-19-x-20-walnut-bro",
+      "link": "/products/cat-litter-box-enclosure-with-scratching-board-cat-washroom-end-side-table-31-5-x-19-x-20-walnut-bro",
       "badge": "Best Design",
       "availability": "InStock"
     },
@@ -100,7 +100,7 @@
         "Top entry",
         "Deodorizing bags"
       ],
-      "link": "/product/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g",
+      "link": "/products/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g",
       "badge": "Best Budget",
       "availability": "InStock"
     }
