@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X, Download } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X, Download, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Range = '24h' | '7d' | '30d';
@@ -56,6 +56,7 @@ interface Summary {
     product_atc_rate_std_pp: number;
     sample_size: number;
   };
+  thresholds?: Thresholds;
   funnel: {
     pdp_views: number; cart_opens: number; add_to_cart: number;
     begin_checkout: number; payment_success: number;
