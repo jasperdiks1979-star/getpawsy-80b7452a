@@ -26,11 +26,12 @@ const PaymentSuccess = () => {
   const purchasedIdsRef = useRef<string[]>([]);
   const lpFiredRef = useRef(false);
 
-  // Fire lp_funnel_events `payment_success_view` once per mount with the
+  // Fire lp_funnel_events `payment_success` once per mount with the
   // Stripe session id from the URL. Purely additive — does NOT modify
   // Stripe webhook, checkout, or refund logic. Reliable conversion truth
   // still comes from the server-side webhook; this is for client-side
-  // funnel-completion visibility in the /admin/funnel-health dashboard.
+  // funnel-completion visibility in the /admin/funnel-health and
+  // /admin/ai-revenue dashboards (checkout → payment ratio).
   useEffect(() => {
     if (lpFiredRef.current) return;
     if (!sessionId) return;
@@ -41,10 +42,25 @@ const PaymentSuccess = () => {
         currency: 'USD',
         stripe_session_id: sessionId,
       });
+      // Also mirror a canonical `purchase` event so the AI revenue
+      // dashboard can compute checkout→payment ratios even when the
+      // cart was cleared by a page refresh (no items in scope).
+      const utm = {
+        utm_source: sessionStorage.getItem('gp_utm_utm_source') ?? undefined,
+        utm_medium: sessionStorage.getItem('gp_utm_utm_medium') ?? undefined,
+        utm_campaign: sessionStorage.getItem('gp_utm_utm_campaign') ?? undefined,
+        utm_content: sessionStorage.getItem('gp_utm_utm_content') ?? undefined,
+      };
+      mirrorLpFunnelEvent('purchase', {
+        value: typeof totalPrice === 'number' ? totalPrice : undefined,
+        items: items.map(item => ({ item_id: item.id, item_name: item.name })),
+        stripe_session_id: sessionId,
+        ...utm,
+      });
     } catch {
       /* analytics never breaks UX */
     }
-  }, [sessionId, totalPrice]);
+  }, [sessionId, totalPrice, items]);
 
   useEffect(() => {
     // Track purchase conversion and clear cart only once
