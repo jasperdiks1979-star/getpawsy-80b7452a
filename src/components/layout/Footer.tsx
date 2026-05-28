@@ -13,6 +13,7 @@ import {
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { DebugPanel } from './DebugPanel';
 import { getFounderModeStatus } from '@/lib/founder-mode';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import {
   SUPPORT_EMAIL,
   FREE_SHIPPING_THRESHOLD,
@@ -36,12 +37,16 @@ const FounderBadge = forwardRef<HTMLDivElement>((_, ref) => {
 });
 FounderBadge.displayName = 'FounderBadge';
 
-const FooterSection = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => {
+const FooterSection = ({ title, children, className, premium }: { title: string; children: React.ReactNode; className?: string; premium?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className={className}>
       <button
-        className="font-display font-semibold text-sm mb-4 w-full text-left flex items-center justify-between md:pointer-events-none text-background"
+        className={
+          premium
+            ? "font-display text-[11px] uppercase tracking-[0.22em] mb-5 w-full text-left flex items-center justify-between md:pointer-events-none text-background/80"
+            : "font-display font-semibold text-sm mb-4 w-full text-left flex items-center justify-between md:pointer-events-none text-background"
+        }
         onClick={() => setIsOpen(o => !o)}
         aria-expanded={isOpen}
       >
@@ -92,11 +97,11 @@ const footerLinks = {
   ],
 };
 
-const LinkList = ({ links }: { links: { label: string; href: string }[] }) => (
-  <ul className="space-y-2.5">
+const LinkList = ({ links, premium }: { links: { label: string; href: string }[]; premium?: boolean }) => (
+  <ul className={premium ? "space-y-2" : "space-y-2.5"}>
     {links.map((link) => (
       <li key={link.href}>
-        <a href={link.href} className="text-sm text-background/60 hover:text-primary transition-colors">
+        <a href={link.href} className={premium ? "text-[13px] text-background/55 hover:text-primary transition-colors" : "text-sm text-background/60 hover:text-primary transition-colors"}>
           {link.label}
         </a>
       </li>
@@ -106,6 +111,7 @@ const LinkList = ({ links }: { links: { label: string; href: string }[] }) => (
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const premium = getConversionFlag('premiumFooter');
 
   return (
     <footer className="relative mt-auto w-full max-w-[100vw] overflow-x-hidden pb-safe">
@@ -181,38 +187,38 @@ export const Footer = () => {
             </div>
 
             {/* Shop */}
-            <FooterSection title="Shop">
-              <LinkList links={footerLinks.shop} />
+            <FooterSection title="Shop" premium={premium}>
+              <LinkList links={footerLinks.shop} premium={premium} />
             </FooterSection>
 
             {/* Collections */}
-            <FooterSection title="Collections">
-              <LinkList links={footerLinks.collections} />
+            <FooterSection title="Collections" premium={premium}>
+              <LinkList links={footerLinks.collections} premium={premium} />
             </FooterSection>
 
             {/* Help */}
-            <FooterSection title="Help">
-              <LinkList links={footerLinks.support} />
+            <FooterSection title="Help" premium={premium}>
+              <LinkList links={footerLinks.support} premium={premium} />
               <div className="mt-4">
-                <LinkList links={footerLinks.company} />
+                <LinkList links={footerLinks.company} premium={premium} />
               </div>
             </FooterSection>
 
             {/* Guides */}
-            <FooterSection title="Guides">
-              <LinkList links={footerLinks.guides} />
+            <FooterSection title="Guides" premium={premium}>
+              <LinkList links={footerLinks.guides} premium={premium} />
             </FooterSection>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-background/10">
+        <div className={premium ? "border-t border-background/5" : "border-t border-background/10"}>
           <div className="container px-4 md:px-6 py-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-              <p className="text-xs text-background/40">
+            <div className={premium ? "flex flex-col md:flex-row justify-between items-center gap-3 md:gap-6" : "flex flex-col md:flex-row justify-between items-center gap-3"}>
+              <p className={premium ? "text-[11px] text-background/35 tracking-wide" : "text-xs text-background/40"}>
                 © {currentYear} GetPawsy. All rights reserved.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 text-xs text-background/50">
+              <div className={premium ? "flex flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-background/45" : "flex flex-wrap justify-center gap-4 text-xs text-background/50"}>
                 <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
                 <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
