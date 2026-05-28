@@ -30,6 +30,7 @@ import {
   DELIVERY_TIME_STANDARD,
   SITE_LAST_UPDATED,
 } from "@/lib/shipping-constants";
+import { Mail } from "lucide-react";
 
 const TrustTransparencySection = lazy(() => import("@/components/home/TrustTransparencySection").then(m => ({ default: m.default ?? m.TrustTransparencySection })));
 
