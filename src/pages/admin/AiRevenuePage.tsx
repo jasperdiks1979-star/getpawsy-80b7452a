@@ -229,6 +229,11 @@ export default function AiRevenuePage() {
   const [storedBusy, setStoredBusy] = useState(false);
   const [storedSeverity, setStoredSeverity] = useState<'all' | 'info' | 'warn' | 'critical'>('all');
   const [genInsightsBusy, setGenInsightsBusy] = useState(false);
+  // Iteration D — traffic quality classifier state
+  const [classifyBusy, setClassifyBusy] = useState(false);
+  const [classifyResult, setClassifyResult] = useState<null | {
+    scanned: number; updated: number; breakdown: Record<string, number>;
+  }>(null);
 
   // Per-product drilldown panel state. Lazily fetches when a row is clicked.
   interface DrilldownMetrics { views: number; atc: number; atc_rate_pct: number; rage_clicks: number; avg_dwell_ms: number; sessions: number }
