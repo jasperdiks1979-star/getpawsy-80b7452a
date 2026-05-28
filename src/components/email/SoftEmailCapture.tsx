@@ -36,6 +36,7 @@ export function SoftEmailCapture({
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const premium = getConversionFlag('premiumNewsletter');
 
   // Default copy based on variant
   const defaultContent = {
