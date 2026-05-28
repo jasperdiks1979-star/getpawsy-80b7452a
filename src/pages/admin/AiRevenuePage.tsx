@@ -45,6 +45,17 @@ interface Summary {
   range: Range;
   total_events: number;
   total_sessions: number;
+  baselines?: {
+    prior_since: string;
+    prior_until: string;
+    prior_events: number;
+    overall_atc_rate_pct: number;
+    product_views_mean: number;
+    product_views_std: number;
+    product_atc_rate_mean_pct: number;
+    product_atc_rate_std_pp: number;
+    sample_size: number;
+  };
   funnel: {
     pdp_views: number; cart_opens: number; add_to_cart: number;
     begin_checkout: number; payment_success: number;
@@ -54,12 +65,25 @@ interface Summary {
   devices: Record<string, number>;
   os: Record<string, number>;
   traffic_quality: Array<{ source: string; sessions: number; views: number; atc_rate: number; bounce_rate: number; avg_dwell_ms: number }>;
-  top_products: Array<{ id: string; name: string; views: number; atc: number; atc_rate: number; avg_dwell_ms: number; rage_clicks: number; sessions: number }>;
+  top_products: ProductRow[];
   breakout_products: Summary['top_products'];
+  winner_products?: Summary['top_products'];
+  rising_products?: Summary['top_products'];
+  falling_products?: Summary['top_products'];
   best_dwell: Summary['top_products'];
   worst_rage: Summary['top_products'];
   top_landing: Array<{ path: string; count: number }>;
   top_exit: Array<{ path: string; count: number }>;
+}
+
+interface ProductRow {
+  id: string; name: string; views: number; atc: number; atc_rate: number;
+  avg_dwell_ms: number; rage_clicks: number; sessions: number;
+  prior_views?: number; prior_atc_rate?: number;
+  views_delta_pct?: number | null; atc_rate_delta_pp?: number;
+  views_z?: number; atc_rate_z?: number;
+  wilson_atc_lower?: number; is_new?: boolean;
+  classification?: 'winner' | 'breakout' | 'rising' | 'falling' | 'stable';
 }
 
 interface Insight { title: string; body: string; severity: 'info' | 'warning' | 'critical'; category: string; product_id?: string | null }
