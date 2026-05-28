@@ -87,24 +87,35 @@ Deno.serve(async (req) => {
     const range = (url.searchParams.get('range') || '7d') as Range;
     const generateAi = url.searchParams.get('ai') === '1';
     const persist = url.searchParams.get('persist') === '1';
+    // Optional explicit date window (ISO). When provided, overrides `range`.
+    const fromParam = url.searchParams.get('from');
+    const toParam = url.searchParams.get('to');
+    // Optional source filter: tiktok | pinterest | google | organic | direct | other | all
+    const sourceFilter = (url.searchParams.get('source') || 'all').toLowerCase();
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
 
-    const since = sinceFor(range);
+    const since = fromParam || sinceFor(range);
+    const until = toParam || null;
 
     // 1. Pull funnel events (clean, non-bot)
-    const { data: events, error } = await supabase
+    let q = supabase
       .from('lp_funnel_events')
       .select('event_name,session_id,product_id,product_name,page_path,utm_source,utm_medium,dwell_ms,raw_payload,is_bot,is_internal,created_at')
       .gte('created_at', since)
       .or('is_bot.is.null,is_bot.eq.false')
       .or('is_internal.is.null,is_internal.eq.false')
       .limit(20000);
+    if (until) q = q.lte('created_at', until);
+    const { data: events, error } = await q;
     if (error) throw error;
 
-    const rows = events || [];
+    let rows = events || [];
+    if (sourceFilter && sourceFilter !== 'all') {
+      rows = rows.filter(r => classifySource(r) === sourceFilter);
+    }
     const sessions = new Map<string, any[]>();
     for (const r of rows) {
       const arr = sessions.get(r.session_id) || [];
@@ -195,6 +206,8 @@ Deno.serve(async (req) => {
     const summary = {
       range,
       since,
+      until,
+      source: sourceFilter,
       total_events: rows.length,
       total_sessions: totalSessions,
       funnel: {

@@ -21,10 +21,25 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Range = '24h' | '7d' | '30d';
+type SourceFilter = 'all' | 'tiktok' | 'pinterest' | 'google' | 'organic' | 'direct' | 'other';
+
+const SOURCE_OPTIONS: Array<{ value: SourceFilter; label: string }> = [
+  { value: 'all', label: 'All sources' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'pinterest', label: 'Pinterest' },
+  { value: 'google', label: 'Google / Paid' },
+  { value: 'organic', label: 'Organic search' },
+  { value: 'direct', label: 'Direct' },
+  { value: 'other', label: 'Other' },
+];
 
 interface Summary {
   range: Range;
@@ -83,6 +98,9 @@ function severityVariant(sev: string): 'default' | 'secondary' | 'destructive' |
 
 export default function AiRevenuePage() {
   const [range, setRange] = useState<Range>('7d');
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
+  const [toDate, setToDate] = useState<Date | undefined>(undefined);
+  const [source, setSource] = useState<SourceFilter>('all');
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -94,23 +112,34 @@ export default function AiRevenuePage() {
   const [extraContext, setExtraContext] = useState<string>('');
   const [genBusy, setGenBusy] = useState(false);
 
+  function buildQuery(r: Range, extra: Record<string, string> = {}): string {
+    const params = new URLSearchParams();
+    if (fromDate || toDate) {
+      if (fromDate) params.set('from', fromDate.toISOString());
+      if (toDate) {
+        // include the whole selected end day
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        params.set('to', end.toISOString());
+      }
+    } else {
+      params.set('range', r);
+    }
+    if (source && source !== 'all') params.set('source', source);
+    for (const [k, v] of Object.entries(extra)) params.set(k, v);
+    return params.toString();
+  }
+
   async function loadSummary(r: Range) {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-revenue-insights', {
-        body: null,
-        method: 'GET',
-      } as any);
-      // Fallback: use GET via fetch (invoke does not support GET params for all stacks)
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?range=${r}`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?${buildQuery(r)}`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
       });
       const json = await resp.json();
       if (!json.ok) throw new Error(json.message || 'failed');
       setSummary(json.summary);
-      // Suppress unused
-      void data; void error;
     } catch (e: any) {
       toast.error('Failed to load metrics: ' + e.message);
     } finally {
@@ -121,7 +150,9 @@ export default function AiRevenuePage() {
   async function runAi(persist: boolean) {
     setAiBusy(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?range=${range}&ai=1${persist ? '&persist=1' : ''}`;
+      const extra: Record<string, string> = { ai: '1' };
+      if (persist) extra.persist = '1';
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?${buildQuery(range, extra)}`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
       });
@@ -187,7 +218,11 @@ export default function AiRevenuePage() {
     }
   }
 
-  useEffect(() => { loadSummary(range); }, [range]);
+  useEffect(() => {
+    loadSummary(range);
+    // re-fetch when any filter changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, fromDate, toDate, source]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => {
@@ -210,16 +245,70 @@ export default function AiRevenuePage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Brain className="w-6 h-6" /> AI Revenue Operator</h1>
-          <p className="text-sm text-muted-foreground">Live funnel intelligence and AI-generated growth recommendations.</p>
+          <p className="text-sm text-muted-foreground">
+            Live funnel intelligence and AI-generated growth recommendations.
+            {(fromDate || toDate || source !== 'all') && (
+              <span className="ml-2 text-foreground">
+                · Filtered{fromDate || toDate ? ` ${fromDate ? format(fromDate, 'MMM d') : '…'} → ${toDate ? format(toDate, 'MMM d') : '…'}` : ''}
+                {source !== 'all' ? ` · ${SOURCE_OPTIONS.find(s => s.value === source)?.label}` : ''}
+              </span>
+            )}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={range} onValueChange={(v) => { setFromDate(undefined); setToDate(undefined); setRange(v as Range); }}>
             <TabsList>
               <TabsTrigger value="24h">24h</TabsTrigger>
               <TabsTrigger value="7d">7d</TabsTrigger>
               <TabsTrigger value="30d">30d</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('justify-start text-left font-normal', !fromDate && 'text-muted-foreground')}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                {fromDate ? format(fromDate, 'MMM d') : 'From'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={fromDate} onSelect={setFromDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('justify-start text-left font-normal', !toDate && 'text-muted-foreground')}
+              >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                {toDate ? format(toDate, 'MMM d') : 'To'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={toDate} onSelect={setToDate} initialFocus className={cn('p-3 pointer-events-auto')} />
+            </PopoverContent>
+          </Popover>
+
+          {(fromDate || toDate) && (
+            <Button size="sm" variant="ghost" onClick={() => { setFromDate(undefined); setToDate(undefined); }} title="Clear dates">
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+
+          <Select value={source} onValueChange={(v) => setSource(v as SourceFilter)}>
+            <SelectTrigger className="w-[160px] h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SOURCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
           <Button size="sm" variant="outline" onClick={() => loadSummary(range)} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
