@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Range = '24h' | '7d' | '30d';
@@ -128,6 +128,42 @@ export default function AiRevenuePage() {
     if (source && source !== 'all') params.set('source', source);
     for (const [k, v] of Object.entries(extra)) params.set(k, v);
     return params.toString();
+  }
+
+  function downloadJson(filename: string, data: unknown) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function toCsv(rows: Array<Record<string, string | number | null | undefined>>) {
+    if (!rows.length) return '';
+    const headers = Object.keys(rows[0]);
+    const escape = (v: unknown) => {
+      const s = v == null ? '' : String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    return [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))].join('\n');
+  }
+
+  function downloadCsv(filename: string, rows: Array<Record<string, string | number | null | undefined>>) {
+    const blob = new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildExportPayload() {
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source } } };
   }
 
   async function loadSummary(r: Range) {
@@ -312,6 +348,22 @@ export default function AiRevenuePage() {
           <Button size="sm" variant="outline" onClick={() => loadSummary(range)} disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!summary}><Download className="w-4 h-4 mr-1" /> Export</Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2 space-y-1">
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts, payload } = buildExportPayload(); downloadJson(`ai-revenue-${ts}.json`, payload); }}>
+                <Download className="w-3 h-3 mr-2" /> Full report (JSON)
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.top_products.map(p => ({ id: p.id, name: p.name, views: p.views, atc: p.atc, atc_rate_pct: p.atc_rate, dwell_sec: (p.avg_dwell_ms / 1000).toFixed(1), rage_clicks: p.rage_clicks, sessions: p.sessions })) : []; downloadCsv(`products-${ts}.csv`, rows); }}>
+                <Download className="w-3 h-3 mr-2" /> Product data (CSV)
+              </Button>
+              <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { const { ts } = buildExportPayload(); const rows = summary ? summary.traffic_quality.map(t => ({ source: t.source, sessions: t.sessions, views: t.views, atc_rate_pct: t.atc_rate, bounce_rate_pct: t.bounce_rate, avg_dwell_sec: (t.avg_dwell_ms / 1000).toFixed(1) })) : []; downloadCsv(`traffic-${ts}.csv`, rows); }}>
+                <Download className="w-3 h-3 mr-2" /> Traffic quality (CSV)
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -408,13 +460,19 @@ export default function AiRevenuePage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Insights</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" disabled={aiBusy || !summary} onClick={() => runAi(false)}>
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Generate
             </Button>
             <Button size="sm" disabled={aiBusy || !summary} onClick={() => runAi(true)}>
               Save as recommendations
             </Button>
+            {insights.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`insights-${ts}.json`, insights); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+                <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = insights.map(it => ({ title: it.title, category: it.category, severity: it.severity, body: it.body, product_id: it.product_id ?? '' })); downloadCsv(`insights-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+              </>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -427,7 +485,15 @@ export default function AiRevenuePage() {
 
       {/* Saved Recommendations */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
+          {recs.length > 0 && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`recommendations-${ts}.json`, recs); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = recs.map(r => ({ id: r.id, title: r.title, category: r.category, severity: r.severity, status: r.status, body: r.body, created_at: r.created_at })); downloadCsv(`recommendations-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+            </div>
+          )}
+        </div>
         <div className="space-y-2">
           {recs.length === 0 && <p className="text-sm text-muted-foreground">No saved recommendations yet.</p>}
           {recs.map(r => (
@@ -453,7 +519,15 @@ export default function AiRevenuePage() {
 
       {/* AI Content Generator */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-4 h-4" /> AI Content Generator</h2>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Wand2 className="w-4 h-4" /> AI Content Generator</h2>
+          {drafts.length > 0 && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); downloadJson(`drafts-${ts}.json`, drafts); }}><Download className="w-4 h-4 mr-1" /> JSON</Button>
+              <Button size="sm" variant="ghost" onClick={() => { const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); const rows = drafts.map(d => ({ id: d.id, kind: d.kind, product_name: d.product_name ?? '', output: d.output, created_at: d.created_at })); downloadCsv(`drafts-${ts}.csv`, rows); }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+            </div>
+          )}
+        </div>
         <Card><CardContent className="p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
