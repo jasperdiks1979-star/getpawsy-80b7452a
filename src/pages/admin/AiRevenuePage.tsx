@@ -32,6 +32,32 @@ import { toast } from 'sonner';
 type Range = '24h' | '7d' | '30d';
 type SourceFilter = 'all' | 'tiktok' | 'pinterest' | 'google' | 'organic' | 'direct' | 'other';
 
+/** Generic localStorage-backed state. Dates need custom ser/des. */
+function usePersistedState<T>(
+  key: string,
+  initial: T,
+  opts?: { serialize?: (v: T) => string; deserialize?: (s: string) => T }
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored != null) {
+        return opts?.deserialize ? opts.deserialize(stored) : (JSON.parse(stored) as T);
+      }
+    } catch { /* ignore corrupt storage */ }
+    return initial;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, opts?.serialize ? opts.serialize(value) : JSON.stringify(value));
+    } catch { /* storage full or private mode */ }
+  }, [key, value, opts]);
+  return [value, setValue];
+}
+
+const dateToIso = (d: Date | undefined) => (d ? d.toISOString() : '');
+const isoToDate = (s: string) => { const d = new Date(s); return isNaN(d.getTime()) ? undefined : d; };
+
 interface Thresholds {
   min_views: number;
   min_prior_views: number;
