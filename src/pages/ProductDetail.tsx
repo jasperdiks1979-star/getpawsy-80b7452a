@@ -1060,7 +1060,7 @@ const ProductDetail = () => {
                 />
               )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
-              {adIntent.source === 'pinterest' && (
+              {adIntent.source === 'pinterest' && allowPinterestBanner && (
                 <div className="mb-3">
                   <PinterestLandingBanner hook={adIntent.keyword} />
                 </div>
@@ -1078,14 +1078,15 @@ const ProductDetail = () => {
                 {safeString(product.name)}
               </h1>
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
-              {adIntent.headline && (
+              {adIntent.headline && allowHeadlineOverride && (
                 <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
                   {adIntent.headline}
                 </p>
               )}
               {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
-                {adIntent.subline || generateClarityIntro(product.name, product.category || "")}
+                {(allowHeadlineOverride && adIntent.subline) ||
+                  generateClarityIntro(product.name, product.category || "")}
               </p>
 
               {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
