@@ -521,16 +521,21 @@ export const Navbar = () => {
                   <AnimatedHamburger isOpen={isMobileMenuOpen} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[320px] p-0 bg-background">
+              <SheetContent side="right" className={premiumMobileNavV2 ? 'w-[330px] p-0 bg-background border-l border-border/60' : 'w-[320px] p-0 bg-background'}>
                 <div className="flex flex-col h-full">
-                  <div className="p-6 border-b bg-muted/30">
-                    <span className="font-display text-xl">
+                  <div className={premiumMobileNavV2 ? 'px-6 py-5 border-b border-border/50' : 'p-6 border-b bg-muted/30'}>
+                    {premiumMobileNavV2 && (
+                      <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mb-1.5">
+                        Menu
+                      </p>
+                    )}
+                    <span className={premiumMobileNavV2 ? 'font-display text-lg font-semibold tracking-tight' : 'font-display text-xl'}>
                       Get<span className="text-primary">Pawsy</span>
                     </span>
                   </div>
                   
                   {/* Mobile Search */}
-                  <div className="p-4 border-b">
+                  <div className={premiumMobileNavV2 ? 'p-4 border-b border-border/50' : 'p-4 border-b'}>
                     <EnhancedSearch
                       variant="navbar"
                       placeholder="Search products..."
@@ -540,12 +545,17 @@ export const Navbar = () => {
 
                   <ScrollArea className="flex-1">
                     <nav className="p-4">
+                      {premiumMobileNavV2 && (
+                        <p className="px-4 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                          Browse
+                        </p>
+                      )}
                       <div className="flex flex-col gap-1 mb-4">
                         {navLinks.map((link) => (
                           <SheetClose asChild key={link.href}>
                             <Link
                               to={link.href}
-                              className={`px-4 py-3 text-lg font-medium rounded-xl transition-colors ${
+                              className={`px-4 ${premiumMobileNavV2 ? 'py-2.5 text-[15px] font-medium' : 'py-3 text-lg font-medium'} rounded-xl transition-colors ${
                                 isActive(link.href)
                                   ? 'text-primary bg-primary/10'
                                   : 'hover:bg-muted'
