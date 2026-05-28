@@ -208,6 +208,19 @@ Deno.serve(async (req) => {
       return (data || []);
     };
 
+    // Companion fetch — counts bot-flagged events in the same window so the
+    // dashboard can show bot_filtered_pct without trusting client signals.
+    const countBotEvents = async (gte: string, lte: string | null): Promise<number> => {
+      let q = supabase
+        .from('lp_funnel_events')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', gte)
+        .eq('is_bot', true);
+      if (lte) q = q.lte('created_at', lte);
+      const { count } = await q;
+      return count ?? 0;
+    };
+
     // --- Product drilldown mode -------------------------------------------
     // Lightweight, focused payload for the UI's per-product comparison panel.
     if (drilldownId) {
