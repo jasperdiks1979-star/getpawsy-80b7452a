@@ -17,7 +17,8 @@ export type ConversionFlagKey =
   | 'dynamicAtcLabel'
   | 'intentGating'
   | 'premiumCard'
-  | 'premiumHero';
+  | 'premiumHero'
+  | 'premiumCheckoutCart';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   emotionalHook: true,
@@ -37,6 +38,11 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // When on, the legacy duplicate trust strips below the hero are suppressed
   // to keep above-the-fold quiet. Flip to false to restore legacy hero.
   premiumHero: true,
+  // CI-8: premium DTC cart polish — sticky mobile checkout bar, single
+  // hairline trust row instead of triple-stacked rows, calmer item cards,
+  // and the duplicate sidebar upsell suppressed on mobile. Pure presentation
+  // and ordering; pricing, shipping math, Stripe and checkout untouched.
+  premiumCheckoutCart: true,
 };
 
 const LS_KEY = 'gp_conversion_flags_v1';
