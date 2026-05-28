@@ -26,6 +26,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
 import { DesktopProductGallery } from "@/components/products/DesktopProductGallery";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -298,6 +299,7 @@ const ProductDetail = () => {
   const [autoplayPaused, setAutoplayPaused] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [volumeDiscount, setVolumeDiscount] = useState(0);
+  const stickyScrollDir = useScrollDirection(10);
   const autoplayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -2057,14 +2059,28 @@ const ProductDetail = () => {
 
       {/* Sticky Add to Cart - Mobile Only - Shows when main button is out of view */}
       <AnimatePresence>
-        {showStickyBar && (
+        {showStickyBar && (() => {
+          const pdpStickyV2 = getConversionFlag('premiumPdpStickyV2');
+          const hideOnScroll = pdpStickyV2 && stickyScrollDir === 'down';
+          return (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={{ y: hideOnScroll ? 100 : 0, opacity: hideOnScroll ? 0 : 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.15)] safe-area-bottom"
+            className={
+              pdpStickyV2
+                ? "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/60 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] safe-area-bottom"
+                : "fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.15)] safe-area-bottom"
+            }
           >
+            {pdpStickyV2 && (
+              <div className="hidden md:flex max-w-7xl mx-auto px-4 pt-2 items-center gap-4 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-2">
+                <span className="inline-flex items-center gap-1.5"><Truck className="w-3 h-3" strokeWidth={1.75} />Free Shipping ${FREE_SHIPPING_THRESHOLD}+</span>
+                <span className="text-border">·</span>
+                <span className="inline-flex items-center gap-1.5"><Shield className="w-3 h-3" strokeWidth={1.75} />30-Day Returns</span>
+              </div>
+            )}
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
               {/* Product name + Price */}
               <div className="flex-shrink-0 min-w-0">
@@ -2079,14 +2095,16 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Trust badge - desktop only */}
-              <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
-                <Truck className="w-3.5 h-3.5 text-primary" />
-                <span>Free Shipping Available ${FREE_SHIPPING_THRESHOLD}+</span>
-                <span className="mx-1">•</span>
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                <span>30-Day Returns</span>
-              </div>
+              {/* Trust badge - desktop only (legacy variant; hairline row above replaces it when v2 is on) */}
+              {!pdpStickyV2 && (
+                <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
+                  <Truck className="w-3.5 h-3.5 text-primary" />
+                  <span>Free Shipping Available ${FREE_SHIPPING_THRESHOLD}+</span>
+                  <span className="mx-1">•</span>
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                  <span>30-Day Returns</span>
+                </div>
+              )}
 
               {/* Quantity Selector */}
               <div className="flex items-center gap-1 bg-muted rounded-full p-1">
@@ -2140,7 +2158,8 @@ const ProductDetail = () => {
               </Button>
             </div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       {/* Spacer for sticky bar — fixed height, no transition to prevent layout oscillation */}

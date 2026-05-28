@@ -25,6 +25,8 @@ export type ConversionFlagKey =
   | 'premiumNav'
   | 'premiumCartV3'
   | 'premiumThankYou'
+  | 'premiumPdpStickyV2'
+  | 'premiumPostPurchase'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -83,6 +85,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // happens next" panel. Tracking, conversion events, and post-purchase
   // offer untouched.
   premiumThankYou: true,
+  // CI-13: PDP sticky ATC v2 — hides on scroll-down / reveals on scroll-up
+  // (matches CI-11 navbar + checkout + CI-12 cart), hairline trust micro-caps
+  // row replaces the chunky desktop trust pills, tighter border + lighter
+  // shadow. Pure presentation; ATC handler, pricing, and quantity untouched.
+  premiumPdpStickyV2: true,
+  // CI-13: post-purchase polish — soft email capture on the thank-you page
+  // (no popup, trust-first copy), and a quiet returning-visitor welcome strip
+  // on the homepage for ~30 days after the most recent successful purchase.
+  // Both are dismissable / additive. Tracking and conversion events untouched.
+  premiumPostPurchase: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to

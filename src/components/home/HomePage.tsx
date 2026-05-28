@@ -25,6 +25,7 @@ import { HomepageFAQ } from "@/components/home/HomepageFAQ";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { StickyMobileCta } from "@/components/home/StickyMobileCta";
 import { SoftEmailCapture } from "@/components/email/SoftEmailCapture";
+import { ReturningVisitorWelcome } from "@/components/home/ReturningVisitorWelcome";
 import {
   DELIVERY_TIME_STANDARD,
   SITE_LAST_UPDATED,
@@ -173,6 +174,9 @@ const HomePage = () => {
           content="Make pet care easier every day. Smart, practical products for a cleaner home and a happier pet. Free shipping over $35. 30-day returns. Trusted by US pet owners."
         />
       </Helmet>
+
+      {/* CI-13: quiet welcome strip for visitors with a recent purchase */}
+      <ReturningVisitorWelcome />
 
       {/* 1. Hero — CI-7 premium variant by default, legacy on flag flip. */}
       {getConversionFlag('premiumHero') ? <HeroSectionPremium /> : <HeroSection />}
