@@ -1501,7 +1501,18 @@ const ProductDetail = () => {
             </motion.div>
 
             {/* Trust Badges — single consolidated trust block */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-2">
+            {/*
+              On mobile, when the new top MobileStickyTrustBar (hairline strip
+              above the gallery) is active, we hide this legacy 4-card grid to
+              avoid duplicate reassurance. Desktop keeps it (the mobile strip
+              is `md:hidden`). Fully reversible by toggling `mobileTrustBar`.
+            */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className={`pt-2 ${getConversionFlag('mobileTrustBar') ? 'hidden md:block' : ''}`}
+            >
               <TrustBadgesBlock compact />
             </motion.div>
 
