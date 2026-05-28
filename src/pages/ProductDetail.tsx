@@ -999,7 +999,11 @@ const ProductDetail = () => {
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
               <>
-                <MobileStickyTrustBar />
+                {/* CI-9: when premiumPdpV2 is on, the hairline trust bar
+                    above the gallery is suppressed — the SwipeBenefitChips
+                    + price block + sticky ATC already carry trust. Keeps
+                    above-the-fold quiet for cold mobile traffic. */}
+                {!getConversionFlag('premiumPdpV2') && <MobileStickyTrustBar />}
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
