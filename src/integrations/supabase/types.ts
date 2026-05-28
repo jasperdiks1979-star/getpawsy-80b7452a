@@ -576,6 +576,81 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_creative_drafts: {
+        Row: {
+          body: string | null
+          confidence: number | null
+          created_at: string
+          dismissed_at: string | null
+          evidence: Json
+          expected_revenue_impact: string | null
+          generated_at: string
+          id: string
+          kind: string
+          model: string | null
+          prompt_hash: string | null
+          published_at: string | null
+          quality_flags: Json
+          quality_score: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_ref: string | null
+          title: string
+          traffic_source: string | null
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          expected_revenue_impact?: string | null
+          generated_at?: string
+          id?: string
+          kind: string
+          model?: string | null
+          prompt_hash?: string | null
+          published_at?: string | null
+          quality_flags?: Json
+          quality_score?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_ref?: string | null
+          title: string
+          traffic_source?: string | null
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          expected_revenue_impact?: string | null
+          generated_at?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          prompt_hash?: string | null
+          published_at?: string | null
+          quality_flags?: Json
+          quality_score?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_ref?: string | null
+          title?: string
+          traffic_source?: string | null
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
       ai_revenue_insights: {
         Row: {
           body: string
@@ -678,6 +753,81 @@ export type Database = {
           product_id?: string | null
           severity?: string
           source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_seo_drafts: {
+        Row: {
+          affected_url: string | null
+          body: string | null
+          confidence: number | null
+          created_at: string
+          dismissed_at: string | null
+          evidence: Json
+          expected_seo_impact: string | null
+          generated_at: string
+          id: string
+          kind: string
+          model: string | null
+          priority: string
+          prompt_hash: string | null
+          published_at: string | null
+          quality_flags: Json
+          quality_score: number | null
+          recommendations: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_url?: string | null
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          expected_seo_impact?: string | null
+          generated_at?: string
+          id?: string
+          kind: string
+          model?: string | null
+          priority?: string
+          prompt_hash?: string | null
+          published_at?: string | null
+          quality_flags?: Json
+          quality_score?: number | null
+          recommendations?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_url?: string | null
+          body?: string | null
+          confidence?: number | null
+          created_at?: string
+          dismissed_at?: string | null
+          evidence?: Json
+          expected_seo_impact?: string | null
+          generated_at?: string
+          id?: string
+          kind?: string
+          model?: string | null
+          priority?: string
+          prompt_hash?: string | null
+          published_at?: string | null
+          quality_flags?: Json
+          quality_score?: number | null
+          recommendations?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           title?: string
           updated_at?: string
