@@ -1818,8 +1818,16 @@ const ProductDetail = () => {
             onCtaClick={handleAddToCart}
             inStock={inStock}
             price={activePrice}
+            ctaLabel={
+              getConversionFlag('dynamicAtcLabel')
+                ? getEmotionalCopy(product.category, product.name).ctaLabel
+                : undefined
+            }
           />
         )}
+
+        {/* CI-2: Slim mobile top trust strip. Hides on scroll-down. */}
+        {!showTikTokVariant && <MobileStickyTrustBar />}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
         {isLitterBoxProduct && <LitterBoxLovedSection />}
