@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
 import { fireCartOpen } from '@/lib/funnelEvents';
+import { getConversionFlag } from '@/lib/conversionFlags';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
 import { TieredIncentiveBar } from '@/components/cart/TieredIncentiveBar';
@@ -33,6 +34,7 @@ import {
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  const premium = getConversionFlag('premiumCheckoutCart');
 
   // Fire one cart_open event per session+page when the cart route mounts.
   // Dedupe handled centrally in funnelEvents (10s window per session+event).
@@ -91,7 +93,7 @@ const Cart = () => {
   return (
     <Layout>
       <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
-      <div className="container px-4 md:px-6 py-8">
+      <div className={`container px-4 md:px-6 py-8 ${premium ? 'pb-28 md:pb-8' : ''}`}>
         {/* Breadcrumbs */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
@@ -123,25 +125,37 @@ const Cart = () => {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="flex gap-4 p-4 bg-card rounded-xl shadow-card"
+                className={
+                  premium
+                    ? 'flex gap-4 p-4 bg-card rounded-2xl border border-border/60'
+                    : 'flex gap-4 p-4 bg-card rounded-xl shadow-card'
+                }
               >
                 <Link to={item.slug ? `/products/${item.slug}` : '/products'} className="shrink-0">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-24 h-24 object-cover rounded-lg"
+                    className={premium ? 'w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl bg-secondary/30' : 'w-24 h-24 object-cover rounded-lg'}
                   />
                 </Link>
                 <div className="flex-1 min-w-0">
                   <Link to={item.slug ? `/products/${item.slug}` : '/products'}>
-                    <h3 className="font-semibold hover:text-primary transition-colors">
+                    <h3 className={
+                      premium
+                        ? 'font-display font-semibold text-[15px] leading-snug line-clamp-2 hover:text-primary transition-colors'
+                        : 'font-semibold hover:text-primary transition-colors'
+                    }>
                       {safeString(item.name)}
                     </h3>
                   </Link>
                   {item.variant && (
                     <p className="text-sm text-muted-foreground">{safeString(item.variant)}</p>
                   )}
-                  <p className="text-lg font-bold text-primary mt-1">
+                  <p className={
+                    premium
+                      ? 'text-[15px] font-semibold text-foreground mt-1 tracking-tight'
+                      : 'text-lg font-bold text-primary mt-1'
+                  }>
                     ${safeNumber(item.price).toFixed(2)}
                   </p>
                 </div>
@@ -187,7 +201,11 @@ const Cart = () => {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-card rounded-xl shadow-card p-6 sticky top-24">
+            <div className={
+              premium
+                ? 'bg-card rounded-2xl border border-border/60 p-6 sticky top-24'
+                : 'bg-card rounded-xl shadow-card p-6 sticky top-24'
+            }>
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
               
               {/* Tiered Incentive Progress */}
@@ -242,38 +260,58 @@ const Cart = () => {
               </div>
 
               <Link to="/checkout" className="block mt-4">
-                <Button size="lg" className="w-full gap-2 shadow-lg hover:shadow-xl transition-shadow">
+                <Button
+                  size="lg"
+                  className={
+                    premium
+                      ? 'w-full gap-2 rounded-full font-semibold shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)] hover:shadow-[0_10px_28px_-12px_rgba(0,0,0,0.45)] transition-shadow'
+                      : 'w-full gap-2 shadow-lg hover:shadow-xl transition-shadow'
+                  }
+                >
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
 
               <Link to="/products" className="block mt-3">
-                <Button variant="outline" size="lg" className="w-full">
+                <Button variant="outline" size="lg" className={premium ? 'w-full rounded-full' : 'w-full'}>
                   Continue Shopping
                 </Button>
               </Link>
 
-              {/* Enhanced Trust badges - using centralized constants */}
-              <div className="mt-6 pt-4 border-t space-y-3">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="w-4 h-4 text-green-600" />
-                  <span>{TRUST_BADGES.secure.title} • {TRUST_BADGES.secure.subtitle}</span>
+              {/* Trust row — single hairline dot-separated line in premium mode,
+                  legacy triple-stack otherwise. Payment badges always shown. */}
+              {premium ? (
+                <div className="mt-6 pt-4 border-t">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span>Secure checkout</span>
+                    <span aria-hidden="true" className="opacity-60">·</span>
+                    <span>{DELIVERY_TIME_STANDARD}</span>
+                    <span aria-hidden="true" className="opacity-60">·</span>
+                    <span>30-day returns</span>
+                  </p>
+                  <PaymentBadges variant="dark" label="We accept:" className="pt-3" />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Truck className="w-4 h-4 text-primary" />
-                  <span>{US_FULFILLMENT_NOTE} • {DELIVERY_TIME_STANDARD}</span>
+              ) : (
+                <div className="mt-6 pt-4 border-t space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-4 h-4 text-green-600" />
+                    <span>{TRUST_BADGES.secure.title} • {TRUST_BADGES.secure.subtitle}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Truck className="w-4 h-4 text-primary" />
+                    <span>{US_FULFILLMENT_NOTE} • {DELIVERY_TIME_STANDARD}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    <span>{RETURNS_POLICY_SHORT}</span>
+                  </div>
+                  <PaymentBadges variant="dark" label="We accept:" className="pt-2" />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Star className="w-4 h-4 text-amber-500" />
-                  <span>{RETURNS_POLICY_SHORT}</span>
-                </div>
-                {/* Payment method badges */}
-                <PaymentBadges variant="dark" label="We accept:" className="pt-2" />
-              </div>
+              )}
 
               {/* Compact sidebar cross-sell */}
-              <div className="mt-6 pt-4 border-t">
+              <div className={premium ? 'mt-6 pt-4 border-t hidden md:block' : 'mt-6 pt-4 border-t'}>
                 <CartUpsell 
                   currentItemIds={items.map(item => item.id)} 
                   variant="compact" 
@@ -284,6 +322,30 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {/* CI-8 — mobile sticky checkout bar. Always-reachable primary action
+          while the user scrolls items and upsells. Desktop unaffected.
+          Suppressed when premiumCheckoutCart flag is off. */}
+      {premium && (
+        <div
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/60 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]"
+          role="region"
+          aria-label="Checkout summary"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
+              <p className="text-base font-semibold text-foreground tracking-tight">${total.toFixed(2)}</p>
+            </div>
+            <Link to="/checkout" className="flex-1">
+              <Button size="lg" className="w-full gap-2 rounded-full font-semibold h-12">
+                Checkout
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
