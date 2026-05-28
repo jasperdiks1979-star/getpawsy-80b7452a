@@ -25,11 +25,35 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X, Download } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, TrendingUp, AlertTriangle, Brain, Wand2, Copy as CopyIcon, CalendarIcon, X, Download, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Range = '24h' | '7d' | '30d';
 type SourceFilter = 'all' | 'tiktok' | 'pinterest' | 'google' | 'organic' | 'direct' | 'other';
+
+interface Thresholds {
+  min_views: number;
+  min_prior_views: number;
+  winner_atc_z: number;
+  winner_views_z: number;
+  breakout_views_z: number;
+  breakout_views_delta_pct: number;
+  rising_atc_z: number;
+  rising_min_views: number;
+  falling_delta_pct: number;
+}
+
+const DEFAULT_THRESHOLDS: Thresholds = {
+  min_views: 5,
+  min_prior_views: 5,
+  winner_atc_z: 1,
+  winner_views_z: 0,
+  breakout_views_z: 1,
+  breakout_views_delta_pct: 200,
+  rising_atc_z: 0.5,
+  rising_min_views: 3,
+  falling_delta_pct: -30,
+};
 
 const SOURCE_OPTIONS: Array<{ value: SourceFilter; label: string }> = [
   { value: 'all', label: 'All sources' },
@@ -56,6 +80,7 @@ interface Summary {
     product_atc_rate_std_pp: number;
     sample_size: number;
   };
+  thresholds?: Thresholds;
   funnel: {
     pdp_views: number; cart_opens: number; add_to_cart: number;
     begin_checkout: number; payment_success: number;
@@ -125,6 +150,7 @@ export default function AiRevenuePage() {
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const [source, setSource] = useState<SourceFilter>('all');
+  const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -150,6 +176,14 @@ export default function AiRevenuePage() {
       params.set('range', r);
     }
     if (source && source !== 'all') params.set('source', source);
+    // Pass classification thresholds through to the edge function so winner /
+    // breakout / rising / falling cutoffs are tunable per request.
+    const defaults = DEFAULT_THRESHOLDS as unknown as Record<string, number>;
+    for (const [k, v] of Object.entries(thresholds as unknown as Record<string, number>)) {
+      if (v !== defaults[k]) {
+        params.set(k, String(v));
+      }
+    }
     for (const [k, v] of Object.entries(extra)) params.set(k, v);
     return params.toString();
   }
@@ -187,7 +221,7 @@ export default function AiRevenuePage() {
 
   function buildExportPayload() {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source } } };
+    return { ts, payload: { summary, insights, recommendations: recs, drafts, filters: { range, fromDate, toDate, source, thresholds } } };
   }
 
   async function loadSummary(r: Range) {
@@ -282,7 +316,7 @@ export default function AiRevenuePage() {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range, fromDate, toDate, source]);
+  }, [range, fromDate, toDate, source, thresholds]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
@@ -366,6 +400,57 @@ export default function AiRevenuePage() {
           </Button>
           <Popover>
             <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" title="Adjust classification thresholds">
+                <SlidersHorizontal className="w-4 h-4 mr-1" /> Thresholds
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Classification thresholds</div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setThresholds(DEFAULT_THRESHOLDS)}
+                >
+                  Reset
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tighten z-scores or raise the minimum sample size to surface only the strongest signals.
+                Loosen them to explore early movers.
+              </p>
+              {[
+                { key: 'min_views', label: 'Min views (winner)', step: 1 },
+                { key: 'winner_atc_z', label: 'Winner ATC z ≥', step: 0.1 },
+                { key: 'winner_views_z', label: 'Winner views z ≥', step: 0.1 },
+                { key: 'breakout_views_z', label: 'Breakout views z ≥', step: 0.1 },
+                { key: 'breakout_views_delta_pct', label: 'Breakout Δviews % ≥', step: 10 },
+                { key: 'rising_min_views', label: 'Min views (rising)', step: 1 },
+                { key: 'rising_atc_z', label: 'Rising ATC z ≥', step: 0.1 },
+                { key: 'min_prior_views', label: 'Min prior views (falling)', step: 1 },
+                { key: 'falling_delta_pct', label: 'Falling Δviews % ≤', step: 5 },
+              ].map(({ key, label, step }) => (
+                <div key={key} className="flex items-center justify-between gap-2">
+                  <label className="text-xs text-muted-foreground flex-1" htmlFor={`thr-${key}`}>{label}</label>
+                  <Input
+                    id={`thr-${key}`}
+                    type="number"
+                    step={step}
+                    value={(thresholds as unknown as Record<string, number>)[key]}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      setThresholds(prev => ({ ...prev, [key]: n }));
+                    }}
+                    className="h-8 w-24 text-right tabular-nums"
+                  />
+                </div>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button size="sm" variant="outline" disabled={!summary}><Download className="w-4 h-4 mr-1" /> Export</Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 space-y-1">
@@ -435,6 +520,14 @@ export default function AiRevenuePage() {
                   product views μ {summary.baselines.product_views_mean} ±{summary.baselines.product_views_std} ·
                   ATC-rate μ {summary.baselines.product_atc_rate_mean_pct}% ±{summary.baselines.product_atc_rate_std_pp}pp ·
                   prior window {summary.baselines.prior_events} events
+                </p>
+              )}
+              {summary.thresholds && (
+                <p className="text-[11px] text-muted-foreground">
+                  Cutoffs · winner: views ≥ {summary.thresholds.min_views}, views z ≥ {summary.thresholds.winner_views_z}, ATC z ≥ {summary.thresholds.winner_atc_z} ·
+                  breakout: views z ≥ {summary.thresholds.breakout_views_z} or Δ ≥ {summary.thresholds.breakout_views_delta_pct}% ·
+                  rising: views ≥ {summary.thresholds.rising_min_views}, ATC z ≥ {summary.thresholds.rising_atc_z} ·
+                  falling: prior ≥ {summary.thresholds.min_prior_views}, Δ ≤ {summary.thresholds.falling_delta_pct}%
                 </p>
               )}
             </div>
