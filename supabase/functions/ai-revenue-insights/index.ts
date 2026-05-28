@@ -541,8 +541,10 @@ Deno.serve(async (req) => {
           if (viewsDeltaPct === null) return isNew && p.views >= 3 ? 80 : 0;
           // Map -100..+500 % delta to 0..100 via log-ish curve.
           const d = Math.max(-100, Math.min(500, viewsDeltaPct));
-          if (d <= 0) return Math.round(50 + d * 0.5); // -100 -> 0, 0 -> 50
-          return Math.round(50 + Math.log10(1 + d) * 25); // +500 -> ~117 clamp
+          const raw = d <= 0
+            ? 50 + d * 0.5            // -100 -> 0, 0 -> 50
+            : 50 + Math.log10(1 + d) * 18; // +500 -> ~99
+          return Math.max(0, Math.min(100, Math.round(raw)));
         })(),
         conversion_momentum: (() => {
           if (priorViews < 3 || p.views < 3) return 50;
