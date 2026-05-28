@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
+import { useEffect } from 'react';
+import { fireCartOpen } from '@/lib/funnelEvents';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
 import { TieredIncentiveBar } from '@/components/cart/TieredIncentiveBar';
@@ -31,6 +33,20 @@ import {
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+
+  // Fire one cart_open event per session+page when the cart route mounts.
+  // Dedupe handled centrally in funnelEvents (10s window per session+event).
+  useEffect(() => {
+    try {
+      fireCartOpen({
+        item_count: items.length,
+        source_component: 'cart_page',
+      });
+    } catch {
+      /* analytics never breaks UX */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Apply flat rate shipping for orders under threshold
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
