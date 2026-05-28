@@ -163,6 +163,53 @@ export default function AiRevenuePage() {
   const [extraContext, setExtraContext] = useState<string>('');
   const [genBusy, setGenBusy] = useState(false);
 
+  // Per-product drilldown panel state. Lazily fetches when a row is clicked.
+  interface DrilldownMetrics { views: number; atc: number; atc_rate_pct: number; rage_clicks: number; avg_dwell_ms: number; sessions: number }
+  interface DrilldownSession {
+    session_id: string; started_at: string | null; ended_at: string | null;
+    event_count: number; views: number; atc: number; rage: number;
+    source: string; landing_path: string | null;
+    timeline: Array<{ event: string; path: string | null; dwell_ms: number | null; product_id: string | null; at: string }>;
+  }
+  interface DrilldownPayload {
+    product_id: string; product_name: string;
+    window: { since: string; until: string };
+    prior_window: { since: string; until: string };
+    source: string;
+    current: DrilldownMetrics; prior: DrilldownMetrics;
+    deltas: {
+      views_delta_pct: number | null; atc_delta_pct: number | null;
+      atc_rate_delta_pp: number; dwell_delta_pct: number | null;
+      rage_delta_pct: number | null; sessions_delta_pct: number | null;
+    };
+    example_sessions: DrilldownSession[];
+  }
+  const [drilldown, setDrilldown] = useState<DrilldownPayload | null>(null);
+  const [drillBusy, setDrillBusy] = useState(false);
+  const [drillOpen, setDrillOpen] = useState(false);
+  const [drillRow, setDrillRow] = useState<ProductRow | null>(null);
+
+  async function openDrilldown(p: ProductRow) {
+    setDrillRow(p);
+    setDrillOpen(true);
+    setDrillBusy(true);
+    setDrilldown(null);
+    try {
+      const qs = buildQuery(range, { drilldown: p.id });
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?${qs}`;
+      const resp = await fetch(url, {
+        headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      });
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.message || 'failed');
+      setDrilldown(json.drilldown as DrilldownPayload);
+    } catch (e: any) {
+      toast.error('Drilldown failed: ' + e.message);
+    } finally {
+      setDrillBusy(false);
+    }
+  }
+
   function buildQuery(r: Range, extra: Record<string, string> = {}): string {
     const params = new URLSearchParams();
     if (fromDate || toDate) {
