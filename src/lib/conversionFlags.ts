@@ -181,6 +181,10 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // calmer hub header (no gradient icon tile), refined chip nav with hairline
   // borders. Pure presentation; routing, schema, and links untouched.
   premiumGuidesHub: true,
+  // CI-21: newsletter capture polish — hairline border (no tinted bg), micro-
+  // caps eyebrow, calmer icon ring, refined success state. Pure presentation;
+  // signup handler, Supabase insert, and welcome email flow untouched.
+  premiumNewsletter: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
