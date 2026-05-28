@@ -16,6 +16,7 @@ import { firePaymentSuccess } from '@/lib/funnelEvents';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -25,6 +26,7 @@ const PaymentSuccess = () => {
   const [tracked, setTracked] = useState(false);
   const purchasedIdsRef = useRef<string[]>([]);
   const lpFiredRef = useRef(false);
+  const premiumThankYou = getConversionFlag('premiumThankYou');
 
   // Fire lp_funnel_events `payment_success` once per mount with the
   // Stripe session id from the URL. Purely additive — does NOT modify
@@ -201,41 +203,89 @@ const PaymentSuccess = () => {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-24 h-24 mx-auto mb-8 rounded-full bg-green-100 flex items-center justify-center"
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className={
+              premiumThankYou
+                ? 'w-20 h-20 mx-auto mb-8 rounded-full bg-[hsl(var(--success))/0.12] flex items-center justify-center'
+                : 'w-24 h-24 mx-auto mb-8 rounded-full bg-green-100 flex items-center justify-center'
+            }
           >
-            <CheckCircle className="w-12 h-12 text-green-600" />
+            <CheckCircle
+              className={
+                premiumThankYou
+                  ? 'w-10 h-10 text-[hsl(var(--success))]'
+                  : 'w-12 h-12 text-green-600'
+              }
+              strokeWidth={premiumThankYou ? 1.75 : 2}
+            />
           </motion.div>
 
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Thank You for Your Order! 🎉
+          <h1
+            className={
+              premiumThankYou
+                ? 'text-3xl md:text-4xl font-display font-semibold tracking-tight mb-3'
+                : 'text-3xl md:text-4xl font-display font-bold mb-4'
+            }
+          >
+            {premiumThankYou ? 'Thank you for your order' : 'Thank You for Your Order! 🎉'}
           </h1>
-          
-          <p className="text-lg text-muted-foreground mb-8">
-            Your order has been successfully placed. You'll receive a confirmation email 
-            shortly with your order details.
+
+          <p
+            className={
+              premiumThankYou
+                ? 'text-base md:text-lg text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed'
+                : 'text-lg text-muted-foreground mb-8'
+            }
+          >
+            Your order has been successfully placed. You'll receive a confirmation
+            email shortly with your order details.
           </p>
 
-          <div className="bg-muted/50 rounded-2xl p-6 mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Package className="w-6 h-6 text-primary" />
-              <h2 className="text-lg font-semibold">What happens next?</h2>
+          {premiumThankYou ? (
+            <div className="border border-border/50 rounded-2xl p-6 mb-8 text-left max-w-lg mx-auto bg-card/40">
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
+                <h2 className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">
+                  What happens next
+                </h2>
+              </div>
+              <ol className="space-y-3 text-sm text-foreground">
+                <li className="flex items-start gap-3">
+                  <span className="text-muted-foreground tabular-nums w-5">01</span>
+                  <span>Order confirmation arrives in your inbox</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-muted-foreground tabular-nums w-5">02</span>
+                  <span>We prepare and ship your order within 1–2 business days</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-muted-foreground tabular-nums w-5">03</span>
+                  <span>A tracking link follows once it's on the way</span>
+                </li>
+              </ol>
             </div>
-            <ul className="text-left space-y-3 text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">1.</span>
-                You'll receive an order confirmation via email
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">2.</span>
-                We'll prepare your order and ship it as soon as possible
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold">3.</span>
-                You'll receive a tracking code once your package is on its way
-              </li>
-            </ul>
-          </div>
+          ) : (
+            <div className="bg-muted/50 rounded-2xl p-6 mb-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Package className="w-6 h-6 text-primary" />
+                <h2 className="text-lg font-semibold">What happens next?</h2>
+              </div>
+              <ul className="text-left space-y-3 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">1.</span>
+                  You'll receive an order confirmation via email
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">2.</span>
+                  We'll prepare your order and ship it as soon as possible
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary font-bold">3.</span>
+                  You'll receive a tracking code once your package is on its way
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* Post-Purchase Offer */}
           {purchasedIdsRef.current.length > 0 && (
