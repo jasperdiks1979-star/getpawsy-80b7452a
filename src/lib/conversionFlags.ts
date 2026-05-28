@@ -21,6 +21,8 @@ export type ConversionFlagKey =
   | 'premiumCheckoutCart'
   | 'premiumPdpV2'
   | 'premiumCollection'
+  | 'premiumCheckoutV2'
+  | 'premiumNav'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -59,6 +61,16 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // the first 3 winners. Pure presentation; flip to false to restore
   // the legacy header / chip trust row / grid.
   premiumCollection: true,
+  // CI-11: premium checkout polish v2 — sticky mobile bar that hides on
+  // scroll-down / reveals on scroll-up, hairline trust row (matches CI-7/
+  // CI-8/CI-10), quieter terms warning, calmer payment-methods subtext.
+  // Pure presentation; Stripe redirect, pricing, and validation untouched.
+  premiumCheckoutV2: true,
+  // CI-11: premium global navbar polish — sticky header hides on
+  // scroll-down and reveals on scroll-up (mobile), tighter scrolled
+  // height, hairline border. Pure presentation; nav links + routes
+  // unchanged. Flip to false to restore the always-visible legacy nav.
+  premiumNav: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
