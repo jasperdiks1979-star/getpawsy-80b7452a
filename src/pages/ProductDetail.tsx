@@ -1004,6 +1004,21 @@ const ProductDetail = () => {
               {showTikTokVariant && (
                 <TikTokHero onCtaClick={scrollToBuy} inStock={inStock} />
               )}
+              {/*
+                Universal Litter Box conversion booster — shown to ALL traffic
+                on the automatic litter box PDP (mobile + desktop). Above the
+                title for maximum above-the-fold conversion impact.
+                Suppressed when the TikTok-only hero is already taking the
+                top slot to avoid stacking two heroes.
+              */}
+              {isLitterBoxProduct && !showTikTokVariant && (
+                <LitterBoxConversionBoost
+                  images={safeArray(product.images, []) as string[]}
+                  productName={product.name}
+                  inStock={inStock}
+                  reviewCount={reviews.length}
+                />
+              )}
               {/* Pinterest continuity banner — only when arriving from a pin */}
               {adIntent.source === 'pinterest' && (
                 <div className="mb-3">
