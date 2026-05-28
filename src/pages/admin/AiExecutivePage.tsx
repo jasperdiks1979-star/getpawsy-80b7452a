@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, RefreshCw, Sparkles, TrendingUp, AlertTriangle, Shield, Activity } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import SourceQualityCard from "@/components/admin/analytics/SourceQualityCard";
 
 type QueueRow = {
   id: string;
@@ -197,6 +198,9 @@ export default function AiExecutivePage() {
             </CardContent>
           </Card>
         )}
+
+        {/* CI-3 — traffic source quality breakdown */}
+        <SourceQualityCard days={7} />
 
         <Tabs defaultValue="queue">
           <TabsList>
