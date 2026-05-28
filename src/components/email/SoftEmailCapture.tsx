@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { trackNewsletterSignup } from '@/lib/analytics';
 import { toast } from 'sonner';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface SoftEmailCaptureProps {
   /** The context where this capture appears */
