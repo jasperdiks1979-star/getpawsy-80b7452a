@@ -188,6 +188,15 @@ const Checkout = () => {
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
 
+  // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
+  const scrollDir = useScrollDirection(8);
+  const premiumCheckoutV2 = getConversionFlag('premiumCheckoutV2');
+  const hideMobileBar =
+    premiumCheckoutV2 &&
+    scrollDir === 'down' &&
+    typeof window !== 'undefined' &&
+    window.scrollY > 200;
+
   // Valid discount codes
   const VALID_DISCOUNT_CODES: Record<string, { discount: number; label: string }> = {
     'WELCOME10': { discount: 10, label: 'Welcome 10% Off' },
