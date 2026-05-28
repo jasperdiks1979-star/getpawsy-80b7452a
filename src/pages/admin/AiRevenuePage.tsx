@@ -152,6 +152,22 @@ interface Insight { title: string; body: string; severity: 'info' | 'warning' | 
 interface Recommendation { id: string; category: string; severity: string; title: string; body: string; status: string; created_at: string }
 interface Draft { id: string; kind: string; output: string; created_at: string; product_name?: string | null }
 
+interface StoredInsight {
+  id: string;
+  scope: string;
+  scope_ref: string | null;
+  insight_type: string;
+  severity: 'info' | 'warn' | 'critical';
+  title: string;
+  body: string;
+  evidence: Record<string, unknown>;
+  recommendations: string[];
+  model: string | null;
+  generated_at: string;
+  dismissed_at: string | null;
+  snoozed_until: string | null;
+}
+
 const KIND_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'tiktok_hook', label: 'TikTok Hooks' },
   { value: 'pinterest_caption', label: 'Pinterest Captions' },
@@ -203,6 +219,12 @@ export default function AiRevenuePage() {
   const [productId, setProductId] = useState<string>('');
   const [extraContext, setExtraContext] = useState<string>('');
   const [genBusy, setGenBusy] = useState(false);
+
+  // Iteration B: persisted AI insights (separate from live `insights`)
+  const [storedInsights, setStoredInsights] = useState<StoredInsight[]>([]);
+  const [storedBusy, setStoredBusy] = useState(false);
+  const [storedSeverity, setStoredSeverity] = useState<'all' | 'info' | 'warn' | 'critical'>('all');
+  const [genInsightsBusy, setGenInsightsBusy] = useState(false);
 
   // Per-product drilldown panel state. Lazily fetches when a row is clicked.
   interface DrilldownMetrics { views: number; atc: number; atc_rate_pct: number; rage_clicks: number; avg_dwell_ms: number; sessions: number }
@@ -411,12 +433,78 @@ export default function AiRevenuePage() {
     }
   }
 
+  async function loadStoredInsights() {
+    setStoredBusy(true);
+    try {
+      const nowIso = new Date().toISOString();
+      let q = supabase
+        .from('ai_revenue_insights' as any)
+        .select('id,scope,scope_ref,insight_type,severity,title,body,evidence,recommendations,model,generated_at,dismissed_at,snoozed_until')
+        .is('dismissed_at', null)
+        .or(`snoozed_until.is.null,snoozed_until.lt.${nowIso}`)
+        .order('generated_at', { ascending: false })
+        .limit(50);
+      if (storedSeverity !== 'all') q = q.eq('severity', storedSeverity);
+      const { data, error } = await q;
+      if (error) throw error;
+      setStoredInsights((data || []) as unknown as StoredInsight[]);
+    } catch (e: any) {
+      toast.error('Could not load saved insights: ' + (e?.message || 'error'));
+    } finally {
+      setStoredBusy(false);
+    }
+  }
+
+  async function generateStoredInsights(force = false) {
+    setGenInsightsBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-insights-generate', {
+        body: { range, source, force },
+      });
+      if (error) throw error;
+      if (!data?.ok) {
+        if (data?.rate_limited) toast.error('AI rate-limited. Try again in a minute.');
+        else if (data?.credits_exhausted) toast.error('AI credits exhausted. Add funds in Workspace.');
+        else if (data?.deduped) toast.message(data?.message || 'Recent insights already exist.');
+        else throw new Error(data?.message || 'AI failed');
+        return;
+      }
+      toast.success(`Saved ${data.inserted ?? 0} new insights`);
+      loadStoredInsights();
+    } catch (e: any) {
+      toast.error('AI insights failed: ' + (e?.message || 'error'));
+    } finally {
+      setGenInsightsBusy(false);
+    }
+  }
+
+  async function dismissStoredInsight(id: string) {
+    const { error } = await supabase
+      .from('ai_revenue_insights' as any)
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setStoredInsights(prev => prev.filter(i => i.id !== id));
+  }
+
+  async function snoozeStoredInsight(id: string, days: number) {
+    const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from('ai_revenue_insights' as any)
+      .update({ snoozed_until: until })
+      .eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setStoredInsights(prev => prev.filter(i => i.id !== id));
+    toast.success(`Snoozed ${days}d`);
+  }
+
   useEffect(() => {
     loadSummary(range);
     // re-fetch when any filter changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range, fromDate, toDate, source, thresholds, priorMode, priorFrom, priorTo]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
+  useEffect(() => { loadStoredInsights(); /* eslint-disable-next-line */ }, [storedSeverity]);
 
   const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
   const breakouts = useMemo(() => summary?.breakout_products ?? [], [summary]);
@@ -861,7 +949,73 @@ export default function AiRevenuePage() {
         </div>
       </section>
 
-      {/* Saved Recommendations */}
+      {/* Iteration B — Saved AI Insights (gemini-2.5-pro, persisted, dedupe 24h) */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Brain className="w-4 h-4" /> Saved AI Insights
+            <Badge variant="outline" className="text-[10px] uppercase">pro model</Badge>
+          </h2>
+          <div className="flex gap-2 flex-wrap items-center">
+            <Select value={storedSeverity} onValueChange={(v) => setStoredSeverity(v as any)}>
+              <SelectTrigger className="h-8 w-[130px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="warn">Warn</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="ghost" onClick={() => loadStoredInsights()} disabled={storedBusy}>
+              {storedBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => generateStoredInsights(false)} disabled={genInsightsBusy}>
+              {genInsightsBusy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+              Generate
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => generateStoredInsights(true)} disabled={genInsightsBusy} title="Force regenerate (bypass 24h dedupe)">
+              Force
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Pro-model analysis of the current window, persisted with 24h dedupe. Dismiss or snooze to keep the list tidy.
+        </p>
+        <div className="space-y-2">
+          {storedInsights.length === 0 && !storedBusy && (
+            <p className="text-sm text-muted-foreground">No saved insights. Click Generate to run the pro analyst.</p>
+          )}
+          {storedInsights.map((it) => (
+            <Card key={it.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={severityVariant(it.severity === 'warn' ? 'warning' : it.severity)}>{it.severity}</Badge>
+                      <Badge variant="outline" className="text-[10px] uppercase">{it.scope}{it.scope_ref ? `:${it.scope_ref}` : ''}</Badge>
+                      <Badge variant="secondary" className="text-[10px]">{it.insight_type}</Badge>
+                      <span className="text-xs text-muted-foreground">{new Date(it.generated_at).toLocaleString()}</span>
+                    </div>
+                    <div className="font-medium mt-1">{it.title}</div>
+                    <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{it.body}</div>
+                    {Array.isArray(it.recommendations) && it.recommendations.length > 0 && (
+                      <ul className="text-sm mt-2 list-disc pl-5 space-y-0.5">
+                        {it.recommendations.map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    <Button size="sm" variant="ghost" onClick={() => snoozeStoredInsight(it.id, 1)}>1d</Button>
+                    <Button size="sm" variant="ghost" onClick={() => snoozeStoredInsight(it.id, 7)}>7d</Button>
+                    <Button size="sm" variant="outline" onClick={() => dismissStoredInsight(it.id)}>Dismiss</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       <section className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Recommendations</h2>
