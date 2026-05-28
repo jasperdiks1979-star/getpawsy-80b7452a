@@ -674,12 +674,23 @@ const SeoCollection = () => {
           </p>
         </header>
 
-        {/* Trust strip — always visible, compact */}
-        <div className="flex flex-wrap items-center gap-3 md:gap-6 py-2 px-3 mb-3 rounded-lg bg-secondary/20 border border-secondary/40 text-xs text-secondary-foreground">
-          <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Free Shipping on Orders $35+</span>
-          <span className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Returns</span>
-          <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Secure Checkout</span>
-        </div>
+        {/* Trust strip — CI-10 hairline row (matches CI-7 hero / CI-8 cart).
+            Flip premiumCollection to false to restore the legacy bordered chip row. */}
+        {getConversionFlag('premiumCollection') ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 mb-3 border-y border-border/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <span className="flex items-center gap-1.5"><Truck className="w-3 h-3" /> Free US shipping over $35</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <span className="flex items-center gap-1.5"><RotateCcw className="w-3 h-3" /> 30-day returns</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3 h-3" /> Secure checkout</span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3 md:gap-6 py-2 px-3 mb-3 rounded-lg bg-secondary/20 border border-secondary/40 text-xs text-secondary-foreground">
+            <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> Free Shipping on Orders $35+</span>
+            <span className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5 text-primary" /> 30-Day Returns</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Secure Checkout</span>
+          </div>
+        )}
 
         <SectionErrorBoundary section="SeoCollection-cluster-intro">
           <CollectionClusterIntro
@@ -690,12 +701,20 @@ const SeoCollection = () => {
 
         <div id="product-grid" />
         <section id="products" className="mb-8 md:mb-12">
-          <div className="flex items-center justify-between mb-3 md:mb-6">
-            <h2 className="text-lg md:text-2xl font-semibold">
+          <div className="flex items-end justify-between mb-3 md:mb-6">
+            <h2 className={
+              getConversionFlag('premiumCollection')
+                ? 'text-lg md:text-2xl font-display font-semibold tracking-tight'
+                : 'text-lg md:text-2xl font-semibold'
+            }>
               Shop {collection.name.replace(/\s–.*$/, '')}
             </h2>
-            <span className="text-muted-foreground text-xs md:text-sm">
-              {products.length} products
+            <span className={
+              getConversionFlag('premiumCollection')
+                ? 'text-muted-foreground text-[11px] md:text-xs uppercase tracking-wider tabular-nums'
+                : 'text-muted-foreground text-xs md:text-sm'
+            }>
+              {products.length} {getConversionFlag('premiumCollection') ? 'items · Sorted by best match' : 'products'}
             </span>
           </div>
 
