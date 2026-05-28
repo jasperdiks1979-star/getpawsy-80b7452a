@@ -16,7 +16,8 @@ export type ConversionFlagKey =
   | 'reassuranceCallout'
   | 'dynamicAtcLabel'
   | 'intentGating'
-  | 'premiumCard';
+  | 'premiumCard'
+  | 'premiumHero';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   emotionalHook: true,
@@ -31,6 +32,11 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // no emoji, refined spacing). Pure presentation; flip to false to restore
   // the legacy multi-badge card instantly.
   premiumCard: true,
+  // CI-7: premium DTC homepage hero — single emotional headline, single
+  // primary CTA, hairline trust row, no urgency ping, no secondary CTA.
+  // When on, the legacy duplicate trust strips below the hero are suppressed
+  // to keep above-the-fold quiet. Flip to false to restore legacy hero.
+  premiumHero: true,
 };
 
 const LS_KEY = 'gp_conversion_flags_v1';
