@@ -12,10 +12,12 @@
  *   - Surfaces real, verifiable signals only: live price + free-shipping rule.
  *   - Honors `inStock` so we never invite a tap on an unavailable product.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
+import { useHaptic } from '@/hooks/useHaptic';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface Props {
   onCtaClick: () => void;
@@ -27,6 +29,10 @@ interface Props {
 
 export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Cart' }: Props) {
   const [visible, setVisible] = useState(false);
+  const [hiddenByScroll, setHiddenByScroll] = useState(false);
+  const lastY = useRef(0);
+  const haptic = useHaptic();
+  const v2 = getConversionFlag('premiumPdpV2');
 
   useEffect(() => {
     const buy = document.getElementById('pdp-buy-box');
@@ -45,9 +51,75 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
     return () => io.disconnect();
   }, []);
 
+  // v2: also hide while scrolling down, reveal while scrolling up. Keeps
+  // the buy CTA reachable without covering content the user is reading.
+  useEffect(() => {
+    if (!v2) return;
+    lastY.current = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastY.current;
+        if (Math.abs(delta) > 6) {
+          setHiddenByScroll(delta > 0 && y > 200);
+          lastY.current = y;
+        }
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [v2]);
+
   if (!visible) return null;
 
   const qualifiesFreeShip = price >= FREE_SHIPPING_THRESHOLD;
+
+  const handleTap = () => {
+    if (v2 && inStock) haptic.trigger('medium');
+    onCtaClick();
+  };
+
+  if (v2) {
+    return (
+      <div
+        role="region"
+        aria-label="Quick add to cart"
+        className={[
+          'md:hidden fixed inset-x-0 bottom-0 z-40',
+          'border-t border-border/40 bg-background/95 backdrop-blur-md',
+          'supports-[backdrop-filter]:bg-background/80',
+          'px-3 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]',
+          'shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]',
+          'transition-transform duration-300 ease-out',
+          hiddenByScroll ? 'translate-y-full' : 'translate-y-0',
+        ].join(' ')}
+        style={{ contain: 'layout' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-[15px] font-semibold tracking-tight text-foreground tabular-nums">
+              ${price.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-muted-foreground truncate">
+              {qualifiesFreeShip ? 'Free US shipping' : `Free over $${FREE_SHIPPING_THRESHOLD}`}
+            </span>
+          </div>
+          <Button
+            onClick={handleTap}
+            disabled={!inStock}
+            className="ml-auto h-14 flex-1 gap-2 text-[15px] font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-transform"
+          >
+            <ShoppingCart className="w-[18px] h-[18px]" />
+            {inStock ? ctaLabel : 'Out of stock'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
