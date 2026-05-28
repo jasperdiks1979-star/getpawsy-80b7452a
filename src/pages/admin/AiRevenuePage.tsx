@@ -285,18 +285,10 @@ export default function AiRevenuePage() {
   }, [range, fromDate, toDate, source]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
-  const winners = useMemo(() => {
-    if (!summary) return [];
-    return summary.top_products
-      .filter(p => p.views >= 5 && p.atc_rate >= 3 && p.rage_clicks <= 1)
-      .sort((a, b) => b.atc_rate - a.atc_rate)
-      .slice(0, 8);
-  }, [summary]);
-
-  const rising = useMemo(() => {
-    if (!summary) return [];
-    return summary.breakout_products.filter(p => p.views >= 3 && p.views < 20).slice(0, 8);
-  }, [summary]);
+  const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
+  const breakouts = useMemo(() => summary?.breakout_products ?? [], [summary]);
+  const rising = useMemo(() => summary?.rising_products ?? [], [summary]);
+  const falling = useMemo(() => summary?.falling_products ?? [], [summary]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 py-6 space-y-6">
