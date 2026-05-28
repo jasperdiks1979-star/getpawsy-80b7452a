@@ -9,10 +9,30 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const LS_KEY = "gp.github.repo";
-const LS_TOKEN = "gp.github.token";
+// Secrets are kept in sessionStorage (cleared on tab close) instead of
+// localStorage to reduce blast radius if an XSS or extension reads storage.
+const SS_TOKEN = "gp.github.token";
 const LS_RENDER_URL = "gp.render.healthUrl";
-const LS_RENDER_API_KEY = "gp.render.apiKey";
+const SS_RENDER_API_KEY = "gp.render.apiKey";
 const LS_RENDER_SERVICE = "gp.render.serviceId";
+
+// One-time migration: purge any previously persisted secrets from localStorage.
+if (typeof window !== "undefined") {
+  try {
+    const legacyToken = window.localStorage.getItem("gp.github.token");
+    if (legacyToken) {
+      window.sessionStorage.setItem(SS_TOKEN, legacyToken);
+      window.localStorage.removeItem("gp.github.token");
+    }
+    const legacyRender = window.localStorage.getItem("gp.render.apiKey");
+    if (legacyRender) {
+      window.sessionStorage.setItem(SS_RENDER_API_KEY, legacyRender);
+      window.localStorage.removeItem("gp.render.apiKey");
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 type Commit = {
   sha: string;
@@ -25,7 +45,7 @@ type Branch = { name: string; commit: { sha: string } };
 export default function GitHubSyncStatusPage() {
   const [repo, setRepo] = useState<string>(() => localStorage.getItem(LS_KEY) || "");
   const [input, setInput] = useState(repo);
-  const [token, setToken] = useState<string>(() => localStorage.getItem(LS_TOKEN) || "");
+  const [token, setToken] = useState<string>(() => sessionStorage.getItem(SS_TOKEN) || "");
   const [tokenInput, setTokenInput] = useState(token);
   const [merging, setMerging] = useState<string | null>(null);
   const [mainCommit, setMainCommit] = useState<Commit | null>(null);
@@ -36,7 +56,7 @@ export default function GitHubSyncStatusPage() {
 
   const [renderUrl, setRenderUrl] = useState<string>(() => localStorage.getItem(LS_RENDER_URL) || "");
   const [renderUrlInput, setRenderUrlInput] = useState(renderUrl);
-  const [renderApiKey, setRenderApiKey] = useState<string>(() => localStorage.getItem(LS_RENDER_API_KEY) || "");
+  const [renderApiKey, setRenderApiKey] = useState<string>(() => sessionStorage.getItem(SS_RENDER_API_KEY) || "");
   const [renderApiKeyInput, setRenderApiKeyInput] = useState(renderApiKey);
   const [renderServiceId, setRenderServiceId] = useState<string>(() => localStorage.getItem(LS_RENDER_SERVICE) || "");
   const [renderServiceIdInput, setRenderServiceIdInput] = useState(renderServiceId);
@@ -89,8 +109,8 @@ export default function GitHubSyncStatusPage() {
 
   const saveToken = () => {
     const t = tokenInput.trim();
-    if (t) localStorage.setItem(LS_TOKEN, t);
-    else localStorage.removeItem(LS_TOKEN);
+    if (t) sessionStorage.setItem(SS_TOKEN, t);
+    else sessionStorage.removeItem(SS_TOKEN);
     setToken(t);
     toast({ title: t ? "Token saved" : "Token cleared" });
   };
@@ -211,7 +231,7 @@ export default function GitHubSyncStatusPage() {
     const key = renderApiKeyInput.trim();
     const svc = renderServiceIdInput.trim();
     url ? localStorage.setItem(LS_RENDER_URL, url) : localStorage.removeItem(LS_RENDER_URL);
-    key ? localStorage.setItem(LS_RENDER_API_KEY, key) : localStorage.removeItem(LS_RENDER_API_KEY);
+    key ? sessionStorage.setItem(SS_RENDER_API_KEY, key) : sessionStorage.removeItem(SS_RENDER_API_KEY);
     svc ? localStorage.setItem(LS_RENDER_SERVICE, svc) : localStorage.removeItem(LS_RENDER_SERVICE);
     setRenderUrl(url);
     setRenderApiKey(key);
