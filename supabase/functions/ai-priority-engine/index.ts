@@ -78,7 +78,7 @@ async function gatherCandidates(admin: ReturnType<typeof createClient>): Promise
   // 1. Pull recent insights
   const { data: insights } = await admin
     .from("ai_revenue_insights")
-    .select("id,scope,scope_ref,severity,title,body,evidence,generated_at")
+    .select("id,scope,scope_ref,insight_type,severity,title,body,evidence,generated_at")
     .gte("generated_at", sinceIso)
     .is("dismissed_at", null)
     .limit(50);
@@ -88,7 +88,21 @@ async function gatherCandidates(admin: ReturnType<typeof createClient>): Promise
     const revImpact = Number((ev.expected_revenue_30d as number) ?? 0);
     const traffic = Number((ev.sessions as number) ?? 0);
     const sevWeight = ins.severity === "critical" ? 0.9 : ins.severity === "warn" ? 0.7 : 0.5;
-    const cat = ins.scope === "product" ? (revImpact >= 0 ? "winner" : "loser") : "anomaly";
+    const itype = (ins as { insight_type?: string }).insight_type ?? "";
+    let cat: string;
+    if (itype === "conversion_friction") {
+      cat = "friction";
+    } else if (itype === "conversion_potential_score") {
+      const label = String((ev.label as string) ?? "");
+      cat =
+        label === "breakout" || label === "ad_scale_candidate" || label === "homepage_candidate"
+          ? "winner"
+          : label === "weak" || label === "dead_traffic_magnet"
+            ? "loser"
+            : "winner";
+    } else {
+      cat = ins.scope === "product" ? (revImpact >= 0 ? "winner" : "loser") : "anomaly";
+    }
     candidates.push({
       source_kind: "insight",
       source_ref: ins.id,
