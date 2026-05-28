@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 import { HeroSection } from "@/components/home/HeroSection";
+import { HeroSectionPremium } from "@/components/home/HeroSectionPremium";
+import { getConversionFlag } from "@/lib/conversionFlags";
 import { useCanonical } from "@/components/seo/CanonicalTag";
 import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
@@ -59,14 +61,18 @@ const HomePage = () => {
         />
       </Helmet>
 
-      {/* 1. Hero */}
-      <HeroSection />
+      {/* 1. Hero — CI-7 premium variant by default, legacy on flag flip. */}
+      {getConversionFlag('premiumHero') ? <HeroSectionPremium /> : <HeroSection />}
 
-      {/* 1b. Trust strip — recent reviews + ship-time badges directly under hero */}
-      <HeroTrustStrip />
-
-      {/* 1c. US-only trust strip — shown to non-EU visitors (Pinterest US traffic) */}
-      <UsOnlyTrustStrip />
+      {/* 1b/1c. Legacy trust strips — suppressed when the premium hero is on,
+          because the premium hero already embeds a calm trust row. Keeps the
+          fold quiet for cold TikTok/Pinterest traffic. */}
+      {!getConversionFlag('premiumHero') && (
+        <>
+          <HeroTrustStrip />
+          <UsOnlyTrustStrip />
+        </>
+      )}
 
       {/* 2. Benefits */}
       <BenefitsSection />
