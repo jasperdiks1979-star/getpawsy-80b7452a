@@ -624,8 +624,8 @@ export default function AiRevenuePage() {
                           const daLabel = da == null ? '—' : `${da >= 0 ? '+' : ''}${da}pp`;
                           const daColor = da == null ? 'text-muted-foreground' : da > 0 ? 'text-emerald-600' : da < 0 ? 'text-red-600' : '';
                           return (
-                            <tr key={p.id} className="border-t">
-                              <td className="p-2 max-w-[14rem] truncate">{p.name}</td>
+                            <tr key={p.id} className="border-t hover:bg-muted/30 cursor-pointer" onClick={() => openDrilldown(p)} title="Open drilldown">
+                              <td className="p-2 max-w-[14rem] truncate text-primary underline-offset-2 hover:underline">{p.name}</td>
                               <td className="p-2 text-right tabular-nums">{p.views}</td>
                               <td className={`p-2 text-right tabular-nums ${dvColor}`}>{dvLabel}</td>
                               <td className="p-2 text-right tabular-nums text-muted-foreground">{p.views_z ?? 0}</td>
