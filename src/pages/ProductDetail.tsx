@@ -1093,8 +1093,15 @@ const ProductDetail = () => {
                   generateClarityIntro(product.name, product.category || "")}
               </p>
 
-              {/* CI-2: Emotional hook — deterministic per category, gated by flag. */}
-              <div className="mt-3">
+              {/* CI-2: Emotional hook — deterministic per category, gated by flag.
+                  CI-9: under premiumPdpV2 we hide it on mobile (the subline +
+                  SwipeBenefitChips already carry the emotional read above the
+                  fold). Desktop still renders it. */}
+              <div
+                className={
+                  getConversionFlag('premiumPdpV2') ? 'mt-3 hidden md:block' : 'mt-3'
+                }
+              >
                 <EmotionalHook
                   category={product.category || undefined}
                   productName={product.name}
