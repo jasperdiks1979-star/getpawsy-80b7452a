@@ -45,6 +45,17 @@ interface Summary {
   range: Range;
   total_events: number;
   total_sessions: number;
+  baselines?: {
+    prior_since: string;
+    prior_until: string;
+    prior_events: number;
+    overall_atc_rate_pct: number;
+    product_views_mean: number;
+    product_views_std: number;
+    product_atc_rate_mean_pct: number;
+    product_atc_rate_std_pp: number;
+    sample_size: number;
+  };
   funnel: {
     pdp_views: number; cart_opens: number; add_to_cart: number;
     begin_checkout: number; payment_success: number;
@@ -54,12 +65,25 @@ interface Summary {
   devices: Record<string, number>;
   os: Record<string, number>;
   traffic_quality: Array<{ source: string; sessions: number; views: number; atc_rate: number; bounce_rate: number; avg_dwell_ms: number }>;
-  top_products: Array<{ id: string; name: string; views: number; atc: number; atc_rate: number; avg_dwell_ms: number; rage_clicks: number; sessions: number }>;
+  top_products: ProductRow[];
   breakout_products: Summary['top_products'];
+  winner_products?: Summary['top_products'];
+  rising_products?: Summary['top_products'];
+  falling_products?: Summary['top_products'];
   best_dwell: Summary['top_products'];
   worst_rage: Summary['top_products'];
   top_landing: Array<{ path: string; count: number }>;
   top_exit: Array<{ path: string; count: number }>;
+}
+
+interface ProductRow {
+  id: string; name: string; views: number; atc: number; atc_rate: number;
+  avg_dwell_ms: number; rage_clicks: number; sessions: number;
+  prior_views?: number; prior_atc_rate?: number;
+  views_delta_pct?: number | null; atc_rate_delta_pp?: number;
+  views_z?: number; atc_rate_z?: number;
+  wilson_atc_lower?: number; is_new?: boolean;
+  classification?: 'winner' | 'breakout' | 'rising' | 'falling' | 'stable';
 }
 
 interface Insight { title: string; body: string; severity: 'info' | 'warning' | 'critical'; category: string; product_id?: string | null }
@@ -261,18 +285,10 @@ export default function AiRevenuePage() {
   }, [range, fromDate, toDate, source]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
-  const winners = useMemo(() => {
-    if (!summary) return [];
-    return summary.top_products
-      .filter(p => p.views >= 5 && p.atc_rate >= 3 && p.rage_clicks <= 1)
-      .sort((a, b) => b.atc_rate - a.atc_rate)
-      .slice(0, 8);
-  }, [summary]);
-
-  const rising = useMemo(() => {
-    if (!summary) return [];
-    return summary.breakout_products.filter(p => p.views >= 3 && p.views < 20).slice(0, 8);
-  }, [summary]);
+  const winners = useMemo(() => summary?.winner_products ?? [], [summary]);
+  const breakouts = useMemo(() => summary?.breakout_products ?? [], [summary]);
+  const rising = useMemo(() => summary?.rising_products ?? [], [summary]);
+  const falling = useMemo(() => summary?.falling_products ?? [], [summary]);
 
   return (
     <div className="max-w-7xl mx-auto px-3 py-6 space-y-6">
@@ -411,31 +427,75 @@ export default function AiRevenuePage() {
 
           {/* Product Intelligence */}
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Product Intelligence</h2>
+            <div className="flex items-end justify-between flex-wrap gap-2">
+              <h2 className="text-lg font-semibold">Product Intelligence</h2>
+              {summary.baselines && (
+                <p className="text-xs text-muted-foreground">
+                  Baseline: site ATC {summary.baselines.overall_atc_rate_pct}% ·
+                  product views μ {summary.baselines.product_views_mean} ±{summary.baselines.product_views_std} ·
+                  ATC-rate μ {summary.baselines.product_atc_rate_mean_pct}% ±{summary.baselines.product_atc_rate_std_pp}pp ·
+                  prior window {summary.baselines.prior_events} events
+                </p>
+              )}
+            </div>
             <Tabs defaultValue="top">
               <TabsList className="flex-wrap">
                 <TabsTrigger value="top">Most viewed</TabsTrigger>
-                <TabsTrigger value="winners">Winners</TabsTrigger>
-                <TabsTrigger value="rising">Rising</TabsTrigger>
+                <TabsTrigger value="winners">Winners ({winners.length})</TabsTrigger>
+                <TabsTrigger value="breakout">Breakout ({breakouts.length})</TabsTrigger>
+                <TabsTrigger value="rising">Rising ({rising.length})</TabsTrigger>
+                <TabsTrigger value="falling">Falling ({falling.length})</TabsTrigger>
                 <TabsTrigger value="dwell">Best dwell</TabsTrigger>
                 <TabsTrigger value="rage">High rage</TabsTrigger>
               </TabsList>
               {[
                 { v: 'top', list: summary.top_products },
                 { v: 'winners', list: winners },
+                { v: 'breakout', list: breakouts },
                 { v: 'rising', list: rising },
+                { v: 'falling', list: falling },
                 { v: 'dwell', list: summary.best_dwell },
                 { v: 'rage', list: summary.worst_rage },
               ].map(({ v, list }) => (
                 <TabsContent key={v} value={v}>
                   <Card><CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/40 text-xs uppercase"><tr><th className="text-left p-2">Product</th><th className="text-right p-2">Views</th><th className="text-right p-2">ATC</th><th className="text-right p-2">ATC %</th><th className="text-right p-2">Dwell</th><th className="text-right p-2">Rage</th></tr></thead>
+                      <thead className="bg-muted/40 text-xs uppercase">
+                        <tr>
+                          <th className="text-left p-2">Product</th>
+                          <th className="text-right p-2" title="Page views in current window">Views</th>
+                          <th className="text-right p-2" title="Views vs prior period of equal length">Δ Views</th>
+                          <th className="text-right p-2" title="Views z-score vs site mean">z</th>
+                          <th className="text-right p-2">ATC %</th>
+                          <th className="text-right p-2" title="ATC % change in percentage points vs prior period">Δ ATC pp</th>
+                          <th className="text-right p-2" title="Wilson 95% lower bound of ATC rate (sample-size aware)">Wilson</th>
+                          <th className="text-right p-2">Dwell</th>
+                          <th className="text-right p-2">Rage</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {list.length === 0 && <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No data yet for this slice</td></tr>}
-                        {list.map(p => (
-                          <tr key={p.id} className="border-t"><td className="p-2 max-w-[14rem] truncate">{p.name}</td><td className="p-2 text-right tabular-nums">{p.views}</td><td className="p-2 text-right tabular-nums">{p.atc}</td><td className="p-2 text-right tabular-nums">{p.atc_rate}%</td><td className="p-2 text-right tabular-nums">{(p.avg_dwell_ms / 1000).toFixed(1)}s</td><td className="p-2 text-right tabular-nums">{p.rage_clicks}</td></tr>
-                        ))}
+                        {list.length === 0 && <tr><td colSpan={9} className="p-4 text-center text-muted-foreground">No data yet for this slice</td></tr>}
+                        {list.map((p: ProductRow) => {
+                          const dv = p.views_delta_pct;
+                          const dvLabel = p.is_new ? 'NEW' : dv == null ? '—' : `${dv >= 0 ? '+' : ''}${dv}%`;
+                          const dvColor = p.is_new ? 'text-emerald-600 font-semibold' : dv == null ? 'text-muted-foreground' : dv > 0 ? 'text-emerald-600' : dv < 0 ? 'text-red-600' : '';
+                          const da = p.atc_rate_delta_pp;
+                          const daLabel = da == null ? '—' : `${da >= 0 ? '+' : ''}${da}pp`;
+                          const daColor = da == null ? 'text-muted-foreground' : da > 0 ? 'text-emerald-600' : da < 0 ? 'text-red-600' : '';
+                          return (
+                            <tr key={p.id} className="border-t">
+                              <td className="p-2 max-w-[14rem] truncate">{p.name}</td>
+                              <td className="p-2 text-right tabular-nums">{p.views}</td>
+                              <td className={`p-2 text-right tabular-nums ${dvColor}`}>{dvLabel}</td>
+                              <td className="p-2 text-right tabular-nums text-muted-foreground">{p.views_z ?? 0}</td>
+                              <td className="p-2 text-right tabular-nums">{p.atc_rate}%</td>
+                              <td className={`p-2 text-right tabular-nums ${daColor}`}>{daLabel}</td>
+                              <td className="p-2 text-right tabular-nums text-muted-foreground">{p.wilson_atc_lower ?? 0}%</td>
+                              <td className="p-2 text-right tabular-nums">{(p.avg_dwell_ms / 1000).toFixed(1)}s</td>
+                              <td className="p-2 text-right tabular-nums">{p.rage_clicks}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </CardContent></Card>
