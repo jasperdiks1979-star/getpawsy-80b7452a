@@ -746,9 +746,11 @@ const Checkout = () => {
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Discover</div>
                   <div className="bg-muted px-3 py-1.5 rounded text-xs font-medium">Link</div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Apple Pay & Google Pay appear automatically on supported devices for 1-tap checkout.
-                </p>
+                {!premiumCheckoutV2 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Apple Pay & Google Pay appear automatically on supported devices for 1-tap checkout.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -822,11 +824,17 @@ const Checkout = () => {
                 </div>
                 
                 {!acceptedTerms && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                    <p className="text-xs text-amber-800 dark:text-amber-200">
-                      ⚠️ You must accept the terms and conditions to proceed with your order.
+                  premiumCheckoutV2 ? (
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground border-t border-border/40 pt-3 mt-1">
+                      Accept the terms above to continue
                     </p>
-                  </div>
+                  ) : (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                        ⚠️ You must accept the terms and conditions to proceed with your order.
+                      </p>
+                    </div>
+                  )
                 )}
               </div>
             </div>
