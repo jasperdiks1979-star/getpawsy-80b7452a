@@ -14,7 +14,8 @@ export type ConversionFlagKey =
   | 'mobileTrustBar'
   | 'swipeBenefitChips'
   | 'reassuranceCallout'
-  | 'dynamicAtcLabel';
+  | 'dynamicAtcLabel'
+  | 'intentGating';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   emotionalHook: true,
@@ -22,6 +23,9 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   swipeBenefitChips: true,
   reassuranceCallout: true,
   dynamicAtcLabel: true,
+  // When true, weak-intent visitors see the baseline PDP without ad-driven
+  // headline overrides or Pinterest-specific banners. Off = legacy behavior.
+  intentGating: true,
 };
 
 const LS_KEY = 'gp_conversion_flags_v1';
