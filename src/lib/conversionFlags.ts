@@ -20,6 +20,7 @@ export type ConversionFlagKey =
   | 'premiumHero'
   | 'premiumCheckoutCart'
   | 'premiumPdpV2'
+  | 'premiumCollection'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -52,6 +53,12 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // and the gallery uses a calmer zoom hint. Pure presentation; flip to
   // false to restore CI-2/CI-7 behavior instantly.
   premiumPdpV2: true,
+  // CI-10: premium DTC collection-page polish — hairline trust row
+  // (matches CI-7/CI-8), denser mobile grid, calmer infinite-scroll
+  // hairline divider, and subtle 'Customer favorite' rank emphasis on
+  // the first 3 winners. Pure presentation; flip to false to restore
+  // the legacy header / chip trust row / grid.
+  premiumCollection: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
