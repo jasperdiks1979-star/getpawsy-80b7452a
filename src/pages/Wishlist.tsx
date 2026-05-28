@@ -32,6 +32,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { safeString, safeNumber } from '@/lib/safe-render';
+import { getConversionFlag } from '@/lib/conversionFlags';
 
 // Wishlist item skeleton component
 const WishlistItemSkeleton = memo(() => (
@@ -72,6 +73,7 @@ const Wishlist = () => {
   const { addItem } = useCart();
   const [sortBy, setSortBy] = useState<SortOption>('added-desc');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const premiumV1 = getConversionFlag('premiumWishlist');
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['wishlist-products', wishlist],
@@ -167,10 +169,25 @@ const Wishlist = () => {
         <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
         <div className="container px-4 md:px-6 py-16 text-center">
           <div className="max-w-md mx-auto">
-            <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Your wishlist is empty</h2>
+            {premiumV1 ? (
+              <div className="mx-auto mb-5 inline-flex items-center justify-center w-14 h-14 rounded-full border border-border/60">
+                <Heart className="w-6 h-6 text-muted-foreground" />
+              </div>
+            ) : (
+              <Heart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            )}
+            {premiumV1 && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                Wishlist
+              </p>
+            )}
+            <h2 className={premiumV1 ? "font-display text-2xl font-semibold mb-2 tracking-tight" : "text-2xl font-bold mb-2"}>
+              {premiumV1 ? "Nothing saved yet" : "Your wishlist is empty"}
+            </h2>
             <p className="text-muted-foreground mb-6">
-              Add products to your wishlist by clicking the heart icon.
+              {premiumV1
+                ? "Tap the heart on any product to keep it here for later."
+                : "Add products to your wishlist by clicking the heart icon."}
             </p>
             <Link to="/products">
               <Button className="gap-2">
@@ -193,7 +210,14 @@ const Wishlist = () => {
           <div className="flex items-center gap-3">
             <Heart className="w-8 h-8 text-primary fill-primary" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">My Wishlist</h1>
+              {premiumV1 && (
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                  Account · Wishlist
+                </p>
+              )}
+              <h1 className={premiumV1 ? "font-display text-2xl md:text-3xl font-semibold tracking-tight" : "text-2xl md:text-3xl font-bold"}>
+                {premiumV1 ? "Saved for later" : "My Wishlist"}
+              </h1>
               <p className="text-muted-foreground">
                 {wishlist.length} {wishlist.length === 1 ? 'item' : 'items'} saved
               </p>
@@ -299,7 +323,11 @@ const Wishlist = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                   transition={{ duration: 0.3 }}
-                  className="bg-card rounded-xl overflow-hidden shadow-card group"
+                  className={
+                    premiumV1
+                      ? "bg-card rounded-xl overflow-hidden border border-border/60 group"
+                      : "bg-card rounded-xl overflow-hidden shadow-card group"
+                  }
                 >
                   {/* Image */}
                   <Link to={`/product/${product.id}`}>
@@ -316,11 +344,19 @@ const Wishlist = () => {
                   <div className="p-4">
                     <Link to={`/product/${product.id}`}>
                       {product.category && (
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                        <p className={
+                          premiumV1
+                            ? "text-[10px] font-medium text-muted-foreground uppercase tracking-[0.18em] mb-1"
+                            : "text-xs text-muted-foreground uppercase tracking-wider mb-1"
+                        }>
                           {safeString(product.category)}
                         </p>
                       )}
-                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                      <h3 className={
+                        premiumV1
+                          ? "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors tracking-tight"
+                          : "font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors"
+                      }>
                         {safeString(product.name)}
                       </h3>
                     </Link>
