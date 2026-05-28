@@ -1725,6 +1725,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ai-revenue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiRevenuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="momentum"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
