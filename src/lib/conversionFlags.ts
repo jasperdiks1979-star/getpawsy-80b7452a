@@ -42,6 +42,7 @@ export type ConversionFlagKey =
   | 'premiumSocialProof'
   | 'premiumSearchUI'
   | 'premiumGuidesHub'
+  | 'premiumNewsletter'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
