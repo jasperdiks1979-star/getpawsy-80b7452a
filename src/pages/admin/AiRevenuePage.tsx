@@ -779,6 +779,121 @@ export default function AiRevenuePage() {
       <p className="text-xs text-muted-foreground pt-4">
         Drafts are not auto-published. Stripe, checkout, webhooks, and SEO canonicals are untouched.
       </p>
+
+      <Dialog open={drillOpen} onOpenChange={setDrillOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
+              <span className="truncate">{drillRow?.name ?? 'Product drilldown'}</span>
+              {drillRow?.classification && drillRow.classification !== 'stable' && (
+                <Badge variant="outline" className="uppercase text-[10px]">{drillRow.classification}</Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Current window vs equal-length prior period. Click a session to inspect its event timeline.
+            </DialogDescription>
+          </DialogHeader>
+
+          {drillBusy && (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading drilldown…
+            </div>
+          )}
+
+          {!drillBusy && drilldown && (
+            <div className="space-y-4">
+              {/* Metric comparison grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                {([
+                  { k: 'views', label: 'Views', fmt: (v: number) => String(v), delta: drilldown.deltas.views_delta_pct, unit: '%' },
+                  { k: 'atc', label: 'ATCs', fmt: (v: number) => String(v), delta: drilldown.deltas.atc_delta_pct, unit: '%' },
+                  { k: 'atc_rate_pct', label: 'ATC rate', fmt: (v: number) => `${v}%`, delta: drilldown.deltas.atc_rate_delta_pp, unit: 'pp' },
+                  { k: 'avg_dwell_ms', label: 'Avg dwell', fmt: (v: number) => `${(v / 1000).toFixed(1)}s`, delta: drilldown.deltas.dwell_delta_pct, unit: '%' },
+                  { k: 'rage_clicks', label: 'Rage clicks', fmt: (v: number) => String(v), delta: drilldown.deltas.rage_delta_pct, unit: '%', invert: true },
+                  { k: 'sessions', label: 'Sessions', fmt: (v: number) => String(v), delta: drilldown.deltas.sessions_delta_pct, unit: '%' },
+                ] as const).map((m) => {
+                  const cur = (drilldown.current as any)[m.k] as number;
+                  const pri = (drilldown.prior as any)[m.k] as number;
+                  const d = m.delta;
+                  const good = d == null ? null : (m as any).invert ? d < 0 : d > 0;
+                  const color = d == null ? 'text-muted-foreground' : good ? 'text-emerald-600' : d === 0 ? 'text-muted-foreground' : 'text-red-600';
+                  const label = d == null ? '—' : `${d >= 0 ? '+' : ''}${d}${m.unit}`;
+                  return (
+                    <Card key={m.k}>
+                      <CardContent className="p-3">
+                        <div className="text-xs uppercase text-muted-foreground">{m.label}</div>
+                        <div className="text-lg font-semibold tabular-nums">{m.fmt(cur)}</div>
+                        <div className="text-xs flex justify-between gap-2">
+                          <span className="text-muted-foreground">prior {m.fmt(pri)}</span>
+                          <span className={`tabular-nums ${color}`}>{label}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Classification basis */}
+              {drillRow && (
+                <div className="text-xs text-muted-foreground border rounded p-2 leading-relaxed">
+                  Classification basis · views z {drillRow.views_z ?? 0} ·
+                  ATC z {drillRow.atc_rate_z ?? 0} ·
+                  Wilson lower {drillRow.wilson_atc_lower ?? 0}% ·
+                  {drillRow.is_new ? ' new product (no prior baseline)' : ` prior views ${drillRow.prior_views ?? 0}`}
+                </div>
+              )}
+
+              {/* Example sessions */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2">
+                  Example sessions ({drilldown.example_sessions.length})
+                </h3>
+                {drilldown.example_sessions.length === 0 && (
+                  <div className="text-sm text-muted-foreground border rounded p-3">
+                    No sessions touched this product in the current window.
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {drilldown.example_sessions.map((s) => (
+                    <details key={s.session_id} className="border rounded">
+                      <summary className="cursor-pointer p-2 text-sm flex flex-wrap items-center gap-2">
+                        <code className="text-xs">{s.session_id.slice(0, 8)}</code>
+                        <Badge variant="secondary" className="text-[10px] uppercase">{s.source}</Badge>
+                        <span className="text-muted-foreground text-xs">{s.landing_path}</span>
+                        <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                          {s.event_count} events · {s.views} views · {s.atc} ATC{s.rage ? ` · ${s.rage} rage` : ''}
+                        </span>
+                      </summary>
+                      <div className="p-2 border-t bg-muted/20 overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="text-muted-foreground">
+                            <tr>
+                              <th className="text-left p-1">Time</th>
+                              <th className="text-left p-1">Event</th>
+                              <th className="text-left p-1">Path</th>
+                              <th className="text-right p-1">Dwell</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {s.timeline.map((e, i) => (
+                              <tr key={i} className={`border-t ${e.product_id === drilldown.product_id ? 'bg-primary/5' : ''}`}>
+                                <td className="p-1 tabular-nums whitespace-nowrap">{new Date(e.at).toLocaleTimeString()}</td>
+                                <td className="p-1 font-mono">{e.event}</td>
+                                <td className="p-1 truncate max-w-[16rem]">{e.path}</td>
+                                <td className="p-1 text-right tabular-nums">{e.dwell_ms ? `${(e.dwell_ms / 1000).toFixed(1)}s` : '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
