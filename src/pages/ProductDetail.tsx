@@ -1172,10 +1172,45 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
-            {/* Above-the-fold conversion block with winner badge */}
-            <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
-            {/* Trust Stack — PDP merchant trust signals */}
-            <div className="bg-muted/40 rounded-xl p-4 space-y-2.5 border border-border/50">
+            {/*
+              Above-the-fold conversion block with winner badge.
+              On mobile, when the new MobileStickyTrustBar (hairline strip
+              above the gallery) is active, we render a compact variant that
+              drops the duplicated shipping/delivery/returns triplet. Desktop
+              keeps the full block since the mobile strip is `md:hidden`.
+              Fully reversible by toggling `mobileTrustBar`.
+            */}
+            {getConversionFlag('mobileTrustBar') ? (
+              <>
+                <div className="md:hidden">
+                  <ConversionBlock
+                    productName={product.name}
+                    category={product.category || undefined}
+                    productId={product.id}
+                    bestForOverride={adIntent.bestFor}
+                    trustCompact
+                  />
+                </div>
+                <div className="hidden md:block">
+                  <ConversionBlock
+                    productName={product.name}
+                    category={product.category || undefined}
+                    productId={product.id}
+                    bestForOverride={adIntent.bestFor}
+                  />
+                </div>
+              </>
+            ) : (
+              <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
+            )}
+            {/*
+              Trust Stack — PDP merchant trust signals. Fully duplicates the
+              top MobileStickyTrustBar on mobile, so we hide it there when
+              the strip is active. Desktop keeps the full block.
+            */}
+            <div
+              className={`bg-muted/40 rounded-xl p-4 space-y-2.5 border border-border/50 ${getConversionFlag('mobileTrustBar') ? 'hidden md:block' : ''}`}
+            >
               <div className="flex items-center gap-2 text-sm text-foreground font-medium">
                 <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
                 In stock — Ships to United States
