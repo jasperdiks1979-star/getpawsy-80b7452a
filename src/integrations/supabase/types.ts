@@ -576,6 +576,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_revenue_insights: {
+        Row: {
+          body: string
+          created_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          evidence: Json
+          generated_at: string
+          id: string
+          insight_type: string
+          model: string | null
+          prompt_hash: string | null
+          recommendations: Json
+          scope: string
+          scope_ref: string | null
+          severity: string
+          snoozed_until: string | null
+          title: string
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          evidence?: Json
+          generated_at?: string
+          id?: string
+          insight_type: string
+          model?: string | null
+          prompt_hash?: string | null
+          recommendations?: Json
+          scope: string
+          scope_ref?: string | null
+          severity?: string
+          snoozed_until?: string | null
+          title: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          evidence?: Json
+          generated_at?: string
+          id?: string
+          insight_type?: string
+          model?: string | null
+          prompt_hash?: string | null
+          recommendations?: Json
+          scope?: string
+          scope_ref?: string | null
+          severity?: string
+          snoozed_until?: string | null
+          title?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       ai_revenue_recommendations: {
         Row: {
           body: string
