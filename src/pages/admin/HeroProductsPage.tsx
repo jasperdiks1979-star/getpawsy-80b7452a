@@ -52,13 +52,23 @@ export default function HeroProductsPage() {
       const [{ data: prodData }, { data: prioData }] = await Promise.all([
         supabase
           .from('products_public')
-          .select('id, name, slug, category, image')
+          .select('id, name, slug, category, image_url')
           .order('name', { ascending: true })
           .limit(500),
         supabase.from('product_priority').select('product_id, tier'),
       ]);
       if (cancel) return;
-      setProducts((prodData ?? []) as ProductRow[]);
+      const rows: ProductRow[] = (prodData ?? [])
+        .filter((r): r is { id: string; name: string; slug: string; category: string | null; image_url: string | null } =>
+          !!(r && typeof r === 'object' && 'id' in r && r.id))
+        .map((r) => ({
+          id: r.id,
+          name: r.name ?? '(untitled)',
+          slug: r.slug ?? '',
+          category: r.category,
+          image: r.image_url,
+        }));
+      setProducts(rows);
       const map: Record<string, ProductTier> = {};
       for (const r of (prioData ?? []) as Array<{ product_id: string; tier: ProductTier }>) {
         map[r.product_id] = r.tier;
