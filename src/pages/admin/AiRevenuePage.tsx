@@ -146,6 +146,10 @@ interface ProductRow {
   views_z?: number; atc_rate_z?: number;
   wilson_atc_lower?: number; is_new?: boolean;
   classification?: 'winner' | 'breakout' | 'rising' | 'falling' | 'stable';
+  // Iteration D — Winner v2 derived scores (0-100). Optional, additive.
+  winner_score?: number;
+  trend_velocity?: number;
+  conversion_momentum?: number;
 }
 
 interface Insight { title: string; body: string; severity: 'info' | 'warning' | 'critical'; category: string; product_id?: string | null }
