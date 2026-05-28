@@ -402,6 +402,125 @@ export default function FunnelHealth() {
               <Badge variant="outline">Bot-filtered: {kpis.bot_filtered}</Badge>
             </CardContent>
           </Card>
+
+          {intel && (
+            <>
+              <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Stat label="PDP views" value={intel.pdp_views} />
+                <Stat
+                  label="PDP → ATC"
+                  value={pct(kpis.atc_verified, intel.pdp_views)}
+                  hint="verified user_click only"
+                />
+                <Stat label="Cart opens" value={intel.cart_opens} />
+                <Stat label="Payment success views" value={intel.payment_success} />
+                <Stat label="Session ends" value={intel.session_ends} />
+                <Stat
+                  label="Bounce rate"
+                  value={pct(intel.bounces, intel.session_ends)}
+                  hint="dwell<10s & <2 interactions"
+                />
+                <Stat label="Rage clicks" value={intel.rage_clicks} />
+                <Stat
+                  label="Checkout → Payment"
+                  value={pct(intel.payment_success, kpis.checkout_clicks)}
+                />
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Device breakdown</CardTitle>
+                    <CardDescription>Mobile-first audit — TikTok iOS traffic should dominate.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex gap-2 flex-wrap">
+                    {Object.entries(intel.device).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                      <Badge key={k} variant="secondary">{k}: {v}</Badge>
+                    ))}
+                    {Object.keys(intel.device).length === 0 && (
+                      <span className="text-xs text-muted-foreground">No events in window.</span>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Source breakdown</CardTitle>
+                    <CardDescription>Last-touch utm_source per event.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex gap-2 flex-wrap">
+                    {Object.entries(intel.sources).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => (
+                      <Badge key={k} variant="outline">{k}: {v}</Badge>
+                    ))}
+                    {Object.keys(intel.sources).length === 0 && (
+                      <span className="text-xs text-muted-foreground">No events in window.</span>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top PDPs (views → ATC)</CardTitle>
+                    <CardDescription>Best & worst converting product pages.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-sm">
+                      {intel.top_pdps.map(p => (
+                        <li key={p.product_id} className="flex justify-between gap-2">
+                          <span className="truncate">{p.product_name || p.product_id}</span>
+                          <span className="font-mono tabular-nums text-xs whitespace-nowrap">
+                            {p.views}v · {p.atc}atc · {p.views ? ((p.atc / p.views) * 100).toFixed(1) : '0.0'}%
+                          </span>
+                        </li>
+                      ))}
+                      {intel.top_pdps.length === 0 && (
+                        <li className="text-xs text-muted-foreground">No PDP views yet.</li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top landing pages</CardTitle>
+                    <CardDescription>First page in each session.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-sm">
+                      {intel.top_landing.map(p => (
+                        <li key={p.page_path} className="flex justify-between gap-2">
+                          <span className="truncate font-mono text-xs">{p.page_path}</span>
+                          <span className="font-mono text-xs">{p.sessions}</span>
+                        </li>
+                      ))}
+                      {intel.top_landing.length === 0 && (
+                        <li className="text-xs text-muted-foreground">No sessions in window.</li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top exit pages</CardTitle>
+                    <CardDescription>Where sessions ended or bounced.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-sm">
+                      {intel.top_exit.map(p => (
+                        <li key={p.page_path} className="flex justify-between gap-2">
+                          <span className="truncate font-mono text-xs">{p.page_path}</span>
+                          <span className="font-mono text-xs">{p.count}</span>
+                        </li>
+                      ))}
+                      {intel.top_exit.length === 0 && (
+                        <li className="text-xs text-muted-foreground">No exits recorded yet.</li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
