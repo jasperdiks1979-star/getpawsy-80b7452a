@@ -546,6 +546,59 @@ Deno.serve(async (req) => {
     const topLanding = Object.entries(landing).map(([p, c]) => ({ path: p, count: c })).sort((a, b) => b.count - a.count).slice(0, 10);
     const topExit = Object.entries(exit).map(([p, c]) => ({ path: p, count: c })).sort((a, b) => b.count - a.count).slice(0, 10);
 
+    // 7. Derived quality scores (0-100). Each is a clamped, weighted blend of
+    // signals already computed above. These are *directional* — they help
+    // operators spot regressions; they are not statistical truth.
+    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+    const score100 = (n: number) => Math.round(clamp01(n) * 100);
+
+    // Funnel friction: penalises drop-offs at each stage + rage clicks.
+    const pdpAtc01 = pdpViews ? atcs / pdpViews : 0;
+    const atcCo01 = atcs ? checkouts / atcs : 0;
+    const coPay01 = checkouts ? payments / checkouts : 0;
+    const ragePenalty = totalSessions ? Math.min(1, rage / totalSessions) : 0;
+    const funnelFrictionScore = score100(
+      0.30 * pdpAtc01 * 5 + // ATC rates are small — scale up
+      0.30 * atcCo01 +
+      0.25 * coPay01 +
+      0.15 * (1 - ragePenalty)
+    );
+
+    // PDP quality: dwell + ATC rate + low rage.
+    const avgDwellMs = (() => {
+      const arr = rows.map(r => (typeof r.dwell_ms === 'number' ? r.dwell_ms : null)).filter((v): v is number => v != null);
+      return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    })();
+    const pdpQualityScore = score100(
+      0.40 * Math.min(1, avgDwellMs / 30000) + // 30s = perfect
+      0.40 * pdpAtc01 * 5 +
+      0.20 * (1 - ragePenalty)
+    );
+
+    // Mobile conversion: ATC rate of mobile slice relative to overall.
+    const mobileSlice = devSlices['mobile'];
+    const mobileAtc01 = mobileSlice && mobileSlice.views ? mobileSlice.atc / mobileSlice.views : 0;
+    const mobileConversionScore = score100(
+      0.60 * mobileAtc01 * 5 +
+      0.40 * (mobileSlice ? mobileSlice.sessions.size / Math.max(1, totalSessions) : 0)
+    );
+
+    // Traffic quality: low bounce + decent dwell + low bot %.
+    const botFilteredPct = pct(botEventCount, botEventCount + rows.length);
+    const bouncePenalty = totalSessions ? Math.min(1, bounces / totalSessions) : 0;
+    const trafficQualityScore = score100(
+      0.45 * (1 - bouncePenalty) +
+      0.30 * Math.min(1, avgDwellMs / 20000) +
+      0.25 * (1 - Math.min(1, botFilteredPct / 50))
+    );
+
+    const qualityScores = {
+      funnel_friction: funnelFrictionScore,
+      pdp_quality: pdpQualityScore,
+      mobile_conversion: mobileConversionScore,
+      traffic_quality: trafficQualityScore,
+    };
+
     const summary = {
       range,
       since,
@@ -553,6 +606,11 @@ Deno.serve(async (req) => {
       source: sourceFilter,
       total_events: rows.length,
       total_sessions: totalSessions,
+      bot_filtered_events: botEventCount,
+      bot_filtered_pct: botFilteredPct,
+      quality_scores: qualityScores,
+      device_split: deviceSplit,
+      os_split: osSplit,
       baselines: {
         prior_mode: priorMode === 'custom' && priorFromParam && priorToParam ? 'custom' : 'equal',
         prior_since: priorSince,
