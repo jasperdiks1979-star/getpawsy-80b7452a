@@ -798,6 +798,46 @@ export default function AiRevenuePage() {
               </Button>
             </PopoverContent>
           </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" title="Classify recent sessions into real_human / suspicious / crawler / likely_bot">
+                {classifyBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                Traffic Quality
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-3 space-y-3">
+              <div className="text-sm font-semibold">Traffic Quality Engine v2</div>
+              <p className="text-xs text-muted-foreground">
+                Labels recent sessions with a quality class based on bot signals,
+                UA, geo, and engagement. Strictly additive — never touches
+                checkout, Stripe, or payment flows.
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" disabled={classifyBusy} onClick={() => runTrafficClassifier(true)}>
+                  Dry run
+                </Button>
+                <Button size="sm" className="flex-1" disabled={classifyBusy} onClick={() => runTrafficClassifier(false)}>
+                  Classify 30d
+                </Button>
+              </div>
+              {classifyResult && (
+                <div className="border-t pt-2 space-y-1 text-xs">
+                  <div className="text-muted-foreground">
+                    Scanned <span className="tabular-nums font-medium text-foreground">{classifyResult.scanned}</span>
+                    {' · '}Updated <span className="tabular-nums font-medium text-foreground">{classifyResult.updated}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {(['real_human','suspicious','crawler','likely_bot'] as const).map(k => (
+                      <div key={k} className="flex justify-between border rounded px-2 py-1">
+                        <span className="capitalize">{k.replace('_',' ')}</span>
+                        <span className="tabular-nums font-medium">{classifyResult.breakdown[k] ?? 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
