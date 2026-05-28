@@ -98,6 +98,9 @@ function severityVariant(sev: string): 'default' | 'secondary' | 'destructive' |
 
 export default function AiRevenuePage() {
   const [range, setRange] = useState<Range>('7d');
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
+  const [toDate, setToDate] = useState<Date | undefined>(undefined);
+  const [source, setSource] = useState<SourceFilter>('all');
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -109,23 +112,34 @@ export default function AiRevenuePage() {
   const [extraContext, setExtraContext] = useState<string>('');
   const [genBusy, setGenBusy] = useState(false);
 
+  function buildQuery(r: Range, extra: Record<string, string> = {}): string {
+    const params = new URLSearchParams();
+    if (fromDate || toDate) {
+      if (fromDate) params.set('from', fromDate.toISOString());
+      if (toDate) {
+        // include the whole selected end day
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        params.set('to', end.toISOString());
+      }
+    } else {
+      params.set('range', r);
+    }
+    if (source && source !== 'all') params.set('source', source);
+    for (const [k, v] of Object.entries(extra)) params.set(k, v);
+    return params.toString();
+  }
+
   async function loadSummary(r: Range) {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-revenue-insights', {
-        body: null,
-        method: 'GET',
-      } as any);
-      // Fallback: use GET via fetch (invoke does not support GET params for all stacks)
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?range=${r}`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?${buildQuery(r)}`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
       });
       const json = await resp.json();
       if (!json.ok) throw new Error(json.message || 'failed');
       setSummary(json.summary);
-      // Suppress unused
-      void data; void error;
     } catch (e: any) {
       toast.error('Failed to load metrics: ' + e.message);
     } finally {
@@ -136,7 +150,9 @@ export default function AiRevenuePage() {
   async function runAi(persist: boolean) {
     setAiBusy(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?range=${range}&ai=1${persist ? '&persist=1' : ''}`;
+      const extra: Record<string, string> = { ai: '1' };
+      if (persist) extra.persist = '1';
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-revenue-insights?${buildQuery(range, extra)}`;
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
       });
@@ -202,7 +218,11 @@ export default function AiRevenuePage() {
     }
   }
 
-  useEffect(() => { loadSummary(range); }, [range]);
+  useEffect(() => {
+    loadSummary(range);
+    // re-fetch when any filter changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, fromDate, toDate, source]);
   useEffect(() => { loadRecs(); loadDrafts(); }, []);
 
   const winners = useMemo(() => {
