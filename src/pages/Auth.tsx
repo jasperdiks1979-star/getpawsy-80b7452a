@@ -28,6 +28,8 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const premium = getConversionFlag('premiumAuth');
+  const premiumV2 = getConversionFlag('premiumAuthV2');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const nextPath = useMemo(() => {
     const next = searchParams.get('next');
     return next && next.startsWith('/') ? next : '/';
@@ -136,26 +138,55 @@ const Auth = () => {
           {premium ? 'Back home' : 'Back to Home'}
         </Link>
 
-        <Card className={premium ? "border border-border/60 shadow-none" : undefined}>
+        <Card className={premium ? `border border-border/60 shadow-none ${premiumV2 ? 'rounded-2xl' : ''}` : undefined}>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img src={logoIcon} alt="GetPawsy" className={premium ? "w-14 h-14 rounded-2xl" : "w-16 h-16 rounded-2xl shadow-soft"} />
             </div>
             {premium && (
-              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">Account</p>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground mb-2">
+                {premiumV2 ? (activeTab === 'signup' ? 'Create account' : 'Sign in') : 'Account'}
+              </p>
             )}
-            <CardTitle className={premium ? "text-2xl font-display" : "text-2xl"}>
-              {premium ? 'Welcome to GetPawsy' : 'Welcome to GetPawsy'}
+            <CardTitle className={premium ? 'text-2xl font-display font-semibold tracking-tight' : 'text-2xl'}>
+              {premiumV2
+                ? (activeTab === 'signup' ? 'Join GetPawsy' : 'Welcome back')
+                : 'Welcome to GetPawsy'}
             </CardTitle>
-            <CardDescription className={premium ? "text-sm" : undefined}>
-              {premium ? 'Sign in or create an account to continue' : 'Sign in to your account or create a new one'}
+            <CardDescription className={premium ? 'text-sm' : undefined}>
+              {premiumV2
+                ? (activeTab === 'signup'
+                    ? 'Create your account to track orders and save favorites.'
+                    : 'Sign in to pick up where you left off.')
+                : (premium ? 'Sign in or create an account to continue' : 'Sign in to your account or create a new one')}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <Tabs
+              defaultValue="login"
+              onValueChange={(v) => setActiveTab(v === 'signup' ? 'signup' : 'login')}
+            >
+              <TabsList
+                className={premiumV2
+                  ? 'grid w-full grid-cols-2 bg-transparent p-0 h-auto border-b border-border/60 rounded-none gap-0'
+                  : 'grid w-full grid-cols-2'}
+              >
+                <TabsTrigger
+                  value="login"
+                  className={premiumV2
+                    ? 'rounded-none bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-foreground text-muted-foreground text-[12px] uppercase tracking-[0.18em] py-3'
+                    : ''}
+                >
+                  {premiumV2 ? 'Sign in' : 'Login'}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="signup"
+                  className={premiumV2
+                    ? 'rounded-none bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-foreground text-muted-foreground text-[12px] uppercase tracking-[0.18em] py-3'
+                    : ''}
+                >
+                  {premiumV2 ? 'Create account' : 'Sign Up'}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-6 space-y-4">
