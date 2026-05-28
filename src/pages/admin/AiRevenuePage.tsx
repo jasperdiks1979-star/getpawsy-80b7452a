@@ -463,6 +463,67 @@ export default function AiRevenuePage() {
           </Button>
           <Popover>
             <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" title="Choose prior comparison window">
+                <CalendarIcon className="w-4 h-4 mr-1" />
+                Prior: {priorMode === 'custom' && priorFrom && priorTo
+                  ? `${format(priorFrom, 'MMM d')}–${format(priorTo, 'MMM d')}`
+                  : 'equal-length'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-3 space-y-3" align="end">
+              <div className="text-sm font-semibold">Prior comparison window</div>
+              <p className="text-xs text-muted-foreground">
+                Baselines for winner / breakout / rising / falling compare the current
+                window to a prior period. Default is the equal-length window immediately
+                before the current one.
+              </p>
+              <Select value={priorMode} onValueChange={(v) => setPriorMode(v as 'equal' | 'custom')}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equal">Equal-length (auto)</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
+              {priorMode === 'custom' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn('justify-start text-left font-normal', !priorFrom && 'text-muted-foreground')}>
+                        <CalendarIcon className="w-3 h-3 mr-2" />
+                        {priorFrom ? format(priorFrom, 'MMM d') : 'From'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={priorFrom} onSelect={setPriorFrom} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn('justify-start text-left font-normal', !priorTo && 'text-muted-foreground')}>
+                        <CalendarIcon className="w-3 h-3 mr-2" />
+                        {priorTo ? format(priorTo, 'MMM d') : 'To'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={priorTo} onSelect={setPriorTo} initialFocus className={cn('p-3 pointer-events-auto')} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+              {priorMode === 'custom' && (priorFrom || priorTo) && (
+                <Button size="sm" variant="ghost" onClick={() => { setPriorFrom(undefined); setPriorTo(undefined); }}>
+                  Clear custom range
+                </Button>
+              )}
+              {summary?.baselines && (
+                <div className="text-[11px] text-muted-foreground border-t pt-2">
+                  Active prior: {new Date(summary.baselines.prior_since).toLocaleDateString()} → {new Date(summary.baselines.prior_until).toLocaleDateString()} · {summary.baselines.prior_events} events
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button size="sm" variant="outline" title="Adjust classification thresholds">
                 <SlidersHorizontal className="w-4 h-4 mr-1" /> Thresholds
               </Button>
