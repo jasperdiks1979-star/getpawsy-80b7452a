@@ -124,11 +124,11 @@ export function SoftEmailCapture({
 
   if (isSuccess) {
     return (
-      <div className={`rounded-2xl bg-primary/5 border border-primary/10 p-6 md:p-8 text-center ${className}`}>
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-4">
+      <div className={`${premium ? 'border border-border/60' : 'rounded-2xl bg-primary/5 border border-primary/10'} p-6 md:p-8 text-center ${className}`}>
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${premium ? 'border border-border/60 text-foreground/70' : 'bg-primary/10 text-primary'}`}>
           <Sparkles className="w-6 h-6" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">You're all set!</h3>
+        <h3 className={`mb-2 ${premium ? 'font-display text-[17px] tracking-tight' : 'text-lg font-semibold'}`}>You're all set!</h3>
         <p className="text-muted-foreground text-sm">
           We'll send you helpful tips and updates — no spam, ever.
         </p>
