@@ -13,6 +13,7 @@ import {
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { getTrustModules, TRUST_LABELS } from '@/config/trust-blocks';
 
 const Dot = () => (
   <span
@@ -24,6 +25,17 @@ const Dot = () => (
 export function MobileStickyTrustBar() {
   if (!getConversionFlag('mobileTrustBar')) return null;
 
+  const modules = getTrustModules('pdp_mobile_strip');
+  if (!modules.length) return null;
+
+  // dynamic labels for shipping & returns reflect live constants
+  const labelFor = (m: string) =>
+    m === 'free_shipping'
+      ? `Free shipping $${FREE_SHIPPING_THRESHOLD}+`
+      : m === 'returns'
+        ? `${RETURN_WINDOW_DAYS}-day returns`
+        : TRUST_LABELS[m as keyof typeof TRUST_LABELS];
+
   return (
     <div
       role="region"
@@ -32,17 +44,14 @@ export function MobileStickyTrustBar() {
       style={{ contain: 'layout' }}
     >
       <div className="h-7 flex items-center justify-center gap-3">
-        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
-          Free shipping ${FREE_SHIPPING_THRESHOLD}+
-        </span>
-        <Dot />
-        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
-          {RETURN_WINDOW_DAYS}-day returns
-        </span>
-        <Dot />
-        <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
-          Secure checkout
-        </span>
+        {modules.map((m, i) => (
+          <span key={m} className="flex items-center gap-3">
+            {i > 0 && <Dot />}
+            <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-foreground/70">
+              {labelFor(m)}
+            </span>
+          </span>
+        ))}
       </div>
     </div>
   );
