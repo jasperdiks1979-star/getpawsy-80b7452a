@@ -983,6 +983,7 @@ const ProductDetail = () => {
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
               <>
+                <MobileStickyTrustBar />
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
