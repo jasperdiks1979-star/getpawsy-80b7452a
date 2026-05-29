@@ -44,6 +44,7 @@ const navItems = [
   { to: '/admin/page-changelog', label: 'Page Changelog', icon: History },
   { to: '/admin/guides', label: 'Guides SEO', icon: BookOpen },
   { to: '/admin/internal-link-log', label: 'Internal Links', icon: Link },
+  { to: '/admin/degraded-events', label: 'Degraded Events', icon: ShieldAlert },
   { to: '/admin/diagnostics', label: 'Diagnostics', icon: Stethoscope },
   { to: '/admin/domain-health', label: 'Domain Health', icon: Globe },
   { to: '/admin/perf-audit', label: 'Performance', icon: Activity },
