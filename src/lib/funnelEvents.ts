@@ -187,6 +187,8 @@ export interface UserAddToCartInput {
   price: number;
   currency?: string;
   source_component: string; // e.g. 'pdp_sticky_cta', 'cart_drawer', 'pdp_main_cta'
+  /** QA-simulated event from admin dashboard — tagged classification='qa', excluded from Clean. */
+  qa?: boolean;
 }
 
 /**
@@ -212,8 +214,8 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
-    if (env.is_bot) return; // never count bot ATC
-    if (env.deduped) return; // collapsed inside 10s window
+    if (env.is_bot && !input.qa) return; // never count bot ATC (except QA)
+    if (env.deduped && !input.qa) return; // collapsed inside 10s window
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -240,6 +242,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       validation_status: 'verified',
       degraded,
       ...qualityFields(env),
+      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
       raw_payload: {
         slug: input.slug ?? null,
         qty: input.qty,
@@ -269,6 +272,8 @@ export interface CheckoutEventInput {
   currency?: string;
   destination_url?: string | null;
   error_reason?: string | null;
+  /** QA-simulated event — tagged qa=true, excluded from Clean KPI. */
+  qa?: boolean;
 }
 
 export function fireCheckoutEvent(input: CheckoutEventInput): void {
@@ -292,14 +297,14 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       geo_quality: env.geo_quality,
       traffic_quality_score: env.traffic_quality_score,
     });
-    if (env.is_bot) {
+    if (env.is_bot && !input.qa) {
       console.warn('[funnel:checkout] skipped — is_bot', {
         step: input.step,
         bot_reason: env.bot_reason,
       });
       return;
     }
-    if (env.deduped && input.step === 'checkout_click') {
+    if (env.deduped && input.step === 'checkout_click' && !input.qa) {
       console.warn('[funnel:checkout] skipped — deduped (idempotency window)', {
         step: input.step,
         idempotency_key: env.idempotency_key,
@@ -332,6 +337,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       destination_url: input.destination_url ?? null,
       error_reason: input.error_reason ?? null,
       ...qualityFields(env),
+      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
     };
     void supabase
       .from('checkout_funnel_events')
@@ -409,6 +415,8 @@ function fireLpEvent(opts: {
   extra?: Record<string, unknown>;
   /** When true, skip the 10s idempotency dedupe (use for high-frequency signals like scroll). */
   skipDedupe?: boolean;
+  /** QA-simulated event — tagged classification='qa', excluded from Clean. */
+  qa?: boolean;
 }): void {
   try {
     const env = envelope({
@@ -417,8 +425,8 @@ function fireLpEvent(opts: {
       product_id: opts.product_id ?? null,
       event: opts.event_name,
     });
-    if (env.is_bot) return;
-    if (!opts.skipDedupe && env.deduped) return;
+    if (env.is_bot && !opts.qa) return;
+    if (!opts.skipDedupe && env.deduped && !opts.qa) return;
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -444,6 +452,7 @@ function fireLpEvent(opts: {
       deduped: false,
       validation_status: 'verified',
       ...qualityFields(env),
+      ...(opts.qa ? { classification: 'qa', qa: true } : { qa: false }),
       raw_payload: {
         device_type: detectDeviceType(),
         os: detectOs(),
@@ -462,6 +471,7 @@ export function firePdpView(input: {
   product_id: string;
   product_name?: string | null;
   price?: number | null;
+  qa?: boolean;
 }): void {
   fireLpEvent({
     event_name: 'pdp_view',
@@ -469,6 +479,7 @@ export function firePdpView(input: {
     product_id: input.product_id,
     product_name: input.product_name ?? null,
     value: input.price ?? null,
+    qa: input.qa,
   });
 }
 
