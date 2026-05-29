@@ -160,6 +160,23 @@ function envelope(opts: {
   };
 }
 
+/**
+ * Shape the quality + classification fields for direct spread into the
+ * inserted row. Centralised so every event writer (ATC, checkout, lp_event)
+ * gets the same columns populated — that's what drives the admin Clean filter.
+ */
+function qualityFields(env: ReturnType<typeof envelope>): Record<string, unknown> {
+  return {
+    classification: env.classification,
+    geo_tier: env.geo_tier,
+    geo_country: env.geo_country,
+    device: env.device,
+    os_family: env.os_family,
+    browser_family: env.browser_family,
+    in_app_browser: env.in_app_browser,
+  };
+}
+
 export interface UserAddToCartInput {
   product_id: string;
   product_name?: string | null;
