@@ -337,6 +337,7 @@ const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokS
 const CheckoutFunnelEventsPage = lazyWithRetry(() => import("./pages/admin/CheckoutFunnelEventsPage"));
 const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealth"));
 const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThresholdReport"));
+const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokCredentialsStatusPage"));
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
