@@ -415,6 +415,8 @@ function fireLpEvent(opts: {
   extra?: Record<string, unknown>;
   /** When true, skip the 10s idempotency dedupe (use for high-frequency signals like scroll). */
   skipDedupe?: boolean;
+  /** QA-simulated event — tagged classification='qa', excluded from Clean. */
+  qa?: boolean;
 }): void {
   try {
     const env = envelope({
@@ -423,8 +425,8 @@ function fireLpEvent(opts: {
       product_id: opts.product_id ?? null,
       event: opts.event_name,
     });
-    if (env.is_bot) return;
-    if (!opts.skipDedupe && env.deduped) return;
+    if (env.is_bot && !opts.qa) return;
+    if (!opts.skipDedupe && env.deduped && !opts.qa) return;
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -450,6 +452,7 @@ function fireLpEvent(opts: {
       deduped: false,
       validation_status: 'verified',
       ...qualityFields(env),
+      ...(opts.qa ? { classification: 'qa', qa: true } : { qa: false }),
       raw_payload: {
         device_type: detectDeviceType(),
         os: detectOs(),
