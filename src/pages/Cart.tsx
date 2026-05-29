@@ -334,7 +334,11 @@ const Cart = () => {
                 </div>
               )}
 
-              <Link to="/checkout" className="block mt-4">
+              <Link
+                to="/checkout"
+                className="block mt-4"
+                onClick={() => handleCartCheckoutClick('cart_proceed_button')}
+              >
                 <Button
                   size="lg"
                   className={
@@ -412,7 +416,11 @@ const Cart = () => {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
               <p className="text-base font-semibold text-foreground tracking-tight">${total.toFixed(2)}</p>
             </div>
-            <Link to="/checkout" className="flex-1">
+            <Link
+              to="/checkout"
+              className="flex-1"
+              onClick={() => handleCartCheckoutClick('cart_sticky_button')}
+            >
               <Button size="lg" className="w-full gap-2 rounded-full font-semibold h-12">
                 Checkout
                 <ArrowRight className="w-4 h-4" />
