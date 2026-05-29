@@ -614,12 +614,22 @@ const Checkout = () => {
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      const msg = error instanceof Error ? error.message : 'Unknown error';
+      const rawMsg = error instanceof Error ? error.message : 'Unknown error';
+      // PII-safe sanitization: strip emails, bearer tokens, sk_/pk_ Stripe
+      // keys, long hex/JWT-like blobs. Also cap length so the funnel row
+      // never gets accidental PII or secrets.
+      const safeMsg = rawMsg
+        .replace(/[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[email]')
+        .replace(/\b(sk|pk|rk)_(live|test)_[A-Za-z0-9]+/g, '[stripe_key]')
+        .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [token]')
+        .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[jwt]')
+        .replace(/[a-f0-9]{32,}/gi, '[hash]')
+        .slice(0, 200);
       fireCheckoutError({
         source_component: 'checkout_stripe_button',
         value: Number(stripeChargedTotal.toFixed(2)),
         currency: 'USD',
-        error_reason: msg,
+        error_reason: safeMsg,
       });
       toast.error("Checkout couldn't open. Please try again or contact support.");
       setIsProcessing(false);
