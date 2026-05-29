@@ -21,6 +21,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
+    const url = new URL(req.url);
+    const format = (url.searchParams.get("format") || "").toLowerCase();
+    const wantsXml = format === "xml" || format === "rss" || url.pathname.endsWith(".xml");
+
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -71,6 +75,51 @@ Deno.serve(async (req) => {
     // Sort: high first, then medium, then low
     const order = { high: 0, medium: 1, low: 2 };
     feed.sort((a, b) => order[a.priority] - order[b.priority]);
+
+    if (wantsXml) {
+      const esc = (s: unknown) =>
+        String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      const items = feed
+        .map((p) => {
+          const availability = "in stock";
+          const condition = "new";
+          const price = `${Number(p.price).toFixed(2)} USD`;
+          return `    <item>
+      <g:id>${esc(p.id)}</g:id>
+      <title>${esc(p.title)}</title>
+      <link>${esc(p.product_url)}</link>
+      <description>${esc(p.description || p.title)}</description>
+      <g:image_link>${esc(p.image_url)}</g:image_link>
+      <g:price>${esc(price)}</g:price>
+      <g:availability>${availability}</g:availability>
+      <g:condition>${condition}</g:condition>
+      <g:product_type>${esc(p.category)}</g:product_type>
+      <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>
+      <g:brand>GetPawsy</g:brand>
+    </item>`;
+        })
+        .join("\n");
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>GetPawsy — Pinterest Catalog</title>
+    <link>https://getpawsy.pet</link>
+    <description>Premium pet products for cats and dogs, US-native catalog.</description>
+${items}
+  </channel>
+</rss>`;
+      return new Response(xml, {
+        headers: {
+          ...cors,
+          "Content-Type": "application/xml; charset=utf-8",
+          "Cache-Control": "public, max-age=3600, s-maxage=600",
+        },
+      });
+    }
 
     return new Response(JSON.stringify(feed), {
       headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
