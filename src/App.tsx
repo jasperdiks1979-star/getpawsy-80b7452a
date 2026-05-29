@@ -2693,6 +2693,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="clean-kpi"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CleanKpiDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
