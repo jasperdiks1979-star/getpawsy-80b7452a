@@ -13,6 +13,7 @@ import { getDeviceClassification } from '@/lib/deviceClassify';
 
 const QUALITY_KEY = 'gp_geo_quality_v1';
 const COUNTRY_KEY = 'gp_geo_country_v1';
+const US_TIER_KEY = 'gp_geo_us_tier_v1';
 const INFLIGHT_KEY = 'gp_geo_inflight_v1';
 const DEVICE_PRIMED_KEY = 'gp_device_primed_v1';
 
@@ -77,9 +78,13 @@ export function ensureGeoClassified(): void {
           'unknown';
         const country =
           (data && typeof data === 'object' && (data as Record<string, unknown>).country) || null;
+        const usTier =
+          (data && typeof data === 'object' && (data as Record<string, unknown>).us_tier) ||
+          'unknown';
         try {
           sessionStorage.setItem(QUALITY_KEY, String(quality));
           if (country) sessionStorage.setItem(COUNTRY_KEY, String(country));
+          sessionStorage.setItem(US_TIER_KEY, String(usTier));
         } catch {
           /* ignore */
         }
@@ -110,5 +115,14 @@ export function getCachedGeoCountry(): string | null {
     return sessionStorage.getItem(COUNTRY_KEY);
   } catch {
     return null;
+  }
+}
+
+/** US-segmented tier: verified_us | probable_us | non_us | unknown | bot_like */
+export function getCachedUsTier(): string {
+  try {
+    return sessionStorage.getItem(US_TIER_KEY) || 'unknown';
+  } catch {
+    return 'unknown';
   }
 }
