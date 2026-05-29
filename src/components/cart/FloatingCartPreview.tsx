@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ArrowRight, X } from 'lucide-react';
@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { safeString, safePrice } from '@/lib/safe-render';
-import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
+import { fireCheckoutClick } from '@/lib/funnelEvents';
 
 interface FloatingCartPreviewProps {
   isVisible: boolean;
@@ -18,19 +18,6 @@ export const FloatingCartPreview = memo(({ isVisible, onClose }: FloatingCartPre
 
   const displayItems = items.slice(0, 3);
   const remainingCount = items.length - 3;
-
-  // Fire cart_open when the drawer becomes visible (deduped centrally).
-  useEffect(() => {
-    if (!isVisible) return;
-    try {
-      fireCartOpen({
-        item_count: totalItems,
-        source_component: 'cart_drawer',
-      });
-    } catch {
-      /* analytics never breaks UX */
-    }
-  }, [isVisible, totalItems]);
 
   return (
     <AnimatePresence>
