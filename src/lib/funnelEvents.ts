@@ -428,6 +428,7 @@ function fireLpEvent(opts: {
       traffic_quality_score: env.traffic_quality_score,
       deduped: false,
       validation_status: 'verified',
+      ...qualityFields(env),
       raw_payload: {
         device_type: detectDeviceType(),
         os: detectOs(),
