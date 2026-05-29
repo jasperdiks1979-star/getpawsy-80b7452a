@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
-import { fireCartOpen } from '@/lib/funnelEvents';
+import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CartUpsell } from '@/components/cart/CartUpsell';
@@ -74,6 +74,20 @@ const Cart = () => {
   // Calculate progress to free shipping
   const shippingProgress = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100);
   const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - totalPrice, 0);
+
+  // Shared handler: fires the cart-stage checkout intent so we can measure
+  // cart → /checkout drop-off. The actual create-checkout invoke + redirect
+  // events fire on the /checkout page itself.
+  const handleCartCheckoutClick = (source_component: string) => {
+    try {
+      fireCheckoutClick({
+        source_component,
+        item_count: items.reduce((s, i) => s + i.quantity, 0),
+        value: Number(total.toFixed(2)),
+        currency: 'USD',
+      });
+    } catch { /* analytics never breaks UX */ }
+  };
 
   if (items.length === 0) {
     if (premiumV4) {
@@ -320,7 +334,11 @@ const Cart = () => {
                 </div>
               )}
 
-              <Link to="/checkout" className="block mt-4">
+              <Link
+                to="/checkout"
+                className="block mt-4"
+                onClick={() => handleCartCheckoutClick('cart_proceed_button')}
+              >
                 <Button
                   size="lg"
                   className={
@@ -398,7 +416,11 @@ const Cart = () => {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
               <p className="text-base font-semibold text-foreground tracking-tight">${total.toFixed(2)}</p>
             </div>
-            <Link to="/checkout" className="flex-1">
+            <Link
+              to="/checkout"
+              className="flex-1"
+              onClick={() => handleCartCheckoutClick('cart_sticky_button')}
+            >
               <Button size="lg" className="w-full gap-2 rounded-full font-semibold h-12">
                 Checkout
                 <ArrowRight className="w-4 h-4" />

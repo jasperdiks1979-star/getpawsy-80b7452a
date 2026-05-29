@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { safeString, safePrice } from '@/lib/safe-render';
-import { fireCartOpen } from '@/lib/funnelEvents';
+import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
 
 interface FloatingCartPreviewProps {
   isVisible: boolean;
@@ -141,7 +141,21 @@ export const FloatingCartPreview = memo(({ isVisible, onClose }: FloatingCartPre
                       View Cart
                     </Button>
                   </Link>
-                  <Link to="/checkout" onClick={onClose} className="flex-1">
+                  <Link
+                    to="/checkout"
+                    onClick={() => {
+                      try {
+                        fireCheckoutClick({
+                          source_component: 'floating_cart_checkout',
+                          item_count: totalItems,
+                          value: Number(totalPrice.toFixed(2)),
+                          currency: 'USD',
+                        });
+                      } catch { /* analytics never breaks UX */ }
+                      onClose();
+                    }}
+                    className="flex-1"
+                  >
                     <Button size="sm" className="w-full rounded-full gap-1">
                       Checkout <ArrowRight className="w-3 h-3" />
                     </Button>
