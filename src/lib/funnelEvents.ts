@@ -231,6 +231,8 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
     });
     if (env.is_bot && !input.qa) return; // never count bot ATC (except QA)
     if (env.deduped && !input.qa) return; // collapsed inside 10s window
+    // Reserve the 10s bucket only for real (non-QA) events that will insert.
+    if (!input.qa) markDeduped(env.idempotency_key);
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -325,6 +327,11 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
         idempotency_key: env.idempotency_key,
       });
       return;
+    }
+    // Reserve the 10s bucket only for real checkout_click (other steps fire
+    // at most once per redirect cycle and should never collapse each other).
+    if (input.step === 'checkout_click' && !input.qa) {
+      markDeduped(env.idempotency_key);
     }
 
     const last = getLastTouch() ?? classifySource();
@@ -442,6 +449,10 @@ function fireLpEvent(opts: {
     });
     if (env.is_bot && !opts.qa) return;
     if (!opts.skipDedupe && env.deduped && !opts.qa) return;
+    // Reserve the 10s bucket only when this row is actually going to insert
+    // and is subject to dedupe (skipDedupe events like scroll milestones must
+    // never block a subsequent real event in the same bucket).
+    if (!opts.skipDedupe && !opts.qa) markDeduped(env.idempotency_key);
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
