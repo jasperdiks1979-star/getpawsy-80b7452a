@@ -1,61 +1,61 @@
-# GetPawsy Funnel Tracking Audit & Revenue Analytics
 
-This is a large, multi-phase build. Before I start writing code I want to align on scope and sequencing so we don't ship half-finished dashboards or duplicate what already exists.
+## Audit result — most of this already ships
 
-## What already exists (from prior work in this project)
+GetPawsy already runs a deep Pinterest stack (per memory + filesystem audit):
 
-Tracking foundation is actually quite mature:
+| Phase | Status | What exists |
+|---|---|---|
+| 1. Tracking | Live | `SafePinterestTag` (PageVisit, ATC, Checkout, Search, Signup), `pinterest_capi_outbox` + relay, `pinterest_attribution_sessions`, UTM persistence in `lpFunnelMirror`, cross-session cookie `gp_pin_sess` |
+| 2. Catalog feed | Edge fn exists | `supabase/functions/pinterest-feed` — but not exposed at `/pinterest-feed.xml` public URL |
+| 3. Product prioritization | Live | `pinterest-autopilot` scores all products (image/margin/category/perf), logs to `pinterest_autopilot_decisions` |
+| 4. Pinterest SEO | Live | `pinterest-creative-director` + `pinterest-content-director` generate titles/descriptions/keywords/hashtags |
+| 5. Pin creation | Live | `pinterest-viral-batch` + `pinterest-pin-generator` + `pinterest-creative-director` (6 styles, safe-area engine, AI backdrops) |
+| 6. Board strategy | Live | `pinterest_boards` table + governance memory (sandbox exclusion, blacklist, auto-selection by priority/style affinity) |
+| 7. Scheduler | Live | `pinterest-scheduler` + `pinterest-cron-worker` + `pinterest-schedule-optimizer` (US peak hours, 4/day cap, ≥90min gap) |
+| 8. Trends | Live | `pinterest-trend-harvester` + `pinterest-trend-intelligence` (US seasonal calendar + evergreen pet) |
+| 9. Revenue | Partial | `pinterest-intelligence-api?panel=revenue` exists; not surfaced as standalone `/admin/pinterest-revenue` |
+| 10. AI optimization | Live | `pinterest-auto-evolve` + `pinterest-winner-detector` + `pinterest-learning-rollup` (winner clone, loser blocklist) |
 
-- `lp_funnel_events` table with envelope columns: `session_id`, `event_name`, `product_id`, `product_name`, `value`, `utm_*`, `classification`, `geo_tier`, `geo_country`, `device`, `os_family`, `browser_family`, `is_bot`, `qa`, `validation_status`, `degraded`, `idempotency_key`, `raw_payload`.
-- `src/lib/funnelEvents.ts` — `fireUserAddToCart`, `fireCheckoutEvent`, `firePdpView`, `fireScrollDepth`, `fireRageClick`, `fireSessionEnd`, `fireReturnVisit`, with dedupe + degraded fallback (TRK-1/TRK-2).
-- `src/lib/attribution.ts` — first/last touch in sessionStorage, classifies tiktok/pinterest/google_ads/google_organic/meta/email/direct/referral.
-- `src/lib/checkoutFunnel.ts` — Stripe/Klarna funnel mirror via `track-checkout-funnel` edge function.
-- `src/hooks/useUTMTracking.ts` + `logUtmSession` — 30-day UTM persistence.
-- Admin views: `/admin/clean-kpi`, `/admin/degraded-events`, `/admin/bot-threshold-report`, plus the existing Klarna funnel report.
-- GA4, TikTok Pixel, Pinterest Tag, Meta — all wired through `SafeGlobalVisitorTracker` / `SafePinterestTag` / `marketingClient`.
+## Real gaps to close
 
-The "only view_item events" symptom is almost certainly **not** missing instrumentation — it's that TikTok Bio traffic on a mobile carrier IP is bouncing before ATC. But we should prove that with an audit instead of assuming.
+Five concrete deliverables; the rest is already running.
 
-## Proposed approach — split into 3 shippable milestones
+### 1. `/pinterest-feed.xml` public route
+The `pinterest-feed` edge function exists but Pinterest needs a stable public URL. Add a `public/_redirects` rule (or Vite middleware) that rewrites `/pinterest-feed.xml` → the edge function, with proper `Content-Type: application/xml` and a long browser cache + short edge cache.
 
-Rather than one giant PR, I'd ship this in 3 reviewable chunks. Each milestone is independently useful.
+### 2. `/admin/pinterest-health` — unified tracking + funnel dashboard
+New page that pulls from `pinterest_funnel_events`, `pinterest_attribution_sessions`, `pinterest_capi_outbox`, and `lp_funnel_events` to show in one view: sessions, PDP views, ATC, checkouts, purchases, revenue, CR, top products. No new edge functions — reuses `pinterest-intelligence-api` panels + direct table reads.
 
-### Milestone 1 — Audit + Funnel Dashboard (the most valuable piece)
+### 3. `/admin/pinterest-products` — Top 25 promotable products
+New page calling `pinterest-autopilot?action=score` and rendering the ranked list with score breakdown (image / margin / category_fit / visual_appeal / shipping / performance). Adds a "Promote now" button that enqueues a creative-director run.
 
-1. **Run the audit live** (no code): query `lp_funnel_events` grouped by `event_name`, source, device for the last 30 days to produce the real **Event Inventory Report** and **Funnel Coverage Report**. Output to `/mnt/documents/funnel-audit.md`. This tells us exactly which events are firing vs missing before we write any code.
-2. **`/admin/funnel`** — the conversion dashboard:
-   - Funnel: visitors → product_view → add_to_cart → checkout_click → payment_success
-   - Conversion rates between each step
-   - Revenue per visitor / session / source / campaign
-   - Date range + source/campaign/device filters
-   - Reuses `lp_funnel_events` + `orders` table
+### 4. `/admin/pinterest-scheduler` — visual schedule
+New page reading `pinterest_pin_queue` (status, scheduled_for, board, product) grouped by day and US peak window. Existing scheduler logic stays untouched; this is read-only surfacing.
 
-### Milestone 2 — Product & Source dashboards
+### 5. `/admin/pinterest-trends` and `/admin/pinterest-revenue` — promote existing panels
+Thin admin pages that wrap the existing `pinterest-intelligence-api` `trends` and `revenue` panels into dedicated routes (currently buried inside `/admin/pinterest-intelligence`).
 
-3. **`/admin/products-performance`** — per-product views/ATCs/checkouts/purchases/revenue/CVR, sortable.
-4. **`/admin/traffic-performance`** — per-source (TikTok / Pinterest / Google / Direct / Email) visitors/ATCs/purchases/revenue/ROAS where ad spend is known.
-5. **`/admin/tracking-health`** — pixel heartbeat panel: last-seen timestamp per GA4 / TikTok / Pinterest / Meta event, plus "missing event" alerts (e.g. ATC fired but no GA4 ATC seen in last 24h).
+## Non-goals (already covered, won't touch)
 
-### Milestone 3 — Attribution hardening + test suite
+- Tag, CAPI, attribution — not touching `SafePinterestTag`, `pinterest-capi-relay`, or `pinterest_attribution_sessions`
+- Board creation/governance — already governed by sandbox-exclusion + blacklist memory rules
+- Pin generation engine — `pinterest-creative-director` already produces 6 styles; not rebuilding
+- Auto-evolve / winner loop — already running daily via cron
+- GMC, GA4, TikTok, canonical/SEO structure — explicitly out of scope per your guardrails
 
-6. **Attribution persistence audit**: verify `first_touch` / `last_touch` survive PDP→cart→checkout→`/order-success`, write back into `orders.attribution_first_touch` / `attribution_last_touch` columns so revenue-by-source is accurate. Add migration only if columns don't exist.
-7. **Missing events** found in Phase 1 audit get instrumented: `variant_change`, `gallery_interaction`, `remove_from_cart`, `add_shipping_info`, `add_payment_info`, `newsletter_signup`, `guide_view`, `guide_cta_click` (most of these likely already exist — audit will tell us).
-8. **Playwright e2e** `tracking-funnel.spec.ts`: visit product → ATC → checkout → mock purchase → assert each `lp_funnel_events` row exists with full envelope.
+## Implementation order
 
-## What I will NOT touch
-
-Per your guardrails: no URL changes, no SEO/canonical edits, no product/collection/PDP rewrites, no ad campaign config changes, no removal of existing events, no changes to `SafeGlobalVisitorTracker` / `SafePinterestTag` / pixel boot order.
+1. Add `/pinterest-feed.xml` public route mapping → `pinterest-feed` edge function
+2. Build `/admin/pinterest-health` page + register in `AdminLayout` + `App.tsx`
+3. Build `/admin/pinterest-products` page wired to autopilot scorer
+4. Build `/admin/pinterest-scheduler` page (read-only queue view)
+5. Build `/admin/pinterest-trends` + `/admin/pinterest-revenue` wrapper pages
+6. Final report: tracking status, catalog status, feed URL, readiness score, top 25 products, 30-day plan
 
 ## Technical notes
 
-- All new dashboards: admin-guarded, lazy-loaded route (matches `BotThresholdReport`, `CleanKpiDashboard`, `DegradedEventsPage` pattern).
-- Bot/QA traffic excluded by default with a toggle.
-- Use `unique session_id` counts for funnel steps (not raw event counts) — same convention as Clean KPI dashboard.
-- Revenue source: `orders` table joined to `lp_funnel_events` on `session_id` for attribution.
-- No mock data, no placeholders — if a metric has zero rows it renders "No data yet" with the SQL behind it.
-
-## One question before I start
-
-**Do you want me to start with Milestone 1 now (audit + `/admin/funnel`), or would you rather I run only the audit first (Phase 1 report to `/mnt/documents/funnel-audit.md`) so you can see what's actually broken before I build dashboards?**
-
-The audit-first path is safer — we'll likely find that 2-3 specific events are missing and most of the "no funnel data" problem is just bounced TikTok traffic, which changes what we build.
+- All new admin pages: lazy-loaded via existing `AdminLayout` lazy pattern (per memory `bundle-optimization`)
+- All Supabase calls: use `auth.getUser()` + service role only via existing edge fns (per memory `edge-function-and-api-standards`)
+- New pages use semantic tokens from `index.css`; no custom color classes
+- No DB schema changes needed — all tables already exist
+- No new secrets required — Pinterest OAuth already linked
