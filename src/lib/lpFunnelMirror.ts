@@ -49,6 +49,13 @@ const MIRRORED_EVENTS = new Set([
   // begin_checkout → purchase conversion per UTM source (TikTok, Pinterest…).
   'begin_checkout',
   'purchase',
+  // TikTok PDP variant instrumentation — mirrored so the 72h measurement
+  // phase can compute buy-box visibility, first-interaction latency and
+  // ATC / Buy Now rates server-side from lp_funnel_events.
+  'tiktok_pdp_buy_box_visible',
+  'tiktok_first_interaction',
+  'tiktok_atc_click',
+  'tiktok_buy_now_click',
 ]);
 
 const SESSION_ID_KEY = 'gp_session_id';
