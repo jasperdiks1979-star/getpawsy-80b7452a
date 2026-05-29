@@ -2722,6 +2722,30 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="products-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductsPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="traffic-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TrafficPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="tracking-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TrackingHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
