@@ -1,0 +1,1 @@
+ALTER TABLE public.lp_funnel_events ALTER COLUMN funnel DROP DEFAULT;
