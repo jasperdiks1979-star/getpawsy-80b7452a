@@ -221,4 +221,57 @@ describe('fireCartOpen', () => {
     expect(inserts).toHaveLength(1);
     expect(inserts[0].row.source_component).toBe('cart_icon_mobile');
   });
+
+  it('shares session_id with add_to_cart in the same session', async () => {
+    fireUserAddToCart({
+      product_id: 'prod_shared',
+      qty: 1,
+      price: 10,
+      source_component: 'pdp_main_cta',
+    });
+    fireCartOpen({ source_component: 'cart_icon_mobile', item_count: 1 });
+    await flush();
+    expect(inserts).toHaveLength(2);
+    const atc = inserts.find(i => i.row.event_name === 'add_to_cart')!;
+    const open = inserts.find(i => i.row.event_name === 'cart_open')!;
+    expect(atc.row.session_id).toBeTruthy();
+    expect(atc.row.session_id).toBe(open.row.session_id);
+  });
+
+  it('different products in the same bucket are NOT deduped against each other', async () => {
+    // Idempotency key includes product_id so distinct products must still write.
+    fireUserAddToCart({ product_id: 'prod_A', qty: 1, price: 10, source_component: 'pdp_main_cta' });
+    fireUserAddToCart({ product_id: 'prod_B', qty: 1, price: 10, source_component: 'pdp_main_cta' });
+    await flush();
+    expect(inserts).toHaveLength(2);
+    const ids = inserts.map(i => i.row.product_id).sort();
+    expect(ids).toEqual(['prod_A', 'prod_B']);
+  });
+});
+
+describe('QA bypass does not poison real-event dedupe', () => {
+  it('a QA ATC followed by a real ATC for the same product still writes the real row', async () => {
+    // Previously the envelope unconditionally marked the bucket as seen,
+    // which silently dropped the next real event. TRK-2 hardening: only
+    // real (non-QA, non-skipDedupe) inserts reserve the bucket.
+    fireUserAddToCart({
+      product_id: 'prod_real',
+      qty: 1,
+      price: 10,
+      source_component: 'qa_admin_sim',
+      qa: true,
+    });
+    fireUserAddToCart({
+      product_id: 'prod_real',
+      qty: 1,
+      price: 10,
+      source_component: 'pdp_main_cta',
+    });
+    await flush();
+    expect(inserts).toHaveLength(2);
+    const real = inserts.find(i => i.row.qa === false);
+    expect(real).toBeTruthy();
+    expect(real!.row.classification).toBe('verified_user');
+    expect(real!.row.product_id).toBe('prod_real');
+  });
 });
