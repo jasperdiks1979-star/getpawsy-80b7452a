@@ -50,6 +50,7 @@ import {
   fireUserAddToCart,
   fireCheckoutClick,
   fireCheckoutError,
+  fireCartOpen,
 } from '@/lib/funnelEvents';
 import { getBotClassification } from '@/lib/botDetection';
 
@@ -197,5 +198,27 @@ describe('fireCheckout*', () => {
     fireCheckoutClick({ source_component: 'cart_proceed_button' });
     await flush();
     expect(inserts).toHaveLength(1);
+  });
+});
+
+describe('fireCartOpen', () => {
+  it('writes one cart_open row and tags the source_component', async () => {
+    fireCartOpen({ source_component: 'cart_icon_mobile', item_count: 2 });
+    await flush();
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0].table).toBe('lp_funnel_events');
+    expect(inserts[0].row.event_name).toBe('cart_open');
+    expect(inserts[0].row.source_component).toBe('cart_icon_mobile');
+    expect(inserts[0].row.classification).toBe('verified_user');
+  });
+
+  it('dedupes icon-click + /cart route mount within 10s (single row)', async () => {
+    // Simulates user tapping the cart icon, then the Cart page mount firing
+    // its own cart_open within the same session/10s bucket.
+    fireCartOpen({ source_component: 'cart_icon_mobile', item_count: 1 });
+    fireCartOpen({ source_component: 'cart_page', item_count: 1 });
+    await flush();
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0].row.source_component).toBe('cart_icon_mobile');
   });
 });

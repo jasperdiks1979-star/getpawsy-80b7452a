@@ -42,6 +42,17 @@ import { buildCategoryTree, type CategoryTreeNode } from '@/lib/canonical-catego
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { fireCartOpen } from '@/lib/funnelEvents';
+
+/** Fire a single cart_open intent — central dedupe collapses any duplicate
+ *  fired by the /cart route mount within the 10s idempotency window. */
+function emitCartOpen(source: 'cart_icon_desktop' | 'cart_icon_mobile', itemCount: number) {
+  try {
+    fireCartOpen({ source_component: source, item_count: itemCount });
+  } catch {
+    /* analytics never breaks UX */
+  }
+}
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -415,6 +426,7 @@ export const Navbar = () => {
               <Link
                 to="/cart"
                 aria-label={totalItems > 0 ? `Shopping cart (${totalItems} items)` : 'Shopping cart'}
+                onClick={() => emitCartOpen('cart_icon_desktop', totalItems)}
               >
                 <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
                   <Button variant="ghost" size="icon" className="relative rounded-full" tabIndex={-1} aria-hidden="true">
@@ -442,6 +454,7 @@ export const Navbar = () => {
               to="/cart"
               className="sm:hidden"
               aria-label={totalItems > 0 ? `Shopping cart (${totalItems} items)` : 'Shopping cart'}
+              onClick={() => emitCartOpen('cart_icon_mobile', totalItems)}
             >
               <div ref={cartIconRef as React.RefObject<HTMLDivElement>}>
                 <Button variant="ghost" size="icon" className="relative rounded-full" tabIndex={-1} aria-hidden="true">
