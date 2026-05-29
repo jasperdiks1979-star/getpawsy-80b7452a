@@ -471,6 +471,7 @@ export function firePdpView(input: {
   product_id: string;
   product_name?: string | null;
   price?: number | null;
+  qa?: boolean;
 }): void {
   fireLpEvent({
     event_name: 'pdp_view',
@@ -478,6 +479,7 @@ export function firePdpView(input: {
     product_id: input.product_id,
     product_name: input.product_name ?? null,
     value: input.price ?? null,
+    qa: input.qa,
   });
 }
 
