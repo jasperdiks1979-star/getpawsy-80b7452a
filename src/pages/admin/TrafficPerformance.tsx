@@ -127,7 +127,7 @@ export default function TrafficPerformance() {
       for (const b of buckets.values()) b.revenue = 0;
       for (const o of paid) {
         const sid = o.stripe_session_id ? stripeToSid.get(o.stripe_session_id) : undefined;
-        const src = (sid && sidSource.get(sid)) ?? 'direct';
+        const src: Source = (sid ? sidSource.get(sid) : undefined) ?? 'direct';
         const b = buckets.get(src);
         if (b) b.revenue += Number(o.total_amount ?? 0);
       }
