@@ -316,6 +316,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       item_count: input.item_count ?? null,
       destination_url: input.destination_url ?? null,
       error_reason: input.error_reason ?? null,
+      ...qualityFields(env),
     };
     void supabase
       .from('checkout_funnel_events')
