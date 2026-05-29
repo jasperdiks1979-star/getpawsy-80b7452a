@@ -117,6 +117,7 @@ import {
   LitterBoxLovedSection,
 } from "@/components/products/LitterBoxConversionBoost";
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
+import TikTokPdpVariant from "@/components/product/TikTokPdpVariant";
 import { useGuidesList } from "@/hooks/useGuides";
 import {
   DELIVERY_TIME_STANDARD,
