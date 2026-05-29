@@ -2684,6 +2684,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="bot-threshold"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BotThresholdReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
