@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
-import { fireCartOpen } from '@/lib/funnelEvents';
+import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CartUpsell } from '@/components/cart/CartUpsell';
@@ -74,6 +74,20 @@ const Cart = () => {
   // Calculate progress to free shipping
   const shippingProgress = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100);
   const amountToFreeShipping = Math.max(FREE_SHIPPING_THRESHOLD - totalPrice, 0);
+
+  // Shared handler: fires the cart-stage checkout intent so we can measure
+  // cart → /checkout drop-off. The actual create-checkout invoke + redirect
+  // events fire on the /checkout page itself.
+  const handleCartCheckoutClick = (source_component: string) => {
+    try {
+      fireCheckoutClick({
+        source_component,
+        item_count: items.reduce((s, i) => s + i.quantity, 0),
+        value: Number(total.toFixed(2)),
+        currency: 'USD',
+      });
+    } catch { /* analytics never breaks UX */ }
+  };
 
   if (items.length === 0) {
     if (premiumV4) {
