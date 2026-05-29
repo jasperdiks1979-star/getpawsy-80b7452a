@@ -187,6 +187,8 @@ export interface UserAddToCartInput {
   price: number;
   currency?: string;
   source_component: string; // e.g. 'pdp_sticky_cta', 'cart_drawer', 'pdp_main_cta'
+  /** QA-simulated event from admin dashboard — tagged classification='qa', excluded from Clean. */
+  qa?: boolean;
 }
 
 /**
@@ -212,8 +214,8 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
-    if (env.is_bot) return; // never count bot ATC
-    if (env.deduped) return; // collapsed inside 10s window
+    if (env.is_bot && !input.qa) return; // never count bot ATC (except QA)
+    if (env.deduped && !input.qa) return; // collapsed inside 10s window
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -240,6 +242,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       validation_status: 'verified',
       degraded,
       ...qualityFields(env),
+      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
       raw_payload: {
         slug: input.slug ?? null,
         qty: input.qty,
