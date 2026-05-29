@@ -65,14 +65,29 @@ function makeIdempotencyKey(
   );
 }
 
-function isDuplicate(key: string): boolean {
+/**
+ * Read-only dedupe peek. Used by `envelope()` so that QA / skipDedupe events
+ * never poison the cache for subsequent real events in the same 10s bucket.
+ */
+function peekDuplicate(key: string): boolean {
   try {
-    const fullKey = DEDUPE_PREFIX + key;
-    if (sessionStorage.getItem(fullKey)) return true;
-    sessionStorage.setItem(fullKey, String(Date.now()));
-    return false;
+    return !!sessionStorage.getItem(DEDUPE_PREFIX + key);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Mark an idempotency key as consumed. Callers MUST invoke this only after
+ * passing all gates (not bot, not QA, not skipDedupe) and only when an actual
+ * insert is about to fire — otherwise we'd silently drop the next real event
+ * in the same 10s bucket.
+ */
+function markDeduped(key: string): void {
+  try {
+    sessionStorage.setItem(DEDUPE_PREFIX + key, String(Date.now()));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -149,7 +164,7 @@ function envelope(opts: {
     bot_reason: cls.bot_reason,
     traffic_quality_score: cls.traffic_quality_score,
     geo_quality: getGeoQuality(),
-    deduped: isDuplicate(key),
+    deduped: peekDuplicate(key),
     classification: classifyTraffic(cls.is_bot, cls.traffic_quality_score, dev.device_confidence),
     geo_tier: getCachedUsTier(),
     geo_country: getCachedGeoCountry(),
