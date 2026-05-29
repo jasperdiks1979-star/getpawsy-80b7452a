@@ -10,6 +10,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
 import { sanitizeTrackingFields, cleanString, isBotUserAgent } from '@/lib/eventSanitizer';
+import { getDeviceClassification } from '@/lib/deviceClassify';
+import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geo';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
+import { getStoredUTMParams } from '@/hooks/useUTMTracking';
+
+const LANDING_PAGE_KEY = 'gp_landing_page';
+
+function getLandingPage(): string | null {
+  try {
+    const store = window.sessionStorage;
+    let lp = store.getItem(LANDING_PAGE_KEY);
+    if (!lp) {
+      const stored = getStoredUTMParams();
+      lp = stored.landing_page ?? (window.location.pathname + window.location.search);
+      store.setItem(LANDING_PAGE_KEY, lp);
+    }
+    return lp.slice(0, 500);
+  } catch {
+    return null;
+  }
+}
 
 const MIRRORED_EVENTS = new Set([
   'lp_view',
