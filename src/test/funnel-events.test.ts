@@ -101,7 +101,7 @@ describe('fireUserAddToCart', () => {
     expect((inserts[0].row.raw_payload as Record<string, unknown>).slug).toBe('cozy-cat-tree');
   });
 
-  it('skips entirely when both product_id and slug are missing', async () => {
+  it('still records degraded ATC with full envelope when product_id AND slug are missing', async () => {
     fireUserAddToCart({
       product_id: '',
       qty: 1,
@@ -109,7 +109,29 @@ describe('fireUserAddToCart', () => {
       source_component: 'pdp_main_cta',
     });
     await flush();
-    expect(inserts).toHaveLength(0);
+    expect(inserts).toHaveLength(1);
+    const row = inserts[0].row;
+    expect(row.degraded).toBe(true);
+    expect(row.product_id).toBeNull();
+    expect(row.validation_status).toBe('degraded');
+    // Envelope must still be usable for Clean KPI segmentation.
+    expect(row.classification).toBe('verified_user');
+    expect(row.geo_tier).toBe('us');
+    expect(row.device).toBe('mobile');
+    expect((row.raw_payload as Record<string, unknown>).degraded_reason)
+      .toBe('no_product_id_or_slug');
+  });
+
+  it('degraded ATC events from different placements are NOT collapsed by dedupe', async () => {
+    fireUserAddToCart({
+      product_id: '', qty: 1, price: 10, source_component: 'pdp_main_cta',
+    });
+    fireUserAddToCart({
+      product_id: '', qty: 1, price: 10, source_component: 'cart_drawer',
+    });
+    await flush();
+    expect(inserts).toHaveLength(2);
+    expect(inserts.every(i => i.row.degraded === true)).toBe(true);
   });
 
   it('dedupes within 10s window for the same product+session', async () => {
