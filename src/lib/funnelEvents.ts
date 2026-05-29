@@ -272,6 +272,8 @@ export interface CheckoutEventInput {
   currency?: string;
   destination_url?: string | null;
   error_reason?: string | null;
+  /** QA-simulated event — tagged qa=true, excluded from Clean KPI. */
+  qa?: boolean;
 }
 
 export function fireCheckoutEvent(input: CheckoutEventInput): void {
@@ -295,14 +297,14 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       geo_quality: env.geo_quality,
       traffic_quality_score: env.traffic_quality_score,
     });
-    if (env.is_bot) {
+    if (env.is_bot && !input.qa) {
       console.warn('[funnel:checkout] skipped — is_bot', {
         step: input.step,
         bot_reason: env.bot_reason,
       });
       return;
     }
-    if (env.deduped && input.step === 'checkout_click') {
+    if (env.deduped && input.step === 'checkout_click' && !input.qa) {
       console.warn('[funnel:checkout] skipped — deduped (idempotency window)', {
         step: input.step,
         idempotency_key: env.idempotency_key,
@@ -335,6 +337,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       destination_url: input.destination_url ?? null,
       error_reason: input.error_reason ?? null,
       ...qualityFields(env),
+      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
     };
     void supabase
       .from('checkout_funnel_events')
