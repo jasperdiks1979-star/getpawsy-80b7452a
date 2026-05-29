@@ -226,6 +226,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       traffic_quality_score: env.traffic_quality_score,
       deduped: env.deduped,
       validation_status: 'verified',
+      ...qualityFields(env),
       raw_payload: {
         qty: input.qty,
         price: input.price,
