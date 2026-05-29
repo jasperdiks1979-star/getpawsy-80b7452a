@@ -11,7 +11,7 @@ import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
 import { sanitizeTrackingFields, cleanString, isBotUserAgent } from '@/lib/eventSanitizer';
 import { getDeviceClassification } from '@/lib/deviceClassify';
-import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geo';
+import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
 import { getPersistedUtm } from '@/lib/utmNormalizer';
 import { getStoredUTMParams } from '@/hooks/useUTMTracking';
 
