@@ -212,20 +212,26 @@ export interface UserAddToCartInput {
  */
 export function fireUserAddToCart(input: UserAddToCartInput): void {
   try {
-    // Degraded path: product_id missing but we still have a slug → log the
-    // event so the dashboard sees the intent, flag it as degraded so it's
-    // visible in the data quality breakdown.
+    // Degraded path: product_id and/or slug missing → STILL record the
+    // event so the Clean KPI dashboard can count the intent and segment
+    // it by classification / geo_tier / device. Without this fallback we
+    // were silently dropping ATC clicks whenever the PDP failed to wire
+    // product metadata, which inflated checkout-without-ATC anomalies.
     const hasProductId = typeof input.product_id === 'string' && input.product_id.length > 0;
     const hasSlug = typeof input.slug === 'string' && (input.slug?.length ?? 0) > 0;
-    if (!hasProductId && !hasSlug) {
-      console.debug('[funnelEvents] ATC skipped — no product_id or slug');
-      return;
-    }
     const degraded = !hasProductId;
+    // When neither identifier is present, scope the idempotency key to the
+    // source_component so two distinct placements firing in the same 10s
+    // bucket aren't collapsed into one row.
+    const fallbackProductKey = hasProductId
+      ? input.product_id
+      : hasSlug
+      ? (input.slug as string)
+      : `__nopid__:${input.source_component}`;
     const env = envelope({
       event_source: 'user_click',
       source_component: input.source_component,
-      product_id: input.product_id || input.slug || null,
+      product_id: fallbackProductKey,
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
@@ -256,7 +262,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       geo_quality: env.geo_quality,
       traffic_quality_score: env.traffic_quality_score,
       deduped: env.deduped,
-      validation_status: 'verified',
+      validation_status: degraded ? 'degraded' : 'verified',
       degraded,
       ...qualityFields(env),
       ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
@@ -266,6 +272,11 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
         price: input.price,
         currency: input.currency ?? 'USD',
         degraded,
+        degraded_reason: degraded
+          ? !hasProductId && !hasSlug
+            ? 'no_product_id_or_slug'
+            : 'no_product_id'
+          : null,
         first_touch: first,
         last_touch: last,
       },
@@ -295,6 +306,13 @@ export interface CheckoutEventInput {
 
 export function fireCheckoutEvent(input: CheckoutEventInput): void {
   try {
+    // Degraded path: a checkout click without a cart_id or item_count
+    // means the cart context never hydrated. We still record the event
+    // (envelope intact) so Clean KPIs include the intent, and tag it as
+    // degraded so the dashboard can surface it for repair.
+    const hasCartId = typeof input.cart_id === 'string' && input.cart_id.length > 0;
+    const hasItems = typeof input.item_count === 'number' && input.item_count > 0;
+    const degraded = !hasCartId || !hasItems;
     const env = envelope({
       event_source: 'user_click',
       source_component: input.source_component,
@@ -345,6 +363,14 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
         source: last.source,
         medium: last.medium,
         campaign: last.campaign,
+        degraded,
+        degraded_reason: degraded
+          ? !hasCartId && !hasItems
+            ? 'no_cart_or_items'
+            : !hasCartId
+            ? 'no_cart_id'
+            : 'no_item_count'
+          : null,
       },
       source: 'client',
       event_source: env.event_source,
