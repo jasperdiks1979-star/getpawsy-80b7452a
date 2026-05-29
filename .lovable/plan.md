@@ -1,54 +1,61 @@
-## Tracking Reliability Overhaul — Phased
+# GetPawsy Funnel Tracking Audit & Revenue Analytics
 
-Goal: make funnel data trustworthy. **No UI polish. No Stripe/checkout/webhook/pricing/SEO changes.** Only safe instrumentation + admin diagnostics.
+This is a large, multi-phase build. Before I start writing code I want to align on scope and sequencing so we don't ship half-finished dashboards or duplicate what already exists.
 
-### Phase TRK-1 — Audit + Foundation (read-only + shared helpers)
-- Map every event firing site (`session_start`, `pdp_view`, `add_to_cart`, `cart_open`, `checkout_click`, `checkout_redirect_attempt/success`, `checkout_error`, `payment_success`, `rage_click`, `scroll_depth`, `session_end`) → produce inventory in `docs/tracking-audit.md`.
-- Harden `src/lib/deviceClassify.ts` (already exists): add viewport + touch fallbacks, in-app browser priority, persist to sessionStorage, re-export to `funnelEvents.ts` writer so **every** event row gets `device/os/browser_family/in_app_browser` automatically.
-- Harden `src/lib/botDetection.ts`: add `legacy_unknown` vs `verified_user`/`probable_user`/`bot_like` classification, attach to every event write.
-- Add stable `idempotencyKey(eventName, productId, sessionId, bucketMs)` helper + in-memory + sessionStorage dedupe in `funnelEvents.ts`.
-- Edge fn `geo-classify`: read `cf-ipcountry`, `x-vercel-ip-country`, `x-country-code`, fallback to `accept-language`. Return `geo_tier ∈ {verified_us, probable_us, non_us, unknown, bot_like}`.
+## What already exists (from prior work in this project)
 
-### Phase TRK-2 — Add-to-Cart + Cart-Open (the critical fix)
-- `CartContext.addToCart`: after state confirms insert, fire `add_to_cart` once with `{product_id, slug, title, price, quantity, variant, event_source:'user_click', session_id, visitor_id, utm_*, landing_page, referrer, device_*}`.
-- Suppress firing on: rehydrate from localStorage, SSR/hydration, bot-classified sessions (still log but mark `classification='bot_like'`), missing `event_source` (no auto button).
-- Add `cart_open` fire on cart drawer open / `/cart` route entry (once per session per open).
-- Fallback: if `product_id` missing but `slug` exists, write with `product_id=null, slug` + flag `degraded=true`.
+Tracking foundation is actually quite mature:
 
-### Phase TRK-3 — Checkout Click + Redirect (safe wrap, no Stripe changes)
-- Wrap existing checkout CTA handler: fire `checkout_click` on tap, `checkout_redirect_attempt` immediately before `supabase.functions.invoke('create-checkout')`, `checkout_redirect_success` when URL received & `window.location.href=` is about to execute, `checkout_error` on throw with `{code, message_safe}` (no tokens/PII/email).
-- **No changes** to `create-checkout` edge fn body, no changes to webhook, no changes to payment-success logic except already-present event mirror.
+- `lp_funnel_events` table with envelope columns: `session_id`, `event_name`, `product_id`, `product_name`, `value`, `utm_*`, `classification`, `geo_tier`, `geo_country`, `device`, `os_family`, `browser_family`, `is_bot`, `qa`, `validation_status`, `degraded`, `idempotency_key`, `raw_payload`.
+- `src/lib/funnelEvents.ts` — `fireUserAddToCart`, `fireCheckoutEvent`, `firePdpView`, `fireScrollDepth`, `fireRageClick`, `fireSessionEnd`, `fireReturnVisit`, with dedupe + degraded fallback (TRK-1/TRK-2).
+- `src/lib/attribution.ts` — first/last touch in sessionStorage, classifies tiktok/pinterest/google_ads/google_organic/meta/email/direct/referral.
+- `src/lib/checkoutFunnel.ts` — Stripe/Klarna funnel mirror via `track-checkout-funnel` edge function.
+- `src/hooks/useUTMTracking.ts` + `logUtmSession` — 30-day UTM persistence.
+- Admin views: `/admin/clean-kpi`, `/admin/degraded-events`, `/admin/bot-threshold-report`, plus the existing Klarna funnel report.
+- GA4, TikTok Pixel, Pinterest Tag, Meta — all wired through `SafeGlobalVisitorTracker` / `SafePinterestTag` / `marketingClient`.
 
-### Phase TRK-4 — Admin /admin/funnel-health Upgrade
-- Two KPI modes toggle: **Clean** (classification IN ('verified_user','probable_user') AND qa=false) vs **Raw** (all).
-- Cards: Data Quality Score, Tracking Reliability, Unknown Geo %, Unknown Device %, Bot-filtered %, Verified Sessions, US Verified, PDP→ATC %, ATC→Checkout %, Checkout→Payment %.
-- Breakdowns: source (TikTok/Pinterest/Direct/Google/Other), device, geo tier.
-- Top PDPs / landing / exit tables.
-- QA buttons: Simulate PDP View / ATC / Checkout Click / Redirect Success — all marked `qa=true`, excluded from Clean.
-- "Latest events" inspector table with filters (1h/10h/24h/7d, type, source, clean/qa/bot).
+The "only view_item events" symptom is almost certainly **not** missing instrumentation — it's that TikTok Bio traffic on a mobile carrier IP is bouncing before ATC. But we should prove that with an audit instead of assuming.
 
-### Phase TRK-5 — Tests + CSV diagnostic + Report
-- Vitest:
-  - `add_to_cart` fires once on real click, not on render/rehydrate
-  - `checkout_click` + `checkout_redirect_success` ordering
-  - device classifier identifies iPhone-Safari, TikTok webview UA, Pinterest UA
-  - geo classifier downgrades unknown → excluded from Clean US KPI
-  - QA events excluded from Clean
-  - bot UA events excluded from Clean
-- Admin CSV paste-box: parse uploaded session CSV, compare counts vs DB, flag mismatches (e.g. "CSV shows 66 PDP views, DB Clean shows N — delta X").
-- Final report: files changed, what was broken, mobile test steps, what should turn green, what NOT to touch.
+## Proposed approach — split into 3 shippable milestones
 
-### Hard safety rails (apply to every phase)
-- No edits to: Stripe `create-checkout`, `stripe-webhook`, pricing, canonical/`useCanonical`, sitemap files, `merchant-policy`, robots, Merchant feed exporter.
-- No PII / token / email / Stripe key in any log or event payload.
-- No fake reviews/sales/stats.
-- All admin diagnostics gated behind existing admin role check.
-- Mobile LCP/CLS: tracking writes stay idle-deferred via existing `requestIdleCallback` pattern in `usePdpFunnelTracking`.
+Rather than one giant PR, I'd ship this in 3 reviewable chunks. Each milestone is independently useful.
 
-### Technical notes
-- DB: writes target existing `lp_funnel_events` table (plus its session_id/classification/qa columns). If schema lacks `classification`, `qa`, `geo_tier`, `device`, `in_app_browser` columns → one additive migration (no destructive changes), with GRANTs.
-- Edge fn `geo-classify` already exists — extend, don't replace.
-- Use existing `getDeviceClassification()`, `getBotClassification()`, `ensureGeoClassified()` — wire them into the central event writer so call sites stay clean.
+### Milestone 1 — Audit + Funnel Dashboard (the most valuable piece)
 
-### Ask before I start
-Confirm phase order **TRK-1 → TRK-5** (one phase per turn, like CI-22/23), and confirm I may add the additive migration in TRK-1 if `lp_funnel_events` is missing the columns above.
+1. **Run the audit live** (no code): query `lp_funnel_events` grouped by `event_name`, source, device for the last 30 days to produce the real **Event Inventory Report** and **Funnel Coverage Report**. Output to `/mnt/documents/funnel-audit.md`. This tells us exactly which events are firing vs missing before we write any code.
+2. **`/admin/funnel`** — the conversion dashboard:
+   - Funnel: visitors → product_view → add_to_cart → checkout_click → payment_success
+   - Conversion rates between each step
+   - Revenue per visitor / session / source / campaign
+   - Date range + source/campaign/device filters
+   - Reuses `lp_funnel_events` + `orders` table
+
+### Milestone 2 — Product & Source dashboards
+
+3. **`/admin/products-performance`** — per-product views/ATCs/checkouts/purchases/revenue/CVR, sortable.
+4. **`/admin/traffic-performance`** — per-source (TikTok / Pinterest / Google / Direct / Email) visitors/ATCs/purchases/revenue/ROAS where ad spend is known.
+5. **`/admin/tracking-health`** — pixel heartbeat panel: last-seen timestamp per GA4 / TikTok / Pinterest / Meta event, plus "missing event" alerts (e.g. ATC fired but no GA4 ATC seen in last 24h).
+
+### Milestone 3 — Attribution hardening + test suite
+
+6. **Attribution persistence audit**: verify `first_touch` / `last_touch` survive PDP→cart→checkout→`/order-success`, write back into `orders.attribution_first_touch` / `attribution_last_touch` columns so revenue-by-source is accurate. Add migration only if columns don't exist.
+7. **Missing events** found in Phase 1 audit get instrumented: `variant_change`, `gallery_interaction`, `remove_from_cart`, `add_shipping_info`, `add_payment_info`, `newsletter_signup`, `guide_view`, `guide_cta_click` (most of these likely already exist — audit will tell us).
+8. **Playwright e2e** `tracking-funnel.spec.ts`: visit product → ATC → checkout → mock purchase → assert each `lp_funnel_events` row exists with full envelope.
+
+## What I will NOT touch
+
+Per your guardrails: no URL changes, no SEO/canonical edits, no product/collection/PDP rewrites, no ad campaign config changes, no removal of existing events, no changes to `SafeGlobalVisitorTracker` / `SafePinterestTag` / pixel boot order.
+
+## Technical notes
+
+- All new dashboards: admin-guarded, lazy-loaded route (matches `BotThresholdReport`, `CleanKpiDashboard`, `DegradedEventsPage` pattern).
+- Bot/QA traffic excluded by default with a toggle.
+- Use `unique session_id` counts for funnel steps (not raw event counts) — same convention as Clean KPI dashboard.
+- Revenue source: `orders` table joined to `lp_funnel_events` on `session_id` for attribution.
+- No mock data, no placeholders — if a metric has zero rows it renders "No data yet" with the SQL behind it.
+
+## One question before I start
+
+**Do you want me to start with Milestone 1 now (audit + `/admin/funnel`), or would you rather I run only the audit first (Phase 1 report to `/mnt/documents/funnel-audit.md`) so you can see what's actually broken before I build dashboards?**
+
+The audit-first path is safer — we'll likely find that 2-3 specific events are missing and most of the "no funnel data" problem is just bounced TikTok traffic, which changes what we build.

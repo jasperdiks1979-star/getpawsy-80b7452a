@@ -339,6 +339,7 @@ const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealth"
 const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThresholdReport"));
 const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const DegradedEventsPage = lazyWithRetry(() => import("./pages/admin/DegradedEventsPage"));
+const FunnelDashboardPage = lazyWithRetry(() => import("./pages/admin/FunnelDashboard"));
 const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokCredentialsStatusPage"));
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
@@ -2706,6 +2707,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <DegradedEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="funnel"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FunnelDashboardPage />
                                 </Suspense>
                               }
                             />
