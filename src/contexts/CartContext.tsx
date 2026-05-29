@@ -251,6 +251,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 'legacy_unverified' and excluded.
     getFireUserAddToCart().then(fn => fn({
       product_id: newItem.id,
+      slug: newItem.slug ?? null,
       product_name: newItem.name,
       qty: 1,
       price: newItem.price,
