@@ -1456,20 +1456,28 @@ export type Database = {
       checkout_funnel_events: {
         Row: {
           bot_reason: string | null
+          browser_family: string | null
           cart_id: string | null
+          classification: string | null
           created_at: string
           currency: string | null
           destination_url: string | null
+          device: string | null
           error_reason: string | null
           event_source: string | null
+          geo_country: string | null
           geo_quality: string | null
+          geo_tier: string | null
           id: string
           idempotency_key: string | null
+          in_app_browser: string | null
           is_bot: boolean | null
           is_klarna: boolean | null
           item_count: number | null
           metadata: Json | null
+          os_family: string | null
           payment_method: string | null
+          qa: boolean | null
           session_id: string | null
           source: string | null
           source_component: string | null
@@ -1481,20 +1489,28 @@ export type Database = {
         }
         Insert: {
           bot_reason?: string | null
+          browser_family?: string | null
           cart_id?: string | null
+          classification?: string | null
           created_at?: string
           currency?: string | null
           destination_url?: string | null
+          device?: string | null
           error_reason?: string | null
           event_source?: string | null
+          geo_country?: string | null
           geo_quality?: string | null
+          geo_tier?: string | null
           id?: string
           idempotency_key?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           is_klarna?: boolean | null
           item_count?: number | null
           metadata?: Json | null
+          os_family?: string | null
           payment_method?: string | null
+          qa?: boolean | null
           session_id?: string | null
           source?: string | null
           source_component?: string | null
@@ -1506,20 +1522,28 @@ export type Database = {
         }
         Update: {
           bot_reason?: string | null
+          browser_family?: string | null
           cart_id?: string | null
+          classification?: string | null
           created_at?: string
           currency?: string | null
           destination_url?: string | null
+          device?: string | null
           error_reason?: string | null
           event_source?: string | null
+          geo_country?: string | null
           geo_quality?: string | null
+          geo_tier?: string | null
           id?: string
           idempotency_key?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           is_klarna?: boolean | null
           item_count?: number | null
           metadata?: Json | null
+          os_family?: string | null
           payment_method?: string | null
+          qa?: boolean | null
           session_id?: string | null
           source?: string | null
           source_component?: string | null
@@ -6946,6 +6970,8 @@ export type Database = {
       lp_funnel_events: {
         Row: {
           bot_reason: string | null
+          browser_family: string | null
+          classification: string | null
           cohort: string | null
           created_at: string
           cta_copy_label: string | null
@@ -6953,16 +6979,21 @@ export type Database = {
           cta_copy_source: string | null
           cta_variant: string | null
           deduped: boolean | null
+          degraded: boolean | null
           delta_ms: number | null
+          device: string | null
           dwell_ms: number | null
           event_name: string
           event_source: string | null
           first_click_placement: string | null
           funnel: string | null
+          geo_country: string | null
           geo_quality: string | null
+          geo_tier: string | null
           hook_family: string | null
           id: string
           idempotency_key: string | null
+          in_app_browser: string | null
           is_bot: boolean | null
           is_first_click: boolean | null
           is_internal: boolean | null
@@ -6970,11 +7001,13 @@ export type Database = {
           is_repeat_click: boolean | null
           lp_click_id: string | null
           lp_placement: string | null
+          os_family: string | null
           page_path: string | null
           placement: string | null
           previous_placement: string | null
           product_id: string | null
           product_name: string | null
+          qa: boolean | null
           raw_payload: Json | null
           repeat_index: number | null
           scroll_depth_at_click: number | null
@@ -6994,6 +7027,8 @@ export type Database = {
         }
         Insert: {
           bot_reason?: string | null
+          browser_family?: string | null
+          classification?: string | null
           cohort?: string | null
           created_at?: string
           cta_copy_label?: string | null
@@ -7001,16 +7036,21 @@ export type Database = {
           cta_copy_source?: string | null
           cta_variant?: string | null
           deduped?: boolean | null
+          degraded?: boolean | null
           delta_ms?: number | null
+          device?: string | null
           dwell_ms?: number | null
           event_name: string
           event_source?: string | null
           first_click_placement?: string | null
           funnel?: string | null
+          geo_country?: string | null
           geo_quality?: string | null
+          geo_tier?: string | null
           hook_family?: string | null
           id?: string
           idempotency_key?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           is_first_click?: boolean | null
           is_internal?: boolean | null
@@ -7018,11 +7058,13 @@ export type Database = {
           is_repeat_click?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
+          os_family?: string | null
           page_path?: string | null
           placement?: string | null
           previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          qa?: boolean | null
           raw_payload?: Json | null
           repeat_index?: number | null
           scroll_depth_at_click?: number | null
@@ -7042,6 +7084,8 @@ export type Database = {
         }
         Update: {
           bot_reason?: string | null
+          browser_family?: string | null
+          classification?: string | null
           cohort?: string | null
           created_at?: string
           cta_copy_label?: string | null
@@ -7049,16 +7093,21 @@ export type Database = {
           cta_copy_source?: string | null
           cta_variant?: string | null
           deduped?: boolean | null
+          degraded?: boolean | null
           delta_ms?: number | null
+          device?: string | null
           dwell_ms?: number | null
           event_name?: string
           event_source?: string | null
           first_click_placement?: string | null
           funnel?: string | null
+          geo_country?: string | null
           geo_quality?: string | null
+          geo_tier?: string | null
           hook_family?: string | null
           id?: string
           idempotency_key?: string | null
+          in_app_browser?: string | null
           is_bot?: boolean | null
           is_first_click?: boolean | null
           is_internal?: boolean | null
@@ -7066,11 +7115,13 @@ export type Database = {
           is_repeat_click?: boolean | null
           lp_click_id?: string | null
           lp_placement?: string | null
+          os_family?: string | null
           page_path?: string | null
           placement?: string | null
           previous_placement?: string | null
           product_id?: string | null
           product_name?: string | null
+          qa?: boolean | null
           raw_payload?: Json | null
           repeat_index?: number | null
           scroll_depth_at_click?: number | null
