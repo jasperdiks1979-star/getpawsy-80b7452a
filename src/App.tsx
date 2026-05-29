@@ -2702,6 +2702,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="degraded-events"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <DegradedEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
