@@ -1,74 +1,54 @@
-# CI-8 — AI Homepage Personalization + Dynamic Winner Routing
+## Tracking Reliability Overhaul — Phased
 
-A fully feature-flagged, additive personalization layer. Default OFF in storefront render path until verified; flag flip enables it instantly. Static homepage remains the fallback at every layer.
+Goal: make funnel data trustworthy. **No UI polish. No Stripe/checkout/webhook/pricing/SEO changes.** Only safe instrumentation + admin diagnostics.
 
-## Goals
-- Lift homepage→PDP CTR, ATC, scroll depth on cold TikTok/Pinterest mobile traffic.
-- Zero Lighthouse / SEO / canonical / checkout impact.
-- No popup spam, no fake urgency, no manipulative copy.
+### Phase TRK-1 — Audit + Foundation (read-only + shared helpers)
+- Map every event firing site (`session_start`, `pdp_view`, `add_to_cart`, `cart_open`, `checkout_click`, `checkout_redirect_attempt/success`, `checkout_error`, `payment_success`, `rage_click`, `scroll_depth`, `session_end`) → produce inventory in `docs/tracking-audit.md`.
+- Harden `src/lib/deviceClassify.ts` (already exists): add viewport + touch fallbacks, in-app browser priority, persist to sessionStorage, re-export to `funnelEvents.ts` writer so **every** event row gets `device/os/browser_family/in_app_browser` automatically.
+- Harden `src/lib/botDetection.ts`: add `legacy_unknown` vs `verified_user`/`probable_user`/`bot_like` classification, attach to every event write.
+- Add stable `idempotencyKey(eventName, productId, sessionId, bucketMs)` helper + in-memory + sessionStorage dedupe in `funnelEvents.ts`.
+- Edge fn `geo-classify`: read `cf-ipcountry`, `x-vercel-ip-country`, `x-country-code`, fallback to `accept-language`. Return `geo_tier ∈ {verified_us, probable_us, non_us, unknown, bot_like}`.
 
-## Scope (this phase)
+### Phase TRK-2 — Add-to-Cart + Cart-Open (the critical fix)
+- `CartContext.addToCart`: after state confirms insert, fire `add_to_cart` once with `{product_id, slug, title, price, quantity, variant, event_source:'user_click', session_id, visitor_id, utm_*, landing_page, referrer, device_*}`.
+- Suppress firing on: rehydrate from localStorage, SSR/hydration, bot-classified sessions (still log but mark `classification='bot_like'`), missing `event_source` (no auto button).
+- Add `cart_open` fire on cart drawer open / `/cart` route entry (once per session per open).
+- Fallback: if `product_id` missing but `slug` exists, write with `product_id=null, slug` + flag `degraded=true`.
 
-### 1. Database (migration, additive only)
-- `public.ai_homepage_variants` — variant_key (unique), traffic_source, geo_tier, device_quality, hero_category, hero_product_id, emotional_angle, headline, subheadline, primary_cta, confidence_score, performance_score, impressions, clicks, atc, purchases, bounce_delta, active, created_at.
-- `public.homepage_variant_events` — session_id, variant_key, event_type (`impression|hero_click|pdp_view|atc|purchase|bounce`), product_id, created_at.
-- GRANTs: `service_role` ALL on both. `authenticated` SELECT on `ai_homepage_variants` (admin via `has_role`). NO anon writes — all writes go through edge function with service role.
-- RLS:
-  - `ai_homepage_variants`: admins can select/insert/update/delete (`has_role(auth.uid(),'admin')`).
-  - `homepage_variant_events`: admins can select; inserts only via service role (no anon/auth insert policy).
-- Indexes: `(variant_key)`, `(traffic_source, geo_tier, device_quality)`, `(created_at desc)` on events.
+### Phase TRK-3 — Checkout Click + Redirect (safe wrap, no Stripe changes)
+- Wrap existing checkout CTA handler: fire `checkout_click` on tap, `checkout_redirect_attempt` immediately before `supabase.functions.invoke('create-checkout')`, `checkout_redirect_success` when URL received & `window.location.href=` is about to execute, `checkout_error` on throw with `{code, message_safe}` (no tokens/PII/email).
+- **No changes** to `create-checkout` edge fn body, no changes to webhook, no changes to payment-success logic except already-present event mirror.
 
-### 2. Edge function `ai-homepage-engine`
-- Public (verify_jwt false), tiny payload: `{ traffic_source, geo_quality, device_quality, returning, session_id }`.
-- Reads top winners from `product_priority` / `bestsellers` + recent ATC velocity (cached 5 min in-memory per isolate).
-- Optional Gemini Flash call (`google/gemini-2.5-flash`) to pick an emotional angle headline from a small whitelist — 400ms hard timeout, single attempt, no retry. On 429/402/timeout → returns rule-based decision.
-- Response: `{ variantKey, hero: { category, productId, headline, subheadline, primaryCta }, categoryBias: string[], blockOrder: string[], ttlSeconds }`.
-- Always returns a valid decision; never throws to client. Records nothing itself — client fires `impression` via a separate lightweight `ai-homepage-event` endpoint (or reuses funnel events).
+### Phase TRK-4 — Admin /admin/funnel-health Upgrade
+- Two KPI modes toggle: **Clean** (classification IN ('verified_user','probable_user') AND qa=false) vs **Raw** (all).
+- Cards: Data Quality Score, Tracking Reliability, Unknown Geo %, Unknown Device %, Bot-filtered %, Verified Sessions, US Verified, PDP→ATC %, ATC→Checkout %, Checkout→Payment %.
+- Breakdowns: source (TikTok/Pinterest/Direct/Google/Other), device, geo tier.
+- Top PDPs / landing / exit tables.
+- QA buttons: Simulate PDP View / ATC / Checkout Click / Redirect Success — all marked `qa=true`, excluded from Clean.
+- "Latest events" inspector table with filters (1h/10h/24h/7d, type, source, clean/qa/bot).
 
-### 3. Client lib `src/lib/homepagePersonalization.ts`
-- `shouldUsePersonalization()` — gated on `getConversionFlag('aiHomepage')` AND not bot AND not internal traffic AND not admin route. Returns false for `unknown` device confidence < 60.
-- `getHomepageVariant()` — sessionStorage cache (`gp_hp_variant_v1`, TTL 15 min). Fire-and-forget fetch; resolves to `null` quickly if not ready so first paint is always static.
-- `getHeroBias()`, `getCategoryBias()` — pure readers from the cached variant.
-- `trackHomepageVariant(event, payload)` — `navigator.sendBeacon` to the event endpoint, never throws, never awaits.
+### Phase TRK-5 — Tests + CSV diagnostic + Report
+- Vitest:
+  - `add_to_cart` fires once on real click, not on render/rehydrate
+  - `checkout_click` + `checkout_redirect_success` ordering
+  - device classifier identifies iPhone-Safari, TikTok webview UA, Pinterest UA
+  - geo classifier downgrades unknown → excluded from Clean US KPI
+  - QA events excluded from Clean
+  - bot UA events excluded from Clean
+- Admin CSV paste-box: parse uploaded session CSV, compare counts vs DB, flag mismatches (e.g. "CSV shows 66 PDP views, DB Clean shows N — delta X").
+- Final report: files changed, what was broken, mobile test steps, what should turn green, what NOT to touch.
 
-### 4. Conversion flag
-- Add `aiHomepage: false` to `src/lib/conversionFlags.ts` (default OFF — flip after admin QA).
+### Hard safety rails (apply to every phase)
+- No edits to: Stripe `create-checkout`, `stripe-webhook`, pricing, canonical/`useCanonical`, sitemap files, `merchant-policy`, robots, Merchant feed exporter.
+- No PII / token / email / Stripe key in any log or event payload.
+- No fake reviews/sales/stats.
+- All admin diagnostics gated behind existing admin role check.
+- Mobile LCP/CLS: tracking writes stay idle-deferred via existing `requestIdleCallback` pattern in `usePdpFunnelTracking`.
 
-### 5. Homepage modular blocks (presentation only, no logic change when flag off)
-Refactor `HomePage.tsx` to render an ordered list of blocks based on `blockOrder` when personalization is active; otherwise render the exact current order. Block components are the existing sections — no new layout work this phase, just an ordering wrapper:
-- `HeroSectionPremium` (with overridden headline/sub/CTA when variant provides them)
-- existing trust strip suppression already in place
-- `BenefitsSection`, `CuratedProductSection` (re-ranked by `categoryBias`), `SocialProofSection`, `SoftEmailCapture`, `HowItWorks`, `ProblemSolutionSection`, `HomepageFAQ`, `TrustTransparencySection`, `FinalCtaSection`.
+### Technical notes
+- DB: writes target existing `lp_funnel_events` table (plus its session_id/classification/qa columns). If schema lacks `classification`, `qa`, `geo_tier`, `device`, `in_app_browser` columns → one additive migration (no destructive changes), with GRANTs.
+- Edge fn `geo-classify` already exists — extend, don't replace.
+- Use existing `getDeviceClassification()`, `getBotClassification()`, `ensureGeoClassified()` — wire them into the central event writer so call sites stay clean.
 
-Hero override: when variant has `headline`/`subheadline`/`primaryCta`, `HeroSectionPremium` accepts optional props and uses them; otherwise falls back to the CI-7 defaults. No layout shift — same DOM shape, only text swap after hydration.
-
-### 6. Admin panel `/admin/homepage-ai` (lazy-loaded)
-- Route added to admin router, behind existing `has_role('admin')` guard.
-- Tabs: Variants (leaderboard sorted by performance_score), Traffic-source breakdown, Hero winner tracker, Emotional-angle performance.
-- Per-variant toggle (active on/off), rollback (deactivate all → static).
-- Pure read from new tables + small RPC for aggregates; zero storefront bundle impact (separate chunk).
-
-### 7. Measurement
-Reuse existing funnel events where possible; new events table only captures variant-attributed signals. Aggregates computed in admin via SQL views (`ai_homepage_variant_stats`).
-
-## Out of scope (explicit)
-- Checkout / cart UI (untouched).
-- Canonical, sitemap, robots, SEO meta (untouched).
-- New popups, countdowns, urgency badges (forbidden by brand rules).
-- Pro-tier AI models.
-
-## Safety
-- All new code paths gated by `aiHomepage` flag (default false).
-- Engine failure → static homepage, no user-visible error.
-- Migration is purely additive (CREATE only, no ALTER/DROP).
-- No changes to `products`, `bestsellers`, `product_priority`, or any indexed/SEO-relevant table.
-- Admin route lazy-loaded, not in main bundle.
-
-## Order of execution
-1. Migration (await approval).
-2. Edge function + event endpoint.
-3. Client lib + flag + Hero prop overrides + block ordering wrapper.
-4. Admin route (lazy).
-5. Verify: static homepage unchanged with flag OFF (screenshot 390×844), engine returns decision in <500ms, admin route loads behind role guard.
-
-Say **approve** to start with the migration.
+### Ask before I start
+Confirm phase order **TRK-1 → TRK-5** (one phase per turn, like CI-22/23), and confirm I may add the additive migration in TRK-1 if `lp_funnel_events` is missing the columns above.
