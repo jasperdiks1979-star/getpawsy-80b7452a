@@ -176,7 +176,10 @@ export function mirrorLpFunnelEvent(
     utm_medium,
     utm_campaign,
     utm_content,
-    funnel: cleanString(pickString(params, 'funnel'), 60) ?? 'tiktok_bio',
+    // Funnel label is event-provided only. Removed the legacy `tiktok_bio`
+    // default which mis-attributed every mirrored row to TikTok regardless
+    // of true source. Real TikTok attribution lives in utm_source.
+    funnel: cleanString(pickString(params, 'funnel'), 60),
     // Envelope enrichment — device / browser / geo. Required so the legacy
     // view_item path no longer writes NULL for these columns (which broke
     // the "US-only" and "mobile vs desktop" segments in the dashboards).
