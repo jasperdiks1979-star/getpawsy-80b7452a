@@ -809,6 +809,41 @@ const ProductDetail = () => {
     return <NotFound />;
   }
 
+  // ── TikTok Bio fast PDP ────────────────────────────────────────────────
+  // For ALL products, when the visitor arrives via TikTok (utm_source=tiktok,
+  // ad=tt, src=tiktok, TikTok webview UA, or tiktok.com referrer), render a
+  // dedicated single-screen above-the-fold PDP optimized for the 96.6% <5s
+  // bounce we measured on the canonical layout. Opt-out via ?notiktok=1
+  // so admins/QA can compare. Disabled when the legacy litterbox-specific
+  // TikTok variant (`showTikTokVariant`) is active so we don't double-render.
+  const tiktokFastOptOut =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('notiktok');
+  const showTikTokFastPdp = isTikTok && !showTikTokVariant && !tiktokFastOptOut;
+  if (showTikTokFastPdp) {
+    return (
+      <Layout>
+        <Helmet>
+          <meta name="robots" content="index, follow, max-image-preview:large" />
+        </Helmet>
+        <TikTokPdpVariant
+          product={{
+            id: product.id,
+            slug: product.slug,
+            name: product.name || '',
+            description: product.description,
+            price: Number(product.price),
+            compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
+            image_url: product.image_url,
+            images: (product.images as string[] | null) ?? null,
+            category: product.category,
+            stock: product.stock,
+          }}
+          reviews={reviews ?? []}
+        />
+      </Layout>
+    );
+  }
+
   // Use centralized availability logic with variant-aware fallback
   // Variant stock overrides product stock only when a variant is selected
   const variantStock = selectedVariant ? (selectedVariant as any).stock : undefined;
