@@ -5,6 +5,9 @@
 # ── Canonical product URL redirect (singular → plural) ──
 /product/:slug /products/:slug 301
 
+# ── Pinterest catalog feed (rewrite, not redirect) ──
+/pinterest-feed.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 200
+
 # ── Legacy collection singular → plural ──
 /collection/:slug /collections/:slug 301
 
