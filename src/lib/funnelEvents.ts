@@ -12,7 +12,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getBotClassification, recordEventTimingSample } from '@/lib/botDetection';
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
-import { ensureGeoClassified } from '@/lib/geoClassify';
+import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
+import { getDeviceClassification } from '@/lib/deviceClassify';
 
 const SESSION_KEY = 'gp_session_id';
 const DEDUPE_PREFIX = 'gp_fe_dedupe_';
@@ -87,6 +88,21 @@ function getGeoQuality(): string {
   return 'unknown';
 }
 
+/**
+ * Compute the funnel classification label for KPI filtering:
+ *   verified_user  — real human, full signals (passes bot + has device + non-bot UA)
+ *   probable_user  — partial signals (e.g. unknown geo but real device + no bot flags)
+ *   bot_like       — botDetection flagged
+ *   legacy_unknown — missing critical signals (no device, no UA)
+ *   qa             — explicit QA-simulated event (set by caller, not here)
+ */
+function classifyTraffic(isBot: boolean, qualityScore: number, deviceConfidence: number): string {
+  if (isBot) return 'bot_like';
+  if (deviceConfidence < 40) return 'legacy_unknown';
+  if (qualityScore >= 80 && deviceConfidence >= 80) return 'verified_user';
+  return 'probable_user';
+}
+
 /** Build the common envelope for every event row. */
 function envelope(opts: {
   event_source: EventSource;
@@ -105,10 +121,18 @@ function envelope(opts: {
   traffic_quality_score: number;
   geo_quality: string;
   deduped: boolean;
+  classification: string;
+  geo_tier: string;
+  geo_country: string | null;
+  device: string;
+  os_family: string;
+  browser_family: string;
+  in_app_browser: string | null;
 } {
   recordEventTimingSample();
   const sessionId = getSessionId();
   const cls = getBotClassification();
+  const dev = getDeviceClassification();
   const key = makeIdempotencyKey(
     sessionId,
     opts.event,
@@ -126,6 +150,13 @@ function envelope(opts: {
     traffic_quality_score: cls.traffic_quality_score,
     geo_quality: getGeoQuality(),
     deduped: isDuplicate(key),
+    classification: classifyTraffic(cls.is_bot, cls.traffic_quality_score, dev.device_confidence),
+    geo_tier: getCachedUsTier(),
+    geo_country: getCachedGeoCountry(),
+    device: dev.device,
+    os_family: dev.os_family,
+    browser_family: dev.browser_family,
+    in_app_browser: dev.in_app_browser,
   };
 }
 
