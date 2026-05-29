@@ -5,8 +5,12 @@
 # ── Canonical product URL redirect (singular → plural) ──
 /product/:slug /products/:slug 301
 
-# ── Pinterest catalog feed (rewrite, not redirect) ──
-/pinterest-feed.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 200
+# ── Pinterest catalog feed ──
+# Lovable static hosting does not proxy (status 200) to external hosts,
+# so we 302-redirect to the edge function. Pinterest's catalog crawler
+# follows 30x redirects, and the final response is valid RSS/XML.
+/pinterest-feed.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 302
+/pinterest-feed     https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 302
 
 # ── Legacy collection singular → plural ──
 /collection/:slug /collections/:slug 301
