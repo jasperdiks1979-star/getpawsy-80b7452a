@@ -14,6 +14,7 @@ import { getDeviceClassification } from '@/lib/deviceClassify';
 import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
 import { getPersistedUtm } from '@/lib/utmNormalizer';
 import { getStoredUTMParams } from '@/hooks/useUTMTracking';
+import { getLastTouch, classifySource } from '@/lib/attribution';
 
 const LANDING_PAGE_KEY = 'gp_landing_page';
 
@@ -138,9 +139,15 @@ export function mirrorLpFunnelEvent(
   // data exists. This is what closes the TikTok / Pinterest / Google Ads
   // attribution gap in lp_funnel_events.
   const persisted = getPersistedUtm();
-  const utm_source = clean.utm_source ?? persisted.utm_source ?? null;
-  const utm_medium = clean.utm_medium ?? persisted.utm_medium ?? null;
-  const utm_campaign = clean.utm_campaign ?? persisted.utm_campaign ?? null;
+  // Final-fallback: classify from referrer + URL when no UTMs were ever set.
+  // Closes the gap for organic / direct / referral / google_organic / pinterest
+  // / tiktok web traffic — without this, legacy view_item events landed with
+  // utm_source=NULL and were invisible in per-source dashboards.
+  let touch = null as ReturnType<typeof getLastTouch>;
+  try { touch = getLastTouch() ?? classifySource(); } catch { /* SSR / private mode */ }
+  const utm_source = clean.utm_source ?? persisted.utm_source ?? touch?.source ?? null;
+  const utm_medium = clean.utm_medium ?? persisted.utm_medium ?? touch?.medium ?? null;
+  const utm_campaign = clean.utm_campaign ?? persisted.utm_campaign ?? touch?.campaign ?? null;
   const utm_content = clean.utm_content ?? persisted.utm_content ?? null;
   const utm_term = pickString(params, 'utm_term') ?? persisted.utm_term ?? null;
 
