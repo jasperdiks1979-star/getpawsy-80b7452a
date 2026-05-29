@@ -179,6 +179,8 @@ function qualityFields(env: ReturnType<typeof envelope>): Record<string, unknown
 
 export interface UserAddToCartInput {
   product_id: string;
+  /** Optional product slug — used as fallback identifier when product_id is missing/empty. */
+  slug?: string | null;
   product_name?: string | null;
   variant_id?: string | null;
   qty: number;
@@ -193,10 +195,20 @@ export interface UserAddToCartInput {
  */
 export function fireUserAddToCart(input: UserAddToCartInput): void {
   try {
+    // Degraded path: product_id missing but we still have a slug → log the
+    // event so the dashboard sees the intent, flag it as degraded so it's
+    // visible in the data quality breakdown.
+    const hasProductId = typeof input.product_id === 'string' && input.product_id.length > 0;
+    const hasSlug = typeof input.slug === 'string' && (input.slug?.length ?? 0) > 0;
+    if (!hasProductId && !hasSlug) {
+      console.debug('[funnelEvents] ATC skipped — no product_id or slug');
+      return;
+    }
+    const degraded = !hasProductId;
     const env = envelope({
       event_source: 'user_click',
       source_component: input.source_component,
-      product_id: input.product_id,
+      product_id: input.product_id || input.slug || null,
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
@@ -210,7 +222,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       session_id: env.session_id,
       event_name: 'add_to_cart',
       page_path: typeof window !== 'undefined' ? window.location.pathname : null,
-      product_id: input.product_id,
+      product_id: hasProductId ? input.product_id : null,
       product_name: input.product_name ?? null,
       value: input.price * input.qty,
       utm_source: last.source,
@@ -226,11 +238,14 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       traffic_quality_score: env.traffic_quality_score,
       deduped: env.deduped,
       validation_status: 'verified',
+      degraded,
       ...qualityFields(env),
       raw_payload: {
+        slug: input.slug ?? null,
         qty: input.qty,
         price: input.price,
         currency: input.currency ?? 'USD',
+        degraded,
         first_touch: first,
         last_touch: last,
       },
