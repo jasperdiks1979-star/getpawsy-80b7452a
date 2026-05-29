@@ -6999,6 +6999,7 @@ export type Database = {
           is_internal: boolean | null
           is_misclick: boolean | null
           is_repeat_click: boolean | null
+          landing_page: string | null
           lp_click_id: string | null
           lp_placement: string | null
           os_family: string | null
@@ -7056,6 +7057,7 @@ export type Database = {
           is_internal?: boolean | null
           is_misclick?: boolean | null
           is_repeat_click?: boolean | null
+          landing_page?: string | null
           lp_click_id?: string | null
           lp_placement?: string | null
           os_family?: string | null
@@ -7113,6 +7115,7 @@ export type Database = {
           is_internal?: boolean | null
           is_misclick?: boolean | null
           is_repeat_click?: boolean | null
+          landing_page?: string | null
           lp_click_id?: string | null
           lp_placement?: string | null
           os_family?: string | null

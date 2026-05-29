@@ -10,6 +10,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
 import { sanitizeTrackingFields, cleanString, isBotUserAgent } from '@/lib/eventSanitizer';
+import { getDeviceClassification } from '@/lib/deviceClassify';
+import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
+import { getStoredUTMParams } from '@/hooks/useUTMTracking';
+
+const LANDING_PAGE_KEY = 'gp_landing_page';
+
+function getLandingPage(): string | null {
+  try {
+    const store = window.sessionStorage;
+    let lp = store.getItem(LANDING_PAGE_KEY);
+    if (!lp) {
+      const stored = getStoredUTMParams();
+      lp = stored.landing_page ?? (window.location.pathname + window.location.search);
+      store.setItem(LANDING_PAGE_KEY, lp);
+    }
+    return lp.slice(0, 500);
+  } catch {
+    return null;
+  }
+}
 
 const MIRRORED_EVENTS = new Set([
   'lp_view',
@@ -103,6 +124,37 @@ export function mirrorLpFunnelEvent(
   });
   if (!clean.page_path) return; // drop spam
 
+  // Attribution back-fill. If the caller didn't carry UTMs on the event
+  // (legacy view_item, organic landings, deferred conversion events), pull
+  // them from the persisted session/localStorage attribution layer so every
+  // mirrored row has a usable utm_source / utm_medium / utm_campaign when
+  // data exists. This is what closes the TikTok / Pinterest / Google Ads
+  // attribution gap in lp_funnel_events.
+  const persisted = getPersistedUtm();
+  const utm_source = clean.utm_source ?? persisted.utm_source ?? null;
+  const utm_medium = clean.utm_medium ?? persisted.utm_medium ?? null;
+  const utm_campaign = clean.utm_campaign ?? persisted.utm_campaign ?? null;
+  const utm_content = clean.utm_content ?? persisted.utm_content ?? null;
+  const utm_term = pickString(params, 'utm_term') ?? persisted.utm_term ?? null;
+
+  // Validation: reject NULL attribution when data IS available. We don't
+  // drop the row — that would lose the event — but we log a structured
+  // warning so the dashboard's coverage report can surface regressions.
+  if (!utm_source && !utm_medium && !utm_campaign) {
+    const hasReferrer = typeof document !== 'undefined' && !!document.referrer;
+    const hasUrlUtm = typeof window !== 'undefined' && /[?&]utm_/.test(window.location.search);
+    if (hasReferrer || hasUrlUtm) {
+      console.warn('[lpFunnelMirror] NULL attribution despite available signal', {
+        event: eventName,
+        page: clean.page_path,
+        referrer: typeof document !== 'undefined' ? document.referrer : null,
+        search: typeof window !== 'undefined' ? window.location.search : null,
+      });
+    }
+  }
+
+  const dev = getDeviceClassification();
+
   const row = {
     session_id: getSessionId(),
     event_name: eventName,
@@ -113,11 +165,21 @@ export function mirrorLpFunnelEvent(
     value: pickNumber(params, 'value'),
     lp_click_id: cleanString(pickString(params, 'lp_click_id'), 200),
     lp_placement: cleanString(pickString(params, 'lp_placement'), 120),
-    utm_source: clean.utm_source,
-    utm_medium: clean.utm_medium,
-    utm_campaign: clean.utm_campaign,
-    utm_content: clean.utm_content,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
     funnel: cleanString(pickString(params, 'funnel'), 60) ?? 'tiktok_bio',
+    // Envelope enrichment — device / browser / geo. Required so the legacy
+    // view_item path no longer writes NULL for these columns (which broke
+    // the "US-only" and "mobile vs desktop" segments in the dashboards).
+    device: dev.device,
+    os_family: dev.os_family,
+    browser_family: dev.browser_family,
+    in_app_browser: dev.in_app_browser,
+    geo_country: getCachedGeoCountry(),
+    geo_tier: getCachedUsTier(),
+    landing_page: getLandingPage(),
     // CTA variant tag — flows through from LinkInBio's CTA_VARIANT constant
     // (currently 'high_conv_v2'). Lets the admin dashboard compare CTR per
     // variant × placement to attribute uplift to specific UI experiments.

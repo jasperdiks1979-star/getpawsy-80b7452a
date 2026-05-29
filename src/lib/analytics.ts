@@ -217,7 +217,11 @@ export const trackViewItem = (
   productPrice: number,
   category?: string
 ): void => {
-  trackEvent('view_item', {
+  // Wrap with persisted UTM so the legacy view_item path carries the
+  // same attribution as the new TRK funnel events. Required for 100%
+  // TikTok / Pinterest / Google Ads / organic attribution coverage in
+  // lp_funnel_events.
+  trackEvent('view_item', withPersistedUtm({
     currency: 'USD',
     value: productPrice,
     items: [{
@@ -226,7 +230,7 @@ export const trackViewItem = (
       price: productPrice,
       item_category: category,
     }],
-  });
+  }));
 
   // TikTok Pixel — respect founder mode suppression
   if (!getFounderModeStatus()) {
