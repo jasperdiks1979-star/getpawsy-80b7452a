@@ -49,6 +49,13 @@ const MIRRORED_EVENTS = new Set([
   // begin_checkout → purchase conversion per UTM source (TikTok, Pinterest…).
   'begin_checkout',
   'purchase',
+  // TikTok PDP variant instrumentation — mirrored so the 72h measurement
+  // phase can compute buy-box visibility, first-interaction latency and
+  // ATC / Buy Now rates server-side from lp_funnel_events.
+  'tiktok_pdp_buy_box_visible',
+  'tiktok_first_interaction',
+  'tiktok_atc_click',
+  'tiktok_buy_now_click',
 ]);
 
 const SESSION_ID_KEY = 'gp_session_id';
@@ -169,7 +176,10 @@ export function mirrorLpFunnelEvent(
     utm_medium,
     utm_campaign,
     utm_content,
-    funnel: cleanString(pickString(params, 'funnel'), 60) ?? 'tiktok_bio',
+    // Funnel label is event-provided only. Removed the legacy `tiktok_bio`
+    // default which mis-attributed every mirrored row to TikTok regardless
+    // of true source. Real TikTok attribution lives in utm_source.
+    funnel: cleanString(pickString(params, 'funnel'), 60),
     // Envelope enrichment — device / browser / geo. Required so the legacy
     // view_item path no longer writes NULL for these columns (which broke
     // the "US-only" and "mobile vs desktop" segments in the dashboards).
