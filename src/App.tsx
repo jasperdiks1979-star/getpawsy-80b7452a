@@ -468,6 +468,11 @@ const PinterestNicheRulesPage = lazyWithRetry(() => import("./pages/admin/Pinter
 const RejectedSpamEventsPage = lazyWithRetry(() => import("./pages/admin/RejectedSpamEventsPage"));
 const BotTrafficDrilldownPage = lazyWithRetry(() => import("./pages/admin/BotTrafficDrilldownPage"));
 const PinterestBackdropPreviewPage = lazyWithRetry(() => import("./pages/admin/PinterestBackdropPreviewPage"));
+const PinterestHealth = lazyWithRetry(() => import("./pages/admin/PinterestHealth"));
+const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
+const PinterestSchedulerPage = lazyWithRetry(() => import("./pages/admin/PinterestSchedulerPage"));
+const PinterestTrendsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrendsPage"));
+const PinterestRevenuePage = lazyWithRetry(() => import("./pages/admin/PinterestRevenuePage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
@@ -2486,6 +2491,46 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestBackdropPreviewPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestHealth />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-products"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestProducts />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-scheduler"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestSchedulerPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-trends"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestTrendsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-revenue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestRevenuePage />
                                 </Suspense>
                               }
                             />
