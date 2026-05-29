@@ -27,6 +27,28 @@ function tier(country: string | null): string {
 }
 
 /**
+ * US-segmented tier label for the admin Clean dashboard.
+ * verified_us  : country header says US and chain is single-hop
+ * probable_us  : country=US but proxied, or accept-language en-US
+ * non_us       : known non-US country
+ * bot_like     : crawler/headless UA
+ * unknown      : nothing usable
+ */
+function usTier(country: string | null, xff: string | null, ua: string | null, acceptLang: string | null): string {
+  if (ua && BOT_UA.test(ua)) return 'bot_like';
+  if (country) {
+    const c = country.toUpperCase();
+    if (c === 'US') {
+      const hops = xff ? xff.split(',').filter(Boolean).length : 1;
+      return hops > 2 ? 'probable_us' : 'verified_us';
+    }
+    return 'non_us';
+  }
+  if (acceptLang && /^en-us\b/i.test(acceptLang)) return 'probable_us';
+  return 'unknown';
+}
+
+/**
  * Build a trust label independent of the commercial tier.
  * - bot_like  : UA is clearly automated
  * - verified  : country present AND IP chain is single-hop (no obvious proxy)
@@ -40,13 +62,41 @@ function quality(country: string | null, xff: string | null, ua: string | null):
   return hops > 2 ? 'probable' : 'verified';
 }
 
-Deno.serve((req) => {
+/** IP-based fallback: many edge providers do not forward cf-ipcountry to
+ *  Supabase functions. We hit a free, no-auth geo service with the visitor's
+ *  first forwarded IP. Best-effort, never blocks; if it fails we return null
+ *  and the caller falls back to accept-language. */
+async function ipCountryFallback(xff: string | null, realIp: string | null): Promise<string | null> {
+  try {
+    const ip = (xff?.split(',')[0]?.trim() || realIp || '').trim();
+    if (!ip || ip === '127.0.0.1' || ip.startsWith('10.') || ip.startsWith('192.168.') || ip.startsWith('::1')) return null;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 1500);
+    try {
+      const resp = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/country/`, {
+        signal: ctrl.signal,
+        headers: { 'user-agent': 'getpawsy-geo-classify/1.0' },
+      });
+      if (!resp.ok) { await resp.text().catch(() => ''); return null; }
+      const txt = (await resp.text()).trim();
+      // ipapi returns 2-letter country code or 'Undefined'
+      if (/^[A-Z]{2}$/.test(txt)) return txt;
+      return null;
+    } finally {
+      clearTimeout(t);
+    }
+  } catch {
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
   try {
     const h = req.headers;
-    const country =
+    let country =
       h.get('cf-ipcountry') ||
       h.get('x-vercel-ip-country') ||
       h.get('x-country-code') ||
@@ -61,26 +111,45 @@ Deno.serve((req) => {
       null;
 
     const xff = h.get('x-forwarded-for');
+    const realIp = h.get('x-real-ip');
     const ua = h.get('user-agent');
+    const acceptLang = h.get('accept-language');
+
+    // Fallback: most Supabase fns do not receive cf-ipcountry. Hit IP geo.
+    let countrySource: 'header' | 'ip_lookup' | 'accept_language' | 'none' = country ? 'header' : 'none';
+    if (!country) {
+      const ipCountry = await ipCountryFallback(xff, realIp);
+      if (ipCountry) {
+        country = ipCountry;
+        countrySource = 'ip_lookup';
+      } else if (acceptLang && /^en-us\b/i.test(acceptLang)) {
+        country = 'US';
+        countrySource = 'accept_language';
+      }
+    }
+
     const body = {
       country,
       region,
       city,
       geo_tier: tier(country),
       geo_quality: quality(country, xff, ua),
+      us_tier: usTier(country, xff, ua, acceptLang),
+      country_source: countrySource,
       ts: new Date().toISOString(),
     };
     return new Response(JSON.stringify(body), {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600',
+        // No public cache — geo varies per visitor IP and IP-lookup must run per session.
+        'Cache-Control': 'private, max-age=600',
       },
       status: 200,
     });
   } catch (e) {
     return new Response(
-      JSON.stringify({ country: null, geo_tier: 'unknown', geo_quality: 'unknown', error: String(e) }),
+      JSON.stringify({ country: null, geo_tier: 'unknown', geo_quality: 'unknown', us_tier: 'unknown', country_source: 'none', error: String(e) }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
