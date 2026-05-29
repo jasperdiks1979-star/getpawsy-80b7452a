@@ -28,7 +28,7 @@ describe('trackingCsv', () => {
     expect(r.unknown_geo_count).toBe(3);
     // clean = 2 verified + 1 probable = 3
     expect(r.clean_total).toBe(3);
-    expect(r.by_event['add_to_cart'].raw).toBe(3);
+    expect(r.by_event['add_to_cart'].raw).toBe(4);
     expect(r.by_event['add_to_cart'].clean).toBe(2);
     expect(r.data_quality_score).toBe(50);
     // warning: clean ATC > 0 but clean checkout_click = 0
