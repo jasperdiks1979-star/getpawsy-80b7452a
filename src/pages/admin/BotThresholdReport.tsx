@@ -93,7 +93,7 @@ export default function BotThresholdReport() {
         .order('created_at', { ascending: false })
         .limit(5000);
       if (dErr) throw dErr;
-      setRows((data ?? []) as Row[]);
+      setRows((data ?? []) as unknown as Row[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
