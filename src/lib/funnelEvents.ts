@@ -306,6 +306,13 @@ export interface CheckoutEventInput {
 
 export function fireCheckoutEvent(input: CheckoutEventInput): void {
   try {
+    // Degraded path: a checkout click without a cart_id or item_count
+    // means the cart context never hydrated. We still record the event
+    // (envelope intact) so Clean KPIs include the intent, and tag it as
+    // degraded so the dashboard can surface it for repair.
+    const hasCartId = typeof input.cart_id === 'string' && input.cart_id.length > 0;
+    const hasItems = typeof input.item_count === 'number' && input.item_count > 0;
+    const degraded = !hasCartId || !hasItems;
     const env = envelope({
       event_source: 'user_click',
       source_component: input.source_component,
@@ -356,6 +363,14 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
         source: last.source,
         medium: last.medium,
         campaign: last.campaign,
+        degraded,
+        degraded_reason: degraded
+          ? !hasCartId && !hasItems
+            ? 'no_cart_or_items'
+            : !hasCartId
+            ? 'no_cart_id'
+            : 'no_item_count'
+          : null,
       },
       source: 'client',
       event_source: env.event_source,
