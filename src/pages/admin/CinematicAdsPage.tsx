@@ -627,6 +627,8 @@ export default function CinematicAdsPage() {
         </p>
       </header>
 
+      <CinematicAdsSafetyPanel />
+
       {/* Debug panel — surfaces exact DB state so worker/admin mismatches are visible */}
       <Card className="border-dashed">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
