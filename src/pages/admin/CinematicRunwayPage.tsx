@@ -500,6 +500,17 @@ export default function CinematicRunwayPage() {
                   {mergeProgress && (
                     <p className="text-xs text-muted-foreground font-mono">{mergeProgress}</p>
                   )}
+                  <ProgressTimeline job={active} />
+                  {autoLog.length > 0 && (
+                    <details className="mt-2">
+                      <summary className="text-xs cursor-pointer text-muted-foreground">
+                        Auto-pipeline log ({autoLog.length})
+                      </summary>
+                      <pre className="text-[10px] font-mono bg-muted/40 rounded p-2 mt-1 max-h-48 overflow-auto whitespace-pre-wrap">
+                        {autoLog.join("\n")}
+                      </pre>
+                    </details>
+                  )}
                 </CardContent>
               </Card>
 
