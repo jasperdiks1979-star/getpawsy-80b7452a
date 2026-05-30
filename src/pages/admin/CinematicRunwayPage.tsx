@@ -53,6 +53,16 @@ export default function CinematicRunwayPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [mergeProgress, setMergeProgress] = useState<string>("");
+  const [autoLog, setAutoLog] = useState<string[]>([]);
+  const autoBusyRef = useRef(false);
+  const lastPollRef = useRef<Record<string, number>>({});
+
+  function log(msg: string) {
+    const line = `${new Date().toISOString().slice(11, 19)}  ${msg}`;
+    // eslint-disable-next-line no-console
+    console.log("[cinematic-runway]", line);
+    setAutoLog((prev) => [...prev.slice(-49), line]);
+  }
 
   const active = useMemo(() => jobs.find((j) => j.id === activeId) ?? jobs[0] ?? null, [jobs, activeId]);
 
