@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
   // Find eligible jobs
   const { data: jobs, error } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type, variation_signature, text_safe_area_passed, category_match_passed, motion_score, creative_quality_score, creative_reject_reason, output_duration_seconds, is_safe_to_publish, legacy_unverified, preflight_status, qa_passed")
+    .select("id, product_slug, output_mp4_url, output_thumbnail_url, output_duration_seconds, hook_variant, hook_archetype, thumbnail_phash, first3s_phash, overlay_text_hash, validation_passed, qa_composite_score, pin_publish_attempts, pinterest_asset_id, status, quarantined_assets, creative_category, style_rejection_reason, visual_uniqueness_score, hook_uniqueness_score, thumbnail_entropy_score, first_frame_originality_score, media_type, media_hash, content_type, variation_signature, text_safe_area_passed, category_match_passed, motion_score, creative_quality_score, creative_reject_reason, output_duration_seconds, is_safe_to_publish, legacy_unverified, preflight_status, qa_passed, validation_v4_passed, v4_reject_reasons, validation_v5_passed, v5_reject_reasons, fidelity_passed, fidelity_score, fidelity_reject_reasons")
     .in("status", ELIGIBLE_STATUSES)
     .is("pinterest_asset_id", null)
     .not("output_mp4_url", "is", null)
