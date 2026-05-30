@@ -474,6 +474,17 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "v5_reject" });
       continue;
     }
+    // V6 gate: product fidelity — refuse anything that misrepresents the SKU.
+    if ((job as any).fidelity_passed === false) {
+      const reasons = Array.isArray((job as any).fidelity_reject_reasons)
+        ? (job as any).fidelity_reject_reasons.join("|")
+        : "fidelity_failed";
+      await admin.from("cinematic_ad_jobs").update({
+        publish_blocked_reason: `fidelity_reject:${String(reasons).slice(0, 180)}`,
+      }).eq("id", job.id);
+      results.push({ job_id: job.id, ok: false, reason: "product_fidelity_reject" });
+      continue;
+    }
     if (job.overlay_text_hash && qOverlays.has(job.overlay_text_hash)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_overlay" }); continue;
     }
