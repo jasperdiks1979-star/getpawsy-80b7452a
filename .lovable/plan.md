@@ -1,61 +1,84 @@
 
-## Audit result — most of this already ships
+# Cinematic Ads — Production-Safe Overhaul
 
-GetPawsy already runs a deep Pinterest stack (per memory + filesystem audit):
+This is a large, multi-surface change. Before I touch any code or run any migrations, I need your approval on scope, because several parts of this carry real risk (credit spend, DB writes against existing jobs, and the autopublish edge function).
 
-| Phase | Status | What exists |
-|---|---|---|
-| 1. Tracking | Live | `SafePinterestTag` (PageVisit, ATC, Checkout, Search, Signup), `pinterest_capi_outbox` + relay, `pinterest_attribution_sessions`, UTM persistence in `lpFunnelMirror`, cross-session cookie `gp_pin_sess` |
-| 2. Catalog feed | Edge fn exists | `supabase/functions/pinterest-feed` — but not exposed at `/pinterest-feed.xml` public URL |
-| 3. Product prioritization | Live | `pinterest-autopilot` scores all products (image/margin/category/perf), logs to `pinterest_autopilot_decisions` |
-| 4. Pinterest SEO | Live | `pinterest-creative-director` + `pinterest-content-director` generate titles/descriptions/keywords/hashtags |
-| 5. Pin creation | Live | `pinterest-viral-batch` + `pinterest-pin-generator` + `pinterest-creative-director` (6 styles, safe-area engine, AI backdrops) |
-| 6. Board strategy | Live | `pinterest_boards` table + governance memory (sandbox exclusion, blacklist, auto-selection by priority/style affinity) |
-| 7. Scheduler | Live | `pinterest-scheduler` + `pinterest-cron-worker` + `pinterest-schedule-optimizer` (US peak hours, 4/day cap, ≥90min gap) |
-| 8. Trends | Live | `pinterest-trend-harvester` + `pinterest-trend-intelligence` (US seasonal calendar + evergreen pet) |
-| 9. Revenue | Partial | `pinterest-intelligence-api?panel=revenue` exists; not surfaced as standalone `/admin/pinterest-revenue` |
-| 10. AI optimization | Live | `pinterest-auto-evolve` + `pinterest-winner-detector` + `pinterest-learning-rollup` (winner clone, loser blocklist) |
+## Goals
 
-## Real gaps to close
+1. Stop bad/slideshow MP4s from ever reaching Pinterest.
+2. Stop credit-burning renders unless a job passes preflight + has a real creative plan.
+3. Make `/admin/cinematic-ads` honest about *why* each job is where it is.
+4. Leave Pinterest Tag, GMC/Pinterest feeds, GA4, Meta/TikTok pixels, Google Ads, product URLs, checkout, and storefront UX untouched.
 
-Five concrete deliverables; the rest is already running.
+## What I will change
 
-### 1. `/pinterest-feed.xml` public route
-The `pinterest-feed` edge function exists but Pinterest needs a stable public URL. Add a `public/_redirects` rule (or Vite middleware) that rewrites `/pinterest-feed.xml` → the edge function, with proper `Content-Type: application/xml` and a long browser cache + short edge cache.
+### 1. Database (single migration)
 
-### 2. `/admin/pinterest-health` — unified tracking + funnel dashboard
-New page that pulls from `pinterest_funnel_events`, `pinterest_attribution_sessions`, `pinterest_capi_outbox`, and `lp_funnel_events` to show in one view: sessions, PDP views, ATC, checkouts, purchases, revenue, CR, top products. No new edge functions — reuses `pinterest-intelligence-api` panels + direct table reads.
+Add to `cinematic_ad_jobs`:
+- `preflight_status` (`pass | fail | not_run`), `preflight_reasons text[]`
+- `qa_score int`, `qa_reasons text[]`, `qa_passed bool`
+- `creative_plan jsonb` (the 4-scene script: hook + 3 scenes + CTA, with overlay/camera/duration per scene)
+- `render_attempts int default 0`, `last_render_at timestamptz`, `last_render_error text`
+- `is_safe_to_publish bool generated/derived`
+- Extend `status` taxonomy with: `blocked_preflight`, `rendered_pending_qa`, `rejected_low_quality`, `failed_render`, `failed_publish` (mapped from existing values where possible — no destructive change).
 
-### 3. `/admin/pinterest-products` — Top 25 promotable products
-New page calling `pinterest-autopilot?action=score` and rendering the ranked list with score breakdown (image / margin / category_fit / visual_appeal / shipping / performance). Adds a "Promote now" button that enqueues a creative-director run.
+Add table `cinematic_ad_render_budget` (product_slug, last_expensive_render_at) to enforce 1 expensive render / product / 24h.
 
-### 4. `/admin/pinterest-scheduler` — visual schedule
-New page reading `pinterest_pin_queue` (status, scheduled_for, board, product) grouped by day and US peak window. Existing scheduler logic stays untouched; this is read-only surfacing.
+GRANTs + RLS preserved (authenticated read for admins via existing has_role; service_role full).
 
-### 5. `/admin/pinterest-trends` and `/admin/pinterest-revenue` — promote existing panels
-Thin admin pages that wrap the existing `pinterest-intelligence-api` `trends` and `revenue` panels into dedicated routes (currently buried inside `/admin/pinterest-intelligence`).
+### 2. Edge functions
 
-## Non-goals (already covered, won't touch)
+- **`cinematic-ad-preflight`** (new): validates title, URL, image, ≥2 usable assets, pet category, price, in-stock, Pinterest-safe copy. Writes `preflight_status` + reasons. Pure DB + light HTTP HEAD; no paid APIs.
+- **`cinematic-ad-plan`** (new): generates the 4-scene script using the existing Lovable AI Gateway (google/gemini-2.5-flash — cheap, no extra key). Category-aware templates (litter boxes / cat trees / beds / dog toys / training / small pet). Writes `creative_plan` only. No video render.
+- **`cinematic-ad-validate`** (new): post-render QA. Uses `ffprobe` (already installed in render-worker; for edge it calls a lightweight metadata endpoint we already have or downloads first/last frame via existing thumbnail). Checks: vertical 1080x1920, duration 12–20s, ≥3 distinct scene hashes, overlay text present in plan, not slideshow (mean-frame-diff threshold), file > min bytes. Updates `qa_score` + `qa_reasons` + `is_safe_to_publish`.
+- **`cinematic-ad-autopublish`** (edit, surgical): add hard gate — refuse unless `status='approved' AND qa_passed AND is_safe_to_publish AND output_mp4_url AND product_url AND board configured`. No other behavior changes. Existing video-first quality gates remain.
+- **Render worker** (`render-worker/`): add `--dry-run`, refuse to start unless `preflight_status='pass' AND creative_plan IS NOT NULL`. Increment `render_attempts`, write `last_render_error`. No automatic retry after `rejected_low_quality`.
 
-- Tag, CAPI, attribution — not touching `SafePinterestTag`, `pinterest-capi-relay`, or `pinterest_attribution_sessions`
-- Board creation/governance — already governed by sandbox-exclusion + blacklist memory rules
-- Pin generation engine — `pinterest-creative-director` already produces 6 styles; not rebuilding
-- Auto-evolve / winner loop — already running daily via cron
-- GMC, GA4, TikTok, canonical/SEO structure — explicitly out of scope per your guardrails
+### 3. Admin UI (`/admin/cinematic-ads`)
 
-## Implementation order
+- Tabs: **Needs Attention | Ready to Render | Pending QA | Approved | Published | Failed**
+- Warning banner about slideshow blocking.
+- Per-job card shows every diagnostic field you listed (title, slug, status, provider, attempts, last error, QA score + reasons, MP4 URL, Pinterest publish status, timestamps, run ID, safe-to-publish badge).
+- Buttons: **Generate Script Only**, **Run Preflight**, **Render Now** (disabled until preflight pass), **Re-run QA**, **Rebuild Creative**, **Approve** (disabled until MP4 + QA pass), **Publish Pin** (disabled until approved+safe).
+- Bulk actions: Rebuild plan / Re-run QA / Block low quality / Render approved plans.
+- Preview modal: video + script + scene breakdown + QA checklist + publish readiness.
+- Confirmation dialog before any "Render Now" (expensive) action, showing credit warning.
 
-1. Add `/pinterest-feed.xml` public route mapping → `pinterest-feed` edge function
-2. Build `/admin/pinterest-health` page + register in `AdminLayout` + `App.tsx`
-3. Build `/admin/pinterest-products` page wired to autopilot scorer
-4. Build `/admin/pinterest-scheduler` page (read-only queue view)
-5. Build `/admin/pinterest-trends` + `/admin/pinterest-revenue` wrapper pages
-6. Final report: tracking status, catalog status, feed URL, readiness score, top 25 products, 30-day plan
+Existing `PinterestQualityPanel` stays; I'll wire it to the new fields.
 
-## Technical notes
+### 4. Cleanup of existing jobs (one-time, safe)
 
-- All new admin pages: lazy-loaded via existing `AdminLayout` lazy pattern (per memory `bundle-optimization`)
-- All Supabase calls: use `auth.getUser()` + service role only via existing edge fns (per memory `edge-function-and-api-standards`)
-- New pages use semantic tokens from `index.css`; no custom color classes
-- No DB schema changes needed — all tables already exist
-- No new secrets required — Pinterest OAuth already linked
+A single SQL pass:
+- Run preflight inline for every existing job → write `preflight_status`.
+- Mark any job with `output_mp4_url` but no `creative_plan` and no QA pass as `rejected_low_quality` with reason `legacy_slideshow_unverified`. Files preserved.
+- Jobs currently "Awaiting Approval / validation failed" get `qa_reasons` populated so the admin card explains *why*.
+- Nothing is published. Nothing is deleted. Nothing is re-rendered automatically.
+
+### 5. Credit protection
+
+- Hard cap: 1 expensive render per `product_slug` per 24h unless `force=true` is passed from UI (requires confirm dialog).
+- No automatic retry after `rejected_low_quality` or `blocked_preflight`.
+- Dry-run mode for the worker.
+- "Generate Script Only" path never calls render APIs.
+
+## What I will NOT change
+
+- Pinterest Tag (`usePinterestTracking`, `SafePinterestTag`) — frozen.
+- Pinterest catalog feed, Google Merchant feed, GA4, TikTok Pixel, Meta Pixel, Google Ads.
+- Product URLs, slugs, checkout, PDP, storefront UX.
+- Existing MP4 files in storage (only their DB status changes).
+
+## Risk + cost
+
+- **Migration**: additive only, no destructive ALTERs. Reversible.
+- **Edge functions**: 3 new + 1 surgical edit to autopublish + worker preflight check.
+- **AI cost for script generation**: gemini-2.5-flash, ~$0.0001 per job. Only runs on demand or when you click "Generate Script Only".
+- **No expensive render API is called during this rollout.** Existing queued jobs will be re-classified, not re-rendered.
+
+## Final verification report I will deliver
+
+After running the cleanup pass I'll give you the exact counts you asked for (scanned / blocked / rejected / approved / ready / safe to publish), confirmation no Pinterest publish was triggered, confirmation no expensive render API was called, list of changed files, and a step-by-step "test one product safely" walkthrough using Generate Script Only → Preflight → Dry-run render.
+
+---
+
+**Scope is large (~1 migration, 3 new edge functions, 1 edited edge function, render-worker patch, ~4–6 admin UI files, 1 cleanup SQL).** Approve and I'll execute it as one production-safe run. If you want a smaller first slice (e.g. just the publish gate + cleanup, defer the new script/QA generators), say so and I'll cut accordingly.
