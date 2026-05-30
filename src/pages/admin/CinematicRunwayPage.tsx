@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const TEST_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
+const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 type Scene = {
   key: "hook" | "problem" | "solution" | "cta";
@@ -150,7 +151,7 @@ export default function CinematicRunwayPage() {
       if (!j) return;
 
       // 1. Poll Runway every ~30s while scenes are still rendering.
-      if (j.status === "rendering_scenes" || j.status === "scripting") {
+      if (j.status === "rendering_scenes") {
         const last = lastPollRef.current[j.id] ?? 0;
         if (Date.now() - last < 30_000) return;
         lastPollRef.current[j.id] = Date.now();
@@ -163,7 +164,8 @@ export default function CinematicRunwayPage() {
           if (error) throw error;
           if (!data?.ok) throw new Error(data?.message ?? "poll failed");
           const done = (data.scenes ?? []).filter((s: any) => s.clip_url).length;
-          log(`poll ok status=${data.status} clips_ready=${done}/4`);
+          log(`poll success status=${data.status}`);
+          log(`clips found ${done}/4`);
           await loadJobs();
         } catch (e: any) {
           log(`poll error: ${e.message ?? e}`);
@@ -187,10 +189,10 @@ export default function CinematicRunwayPage() {
           });
           if (error) throw error;
           if (!data?.ok) throw new Error(data?.message ?? "voiceover failed");
-          log(`voiceover ok`);
+          log(`voiceover status generated`);
           await loadJobs();
         } catch (e: any) {
-          log(`voiceover error: ${e.message ?? e}`);
+          log(`voiceover status error: ${e.message ?? e}`);
         } finally {
           autoBusyRef.current = false;
         }
