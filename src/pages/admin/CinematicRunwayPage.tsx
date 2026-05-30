@@ -34,8 +34,16 @@ type Job = {
   qa_report: Record<string, { pass: boolean; detail: string }> | null;
   cost_cents: number;
   error: string | null;
+  merge_error?: string | null;
+  merge_attempted_at?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type FfmpegDiagnostics = {
+  ffmpegCoreLoaded: boolean;
+  ffmpegWasmLoaded: boolean;
+  ffmpegLoadError: string | null;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -85,8 +93,14 @@ export default function CinematicRunwayPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [mergeProgress, setMergeProgress] = useState<string>("");
   const [autoLog, setAutoLog] = useState<string[]>([]);
+  const [ffmpegDiagnostics, setFfmpegDiagnostics] = useState<FfmpegDiagnostics>({
+    ffmpegCoreLoaded: false,
+    ffmpegWasmLoaded: false,
+    ffmpegLoadError: null,
+  });
   const autoBusyRef = useRef(false);
   const lastPollRef = useRef<Record<string, number>>({});
+  const mergeInFlightRef = useRef<Record<string, boolean>>({});
 
   function log(msg: string) {
     const line = `${new Date().toISOString().slice(11, 19)}  ${msg}`;
@@ -183,22 +197,26 @@ export default function CinematicRunwayPage() {
         return;
       }
 
-      // 3. Scenes + VO ready, no final video → assemble (runs in browser ffmpeg.wasm).
+      // 3. Scenes + VO ready, no final video → assemble once only (runs in browser ffmpeg.wasm).
       if (
         j.status === "awaiting_merge" &&
         j.voiceover_url &&
         !j.final_video_url &&
         j.scenes?.every((s) => s.clip_url) &&
+        !j.merge_attempted_at &&
+        !j.merge_error &&
+        !mergeInFlightRef.current[j.id] &&
         busy === null
       ) {
         autoBusyRef.current = true;
-        log(`auto → assemble (ffmpeg.wasm) job=${j.id.slice(0, 8)}`);
+        mergeInFlightRef.current[j.id] = true;
+        log(`auto → merge started job=${j.id.slice(0, 8)}`);
         try {
-          await assemble();
-          log(`assemble + finalize complete`);
+          await assemble({ manual: false });
         } catch (e: any) {
-          log(`assemble error: ${e.message ?? e}`);
+          log(`merge failure: ${e.message ?? e}`);
         } finally {
+          mergeInFlightRef.current[j.id] = false;
           autoBusyRef.current = false;
         }
       }
