@@ -91,6 +91,45 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[claim-job] ${traceId} claim request explicit=${Boolean(explicitJobId)} requested_job=${explicitJobId ?? "auto"}`);
+
+    // ── SAFETY GATE: refuse to render anything that hasn't passed preflight
+    //    and doesn't have a creative_plan. Stops credit-burning legacy renders. ──
+    if (explicitJobId) {
+      const { data: gateRow } = await admin
+        .from("cinematic_ad_jobs")
+        .select("preflight_status, creative_plan, legacy_unverified, product_slug, blocked_reason")
+        .eq("id", explicitJobId)
+        .maybeSingle();
+      const failReasons: string[] = [];
+      if (!gateRow) failReasons.push("job_missing");
+      if (gateRow?.legacy_unverified) failReasons.push("legacy_unverified");
+      if (gateRow && gateRow.preflight_status !== "pass") failReasons.push(`preflight_${gateRow.preflight_status ?? "missing"}`);
+      if (gateRow && !gateRow.creative_plan) failReasons.push("creative_plan_missing");
+      if (failReasons.length > 0) {
+        return json({
+          ok: false, traceId,
+          reason: "blocked_by_safety_gate",
+          fail_reasons: failReasons,
+          blocked_reason: gateRow?.blocked_reason ?? null,
+          supabase_host: supabaseHost,
+        }, 412);
+      }
+      // Render budget: 1 expensive render / product / 24h.
+      const { data: budget } = await admin.rpc("cinematic_reserve_render_slot", {
+        p_product_slug: gateRow!.product_slug,
+        p_force: false,
+      }).maybeSingle();
+      if (budget && budget.allowed === false) {
+        return json({
+          ok: false, traceId,
+          reason: "render_budget_24h_exhausted",
+          product_slug: gateRow!.product_slug,
+          last_render_at: budget.last_at,
+          supabase_host: supabaseHost,
+        }, 429);
+      }
+    }
+
     const { data: locked, error: lockErr } = await admin.rpc("claim_cinematic_ad_job", {
       p_worker_id: workerId,
       p_job_id: explicitJobId,
