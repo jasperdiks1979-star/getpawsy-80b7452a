@@ -690,6 +690,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/pinterest-tag-health"
+                            element={
+                              <Suspense fallback={null}>
+                                <PinterestTagHealth />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/compliance"
                             element={
                               <Suspense fallback={null}>
