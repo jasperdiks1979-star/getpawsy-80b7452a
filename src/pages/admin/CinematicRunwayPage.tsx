@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const TEST_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
-const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.9/dist/umd";
 
 type Scene = {
   key: "hook" | "problem" | "solution" | "cta";
@@ -39,12 +38,6 @@ type Job = {
   merge_attempted_at?: string | null;
   created_at: string;
   updated_at: string;
-};
-
-type FfmpegDiagnostics = {
-  ffmpegCoreLoaded: boolean;
-  ffmpegWasmLoaded: boolean;
-  ffmpegLoadError: string | null;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -92,13 +85,7 @@ export default function CinematicRunwayPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [mergeProgress, setMergeProgress] = useState<string>("");
   const [autoLog, setAutoLog] = useState<string[]>([]);
-  const [ffmpegDiagnostics, setFfmpegDiagnostics] = useState<FfmpegDiagnostics>({
-    ffmpegCoreLoaded: false,
-    ffmpegWasmLoaded: false,
-    ffmpegLoadError: null,
-  });
   const autoBusyRef = useRef(false);
   const lastPollRef = useRef<Record<string, number>>({});
   const mergeInFlightRef = useRef<Record<string, boolean>>({});
@@ -307,173 +294,24 @@ export default function CinematicRunwayPage() {
     if (mergeInFlightRef.current[active.id] && manual) return;
     mergeInFlightRef.current[active.id] = true;
     setBusy("assembling");
-    setMergeProgress("Loading ffmpeg.wasm…");
-    setFfmpegDiagnostics({ ffmpegCoreLoaded: false, ffmpegWasmLoaded: false, ffmpegLoadError: null });
-    log(`ffmpeg load started core=${FFMPEG_CORE_BASE}/ffmpeg-core.js wasm=${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`);
-    log(`merge started job=${active.id.slice(0, 8)}`);
-    await supabase
-      .from("cinematic_runway_jobs")
-      .update({ status: "merging", merge_attempted_at: new Date().toISOString(), merge_error: null, error: null })
-      .eq("id", active.id);
-    let ffmpegCoreReady = false;
-    let ffmpegWasmReady = false;
-    let ffmpegLoaded = false;
+    log(`merge dispatch → cinematic-runway-merge job=${active.id.slice(0, 8)}`);
     try {
-      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile } = await import("@ffmpeg/util");
-      const ffmpeg = new FFmpeg();
-
-      const loadCoreAsset = async (url: string, mimeType: string, minBytes: number) => {
-        const response = await fetch(url, { cache: "force-cache" });
-        if (!response.ok) throw new Error(`failed to fetch ${url}: ${response.status}`);
-        const blob = await response.blob();
-        if (blob.size < minBytes) throw new Error(`invalid ffmpeg asset ${url}: ${blob.size} bytes`);
-        return URL.createObjectURL(new Blob([blob], { type: mimeType }));
-      };
-
-      const coreURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript", 10_000);
-      ffmpegCoreReady = true;
-      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
-      const wasmURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm", 1_000_000);
-      ffmpegWasmReady = true;
-      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
-      await ffmpeg.load({
-        coreURL,
-        wasmURL,
+      const { data, error } = await supabase.functions.invoke("cinematic-runway-merge", {
+        body: { job_id: active.id },
       });
-      ffmpegLoaded = true;
-      log("ffmpeg load success");
-      ffmpeg.on("log", ({ message }) => {
-        if (message.includes("frame=")) setMergeProgress(message.slice(0, 120));
-      });
-
-      // Load font for burned captions
-      setMergeProgress("Loading font…");
-      const fontResp = await fetch(
-        "https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dRDgIWk_RW6.ttf",
-      );
-      const fontBytes = new Uint8Array(await fontResp.arrayBuffer());
-      await ffmpeg.writeFile("Inter.ttf", fontBytes);
-
-      // Fetch all clips and voiceover
-      const sceneOrder: Array<Scene["key"]> = ["hook", "problem", "solution", "cta"];
-      for (const key of sceneOrder) {
-        setMergeProgress(`Fetching scene ${key}…`);
-        const s = active.scenes!.find((x) => x.key === key)!;
-        await ffmpeg.writeFile(`${key}.mp4`, await fetchFile(s.clip_url!));
-      }
-      if (active.voiceover_url) {
-        setMergeProgress("Fetching voice-over…");
-        await ffmpeg.writeFile("vo.mp3", await fetchFile(active.voiceover_url));
-      }
-
-      // Concat the 4 clips into one, dropping any original audio
-      setMergeProgress("Concatenating scenes…");
-      const concatList = sceneOrder
-        .map((k) => `file '${k}.mp4'`)
-        .join("\n");
-      await ffmpeg.writeFile("concat.txt", new TextEncoder().encode(concatList));
-      await ffmpeg.exec([
-        "-f", "concat", "-safe", "0", "-i", "concat.txt",
-        "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "24",
-        "concat.mp4",
-      ]);
-
-      // Burn captions via drawtext per segment, then mux voiceover
-      setMergeProgress("Burning captions + adding voice-over…");
-      const lines = sceneOrder.map((k) => active.script?.[k] ?? "");
-      const esc = (s: string) =>
-        s.replace(/\\/g, "\\\\").replace(/:/g, "\\:").replace(/'/g, "\\'").replace(/,/g, "\\,");
-      // Each scene assumed 5s; segments: 0-5, 5-10, 10-15, 15-20
-      const drawFilters = lines
-        .map((text, i) => {
-          const start = i * 5;
-          const end = start + 5;
-          return `drawtext=fontfile=Inter.ttf:text='${esc(text)}':fontcolor=white:fontsize=44:` +
-            `box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-220:` +
-            `enable='between(t,${start},${end})'`;
-        })
-        .join(",");
-
-      const finalArgs = active.voiceover_url
-        ? [
-            "-i", "concat.mp4",
-            "-i", "vo.mp3",
-            "-vf", drawFilters,
-            "-map", "0:v:0", "-map", "1:a:0",
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
-            "-c:a", "aac", "-b:a", "128k",
-            "-shortest",
-            "final.mp4",
-          ]
-        : [
-            "-i", "concat.mp4",
-            "-vf", drawFilters,
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
-            "final.mp4",
-          ];
-      await ffmpeg.exec(finalArgs);
-
-      setMergeProgress("Uploading final video…");
-      const out = (await ffmpeg.readFile("final.mp4")) as Uint8Array;
-      const blob = new Blob([out as unknown as BlobPart], { type: "video/mp4" });
-      const path = `jobs/${active.id}/final.mp4`;
-      const { error: upErr } = await supabase.storage
-        .from("cinematic-runway")
-        .upload(path, blob, { contentType: "video/mp4", upsert: true });
-      if (upErr) throw upErr;
-      const finalUrl = supabase.storage.from("cinematic-runway").getPublicUrl(path).data.publicUrl;
-
-      // Measure duration
-      const dur = await new Promise<number>((resolve) => {
-        const v = document.createElement("video");
-        v.preload = "metadata";
-        v.onloadedmetadata = () => resolve(v.duration);
-        v.onerror = () => resolve(0);
-        v.src = URL.createObjectURL(blob);
-      });
-
-      const captions = sceneOrder.map((k, i) => ({
-        key: k,
-        text: lines[i],
-        start_s: i * 5,
-        end_s: i * 5 + 5,
-      }));
-
-      setMergeProgress("Running QA…");
-      const { data: qa, error: qaErr } = await supabase.functions.invoke(
-        "cinematic-runway-finalize",
-        {
-          body: {
-            job_id: active.id,
-            final_video_url: finalUrl,
-            duration_s: dur,
-            byte_size: blob.size,
-            captions,
-          },
-        },
-      );
-      if (qaErr) throw qaErr;
-      if (!qa?.ok) {
-        toast.error(`QA failed (score ${qa?.qa_score ?? "?"}). Review report.`);
-        log(`merge success; QA failed score=${qa?.qa_score ?? "?"}`);
-      } else {
-        toast.success(`Final assembled. QA score ${qa.qa_score}.`);
-        log(`merge success final=${finalUrl}`);
-      }
-      setMergeProgress("");
-      loadJobs();
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "merge dispatch failed");
+      log(`merge dispatched workflow=${data.workflow ?? "render-cinematic-runway-merge.yml"}`);
+      toast.success("Merge dispatched — server is rendering final.mp4 (1–3 min)");
+      await loadJobs();
     } catch (e: any) {
       const message = e.message ?? String(e);
-      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
-      if (!ffmpegLoaded) log(`ffmpeg load failure: ${message}`);
-      log(`merge failure: ${message}`);
+      log(`merge dispatch failure: ${message}`);
       await supabase
         .from("cinematic_runway_jobs")
         .update({ status: "merge_failed", merge_error: message, error: message })
         .eq("id", active.id);
       toast.error(message);
-      setMergeProgress("");
       await loadJobs();
     } finally {
       mergeInFlightRef.current[active.id] = false;
@@ -615,14 +453,6 @@ export default function CinematicRunwayPage() {
                     >
                       {busy === "approving" ? "Approving…" : "Approve (no publish)"}
                     </Button>
-                  </div>
-                  {mergeProgress && (
-                    <p className="text-xs text-muted-foreground font-mono">{mergeProgress}</p>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-muted-foreground">
-                    <div>ffmpegCoreLoaded={String(ffmpegDiagnostics.ffmpegCoreLoaded)}</div>
-                    <div>ffmpegWasmLoaded={String(ffmpegDiagnostics.ffmpegWasmLoaded)}</div>
-                    <div>ffmpegLoadError={ffmpegDiagnostics.ffmpegLoadError ?? "null"}</div>
                   </div>
                   {(active.merge_error || active.merge_attempted_at) && (
                     <div className="text-xs border border-border rounded p-2 space-y-1">
