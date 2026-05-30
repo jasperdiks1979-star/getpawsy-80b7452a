@@ -456,6 +456,7 @@ const Checkout = () => {
       fireMarketingAsync('pinterest-initiatecheckout', async () => {
         const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
         trackPinterestEvent('custom', {
+          event_name: 'initiate_checkout',
           event_id: `initiate_checkout_${Date.now()}`,
           value: totalPrice,
           currency: 'USD',
@@ -466,7 +467,7 @@ const Checkout = () => {
             product_price: item.price,
             product_quantity: item.quantity,
           })),
-        } as Parameters<typeof trackPinterestEvent>[1]);
+        });
       }, 'pinterest');
     }
   }, []);
