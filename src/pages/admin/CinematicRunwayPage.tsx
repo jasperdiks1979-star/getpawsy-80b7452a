@@ -66,7 +66,7 @@ export default function CinematicRunwayPage() {
       toast.error(`Load failed: ${error.message}`);
       return;
     }
-    setJobs((data ?? []) as Job[]);
+    setJobs((data ?? []) as unknown as Job[]);
     if (!activeId && data?.[0]) setActiveId(data[0].id);
   }
 
@@ -224,7 +224,7 @@ export default function CinematicRunwayPage() {
 
       setMergeProgress("Uploading final video…");
       const out = (await ffmpeg.readFile("final.mp4")) as Uint8Array;
-      const blob = new Blob([out], { type: "video/mp4" });
+      const blob = new Blob([out as unknown as BlobPart], { type: "video/mp4" });
       const path = `jobs/${active.id}/final.mp4`;
       const { error: upErr } = await supabase.storage
         .from("cinematic-runway")
