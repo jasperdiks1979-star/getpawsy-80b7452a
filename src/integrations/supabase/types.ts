@@ -3139,6 +3139,69 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_runway_jobs: {
+        Row: {
+          captions: Json | null
+          cost_cents: number
+          created_at: string
+          created_by: string | null
+          error: string | null
+          final_video_url: string | null
+          id: string
+          product_image_url: string | null
+          product_name: string
+          product_slug: string
+          qa_report: Json | null
+          qa_score: number | null
+          scenes: Json | null
+          script: Json | null
+          status: string
+          updated_at: string
+          voiceover_duration_s: number | null
+          voiceover_url: string | null
+        }
+        Insert: {
+          captions?: Json | null
+          cost_cents?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          final_video_url?: string | null
+          id?: string
+          product_image_url?: string | null
+          product_name: string
+          product_slug: string
+          qa_report?: Json | null
+          qa_score?: number | null
+          scenes?: Json | null
+          script?: Json | null
+          status?: string
+          updated_at?: string
+          voiceover_duration_s?: number | null
+          voiceover_url?: string | null
+        }
+        Update: {
+          captions?: Json | null
+          cost_cents?: number
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          final_video_url?: string | null
+          id?: string
+          product_image_url?: string | null
+          product_name?: string
+          product_slug?: string
+          qa_report?: Json | null
+          qa_score?: number | null
+          scenes?: Json | null
+          script?: Json | null
+          status?: string
+          updated_at?: string
+          voiceover_duration_s?: number | null
+          voiceover_url?: string | null
+        }
+        Relationships: []
+      }
       cinematic_style_bias: {
         Row: {
           beat_signature: string | null
