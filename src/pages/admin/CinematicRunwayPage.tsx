@@ -317,6 +317,7 @@ export default function CinematicRunwayPage() {
       .eq("id", active.id);
     let ffmpegCoreReady = false;
     let ffmpegWasmReady = false;
+    let ffmpegLoaded = false;
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
       const { fetchFile } = await import("@ffmpeg/util");
@@ -340,6 +341,7 @@ export default function CinematicRunwayPage() {
         coreURL,
         wasmURL,
       });
+      ffmpegLoaded = true;
       log("ffmpeg load success");
       ffmpeg.on("log", ({ message }) => {
         if (message.includes("frame=")) setMergeProgress(message.slice(0, 120));
@@ -464,7 +466,7 @@ export default function CinematicRunwayPage() {
     } catch (e: any) {
       const message = e.message ?? String(e);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
-      if (!ffmpegCoreReady || !ffmpegWasmReady) log(`ffmpeg load failure: ${message}`);
+      if (!ffmpegLoaded) log(`ffmpeg load failure: ${message}`);
       log(`merge failure: ${message}`);
       await supabase
         .from("cinematic_runway_jobs")
