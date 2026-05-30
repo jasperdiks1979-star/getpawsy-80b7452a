@@ -454,14 +454,6 @@ export default function CinematicRunwayPage() {
                       {busy === "approving" ? "Approving…" : "Approve (no publish)"}
                     </Button>
                   </div>
-                  {mergeProgress && (
-                    <p className="text-xs text-muted-foreground font-mono">{mergeProgress}</p>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-muted-foreground">
-                    <div>ffmpegCoreLoaded={String(ffmpegDiagnostics.ffmpegCoreLoaded)}</div>
-                    <div>ffmpegWasmLoaded={String(ffmpegDiagnostics.ffmpegWasmLoaded)}</div>
-                    <div>ffmpegLoadError={ffmpegDiagnostics.ffmpegLoadError ?? "null"}</div>
-                  </div>
                   {(active.merge_error || active.merge_attempted_at) && (
                     <div className="text-xs border border-border rounded p-2 space-y-1">
                       <div className="font-mono text-muted-foreground">
