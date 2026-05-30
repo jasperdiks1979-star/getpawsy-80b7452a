@@ -54,9 +54,21 @@ const initPinterestTag = () => {
   const script = document.createElement('script');
   script.async = true;
   script.src = 'https://s.pinimg.com/ct/core.js';
+  script.onload = () => {
+    if (window.pintrk) {
+      window.pintrk.loaded = true;
+      window.pintrk.version = '3.0';
+    }
+    dlog('core.js loaded');
+  };
+  script.onerror = () => {
+    dlog('core.js failed to load (likely blocked by ad blocker / CSP)');
+  };
   document.head.appendChild(script);
 
   // Initialize with tag ID
+  window.pintrk.queue = window.pintrk.queue || [];
+  window.pintrk.version = '3.0';
   window.pintrk('load', PINTEREST_TAG_ID);
   window.pintrk('page');
   dlog('Tag initialized:', PINTEREST_TAG_ID);
