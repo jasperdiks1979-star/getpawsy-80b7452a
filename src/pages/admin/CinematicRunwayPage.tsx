@@ -314,6 +314,8 @@ export default function CinematicRunwayPage() {
       .from("cinematic_runway_jobs")
       .update({ status: "merging", merge_attempted_at: new Date().toISOString(), merge_error: null, error: null })
       .eq("id", active.id);
+    let ffmpegCoreReady = false;
+    let ffmpegWasmReady = false;
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
       const { fetchFile } = await import("@ffmpeg/util");
@@ -327,13 +329,11 @@ export default function CinematicRunwayPage() {
         return URL.createObjectURL(new Blob([blob], { type: mimeType }));
       };
 
-      let ffmpegCoreLoaded = false;
-      let ffmpegWasmLoaded = false;
       const coreURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript", 10_000);
-      ffmpegCoreLoaded = true;
+      ffmpegCoreReady = true;
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
       const wasmURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm", 1_000_000);
-      ffmpegWasmLoaded = true;
+      ffmpegWasmReady = true;
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
       await ffmpeg.load({
         coreURL,
@@ -463,7 +463,7 @@ export default function CinematicRunwayPage() {
     } catch (e: any) {
       const message = e.message ?? String(e);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
-      log(`ffmpeg load failure: ${message}`);
+      if (!ffmpegCoreReady || !ffmpegWasmReady) log(`ffmpeg load failure: ${message}`);
       log(`merge failure: ${message}`);
       await supabase
         .from("cinematic_runway_jobs")
