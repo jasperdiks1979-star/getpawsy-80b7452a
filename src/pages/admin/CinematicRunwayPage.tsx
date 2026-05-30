@@ -208,6 +208,7 @@ export default function CinematicRunwayPage() {
         j.status === "awaiting_merge" &&
         j.voiceover_url &&
         !j.final_video_url &&
+        j.scenes?.length === 4 &&
         j.scenes?.every((s) => s.clip_url) &&
         !j.merge_attempted_at &&
         !j.merge_error &&
