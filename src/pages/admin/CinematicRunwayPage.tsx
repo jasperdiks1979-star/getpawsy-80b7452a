@@ -51,7 +51,7 @@ function StatusBadge({ status }: { status: string }) {
   const tone =
     status === "approved" || status === "ready_for_review"
       ? "default"
-      : status === "failed"
+      : status.includes("failed")
       ? "destructive"
       : "secondary";
   return <Badge variant={tone as any}>{status}</Badge>;
@@ -75,7 +75,7 @@ function ProgressTimeline({ job }: { job: Job }) {
           state === "done"
             ? "bg-green-500/15 text-green-700 border-green-500/30"
             : state === "active"
-            ? "bg-primary/15 text-primary border-primary/40 animate-pulse"
+            ? "bg-primary/15 text-primary border-primary/40"
             : "bg-muted text-muted-foreground border-border";
         return (
           <li key={s.key} className={`px-2 py-1 rounded border ${cls}`}>
@@ -113,7 +113,8 @@ export default function CinematicRunwayPage() {
   const active = useMemo(() => jobs.find((j) => j.id === activeId) ?? jobs[0] ?? null, [jobs, activeId]);
   const activeClipsReady = !!active?.scenes?.every((s) => s.clip_url) && active.scenes.length === 4;
   const activeVoiceoverReady = !!active?.voiceover_url;
-  const canRetryMerge = !!active && activeClipsReady && activeVoiceoverReady && busy === null;
+  const activeVoiceoverOptional = !active?.script?.vo_text;
+  const canRetryMerge = !!active && activeClipsReady && (activeVoiceoverReady || activeVoiceoverOptional) && busy === null;
 
   async function loadJobs() {
     const { data, error } = await supabase
