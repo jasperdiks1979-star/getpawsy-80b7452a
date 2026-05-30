@@ -111,7 +111,7 @@ export default function CinematicRunwayPage() {
   }
 
   const active = useMemo(() => jobs.find((j) => j.id === activeId) ?? jobs[0] ?? null, [jobs, activeId]);
-  const activeClipsReady = !!active?.scenes?.every((s) => s.clip_url) && active.scenes.length === 4;
+  const activeClipsReady = (active?.scenes?.length ?? 0) === 4 && !!active?.scenes?.every((s) => s.clip_url);
   const activeVoiceoverReady = !!active?.voiceover_url;
   const activeVoiceoverOptional = !active?.script?.vo_text;
   const canRetryMerge = !!active && activeClipsReady && (activeVoiceoverReady || activeVoiceoverOptional) && busy === null;
