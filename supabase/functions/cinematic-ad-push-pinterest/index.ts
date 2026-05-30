@@ -54,6 +54,25 @@ Deno.serve(async (req) => {
   if (jobErr || !job) return json(404, { ok: false, traceId, message: "job not found" });
   if (!job.output_mp4_url) return json(400, { ok: false, traceId, message: "job has no output_mp4_url yet" });
 
+  // HARD SAFETY GATE — refuses every legacy / unverified job. The `force`
+  // override below cannot bypass these; admin must re-render with the new
+  // preflight + creative-plan pipeline.
+  if (job.legacy_unverified === true) {
+    return json(412, { ok: false, traceId,
+      message: "Job is flagged legacy_unverified — predates the new preflight/QA gate. Rebuild creative and re-render before publishing.",
+      blocked_reason: job.blocked_reason ?? null,
+    });
+  }
+  if (job.is_safe_to_publish !== true) {
+    return json(412, { ok: false, traceId,
+      message: "Job is not safe to publish.",
+      preflight_status: job.preflight_status,
+      qa_passed: job.qa_passed,
+      qa_reasons: job.qa_reasons ?? [],
+      blocked_reason: job.blocked_reason ?? null,
+    });
+  }
+
   // Pre-publish quality gate. force=true lets admin override (logged below).
   if (!force) {
     const report = job.validation_report as { passed?: boolean } | null;

@@ -1755,6 +1755,7 @@ export type Database = {
           autopilot_threshold: number
           beat_signature: string | null
           beats_v5: Json | null
+          blocked_reason: string | null
           camera_motion_score: number | null
           camera_style: string | null
           caption_variants: Json
@@ -1768,6 +1769,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null
           cta_clarity_score: number | null
@@ -1803,8 +1805,10 @@ export type Database = {
           human_presence_ratio: number | null
           humanization_seed: string | null
           id: string
+          is_safe_to_publish: boolean
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          legacy_unverified: boolean
           media_hash: string | null
           media_type: string | null
           media_warnings: Json
@@ -1844,6 +1848,9 @@ export type Database = {
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
           predicted_engagement: number | null
+          preflight_checked_at: string | null
+          preflight_reasons: string[]
+          preflight_status: string
           prepared_at: string | null
           preset: string
           product_cooldown_until: string | null
@@ -1862,8 +1869,10 @@ export type Database = {
           qa_breakdown: Json | null
           qa_composite_score: number | null
           qa_decision_reason: string | null
+          qa_passed: boolean | null
           qa_preview_flags: Json | null
           qa_preview_url: string | null
+          qa_reasons: string[]
           qa_report: Json
           qa_score: number | null
           qa_threshold_applied: number | null
@@ -1959,6 +1968,7 @@ export type Database = {
           autopilot_threshold?: number
           beat_signature?: string | null
           beats_v5?: Json | null
+          blocked_reason?: string | null
           camera_motion_score?: number | null
           camera_style?: string | null
           caption_variants?: Json
@@ -1972,6 +1982,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
           cta_clarity_score?: number | null
@@ -2007,8 +2018,10 @@ export type Database = {
           human_presence_ratio?: number | null
           humanization_seed?: string | null
           id?: string
+          is_safe_to_publish?: boolean
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          legacy_unverified?: boolean
           media_hash?: string | null
           media_type?: string | null
           media_warnings?: Json
@@ -2048,6 +2061,9 @@ export type Database = {
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
           predicted_engagement?: number | null
+          preflight_checked_at?: string | null
+          preflight_reasons?: string[]
+          preflight_status?: string
           prepared_at?: string | null
           preset?: string
           product_cooldown_until?: string | null
@@ -2066,8 +2082,10 @@ export type Database = {
           qa_breakdown?: Json | null
           qa_composite_score?: number | null
           qa_decision_reason?: string | null
+          qa_passed?: boolean | null
           qa_preview_flags?: Json | null
           qa_preview_url?: string | null
+          qa_reasons?: string[]
           qa_report?: Json
           qa_score?: number | null
           qa_threshold_applied?: number | null
@@ -2163,6 +2181,7 @@ export type Database = {
           autopilot_threshold?: number
           beat_signature?: string | null
           beats_v5?: Json | null
+          blocked_reason?: string | null
           camera_motion_score?: number | null
           camera_style?: string | null
           caption_variants?: Json
@@ -2176,6 +2195,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
           cta_clarity_score?: number | null
@@ -2211,8 +2231,10 @@ export type Database = {
           human_presence_ratio?: number | null
           humanization_seed?: string | null
           id?: string
+          is_safe_to_publish?: boolean
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          legacy_unverified?: boolean
           media_hash?: string | null
           media_type?: string | null
           media_warnings?: Json
@@ -2252,6 +2274,9 @@ export type Database = {
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
           predicted_engagement?: number | null
+          preflight_checked_at?: string | null
+          preflight_reasons?: string[]
+          preflight_status?: string
           prepared_at?: string | null
           preset?: string
           product_cooldown_until?: string | null
@@ -2270,8 +2295,10 @@ export type Database = {
           qa_breakdown?: Json | null
           qa_composite_score?: number | null
           qa_decision_reason?: string | null
+          qa_passed?: boolean | null
           qa_preview_flags?: Json | null
           qa_preview_url?: string | null
+          qa_reasons?: string[]
           qa_report?: Json
           qa_score?: number | null
           qa_threshold_applied?: number | null
@@ -2454,6 +2481,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cinematic_ad_render_budget: {
+        Row: {
+          last_expensive_render_at: string
+          product_slug: string
+          render_count_24h: number
+          updated_at: string
+        }
+        Insert: {
+          last_expensive_render_at?: string
+          product_slug: string
+          render_count_24h?: number
+          updated_at?: string
+        }
+        Update: {
+          last_expensive_render_at?: string
+          product_slug?: string
+          render_count_24h?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       cinematic_ad_settings: {
         Row: {
@@ -18141,6 +18189,14 @@ export type Database = {
       }
       cinematic_queue_health: { Args: never; Returns: Json }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
+      cinematic_reserve_render_slot: {
+        Args: { p_force?: boolean; p_product_slug: string }
+        Returns: {
+          allowed: boolean
+          last_at: string
+          reason: string
+        }[]
+      }
       claim_cinematic_ad_job: {
         Args: { p_job_id?: string; p_worker_id: string }
         Returns: {
@@ -18480,6 +18536,7 @@ export type Database = {
           autopilot_threshold: number
           beat_signature: string | null
           beats_v5: Json | null
+          blocked_reason: string | null
           camera_motion_score: number | null
           camera_style: string | null
           caption_variants: Json
@@ -18493,6 +18550,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null
           cta_clarity_score: number | null
@@ -18528,8 +18586,10 @@ export type Database = {
           human_presence_ratio: number | null
           humanization_seed: string | null
           id: string
+          is_safe_to_publish: boolean
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          legacy_unverified: boolean
           media_hash: string | null
           media_type: string | null
           media_warnings: Json
@@ -18569,6 +18629,9 @@ export type Database = {
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
           predicted_engagement: number | null
+          preflight_checked_at: string | null
+          preflight_reasons: string[]
+          preflight_status: string
           prepared_at: string | null
           preset: string
           product_cooldown_until: string | null
@@ -18587,8 +18650,10 @@ export type Database = {
           qa_breakdown: Json | null
           qa_composite_score: number | null
           qa_decision_reason: string | null
+          qa_passed: boolean | null
           qa_preview_flags: Json | null
           qa_preview_url: string | null
+          qa_reasons: string[]
           qa_report: Json
           qa_score: number | null
           qa_threshold_applied: number | null

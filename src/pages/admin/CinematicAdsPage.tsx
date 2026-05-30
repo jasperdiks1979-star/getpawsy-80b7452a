@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
 import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
+import CinematicAdsSafetyPanel from "@/components/admin/cinematic/CinematicAdsSafetyPanel";
 
 type Job = {
   id: string;
@@ -625,6 +626,8 @@ export default function CinematicAdsPage() {
           Hybrid Remotion + Nano Banana pipeline. Generate cinematic 9:16 promo videos for Pinterest, TikTok &amp; Reels.
         </p>
       </header>
+
+      <CinematicAdsSafetyPanel />
 
       {/* Debug panel — surfaces exact DB state so worker/admin mismatches are visible */}
       <Card className="border-dashed">
