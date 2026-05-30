@@ -516,6 +516,72 @@ Deno.serve(async (req) => {
   report.checks.push({ name: "v5_thumb_stop", passed: thumb_stop_score >= minThumbStop, observed: thumb_stop_score, expected: `>= ${minThumbStop}` });
   report.checks.push({ name: "v5_human_presence", passed: beatsV5.length === 0 || human_presence_ratio >= humanPresenceRatioMin, observed: human_presence_ratio, expected: `>= ${humanPresenceRatioMin}` });
 
+  // ── V6 Product Fidelity gate ──────────────────────────────────────────────
+  // Compares each AI-generated scene image to the source PDP images via the
+  // cinematic-fidelity-check function. Hard reject on shape/color/dimension/
+  // button/display/opening/branding mismatch or invented features.
+  let fidelityPassed = true;
+  let fidelityScore: number | null = null;
+  let fidelityReasons: string[] = [];
+  let scenesNeedingRegen: number[] = [];
+  let fidelityEnabled = true;
+  let minFidelityScore = 75;
+  let autoRegen = true;
+  let maxRegenPasses = 2;
+  try {
+    const { data: fs } = await admin.from("cinematic_ad_settings")
+      .select("product_fidelity_enabled, min_product_fidelity_score, fidelity_auto_regen, fidelity_max_regen_passes")
+      .limit(1).maybeSingle();
+    if (fs) {
+      fidelityEnabled = fs.product_fidelity_enabled !== false;
+      minFidelityScore = Number(fs.min_product_fidelity_score ?? minFidelityScore);
+      autoRegen = fs.fidelity_auto_regen !== false;
+      maxRegenPasses = Number(fs.fidelity_max_regen_passes ?? maxRegenPasses);
+    }
+  } catch (_) { /* defaults */ }
+
+  const sceneAssets = Array.isArray((job as any).scene_assets) ? (job as any).scene_assets : [];
+  if (fidelityEnabled && sceneAssets.length > 0) {
+    try {
+      const fResp = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-fidelity-check`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-render-secret": RENDER_WORKER_SECRET,
+          "Authorization": `Bearer ${SERVICE_KEY}`,
+        },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+      const fJson = await fResp.json().catch(() => ({}));
+      const fReport = fJson?.report ?? {};
+      fidelityPassed = Boolean(fReport.passed);
+      fidelityScore = typeof fReport.score === "number" ? fReport.score : null;
+      scenesNeedingRegen = Array.isArray(fReport.scenes)
+        ? fReport.scenes.filter((s: any) => !s.passed || s.score < minFidelityScore).map((s: any) => Number(s.index))
+        : [];
+      if (!fidelityPassed) {
+        const flat: string[] = [];
+        for (const s of (fReport.scenes ?? [])) {
+          for (const [rule, ok] of Object.entries(s.rule_flags ?? {})) {
+            if (!ok) flat.push(`scene${s.index}:${rule}`);
+          }
+        }
+        fidelityReasons = flat.slice(0, 20);
+      }
+    } catch (e) {
+      // Soft-fail: AI gateway hiccup must not block the rest of validation.
+      console.warn("[validate] fidelity check error", e);
+    }
+  }
+
+  report.checks.push({
+    name: "v6_product_fidelity",
+    passed: !fidelityEnabled || fidelityPassed,
+    observed: fidelityScore != null ? `score=${fidelityScore} regen=${scenesNeedingRegen.join(",") || "none"}` : "skipped",
+    expected: `score >= ${minFidelityScore}, no scene rule failures`,
+    message: fidelityReasons.length ? fidelityReasons.slice(0, 6).join(" | ") : undefined,
+  });
+
     const patch: Record<string, unknown> = {
       validation_report: report,
       motion_score: report.motion_score,
@@ -553,6 +619,10 @@ Deno.serve(async (req) => {
       environment_flags: envFlagsV5,
       validation_v5_passed,
       v5_reject_reasons,
+      fidelity_passed: !fidelityEnabled ? true : fidelityPassed,
+      fidelity_score: fidelityScore,
+      fidelity_reject_reasons: fidelityReasons,
+      scenes_needing_regen: scenesNeedingRegen,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
@@ -563,10 +633,24 @@ Deno.serve(async (req) => {
     }
 
     // Flip status to 'creative_rejected' when any hard creative gate fails.
-    const combinedRejects = [...rejectReasons, ...v4_reject_reasons, ...v5_reject_reasons];
+    const combinedRejects = [
+      ...rejectReasons,
+      ...v4_reject_reasons,
+      ...v5_reject_reasons,
+      ...(fidelityEnabled && !fidelityPassed ? [`product_fidelity(${fidelityScore ?? "?"}<${minFidelityScore})`, ...fidelityReasons.slice(0, 4)] : []),
+    ];
     if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
       patch.status = "creative_rejected";
       patch.status_message = `creative rejected: ${combinedRejects.slice(0, 3).join(" ; ")}`;
+      // If product fidelity failed and auto-regen is on, queue scenes for regeneration.
+      if (fidelityEnabled && !fidelityPassed && autoRegen && scenesNeedingRegen.length > 0) {
+        const passes = Number((job as any).fidelity_regen_passes ?? 0);
+        if (passes < maxRegenPasses) {
+          patch.fidelity_regen_passes = passes + 1;
+          patch.status = "needs_scene_regen";
+          patch.status_message = `regenerating scenes ${scenesNeedingRegen.join(",")} (pass ${passes + 1}/${maxRegenPasses})`;
+        }
+      }
     }
 
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
