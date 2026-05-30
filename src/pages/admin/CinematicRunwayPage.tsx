@@ -284,7 +284,7 @@ export default function CinematicRunwayPage() {
     }
   }
 
-  async function assemble() {
+  async function assemble({ manual = true }: { manual?: boolean } = {}) {
     if (!active) return;
     if (!active.scenes || active.scenes.length !== 4 || !active.scenes.every((s) => s.clip_url)) {
       toast.error("Need 4 finished scene clips first");
@@ -294,17 +294,30 @@ export default function CinematicRunwayPage() {
       toast.error("Need voice-over first");
       return;
     }
+    if (mergeInFlightRef.current[active.id] && manual) return;
+    mergeInFlightRef.current[active.id] = true;
     setBusy("assembling");
     setMergeProgress("Loading ffmpeg.wasm…");
+    setFfmpegDiagnostics({ ffmpegCoreLoaded: false, ffmpegWasmLoaded: false, ffmpegLoadError: null });
+    log(`ffmpeg load started core=${FFMPEG_CORE_BASE}/ffmpeg-core.js wasm=${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`);
+    log(`merge started job=${active.id.slice(0, 8)}`);
+    await supabase
+      .from("cinematic_runway_jobs")
+      .update({ status: "merging", merge_attempted_at: new Date().toISOString(), merge_error: null, error: null })
+      .eq("id", active.id);
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
       const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
       const ffmpeg = new FFmpeg();
-      const base = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
+      const coreURL = await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript");
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
+      const wasmURL = await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm");
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+        coreURL,
+        wasmURL,
       });
+      log("ffmpeg load success");
       ffmpeg.on("log", ({ message }) => {
         if (message.includes("frame=")) setMergeProgress(message.slice(0, 120));
       });
@@ -408,15 +421,27 @@ export default function CinematicRunwayPage() {
       if (qaErr) throw qaErr;
       if (!qa?.ok) {
         toast.error(`QA failed (score ${qa?.qa_score ?? "?"}). Review report.`);
+        log(`merge success; QA failed score=${qa?.qa_score ?? "?"}`);
       } else {
         toast.success(`Final assembled. QA score ${qa.qa_score}.`);
+        log(`merge success final=${finalUrl}`);
       }
       setMergeProgress("");
       loadJobs();
     } catch (e: any) {
-      toast.error(e.message ?? String(e));
+      const message = e.message ?? String(e);
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
+      log(`ffmpeg load failure: ${message}`);
+      log(`merge failure: ${message}`);
+      await supabase
+        .from("cinematic_runway_jobs")
+        .update({ status: "merge_failed", merge_error: message, error: message })
+        .eq("id", active.id);
+      toast.error(message);
       setMergeProgress("");
+      await loadJobs();
     } finally {
+      mergeInFlightRef.current[active.id] = false;
       setBusy(null);
     }
   }
