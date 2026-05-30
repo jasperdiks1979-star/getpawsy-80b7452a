@@ -48,6 +48,37 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant={tone as any}>{status}</Badge>;
 }
 
+function ProgressTimeline({ job }: { job: Job }) {
+  const clipsDone = (job.scenes ?? []).filter((s) => s.clip_url).length;
+  const steps = [
+    { key: "scripting", label: "Script + frames", done: !!job.script && (job.scenes?.length ?? 0) === 4 },
+    { key: "rendering", label: `Runway clips ${clipsDone}/4`, done: clipsDone === 4 },
+    { key: "voiceover", label: "Voice-over", done: !!job.voiceover_url },
+    { key: "finalize", label: "Merge + captions", done: !!job.final_video_url },
+    { key: "review", label: "Ready for review", done: job.status === "ready_for_review" || job.status === "approved" },
+  ];
+  const activeIdx = steps.findIndex((s) => !s.done);
+  return (
+    <ol className="flex flex-wrap gap-1.5 text-[11px]">
+      {steps.map((s, i) => {
+        const state = s.done ? "done" : i === activeIdx ? "active" : "pending";
+        const cls =
+          state === "done"
+            ? "bg-green-500/15 text-green-700 border-green-500/30"
+            : state === "active"
+            ? "bg-primary/15 text-primary border-primary/40 animate-pulse"
+            : "bg-muted text-muted-foreground border-border";
+        return (
+          <li key={s.key} className={`px-2 py-1 rounded border ${cls}`}>
+            {state === "done" ? "✓ " : state === "active" ? "● " : "○ "}
+            {s.label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function CinematicRunwayPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
