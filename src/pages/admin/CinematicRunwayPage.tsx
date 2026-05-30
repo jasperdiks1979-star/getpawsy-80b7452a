@@ -96,6 +96,89 @@ export default function CinematicRunwayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Auto-progression loop: drives stuck jobs through poll → voiceover → assemble.
+  // Runs every 10s; only triggers each step when preconditions are met.
+  useEffect(() => {
+    const tick = async () => {
+      if (autoBusyRef.current) return;
+      const j = active;
+      if (!j) return;
+
+      // 1. Poll Runway every ~30s while scenes are still rendering.
+      if (j.status === "rendering_scenes" || j.status === "scripting") {
+        const last = lastPollRef.current[j.id] ?? 0;
+        if (Date.now() - last < 30_000) return;
+        lastPollRef.current[j.id] = Date.now();
+        autoBusyRef.current = true;
+        log(`auto-poll → cinematic-runway-poll job=${j.id.slice(0, 8)}`);
+        try {
+          const { data, error } = await supabase.functions.invoke("cinematic-runway-poll", {
+            body: { job_id: j.id },
+          });
+          if (error) throw error;
+          if (!data?.ok) throw new Error(data?.message ?? "poll failed");
+          const done = (data.scenes ?? []).filter((s: any) => s.clip_url).length;
+          log(`poll ok status=${data.status} clips_ready=${done}/4`);
+          await loadJobs();
+        } catch (e: any) {
+          log(`poll error: ${e.message ?? e}`);
+        } finally {
+          autoBusyRef.current = false;
+        }
+        return;
+      }
+
+      // 2. Scenes ready, no voiceover yet → generate VO.
+      if (
+        j.status === "awaiting_merge" &&
+        !j.voiceover_url &&
+        j.script?.vo_text
+      ) {
+        autoBusyRef.current = true;
+        log(`auto → cinematic-runway-voiceover job=${j.id.slice(0, 8)}`);
+        try {
+          const { data, error } = await supabase.functions.invoke("cinematic-runway-voiceover", {
+            body: { job_id: j.id },
+          });
+          if (error) throw error;
+          if (!data?.ok) throw new Error(data?.message ?? "voiceover failed");
+          log(`voiceover ok`);
+          await loadJobs();
+        } catch (e: any) {
+          log(`voiceover error: ${e.message ?? e}`);
+        } finally {
+          autoBusyRef.current = false;
+        }
+        return;
+      }
+
+      // 3. Scenes + VO ready, no final video → assemble (runs in browser ffmpeg.wasm).
+      if (
+        j.status === "awaiting_merge" &&
+        j.voiceover_url &&
+        !j.final_video_url &&
+        j.scenes?.every((s) => s.clip_url) &&
+        busy === null
+      ) {
+        autoBusyRef.current = true;
+        log(`auto → assemble (ffmpeg.wasm) job=${j.id.slice(0, 8)}`);
+        try {
+          await assemble();
+          log(`assemble + finalize complete`);
+        } catch (e: any) {
+          log(`assemble error: ${e.message ?? e}`);
+        } finally {
+          autoBusyRef.current = false;
+        }
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 10_000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id, active?.status, active?.voiceover_url, active?.final_video_url, busy]);
+
   async function startGeneration() {
     setBusy("generating");
     try {
