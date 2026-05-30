@@ -36,6 +36,11 @@ const PinterestTagInner = () => {
       if (path.startsWith('/category/')) {
         const categorySlug = path.replace('/category/', '');
         trackPinterestEvent('viewcategory', { product_category: categorySlug });
+      } else if (path.startsWith('/collections/')) {
+        const categorySlug = path.replace('/collections/', '').split('/')[0];
+        if (categorySlug) {
+          trackPinterestEvent('viewcategory', { product_category: categorySlug });
+        }
       }
     }, 'pinterest');
   }, [location.pathname]);
