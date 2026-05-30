@@ -557,6 +557,7 @@ const BestSelfCleaningLitterBox2026 = lazyWithRetry(() => import("./pages/guides
 const IndoorCatFurnitureGuide = lazyWithRetry(() => import("./pages/guides/IndoorCatFurnitureGuide"));
 const GrowthVerification = lazyWithRetry(() => import("./pages/GrowthVerification"));
 const Healthz = lazyWithRetry(() => import("./pages/Healthz"));
+const PinterestTagHealth = lazyWithRetry(() => import("./pages/PinterestTagHealth"));
 const ComplianceEvidence = lazyWithRetry(() => import("./pages/ComplianceEvidence"));
 const WhyTrustOurReviews = lazyWithRetry(() => import("./pages/WhyTrustOurReviews"));
 const AboutTheAuthor = lazyWithRetry(() => import("./pages/AboutTheAuthor"));
