@@ -450,9 +450,14 @@ const Checkout = () => {
       });
       
       // Pinterest Checkout tracking — deferred, non-blocking
-      fireMarketingAsync('pinterest-checkout', async () => {
+      // Fires as a Pinterest `custom` event (event_name: initiate_checkout)
+      // so it does NOT collide with the standard `checkout` (= Purchase)
+      // fired from PaymentSuccess.
+      fireMarketingAsync('pinterest-initiatecheckout', async () => {
         const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
-        trackPinterestEvent('checkout', {
+        trackPinterestEvent('custom', {
+          event_name: 'initiate_checkout',
+          event_id: `initiate_checkout_${Date.now()}`,
           value: totalPrice,
           currency: 'USD',
           order_quantity: items.reduce((sum, item) => sum + item.quantity, 0),

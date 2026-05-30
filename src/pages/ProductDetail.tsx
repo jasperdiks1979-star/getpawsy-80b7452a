@@ -686,6 +686,20 @@ const ProductDetail = () => {
         value: Number(product.price) || 0,
         currency: "USD",
       });
+      // Pinterest ViewContent — fires after consent, non-blocking
+      import('@/lib/marketingClient').then(({ fireMarketingAsync }) =>
+        fireMarketingAsync('pinterest-viewcontent', async () => {
+          const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
+          trackPinterestEvent('viewcontent', {
+            product_id: currentProductId,
+            product_name: product.name || '',
+            product_price: Number(product.price) || 0,
+            product_category: product.category || undefined,
+            value: Number(product.price) || 0,
+            currency: 'USD',
+          });
+        }, 'pinterest')
+      ).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProductId]);
