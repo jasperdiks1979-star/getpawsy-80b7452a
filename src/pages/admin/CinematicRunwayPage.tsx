@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const TEST_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
-const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.9/dist/umd";
 
 type Scene = {
   key: "hook" | "problem" | "solution" | "cta";
@@ -310,11 +310,20 @@ export default function CinematicRunwayPage() {
       .eq("id", active.id);
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+      const { fetchFile } = await import("@ffmpeg/util");
       const ffmpeg = new FFmpeg();
-      const coreURL = await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript");
+
+      const loadCoreAsset = async (url: string, mimeType: string, minBytes: number) => {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) throw new Error(`failed to fetch ${url}: ${response.status}`);
+        const blob = await response.blob();
+        if (blob.size < minBytes) throw new Error(`invalid ffmpeg asset ${url}: ${blob.size} bytes`);
+        return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+      };
+
+      const coreURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript", 10_000);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
-      const wasmURL = await toBlobURL(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm");
+      const wasmURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm", 1_000_000);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
       await ffmpeg.load({
         coreURL,
