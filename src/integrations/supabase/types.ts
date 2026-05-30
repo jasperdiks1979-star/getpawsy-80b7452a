@@ -1786,6 +1786,12 @@ export type Database = {
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
+          fidelity_checked_at: string | null
+          fidelity_passed: boolean | null
+          fidelity_regen_passes: number
+          fidelity_reject_reasons: string[] | null
+          fidelity_report: Json | null
+          fidelity_score: number | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
@@ -1904,6 +1910,7 @@ export type Database = {
           scene_roles: Json | null
           scene_specs: Json
           scene_template: string | null
+          scenes_needing_regen: number[] | null
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
@@ -1999,6 +2006,12 @@ export type Database = {
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
+          fidelity_checked_at?: string | null
+          fidelity_passed?: boolean | null
+          fidelity_regen_passes?: number
+          fidelity_reject_reasons?: string[] | null
+          fidelity_report?: Json | null
+          fidelity_score?: number | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
@@ -2117,6 +2130,7 @@ export type Database = {
           scene_roles?: Json | null
           scene_specs?: Json
           scene_template?: string | null
+          scenes_needing_regen?: number[] | null
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
@@ -2212,6 +2226,12 @@ export type Database = {
           error_message?: string | null
           expected_impact?: string | null
           failure_category?: string | null
+          fidelity_checked_at?: string | null
+          fidelity_passed?: boolean | null
+          fidelity_regen_passes?: number
+          fidelity_reject_reasons?: string[] | null
+          fidelity_report?: Json | null
+          fidelity_score?: number | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
@@ -2330,6 +2350,7 @@ export type Database = {
           scene_roles?: Json | null
           scene_specs?: Json
           scene_template?: string | null
+          scenes_needing_regen?: number[] | null
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
@@ -2524,6 +2545,8 @@ export type Database = {
           engine_version_default: string
           environment_realism_min: number
           exposure_drift_amp: number
+          fidelity_auto_regen: boolean
+          fidelity_max_regen_passes: number
           focus_breathing_amp: number
           framing_correction_chance: number
           handheld_jitter_amp: number
@@ -2548,6 +2571,7 @@ export type Database = {
           min_hook_uniqueness_score: number
           min_motion_diversity: number | null
           min_motion_entropy: number
+          min_product_fidelity_score: number
           min_publish_gap_minutes: number
           min_realism_consistency: number
           min_realism_score: number
@@ -2568,6 +2592,7 @@ export type Database = {
           pinterest_publish_premium_cap_per_hour: number
           pinterest_publish_quality_floor: number | null
           pinterest_publish_recovery_mode: boolean
+          product_fidelity_enabled: boolean
           publish_jitter_max_seconds: number
           publish_jitter_min_seconds: number
           publish_windows_est: Json
@@ -2618,6 +2643,8 @@ export type Database = {
           engine_version_default?: string
           environment_realism_min?: number
           exposure_drift_amp?: number
+          fidelity_auto_regen?: boolean
+          fidelity_max_regen_passes?: number
           focus_breathing_amp?: number
           framing_correction_chance?: number
           handheld_jitter_amp?: number
@@ -2642,6 +2669,7 @@ export type Database = {
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
+          min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
           min_realism_score?: number
@@ -2662,6 +2690,7 @@ export type Database = {
           pinterest_publish_premium_cap_per_hour?: number
           pinterest_publish_quality_floor?: number | null
           pinterest_publish_recovery_mode?: boolean
+          product_fidelity_enabled?: boolean
           publish_jitter_max_seconds?: number
           publish_jitter_min_seconds?: number
           publish_windows_est?: Json
@@ -2712,6 +2741,8 @@ export type Database = {
           engine_version_default?: string
           environment_realism_min?: number
           exposure_drift_amp?: number
+          fidelity_auto_regen?: boolean
+          fidelity_max_regen_passes?: number
           focus_breathing_amp?: number
           framing_correction_chance?: number
           handheld_jitter_amp?: number
@@ -2736,6 +2767,7 @@ export type Database = {
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
+          min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
           min_realism_score?: number
@@ -2756,6 +2788,7 @@ export type Database = {
           pinterest_publish_premium_cap_per_hour?: number
           pinterest_publish_quality_floor?: number | null
           pinterest_publish_recovery_mode?: boolean
+          product_fidelity_enabled?: boolean
           publish_jitter_max_seconds?: number
           publish_jitter_min_seconds?: number
           publish_windows_est?: Json
@@ -18636,6 +18669,12 @@ export type Database = {
           error_message: string | null
           expected_impact: string | null
           failure_category: string | null
+          fidelity_checked_at: string | null
+          fidelity_passed: boolean | null
+          fidelity_regen_passes: number
+          fidelity_reject_reasons: string[] | null
+          fidelity_report: Json | null
+          fidelity_score: number | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
@@ -18754,6 +18793,7 @@ export type Database = {
           scene_roles: Json | null
           scene_specs: Json
           scene_template: string | null
+          scenes_needing_regen: number[] | null
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
