@@ -34,6 +34,8 @@ declare global {
 }
 
 let pinterestInitialized = false;
+let lastEventName: string | null = null;
+let lastEventAt: string | null = null;
 
 // Initialize Pinterest Tag
 const initPinterestTag = () => {
@@ -106,6 +108,8 @@ const trackPinterestEvent = (event: PinterestEventType, data?: PinterestEventDat
   };
 
   window.pintrk('track', event, eventData);
+  lastEventName = event;
+  lastEventAt = new Date().toISOString();
   dlog('Event tracked:', event, eventData);
 };
 
@@ -118,19 +122,32 @@ export interface PinterestTagHealth {
   consentGranted: boolean;
   productionDomain: boolean;
   hostname: string;
+  lastEventName: string | null;
+  lastEventAt: string | null;
+  status: 'ok' | 'degraded' | 'awaiting_consent' | 'non_production';
 }
 
 export const getPinterestTagHealth = (): PinterestTagHealth => {
   const w = typeof window !== 'undefined' ? window : (undefined as unknown as Window);
   const pintrk = w?.pintrk;
+  const consentGranted = isMarketingAllowed(getConsent());
+  const productionDomain = isProductionDomain();
+  const scriptLoaded = !!(pintrk && pintrk.loaded);
+  let status: PinterestTagHealth['status'] = 'ok';
+  if (!productionDomain) status = 'non_production';
+  else if (!consentGranted) status = 'awaiting_consent';
+  else if (!pinterestInitialized || !scriptLoaded) status = 'degraded';
   return {
+    status,
     tagId: PINTEREST_TAG_ID,
     initialized: pinterestInitialized,
-    scriptLoaded: !!(pintrk && pintrk.loaded),
+    scriptLoaded,
     queueDepth: Array.isArray(pintrk?.queue) ? pintrk!.queue!.length : 0,
-    consentGranted: isMarketingAllowed(getConsent()),
-    productionDomain: isProductionDomain(),
+    consentGranted,
+    productionDomain,
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'ssr',
+    lastEventName,
+    lastEventAt,
   };
 };
 
