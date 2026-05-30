@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const TEST_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
-const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.9/dist/umd";
 
 type Scene = {
   key: "hook" | "problem" | "solution" | "cta";
@@ -39,12 +38,6 @@ type Job = {
   merge_attempted_at?: string | null;
   created_at: string;
   updated_at: string;
-};
-
-type FfmpegDiagnostics = {
-  ffmpegCoreLoaded: boolean;
-  ffmpegWasmLoaded: boolean;
-  ffmpegLoadError: string | null;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -92,13 +85,7 @@ export default function CinematicRunwayPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [mergeProgress, setMergeProgress] = useState<string>("");
   const [autoLog, setAutoLog] = useState<string[]>([]);
-  const [ffmpegDiagnostics, setFfmpegDiagnostics] = useState<FfmpegDiagnostics>({
-    ffmpegCoreLoaded: false,
-    ffmpegWasmLoaded: false,
-    ffmpegLoadError: null,
-  });
   const autoBusyRef = useRef(false);
   const lastPollRef = useRef<Record<string, number>>({});
   const mergeInFlightRef = useRef<Record<string, boolean>>({});
