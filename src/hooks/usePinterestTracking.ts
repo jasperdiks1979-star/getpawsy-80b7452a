@@ -75,6 +75,7 @@ type PinterestEventType =
 
 interface PinterestEventData {
   event_id?: string;
+  event_name?: string;
   value?: number;
   currency?: string;
   order_quantity?: number;
@@ -90,6 +91,7 @@ interface PinterestEventData {
     product_category?: string;
   }>;
   search_query?: string;
+  [key: string]: unknown;
 }
 
 // Track Pinterest event
