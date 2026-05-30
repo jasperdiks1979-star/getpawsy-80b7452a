@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
 import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
+import CinematicAdsSafetyPanel from "@/components/admin/cinematic/CinematicAdsSafetyPanel";
 
 type Job = {
   id: string;
