@@ -2,8 +2,18 @@ import { useEffect, useCallback } from 'react';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { getConsent, isMarketingAllowed } from '@/lib/cookieConsent';
 
-// Pinterest Tag ID
-const PINTEREST_TAG_ID = '2612897117846';
+// Pinterest Tag ID — exposed via env var (publishable, safe to ship in client bundle).
+// Falls back to the canonical GetPawsy production tag if env is missing.
+const PINTEREST_TAG_ID: string =
+  (typeof import.meta !== 'undefined' && (import.meta as ImportMeta).env?.VITE_PINTEREST_TAG_ID) ||
+  '2612897117846';
+
+const IS_DEV: boolean =
+  typeof import.meta !== 'undefined' && !!(import.meta as ImportMeta).env?.DEV;
+
+const dlog = (...args: unknown[]) => {
+  if (IS_DEV) console.log('[Pinterest]', ...args);
+};
 
 // Check if we're on a production domain
 const isProductionDomain = (): boolean => {
@@ -47,15 +57,17 @@ const initPinterestTag = () => {
   // Initialize with tag ID
   window.pintrk('load', PINTEREST_TAG_ID);
   window.pintrk('page');
-  console.log('[Pinterest] Tag initialized:', PINTEREST_TAG_ID);
+  dlog('Tag initialized:', PINTEREST_TAG_ID);
 };
 
 // Pinterest event types
 type PinterestEventType = 
   | 'pagevisit'
   | 'viewcategory'
+  | 'viewcontent'
   | 'addtocart'
   | 'checkout'
+  | 'custom'
   | 'signup'
   | 'lead'
   | 'search'
@@ -92,7 +104,32 @@ const trackPinterestEvent = (event: PinterestEventType, data?: PinterestEventDat
   };
 
   window.pintrk('track', event, eventData);
-  console.log('[Pinterest] Event tracked:', event, eventData);
+  dlog('Event tracked:', event, eventData);
+};
+
+// Health snapshot used by the public Pinterest tag status page.
+export interface PinterestTagHealth {
+  tagId: string;
+  initialized: boolean;
+  scriptLoaded: boolean;
+  queueDepth: number;
+  consentGranted: boolean;
+  productionDomain: boolean;
+  hostname: string;
+}
+
+export const getPinterestTagHealth = (): PinterestTagHealth => {
+  const w = typeof window !== 'undefined' ? window : (undefined as unknown as Window);
+  const pintrk = w?.pintrk;
+  return {
+    tagId: PINTEREST_TAG_ID,
+    initialized: pinterestInitialized,
+    scriptLoaded: !!(pintrk && pintrk.loaded),
+    queueDepth: Array.isArray(pintrk?.queue) ? pintrk!.queue!.length : 0,
+    consentGranted: isMarketingAllowed(getConsent()),
+    productionDomain: isProductionDomain(),
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'ssr',
+  };
 };
 
 /**
