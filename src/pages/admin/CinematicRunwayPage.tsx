@@ -294,7 +294,8 @@ export default function CinematicRunwayPage() {
       toast.error("Need 4 finished scene clips first");
       return;
     }
-    if (!active.voiceover_url) {
+    const voiceoverRequired = !!active.script?.vo_text;
+    if (voiceoverRequired && !active.voiceover_url) {
       toast.error("Need voice-over first");
       return;
     }
@@ -350,8 +351,10 @@ export default function CinematicRunwayPage() {
         const s = active.scenes!.find((x) => x.key === key)!;
         await ffmpeg.writeFile(`${key}.mp4`, await fetchFile(s.clip_url!));
       }
-      setMergeProgress("Fetching voice-over…");
-      await ffmpeg.writeFile("vo.mp3", await fetchFile(active.voiceover_url));
+      if (active.voiceover_url) {
+        setMergeProgress("Fetching voice-over…");
+        await ffmpeg.writeFile("vo.mp3", await fetchFile(active.voiceover_url));
+      }
 
       // Concat the 4 clips into one, dropping any original audio
       setMergeProgress("Concatenating scenes…");
@@ -381,16 +384,24 @@ export default function CinematicRunwayPage() {
         })
         .join(",");
 
-      await ffmpeg.exec([
-        "-i", "concat.mp4",
-        "-i", "vo.mp3",
-        "-vf", drawFilters,
-        "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
-        "-c:a", "aac", "-b:a", "128k",
-        "-shortest",
-        "final.mp4",
-      ]);
+      const finalArgs = active.voiceover_url
+        ? [
+            "-i", "concat.mp4",
+            "-i", "vo.mp3",
+            "-vf", drawFilters,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-c:a", "aac", "-b:a", "128k",
+            "-shortest",
+            "final.mp4",
+          ]
+        : [
+            "-i", "concat.mp4",
+            "-vf", drawFilters,
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "final.mp4",
+          ];
+      await ffmpeg.exec(finalArgs);
 
       setMergeProgress("Uploading final video…");
       const out = (await ffmpeg.readFile("final.mp4")) as Uint8Array;
@@ -444,7 +455,9 @@ export default function CinematicRunwayPage() {
     } catch (e: any) {
       const message = e.message ?? String(e);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
-      log(`ffmpeg load failure: ${message}`);
+      if (!ffmpegDiagnostics.ffmpegCoreLoaded || !ffmpegDiagnostics.ffmpegWasmLoaded) {
+        log(`ffmpeg load failure: ${message}`);
+      }
       log(`merge failure: ${message}`);
       await supabase
         .from("cinematic_runway_jobs")
