@@ -2033,6 +2033,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-runway"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicRunwayPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-ads/dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
