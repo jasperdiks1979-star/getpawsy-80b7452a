@@ -3148,6 +3148,8 @@ export type Database = {
           error: string | null
           final_video_url: string | null
           id: string
+          merge_attempted_at: string | null
+          merge_error: string | null
           product_image_url: string | null
           product_name: string
           product_slug: string
@@ -3168,6 +3170,8 @@ export type Database = {
           error?: string | null
           final_video_url?: string | null
           id?: string
+          merge_attempted_at?: string | null
+          merge_error?: string | null
           product_image_url?: string | null
           product_name: string
           product_slug: string
@@ -3188,6 +3192,8 @@ export type Database = {
           error?: string | null
           final_video_url?: string | null
           id?: string
+          merge_attempted_at?: string | null
+          merge_error?: string | null
           product_image_url?: string | null
           product_name?: string
           product_slug?: string

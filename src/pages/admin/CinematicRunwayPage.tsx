@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const TEST_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
+const FFMPEG_CORE_BASE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.9/dist/umd";
 
 type Scene = {
   key: "hook" | "problem" | "solution" | "cta";
@@ -34,15 +35,23 @@ type Job = {
   qa_report: Record<string, { pass: boolean; detail: string }> | null;
   cost_cents: number;
   error: string | null;
+  merge_error?: string | null;
+  merge_attempted_at?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type FfmpegDiagnostics = {
+  ffmpegCoreLoaded: boolean;
+  ffmpegWasmLoaded: boolean;
+  ffmpegLoadError: string | null;
 };
 
 function StatusBadge({ status }: { status: string }) {
   const tone =
     status === "approved" || status === "ready_for_review"
       ? "default"
-      : status === "failed"
+      : status.includes("failed")
       ? "destructive"
       : "secondary";
   return <Badge variant={tone as any}>{status}</Badge>;
@@ -66,7 +75,7 @@ function ProgressTimeline({ job }: { job: Job }) {
           state === "done"
             ? "bg-green-500/15 text-green-700 border-green-500/30"
             : state === "active"
-            ? "bg-primary/15 text-primary border-primary/40 animate-pulse"
+            ? "bg-primary/15 text-primary border-primary/40"
             : "bg-muted text-muted-foreground border-border";
         return (
           <li key={s.key} className={`px-2 py-1 rounded border ${cls}`}>
@@ -85,8 +94,14 @@ export default function CinematicRunwayPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [mergeProgress, setMergeProgress] = useState<string>("");
   const [autoLog, setAutoLog] = useState<string[]>([]);
+  const [ffmpegDiagnostics, setFfmpegDiagnostics] = useState<FfmpegDiagnostics>({
+    ffmpegCoreLoaded: false,
+    ffmpegWasmLoaded: false,
+    ffmpegLoadError: null,
+  });
   const autoBusyRef = useRef(false);
   const lastPollRef = useRef<Record<string, number>>({});
+  const mergeInFlightRef = useRef<Record<string, boolean>>({});
 
   function log(msg: string) {
     const line = `${new Date().toISOString().slice(11, 19)}  ${msg}`;
@@ -96,6 +111,10 @@ export default function CinematicRunwayPage() {
   }
 
   const active = useMemo(() => jobs.find((j) => j.id === activeId) ?? jobs[0] ?? null, [jobs, activeId]);
+  const activeClipsReady = (active?.scenes?.length ?? 0) === 4 && !!active?.scenes?.every((s) => s.clip_url);
+  const activeVoiceoverReady = !!active?.voiceover_url;
+  const activeVoiceoverOptional = !active?.script?.vo_text;
+  const canRetryMerge = !!active && activeClipsReady && (activeVoiceoverReady || activeVoiceoverOptional) && busy === null;
 
   async function loadJobs() {
     const { data, error } = await supabase
@@ -136,7 +155,7 @@ export default function CinematicRunwayPage() {
       if (!j) return;
 
       // 1. Poll Runway every ~30s while scenes are still rendering.
-      if (j.status === "rendering_scenes" || j.status === "scripting") {
+      if (j.status === "rendering_scenes") {
         const last = lastPollRef.current[j.id] ?? 0;
         if (Date.now() - last < 30_000) return;
         lastPollRef.current[j.id] = Date.now();
@@ -149,7 +168,8 @@ export default function CinematicRunwayPage() {
           if (error) throw error;
           if (!data?.ok) throw new Error(data?.message ?? "poll failed");
           const done = (data.scenes ?? []).filter((s: any) => s.clip_url).length;
-          log(`poll ok status=${data.status} clips_ready=${done}/4`);
+          log(`poll success status=${data.status}`);
+          log(`clips found ${done}/4`);
           await loadJobs();
         } catch (e: any) {
           log(`poll error: ${e.message ?? e}`);
@@ -173,32 +193,37 @@ export default function CinematicRunwayPage() {
           });
           if (error) throw error;
           if (!data?.ok) throw new Error(data?.message ?? "voiceover failed");
-          log(`voiceover ok`);
+          log(`voiceover status generated`);
           await loadJobs();
         } catch (e: any) {
-          log(`voiceover error: ${e.message ?? e}`);
+          log(`voiceover status error: ${e.message ?? e}`);
         } finally {
           autoBusyRef.current = false;
         }
         return;
       }
 
-      // 3. Scenes + VO ready, no final video → assemble (runs in browser ffmpeg.wasm).
+      // 3. Scenes + VO ready, no final video → assemble once only (runs in browser ffmpeg.wasm).
       if (
         j.status === "awaiting_merge" &&
         j.voiceover_url &&
         !j.final_video_url &&
+        j.scenes?.length === 4 &&
         j.scenes?.every((s) => s.clip_url) &&
+        !j.merge_attempted_at &&
+        !j.merge_error &&
+        !mergeInFlightRef.current[j.id] &&
         busy === null
       ) {
         autoBusyRef.current = true;
-        log(`auto → assemble (ffmpeg.wasm) job=${j.id.slice(0, 8)}`);
+        mergeInFlightRef.current[j.id] = true;
+        log(`auto → merge started job=${j.id.slice(0, 8)}`);
         try {
-          await assemble();
-          log(`assemble + finalize complete`);
+          await assemble({ manual: false });
         } catch (e: any) {
-          log(`assemble error: ${e.message ?? e}`);
+          log(`merge failure: ${e.message ?? e}`);
         } finally {
+          mergeInFlightRef.current[j.id] = false;
           autoBusyRef.current = false;
         }
       }
@@ -237,6 +262,9 @@ export default function CinematicRunwayPage() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "failed");
+      const done = (data.scenes ?? []).filter((s: any) => s.clip_url).length;
+      log(`poll success status=${data.status}`);
+      log(`clips found ${done}/4`);
       toast.success(`Poll: status=${data.status}`);
       loadJobs();
     } catch (e: any) {
@@ -255,6 +283,7 @@ export default function CinematicRunwayPage() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "failed");
+      log("voiceover status generated");
       toast.success("Voice-over generated");
       loadJobs();
     } catch (e: any) {
@@ -264,27 +293,56 @@ export default function CinematicRunwayPage() {
     }
   }
 
-  async function assemble() {
+  async function assemble({ manual = true }: { manual?: boolean } = {}) {
     if (!active) return;
     if (!active.scenes || active.scenes.length !== 4 || !active.scenes.every((s) => s.clip_url)) {
       toast.error("Need 4 finished scene clips first");
       return;
     }
-    if (!active.voiceover_url) {
+    const voiceoverRequired = !!active.script?.vo_text;
+    if (voiceoverRequired && !active.voiceover_url) {
       toast.error("Need voice-over first");
       return;
     }
+    if (mergeInFlightRef.current[active.id] && manual) return;
+    mergeInFlightRef.current[active.id] = true;
     setBusy("assembling");
     setMergeProgress("Loading ffmpeg.wasm…");
+    setFfmpegDiagnostics({ ffmpegCoreLoaded: false, ffmpegWasmLoaded: false, ffmpegLoadError: null });
+    log(`ffmpeg load started core=${FFMPEG_CORE_BASE}/ffmpeg-core.js wasm=${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`);
+    log(`merge started job=${active.id.slice(0, 8)}`);
+    await supabase
+      .from("cinematic_runway_jobs")
+      .update({ status: "merging", merge_attempted_at: new Date().toISOString(), merge_error: null, error: null })
+      .eq("id", active.id);
+    let ffmpegCoreReady = false;
+    let ffmpegWasmReady = false;
+    let ffmpegLoaded = false;
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+      const { fetchFile } = await import("@ffmpeg/util");
       const ffmpeg = new FFmpeg();
-      const base = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
+
+      const loadCoreAsset = async (url: string, mimeType: string, minBytes: number) => {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) throw new Error(`failed to fetch ${url}: ${response.status}`);
+        const blob = await response.blob();
+        if (blob.size < minBytes) throw new Error(`invalid ffmpeg asset ${url}: ${blob.size} bytes`);
+        return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+      };
+
+      const coreURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript", 10_000);
+      ffmpegCoreReady = true;
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
+      const wasmURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm", 1_000_000);
+      ffmpegWasmReady = true;
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+        coreURL,
+        wasmURL,
       });
+      ffmpegLoaded = true;
+      log("ffmpeg load success");
       ffmpeg.on("log", ({ message }) => {
         if (message.includes("frame=")) setMergeProgress(message.slice(0, 120));
       });
@@ -304,8 +362,10 @@ export default function CinematicRunwayPage() {
         const s = active.scenes!.find((x) => x.key === key)!;
         await ffmpeg.writeFile(`${key}.mp4`, await fetchFile(s.clip_url!));
       }
-      setMergeProgress("Fetching voice-over…");
-      await ffmpeg.writeFile("vo.mp3", await fetchFile(active.voiceover_url));
+      if (active.voiceover_url) {
+        setMergeProgress("Fetching voice-over…");
+        await ffmpeg.writeFile("vo.mp3", await fetchFile(active.voiceover_url));
+      }
 
       // Concat the 4 clips into one, dropping any original audio
       setMergeProgress("Concatenating scenes…");
@@ -335,16 +395,24 @@ export default function CinematicRunwayPage() {
         })
         .join(",");
 
-      await ffmpeg.exec([
-        "-i", "concat.mp4",
-        "-i", "vo.mp3",
-        "-vf", drawFilters,
-        "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
-        "-c:a", "aac", "-b:a", "128k",
-        "-shortest",
-        "final.mp4",
-      ]);
+      const finalArgs = active.voiceover_url
+        ? [
+            "-i", "concat.mp4",
+            "-i", "vo.mp3",
+            "-vf", drawFilters,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-c:a", "aac", "-b:a", "128k",
+            "-shortest",
+            "final.mp4",
+          ]
+        : [
+            "-i", "concat.mp4",
+            "-vf", drawFilters,
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "final.mp4",
+          ];
+      await ffmpeg.exec(finalArgs);
 
       setMergeProgress("Uploading final video…");
       const out = (await ffmpeg.readFile("final.mp4")) as Uint8Array;
@@ -388,15 +456,27 @@ export default function CinematicRunwayPage() {
       if (qaErr) throw qaErr;
       if (!qa?.ok) {
         toast.error(`QA failed (score ${qa?.qa_score ?? "?"}). Review report.`);
+        log(`merge success; QA failed score=${qa?.qa_score ?? "?"}`);
       } else {
         toast.success(`Final assembled. QA score ${qa.qa_score}.`);
+        log(`merge success final=${finalUrl}`);
       }
       setMergeProgress("");
       loadJobs();
     } catch (e: any) {
-      toast.error(e.message ?? String(e));
+      const message = e.message ?? String(e);
+      setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
+      if (!ffmpegLoaded) log(`ffmpeg load failure: ${message}`);
+      log(`merge failure: ${message}`);
+      await supabase
+        .from("cinematic_runway_jobs")
+        .update({ status: "merge_failed", merge_error: message, error: message })
+        .eq("id", active.id);
+      toast.error(message);
       setMergeProgress("");
+      await loadJobs();
     } finally {
+      mergeInFlightRef.current[active.id] = false;
       setBusy(null);
     }
   }
@@ -510,7 +590,7 @@ export default function CinematicRunwayPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={assemble}
+                      onClick={() => assemble({ manual: true })}
                       disabled={
                         busy !== null ||
                         !active.voiceover_url ||
@@ -518,6 +598,14 @@ export default function CinematicRunwayPage() {
                       }
                     >
                       {busy === "assembling" ? "Merging…" : "Assemble Final Video"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => assemble({ manual: true })}
+                      disabled={!canRetryMerge}
+                    >
+                      Retry Merge
                     </Button>
                     <Button
                       size="sm"
@@ -530,6 +618,19 @@ export default function CinematicRunwayPage() {
                   </div>
                   {mergeProgress && (
                     <p className="text-xs text-muted-foreground font-mono">{mergeProgress}</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-muted-foreground">
+                    <div>ffmpegCoreLoaded={String(ffmpegDiagnostics.ffmpegCoreLoaded)}</div>
+                    <div>ffmpegWasmLoaded={String(ffmpegDiagnostics.ffmpegWasmLoaded)}</div>
+                    <div>ffmpegLoadError={ffmpegDiagnostics.ffmpegLoadError ?? "null"}</div>
+                  </div>
+                  {(active.merge_error || active.merge_attempted_at) && (
+                    <div className="text-xs border border-border rounded p-2 space-y-1">
+                      <div className="font-mono text-muted-foreground">
+                        merge_attempted_at={active.merge_attempted_at ?? "null"}
+                      </div>
+                      {active.merge_error && <div className="text-destructive">merge_error={active.merge_error}</div>}
+                    </div>
                   )}
                   <ProgressTimeline job={active} />
                   {autoLog.length > 0 && (
