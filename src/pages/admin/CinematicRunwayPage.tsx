@@ -261,6 +261,9 @@ export default function CinematicRunwayPage() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "failed");
+      const done = (data.scenes ?? []).filter((s: any) => s.clip_url).length;
+      log(`poll success status=${data.status}`);
+      log(`clips found ${done}/4`);
       toast.success(`Poll: status=${data.status}`);
       loadJobs();
     } catch (e: any) {
@@ -279,6 +282,7 @@ export default function CinematicRunwayPage() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message ?? "failed");
+      log("voiceover status generated");
       toast.success("Voice-over generated");
       loadJobs();
     } catch (e: any) {
@@ -323,9 +327,13 @@ export default function CinematicRunwayPage() {
         return URL.createObjectURL(new Blob([blob], { type: mimeType }));
       };
 
+      let ffmpegCoreLoaded = false;
+      let ffmpegWasmLoaded = false;
       const coreURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.js`, "text/javascript", 10_000);
+      ffmpegCoreLoaded = true;
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegCoreLoaded: true }));
       const wasmURL = await loadCoreAsset(`${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`, "application/wasm", 1_000_000);
+      ffmpegWasmLoaded = true;
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegWasmLoaded: true }));
       await ffmpeg.load({
         coreURL,
@@ -455,9 +463,7 @@ export default function CinematicRunwayPage() {
     } catch (e: any) {
       const message = e.message ?? String(e);
       setFfmpegDiagnostics((prev) => ({ ...prev, ffmpegLoadError: message }));
-      if (!ffmpegDiagnostics.ffmpegCoreLoaded || !ffmpegDiagnostics.ffmpegWasmLoaded) {
-        log(`ffmpeg load failure: ${message}`);
-      }
+      log(`ffmpeg load failure: ${message}`);
       log(`merge failure: ${message}`);
       await supabase
         .from("cinematic_runway_jobs")
