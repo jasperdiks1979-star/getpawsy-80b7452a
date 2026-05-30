@@ -19,12 +19,7 @@ export default function PinterestTagHealthPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  const ok =
-    !!snapshot &&
-    snapshot.initialized &&
-    snapshot.scriptLoaded &&
-    snapshot.consentGranted &&
-    snapshot.productionDomain;
+  const ok = snapshot?.status === 'ok';
 
   return (
     <main
@@ -40,6 +35,9 @@ export default function PinterestTagHealthPage() {
       <h1 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
         Pinterest Tag Health
       </h1>
+      <p style={{ marginTop: 0, color: '#475569' }}>
+        Endpoint: <code>/pinterest-tag-health</code>
+      </p>
       <p style={{ color: ok ? '#0a7f3f' : '#b1531a', marginTop: 0 }}>
         Status: <strong>{ok ? 'OK' : 'DEGRADED'}</strong>
       </p>
