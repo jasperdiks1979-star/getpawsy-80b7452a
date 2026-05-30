@@ -111,6 +111,9 @@ export default function CinematicRunwayPage() {
   }
 
   const active = useMemo(() => jobs.find((j) => j.id === activeId) ?? jobs[0] ?? null, [jobs, activeId]);
+  const activeClipsReady = !!active?.scenes?.every((s) => s.clip_url) && active.scenes.length === 4;
+  const activeVoiceoverReady = !!active?.voiceover_url;
+  const canRetryMerge = !!active && activeClipsReady && activeVoiceoverReady && busy === null;
 
   async function loadJobs() {
     const { data, error } = await supabase
@@ -555,7 +558,7 @@ export default function CinematicRunwayPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={assemble}
+                      onClick={() => assemble({ manual: true })}
                       disabled={
                         busy !== null ||
                         !active.voiceover_url ||
@@ -563,6 +566,14 @@ export default function CinematicRunwayPage() {
                       }
                     >
                       {busy === "assembling" ? "Merging…" : "Assemble Final Video"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => assemble({ manual: true })}
+                      disabled={!canRetryMerge}
+                    >
+                      Retry Merge
                     </Button>
                     <Button
                       size="sm"
@@ -575,6 +586,19 @@ export default function CinematicRunwayPage() {
                   </div>
                   {mergeProgress && (
                     <p className="text-xs text-muted-foreground font-mono">{mergeProgress}</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-muted-foreground">
+                    <div>ffmpegCoreLoaded={String(ffmpegDiagnostics.ffmpegCoreLoaded)}</div>
+                    <div>ffmpegWasmLoaded={String(ffmpegDiagnostics.ffmpegWasmLoaded)}</div>
+                    <div>ffmpegLoadError={ffmpegDiagnostics.ffmpegLoadError ?? "null"}</div>
+                  </div>
+                  {(active.merge_error || active.merge_attempted_at) && (
+                    <div className="text-xs border border-border rounded p-2 space-y-1">
+                      <div className="font-mono text-muted-foreground">
+                        merge_attempted_at={active.merge_attempted_at ?? "null"}
+                      </div>
+                      {active.merge_error && <div className="text-destructive">merge_error={active.merge_error}</div>}
+                    </div>
                   )}
                   <ProgressTimeline job={active} />
                   {autoLog.length > 0 && (
