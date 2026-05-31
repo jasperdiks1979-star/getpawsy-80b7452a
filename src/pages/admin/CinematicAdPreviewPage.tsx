@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, XCircle, RefreshCw, Upload, AlertTriangle, Mic, Download, Sparkles } from "lucide-react";
 import VoiceStyleSelector, { type VoiceStyleId } from "@/components/admin/cinematic/VoiceStyleSelector";
+import ProductFidelityPanel, { useFidelityGate, FIDELITY_THRESHOLD } from "@/components/admin/cinematic/ProductFidelityPanel";
 
 type HookVariantMeta = { angle: string; text: string; score: number; reasoning?: string };
 type CtaVariantMeta = { text: string; score: number };
@@ -64,6 +65,8 @@ export default function CinematicAdPreviewPage() {
   const [hashtags, setHashtags] = useState("");
   const [voiceStyle, setVoiceStyle] = useState<VoiceStyleId>("lifestyle_female");
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const fidelityGate = useFidelityGate(job);
 
   const load = async () => {
     if (!jobId) return;
@@ -122,6 +125,12 @@ export default function CinematicAdPreviewPage() {
 
   const handleApproveAndPublish = async () => {
     if (!jobId) return;
+    if (!fidelityGate.passes) {
+      toast.error(
+        `Approval blocked — quality gate failed (${fidelityGate.reason}). All three scores must be ≥ ${FIDELITY_THRESHOLD}/100.`,
+      );
+      return;
+    }
     setBusy("approve");
     try {
       await callFn("cinematic-ad-approve", {
