@@ -20,13 +20,18 @@ const json = (status: number, body: unknown) =>
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
 
 async function callFn(fnName: string, payload: unknown) {
   try {
     const res = await fetch(`${FUNCTIONS_BASE}/${fnName}`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        ...(RENDER_WORKER_SECRET ? { "x-render-secret": RENDER_WORKER_SECRET } : {}),
+      },
       body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
