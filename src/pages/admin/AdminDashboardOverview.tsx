@@ -87,6 +87,7 @@ const sections = [
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
       { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
       { to: '/admin/rejected-spam-events', label: 'Rejected Spam Events', icon: ShieldAlert, desc: 'Quarantined analytics & Pinterest payloads' },
+      { to: '/admin/webhook-health', label: 'Stripe Webhook Health', icon: Activity, desc: 'Endpoint ping, signature check, last paid order, Stripe events' },
     ],
   },
 ];
