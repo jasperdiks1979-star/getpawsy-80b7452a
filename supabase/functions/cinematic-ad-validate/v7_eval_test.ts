@@ -153,7 +153,6 @@ Deno.test("V7 REJECTS app product without app-control shot", () => {
   };
   const out = evaluateV7(input);
   assertEquals(out.detection_debug.is_app_product, true);
-  console.log("DBG app-missing:", JSON.stringify({ reasons: out.v7_reject_reasons, dd: out.detection_debug }, null, 2));
   assert(out.v7_reject_reasons.includes("missing_app_control_shot"),
     `expected missing_app_control_shot, got ${out.v7_reject_reasons.join(",")}`);
   assertEquals(out.validation_v7_passed, false);
