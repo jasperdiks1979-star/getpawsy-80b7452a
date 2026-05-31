@@ -163,7 +163,7 @@ export default function PinterestAdStudio() {
       director_archetype: opts.archetype ?? null,
       director_run_id: opts.runId ?? null,
     });
-    const jobId = (prep.data as any)?.job_id as string | undefined;
+    const jobId = ((prep.data as any)?.job_id ?? (prep.data as any)?.job?.id) as string | undefined;
     if (!jobId || !prep.diag.ok) return { jobId: null, prepare: prep.diag, queue: null };
     const q = await invokeWithDiag("cinematic-ad-queue-render", { job_id: jobId, preset: opts.preset });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
