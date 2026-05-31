@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import {
   Loader2, Play, RotateCcw, RefreshCw, X, Trash2, Send, Copy, Download,
   ExternalLink, Wand2, AlertTriangle, Zap, Filter, FileDown, Rocket,
+  CheckCircle2, XCircle, Eye,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
@@ -56,6 +57,14 @@ type Job = {
   pinterest_uploaded_at: string | null;
   error_message: string | null;
   approved_for_render: boolean | null;
+  validation_v7_passed: boolean | null;
+  scene_diversity_v7_score: number | null;
+  camera_diversity_score: number | null;
+  hook_strength_v7_score: number | null;
+  text_safety_score: number | null;
+  pinterest_quality_score: number | null;
+  v7_reject_reasons: string[] | null;
+  qa_composite_score: number | null;
 };
 
 type FilterKey = "all" | "queued" | "rendering" | "completed" | "failed" | "cancelled" | "stuck";
@@ -138,7 +147,7 @@ export default function CinematicAdsControlCenterPage() {
     const { data, error } = await supabase
       .from("cinematic_ad_jobs")
       .select(
-        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render"
+        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render,validation_v7_passed,scene_diversity_v7_score,camera_diversity_score,hook_strength_v7_score,text_safety_score,pinterest_quality_score,v7_reject_reasons,qa_composite_score"
       )
       .order("updated_at", { ascending: false })
       .limit(200);
@@ -679,6 +688,8 @@ export default function CinematicAdsControlCenterPage() {
                     </div>
                   </div>
 
+                  <V7QaPanel job={j} />
+
                   {j.output_mp4_url && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
                       <video
@@ -1050,6 +1061,77 @@ function JobLogsViewer({ job, onRefresh }: { job: Job; onRefresh: () => Promise<
       </div>
       {isLive && (
         <div className="mt-1 text-[10px] text-muted-foreground">Live — refreshing every 4s while {job.status}.</div>
+      )}
+    </div>
+  );
+}
+
+function V7QaPanel({ job }: { job: Job }) {
+  const hasV7 =
+    job.validation_v7_passed != null ||
+    (job.v7_reject_reasons && job.v7_reject_reasons.length > 0) ||
+    job.scene_diversity_v7_score != null ||
+    job.pinterest_quality_score != null;
+
+  if (!hasV7) return null;
+
+  const passed = job.validation_v7_passed === true;
+  const rejected = Array.isArray(job.v7_reject_reasons) ? job.v7_reject_reasons : [];
+  const scores = [
+    { label: "Pinterest", value: job.pinterest_quality_score, threshold: 90 },
+    { label: "Scenes", value: job.scene_diversity_v7_score },
+    { label: "Camera", value: job.camera_diversity_score },
+    { label: "Hook", value: job.hook_strength_v7_score },
+    { label: "Text", value: job.text_safety_score },
+    { label: "QA", value: job.qa_composite_score },
+  ];
+
+  return (
+    <div className="rounded border border-border/50 bg-muted/30 p-2">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+        {passed ? (
+          <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
+            <CheckCircle2 className="h-3 w-3" /> V7 Pass
+          </Badge>
+        ) : rejected.length > 0 ? (
+          <Badge variant="destructive" className="gap-1">
+            <XCircle className="h-3 w-3" /> V7 Fail
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="gap-1">
+            <Eye className="h-3 w-3" /> V7 Pending
+          </Badge>
+        )}
+        {job.qa_composite_score != null && (
+          <span className="text-[11px] text-muted-foreground">composite {Number(job.qa_composite_score).toFixed(1)}</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-1.5 md:grid-cols-6">
+        {scores.map((s) => {
+          const n = s.value == null ? null : Number(s.value);
+          const ok = n != null && (s.threshold == null ? true : n > s.threshold);
+          return (
+            <div key={s.label} className="rounded border border-border/40 bg-background p-1.5 text-center">
+              <div className="text-[10px] text-muted-foreground">{s.label}</div>
+              <div className={`text-sm font-semibold ${n == null ? "text-muted-foreground" : ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                {n == null ? "—" : n.toFixed(1)}
+                {s.threshold != null ? <span className="ml-0.5 text-[9px] text-muted-foreground">/{s.threshold}</span> : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {rejected.length > 0 && (
+        <div className="mt-1.5 space-y-0.5">
+          {rejected.map((reason) => (
+            <div key={reason} className="flex items-start gap-1.5 text-[11px] text-destructive">
+              <XCircle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span className="break-words">{reason}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
