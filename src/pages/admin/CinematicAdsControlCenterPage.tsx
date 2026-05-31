@@ -56,6 +56,14 @@ type Job = {
   pinterest_uploaded_at: string | null;
   error_message: string | null;
   approved_for_render: boolean | null;
+  validation_v7_passed: boolean | null;
+  scene_diversity_v7_score: number | null;
+  camera_diversity_score: number | null;
+  hook_strength_v7_score: number | null;
+  text_safety_score: number | null;
+  pinterest_quality_score: number | null;
+  v7_reject_reasons: string[] | null;
+  qa_composite_score: number | null;
 };
 
 type FilterKey = "all" | "queued" | "rendering" | "completed" | "failed" | "cancelled" | "stuck";
