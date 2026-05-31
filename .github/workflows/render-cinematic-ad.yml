@@ -52,12 +52,26 @@ jobs:
           set -euo pipefail
           bun install --frozen-lockfile || bun install
 
-      - name: Install Chrome for Remotion
+      - name: Install Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Export Chrome env vars
         shell: bash
         run: |
           set -euo pipefail
-          npx remotion browser ensure
-          echo "Remotion browser installed"
+          CHROME_PATH="${{ steps.setup-chrome.outputs.chrome-path }}"
+          if [ -z "${CHROME_PATH}" ] || [ ! -x "${CHROME_PATH}" ]; then
+            echo "Error: Chrome path not resolved from setup-chrome action"
+            exit 1
+          fi
+          echo "Resolved Chrome path: ${CHROME_PATH}"
+          "${CHROME_PATH}" --version
+          echo "CHROME_BIN=${CHROME_PATH}" >> "$GITHUB_ENV"
+          echo "PUPPETEER_EXECUTABLE_PATH=${CHROME_PATH}" >> "$GITHUB_ENV"
+          echo "REMOTION_CHROME_EXECUTABLE=${CHROME_PATH}" >> "$GITHUB_ENV"
 
       - name: Debug toolchain
         shell: bash
