@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, RefreshCw, ShieldAlert, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, ShieldAlert, AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
 
-export const FIDELITY_THRESHOLD = 90;
+export const FIDELITY_THRESHOLD = 95;
 
 type SceneFlag = {
   shape_match: boolean;
@@ -54,6 +54,10 @@ type Job = {
   motion_quality_score?: number | null;
   scene_consistency_score?: number | null;
   fidelity_regen_passes?: number | null;
+  product_lock?: Record<string, unknown> | null;
+  product_lock_enabled?: boolean | null;
+  product_reference_urls?: string[] | null;
+  prompt_lock_violations?: Record<string, string[]> | null;
 };
 
 function scoreColor(v: number | null | undefined) {
@@ -152,12 +156,41 @@ export default function ProductFidelityPanel({
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <ShieldAlert className="w-4 h-4" /> Product Fidelity Quality Gate
+          {job.product_lock_enabled && job.product_lock && (
+            <Badge variant="default" className="ml-2 gap-1">
+              <Lock className="w-3 h-3" /> Product Lock Enabled
+            </Badge>
+          )}
           <Badge variant={gate.passes ? "default" : "destructive"} className="ml-auto">
             {gate.passes ? "Approval allowed" : "Approval blocked"}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {job.product_lock && (
+          <div className="rounded-md border bg-muted/30 p-2 text-[11px] space-y-1">
+            <div className="flex items-center gap-1 font-medium">
+              <Lock className="w-3 h-3" /> Locked product fingerprint
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+              {Object.entries(job.product_lock).slice(0, 8).map(([k, v]) => (
+                <div key={k} className="truncate">
+                  <span className="text-muted-foreground">{k}:</span>{" "}
+                  <span>{typeof v === "string" ? v : JSON.stringify(v)}</span>
+                </div>
+              ))}
+            </div>
+            {job.prompt_lock_violations && Object.keys(job.prompt_lock_violations).length > 0 && (
+              <div className="text-destructive">
+                Pre-render prompt violations:{" "}
+                {Object.entries(job.prompt_lock_violations)
+                  .map(([k, v]) => `${k}(${(v as string[]).join(",")})`)
+                  .join(" · ")}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3">
           <ScoreBadge label="Product Match" score={gate.scores?.productMatch ?? null} />
           <ScoreBadge label="Motion Quality" score={gate.scores?.motion ?? null} />
