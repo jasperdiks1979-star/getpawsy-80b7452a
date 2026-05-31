@@ -1778,6 +1778,8 @@ export type Database = {
           cta_text: string | null
           cta_variants_meta: Json
           ctr_prediction_score: number | null
+          director_archetype: string | null
+          director_run_id: string | null
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
@@ -2031,6 +2033,8 @@ export type Database = {
           cta_text?: string | null
           cta_variants_meta?: Json
           ctr_prediction_score?: number | null
+          director_archetype?: string | null
+          director_run_id?: string | null
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
@@ -2284,6 +2288,8 @@ export type Database = {
           cta_text?: string | null
           cta_variants_meta?: Json
           ctr_prediction_score?: number | null
+          director_archetype?: string | null
+          director_run_id?: string | null
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
@@ -4871,6 +4877,167 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      director_archetype_weights: {
+        Row: {
+          archetype: string
+          avg_ctr: number
+          avg_engagement_rate: number
+          category: string
+          id: string
+          last_updated: string
+          samples: number
+          total_clicks: number
+          total_impressions: number
+          total_saves: number
+          weight: number
+          wins: number
+        }
+        Insert: {
+          archetype: string
+          avg_ctr?: number
+          avg_engagement_rate?: number
+          category?: string
+          id?: string
+          last_updated?: string
+          samples?: number
+          total_clicks?: number
+          total_impressions?: number
+          total_saves?: number
+          weight?: number
+          wins?: number
+        }
+        Update: {
+          archetype?: string
+          avg_ctr?: number
+          avg_engagement_rate?: number
+          category?: string
+          id?: string
+          last_updated?: string
+          samples?: number
+          total_clicks?: number
+          total_impressions?: number
+          total_saves?: number
+          weight?: number
+          wins?: number
+        }
+        Relationships: []
+      }
+      director_concepts: {
+        Row: {
+          archetype: string
+          category: string | null
+          commercial_score: number | null
+          composite_score: number | null
+          created_at: string
+          ctr: number
+          ctr_pred_score: number | null
+          engagement_pred_score: number | null
+          engagement_rate: number
+          id: string
+          impressions: number
+          is_winner: boolean
+          job_id: string | null
+          metrics_collected_at: string | null
+          motion_score: number | null
+          outbound_clicks: number
+          pinterest_quality_score: number | null
+          predicted_score: number | null
+          product_slug: string
+          run_id: string
+          saves: number
+          updated_at: string
+        }
+        Insert: {
+          archetype: string
+          category?: string | null
+          commercial_score?: number | null
+          composite_score?: number | null
+          created_at?: string
+          ctr?: number
+          ctr_pred_score?: number | null
+          engagement_pred_score?: number | null
+          engagement_rate?: number
+          id?: string
+          impressions?: number
+          is_winner?: boolean
+          job_id?: string | null
+          metrics_collected_at?: string | null
+          motion_score?: number | null
+          outbound_clicks?: number
+          pinterest_quality_score?: number | null
+          predicted_score?: number | null
+          product_slug: string
+          run_id: string
+          saves?: number
+          updated_at?: string
+        }
+        Update: {
+          archetype?: string
+          category?: string | null
+          commercial_score?: number | null
+          composite_score?: number | null
+          created_at?: string
+          ctr?: number
+          ctr_pred_score?: number | null
+          engagement_pred_score?: number | null
+          engagement_rate?: number
+          id?: string
+          impressions?: number
+          is_winner?: boolean
+          job_id?: string | null
+          metrics_collected_at?: string | null
+          motion_score?: number | null
+          outbound_clicks?: number
+          pinterest_quality_score?: number | null
+          predicted_score?: number | null
+          product_slug?: string
+          run_id?: string
+          saves?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "director_concepts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "director_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      director_runs: {
+        Row: {
+          category: string | null
+          created_at: string
+          decided_reasoning: string | null
+          id: string
+          product_slug: string
+          updated_at: string
+          winner_archetype: string | null
+          winner_job_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          decided_reasoning?: string | null
+          id?: string
+          product_slug: string
+          updated_at?: string
+          winner_archetype?: string | null
+          winner_job_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          decided_reasoning?: string | null
+          id?: string
+          product_slug?: string
+          updated_at?: string
+          winner_archetype?: string | null
+          winner_job_id?: string | null
+        }
+        Relationships: []
       }
       discontinued_products: {
         Row: {
@@ -18832,6 +18999,8 @@ export type Database = {
           cta_text: string | null
           cta_variants_meta: Json
           ctr_prediction_score: number | null
+          director_archetype: string | null
+          director_run_id: string | null
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
