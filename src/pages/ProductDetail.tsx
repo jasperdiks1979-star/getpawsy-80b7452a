@@ -49,6 +49,7 @@ import { useRecentlyViewedProducts } from "@/hooks/useRecentlyViewedProducts";
 import { useHaptic } from "@/hooks/useHaptic";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CreatePinterestAdButton from "@/components/admin/pinterest-ad-studio/CreatePinterestAdButton";
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
@@ -2214,6 +2215,7 @@ const ProductDetail = () => {
 
       {/* Spacer for sticky bar — fixed height, no transition to prevent layout oscillation */}
       {showStickyBar && <div className="h-20" />}
+      <CreatePinterestAdButton slug={product?.slug ?? slug ?? ""} />
     </Layout>
   );
 };
