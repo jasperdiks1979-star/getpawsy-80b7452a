@@ -2027,6 +2027,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-ad-studio"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAdStudio />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-ads/:jobId/qa"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
