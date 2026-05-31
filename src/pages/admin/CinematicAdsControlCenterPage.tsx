@@ -29,6 +29,7 @@ import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQuality
 import PinterestContentEnginePanel from "@/components/admin/cinematic/PinterestContentEnginePanel";
 import BackgroundBatchPanel from "@/components/admin/cinematic/BackgroundBatchPanel";
 import CampaignProgressPanel, { saveLastCampaign } from "@/components/admin/cinematic/CampaignProgressPanel";
+import { downloadAuditCsv } from "@/utils/cinematicQaAudit";
 
 type Job = {
   id: string;
@@ -581,6 +582,16 @@ export default function CinematicAdsControlCenterPage() {
         <Button size="sm" variant="outline" onClick={exportToCsv} disabled={filtered.length === 0} className="h-8 gap-1.5">
           <FileDown className="h-4 w-4" />
           Export CSV
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => downloadAuditCsv(filtered, `cinematic-qa-audit-${new Date().toISOString().split("T")[0]}.csv`)}
+          disabled={filtered.length === 0}
+          className="h-8 gap-1.5"
+        >
+          <ShieldCheck className="h-4 w-4" />
+          QA Audit CSV
         </Button>
       </div>
 
