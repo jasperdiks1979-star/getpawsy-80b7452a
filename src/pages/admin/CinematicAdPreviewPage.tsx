@@ -561,7 +561,7 @@ export default function CinematicAdPreviewPage() {
             <CardHeader className="pb-3"><CardTitle className="text-base">Approve & publish</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                <Button onClick={handleApproveAndPublish} disabled={busy !== null}>
+                <Button onClick={handleApproveAndPublish} disabled={busy !== null || !fidelityGate.passes}>
                   <CheckCircle2 className="w-4 h-4 mr-1" /> Approve & render MP4
                 </Button>
                 <Button onClick={handlePublishPinterest} disabled={!canPublish || busy !== null} variant="secondary">
@@ -571,6 +571,11 @@ export default function CinematicAdPreviewPage() {
                   Force publish (override validator)
                 </Button>
               </div>
+              {!fidelityGate.passes && (
+                <p className="text-xs text-destructive">
+                  Approve blocked — Product Match, Motion Quality, and Scene Consistency must each be ≥ {FIDELITY_THRESHOLD}/100.
+                </p>
+              )}
               {!canPublish && (
                 <p className="text-xs text-amber-700">Validator hasn't passed — fix issues above or force-publish.</p>
               )}
@@ -584,6 +589,9 @@ export default function CinematicAdPreviewPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Product fidelity diagnostics */}
+          <ProductFidelityPanel job={job} onChanged={load} />
         </div>
       </div>
     </div>
