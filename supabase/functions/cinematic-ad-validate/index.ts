@@ -555,6 +555,29 @@ Deno.serve(async (req) => {
   console.log(`[validate] ${traceId} v7_detection job=${jobId}`, JSON.stringify(v7DetectionDebug));
   (report as any).v7_detection_debug = v7DetectionDebug;
 
+  // Explicit per-rule decision log: which detection pass (strict vs retry)
+  // produced the final pass/fail for borderline cases. Mirrored into the
+  // report so it shows up in the admin QA panel + PDF audit.
+  const decisionTrace = (v7Out as any).decision_trace ?? [];
+  (report as any).v7_decision_trace = decisionTrace;
+  for (const t of decisionTrace) {
+    if (t.borderline || t.decided_by === "retry_pass" || t.decided_by === "retry_failed") {
+      console.log(
+        `[validate] ${traceId} v7_decision job=${jobId} rule=${t.rule}`,
+        `decided_by=${t.decided_by} strict=${t.strict_value} final=${t.final_value}`,
+        `threshold=${t.threshold}${t.note ? ` note="${t.note}"` : ""}`,
+      );
+    }
+  }
+  const retryRecovered = decisionTrace.filter((t: any) => t.decided_by === "retry_pass").map((t: any) => t.rule);
+  const retryFailed = decisionTrace.filter((t: any) => t.decided_by === "retry_failed").map((t: any) => t.rule);
+  if (retryRecovered.length || retryFailed.length) {
+    console.log(
+      `[validate] ${traceId} v7_decision_summary job=${jobId}`,
+      `recovered_by_retry=[${retryRecovered.join(",")}] retry_insufficient=[${retryFailed.join(",")}]`,
+    );
+  }
+
   const dd = v7DetectionDebug;
   report.checks.push({ name: "v7_scene_count", passed: dd.scene_count >= v7t.minSceneCountV7, observed: dd.scene_count, expected: `>= ${v7t.minSceneCountV7}` });
   report.checks.push({ name: "v7_unique_scenes", passed: dd.unique_scenes >= v7t.minUniqueScenesV7, observed: dd.unique_scenes, expected: `>= ${v7t.minUniqueScenesV7}` });
