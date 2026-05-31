@@ -197,12 +197,12 @@ async function scoreScene(opts: {
   const allFlagsPass = Object.values(flags).every(Boolean);
   const score = Math.max(0, Math.min(100, Number(parsed.score ?? (allFlagsPass ? similarity_percent : 40))));
   const reasons: string[] = Array.isArray(parsed.reasons) ? parsed.reasons.map(String) : [];
-  if (similarity_percent < 90) reasons.push(`similarity_below_threshold(${similarity_percent}<90)`);
+  if (similarity_percent < 95) reasons.push(`similarity_below_threshold(${similarity_percent}<95)`);
   if (scene_realism_score < 8) reasons.push(`scene_realism_below_threshold(${scene_realism_score}<8)`);
 
   const hardPass =
     allFlagsPass &&
-    similarity_percent >= 90 &&
+    similarity_percent >= 95 &&
     scene_realism_score >= 8;
 
   return {
