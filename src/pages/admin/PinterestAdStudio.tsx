@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2, Bug, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
@@ -30,6 +30,67 @@ type JobRow = {
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
 const TERMINAL_BAD = new Set(["failed", "cancelled"]);
 
+// ============================================================
+// Director run diagnostics — captured per-concept so the
+// "Debug Director Run" panel can show actionable error info
+// when an edge function returns a non-2xx status.
+// ============================================================
+type ConceptStage = "pending" | "preparing" | "queued" | "rendering" | "success" | "concept_failed";
+type EdgeCallDiag = {
+  fn: string;
+  ok: boolean;
+  httpStatus: number | null;
+  responseBody: string | null;
+  traceId: string | null;
+  errorMessage: string | null;
+};
+type ConceptDiag = {
+  archetype: ArchetypeId;
+  label: string;
+  stage: ConceptStage;
+  jobId: string | null;
+  prepare: EdgeCallDiag | null;
+  queue: EdgeCallDiag | null;
+  retried: boolean;
+  suggestedFix: string | null;
+};
+
+function suggestFix(d: EdgeCallDiag): string {
+  const body = (d.responseBody || "").toLowerCase();
+  const msg = (d.errorMessage || "").toLowerCase();
+  if (d.httpStatus === 401 || d.httpStatus === 403) return "Auth/permission issue — re-login as admin and retry.";
+  if (d.httpStatus === 402 || body.includes("payment") || body.includes("billing") || body.includes("credit")) return "AI provider billing/credit issue — add credits to Lovable AI / ElevenLabs.";
+  if (d.httpStatus === 429 || body.includes("rate")) return "Rate limited — wait 30s and retry, or stagger concepts.";
+  if (d.httpStatus && d.httpStatus >= 500) return "Upstream AI service unavailable — automatic safer-prompt retry will engage; otherwise skip this concept.";
+  if (body.includes("voice") || msg.includes("voice")) return "Voice synthesis failed — retry with the narrator fallback voice.";
+  if (body.includes("image") || body.includes("nano") || body.includes("gemini")) return "Image generation failed — retry with safer creative prompt or skip the viral pattern interrupt.";
+  if (d.httpStatus === null) return "Network/timeout — retry the run.";
+  return "Inspect the response body and edge function logs for details.";
+}
+
+// Resilient invoke: never throws, always returns full diagnostics
+// including HTTP status + response body + trace id when the function
+// returns a non-2xx status code.
+async function invokeWithDiag(fn: string, body: Record<string, unknown>): Promise<{ data: any; diag: EdgeCallDiag }> {
+  const { data, error } = await supabase.functions.invoke(fn, { body });
+  // FunctionsHttpError exposes the raw Response via .context
+  const ctx: Response | undefined = (error as any)?.context;
+  let httpStatus: number | null = ctx?.status ?? (data ? 200 : null);
+  let responseBody: string | null = null;
+  let traceId: string | null = (data as any)?.traceId ?? null;
+  if (ctx) {
+    try { responseBody = await ctx.clone().text(); } catch { /* noop */ }
+    try {
+      const parsed = responseBody ? JSON.parse(responseBody) : null;
+      if (parsed?.traceId) traceId = parsed.traceId;
+    } catch { /* response was not JSON */ }
+  }
+  const okFlag = !error && (data as any)?.ok !== false;
+  const errorMessage = okFlag ? null : ((data as any)?.message || error?.message || `non-2xx (${httpStatus ?? "?"})`);
+  const diag: EdgeCallDiag = { fn, ok: okFlag, httpStatus, responseBody, traceId, errorMessage };
+  return { data, diag };
+}
+
 function statusLabel(s: string) {
   if (TERMINAL_OK.has(s)) return "Ready";
   if (TERMINAL_BAD.has(s)) return "Failed";
@@ -50,6 +111,9 @@ export default function PinterestAdStudio() {
   const [runId, setRunId] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [pollKey, setPollKey] = useState(0);
+  const [diagnostics, setDiagnostics] = useState<ConceptDiag[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
+  const [dryRun, setDryRun] = useState(false);
 
   // Preload product from ?slug=
   useEffect(() => {
@@ -80,29 +144,35 @@ export default function PinterestAdStudio() {
   }, [jobs, pollKey]);
 
   async function startOne(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null }) {
-    if (!product) return null;
-    const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare", {
-      body: {
-        product_slug: product.slug,
-        hook_variant: opts.hookVariant,
-        voice_style: opts.voiceStyle,
-        force_new: true,
-        director_archetype: opts.archetype ?? null,
-        director_run_id: opts.runId ?? null,
-      },
+    const res = await startOneWithDiag(opts);
+    if (!res.jobId) throw new Error(res.prepare?.errorMessage || res.queue?.errorMessage || "Failed to start");
+    return res.jobId;
+  }
+
+  // Returns { jobId, prepare, queue } — never throws.
+  async function startOneWithDiag(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null }): Promise<{ jobId: string | null; prepare: EdgeCallDiag; queue: EdgeCallDiag | null }> {
+    if (!product) {
+      const fake: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: null, responseBody: null, traceId: null, errorMessage: "no product selected" };
+      return { jobId: null, prepare: fake, queue: null };
+    }
+    const prep = await invokeWithDiag("cinematic-ad-prepare", {
+      product_slug: product.slug,
+      hook_variant: opts.hookVariant,
+      voice_style: opts.voiceStyle,
+      force_new: true,
+      director_archetype: opts.archetype ?? null,
+      director_run_id: opts.runId ?? null,
     });
-    const jobId = (data as any)?.job_id as string | undefined;
-    if (!jobId) throw new Error((data as any)?.message || error?.message || "Failed to start");
-    await supabase.functions.invoke("cinematic-ad-queue-render", {
-      body: { job_id: jobId, preset: opts.preset },
-    });
+    const jobId = (prep.data as any)?.job_id as string | undefined;
+    if (!jobId || !prep.diag.ok) return { jobId: null, prepare: prep.diag, queue: null };
+    const q = await invokeWithDiag("cinematic-ad-queue-render", { job_id: jobId, preset: opts.preset });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
       await supabase.from("cinematic_ad_jobs")
         .update({ director_archetype: opts.archetype ?? null, director_run_id: opts.runId ?? null })
         .eq("id", jobId);
     }
-    return jobId;
+    return { jobId: q.diag.ok ? jobId : jobId, prepare: prep.diag, queue: q.diag };
   }
 
   async function runStyles(stylesToRun: AdStyleId[], successMsg: string) {
@@ -131,11 +201,16 @@ export default function PinterestAdStudio() {
     setCreating(true);
     setDirectorNote(null);
     setRunId(null);
+    setDiagnostics([]);
     try {
-      const { data, error } = await supabase.functions.invoke("cinematic-director-decide", {
-        body: { product_slug: product.slug, persist: true },
-      });
-      if (error || (data as any)?.ok === false) throw new Error((data as any)?.message || error?.message || "director failed");
+      const decided = await invokeWithDiag("cinematic-director-decide", { product_slug: product.slug, persist: true });
+      if (!decided.diag.ok) {
+        toast.error(`Director decide failed: ${decided.diag.errorMessage}`);
+        setDiagnostics([{ archetype: "viral_interrupt", label: "director-decide", stage: "concept_failed", jobId: null, prepare: decided.diag, queue: null, retried: false, suggestedFix: suggestFix(decided.diag) }]);
+        setShowDebug(true);
+        return;
+      }
+      const data = decided.data;
       const payload = data as any;
       const concepts = (payload.concepts ?? []) as Array<{
         archetype: ArchetypeId; label: string; hookVariant: string; voiceStyle: string;
@@ -147,28 +222,76 @@ export default function PinterestAdStudio() {
       if (concepts.length === 0) throw new Error("No concepts produced");
 
       setDirectorNote(
-        `AI Director rendering 4 concepts: ${concepts.map(c => `${c.label} (w=${c.learned_weight})`).join(" · ")}${meta?.category ? ` · ${meta.category}` : ""}. Winner is selected automatically and fed back into the learning loop.`,
+        `AI Director ${dryRun ? "DRY RUN — simulating" : "rendering"} ${concepts.length} concepts: ${concepts.map(c => `${c.label} (w=${c.learned_weight})`).join(" · ")}${meta?.category ? ` · ${meta.category}` : ""}. One failed concept does not stop the run.`,
       );
 
-      const results: JobRow[] = [];
-      for (const c of concepts) {
-        try {
-          const jobId = await startOne({
-            hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any,
-            archetype: c.archetype, runId: newRunId,
-          });
-          if (jobId) {
-            results.push({
-              id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
-              output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
-              pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
-              hook_variant: c.hookVariant, voice_style: c.voiceStyle,
-              archetype: c.archetype, predicted_score: c.predicted_score,
-            });
+      // Initialize diagnostics row for each concept
+      const initDiag: ConceptDiag[] = concepts.map(c => ({
+        archetype: c.archetype, label: c.label, stage: "preparing",
+        jobId: null, prepare: null, queue: null, retried: false, suggestedFix: null,
+      }));
+      setDiagnostics(initDiag);
+
+      // Run all concepts in parallel — failures isolated per concept
+      const settled = await Promise.allSettled(concepts.map(async (c, idx) => {
+        // ---- DRY RUN: simulate prepare/queue & force a viral failure to verify isolation ----
+        if (dryRun) {
+          if (c.archetype === "viral_interrupt") {
+            const fakeFail: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: 500, responseBody: '{"error":"SIMULATED_VIRAL_FAILURE","message":"dry-run injected failure"}', traceId: "dryrun_trace", errorMessage: "SIMULATED viral concept failure" };
+            return { idx, c, jobId: null, prepare: fakeFail, queue: null, retried: true, dryRun: true };
           }
-        } catch (e: any) { toast.error(`${c.label}: ${e.message || "failed"}`); }
+          const fakeOk: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: true, httpStatus: 200, responseBody: '{"ok":true}', traceId: "dryrun_trace", errorMessage: null };
+          return { idx, c, jobId: `dryrun_${idx}`, prepare: fakeOk, queue: { ...fakeOk, fn: "cinematic-ad-queue-render" }, retried: false, dryRun: true };
+        }
+
+        // ---- REAL RUN with fallback retry for viral_interrupt ----
+        let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+        let retried = false;
+        if (!r.jobId && c.archetype === "viral_interrupt") {
+          // Safer fallback prompt: use lifestyle hook + narrator voice
+          retried = true;
+          r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+        }
+        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: false };
+      }));
+
+      const results: JobRow[] = [];
+      const nextDiag: ConceptDiag[] = [...initDiag];
+      let failedCount = 0;
+      for (const s of settled) {
+        if (s.status !== "fulfilled") continue;
+        const { idx, c, jobId, prepare, queue, retried, dryRun: isDry } = s.value;
+        const ok = !!jobId && prepare.ok && (queue?.ok ?? true);
+        nextDiag[idx] = {
+          archetype: c.archetype, label: c.label,
+          stage: ok ? (isDry ? "success" : "rendering") : "concept_failed",
+          jobId, prepare, queue, retried,
+          suggestedFix: ok ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+        };
+        if (ok && !isDry && jobId) {
+          results.push({
+            id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
+            output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
+            pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
+            hook_variant: c.hookVariant, voice_style: c.voiceStyle,
+            archetype: c.archetype, predicted_score: c.predicted_score,
+          });
+        }
+        if (!ok) failedCount++;
       }
-      if (results.length > 0) { setJobs(results); toast.success(`Director Mode: ${results.length} concepts rendering`); }
+      setDiagnostics(nextDiag);
+
+      if (results.length > 0) {
+        setJobs(results);
+        toast.success(`Director: ${results.length}/${concepts.length} concepts rendering${failedCount ? ` · ${failedCount} skipped` : ""}`);
+      } else if (dryRun) {
+        toast.success(`Dry run complete · ${concepts.length - failedCount}/${concepts.length} would render · ${failedCount} isolated`);
+        setShowDebug(true);
+      } else {
+        toast.error(`All ${concepts.length} concepts failed — see Debug panel`);
+        setShowDebug(true);
+      }
+      if (failedCount > 0) setShowDebug(true);
     } catch (e: any) {
       toast.error(e.message || "director failed");
     } finally { setCreating(false); }
@@ -257,8 +380,12 @@ export default function PinterestAdStudio() {
           </p>
           <Button size="lg" className="w-full" disabled={!product || creating} onClick={handleDirector}>
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Generate Best Possible Pinterest Ad
+            {dryRun ? "Dry-run Director (no renders)" : "Generate Best Possible Pinterest Ad"}
           </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
+            Dry run mode — simulate all 4 concepts (no paid renders, injects a viral failure to verify isolation)
+          </label>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
           )}
@@ -270,6 +397,75 @@ export default function PinterestAdStudio() {
           )}
         </CardContent>
       </Card>
+
+      {/* Debug Director Run */}
+      {diagnostics.length > 0 && (
+        <Card className="border-amber-400/40">
+          <CardHeader className="pb-3">
+            <button onClick={() => setShowDebug(v => !v)} className="flex items-center justify-between w-full text-left">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bug className="w-4 h-4" />Debug Director Run
+                <Badge variant="outline" className="ml-2">
+                  {diagnostics.filter(d => d.stage === "success" || d.stage === "rendering").length}/{diagnostics.length} ok
+                </Badge>
+                {diagnostics.some(d => d.stage === "concept_failed") && (
+                  <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />{diagnostics.filter(d => d.stage === "concept_failed").length} failed</Badge>
+                )}
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">{showDebug ? "Hide" : "Show"}</span>
+            </button>
+          </CardHeader>
+          {showDebug && (
+            <CardContent className="space-y-3">
+              {winner && (
+                <div className="text-xs p-2 rounded bg-primary/5 border border-primary/20">
+                  <span className="font-medium">Selected winner:</span> {winner.archetype ? getArchetype(winner.archetype).label : winner.hook_variant} · QA {Math.round(winner.qa_composite_score ?? 0)} · <code className="text-[10px]">{winner.id.slice(0,8)}</code>
+                </div>
+              )}
+              <div className="space-y-2">
+                {diagnostics.map((d, i) => {
+                  const failed = d.stage === "concept_failed";
+                  const okCall = d.stage === "success" || d.stage === "rendering";
+                  return (
+                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-semibold">
+                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                          {d.label}
+                          {d.retried && <Badge variant="outline" className="text-[10px]">retried (safer prompt)</Badge>}
+                        </div>
+                        <span className="text-muted-foreground">{d.stage}</span>
+                      </div>
+                      {d.jobId && <div><span className="text-muted-foreground">Render job:</span> <code className="text-[10px]">{d.jobId}</code></div>}
+                      {d.prepare && (
+                        <div className="grid grid-cols-[110px_1fr] gap-x-2">
+                          <span className="text-muted-foreground">prepare:</span>
+                          <span><code className="text-[10px]">{d.prepare.fn}</code> · HTTP {d.prepare.httpStatus ?? "—"} · {d.prepare.ok ? "ok" : (d.prepare.errorMessage ?? "failed")}{d.prepare.traceId ? ` · trace ${d.prepare.traceId}` : ""}</span>
+                        </div>
+                      )}
+                      {d.queue && (
+                        <div className="grid grid-cols-[110px_1fr] gap-x-2">
+                          <span className="text-muted-foreground">queue:</span>
+                          <span><code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}</span>
+                        </div>
+                      )}
+                      {failed && d.prepare?.responseBody && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-muted-foreground">Response body</summary>
+                          <pre className="text-[10px] whitespace-pre-wrap break-all p-2 rounded bg-background/60 border border-border mt-1 max-h-40 overflow-auto">{d.prepare.responseBody}</pre>
+                        </details>
+                      )}
+                      {d.suggestedFix && (
+                        <div className="text-amber-700 dark:text-amber-400"><span className="font-medium">Suggested fix:</span> {d.suggestedFix}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* STEP 4 — results */}
       {jobs.length > 0 && (
