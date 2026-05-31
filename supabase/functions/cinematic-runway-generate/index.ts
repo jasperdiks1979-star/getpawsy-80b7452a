@@ -51,11 +51,11 @@ Write a 4-scene script. Each scene is ~5 seconds. Return JSON:
 
 async function generateScenePrompts(productName: string, script: any) {
   const sys =
-    "You direct cinematic UGC pet-product ads. Output strict JSON. No text overlays, no logos, no captions in the video.";
+    "You direct cinematic UGC pet-product ads. Output strict JSON. No text overlays, no captions in the video. The product itself is FIXED — you only describe the scene, environment, lighting, camera and cat behavior AROUND the product. NEVER describe the product's shape, color, controls, opening, materials or branding — those are locked to the source image.";
   const user = `Product: ${productName}
 Script: ${JSON.stringify(script)}
 
-For each of the 4 scenes, write a Runway Gen-3 video prompt describing real-looking cat footage in a modern home. Use the product visually where relevant. Avoid any on-screen text. Cinematic UGC handheld style, natural lighting, shallow depth of field, 9:16 portrait composition. Return JSON:
+For each of the 4 scenes, write a Runway Gen-3 video prompt describing real-looking cat footage in a modern home. The PRODUCT in every frame must be the exact same physical unit shown in the source product photo — same shape, dimensions, opening, controls, color, materials and branding. Describe only the scene context AROUND it (room, lighting, cat action, camera move). Avoid any on-screen text. Cinematic UGC handheld style, natural lighting, shallow depth of field, 9:16 portrait composition. The frame_prompt should describe the SCENE CONTEXT only — the product itself will be composited in from the real source image, so do not re-describe its appearance. Return JSON:
 {
   "hook":     { "video_prompt": "...", "frame_prompt": "photorealistic still that this clip animates from..." },
   "problem":  { "video_prompt": "...", "frame_prompt": "..." },
@@ -82,8 +82,14 @@ For each of the 4 scenes, write a Runway Gen-3 video prompt describing real-look
   return JSON.parse(j.choices[0].message.content);
 }
 
-async function generateStartingFrame(prompt: string): Promise<string> {
-  // Use Lovable AI image generation. Returns a data URL or hosted URL.
+async function generateStartingFrame(
+  scenePrompt: string,
+  sourceProductImageUrl: string,
+): Promise<string> {
+  // PRODUCT FIDELITY GATE (V6): the starting frame MUST preserve the exact product
+  // from the source PDP image. We pass the real product image as multimodal input
+  // and instruct Gemini to compose a scene AROUND it without altering shape, color,
+  // dimensions, opening, controls, materials or branding.
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -95,7 +101,21 @@ async function generateStartingFrame(prompt: string): Promise<string> {
       messages: [
         {
           role: "user",
-          content: `Photorealistic 9:16 portrait still, cinematic UGC style, natural lighting, no text overlays: ${prompt}`,
+          content: [
+            {
+              type: "text",
+              text:
+                "Compose a photorealistic 9:16 portrait still, cinematic UGC style, natural lighting, no text overlays.\n\n" +
+                "HARD CONSTRAINT — PRODUCT FIDELITY:\n" +
+                "The product shown in the reference image MUST appear in the output IDENTICAL to the reference. " +
+                "Preserve EXACTLY: shape, dimensions, opening, controls, color, materials, branding, logos, button placement, display, entry. " +
+                "Do NOT redesign, restyle, reinterpret, simplify, reimagine, recolor or invent features. " +
+                "Do NOT change the product's silhouette or proportions. Treat the product as a fixed prop to be placed in the scene.\n\n" +
+                "SCENE CONTEXT (everything AROUND the product is yours to direct):\n" +
+                scenePrompt,
+            },
+            { type: "image_url", image_url: { url: sourceProductImageUrl } },
+          ],
         },
       ],
       modalities: ["image", "text"],
@@ -226,9 +246,17 @@ Deno.serve(async (req) => {
           if (!sp?.video_prompt || !sp?.frame_prompt) {
             throw new Error(`missing prompt for scene ${key}`);
           }
-          const frameDataUrl = await generateStartingFrame(sp.frame_prompt);
+          const frameDataUrl = await generateStartingFrame(
+            sp.frame_prompt,
+            product.image_url,
+          );
           const frameUrl = await uploadDataUrl(admin, job.id, key, frameDataUrl);
-          const taskId = await kickRunwayTask(frameUrl, sp.video_prompt);
+          // Prepend product-fidelity guardrail to every Runway prompt so motion
+          // generation cannot drift the product appearance away from the frame.
+          const guardedVideoPrompt =
+            "Keep the product identical to the starting frame at all times — same shape, color, controls, opening, materials and branding. Do not morph, restyle or reinterpret the product. " +
+            sp.video_prompt;
+          const taskId = await kickRunwayTask(frameUrl, guardedVideoPrompt);
           scenes.push({
             key,
             video_prompt: sp.video_prompt,
