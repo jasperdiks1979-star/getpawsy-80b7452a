@@ -687,6 +687,8 @@ const handler = async (req: Request): Promise<Response> => {
         status: "preparing",
         status_message: "queued",
         created_by: userData.user.id,
+        director_archetype: directorArchetype,
+        director_run_id: directorRunId,
         media_warnings: mediaWarnings,
         approved_for_render: false,
         pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,
@@ -703,7 +705,20 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .select("id")
       .single();
-    if (insErr) return json(500, { ok: false, traceId, message: insErr.message });
+    if (insErr) {
+      // Recoverable — surface details so the Debug panel can show them, no 500.
+      return json(200, {
+        ok: false,
+        recoverable: true,
+        fallback_used: false,
+        concept_status: "concept_failed",
+        error_code: "DB_INSERT_FAILED",
+        step: "cinematic_ad_jobs.insert",
+        message: insErr.message,
+        details: { code: (insErr as any).code, hint: (insErr as any).hint, details: (insErr as any).details },
+        traceId,
+      });
+    }
     jobId = created.id;
   } else {
     await admin.from("cinematic_ad_jobs").update({
@@ -733,10 +748,13 @@ const handler = async (req: Request): Promise<Response> => {
         vo_url: voUrl, vo_script: voScript, voice_id, voice_style: voiceStyle.id,
         status: "prepared", status_message: "voiceover regenerated", approved_for_render: false,
       }).eq("id", jobId).select("*").single();
-      return json(200, { ok: true, traceId, message: "voiceover regenerated", job: u });
+      return json(200, { ok: true, traceId, job_id: jobId, message: "voiceover regenerated", job: u });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      return json(500, { ok: false, traceId, message: msg });
+      return json(200, {
+        ok: false, recoverable: true, fallback_used: false, concept_status: "concept_failed",
+        error_code: "VO_REGEN_FAILED", step: "elevenlabs.tts", message: msg, traceId, job_id: jobId,
+      });
     }
   }
 
@@ -760,15 +778,69 @@ const handler = async (req: Request): Promise<Response> => {
         status_message: "creative kit regenerated",
         approved_for_render: false,
       }).eq("id", jobId).select("*").single();
-      return json(200, { ok: true, traceId, message: "creative kit regenerated", job: u });
+      return json(200, { ok: true, traceId, job_id: jobId, message: "creative kit regenerated", job: u });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      return json(500, { ok: false, traceId, message: msg });
+      return json(200, {
+        ok: false, recoverable: true, fallback_used: true, concept_status: "concept_failed",
+        error_code: "CREATIVE_KIT_REGEN_FAILED", step: "creative_kit.generate", message: msg, traceId, job_id: jobId,
+      });
     }
   }
 
   try {
     const scenes = DEFAULT_SCENES(productName);
+
+    // ---------- PREPARE-ONLY / NO-RENDER TEST MODE ----------
+    // Skips image AI + voiceover synthesis entirely. Uses the hero image
+    // for every scene + the deterministic fallback caption blueprint.
+    // Persists a valid prepared payload so the Director Mode can verify
+    // the orchestration end-to-end at zero cost.
+    if (prepareOnly) {
+      const fallbackScenes = scenes.map((s) => ({
+        index: s.index, image_url: heroUrl, caption: s.caption,
+        duration_seconds: s.duration_seconds, ai_generated: false,
+        product_slug, product_id: product.id ?? null,
+      }));
+      const { data: updatedDry } = await admin.from("cinematic_ad_jobs").update({
+        status: "prepared",
+        status_message: "prepare-only · fallback template (no AI, no VO, no render)",
+        scene_specs: scenes,
+        scene_assets: fallbackScenes,
+        vo_script: DEFAULT_VO(productName),
+        vo_url: null,
+        voice_id, voice_style: voiceStyle.id,
+        vo_script_variants: [DEFAULT_VO(productName)],
+        caption_variants: scenes.map((s) => [s.caption]),
+        variant_index: 0,
+        pin_title: `${productName} — premium for pet parents`,
+        pin_description: `Discover the ${productName} at GetPawsy.pet`,
+        hashtags: ["#petparents", "#getpawsy", "#petfinds"],
+        media_warnings: mediaWarnings,
+        product_id: product.id,
+        product_name: productName,
+        product_price: product.price != null ? String(product.price) : null,
+        approved_for_render: false,
+        prepared_at: new Date().toISOString(),
+      }).eq("id", jobId).select("*").maybeSingle();
+      return json(200, {
+        ok: true, traceId, job_id: jobId, prepare_only: true, fallback_used: true,
+        concept_status: "prepared_fallback",
+        message: "prepare-only complete · deterministic fallback payload persisted · no render dispatched",
+        job: updatedDry,
+        media_warnings: mediaWarnings,
+      });
+    }
+
+    // ---------- Provider health snapshot (cheap) ----------
+    // If both AI providers are down we still proceed but use the fallback
+    // template so the run does not crash.
+    const providerHealth = await checkProviderHealth(lovableKey, elevenKey);
+    const aiAvailable = providerHealth.lovable_ai.ok;
+    const voAvailable = providerHealth.elevenlabs.ok;
+    if (!aiAvailable || !voAvailable) {
+      console.warn("[cinematic-ad-prepare]", traceId, "degraded providers", providerHealth);
+    }
 
     // ── Multi-variant copy generation ─────────────────────────────────────
     // Build N alternative voiceovers and N alternative captions per scene
@@ -782,7 +854,7 @@ const handler = async (req: Request): Promise<Response> => {
         ? body.captions.map((c: unknown) => String(c ?? ""))
         : null;
 
-    const needAi = !voScript || !captionsOverride;
+    const needAi = (!voScript || !captionsOverride) && aiAvailable;
     if (needAi) {
       const generated = await generateProductCopyVariants(product as any, lovableKey, requestedVariantCount);
       if (generated) {
@@ -832,9 +904,9 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Generate scenes in parallel (best effort; on failure fall back to hero image)
-    const sceneResults = await Promise.allSettled(
+    const sceneResults = aiAvailable ? await Promise.allSettled(
       scenes.map((s) => aiImageEdit(s.prompt, heroUrl, lovableKey)),
-    );
+    ) : scenes.map(() => ({ status: "rejected" as const, reason: "ai_unavailable" }));
 
     const scene_assets: Array<{ index: number; image_url: string; caption: string; duration_seconds: number; ai_generated: boolean; product_slug: string; product_id: string | null }> = [];
     for (let i = 0; i < scenes.length; i++) {
@@ -858,6 +930,8 @@ const handler = async (req: Request): Promise<Response> => {
     // VO
     let voUrl: string | null = null;
     let voDuration: number | null = null;
+    let voError: string | null = null;
+    if (voAvailable) {
     try {
       const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
       const voPath = `${jobId}/voiceover.mp3`;
@@ -870,9 +944,14 @@ const handler = async (req: Request): Promise<Response> => {
       voDuration = Math.round((wordCount / 155) * 60);
     } catch (e) {
       console.error("VO failed", e);
+      voError = e instanceof Error ? e.message : String(e);
+    }
+    } else {
+      voError = providerHealth.elevenlabs.reason || "elevenlabs_unavailable";
     }
 
-    // Creative kit (5 hooks + 3 CTAs + pin copy + storyboard, scored)
+    // Creative kit (5 hooks + 3 CTAs + pin copy + storyboard, scored).
+    // generateCreativeKit already falls back to a deterministic kit on AI failure.
     const kit: CreativeKit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
     const topHook = kit.hook_variants[0];
     const topCta = kit.cta_variants[0];
@@ -925,13 +1004,38 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", jobId)
       .select("*")
       .single();
-    if (upErr) throw upErr;
+    if (upErr) {
+      return json(200, {
+        ok: false, recoverable: true, fallback_used: true,
+        concept_status: "concept_failed", error_code: "DB_UPDATE_FAILED",
+        step: "cinematic_ad_jobs.update", message: upErr.message,
+        details: { code: (upErr as any).code, hint: (upErr as any).hint },
+        traceId, job_id: jobId,
+      });
+    }
 
-    return json(200, { ok: true, traceId, message: "prepared — awaiting approval", job: updated, media_warnings: mediaWarnings });
+    const fallbackUsed = !aiAvailable || !voAvailable;
+    return json(200, {
+      ok: true, traceId, job_id: jobId,
+      message: fallbackUsed ? "prepared — fallback mode (degraded providers)" : "prepared — awaiting approval",
+      fallback_used: fallbackUsed,
+      providers: providerHealth,
+      vo_error: voError,
+      job: updated,
+      media_warnings: mediaWarnings,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? (e.stack ?? null) : null;
+    console.error("[cinematic-ad-prepare] unhandled", traceId, msg, stack);
     await admin.from("cinematic_ad_jobs").update({ status: "failed", error_message: msg, status_message: "preparation failed" }).eq("id", jobId);
-    return json(500, { ok: false, traceId, message: msg });
+    // Return 200 with structured error so the orchestration UI can show
+    // diagnostics and not crash the whole Director run.
+    return json(200, {
+      ok: false, recoverable: true, fallback_used: true,
+      concept_status: "concept_failed", error_code: "UNHANDLED_PREPARE_ERROR",
+      step: "prepare.main_try", message: msg, stack, traceId, job_id: jobId,
+    });
   }
 };
 
