@@ -558,27 +558,108 @@ Deno.serve(async (req) => {
   const uniqueScenesV7 = sceneSignatures.size;
   const uniqueCamerasV7 = new Set(planCrops.filter(Boolean)).size;
 
-  const closeupCount = plan.reduce((n, s, i) => n + (
-    /close|macro|tight|detail/.test(planCrops[i] ?? "") || /close|macro|detail/.test(planRoles[i] ?? "") ? 1 : 0
-  ), 0);
-  const lifestyleCount = plan.reduce((n, s, i) => n + (
-    /lifestyle|home|owner|room|environment/.test(planRoles[i] ?? "") ||
-    /lifestyle|home|owner/i.test(String(s?.category ?? "")) ? 1 : 0
-  ), 0);
-  const productDemoCount = plan.reduce((n, s, i) => n + (
-    /demo|product|inuse|in_use|action/.test(planRoles[i] ?? "") ||
-    /demo|product|in[-_ ]?use|action/i.test(String(s?.category ?? "")) ? 1 : 0
-  ), 0);
-  const hasCloseup = closeupCount >= minCloseupsV7;
-  const hasLifestyle = lifestyleCount >= minLifestyleV7;
-  const hasProductDemo = productDemoCount >= minProductDemoV7;
-  const hasCtaFrame = plan.some((s) => s?.isCta === true || /cta/i.test(String(s?.role ?? s?.category ?? "")));
+  // Build a per-scene "haystack" of every searchable text signal we have for
+  // that scene. Strict pass uses role/crop/category only; retry pass widens
+  // to caption, prompt, asset metadata, voiceover line, beat description.
+  const sceneAssetsForDetect: any[] = Array.isArray((job as any).scene_assets) ? (job as any).scene_assets : [];
+  const beatsForDetect: any[] = Array.isArray((job as any).beats_v5) ? (job as any).beats_v5 : [];
+  const voLines: string[] = String(job.vo_script ?? "").split(/\r?\n|\.|;/);
+  const sceneHaystacks = plan.map((s, i) => {
+    const asset = sceneAssetsForDetect[i] ?? {};
+    const beat = beatsForDetect[i] ?? {};
+    return [
+      planRoles[i], planCrops[i], planMotionsArr[i],
+      String(s?.category ?? ""), String(s?.caption ?? ""), String(s?.prompt ?? ""),
+      String(s?.shotType ?? ""), String(s?.description ?? ""),
+      String(asset?.prompt ?? ""), String(asset?.label ?? ""), String(asset?.category ?? ""),
+      String(beat?.description ?? ""), String(beat?.action ?? ""),
+      String(voLines[i] ?? ""),
+    ].join(" ").toLowerCase();
+  });
+
+  const RX = {
+    closeup: /close[-_ ]?up|macro|tight|detail|texture|fabric|paw|whisker|fur|claw/,
+    lifestyle: /lifestyle|home|owner|room|environment|living|sofa|kitchen|bedroom|outdoor|garden|backyard|family|pet[-_ ]?parent/,
+    demoStrict: /demo|in[-_ ]?use|action|using|operating/,
+    demoBroad: /demo|in[-_ ]?use|action|using|operating|playing|eating|drinking|scooping|cleaning|chewing|scratching|grooming|sleeping|product[-_ ]?shot|hero[-_ ]?shot/,
+    cta: /\bcta\b|shop|buy|order|get yours|learn more|tap|swipe up|link in bio/,
+    appControlStrict: /app|phone|screen|ui|control|tap|swipe/,
+    appControlBroad: /app|phone|smartphone|ios|android|screen|display|ui|interface|control|tap|swipe|button|notification|dashboard|settings|remote/,
+  };
+
+  function countMatches(re: RegExp, sources: string[]) {
+    return sources.reduce((n, h) => n + (re.test(h) ? 1 : 0), 0);
+  }
+
+  // ── Strict pass (role/crop/category only) ───────────────────────────────
+  const strictRoles = planRoles.map((r, i) => `${r} ${String(plan[i]?.category ?? "")} ${planCrops[i] ?? ""}`);
+  const closeupStrict = countMatches(RX.closeup, strictRoles);
+  const lifestyleStrict = countMatches(RX.lifestyle, strictRoles);
+  const productDemoStrict = countMatches(RX.demoStrict, strictRoles);
+  const ctaFrameStrict = plan.some((s, i) => s?.isCta === true || /cta/i.test(strictRoles[i]));
 
   const productCtxStr = `${String(productCtx?.name ?? "")} ${String(productCtx?.category ?? "")} ${String((productCtx as any)?.primary_keyword ?? "")}`.toLowerCase();
   const isAppProduct = /\bapp\b|smart|wifi|bluetooth|automat|connected/.test(productCtxStr);
-  const hasAppControlShot = !isAppProduct || plan.some((s) =>
-    /app|phone|screen|ui|control|tap|swipe/i.test(`${s?.category ?? ""} ${s?.role ?? ""} ${s?.caption ?? ""}`),
+  const appControlStrict = !isAppProduct || plan.some((s, i) =>
+    RX.appControlStrict.test(`${strictRoles[i]} ${String(s?.caption ?? "")}`),
   );
+
+  // ── Retry pass (broader haystack) — only used when strict pass falls short ─
+  const retryUsed: string[] = [];
+  let closeupCount = closeupStrict;
+  let lifestyleCount = lifestyleStrict;
+  let productDemoCount = productDemoStrict;
+  let hasCtaFrame = ctaFrameStrict;
+  let hasAppControlShot = appControlStrict;
+
+  if (closeupCount < minCloseupsV7) {
+    const retry = countMatches(RX.closeup, sceneHaystacks);
+    if (retry > closeupCount) { retryUsed.push(`closeup:${closeupCount}->${retry}`); closeupCount = retry; }
+  }
+  if (lifestyleCount < minLifestyleV7) {
+    const retry = countMatches(RX.lifestyle, sceneHaystacks);
+    if (retry > lifestyleCount) { retryUsed.push(`lifestyle:${lifestyleCount}->${retry}`); lifestyleCount = retry; }
+  }
+  if (productDemoCount < minProductDemoV7) {
+    const retry = countMatches(RX.demoBroad, sceneHaystacks);
+    if (retry > productDemoCount) { retryUsed.push(`product_demo:${productDemoCount}->${retry}`); productDemoCount = retry; }
+  }
+  if (!hasCtaFrame) {
+    const retry = sceneHaystacks.some((h) => RX.cta.test(h)) || /shop|buy|order|cta/i.test(String(job.cta_text ?? ""));
+    if (retry) { retryUsed.push("cta:retry_hit"); hasCtaFrame = true; }
+  }
+  if (isAppProduct && !hasAppControlShot) {
+    const retry = sceneHaystacks.some((h) => RX.appControlBroad.test(h)) ||
+      sceneAssetsForDetect.some((a) => RX.appControlBroad.test(`${a?.prompt ?? ""} ${a?.label ?? ""}`));
+    if (retry) { retryUsed.push("app_control:retry_hit"); hasAppControlShot = true; }
+  }
+
+  const hasCloseup = closeupCount >= minCloseupsV7;
+  const hasLifestyle = lifestyleCount >= minLifestyleV7;
+  const hasProductDemo = productDemoCount >= minProductDemoV7;
+
+  const v7DetectionDebug = {
+    is_app_product: isAppProduct,
+    strict: {
+      closeup: closeupStrict,
+      lifestyle: lifestyleStrict,
+      product_demo: productDemoStrict,
+      cta_frame: ctaFrameStrict,
+      app_control: appControlStrict,
+    },
+    final: {
+      closeup: closeupCount,
+      lifestyle: lifestyleCount,
+      product_demo: productDemoCount,
+      cta_frame: hasCtaFrame,
+      app_control: hasAppControlShot,
+    },
+    retry_used: retryUsed,
+    scene_count: plan.length,
+    haystack_lengths: sceneHaystacks.map((h) => h.length),
+  };
+  console.log(`[validate] ${traceId} v7_detection job=${jobId}`, JSON.stringify(v7DetectionDebug));
+  (report as any).v7_detection_debug = v7DetectionDebug;
 
   // Ken-Burns-only detection: every motion is some flavour of zoom/pan with no real cuts/whip/parallax.
   const motionTokens = planMotionsArr.filter(Boolean);
