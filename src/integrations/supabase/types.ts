@@ -3190,8 +3190,12 @@ export type Database = {
           merge_attempted_at: string | null
           merge_error: string | null
           product_image_url: string | null
+          product_lock: Json | null
+          product_lock_enabled: boolean
           product_name: string
+          product_reference_urls: string[]
           product_slug: string
+          prompt_lock_violations: Json | null
           qa_report: Json | null
           qa_score: number | null
           scenes: Json | null
@@ -3212,8 +3216,12 @@ export type Database = {
           merge_attempted_at?: string | null
           merge_error?: string | null
           product_image_url?: string | null
+          product_lock?: Json | null
+          product_lock_enabled?: boolean
           product_name: string
+          product_reference_urls?: string[]
           product_slug: string
+          prompt_lock_violations?: Json | null
           qa_report?: Json | null
           qa_score?: number | null
           scenes?: Json | null
@@ -3234,8 +3242,12 @@ export type Database = {
           merge_attempted_at?: string | null
           merge_error?: string | null
           product_image_url?: string | null
+          product_lock?: Json | null
+          product_lock_enabled?: boolean
           product_name?: string
+          product_reference_urls?: string[]
           product_slug?: string
+          prompt_lock_violations?: Json | null
           qa_report?: Json | null
           qa_score?: number | null
           scenes?: Json | null
