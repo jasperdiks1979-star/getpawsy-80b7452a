@@ -675,7 +675,7 @@ Deno.serve(async (req) => {
   // Hard rejects (single-image, ken-burns only, text outside safe) zero out the
   // score so they cannot sneak past a high V7 quality score.
   const hookScoreStored = Number((job as any).hook_score ?? 0);
-  const hookScore = hookScoreStored > 0 ? hookScoreStored : Math.round(v2.hook_strength);
+  const hookScoreDom = hookScoreStored > 0 ? hookScoreStored : Math.round(v2.hook_strength);
   const voiceScoreStored = Number((job as any).voice_score ?? 0);
   const voiceScore = voiceScoreStored > 0 ? voiceScoreStored : (job.vo_url ? 75 : 60);
 
@@ -687,7 +687,7 @@ Deno.serve(async (req) => {
   );
 
   const ctrPredictionScore = Math.round(
-    hookScore * 0.45 +
+    hookScoreDom * 0.45 +
     Math.min(100, (thumb_stop_score ?? 0) * 10) * 0.25 +
     scene_diversity_v7_score * 0.15 +
     text_safety_score * 0.15,
@@ -695,7 +695,7 @@ Deno.serve(async (req) => {
 
   const finalCreativeRaw = Math.round(
     pinterest_quality_score * 0.25 +
-    hookScore * 0.20 +
+    hookScoreDom * 0.20 +
     voiceScore * 0.15 +
     commercialScore * 0.20 +
     ctrPredictionScore * 0.20,
@@ -704,14 +704,14 @@ Deno.serve(async (req) => {
 
   const dominationRejects: string[] = [];
   if (dominationMode) {
-    if (hookScore < minHookScore) dominationRejects.push(`hook_score(${hookScore}<${minHookScore})`);
+    if (hookScoreDom < minHookScore) dominationRejects.push(`hook_score(${hookScoreDom}<${minHookScore})`);
     if (voiceScore < minVoiceScore) dominationRejects.push(`voice_score(${voiceScore}<${minVoiceScore})`);
     if (ctrPredictionScore < minCtrPrediction) dominationRejects.push(`ctr_prediction(${ctrPredictionScore}<${minCtrPrediction})`);
     if (finalCreativeScore < minFinalCreative) dominationRejects.push(`final_score(${finalCreativeScore}<${minFinalCreative})`);
     for (const hr of hard_reject_reasons) dominationRejects.push(`hard:${hr}`);
   }
 
-  report.checks.push({ name: "domination_hook_score", passed: hookScore >= minHookScore, observed: hookScore, expected: `>= ${minHookScore}` });
+  report.checks.push({ name: "domination_hook_score", passed: hookScoreDom >= minHookScore, observed: hookScoreDom, expected: `>= ${minHookScore}` });
   report.checks.push({ name: "domination_voice_score", passed: voiceScore >= minVoiceScore, observed: voiceScore, expected: `>= ${minVoiceScore}` });
   report.checks.push({ name: "domination_commercial_score", passed: commercialScore >= 80, observed: commercialScore, expected: ">= 80" });
   report.checks.push({ name: "domination_ctr_prediction", passed: ctrPredictionScore >= minCtrPrediction, observed: ctrPredictionScore, expected: `>= ${minCtrPrediction}` });
@@ -721,7 +721,7 @@ Deno.serve(async (req) => {
 
   (report as any).domination = {
     enabled: dominationMode,
-    hook_score: hookScore,
+    hook_score: hookScoreDom,
     voice_score: voiceScore,
     commercial_score: commercialScore,
     ctr_prediction_score: ctrPredictionScore,
