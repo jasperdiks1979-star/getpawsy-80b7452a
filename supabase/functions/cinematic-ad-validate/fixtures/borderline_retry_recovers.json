@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "description": "Real upload where the strict V7 pass would miss lifestyle/demo/cta because the storyboard generator left the structured `role` fields generic. The retry haystack must recover them from captions, prompts, beats, and the VO script — otherwise a valid render gets falsely rejected.",
+    "media": ["media/valid_multi_scene.mp4"],
+    "expected": {
+      "validation_v7_passed": true,
+      "must_include_reasons": [],
+      "retry_used_non_empty": true
+    }
+  },
+  "job": {
+    "scene_plan": [
+      { "crop": "wide",     "motion": "handheld", "role": "hook",    "category": "lifestyle", "caption": "Meet your pup's new favourite spot" },
+      { "crop": "close_up", "motion": "orbit",    "role": "feature", "category": "feature",   "caption": "Soft memory foam, paw close-up" },
+      { "crop": "medium",   "motion": "parallax", "role": "scene",   "category": "scene",     "caption": "He's sleeping like a baby" },
+      { "crop": "wide",     "motion": "tilt",     "role": "scene",   "category": "scene",     "caption": "In the living room with the family" },
+      { "crop": "macro",    "motion": "whip",     "role": "scene",   "category": "scene",     "caption": "Buy it now", "isCta": true },
+      { "crop": "medium",   "motion": "cut",      "role": "scene",   "category": "scene",     "caption": "Order yours today" }
+    ],
+    "scene_assets": [
+      { "label": "scene_1", "category": "scene", "prompt": "Hook frame, owner introducing the bed", "url": "media/valid_multi_scene.mp4#t=0.0,1.2" },
+      { "label": "scene_2", "category": "scene", "prompt": "Paw close-up on memory foam fabric",     "url": "media/valid_multi_scene.mp4#t=1.2,2.4" },
+      { "label": "scene_3", "category": "scene", "prompt": "Dog sleeping in bed",                     "url": "media/valid_multi_scene.mp4#t=2.4,3.6" },
+      { "label": "scene_4", "category": "scene", "prompt": "Family living-room context",              "url": "media/valid_multi_scene.mp4#t=3.6,4.8" },
+      { "label": "scene_5", "category": "scene", "prompt": "CTA end card",                            "url": "media/valid_multi_scene.mp4#t=4.8,6.0" },
+      { "label": "scene_6", "category": "scene", "prompt": "Logo and order prompt",                   "url": "media/valid_multi_scene.mp4#t=6.0,7.2" }
+    ],
+    "beats_v5": [],
+    "vo_script": "",
+    "hook_text": "Tired pup? Same.",
+    "cta_text": "Shop on GetPawsy"
+  },
+  "product_ctx": { "name": "Orthopedic Dog Bed", "category": "dog_bed" },
+  "safe_area": { "ok": true, "violations": [] },
+  "v2": { "hook_strength": 85, "composite": 90 }
+}
