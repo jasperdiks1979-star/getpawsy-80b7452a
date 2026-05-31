@@ -253,15 +253,15 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, traceId, message: "no scene images to check", report: { scenes: [], score: 100, passed: true } });
     }
 
-    // Settings — strict defaults: 90% similarity, realism >= 8/10, all rules pass.
-    let minScore = 90, enabled = true;
+    // Settings — strict defaults: 95% similarity, realism >= 8/10, all rules pass.
+    let minScore = 95, enabled = true;
     try {
       const { data: s } = await admin.from("cinematic_ad_settings")
         .select("product_fidelity_enabled, min_product_fidelity_score").limit(1).maybeSingle();
       if (s) {
         enabled = s.product_fidelity_enabled !== false;
-        // Floor the configured threshold at 90 — the new rules require 90%+ similarity.
-        minScore = Math.max(90, Number(s.min_product_fidelity_score ?? minScore));
+        // Floor the configured threshold at 95 — Product Lock rules require 95%+ similarity.
+        minScore = Math.max(95, Number(s.min_product_fidelity_score ?? minScore));
       }
     } catch (_) { /* defaults */ }
 
