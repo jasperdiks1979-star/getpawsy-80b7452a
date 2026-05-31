@@ -13,7 +13,7 @@
       { "crop": "close_up", "motion": "orbit",    "role": "closeup",   "category": "closeup",      "caption": "Self-cleaning detail" },
       { "crop": "medium",   "motion": "parallax", "role": "demo",      "category": "product_demo", "caption": "Watch it cycle" },
       { "crop": "phone",    "motion": "tilt",     "role": "app",       "category": "app_control",  "caption": "Tap the app to start a cycle" },
-      { "crop": "wide",     "motion": "whip",     "role": "lifestyle", "category": "lifestyle",    "caption": "Fresh home" },
+      { "crop": "wide_high","motion": "whip",     "role": "lifestyle", "category": "lifestyle",    "caption": "Fresh, happy home — purring cat" },
       { "crop": "medium",   "motion": "cut",      "role": "cta",       "category": "cta",          "caption": "Shop now", "isCta": true }
     ],
     "scene_assets": [

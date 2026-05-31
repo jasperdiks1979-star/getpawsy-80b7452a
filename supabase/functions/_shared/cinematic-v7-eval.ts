@@ -18,12 +18,17 @@ export interface V7Thresholds {
   textSafeZoneTolerance: number;
   maxCaptionDensityV7: number;
   maxDenseCaptionRatioV7: number;
+  // Creative Domination Mode additions
+  minEmotionalPayoffV7: number;
+  requireCtaScene: boolean;
+  hardRejectSingleImage: boolean;
+  hardRejectKenBurnsOnly: boolean;
 }
 
 export const DEFAULT_V7_THRESHOLDS: V7Thresholds = {
   v7Enabled: true,
-  minPinterestQuality: 90,
-  minUniqueScenesV7: 4,
+  minPinterestQuality: 95,
+  minUniqueScenesV7: 5,
   minUniqueCamerasV7: 3,
   minSceneCountV7: 5,
   minCloseupsV7: 1,
@@ -32,6 +37,10 @@ export const DEFAULT_V7_THRESHOLDS: V7Thresholds = {
   textSafeZoneTolerance: 0,
   maxCaptionDensityV7: 0.25,
   maxDenseCaptionRatioV7: 0.34,
+  minEmotionalPayoffV7: 1,
+  requireCtaScene: true,
+  hardRejectSingleImage: true,
+  hardRejectKenBurnsOnly: true,
 };
 
 export interface V7Input {
@@ -48,6 +57,8 @@ export interface V7Result {
   text_safety_score: number;
   pinterest_quality_score: number;
   v7_reject_reasons: string[];
+  hard_reject_reasons: string[];
+  emotional_payoff_present: boolean;
   validation_v7_passed: boolean;
   detection_debug: {
     is_app_product: boolean;
@@ -62,6 +73,9 @@ export interface V7Result {
     text_outside_safe: boolean;
     text_cut_off: boolean;
     too_much_text: boolean;
+    single_image_render: boolean;
+    emotional_payoff_count: number;
+    cta_scene_count: number;
   };
   decision_trace: Array<{
     rule: string;
@@ -82,6 +96,7 @@ const RX = {
   cta: /\bcta\b|shop|buy|order|get yours|learn more|tap|swipe up|link in bio/,
   appControlStrict: /app|phone|screen|ui|control|tap|swipe/,
   appControlBroad: /app|phone|smartphone|ios|android|screen|display|ui|interface|control|tap|swipe|button|notification|dashboard|settings|remote/,
+  payoff: /relief|joy|smile|happy|love|cuddle|peaceful|calm|hug|kiss|reunite|relax|content|wagging|purring|snuggle|trust|gratitude/,
 };
 
 function countMatches(re: RegExp, sources: string[]) {
@@ -225,6 +240,29 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
   traceBool("cta_frame", ctaFrameStrict, hasCtaFrame);
   traceBool("app_control", appControlStrict, hasAppControlShot, isAppProduct);
 
+  // Emotional payoff scene detection (Domination Mode)
+  const payoffStrict = countMatches(RX.payoff, strictRoles);
+  const payoffFinal = payoffStrict >= t.minEmotionalPayoffV7
+    ? payoffStrict
+    : countMatches(RX.payoff, sceneHaystacks);
+  if (payoffFinal > payoffStrict) retryUsed.push(`emotional_payoff:${payoffStrict}->${payoffFinal}`);
+  traceCount("emotional_payoff", t.minEmotionalPayoffV7, payoffStrict, payoffFinal);
+  const emotional_payoff_present = payoffFinal >= t.minEmotionalPayoffV7;
+
+  // Dedicated CTA scene (not just a caption containing CTA words)
+  const ctaSceneCount = plan.filter((s, i) =>
+    s?.isCta === true || /\bcta\b/i.test(String(planRoles[i] ?? "")) || /\bcta\b/i.test(String(s?.category ?? ""))
+  ).length;
+
+  // Single-image render detection: all scene_assets point to the same source asset
+  const assetUrls = sceneAssetsForDetect
+    .map((a) => String(a?.url ?? a?.image_url ?? a?.asset_url ?? a?.src ?? "").trim())
+    .filter(Boolean);
+  const uniqueAssetUrls = new Set(assetUrls);
+  const singleImageRender =
+    (assetUrls.length >= 2 && uniqueAssetUrls.size === 1) ||
+    (plan.length >= 2 && uniqueAssetUrls.size === 1 && assetUrls.length >= Math.max(2, Math.floor(plan.length / 2)));
+
   // Ken-Burns-only detection
   const motionTokens = planMotionsArr.filter(Boolean);
   const kenBurnsOnly = motionTokens.length > 0 &&
@@ -262,6 +300,20 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
     if (!hasCloseup) v7_reject_reasons.push("missing_closeup");
     if (!hasLifestyle) v7_reject_reasons.push("missing_lifestyle_scene");
     if (tooMuchText) v7_reject_reasons.push(`text_density_excessive(${overTextFrames}/${plan.length})`);
+    if (!emotional_payoff_present) v7_reject_reasons.push("missing_emotional_payoff_scene");
+    if (t.requireCtaScene && ctaSceneCount < 1) v7_reject_reasons.push("missing_dedicated_cta_scene");
+  }
+
+  // Hard rejects — absolute deal-breakers regardless of pinterest_quality_score.
+  // These map to the "never again" list in Creative Domination Mode.
+  const hard_reject_reasons: string[] = [];
+  if (t.v7Enabled) {
+    if (t.hardRejectSingleImage && singleImageRender) hard_reject_reasons.push("single_image_render");
+    if (t.hardRejectKenBurnsOnly && kenBurnsOnly) hard_reject_reasons.push("ken_burns_only_render");
+    if (textOutsideSafe) hard_reject_reasons.push("text_outside_safe_zone");
+    if (textCutOff) hard_reject_reasons.push("text_cut_off_frame");
+    if (plan.length < t.minSceneCountV7) hard_reject_reasons.push("below_min_scene_count");
+    if (uniqueCamerasV7 < t.minUniqueCamerasV7) hard_reject_reasons.push("below_min_camera_diversity");
   }
 
   const scene_diversity_v7_score = Math.min(100, Math.round((uniqueScenesV7 / Math.max(t.minUniqueScenesV7, 6)) * 100));
@@ -281,7 +333,7 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
   );
 
   const validation_v7_passed = t.v7Enabled
-    ? (v7_reject_reasons.length === 0 && pinterest_quality_score > t.minPinterestQuality)
+    ? (v7_reject_reasons.length === 0 && hard_reject_reasons.length === 0 && pinterest_quality_score >= t.minPinterestQuality)
     : true;
 
   return {
@@ -291,6 +343,8 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
     text_safety_score,
     pinterest_quality_score,
     v7_reject_reasons,
+    hard_reject_reasons,
+    emotional_payoff_present,
     validation_v7_passed,
     detection_debug: {
       is_app_product: isAppProduct,
@@ -317,6 +371,9 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
       text_outside_safe: textOutsideSafe,
       text_cut_off: textCutOff,
       too_much_text: tooMuchText,
+      single_image_render: singleImageRender,
+      emotional_payoff_count: payoffFinal,
+      cta_scene_count: ctaSceneCount,
     },
     decision_trace: trace,
   };

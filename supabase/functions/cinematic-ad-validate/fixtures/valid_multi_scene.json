@@ -13,7 +13,7 @@
       { "crop": "wide",     "motion": "handheld", "role": "hook",      "category": "lifestyle",    "caption": "Tired pup? Same." },
       { "crop": "close_up", "motion": "orbit",    "role": "closeup",   "category": "closeup",      "caption": "Memory foam detail" },
       { "crop": "medium",   "motion": "parallax", "role": "demo",      "category": "product_demo", "caption": "Watch him sink in" },
-      { "crop": "wide",     "motion": "tilt",     "role": "lifestyle", "category": "lifestyle",    "caption": "Living room ready" },
+      { "crop": "wide_high","motion": "tilt",     "role": "lifestyle", "category": "lifestyle",    "caption": "Living room ready — happy & snuggled" },
       { "crop": "macro",    "motion": "whip",     "role": "feature",   "category": "closeup",      "caption": "Cooling gel layer" },
       { "crop": "medium",   "motion": "cut",      "role": "cta",       "category": "cta",          "caption": "Shop now", "isCta": true }
     ],

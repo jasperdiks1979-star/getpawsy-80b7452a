@@ -1765,6 +1765,7 @@ export type Database = {
           category_match_passed: boolean | null
           cinematic_quality_score: number | null
           classification_confidence: number | null
+          commercial_score: number | null
           confidence_scores: Json
           content_type: string | null
           created_at: string
@@ -1776,10 +1777,12 @@ export type Database = {
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
+          ctr_prediction_score: number | null
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
           emotional_arc_score: number | null
+          emotional_payoff_present: boolean | null
           emotional_register: string | null
           engagement_pacing_score: number | null
           engine_version: string | null
@@ -1793,13 +1796,17 @@ export type Database = {
           fidelity_reject_reasons: string[] | null
           fidelity_report: Json | null
           fidelity_score: number | null
+          final_creative_score: number | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
           hook_archetype: string | null
+          hook_candidates: Json
           hook_cooldown_until: string | null
+          hook_score: number | null
           hook_strength_score: number | null
           hook_strength_v7_score: number | null
           hook_text: string | null
@@ -1891,6 +1898,9 @@ export type Database = {
           realism_score: number | null
           recommended_fix: string | null
           recoverable: boolean | null
+          regenerate_count: number
+          regenerate_requested_at: string | null
+          regenerate_requested_by: string | null
           remote_exists: boolean | null
           render_attempts: number
           render_complete_at: string | null
@@ -1956,7 +1966,9 @@ export type Database = {
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
+          voice_candidates: Json
           voice_id: string
+          voice_score: number | null
           voice_style: string | null
           voiceover_error: Json | null
           voiceover_last_attempt_at: string | null
@@ -1994,6 +2006,7 @@ export type Database = {
           category_match_passed?: boolean | null
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
+          commercial_score?: number | null
           confidence_scores?: Json
           content_type?: string | null
           created_at?: string
@@ -2005,10 +2018,12 @@ export type Database = {
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
+          ctr_prediction_score?: number | null
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
           emotional_arc_score?: number | null
+          emotional_payoff_present?: boolean | null
           emotional_register?: string | null
           engagement_pacing_score?: number | null
           engine_version?: string | null
@@ -2022,13 +2037,17 @@ export type Database = {
           fidelity_reject_reasons?: string[] | null
           fidelity_report?: Json | null
           fidelity_score?: number | null
+          final_creative_score?: number | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
           hook_archetype?: string | null
+          hook_candidates?: Json
           hook_cooldown_until?: string | null
+          hook_score?: number | null
           hook_strength_score?: number | null
           hook_strength_v7_score?: number | null
           hook_text?: string | null
@@ -2120,6 +2139,9 @@ export type Database = {
           realism_score?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
+          regenerate_count?: number
+          regenerate_requested_at?: string | null
+          regenerate_requested_by?: string | null
           remote_exists?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
@@ -2185,7 +2207,9 @@ export type Database = {
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
+          voice_candidates?: Json
           voice_id?: string
+          voice_score?: number | null
           voice_style?: string | null
           voiceover_error?: Json | null
           voiceover_last_attempt_at?: string | null
@@ -2223,6 +2247,7 @@ export type Database = {
           category_match_passed?: boolean | null
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
+          commercial_score?: number | null
           confidence_scores?: Json
           content_type?: string | null
           created_at?: string
@@ -2234,10 +2259,12 @@ export type Database = {
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
+          ctr_prediction_score?: number | null
           duplicate_risk_score?: number
           duration_auto_trimmed?: boolean
           duration_valid?: boolean | null
           emotional_arc_score?: number | null
+          emotional_payoff_present?: boolean | null
           emotional_register?: string | null
           engagement_pacing_score?: number | null
           engine_version?: string | null
@@ -2251,13 +2278,17 @@ export type Database = {
           fidelity_reject_reasons?: string[] | null
           fidelity_report?: Json | null
           fidelity_score?: number | null
+          final_creative_score?: number | null
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
           hook_archetype?: string | null
+          hook_candidates?: Json
           hook_cooldown_until?: string | null
+          hook_score?: number | null
           hook_strength_score?: number | null
           hook_strength_v7_score?: number | null
           hook_text?: string | null
@@ -2349,6 +2380,9 @@ export type Database = {
           realism_score?: number | null
           recommended_fix?: string | null
           recoverable?: boolean | null
+          regenerate_count?: number
+          regenerate_requested_at?: string | null
+          regenerate_requested_by?: string | null
           remote_exists?: boolean | null
           render_attempts?: number
           render_complete_at?: string | null
@@ -2414,7 +2448,9 @@ export type Database = {
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
+          voice_candidates?: Json
           voice_id?: string
+          voice_score?: number | null
           voice_style?: string | null
           voiceover_error?: Json | null
           voiceover_last_attempt_at?: string | null
@@ -2568,6 +2604,7 @@ export type Database = {
           cinematic_v4_enabled: boolean
           cinematic_v5_enabled: boolean
           cinematic_v7_enabled: boolean
+          creative_domination_mode: boolean
           creative_quality_min_score: number
           engine_version: string | null
           engine_version_default: string
@@ -2578,6 +2615,8 @@ export type Database = {
           focus_breathing_amp: number
           framing_correction_chance: number
           handheld_jitter_amp: number
+          hard_reject_ken_burns_only: boolean
+          hard_reject_single_image: boolean
           hook_change_max_frames: number
           hook_cooldown_days: number
           human_presence_required_ratio: number
@@ -2595,10 +2634,14 @@ export type Database = {
           min_camera_motion_score: number
           min_caption_visibility: number | null
           min_closeups_v7: number
+          min_ctr_prediction_score: number
           min_days_between_same_product: number
           min_emotional_arc: number
+          min_emotional_payoff_v7: number
           min_engagement_pacing_score: number
+          min_final_creative_score: number
           min_first_frame_originality_score: number
+          min_hook_score: number
           min_hook_uniqueness_score: number
           min_lifestyle_v7: number
           min_motion_diversity: number | null
@@ -2620,6 +2663,7 @@ export type Database = {
           min_unique_media_assets: number
           min_unique_scenes_v7: number
           min_visual_uniqueness_score: number
+          min_voice_score: number
           motion_score_min_threshold: number
           pattern_interrupt_every_max_frames: number
           pattern_interrupt_every_min_frames: number
@@ -2639,6 +2683,7 @@ export type Database = {
           reject_aggressive_cta: boolean
           reject_orange_title_bar: boolean
           reject_white_background: boolean
+          require_cta_scene_v7: boolean
           required_beats_v5: string[]
           required_scene_roles: Json
           safe_zone_debug: boolean | null
@@ -2677,6 +2722,7 @@ export type Database = {
           cinematic_v4_enabled?: boolean
           cinematic_v5_enabled?: boolean
           cinematic_v7_enabled?: boolean
+          creative_domination_mode?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
@@ -2687,6 +2733,8 @@ export type Database = {
           focus_breathing_amp?: number
           framing_correction_chance?: number
           handheld_jitter_amp?: number
+          hard_reject_ken_burns_only?: boolean
+          hard_reject_single_image?: boolean
           hook_change_max_frames?: number
           hook_cooldown_days?: number
           human_presence_required_ratio?: number
@@ -2704,10 +2752,14 @@ export type Database = {
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
           min_closeups_v7?: number
+          min_ctr_prediction_score?: number
           min_days_between_same_product?: number
           min_emotional_arc?: number
+          min_emotional_payoff_v7?: number
           min_engagement_pacing_score?: number
+          min_final_creative_score?: number
           min_first_frame_originality_score?: number
+          min_hook_score?: number
           min_hook_uniqueness_score?: number
           min_lifestyle_v7?: number
           min_motion_diversity?: number | null
@@ -2729,6 +2781,7 @@ export type Database = {
           min_unique_media_assets?: number
           min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
+          min_voice_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
           pattern_interrupt_every_min_frames?: number
@@ -2748,6 +2801,7 @@ export type Database = {
           reject_aggressive_cta?: boolean
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
+          require_cta_scene_v7?: boolean
           required_beats_v5?: string[]
           required_scene_roles?: Json
           safe_zone_debug?: boolean | null
@@ -2786,6 +2840,7 @@ export type Database = {
           cinematic_v4_enabled?: boolean
           cinematic_v5_enabled?: boolean
           cinematic_v7_enabled?: boolean
+          creative_domination_mode?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
@@ -2796,6 +2851,8 @@ export type Database = {
           focus_breathing_amp?: number
           framing_correction_chance?: number
           handheld_jitter_amp?: number
+          hard_reject_ken_burns_only?: boolean
+          hard_reject_single_image?: boolean
           hook_change_max_frames?: number
           hook_cooldown_days?: number
           human_presence_required_ratio?: number
@@ -2813,10 +2870,14 @@ export type Database = {
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
           min_closeups_v7?: number
+          min_ctr_prediction_score?: number
           min_days_between_same_product?: number
           min_emotional_arc?: number
+          min_emotional_payoff_v7?: number
           min_engagement_pacing_score?: number
+          min_final_creative_score?: number
           min_first_frame_originality_score?: number
+          min_hook_score?: number
           min_hook_uniqueness_score?: number
           min_lifestyle_v7?: number
           min_motion_diversity?: number | null
@@ -2838,6 +2899,7 @@ export type Database = {
           min_unique_media_assets?: number
           min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
+          min_voice_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
           pattern_interrupt_every_min_frames?: number
@@ -2857,6 +2919,7 @@ export type Database = {
           reject_aggressive_cta?: boolean
           reject_orange_title_bar?: boolean
           reject_white_background?: boolean
+          require_cta_scene_v7?: boolean
           required_beats_v5?: string[]
           required_scene_roles?: Json
           safe_zone_debug?: boolean | null
@@ -18720,6 +18783,7 @@ export type Database = {
           category_match_passed: boolean | null
           cinematic_quality_score: number | null
           classification_confidence: number | null
+          commercial_score: number | null
           confidence_scores: Json
           content_type: string | null
           created_at: string
@@ -18731,10 +18795,12 @@ export type Database = {
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
+          ctr_prediction_score: number | null
           duplicate_risk_score: number
           duration_auto_trimmed: boolean
           duration_valid: boolean | null
           emotional_arc_score: number | null
+          emotional_payoff_present: boolean | null
           emotional_register: string | null
           engagement_pacing_score: number | null
           engine_version: string | null
@@ -18748,13 +18814,17 @@ export type Database = {
           fidelity_reject_reasons: string[] | null
           fidelity_report: Json | null
           fidelity_score: number | null
+          final_creative_score: number | null
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
           hook_archetype: string | null
+          hook_candidates: Json
           hook_cooldown_until: string | null
+          hook_score: number | null
           hook_strength_score: number | null
           hook_strength_v7_score: number | null
           hook_text: string | null
@@ -18846,6 +18916,9 @@ export type Database = {
           realism_score: number | null
           recommended_fix: string | null
           recoverable: boolean | null
+          regenerate_count: number
+          regenerate_requested_at: string | null
+          regenerate_requested_by: string | null
           remote_exists: boolean | null
           render_attempts: number
           render_complete_at: string | null
@@ -18911,7 +18984,9 @@ export type Database = {
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
+          voice_candidates: Json
           voice_id: string
+          voice_score: number | null
           voice_style: string | null
           voiceover_error: Json | null
           voiceover_last_attempt_at: string | null
