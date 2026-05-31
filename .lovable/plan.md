@@ -1,100 +1,102 @@
-# Phase 2 — Creative Domination: Output Quality Engines
+# Creative Domination V3 — Output Quality Maximum
 
-Focus shifts from rejecting to *producing*. No new QA reject rules in this phase. Three new engines that upgrade what we ship before the V7 gate even sees it.
+Goal shift: stop adding QA gates. Upgrade what the pipeline *produces* before render so videos look like premium US agency commercials. No new reject rules, no new scorecards beyond what already exists. The existing V7 + Domination scorers stay, but they're inputs to **auto-regeneration**, not new approval gates.
 
-## 1. Cinematic Motion Engine (`cinematic-motion-engine`)
+## 1. Cinematic Motion Engine V2 (`cinematic-motion-engine` rewrite)
 
-**Purpose:** turn 1–N still product images into a true commercial-style storyboard with ≥70% motion scenes.
+Replace the v1 storyboard generator with a stricter planner that guarantees commercial-grade shot variety.
 
-New edge function `supabase/functions/cinematic-motion-engine/index.ts`:
-- Input: `job_id`, source images (from `cinematic_ad_jobs.source_assets`), product category, hook script.
-- Output: `motion_storyboard jsonb` written back to `cinematic_ad_jobs`, structured per scene:
-  - `scene_index`, `duration_ms`, `camera_move` (push_in, pull_out, orbit, dolly, crane, handheld_follow, rack_focus_pull)
-  - `layers`: `[ {role: background, src, blur, parallax_amp}, {role: midground, src, scale_anim}, {role: subject, src, tracking_path} ]`
-  - `depth_simulation`: parallax delta + simulated DoF blur per layer
-  - `transition_in/out`: match_cut, whip_pan, light_leak, cross_dissolve, speed_ramp
-  - `grading`: LUT name + contrast/saturation/temperature deltas (teal_orange, warm_film, pinterest_premium, kodak_portra)
-  - `subject_tracking_path`: bezier keyframes for fake camera-follow
-- Heuristics + Gemini call (`google/gemini-3-flash-preview`) for narrative ordering and camera-move choice based on category (cat trees → orbit + crane; litter → push-in macro + rack focus; beds → handheld dolly + warm grading).
-- Enforces `motion_ratio ≥ 0.70` (motion scenes / total scenes). If single image, auto-generates 5 sub-shots via crops + depth maps (uses existing `MotionGenerator`/`ParallaxStack` building blocks in `remotion/src/viralShared.tsx`).
-- Writes `motion_engine_version='v1'` and `motion_ratio` to job for observability.
+- **Hard plan rules** (planner-side, not validator-side):
+  - ≥ 6 scenes, motion_ratio ≥ 0.70, ≤ 30% static scenes
+  - ≥ 4 distinct camera styles from: `dolly_in, dolly_out, push_in, pull_out, orbit, tracking, reveal, rack_focus, handheld, parallax_dynamic, shake_natural`
+  - ≥ 3 shot distances from: `wide, medium, close_up, extreme_close_up`
+  - Must include: 1 lifestyle scene + 1 product demonstration scene
+- Forbidden plans: all-Ken-Burns, all-static, single-shot-distance. Planner regenerates internally up to 3x if it produces a forbidden plan (no DB roundtrip).
+- For 1-image inputs: auto-derive 6 sub-shots via crop windows + simulated depth (reuses `MotionGenerator` / `ParallaxStack` already in `remotion/src/viralShared.tsx`).
+- Adds `foreground_motion`, `background_motion`, `depth_layers`, `subject_isolation`, `dof_blur_px`, `grade_lut` per scene.
+- Writes `motion_engine_version='v2'` + a compact `motion_plan_summary` (camera styles used, shot distances used, motion_ratio, lifestyle_present, demo_present) to the job for the admin card.
 
-## 2. Pinterest Performance Engine (`cinematic-pinterest-perf`)
+## 2. Hook Elector (extend `cinematic-hook-engine`)
 
-**Purpose:** predict ad performance *before* render, score 0–100 per axis.
+- Generate **10** hooks (currently 4) across 7 angles: curiosity, transformation, relief, before_after, problem_solution, hidden_benefit, emotional_payoff.
+- Score each on: stop_scroll, curiosity_gap, emotion, purchase_intent, save_prob, ctr_pred (existing `scoreHook` extended).
+- Elect the top hook + 2 alternates. Write `hook_candidates jsonb` and `hook_winner_reason text` for transparency.
 
-New edge function `supabase/functions/cinematic-pinterest-perf/index.ts`:
-- Input: hook variants from `cinematic-hook-engine`, motion storyboard, voice candidate, product metadata.
-- Output: `pinterest_perf_scores jsonb`:
-  - `stop_scroll` (first-frame visual disruption: motion intensity in frames 0-15, color contrast, face/eyes presence, text-overlay weight)
-  - `retention` (predicted % through 6s — based on scene cadence < 1.5s, motion ratio, audio rhythm)
-  - `save_rate` (utility + aspirational signals: category × emotional payoff)
-  - `ctr` (CTA clarity + price visibility + curiosity gap)
-  - `composite` weighted (stop_scroll 0.35, retention 0.25, save_rate 0.20, ctr 0.20)
-- Heuristic scoring (deterministic, no AI cost) + optional Gemini second-opinion when composite is borderline 70–85.
-- Writes `pinterest_perf_score` (int) and `pinterest_perf_breakdown` (jsonb) to job. Used as input weight to final creative score, **does not block** — informational + ranking only.
+## 3. US Commercial Voice Engine (extend `cinematic-voice-selector` + `cinematic-voice-engine`)
 
-## 3. Premium Voice Selector (`cinematic-voice-selector`)
+- Generate 5 voice candidates per job (already partly done). Score on trust, warmth, authenticity, purchase_intent, premium_feel.
+- Add tags: `native_us_english`, `natural_pacing`, `conversational`, `emotional_variation`. Penalize robotic/monotone/salesy candidates in the score.
+- Winner + alt persisted (already partially wired). No DB schema change beyond what's already in place.
 
-**Purpose:** auto-pick the best US-native voice per product. Replaces manual `VoiceStyleSelector` default.
+## 4. Emotional Story Arc Composer (`cinematic-story-arc` — NEW)
 
-New edge function `supabase/functions/cinematic-voice-selector/index.ts`:
-- Input: product category, target demographic (inferred), hook tone, emotional payoff label, purchase intent (price tier).
-- Catalog of US-native premium voices (extends existing `VOICE_STYLE_OPTIONS`):
-  - `premium_female_warm` — lifestyle, beds, grooming, mid-high intent
-  - `premium_female_aspirational` — cat trees, furniture, high intent
-  - `premium_male_trust` — health, safety, training, high intent
-  - `friendly_pet_parent_female` — toys, treats, low-mid intent
-  - `energetic_social_male` — fast hooks, viral curiosity
-  - `documentary_calm_male` — orthopedic, senior pets, high consideration
-- Scoring matrix (category × emotion × intent × tone → voice fit 0–100). Picks top 1 + alt.
-- Writes `selected_voice_id`, `voice_fit_score`, `voice_alt_id` to job. The existing `cinematic-voice-engine` keeps scoring; selector consumes it.
-- Frontend `VoiceStyleSelector` gets an "Auto (recommended)" pill that shows the picked voice + reason.
+New tiny edge function that produces a 6-beat narrative spine consumed by Motion V2 + hook elector:
 
-## 4. Wire-up
+1. Problem → 2. Frustration → 3. Discovery → 4. Solution → 5. Emotional payoff → 6. CTA
 
-- `cinematic-ad-prepare` (or wherever storyboard is built) calls in order:
-  1. `cinematic-hook-engine` (existing)
-  2. `cinematic-voice-selector` (new)
-  3. `cinematic-motion-engine` (new)
-  4. `cinematic-pinterest-perf` (new)
-  5. Then render.
-- `cinematic-ad-validate` reads `motion_ratio` and `pinterest_perf_score` for the score card but **does not add new reject rules**. Composite final score formula gains a small Pinterest-perf weight (5–10%), V7 hard rejects unchanged.
+- Input: product, category, hook winner, voice winner.
+- Output: `story_arc jsonb` with one beat per scene index, each carrying `caption_intent`, `emotion`, `visual_intent`.
+- Motion V2 reads `story_arc` to assign camera moves per beat (e.g. problem → push_in handheld, discovery → reveal, payoff → orbit + warm grade, CTA → static hero).
+- Replaces the current loose "hook → scenes" mapping. No new reject rule; if arc is missing the planner falls back to category default.
 
-## 5. Database (single additive migration)
+## 5. Text Safety (planner-side, not new validator)
+
+Motion V2 enforces:
+- ≤ 8 words per text block, ≤ 2 lines per scene
+- All captions routed through existing `safeAreaValidator` in `remotion/src/lib/safeZone.ts` (already mobile-safe, Pinterest safe-zone aware)
+- No new code path; just a planner-level word-count cap so we never *generate* unsafe text in the first place
+
+## 6. Auto-Regeneration (≤ 2 retries)
+
+Replaces the current "wait for admin confirm" flow with an automatic loop for *clearly weak* outputs only. Admin confirm still required for hard V7 rejects (unchanged).
+
+Trigger conditions (any one):
+- `motion_ratio < 0.70`
+- camera_styles_used < 4 OR shot_distances_used < 3
+- `hook_score < min_hook_score` (existing threshold)
+- `pinterest_perf_score < 60`
+- `creative_score < 80`
+
+Action:
+- `cinematic-ad-regenerate` (existing) gets a `mode: 'auto'` branch. Bumps `regenerate_count` (existing column, hard cap 2). Re-runs hook elector → story arc → motion v2 → render. Skips if `regenerate_count >= 2`. Logs reason in `regenerate_reason text`.
+
+## 7. Admin UI
+
+Tiny additions to `DominationScoreCard.tsx`:
+- New column **Plan Quality**: shows `camera_styles_used / shot_distances_used / motion_ratio` as a compact triple.
+- New column **Story Arc**: ✓ / ✗ presence indicator.
+- New column **Auto-regens**: `regenerate_count / 2`.
+- Existing "Re-plan creative" button gains a "Re-plan + re-render (auto)" variant.
+
+No new threshold sliders — Domination thresholds already exist.
+
+## 8. Database (single additive migration)
 
 Add to `cinematic_ad_jobs`:
-- `motion_storyboard jsonb`
-- `motion_ratio numeric(4,3)`
-- `motion_engine_version text`
-- `pinterest_perf_score int`
-- `pinterest_perf_breakdown jsonb`
-- `selected_voice_id text`
-- `voice_fit_score int`
-- `voice_alt_id text`
+- `hook_candidates jsonb`
+- `hook_winner_reason text`
+- `story_arc jsonb`
+- `motion_plan_summary jsonb`
+- `regenerate_reason text`
 
-No destructive changes. All nullable. RLS/grants inherit existing table policy.
-
-## 6. Admin UI
-
-Extend `DominationScoreCard.tsx` columns:
-- "Motion %" (target ≥70)
-- "Pinterest Perf" (0–100, color-coded)
-- "Voice" (picked voice id + fit score, click → swap to alt)
-
-Add "Re-plan creative" button per job → re-runs the four-engine pipeline without rendering.
+All nullable. Inherit existing RLS/grants.
 
 ## Out of scope (explicit)
+
 - No new V7 reject rules.
-- No render-pipeline rewrite (Remotion compositions unchanged — they already accept richer storyboards).
-- No audio engine, no music selection (next phase).
-- No bulk regenerate of existing jobs (already covered by `cinematic-ad-rescore-bulk`).
+- No new scorecards beyond columns above.
+- No render-pipeline rewrite — Remotion compositions already consume richer storyboards.
+- No music/audio engine (next phase).
+- No bulk auto-regenerate of historical jobs (still manual via existing `cinematic-ad-rescore-bulk`).
 
 ## Risk
-- Additive migration only, reversible.
-- 3 new edge functions, 1 small validate-function tweak, 1 admin card edit, 1 frontend selector tweak.
-- AI cost: Gemini Flash on hook + storyboard ordering + borderline perf → ~$0.0005 / job.
-- No expensive APIs touched.
+
+- 1 additive migration, reversible.
+- 1 new edge function (`cinematic-story-arc`).
+- Rewrites: `cinematic-motion-engine` (planner stricter), `cinematic-hook-engine` (10 hooks).
+- Small edits: `cinematic-voice-selector`, `cinematic-ad-regenerate` (auto branch), `DominationScoreCard.tsx`.
+- AI cost: ~$0.0008/job (10 hooks + arc + planner).
 
 ## Deliverable after approval
-Three engines deployed, prepare pipeline wired, admin card showing the new fields, one fixture job re-planned end-to-end to prove the storyboard now contains parallax, rack focus, and a graded scene.
+
+Motion V2 planner live with hard shot-variety rules, 10-hook elector picking winners with reasons, story arc threading 6 beats through the storyboard, auto-regen loop (≤2 retries) triggering on weak outputs, admin card showing plan quality + arc + regen count. One fixture job re-planned end-to-end to prove the new plan contains ≥4 camera styles, ≥3 shot distances, lifestyle + demo, and a complete 6-beat arc.
