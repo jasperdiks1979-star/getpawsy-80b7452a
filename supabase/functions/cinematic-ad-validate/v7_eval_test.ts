@@ -135,11 +135,11 @@ Deno.test("V7 REJECTS app product without app-control shot", () => {
   const input: V7Input = {
     job: {
       scene_plan: [
-        { crop: "wide",     motion: "handheld", role: "hook",      category: "lifestyle",   caption: "Hands-free litter" },
-        { crop: "close_up", motion: "orbit",    role: "closeup",   category: "closeup",     caption: "Self-cleaning detail" },
-        { crop: "medium",   motion: "parallax", role: "demo",      category: "product_demo",caption: "Watch it cycle" },
-        { crop: "wide",     motion: "tilt",     role: "lifestyle", category: "lifestyle",   caption: "Fresh home" },
-        { crop: "macro",    motion: "whip",     role: "feature",   category: "closeup",     caption: "Quiet motor" },
+        { crop: "wide",     motion: "handheld", role: "hook",      category: "lifestyle",   caption: "Fresh home daily" },
+        { crop: "close_up", motion: "orbit",    role: "closeup",   category: "closeup",     caption: "Soft fabric look" },
+        { crop: "medium",   motion: "parallax", role: "demo",      category: "product_demo",caption: "Watch a full cycle" },
+        { crop: "wide",     motion: "tilt",     role: "lifestyle", category: "lifestyle",   caption: "Calm cat owner home" },
+        { crop: "macro",    motion: "whip",     role: "feature",   category: "closeup",     caption: "Hands-free routine" },
         { crop: "medium",   motion: "cut",      role: "cta",       category: "cta",         caption: "Shop now", isCta: true },
       ],
       hook_text: "Less scooping, more cuddles",
