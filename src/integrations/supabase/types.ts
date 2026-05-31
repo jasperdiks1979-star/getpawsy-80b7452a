@@ -1756,6 +1756,7 @@ export type Database = {
           beat_signature: string | null
           beats_v5: Json | null
           blocked_reason: string | null
+          camera_diversity_score: number | null
           camera_motion_score: number | null
           camera_style: string | null
           caption_variants: Json
@@ -1800,6 +1801,7 @@ export type Database = {
           hook_archetype: string | null
           hook_cooldown_until: string | null
           hook_strength_score: number | null
+          hook_strength_v7_score: number | null
           hook_text: string | null
           hook_type: string | null
           hook_uniqueness_score: number | null
@@ -1852,6 +1854,7 @@ export type Database = {
           pinterest_publish_attempts: number
           pinterest_publish_error: string | null
           pinterest_publish_status: string
+          pinterest_quality_score: number | null
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
           predicted_engagement: number | null
@@ -1907,6 +1910,7 @@ export type Database = {
           scene_assets: Json
           scene_change_count: number | null
           scene_consistency_score: number | null
+          scene_diversity_v7_score: number | null
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_roles: Json | null
@@ -1925,6 +1929,7 @@ export type Database = {
           style_rejection_reason: string | null
           subhook_text: string | null
           text_safe_area_passed: boolean | null
+          text_safety_score: number | null
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
@@ -1936,10 +1941,12 @@ export type Database = {
           updated_at: string
           v4_reject_reasons: Json | null
           v5_reject_reasons: string[] | null
+          v7_reject_reasons: string[] | null
           validation_passed: boolean | null
           validation_report: Json | null
           validation_v4_passed: boolean | null
           validation_v5_passed: boolean | null
+          validation_v7_passed: boolean | null
           variant_index: number
           variation_signature: string | null
           verified_at: string | null
@@ -1978,6 +1985,7 @@ export type Database = {
           beat_signature?: string | null
           beats_v5?: Json | null
           blocked_reason?: string | null
+          camera_diversity_score?: number | null
           camera_motion_score?: number | null
           camera_style?: string | null
           caption_variants?: Json
@@ -2022,6 +2030,7 @@ export type Database = {
           hook_archetype?: string | null
           hook_cooldown_until?: string | null
           hook_strength_score?: number | null
+          hook_strength_v7_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
           hook_uniqueness_score?: number | null
@@ -2074,6 +2083,7 @@ export type Database = {
           pinterest_publish_attempts?: number
           pinterest_publish_error?: string | null
           pinterest_publish_status?: string
+          pinterest_quality_score?: number | null
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
           predicted_engagement?: number | null
@@ -2129,6 +2139,7 @@ export type Database = {
           scene_assets?: Json
           scene_change_count?: number | null
           scene_consistency_score?: number | null
+          scene_diversity_v7_score?: number | null
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_roles?: Json | null
@@ -2147,6 +2158,7 @@ export type Database = {
           style_rejection_reason?: string | null
           subhook_text?: string | null
           text_safe_area_passed?: boolean | null
+          text_safety_score?: number | null
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
@@ -2158,10 +2170,12 @@ export type Database = {
           updated_at?: string
           v4_reject_reasons?: Json | null
           v5_reject_reasons?: string[] | null
+          v7_reject_reasons?: string[] | null
           validation_passed?: boolean | null
           validation_report?: Json | null
           validation_v4_passed?: boolean | null
           validation_v5_passed?: boolean | null
+          validation_v7_passed?: boolean | null
           variant_index?: number
           variation_signature?: string | null
           verified_at?: string | null
@@ -2200,6 +2214,7 @@ export type Database = {
           beat_signature?: string | null
           beats_v5?: Json | null
           blocked_reason?: string | null
+          camera_diversity_score?: number | null
           camera_motion_score?: number | null
           camera_style?: string | null
           caption_variants?: Json
@@ -2244,6 +2259,7 @@ export type Database = {
           hook_archetype?: string | null
           hook_cooldown_until?: string | null
           hook_strength_score?: number | null
+          hook_strength_v7_score?: number | null
           hook_text?: string | null
           hook_type?: string | null
           hook_uniqueness_score?: number | null
@@ -2296,6 +2312,7 @@ export type Database = {
           pinterest_publish_attempts?: number
           pinterest_publish_error?: string | null
           pinterest_publish_status?: string
+          pinterest_quality_score?: number | null
           pinterest_uploaded_at?: string | null
           pipeline_stage?: string | null
           predicted_engagement?: number | null
@@ -2351,6 +2368,7 @@ export type Database = {
           scene_assets?: Json
           scene_change_count?: number | null
           scene_consistency_score?: number | null
+          scene_diversity_v7_score?: number | null
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_roles?: Json | null
@@ -2369,6 +2387,7 @@ export type Database = {
           style_rejection_reason?: string | null
           subhook_text?: string | null
           text_safe_area_passed?: boolean | null
+          text_safety_score?: number | null
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
@@ -2380,10 +2399,12 @@ export type Database = {
           updated_at?: string
           v4_reject_reasons?: Json | null
           v5_reject_reasons?: string[] | null
+          v7_reject_reasons?: string[] | null
           validation_passed?: boolean | null
           validation_report?: Json | null
           validation_v4_passed?: boolean | null
           validation_v5_passed?: boolean | null
+          validation_v7_passed?: boolean | null
           variant_index?: number
           variation_signature?: string | null
           verified_at?: string | null
@@ -2546,6 +2567,7 @@ export type Database = {
           category_match_required: boolean
           cinematic_v4_enabled: boolean
           cinematic_v5_enabled: boolean
+          cinematic_v7_enabled: boolean
           creative_quality_min_score: number
           engine_version: string | null
           engine_version_default: string
@@ -2577,17 +2599,21 @@ export type Database = {
           min_hook_uniqueness_score: number
           min_motion_diversity: number | null
           min_motion_entropy: number
+          min_pinterest_quality_score: number
           min_product_fidelity_score: number
           min_publish_gap_minutes: number
           min_realism_consistency: number
           min_realism_score: number
           min_scene_count_v4: number
+          min_scene_count_v7: number
           min_scene_diversity: number | null
           min_scenes: number | null
           min_thumb_stop_score: number
           min_thumbnail_entropy_score: number
           min_ugc_authenticity: number
+          min_unique_cameras_v7: number
           min_unique_media_assets: number
+          min_unique_scenes_v7: number
           min_visual_uniqueness_score: number
           motion_score_min_threshold: number
           pattern_interrupt_every_max_frames: number
@@ -2644,6 +2670,7 @@ export type Database = {
           category_match_required?: boolean
           cinematic_v4_enabled?: boolean
           cinematic_v5_enabled?: boolean
+          cinematic_v7_enabled?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
@@ -2675,17 +2702,21 @@ export type Database = {
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
+          min_pinterest_quality_score?: number
           min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
           min_realism_score?: number
           min_scene_count_v4?: number
+          min_scene_count_v7?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_thumb_stop_score?: number
           min_thumbnail_entropy_score?: number
           min_ugc_authenticity?: number
+          min_unique_cameras_v7?: number
           min_unique_media_assets?: number
+          min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
@@ -2742,6 +2773,7 @@ export type Database = {
           category_match_required?: boolean
           cinematic_v4_enabled?: boolean
           cinematic_v5_enabled?: boolean
+          cinematic_v7_enabled?: boolean
           creative_quality_min_score?: number
           engine_version?: string | null
           engine_version_default?: string
@@ -2773,17 +2805,21 @@ export type Database = {
           min_hook_uniqueness_score?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
+          min_pinterest_quality_score?: number
           min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
           min_realism_score?: number
           min_scene_count_v4?: number
+          min_scene_count_v7?: number
           min_scene_diversity?: number | null
           min_scenes?: number | null
           min_thumb_stop_score?: number
           min_thumbnail_entropy_score?: number
           min_ugc_authenticity?: number
+          min_unique_cameras_v7?: number
           min_unique_media_assets?: number
+          min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
@@ -18657,6 +18693,7 @@ export type Database = {
           beat_signature: string | null
           beats_v5: Json | null
           blocked_reason: string | null
+          camera_diversity_score: number | null
           camera_motion_score: number | null
           camera_style: string | null
           caption_variants: Json
@@ -18701,6 +18738,7 @@ export type Database = {
           hook_archetype: string | null
           hook_cooldown_until: string | null
           hook_strength_score: number | null
+          hook_strength_v7_score: number | null
           hook_text: string | null
           hook_type: string | null
           hook_uniqueness_score: number | null
@@ -18753,6 +18791,7 @@ export type Database = {
           pinterest_publish_attempts: number
           pinterest_publish_error: string | null
           pinterest_publish_status: string
+          pinterest_quality_score: number | null
           pinterest_uploaded_at: string | null
           pipeline_stage: string | null
           predicted_engagement: number | null
@@ -18808,6 +18847,7 @@ export type Database = {
           scene_assets: Json
           scene_change_count: number | null
           scene_consistency_score: number | null
+          scene_diversity_v7_score: number | null
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_roles: Json | null
@@ -18826,6 +18866,7 @@ export type Database = {
           style_rejection_reason: string | null
           subhook_text: string | null
           text_safe_area_passed: boolean | null
+          text_safety_score: number | null
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
@@ -18837,10 +18878,12 @@ export type Database = {
           updated_at: string
           v4_reject_reasons: Json | null
           v5_reject_reasons: string[] | null
+          v7_reject_reasons: string[] | null
           validation_passed: boolean | null
           validation_report: Json | null
           validation_v4_passed: boolean | null
           validation_v5_passed: boolean | null
+          validation_v7_passed: boolean | null
           variant_index: number
           variation_signature: string | null
           verified_at: string | null
