@@ -1039,10 +1039,6 @@ const _handlerInner = async (req: Request): Promise<Response> => {
   }
 };
 
-if (import.meta.main) {
-  Deno.serve(handler);
-}
-
 // Outer wrapper — guarantees we never return a raw 500 to the orchestrator.
 const handler = async (req: Request): Promise<Response> => {
   try {
@@ -1060,5 +1056,9 @@ const handler = async (req: Request): Promise<Response> => {
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 };
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
 
 export { handler };
