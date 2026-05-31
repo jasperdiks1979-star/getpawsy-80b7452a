@@ -4,9 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play } from "lucide-react";
+import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
@@ -43,10 +41,10 @@ export default function PinterestAdStudio() {
   const [sp, setSp] = useSearchParams();
   const initialSlug = sp.get("slug") || "";
   const [product, setProduct] = useState<PickerProduct | null>(null);
-  const [style, setStyle] = useState<AdStyleId>("viral");
-  const [bestOf, setBestOf] = useState(false);
+  const [manualStyle, setManualStyle] = useState<AdStyleId>("viral");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [directorNote, setDirectorNote] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [pollKey, setPollKey] = useState(0);
 
@@ -97,34 +95,52 @@ export default function PinterestAdStudio() {
     return jobId;
   }
 
-  async function handleCreate() {
+  async function runStyles(stylesToRun: AdStyleId[], successMsg: string) {
+    const results: JobRow[] = [];
+    for (const sId of stylesToRun) {
+      try {
+        const jobId = await startOne(sId);
+        if (jobId) {
+          results.push({
+            id: jobId, product_slug: product!.slug, status: "preparing", status_message: "queued",
+            output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
+            pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
+            hook_variant: getAdStyle(sId).hookVariant, voice_style: getAdStyle(sId).voiceStyle,
+          });
+        }
+      } catch (e: any) {
+        toast.error(`${sId}: ${e.message || "failed"}`);
+      }
+    }
+    if (results.length > 0) { setJobs(results); toast.success(successMsg); }
+  }
+
+  async function handleDirector() {
     if (!product) { toast.error("Select a product first"); return; }
     setCreating(true);
+    setDirectorNote(null);
     try {
-      const stylesToRun: AdStyleId[] = bestOf
-        ? (["viral", "lifestyle", "cinematic"] as AdStyleId[])
-        : [style];
-      const results: JobRow[] = [];
-      for (const sId of stylesToRun) {
-        try {
-          const jobId = await startOne(sId);
-          if (jobId) {
-            results.push({
-              id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
-              output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
-              pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
-              hook_variant: getAdStyle(sId).hookVariant, voice_style: getAdStyle(sId).voiceStyle,
-            });
-          }
-        } catch (e: any) {
-          toast.error(`${sId}: ${e.message || "failed"}`);
-        }
-      }
-      if (results.length > 0) {
-        setJobs(results);
-        toast.success(bestOf ? `Generating ${results.length} concepts — best will be auto-selected` : "Ad creation started");
-      }
+      const { data, error } = await supabase.functions.invoke("cinematic-director-decide", {
+        body: { product_slug: product.slug, top_n: 3 },
+      });
+      if (error || (data as any)?.ok === false) throw new Error((data as any)?.message || error?.message || "director failed");
+      const concepts = ((data as any)?.concepts ?? []) as Array<{ style: AdStyleId; predicted_score: number }>;
+      const meta = (data as any)?.meta;
+      const styles = concepts.slice(0, 3).map(c => c.style);
+      if (styles.length === 0) throw new Error("No concepts produced");
+      setDirectorNote(`AI picked ${styles.map(s => getAdStyle(s).label).join(" · ")} based on ${meta?.history_samples ?? 0} past results${meta?.category ? ` in ${meta.category}` : ""}.`);
+      await runStyles(styles, "Director Mode: generating concepts — best will auto-win");
+    } catch (e: any) {
+      toast.error(e.message || "director failed");
     } finally { setCreating(false); }
+  }
+
+  async function handleManual() {
+    if (!product) { toast.error("Select a product first"); return; }
+    setCreating(true);
+    setDirectorNote(null);
+    try { await runStyles([manualStyle], "Ad creation started"); }
+    finally { setCreating(false); }
   }
 
   async function publish(j: JobRow) {
@@ -166,7 +182,7 @@ export default function PinterestAdStudio() {
           <h1 className="text-2xl font-semibold tracking-tight">Pinterest Ad Studio</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Select a product, pick a style, click create. The system handles hook, voice, motion, storyboard, CTA and Pinterest strategy.
+          Select a product, click create. The AI Director picks the best style, hook, voice, storyboard, CTA and motion automatically.
         </p>
       </header>
 
@@ -178,44 +194,25 @@ export default function PinterestAdStudio() {
         </CardContent>
       </Card>
 
-      {/* STEP 2 */}
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Step 2 · Pick ad style</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            {AD_STYLES.map(s => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setStyle(s.id)}
-                className={`text-left p-3 rounded-lg border transition-colors ${style === s.id && !bestOf ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"} ${bestOf ? "opacity-50" : ""}`}
-                disabled={bestOf}
-              >
-                <div className="text-sm font-semibold">{s.label}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{s.description}</div>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* STEP 3 */}
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Step 3 · Create</CardTitle></CardHeader>
+      {/* STEP 2 — Director Mode (primary) */}
+      <Card className="border-primary/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-primary" />
+            Step 2 · Generate Best Possible Pinterest Ad
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-            <Trophy className="w-4 h-4 text-amber-500" />
-            <div className="flex-1">
-              <Label htmlFor="bestof" className="text-sm font-medium cursor-pointer">Generate Best Possible Pinterest Ad</Label>
-              <p className="text-xs text-muted-foreground">Creates 3 concepts (Viral · Lifestyle · Cinematic), scores them, picks the winner.</p>
-            </div>
-            <Switch id="bestof" checked={bestOf} onCheckedChange={setBestOf} />
-          </div>
-
-          <Button size="lg" className="w-full" disabled={!product || creating} onClick={handleCreate}>
+          <p className="text-sm text-muted-foreground">
+            The AI Director analyzes your product category, Pinterest trends and past performance, then auto-picks the best style, hook, voice, storyboard, CTA and motion. Three concepts are rendered and the highest-scoring winner is selected automatically.
+          </p>
+          <Button size="lg" className="w-full" disabled={!product || creating} onClick={handleDirector}>
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {bestOf ? "Generate Best Possible Pinterest Ad" : "Create Pinterest Ad"}
+            Generate Best Possible Pinterest Ad
           </Button>
+          {directorNote && (
+            <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
+          )}
         </CardContent>
       </Card>
 
@@ -288,13 +285,35 @@ export default function PinterestAdStudio() {
           </button>
         </CardHeader>
         {showAdvanced && (
-          <CardContent className="space-y-2 text-sm">
-            <p className="text-muted-foreground">Full engine controls, QA gates, autopilot, intelligence panels and bulk operations live in the Control Center.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads"><Play className="w-3 h-3 mr-1" />Cinematic Control Center</Link></Button>
-              <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads/dashboard">Jobs dashboard</Link></Button>
-              <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads/queue-health">Queue health</Link></Button>
-              <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-performance">Performance metrics</Link></Button>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-2">Manual style override (skips Director)</div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-2">
+                {AD_STYLES.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setManualStyle(s.id)}
+                    className={`text-left p-2 rounded-lg border transition-colors ${manualStyle === s.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"}`}
+                  >
+                    <div className="text-xs font-semibold">{s.label}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{s.description}</div>
+                  </button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" disabled={!product || creating} onClick={handleManual}>
+                <Sparkles className="w-3 h-3 mr-1" />Render single concept ({getAdStyle(manualStyle).label})
+              </Button>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-2">Engine controls</div>
+              <p className="text-muted-foreground text-xs mb-2">Full engine controls, QA gates, autopilot, intelligence panels and bulk operations.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads"><Play className="w-3 h-3 mr-1" />Cinematic Control Center</Link></Button>
+                <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads/dashboard">Jobs dashboard</Link></Button>
+                <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-ads/queue-health">Queue health</Link></Button>
+                <Button variant="outline" size="sm" asChild><Link to="/admin/cinematic-performance">Performance metrics</Link></Button>
+              </div>
             </div>
           </CardContent>
         )}
