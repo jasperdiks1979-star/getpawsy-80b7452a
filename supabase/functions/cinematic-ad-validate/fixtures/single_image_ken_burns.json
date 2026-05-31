@@ -8,7 +8,6 @@
         "ken_burns_zoom_only",
         "missing_closeup",
         "missing_lifestyle_scene",
-        "missing_product_demo_shot",
         "missing_cta_frame"
       ]
     }
@@ -22,7 +21,7 @@
       { "crop": "wide", "motion": "ken_burns", "category": "hero", "caption": "" }
     ],
     "scene_assets": [
-      { "label": "hero_still", "category": "hero", "prompt": "Orthopedic dog bed product shot, plain background", "url": "media/single_image_hero.png" }
+      { "label": "hero_still", "category": "hero", "prompt": "Orthopedic dog bed on plain background", "url": "media/single_image_hero.png" }
     ],
     "beats_v5": [],
     "vo_script": "",
