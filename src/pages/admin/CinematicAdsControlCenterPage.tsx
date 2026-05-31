@@ -1137,6 +1137,47 @@ function V7QaPanel({ job }: { job: Job }) {
           ))}
         </div>
       )}
+      <V7DecisionTrace job={job} />
+    </div>
+  );
+}
+
+function V7DecisionTrace({ job }: { job: Job }) {
+  const trace: Array<any> = Array.isArray((job as any)?.validation_report?.v7_decision_trace)
+    ? (job as any).validation_report.v7_decision_trace
+    : [];
+  if (trace.length === 0) return null;
+
+  // Surface borderline rules + every retry decision so reviewers can audit
+  // exactly which detection pass (strict vs retry) drove the result.
+  const interesting = trace.filter(
+    (t) => t.borderline || t.decided_by === "retry_pass" || t.decided_by === "retry_failed",
+  );
+  if (interesting.length === 0) return null;
+
+  const colorFor = (d: string) =>
+    d === "strict_pass" ? "text-emerald-600 dark:text-emerald-400"
+    : d === "retry_pass" ? "text-amber-600 dark:text-amber-400"
+    : d === "not_applicable" ? "text-muted-foreground"
+    : "text-destructive";
+
+  return (
+    <div className="mt-1.5 rounded border border-border/40 bg-background/60 p-1.5">
+      <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        V7 detection trace (strict vs retry)
+      </div>
+      <div className="space-y-0.5">
+        {interesting.map((t) => (
+          <div key={t.rule} className="flex flex-wrap items-baseline gap-1.5 text-[11px]">
+            <span className="font-mono">{t.rule}</span>
+            <span className={`font-semibold ${colorFor(t.decided_by)}`}>{t.decided_by}</span>
+            <span className="text-muted-foreground">
+              strict={String(t.strict_value)} → final={String(t.final_value)} (≥{String(t.threshold)})
+            </span>
+            {t.note && <span className="text-muted-foreground italic">— {t.note}</span>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
