@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "description": "Real upload for an app-controlled smart litter box that ships WITHOUT a phone/app-control shot. V7 must catch the gap — Pinterest creatives for smart hardware lose conversion without the UI scene.",
+    "media": ["media/valid_multi_scene.mp4"],
+    "expected": {
+      "validation_v7_passed": false,
+      "must_include_reasons": ["missing_app_control_shot"]
+    }
+  },
+  "job": {
+    "scene_plan": [
+      { "crop": "wide",     "motion": "handheld", "role": "hook",      "category": "lifestyle",    "caption": "Fresh home daily" },
+      { "crop": "close_up", "motion": "orbit",    "role": "closeup",   "category": "closeup",      "caption": "Soft fabric look" },
+      { "crop": "medium",   "motion": "parallax", "role": "demo",      "category": "product_demo", "caption": "Watch a full cycle" },
+      { "crop": "wide",     "motion": "tilt",     "role": "lifestyle", "category": "lifestyle",    "caption": "Calm cat owner home" },
+      { "crop": "macro",    "motion": "whip",     "role": "feature",   "category": "closeup",      "caption": "Hands-free routine" },
+      { "crop": "medium",   "motion": "cut",      "role": "cta",       "category": "cta",          "caption": "Shop now", "isCta": true }
+    ],
+    "scene_assets": [
+      { "label": "hook",      "category": "lifestyle",    "prompt": "Calm modern living room with cat", "url": "media/valid_multi_scene.mp4#t=0.0,1.2" },
+      { "label": "closeup",   "category": "closeup",      "prompt": "Soft litter box fabric texture",   "url": "media/valid_multi_scene.mp4#t=1.2,2.4" },
+      { "label": "demo",      "category": "product_demo", "prompt": "Self-cleaning cycle in action",    "url": "media/valid_multi_scene.mp4#t=2.4,3.6" },
+      { "label": "lifestyle", "category": "lifestyle",    "prompt": "Owner relaxing on sofa with cat",  "url": "media/valid_multi_scene.mp4#t=3.6,4.8" },
+      { "label": "feature",   "category": "closeup",      "prompt": "Odor seal feature close-up",       "url": "media/valid_multi_scene.mp4#t=4.8,6.0" },
+      { "label": "cta",       "category": "cta",          "prompt": "Brand end card",                   "url": "media/valid_multi_scene.mp4#t=6.0,7.2" }
+    ],
+    "beats_v5": [],
+    "vo_script": "Less scooping, more cuddles. Self-cleaning means a fresh home every day.",
+    "hook_text": "Less scooping, more cuddles",
+    "cta_text": "Shop on GetPawsy"
+  },
+  "product_ctx": { "name": "Smart Self-Cleaning Litter Box", "category": "cat_litter", "primary_keyword": "app controlled litter box" },
+  "safe_area": { "ok": true, "violations": [] },
+  "v2": { "hook_strength": 85, "composite": 90 }
+}

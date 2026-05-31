@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "description": "Real upload: a single hero still looped with Ken-Burns zoom/pan. The kind of low-effort render V7 must block before it reaches Pinterest.",
+    "media": ["media/single_image_hero.png"],
+    "expected": {
+      "validation_v7_passed": false,
+      "must_include_reasons": [
+        "ken_burns_zoom_only",
+        "missing_closeup",
+        "missing_lifestyle_scene",
+        "missing_cta_frame"
+      ]
+    }
+  },
+  "job": {
+    "scene_plan": [
+      { "crop": "wide", "motion": "zoom_in",   "category": "hero", "caption": "" },
+      { "crop": "wide", "motion": "zoom_out",  "category": "hero", "caption": "" },
+      { "crop": "wide", "motion": "pan_left",  "category": "hero", "caption": "" },
+      { "crop": "wide", "motion": "pan_right", "category": "hero", "caption": "" },
+      { "crop": "wide", "motion": "ken_burns", "category": "hero", "caption": "" }
+    ],
+    "scene_assets": [
+      { "label": "hero_still", "category": "hero", "prompt": "Orthopedic dog bed on plain background", "url": "media/single_image_hero.png" }
+    ],
+    "beats_v5": [],
+    "vo_script": "",
+    "hook_text": "Beautiful product",
+    "cta_text": ""
+  },
+  "product_ctx": { "name": "Orthopedic Dog Bed", "category": "dog_bed" },
+  "safe_area": { "ok": true, "violations": [] },
+  "v2": { "hook_strength": 85, "composite": 90 }
+}
