@@ -52,27 +52,22 @@ jobs:
           set -euo pipefail
           bun install --frozen-lockfile || bun install
 
-      - name: Install Playwright Chromium (with system deps)
+      - name: Install Chrome for Remotion
         shell: bash
         run: |
           set -euo pipefail
-          npx playwright install --with-deps chromium
-          echo "--- Chromium discovery diagnostics ---"
-          which chromium || true
-          which chromium-browser || true
-          find "${HOME}/.cache/ms-playwright" -type f 2>/dev/null | head -20 || true
-          echo "Letting Remotion/Playwright auto-discover Chromium."
+          npx remotion browser ensure
+          echo "Remotion browser installed"
 
-      - name: Fail-fast render diagnostics
+      - name: Debug toolchain
         shell: bash
         run: |
           set -euo pipefail
-          cat /etc/os-release
-          node --version
-          bun --version
           which ffmpeg
           ffmpeg -version | head -n 1
-          npx playwright --version
+          node --version
+          bun --version
+          npx remotion --version || true
 
       - name: Preflight env check
         shell: bash
