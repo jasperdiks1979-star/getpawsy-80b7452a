@@ -304,7 +304,10 @@ Deno.serve(async (req) => {
             shape_match: true, color_match: true, dimensions_match: true,
             buttons_match: true, display_match: true, opening_match: true,
             no_invented_features: true, branding_match: true, product_identifiable: true,
+            geometry_match: true, cat_no_intersection: true,
           },
+          similarity_percent: 0,
+          scene_realism_score: 0,
         })),
       ));
       results.push(...out);
