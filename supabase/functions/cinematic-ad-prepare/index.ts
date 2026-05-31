@@ -552,7 +552,7 @@ Return STRICT JSON, no markdown:
   }
 }
 
-const handler = async (req: Request): Promise<Response> => {
+const _handlerInner = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
 
@@ -1042,5 +1042,23 @@ const handler = async (req: Request): Promise<Response> => {
 if (import.meta.main) {
   Deno.serve(handler);
 }
+
+// Outer wrapper — guarantees we never return a raw 500 to the orchestrator.
+const handler = async (req: Request): Promise<Response> => {
+  try {
+    return await _handlerInner(req);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? (e.stack ?? null) : null;
+    console.error("[cinematic-ad-prepare] OUTER catch", msg, stack);
+    return new Response(JSON.stringify({
+      ok: false, recoverable: true, fallback_used: true,
+      concept_status: "concept_failed",
+      error_code: "OUTER_HANDLER_CRASH",
+      step: "handler.outer", message: msg, stack,
+      traceId: `cap_outer_${Date.now().toString(36)}`,
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+};
 
 export { handler };
