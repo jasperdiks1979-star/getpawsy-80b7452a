@@ -853,7 +853,6 @@ Deno.serve(async (req) => {
       pinterest_quality_score,
       v7_reject_reasons,
       validation_v7_passed,
-      v7_detection_debug: v7DetectionDebug,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
