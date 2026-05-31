@@ -13,7 +13,7 @@
       { "crop": "wide",     "motion": "handheld", "role": "hook",    "category": "lifestyle", "caption": "Meet your pup's new favourite spot" },
       { "crop": "close_up", "motion": "orbit",    "role": "feature", "category": "feature",   "caption": "Soft memory foam, paw close-up" },
       { "crop": "medium",   "motion": "parallax", "role": "scene",   "category": "scene",     "caption": "He's sleeping like a baby" },
-      { "crop": "wide",     "motion": "tilt",     "role": "scene",   "category": "scene",     "caption": "In the living room with the family" },
+      { "crop": "wide_high","motion": "tilt",     "role": "scene",   "category": "scene",     "caption": "In the living room with the family — pure joy" },
       { "crop": "macro",    "motion": "whip",     "role": "scene",   "category": "scene",     "caption": "Buy it now", "isCta": true },
       { "crop": "medium",   "motion": "cut",      "role": "scene",   "category": "scene",     "caption": "Order yours today" }
     ],

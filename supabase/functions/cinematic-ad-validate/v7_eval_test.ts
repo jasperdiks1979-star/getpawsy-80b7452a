@@ -36,7 +36,7 @@ function fixtureValidMultiScene(): V7Input {
         { crop: "wide",     motion: "handheld",  role: "hook",      category: "lifestyle",   caption: "Tired pup? Same." },
         { crop: "close_up", motion: "orbit",     role: "closeup",   category: "closeup",     caption: "Memory foam detail" },
         { crop: "medium",   motion: "parallax",  role: "demo",      category: "product_demo",caption: "Watch him sink in" },
-        { crop: "wide",     motion: "tilt",      role: "lifestyle", category: "lifestyle",   caption: "Living room ready" },
+        { crop: "wide_high",motion: "tilt",      role: "lifestyle", category: "lifestyle",   caption: "Living room ready — happy & snuggled" },
         { crop: "macro",    motion: "whip",      role: "feature",   category: "closeup",     caption: "Cooling gel layer" },
         { crop: "medium",   motion: "cut",       role: "cta",       category: "cta",         caption: "Shop now",       isCta: true },
       ],
@@ -111,7 +111,7 @@ Deno.test("V7 retry pass recovers borderline product-demo via captions/prompts",
         { crop: "wide",     motion: "handheld", role: "hook",      category: "lifestyle", caption: "Meet your pup's new favourite spot" },
         { crop: "close_up", motion: "orbit",    role: "feature",   category: "feature",   caption: "Soft memory foam, paw close-up" },
         { crop: "medium",   motion: "parallax", role: "scene",     category: "scene",     caption: "He's sleeping like a baby" }, // demo (sleeping) via broad regex
-        { crop: "wide",     motion: "tilt",     role: "scene",     category: "scene",     caption: "In the living room with the family" }, // lifestyle via broad
+        { crop: "wide_high",motion: "tilt",     role: "scene",     category: "scene",     caption: "In the living room with the family — pure joy" }, // lifestyle + payoff via broad
         { crop: "macro",    motion: "whip",     role: "scene",     category: "scene",     caption: "Buy it now",                  isCta: true }, // cta via retry
         { crop: "medium",   motion: "cut",      role: "scene",     category: "scene",     caption: "Order yours today" },
       ],
@@ -166,7 +166,7 @@ Deno.test("V7 ACCEPTS app product when an app-control shot is present", () => {
         { crop: "close_up", motion: "orbit",    role: "closeup",   category: "closeup",     caption: "Self-cleaning detail" },
         { crop: "medium",   motion: "parallax", role: "demo",      category: "product_demo",caption: "Watch it cycle" },
         { crop: "phone",    motion: "tilt",     role: "app",       category: "app_control", caption: "Tap the app to start a cycle" },
-        { crop: "wide",     motion: "whip",     role: "lifestyle", category: "lifestyle",   caption: "Fresh home" },
+        { crop: "wide_high",motion: "whip",     role: "lifestyle", category: "lifestyle",   caption: "Fresh, happy home — purring cat" },
         { crop: "medium",   motion: "cut",      role: "cta",       category: "cta",         caption: "Shop now", isCta: true },
       ],
       hook_text: "Less scooping, more cuddles",
