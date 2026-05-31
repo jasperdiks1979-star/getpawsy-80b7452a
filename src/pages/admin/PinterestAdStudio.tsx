@@ -380,8 +380,12 @@ export default function PinterestAdStudio() {
           </p>
           <Button size="lg" className="w-full" disabled={!product || creating} onClick={handleDirector}>
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Generate Best Possible Pinterest Ad
+            {dryRun ? "Dry-run Director (no renders)" : "Generate Best Possible Pinterest Ad"}
           </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
+            Dry run mode — simulate all 4 concepts (no paid renders, injects a viral failure to verify isolation)
+          </label>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
           )}
@@ -393,6 +397,75 @@ export default function PinterestAdStudio() {
           )}
         </CardContent>
       </Card>
+
+      {/* Debug Director Run */}
+      {diagnostics.length > 0 && (
+        <Card className="border-amber-400/40">
+          <CardHeader className="pb-3">
+            <button onClick={() => setShowDebug(v => !v)} className="flex items-center justify-between w-full text-left">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bug className="w-4 h-4" />Debug Director Run
+                <Badge variant="outline" className="ml-2">
+                  {diagnostics.filter(d => d.stage === "success" || d.stage === "rendering").length}/{diagnostics.length} ok
+                </Badge>
+                {diagnostics.some(d => d.stage === "concept_failed") && (
+                  <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />{diagnostics.filter(d => d.stage === "concept_failed").length} failed</Badge>
+                )}
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">{showDebug ? "Hide" : "Show"}</span>
+            </button>
+          </CardHeader>
+          {showDebug && (
+            <CardContent className="space-y-3">
+              {winner && (
+                <div className="text-xs p-2 rounded bg-primary/5 border border-primary/20">
+                  <span className="font-medium">Selected winner:</span> {winner.archetype ? getArchetype(winner.archetype).label : winner.hook_variant} · QA {Math.round(winner.qa_composite_score ?? 0)} · <code className="text-[10px]">{winner.id.slice(0,8)}</code>
+                </div>
+              )}
+              <div className="space-y-2">
+                {diagnostics.map((d, i) => {
+                  const failed = d.stage === "concept_failed";
+                  const okCall = d.stage === "success" || d.stage === "rendering";
+                  return (
+                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-semibold">
+                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                          {d.label}
+                          {d.retried && <Badge variant="outline" className="text-[10px]">retried (safer prompt)</Badge>}
+                        </div>
+                        <span className="text-muted-foreground">{d.stage}</span>
+                      </div>
+                      {d.jobId && <div><span className="text-muted-foreground">Render job:</span> <code className="text-[10px]">{d.jobId}</code></div>}
+                      {d.prepare && (
+                        <div className="grid grid-cols-[110px_1fr] gap-x-2">
+                          <span className="text-muted-foreground">prepare:</span>
+                          <span><code className="text-[10px]">{d.prepare.fn}</code> · HTTP {d.prepare.httpStatus ?? "—"} · {d.prepare.ok ? "ok" : (d.prepare.errorMessage ?? "failed")}{d.prepare.traceId ? ` · trace ${d.prepare.traceId}` : ""}</span>
+                        </div>
+                      )}
+                      {d.queue && (
+                        <div className="grid grid-cols-[110px_1fr] gap-x-2">
+                          <span className="text-muted-foreground">queue:</span>
+                          <span><code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}</span>
+                        </div>
+                      )}
+                      {failed && d.prepare?.responseBody && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-muted-foreground">Response body</summary>
+                          <pre className="text-[10px] whitespace-pre-wrap break-all p-2 rounded bg-background/60 border border-border mt-1 max-h-40 overflow-auto">{d.prepare.responseBody}</pre>
+                        </details>
+                      )}
+                      {d.suggestedFix && (
+                        <div className="text-amber-700 dark:text-amber-400"><span className="font-medium">Suggested fix:</span> {d.suggestedFix}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* STEP 4 — results */}
       {jobs.length > 0 && (
