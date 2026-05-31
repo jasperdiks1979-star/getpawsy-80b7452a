@@ -18,12 +18,17 @@ export interface V7Thresholds {
   textSafeZoneTolerance: number;
   maxCaptionDensityV7: number;
   maxDenseCaptionRatioV7: number;
+  // Creative Domination Mode additions
+  minEmotionalPayoffV7: number;
+  requireCtaScene: boolean;
+  hardRejectSingleImage: boolean;
+  hardRejectKenBurnsOnly: boolean;
 }
 
 export const DEFAULT_V7_THRESHOLDS: V7Thresholds = {
   v7Enabled: true,
-  minPinterestQuality: 90,
-  minUniqueScenesV7: 4,
+  minPinterestQuality: 95,
+  minUniqueScenesV7: 5,
   minUniqueCamerasV7: 3,
   minSceneCountV7: 5,
   minCloseupsV7: 1,
@@ -32,6 +37,10 @@ export const DEFAULT_V7_THRESHOLDS: V7Thresholds = {
   textSafeZoneTolerance: 0,
   maxCaptionDensityV7: 0.25,
   maxDenseCaptionRatioV7: 0.34,
+  minEmotionalPayoffV7: 1,
+  requireCtaScene: true,
+  hardRejectSingleImage: true,
+  hardRejectKenBurnsOnly: true,
 };
 
 export interface V7Input {
@@ -48,6 +57,8 @@ export interface V7Result {
   text_safety_score: number;
   pinterest_quality_score: number;
   v7_reject_reasons: string[];
+  hard_reject_reasons: string[];
+  emotional_payoff_present: boolean;
   validation_v7_passed: boolean;
   detection_debug: {
     is_app_product: boolean;
@@ -62,6 +73,9 @@ export interface V7Result {
     text_outside_safe: boolean;
     text_cut_off: boolean;
     too_much_text: boolean;
+    single_image_render: boolean;
+    emotional_payoff_count: number;
+    cta_scene_count: number;
   };
   decision_trace: Array<{
     rule: string;
@@ -82,6 +96,7 @@ const RX = {
   cta: /\bcta\b|shop|buy|order|get yours|learn more|tap|swipe up|link in bio/,
   appControlStrict: /app|phone|screen|ui|control|tap|swipe/,
   appControlBroad: /app|phone|smartphone|ios|android|screen|display|ui|interface|control|tap|swipe|button|notification|dashboard|settings|remote/,
+  payoff: /relief|joy|smile|happy|love|cuddle|peaceful|calm|hug|kiss|reunite|relax|content|wagging|purring|snuggle|trust|gratitude/,
 };
 
 function countMatches(re: RegExp, sources: string[]) {
