@@ -23,10 +23,10 @@
 // fidelity_score, fidelity_passed, scenes_needing_regen[],
 // motion_quality_score, scene_consistency_score.
 //
-// Threshold (per "URGENT FIX – CINEMATIC ADS QUALITY GATE" v7):
-//   - product similarity >= 90
-//   - motion quality >= 90 (no intersections, geometry stable, realism >= 8)
-//   - scene consistency >= 90 (product looks like the same SKU across scenes)
+// Threshold (per "PRODUCT LOCK" v8):
+//   - product similarity >= 95
+//   - motion quality >= 95 (no intersections, geometry stable, realism >= 8)
+//   - scene consistency >= 95 (product looks like the same SKU across scenes)
 //
 // Auth: admin JWT OR service role (x-render-secret).
 //
@@ -197,12 +197,12 @@ async function scoreScene(opts: {
   const allFlagsPass = Object.values(flags).every(Boolean);
   const score = Math.max(0, Math.min(100, Number(parsed.score ?? (allFlagsPass ? similarity_percent : 40))));
   const reasons: string[] = Array.isArray(parsed.reasons) ? parsed.reasons.map(String) : [];
-  if (similarity_percent < 90) reasons.push(`similarity_below_threshold(${similarity_percent}<90)`);
+  if (similarity_percent < 95) reasons.push(`similarity_below_threshold(${similarity_percent}<95)`);
   if (scene_realism_score < 8) reasons.push(`scene_realism_below_threshold(${scene_realism_score}<8)`);
 
   const hardPass =
     allFlagsPass &&
-    similarity_percent >= 90 &&
+    similarity_percent >= 95 &&
     scene_realism_score >= 8;
 
   return {
@@ -253,15 +253,15 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, traceId, message: "no scene images to check", report: { scenes: [], score: 100, passed: true } });
     }
 
-    // Settings — strict defaults: 90% similarity, realism >= 8/10, all rules pass.
-    let minScore = 90, enabled = true;
+    // Settings — strict defaults: 95% similarity, realism >= 8/10, all rules pass.
+    let minScore = 95, enabled = true;
     try {
       const { data: s } = await admin.from("cinematic_ad_settings")
         .select("product_fidelity_enabled, min_product_fidelity_score").limit(1).maybeSingle();
       if (s) {
         enabled = s.product_fidelity_enabled !== false;
-        // Floor the configured threshold at 90 — the new rules require 90%+ similarity.
-        minScore = Math.max(90, Number(s.min_product_fidelity_score ?? minScore));
+        // Floor the configured threshold at 95 — Product Lock rules require 95%+ similarity.
+        minScore = Math.max(95, Number(s.min_product_fidelity_score ?? minScore));
       }
     } catch (_) { /* defaults */ }
 

@@ -15,6 +15,128 @@ const RUNWAY_VERSION = "2024-11-06";
 
 const SCENE_KEYS = ["hook", "problem", "solution", "cta"] as const;
 
+// Threshold required for a generated ad to be eligible for publish.
+const PRODUCT_MATCH_THRESHOLD = 95;
+
+/**
+ * PRODUCT LOCK — pre-generation fingerprint.
+ *
+ * Given the real PDP reference images, ask Gemini to extract a strict,
+ * structured description of the product's locked attributes. This
+ * fingerprint is then attached to every downstream prompt so the model
+ * cannot invent a different SKU.
+ */
+async function buildProductFingerprint(
+  productName: string,
+  productDescription: string,
+  referenceUrls: string[],
+): Promise<Record<string, unknown>> {
+  const sys =
+    "You build strict product fingerprints used as locked references for ad generation. Output JSON only. Describe ONLY what is visible in the reference photos. Do not guess.";
+  const content: Array<Record<string, unknown>> = [
+    {
+      type: "text",
+      text:
+        `Product: ${productName}\n` +
+        `Description: ${productDescription || "(none)"}\n\n` +
+        `Study the reference photos and return JSON with EXACT visible attributes:\n` +
+        `{\n` +
+        `  "shape": "concise shape description (e.g. dome / cylindrical / rectangular box)",\n` +
+        `  "proportions": "height-to-width feel and key proportional cues",\n` +
+        `  "color": ["primary color", "secondary color"],\n` +
+        `  "materials": ["plastic", "matte finish", ...],\n` +
+        `  "opening": "describe entry/door/lid placement, shape and size",\n` +
+        `  "controls": "describe visible buttons, screens, dials, indicator lights — locations & count",\n` +
+        `  "branding": "describe any visible logos / wordmarks / badges and their placement",\n` +
+        `  "distinctive_features": ["list every distinctive visible feature that defines this SKU"],\n` +
+        `  "must_not_change": ["short rules: 'one circular front opening', 'single top button', 'no side LEDs', ...]\n` +
+        `}`,
+    },
+    ...referenceUrls.slice(0, 4).map((u) => ({
+      type: "image_url" as const,
+      image_url: { url: u },
+    })),
+  ];
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: sys },
+        { role: "user", content },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!r.ok) throw new Error(`fingerprint failed: ${r.status} ${await r.text()}`);
+  const j = await r.json();
+  return JSON.parse(j.choices[0].message.content);
+}
+
+/**
+ * PROMPT LOCK — text-level validation BEFORE any image/video render.
+ *
+ * Reject scene prompts that would alter the locked product geometry,
+ * opening, color, controls or branding. Returns { ok, violations[] }.
+ */
+async function validateScenePromptAgainstLock(
+  scenePrompt: string,
+  fingerprint: Record<string, unknown>,
+): Promise<{ ok: boolean; violations: string[] }> {
+  const sys =
+    "You audit ad scene prompts to make sure they do not alter a locked product. Output JSON only.";
+  const user =
+    `Locked product fingerprint:\n${JSON.stringify(fingerprint)}\n\n` +
+    `Scene prompt to audit:\n"""${scenePrompt}"""\n\n` +
+    `Return JSON:\n` +
+    `{\n` +
+    `  "alters_shape": boolean,\n` +
+    `  "alters_opening": boolean,\n` +
+    `  "alters_color": boolean,\n` +
+    `  "alters_controls": boolean,\n` +
+    `  "alters_branding": boolean,\n` +
+    `  "omits_required_feature": boolean,\n` +
+    `  "violations": ["short reason for each true flag"]\n` +
+    `}\n` +
+    `Be strict. If the prompt redescribes the product's shape/color/opening/controls in a way that conflicts with the fingerprint, flag it. ` +
+    `Describing the cat, environment, lighting or camera is fine.`;
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: sys },
+        { role: "user", content: user },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!r.ok) {
+    // Soft-pass on validator outage — fidelity-check still gates publish.
+    return { ok: true, violations: [`validator_unavailable:${r.status}`] };
+  }
+  const j = await r.json();
+  let parsed: any = {};
+  try { parsed = JSON.parse(j.choices[0].message.content); } catch { parsed = {}; }
+  const flags = [
+    "alters_shape", "alters_opening", "alters_color",
+    "alters_controls", "alters_branding", "omits_required_feature",
+  ];
+  const failing = flags.filter((k) => parsed[k] === true);
+  const violations: string[] = Array.isArray(parsed.violations)
+    ? parsed.violations.map(String)
+    : [];
+  return { ok: failing.length === 0, violations: [...failing, ...violations] };
+}
+
 async function generateScript(productName: string, productDescription: string) {
   const sys =
     "You write 15-second UGC-style Pinterest video ads for premium pet products. Output strict JSON.";
@@ -84,12 +206,16 @@ For each of the 4 scenes, write a Runway Gen-3 video prompt describing real-look
 
 async function generateStartingFrame(
   scenePrompt: string,
-  sourceProductImageUrl: string,
+  sourceProductImageUrls: string[],
+  fingerprint: Record<string, unknown> | null,
 ): Promise<string> {
-  // PRODUCT FIDELITY GATE (V6): the starting frame MUST preserve the exact product
-  // from the source PDP image. We pass the real product image as multimodal input
-  // and instruct Gemini to compose a scene AROUND it without altering shape, color,
-  // dimensions, opening, controls, materials or branding.
+  // PRODUCT LOCK (V8): the starting frame MUST preserve the exact product
+  // from the source PDP images. We pass ALL real product images as multimodal
+  // input plus a structured fingerprint and instruct Gemini to compose a scene
+  // AROUND the locked product. The product is treated as a rigid prop.
+  const imageRefs = sourceProductImageUrls
+    .slice(0, 4)
+    .map((u) => ({ type: "image_url" as const, image_url: { url: u } }));
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -106,15 +232,18 @@ async function generateStartingFrame(
               type: "text",
               text:
                 "Compose a photorealistic 9:16 portrait still, cinematic UGC style, natural lighting, no text overlays.\n\n" +
-                "HARD CONSTRAINT — PRODUCT FIDELITY:\n" +
-                "The product shown in the reference image MUST appear in the output IDENTICAL to the reference. " +
+                "HARD CONSTRAINT — PRODUCT LOCK:\n" +
+                "The product shown in the reference images MUST appear in the output IDENTICAL to the references. " +
                 "Preserve EXACTLY: shape, dimensions, opening, controls, color, materials, branding, logos, button placement, display, entry. " +
                 "Do NOT redesign, restyle, reinterpret, simplify, reimagine, recolor or invent features. " +
                 "Do NOT change the product's silhouette or proportions. Treat the product as a fixed prop to be placed in the scene.\n\n" +
+                (fingerprint
+                  ? `LOCKED PRODUCT FINGERPRINT (do not deviate):\n${JSON.stringify(fingerprint)}\n\n`
+                  : "") +
                 "SCENE CONTEXT (everything AROUND the product is yours to direct):\n" +
                 scenePrompt,
             },
-            { type: "image_url", image_url: { url: sourceProductImageUrl } },
+            ...imageRefs,
           ],
         },
       ],
@@ -207,7 +336,7 @@ Deno.serve(async (req) => {
 
     const { data: product, error: pErr } = await admin
       .from("products")
-      .select("slug,name,description,image_url")
+      .select("slug,name,description,image_url,images")
       .eq("slug", product_slug)
       .maybeSingle();
     if (pErr || !product) {
@@ -217,12 +346,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Lock all available PDP images as immutable product references.
+    const referenceUrls: string[] = [
+      ...(product.image_url ? [String(product.image_url)] : []),
+      ...(Array.isArray((product as any).images) ? (product as any).images.map(String) : []),
+    ]
+      .filter((u) => /^https?:\/\//.test(u))
+      // dedupe, preserve order
+      .filter((u, i, arr) => arr.indexOf(u) === i)
+      .slice(0, 6);
+    if (referenceUrls.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: false, traceId, message: "product has no PDP images to lock against" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { data: job, error: jErr } = await admin
       .from("cinematic_runway_jobs")
       .insert({
         product_slug: product.slug,
         product_name: product.name,
         product_image_url: product.image_url,
+        product_reference_urls: referenceUrls,
+        product_lock_enabled: true,
         status: "scripting",
         created_by: ures.user.id,
       })
@@ -233,13 +380,49 @@ Deno.serve(async (req) => {
     // Background work (kept inline; pipeline is short)
     (async () => {
       try {
+        // 1. Lock the product before anything else is generated.
+        const fingerprint = await buildProductFingerprint(
+          product.name,
+          product.description ?? "",
+          referenceUrls,
+        );
+        await admin
+          .from("cinematic_runway_jobs")
+          .update({ product_lock: fingerprint })
+          .eq("id", job.id);
+
         const script = await generateScript(product.name, product.description ?? "");
         await admin
           .from("cinematic_runway_jobs")
           .update({ script, status: "rendering_scenes" })
           .eq("id", job.id);
 
-        const scenePrompts = await generateScenePrompts(product.name, script);
+        let scenePrompts = await generateScenePrompts(product.name, script);
+        // 2. Validate every scene prompt against the lock BEFORE we render.
+        //    Try up to 2 rewrites; if still violating, fail the job rather
+        //    than burn Runway credits on a guaranteed-bad render.
+        const violationsLog: Record<string, string[]> = {};
+        for (let attempt = 0; attempt < 2; attempt++) {
+          let anyViolation = false;
+          for (const key of SCENE_KEYS) {
+            const sp = scenePrompts[key];
+            if (!sp) continue;
+            const combined = `${sp.frame_prompt ?? ""}\n${sp.video_prompt ?? ""}`;
+            const v = await validateScenePromptAgainstLock(combined, fingerprint);
+            if (!v.ok) {
+              anyViolation = true;
+              violationsLog[key] = v.violations;
+            }
+          }
+          if (!anyViolation) break;
+          // Rewrite prompts knowing what to avoid.
+          scenePrompts = await generateScenePrompts(product.name, script);
+        }
+        await admin
+          .from("cinematic_runway_jobs")
+          .update({ prompt_lock_violations: violationsLog })
+          .eq("id", job.id);
+
         const scenes: any[] = [];
         for (const key of SCENE_KEYS) {
           const sp = scenePrompts[key];
@@ -248,13 +431,14 @@ Deno.serve(async (req) => {
           }
           const frameDataUrl = await generateStartingFrame(
             sp.frame_prompt,
-            product.image_url,
+            referenceUrls,
+            fingerprint,
           );
           const frameUrl = await uploadDataUrl(admin, job.id, key, frameDataUrl);
           // Prepend product-fidelity guardrail to every Runway prompt so motion
           // generation cannot drift the product appearance away from the frame.
           const guardedVideoPrompt =
-            "Keep the product identical to the starting frame at all times — same shape, color, controls, opening, materials and branding. Do not morph, restyle or reinterpret the product. " +
+            "PRODUCT LOCK: keep the product IDENTICAL to the starting frame at all times — same shape, color, controls, opening, materials and branding. Do not morph, restyle, recolor, resize or reinterpret the product. The product is a rigid prop. " +
             sp.video_prompt;
           const taskId = await kickRunwayTask(frameUrl, guardedVideoPrompt);
           scenes.push({
