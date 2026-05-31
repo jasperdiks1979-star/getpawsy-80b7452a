@@ -162,6 +162,7 @@ export default function PinterestAdStudio() {
       force_new: true,
       director_archetype: opts.archetype ?? null,
       director_run_id: opts.runId ?? null,
+      concept_type: opts.archetype ?? null,
     });
     const jobId = ((prep.data as any)?.job_id ?? (prep.data as any)?.job?.id) as string | undefined;
     if (!jobId || !prep.diag.ok) return { jobId: null, prepare: prep.diag, queue: null };
@@ -198,6 +199,32 @@ export default function PinterestAdStudio() {
 
   async function handleDirector() {
     if (!product) { toast.error("Select a product first"); return; }
+    // Guard: if a director run is already active for this product, offer to resume instead of starting duplicates.
+    if (!dryRun) {
+      const { data: active } = await supabase
+        .from("cinematic_ad_jobs")
+        .select("id,director_run_id,concept_type,status")
+        .eq("product_slug", product.slug)
+        .not("director_run_id", "is", null)
+        .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"])
+        .order("updated_at", { ascending: false })
+        .limit(4);
+      if (active && active.length > 0) {
+        const existingRun = (active[0] as any).director_run_id as string;
+        setRunId(existingRun);
+        toast.message("Director run already active for this product — resuming view.", {
+          description: `${active.length} concept job(s) in flight under run ${existingRun.slice(0, 8)}…`,
+        });
+        const resumed: JobRow[] = (active as any[]).map((j) => ({
+          id: j.id, product_slug: product.slug, status: j.status, status_message: "resumed",
+          output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
+          pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
+          hook_variant: null, voice_style: null, archetype: j.concept_type ?? null,
+        }));
+        setJobs(resumed);
+        return;
+      }
+    }
     setCreating(true);
     setDirectorNote(null);
     setRunId(null);

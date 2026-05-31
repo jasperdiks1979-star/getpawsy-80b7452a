@@ -633,6 +633,9 @@ const _handlerInner = async (req: Request): Promise<Response> => {
   const prepareOnly: boolean = body.prepare_only === true || body.dry_run === true;
   const directorArchetype: string | null = typeof body.director_archetype === "string" ? body.director_archetype : null;
   const directorRunId: string | null = typeof body.director_run_id === "string" ? body.director_run_id : null;
+  const conceptType: string | null = typeof body.concept_type === "string" ? body.concept_type : directorArchetype;
+  const conceptIndex: number | null = Number.isFinite(Number(body.concept_index)) ? Math.floor(Number(body.concept_index)) : null;
+  const isDirector = !!directorRunId;
 
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
@@ -645,23 +648,63 @@ const _handlerInner = async (req: Request): Promise<Response> => {
   if (!product?.image_url) {
     return json(404, { ok: false, traceId, message: `product not found or has no image_url: ${product_slug}${prodErr ? ` (${prodErr.message})` : ""}` });
   }
-  const { data: activeDuplicate } = await admin
+  // ── Stale cleanup: any active job for this slug older than 2 hours is auto-superseded
+  await admin
     .from("cinematic_ad_jobs")
-    .select("id,status,created_at,render_queued_at,render_started_at")
+    .update({
+      status: "failed",
+      superseded_at: new Date().toISOString(),
+      status_message: "superseded (stale > 2h)",
+      error_message: "auto-superseded: stale active job > 2h",
+    })
     .eq("product_slug", product_slug)
     .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"])
-    .neq("id", body.job_id ?? "00000000-0000-0000-0000-000000000000")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (activeDuplicate && !body.force_new) {
-    return json(409, {
-      ok: false,
-      traceId,
-      message: `active cinematic job already exists for ${product_slug}; wait for completion/failure before creating another`,
-      existing_job_id: activeDuplicate.id,
-      existing_status: activeDuplicate.status,
-    });
+    .lt("updated_at", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
+
+  // ── Director Mode: attach idempotently to existing concept job under same run
+  if (isDirector && !body.job_id) {
+    const { data: existingConcept } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,status")
+      .eq("product_slug", product_slug)
+      .eq("director_run_id", directorRunId!)
+      .eq("concept_type", conceptType ?? directorArchetype ?? "default")
+      .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"])
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingConcept) {
+      return json(200, {
+        ok: true,
+        traceId,
+        attached: true,
+        idempotent: true,
+        job_id: existingConcept.id,
+        job: { id: existingConcept.id, status: existingConcept.status },
+        message: `attached to existing concept job ${existingConcept.id}`,
+      });
+    }
+  } else if (!isDirector) {
+    // Non-director request: keep duplicate protection (per product_slug + solo)
+    const { data: activeDuplicate } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,status,created_at,render_queued_at,render_started_at,director_run_id")
+      .eq("product_slug", product_slug)
+      .is("director_run_id", null)
+      .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"])
+      .neq("id", body.job_id ?? "00000000-0000-0000-0000-000000000000")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeDuplicate && !body.force_new) {
+      return json(409, {
+        ok: false,
+        traceId,
+        message: `active cinematic job already exists for ${product_slug}; wait for completion/failure or pass force_new`,
+        existing_job_id: activeDuplicate.id,
+        existing_status: activeDuplicate.status,
+      });
+    }
   }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
@@ -689,6 +732,8 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         created_by: userData.user.id,
         director_archetype: directorArchetype,
         director_run_id: directorRunId,
+        concept_type: conceptType,
+        concept_index: conceptIndex,
         media_warnings: mediaWarnings,
         approved_for_render: false,
         pin_destination_url: `https://getpawsy.pet/products/${product_slug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=cinematic`,

@@ -1766,6 +1766,8 @@ export type Database = {
           cinematic_quality_score: number | null
           classification_confidence: number | null
           commercial_score: number | null
+          concept_index: number | null
+          concept_type: string | null
           confidence_scores: Json
           content_type: string | null
           created_at: string
@@ -1950,6 +1952,7 @@ export type Database = {
           style_preset_key: string | null
           style_rejection_reason: string | null
           subhook_text: string | null
+          superseded_at: string | null
           text_safe_area_passed: boolean | null
           text_safety_score: number | null
           thumb_stop_score: number | null
@@ -2021,6 +2024,8 @@ export type Database = {
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           commercial_score?: number | null
+          concept_index?: number | null
+          concept_type?: string | null
           confidence_scores?: Json
           content_type?: string | null
           created_at?: string
@@ -2205,6 +2210,7 @@ export type Database = {
           style_preset_key?: string | null
           style_rejection_reason?: string | null
           subhook_text?: string | null
+          superseded_at?: string | null
           text_safe_area_passed?: boolean | null
           text_safety_score?: number | null
           thumb_stop_score?: number | null
@@ -2276,6 +2282,8 @@ export type Database = {
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           commercial_score?: number | null
+          concept_index?: number | null
+          concept_type?: string | null
           confidence_scores?: Json
           content_type?: string | null
           created_at?: string
@@ -2460,6 +2468,7 @@ export type Database = {
           style_preset_key?: string | null
           style_rejection_reason?: string | null
           subhook_text?: string | null
+          superseded_at?: string | null
           text_safe_area_passed?: boolean | null
           text_safety_score?: number | null
           thumb_stop_score?: number | null
@@ -18987,6 +18996,8 @@ export type Database = {
           cinematic_quality_score: number | null
           classification_confidence: number | null
           commercial_score: number | null
+          concept_index: number | null
+          concept_type: string | null
           confidence_scores: Json
           content_type: string | null
           created_at: string
@@ -19171,6 +19182,7 @@ export type Database = {
           style_preset_key: string | null
           style_rejection_reason: string | null
           subhook_text: string | null
+          superseded_at: string | null
           text_safe_area_passed: boolean | null
           text_safety_score: number | null
           thumb_stop_score: number | null
