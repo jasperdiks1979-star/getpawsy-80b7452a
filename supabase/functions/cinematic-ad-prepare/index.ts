@@ -559,9 +559,44 @@ const handler = async (req: Request): Promise<Response> => {
   const url = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
   const elevenKey = Deno.env.get("ELEVENLABS_API_KEY");
-  if (!elevenKey) return json(500, { ok: false, traceId, message: "ELEVENLABS_API_KEY not configured" });
+
+  // Parse body upfront so we can support unauth health check / prepare-only mode flag detection.
+  let body: any = {};
+  try { body = await req.json(); } catch { /* allow empty */ }
+
+  // ---------- Provider health check endpoint ----------
+  // POST { mode: "health" } returns a structured health snapshot. Never 500s.
+  // Used by the Pinterest Ad Studio to disable the render button when AI is down.
+  if (body?.mode === "health") {
+    const h = await checkProviderHealth(lovableKey, elevenKey);
+    return json(200, {
+      ok: h.any_ok,
+      traceId,
+      mode: "health",
+      providers: h,
+      message: h.any_ok
+        ? `providers: lovable_ai=${h.lovable_ai.ok ? "ok" : "down"}, elevenlabs=${h.elevenlabs.ok ? "ok" : "down"}`
+        : "all providers unavailable — fallback template will be used",
+      recoverable: true,
+      fallback_used: !h.any_ok,
+    });
+  }
+
+  if (!elevenKey) {
+    // Recoverable: surface as 200 so the UI can show diagnostics & still use fallback.
+    return json(200, {
+      ok: false,
+      recoverable: true,
+      fallback_used: true,
+      concept_status: "concept_failed",
+      error_code: "MISSING_ENV_SECRET",
+      missing_secret: "ELEVENLABS_API_KEY",
+      message: "ELEVENLABS_API_KEY not configured — voiceover will be skipped",
+      traceId,
+    });
+  }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -586,9 +621,6 @@ const handler = async (req: Request): Promise<Response> => {
     userData = { user: { id: u.user.id } };
   }
 
-  let body: any = {};
-  try { body = await req.json(); } catch { /* allow empty */ }
-
   const product_slug: string = String(body.product_slug ?? "enclosed-cat-litter-box-extra-large-flip-top").trim();
   const hook_variant: string = body.hook_variant ?? "default";
   const voiceStyle = resolveVoiceStyle(body.voice_style);
@@ -598,11 +630,14 @@ const handler = async (req: Request): Promise<Response> => {
     1,
     Math.min(MAX_VARIANT_COUNT, Math.floor(Number(body.variant_count) || DEFAULT_VARIANT_COUNT)),
   );
+  const prepareOnly: boolean = body.prepare_only === true || body.dry_run === true;
+  const directorArchetype: string | null = typeof body.director_archetype === "string" ? body.director_archetype : null;
+  const directorRunId: string | null = typeof body.director_run_id === "string" ? body.director_run_id : null;
 
   // Lookup product to get hero image + copy-generation fields
   const { data: product, error: prodErr } = await admin
     .from("products_public")
-    .select("slug, name, image_url, images, description, category, primary_species, primary_intent, price")
+    .select("id, slug, name, image_url, images, description, category, primary_species, primary_intent, price")
     .eq("slug", product_slug)
     .maybeSingle();
 
