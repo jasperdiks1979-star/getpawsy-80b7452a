@@ -24,6 +24,9 @@ type Row = {
   pinterest_perf_score: number | null;
   selected_voice_id: string | null;
   voice_fit_score: number | null;
+  motion_plan_summary: any | null;
+  story_arc: any | null;
+  hook_winner_reason: string | null;
 };
 
 function scoreBadge(v: number | null, floor = 95) {
@@ -43,7 +46,7 @@ export default function DominationScoreCard() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("cinematic_ad_jobs")
-      .select("id, product_slug, product_name, status, hook_score, voice_score, commercial_score, ctr_prediction_score, final_creative_score, pinterest_quality_score, hard_reject_reasons, emotional_payoff_present, regenerate_count, motion_ratio, pinterest_perf_score, selected_voice_id, voice_fit_score")
+      .select("id, product_slug, product_name, status, hook_score, voice_score, commercial_score, ctr_prediction_score, final_creative_score, pinterest_quality_score, hard_reject_reasons, emotional_payoff_present, regenerate_count, motion_ratio, pinterest_perf_score, selected_voice_id, voice_fit_score, motion_plan_summary, story_arc, hook_winner_reason")
       .in("status", ["render_complete", "pinterest_uploaded", "published", "awaiting_approval", "completed"])
       .order("updated_at", { ascending: false })
       .limit(50);
@@ -91,6 +94,7 @@ export default function DominationScoreCard() {
     try {
       await supabase.functions.invoke("cinematic-hook-engine",      { body: { job_id: id, force: true } });
       await supabase.functions.invoke("cinematic-voice-selector",   { body: { job_id: id } });
+      await supabase.functions.invoke("cinematic-story-arc",        { body: { job_id: id } });
       await supabase.functions.invoke("cinematic-motion-engine",    { body: { job_id: id } });
       await supabase.functions.invoke("cinematic-pinterest-perf",   { body: { job_id: id } });
       await supabase.functions.invoke("cinematic-ad-validate",      { body: { job_id: id } });
@@ -153,6 +157,9 @@ export default function DominationScoreCard() {
                   <th className="text-center px-1">Pin</th>
                   <th className="text-center px-1">Motion%</th>
                   <th className="text-center px-1">PinPerf</th>
+                  <th className="text-center px-1">Plan</th>
+                  <th className="text-center px-1">Arc</th>
+                  <th className="text-center px-1">Regens</th>
                   <th className="text-left px-1">Voice</th>
                   <th className="text-left px-1">Hard rejects</th>
                   <th className="text-right pl-2">Actions</th>
@@ -177,6 +184,22 @@ export default function DominationScoreCard() {
                         : <Badge variant={r.motion_ratio >= 0.7 ? "default" : "secondary"}>{Math.round(r.motion_ratio * 100)}%</Badge>}
                     </td>
                     <td className="text-center px-1">{scoreBadge(r.pinterest_perf_score, 75)}</td>
+                    <td className="text-center px-1">
+                      {r.motion_plan_summary ? (
+                        <span className="text-[10px]" title={JSON.stringify(r.motion_plan_summary)}>
+                          {r.motion_plan_summary.camera_styles_count ?? "?"}c /{" "}
+                          {r.motion_plan_summary.shot_distances_count ?? "?"}d
+                        </span>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="text-center px-1">
+                      {Array.isArray(r.story_arc) && r.story_arc.length >= 6
+                        ? <Badge variant="default">✓</Badge>
+                        : <Badge variant="outline">—</Badge>}
+                    </td>
+                    <td className="text-center px-1">
+                      <span className="text-[10px]">{r.regenerate_count ?? 0}/2</span>
+                    </td>
                     <td className="px-1">
                       {r.selected_voice_id
                         ? <span className="text-[10px]">{r.selected_voice_id.replace(/_/g," ")} <span className="text-muted-foreground">({r.voice_fit_score ?? "—"})</span></span>

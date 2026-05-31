@@ -1816,6 +1816,7 @@ export type Database = {
           hook_variant_id: string | null
           hook_variants: Json | null
           hook_variants_meta: Json
+          hook_winner_reason: string | null
           human_flags: Json | null
           human_presence_ratio: number | null
           humanization_seed: string | null
@@ -1832,6 +1833,7 @@ export type Database = {
           motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
+          motion_plan_summary: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
           motion_score: number | null
@@ -1904,6 +1906,7 @@ export type Database = {
           recommended_fix: string | null
           recoverable: boolean | null
           regenerate_count: number
+          regenerate_reason: string | null
           regenerate_requested_at: string | null
           regenerate_requested_by: string | null
           remote_exists: boolean | null
@@ -1939,6 +1942,7 @@ export type Database = {
           smart_retry_count: number
           status: string
           status_message: string | null
+          story_arc: Json | null
           storyboard: Json
           style_preset: string | null
           style_preset_key: string | null
@@ -2065,6 +2069,7 @@ export type Database = {
           hook_variant_id?: string | null
           hook_variants?: Json | null
           hook_variants_meta?: Json
+          hook_winner_reason?: string | null
           human_flags?: Json | null
           human_presence_ratio?: number | null
           humanization_seed?: string | null
@@ -2081,6 +2086,7 @@ export type Database = {
           motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
+          motion_plan_summary?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
           motion_score?: number | null
@@ -2153,6 +2159,7 @@ export type Database = {
           recommended_fix?: string | null
           recoverable?: boolean | null
           regenerate_count?: number
+          regenerate_reason?: string | null
           regenerate_requested_at?: string | null
           regenerate_requested_by?: string | null
           remote_exists?: boolean | null
@@ -2188,6 +2195,7 @@ export type Database = {
           smart_retry_count?: number
           status?: string
           status_message?: string | null
+          story_arc?: Json | null
           storyboard?: Json
           style_preset?: string | null
           style_preset_key?: string | null
@@ -2314,6 +2322,7 @@ export type Database = {
           hook_variant_id?: string | null
           hook_variants?: Json | null
           hook_variants_meta?: Json
+          hook_winner_reason?: string | null
           human_flags?: Json | null
           human_presence_ratio?: number | null
           humanization_seed?: string | null
@@ -2330,6 +2339,7 @@ export type Database = {
           motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
+          motion_plan_summary?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
           motion_score?: number | null
@@ -2402,6 +2412,7 @@ export type Database = {
           recommended_fix?: string | null
           recoverable?: boolean | null
           regenerate_count?: number
+          regenerate_reason?: string | null
           regenerate_requested_at?: string | null
           regenerate_requested_by?: string | null
           remote_exists?: boolean | null
@@ -2437,6 +2448,7 @@ export type Database = {
           smart_retry_count?: number
           status?: string
           status_message?: string | null
+          story_arc?: Json | null
           storyboard?: Json
           style_preset?: string | null
           style_preset_key?: string | null
@@ -18858,6 +18870,7 @@ export type Database = {
           hook_variant_id: string | null
           hook_variants: Json | null
           hook_variants_meta: Json
+          hook_winner_reason: string | null
           human_flags: Json | null
           human_presence_ratio: number | null
           humanization_seed: string | null
@@ -18874,6 +18887,7 @@ export type Database = {
           motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
+          motion_plan_summary: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
           motion_score: number | null
@@ -18946,6 +18960,7 @@ export type Database = {
           recommended_fix: string | null
           recoverable: boolean | null
           regenerate_count: number
+          regenerate_reason: string | null
           regenerate_requested_at: string | null
           regenerate_requested_by: string | null
           remote_exists: boolean | null
@@ -18981,6 +18996,7 @@ export type Database = {
           smart_retry_count: number
           status: string
           status_message: string | null
+          story_arc: Json | null
           storyboard: Json
           style_preset: string | null
           style_preset_key: string | null

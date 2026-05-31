@@ -21,6 +21,7 @@ const json = (status: number, body: unknown) =>
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const RENDER_SECRET = Deno.env.get("RENDER_WEBHOOK_SECRET") ?? "";
 const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
 const MAX_REGENERATE = 2;
 
@@ -29,16 +30,25 @@ Deno.serve(async (req) => {
   const traceId = trace();
   if (req.method !== "POST") return json(405, { ok: false, traceId, message: "POST required" });
 
-  // Auth — require an admin user JWT.
-  const auth = req.headers.get("Authorization") ?? "";
-  if (!auth.startsWith("Bearer ")) return json(401, { ok: false, traceId, message: "missing bearer" });
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: auth } } });
-  const { data: u } = await userClient.auth.getUser();
-  if (!u?.user) return json(401, { ok: false, traceId, message: "invalid token" });
-
-  let body: { job_id?: string; reason?: string } = {};
+  let body: { job_id?: string; reason?: string; mode?: "manual" | "auto" } = {};
   try { body = await req.json(); } catch { /* noop */ }
   if (!body.job_id) return json(400, { ok: false, traceId, message: "job_id required" });
+
+  // Auth: admin JWT for manual, or x-render-secret for auto (internal callers).
+  const mode = body.mode ?? "manual";
+  let actorId: string | null = null;
+  if (mode === "auto") {
+    const sec = req.headers.get("x-render-secret") ?? "";
+    if (!RENDER_SECRET || sec !== RENDER_SECRET) return json(401, { ok: false, traceId, message: "auto mode requires x-render-secret" });
+    actorId = null;
+  } else {
+    const auth = req.headers.get("Authorization") ?? "";
+    if (!auth.startsWith("Bearer ")) return json(401, { ok: false, traceId, message: "missing bearer" });
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const { data: u } = await userClient.auth.getUser();
+    if (!u?.user) return json(401, { ok: false, traceId, message: "invalid token" });
+    actorId = u.user.id;
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: job, error } = await admin
@@ -55,9 +65,10 @@ Deno.serve(async (req) => {
 
   await admin.from("cinematic_ad_jobs").update({
     regenerate_requested_at: new Date().toISOString(),
-    regenerate_requested_by: u.user.id,
+    regenerate_requested_by: actorId,
     regenerate_count: nextCount,
-    status_message: `regenerate #${nextCount}${body.reason ? `: ${body.reason}` : ""}`,
+    regenerate_reason: body.reason ?? (mode === "auto" ? "auto: weak output" : "admin manual"),
+    status_message: `regenerate #${nextCount} (${mode})${body.reason ? `: ${body.reason}` : ""}`,
     updated_at: new Date().toISOString(),
   } as any).eq("id", job.id);
 
