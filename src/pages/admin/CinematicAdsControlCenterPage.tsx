@@ -66,6 +66,7 @@ type Job = {
   pinterest_quality_score: number | null;
   v7_reject_reasons: string[] | null;
   qa_composite_score: number | null;
+  validation_report: any | null;
 };
 
 type FilterKey = "all" | "queued" | "rendering" | "completed" | "failed" | "cancelled" | "stuck";
