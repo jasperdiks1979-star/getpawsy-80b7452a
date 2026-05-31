@@ -8,7 +8,7 @@ import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Pl
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
-import { AD_STYLES, type AdStyleId, getAdStyle } from "@/components/admin/pinterest-ad-studio/adStyles";
+import { AD_STYLES, type AdStyleId, getAdStyle, ARCHETYPES, getArchetype, type ArchetypeId } from "@/components/admin/pinterest-ad-studio/adStyles";
 
 type JobRow = {
   id: string;
@@ -23,6 +23,8 @@ type JobRow = {
   error_message: string | null;
   hook_variant: string | null;
   voice_style: string | null;
+  archetype?: ArchetypeId | null;
+  predicted_score?: number | null;
 };
 
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
@@ -45,6 +47,7 @@ export default function PinterestAdStudio() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [creating, setCreating] = useState(false);
   const [directorNote, setDirectorNote] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [pollKey, setPollKey] = useState(0);
 
@@ -76,22 +79,29 @@ export default function PinterestAdStudio() {
     return () => clearTimeout(t);
   }, [jobs, pollKey]);
 
-  async function startOne(styleId: AdStyleId) {
+  async function startOne(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null }) {
     if (!product) return null;
-    const s = getAdStyle(styleId);
     const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare", {
       body: {
         product_slug: product.slug,
-        hook_variant: s.hookVariant,
-        voice_style: s.voiceStyle,
+        hook_variant: opts.hookVariant,
+        voice_style: opts.voiceStyle,
         force_new: true,
+        director_archetype: opts.archetype ?? null,
+        director_run_id: opts.runId ?? null,
       },
     });
     const jobId = (data as any)?.job_id as string | undefined;
     if (!jobId) throw new Error((data as any)?.message || error?.message || "Failed to start");
     await supabase.functions.invoke("cinematic-ad-queue-render", {
-      body: { job_id: jobId, preset: s.preset },
+      body: { job_id: jobId, preset: opts.preset },
     });
+    // Best-effort: persist director_archetype + run_id on the job (idempotent)
+    if (opts.archetype || opts.runId) {
+      await supabase.from("cinematic_ad_jobs")
+        .update({ director_archetype: opts.archetype ?? null, director_run_id: opts.runId ?? null })
+        .eq("id", jobId);
+    }
     return jobId;
   }
 
@@ -99,13 +109,14 @@ export default function PinterestAdStudio() {
     const results: JobRow[] = [];
     for (const sId of stylesToRun) {
       try {
-        const jobId = await startOne(sId);
+        const s = getAdStyle(sId);
+        const jobId = await startOne({ hookVariant: s.hookVariant, voiceStyle: s.voiceStyle, preset: s.preset });
         if (jobId) {
           results.push({
             id: jobId, product_slug: product!.slug, status: "preparing", status_message: "queued",
             output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
             pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
-            hook_variant: getAdStyle(sId).hookVariant, voice_style: getAdStyle(sId).voiceStyle,
+            hook_variant: s.hookVariant, voice_style: s.voiceStyle,
           });
         }
       } catch (e: any) {
@@ -119,20 +130,55 @@ export default function PinterestAdStudio() {
     if (!product) { toast.error("Select a product first"); return; }
     setCreating(true);
     setDirectorNote(null);
+    setRunId(null);
     try {
       const { data, error } = await supabase.functions.invoke("cinematic-director-decide", {
-        body: { product_slug: product.slug, top_n: 3 },
+        body: { product_slug: product.slug, persist: true },
       });
       if (error || (data as any)?.ok === false) throw new Error((data as any)?.message || error?.message || "director failed");
-      const concepts = ((data as any)?.concepts ?? []) as Array<{ style: AdStyleId; predicted_score: number }>;
-      const meta = (data as any)?.meta;
-      const styles = concepts.slice(0, 3).map(c => c.style);
-      if (styles.length === 0) throw new Error("No concepts produced");
-      setDirectorNote(`AI picked ${styles.map(s => getAdStyle(s).label).join(" · ")} based on ${meta?.history_samples ?? 0} past results${meta?.category ? ` in ${meta.category}` : ""}.`);
-      await runStyles(styles, "Director Mode: generating concepts — best will auto-win");
+      const payload = data as any;
+      const concepts = (payload.concepts ?? []) as Array<{
+        archetype: ArchetypeId; label: string; hookVariant: string; voiceStyle: string;
+        preset: string; predicted_score: number; learned_weight: number; samples: number;
+      }>;
+      const newRunId = payload.run_id as string | null;
+      setRunId(newRunId);
+      const meta = payload.meta;
+      if (concepts.length === 0) throw new Error("No concepts produced");
+
+      setDirectorNote(
+        `AI Director rendering 4 concepts: ${concepts.map(c => `${c.label} (w=${c.learned_weight})`).join(" · ")}${meta?.category ? ` · ${meta.category}` : ""}. Winner is selected automatically and fed back into the learning loop.`,
+      );
+
+      const results: JobRow[] = [];
+      for (const c of concepts) {
+        try {
+          const jobId = await startOne({
+            hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any,
+            archetype: c.archetype, runId: newRunId,
+          });
+          if (jobId) {
+            results.push({
+              id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
+              output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
+              pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
+              hook_variant: c.hookVariant, voice_style: c.voiceStyle,
+              archetype: c.archetype, predicted_score: c.predicted_score,
+            });
+          }
+        } catch (e: any) { toast.error(`${c.label}: ${e.message || "failed"}`); }
+      }
+      if (results.length > 0) { setJobs(results); toast.success(`Director Mode: ${results.length} concepts rendering`); }
     } catch (e: any) {
       toast.error(e.message || "director failed");
     } finally { setCreating(false); }
+  }
+
+  async function handleFeedback() {
+    if (!runId) { toast.error("No active run to score"); return; }
+    const { data, error } = await supabase.functions.invoke("cinematic-director-feedback", { body: { run_id: runId } });
+    if (error || (data as any)?.ok === false) { toast.error((data as any)?.message || error?.message || "feedback failed"); return; }
+    toast.success(`Feedback: ${(data as any)?.message ?? "ok"}`);
   }
 
   async function handleManual() {
@@ -157,7 +203,10 @@ export default function PinterestAdStudio() {
     const sObj = AD_STYLES.find(s => s.hookVariant === j.hook_variant) ?? AD_STYLES[0];
     try {
       setCreating(true);
-      const newId = await startOne(sObj.id);
+      const newId = await startOne({
+        hookVariant: sObj.hookVariant, voiceStyle: sObj.voiceStyle, preset: sObj.preset,
+        archetype: j.archetype ?? null as any, runId,
+      });
       if (newId) {
         setJobs(prev => prev.map(p => p.id === j.id ? { ...p, id: newId, status: "preparing", status_message: "queued", output_mp4_url: null, output_thumbnail_url: null } : p));
         toast.success("Regenerating");
@@ -204,7 +253,7 @@ export default function PinterestAdStudio() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            The AI Director analyzes your product category, Pinterest trends and past performance, then auto-picks the best style, hook, voice, storyboard, CTA and motion. Three concepts are rendered and the highest-scoring winner is selected automatically.
+            The Self-Learning Director renders 4 fundamentally different concepts in parallel — Problem/Solution, Emotional, Premium Lifestyle and Viral Pattern Interrupt — each with a unique hook, voice, CTA, pacing and motion plan. Winner is auto-selected and Pinterest performance is fed back into the learning model so every new ad gets smarter.
           </p>
           <Button size="lg" className="w-full" disabled={!product || creating} onClick={handleDirector}>
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
@@ -212,6 +261,12 @@ export default function PinterestAdStudio() {
           </Button>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
+          )}
+          {runId && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Run <code className="text-[10px]">{runId.slice(0,8)}</code> · feedback loop runs hourly</span>
+              <Button size="sm" variant="ghost" onClick={handleFeedback}>Score this run now</Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -226,11 +281,12 @@ export default function PinterestAdStudio() {
             )}
           </CardHeader>
           <CardContent>
-            <div className={`grid gap-4 ${jobs.length > 1 ? "md:grid-cols-3" : "grid-cols-1"}`}>
+            <div className={`grid gap-4 ${jobs.length > 1 ? "md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1"}`}>
               {jobs.map(j => {
                 const ready = TERMINAL_OK.has(j.status) && j.output_mp4_url;
                 const failed = TERMINAL_BAD.has(j.status);
                 const isWinner = winner?.id === j.id && jobs.length > 1;
+                const archLabel = j.archetype ? getArchetype(j.archetype).shortLabel : (j.hook_variant ?? "—");
                 return (
                   <div key={j.id} className={`border rounded-lg overflow-hidden ${isWinner ? "border-primary ring-2 ring-primary/30" : "border-border"}`}>
                     <div className="aspect-[9/16] bg-muted relative">
@@ -248,9 +304,12 @@ export default function PinterestAdStudio() {
                     </div>
                     <div className="p-3 space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium capitalize">{j.hook_variant ?? "—"}</span>
+                        <span className="font-medium">{archLabel}</span>
                         {j.qa_composite_score != null && <Badge variant="outline">QA {Math.round(j.qa_composite_score)}</Badge>}
                       </div>
+                      {j.predicted_score != null && (
+                        <div className="text-[10px] text-muted-foreground">Predicted {j.predicted_score}</div>
+                      )}
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="outline" asChild disabled={!ready}>
                           <a href={j.output_mp4_url ?? "#"} download target="_blank" rel="noreferrer">
