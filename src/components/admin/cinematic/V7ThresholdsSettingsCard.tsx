@@ -19,13 +19,23 @@ type V7Settings = {
   text_safe_zone_tolerance: number;
   max_caption_density_v7: number;
   max_dense_caption_ratio_v7: number;
+  // Creative Domination Mode
+  creative_domination_mode: boolean;
+  min_hook_score: number;
+  min_voice_score: number;
+  min_ctr_prediction_score: number;
+  min_final_creative_score: number;
+  min_emotional_payoff_v7: number;
+  require_cta_scene_v7: boolean;
+  hard_reject_single_image: boolean;
+  hard_reject_ken_burns_only: boolean;
 };
 
 const DEFAULTS: V7Settings = {
   cinematic_v7_enabled: true,
-  min_pinterest_quality_score: 90,
+  min_pinterest_quality_score: 95,
   min_scene_count_v7: 5,
-  min_unique_scenes_v7: 4,
+  min_unique_scenes_v7: 5,
   min_unique_cameras_v7: 3,
   min_closeups_v7: 1,
   min_lifestyle_v7: 1,
@@ -33,6 +43,15 @@ const DEFAULTS: V7Settings = {
   text_safe_zone_tolerance: 0,
   max_caption_density_v7: 0.25,
   max_dense_caption_ratio_v7: 0.34,
+  creative_domination_mode: true,
+  min_hook_score: 90,
+  min_voice_score: 90,
+  min_ctr_prediction_score: 90,
+  min_final_creative_score: 95,
+  min_emotional_payoff_v7: 1,
+  require_cta_scene_v7: true,
+  hard_reject_single_image: true,
+  hard_reject_ken_burns_only: true,
 };
 
 const FIELDS: Array<{
@@ -53,6 +72,11 @@ const FIELDS: Array<{
   { key: "text_safe_zone_tolerance", label: "Text safe-zone tolerance", hint: "Fraction of scenes allowed outside safe area (0 = strict)", min: 0, max: 1, step: 0.05 },
   { key: "max_caption_density_v7", label: "Max caption density / frame", hint: "Caption length ratio per frame (0.25 = ~25% text)", min: 0.05, max: 1, step: 0.05 },
   { key: "max_dense_caption_ratio_v7", label: "Max dense-caption ratio", hint: "Max fraction of scenes that may exceed density before fail", min: 0, max: 1, step: 0.05 },
+  { key: "min_hook_score", label: "Min hook score (Domination)", hint: "Winning hook variant must score ≥ this (0–100)", min: 0, max: 100, step: 1 },
+  { key: "min_voice_score", label: "Min voice score (Domination)", hint: "Winning voice candidate must score ≥ this", min: 0, max: 100, step: 1 },
+  { key: "min_ctr_prediction_score", label: "Min CTR prediction", hint: "Predicted CTR composite must score ≥ this", min: 0, max: 100, step: 1 },
+  { key: "min_final_creative_score", label: "Min final creative score", hint: "Composite Domination score — auto-approve floor", min: 0, max: 100, step: 1 },
+  { key: "min_emotional_payoff_v7", label: "Min emotional-payoff scenes", hint: "Required emotional-payoff scenes (joy/relief/cuddle)", min: 0, max: 5, step: 1 },
 ];
 
 export default function V7ThresholdsSettingsCard() {
@@ -62,7 +86,7 @@ export default function V7ThresholdsSettingsCard() {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("cinematic_ad_settings")
-      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_scene_count_v7, min_unique_scenes_v7, min_unique_cameras_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7")
+      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_scene_count_v7, min_unique_scenes_v7, min_unique_cameras_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7, creative_domination_mode, min_hook_score, min_voice_score, min_ctr_prediction_score, min_final_creative_score, min_emotional_payoff_v7, require_cta_scene_v7, hard_reject_single_image, hard_reject_ken_burns_only")
       .eq("id", true)
       .maybeSingle();
     setS({ ...DEFAULTS, ...(data as Partial<V7Settings> | null ?? {}) } as V7Settings);
@@ -105,6 +129,34 @@ export default function V7ThresholdsSettingsCard() {
           <Switch
             checked={s.cinematic_v7_enabled}
             onCheckedChange={(v) => setS({ ...s, cinematic_v7_enabled: v })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Creative Domination Mode</span>
+          <Switch
+            checked={s.creative_domination_mode}
+            onCheckedChange={(v) => setS({ ...s, creative_domination_mode: v })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Require dedicated CTA scene</span>
+          <Switch
+            checked={s.require_cta_scene_v7}
+            onCheckedChange={(v) => setS({ ...s, require_cta_scene_v7: v })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Hard reject: single-image renders</span>
+          <Switch
+            checked={s.hard_reject_single_image}
+            onCheckedChange={(v) => setS({ ...s, hard_reject_single_image: v })}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Hard reject: Ken-Burns-only renders</span>
+          <Switch
+            checked={s.hard_reject_ken_burns_only}
+            onCheckedChange={(v) => setS({ ...s, hard_reject_ken_burns_only: v })}
           />
         </label>
         <div className="grid grid-cols-2 gap-3">
