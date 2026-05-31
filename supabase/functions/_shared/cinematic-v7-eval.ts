@@ -63,6 +63,15 @@ export interface V7Result {
     text_cut_off: boolean;
     too_much_text: boolean;
   };
+  decision_trace: Array<{
+    rule: string;
+    threshold: number | boolean;
+    strict_value: number | boolean;
+    final_value: number | boolean;
+    decided_by: "strict_pass" | "retry_pass" | "strict_fail" | "retry_failed" | "not_applicable";
+    borderline: boolean;
+    note?: string;
+  }>;
 }
 
 const RX = {
