@@ -29,12 +29,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install ffmpeg + chromium deps
+      - name: Install ffmpeg
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y ffmpeg chromium-browser fonts-liberation libnss3
+          sudo apt-get install -y ffmpeg fonts-liberation libnss3
+
+      - name: Install Playwright Chromium (with system deps)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -g playwright
+          npx --yes playwright install --with-deps chromium
+          CHROME_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          echo "Resolved Chromium: ${CHROME_PATH}"
+          echo "CHROME_BIN=${CHROME_PATH}" >> "$GITHUB_ENV"
+          echo "PUPPETEER_EXECUTABLE_PATH=${CHROME_PATH}" >> "$GITHUB_ENV"
+          echo "REMOTION_CHROME_EXECUTABLE=${CHROME_PATH}" >> "$GITHUB_ENV"
+
+      - name: Debug toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          which ffmpeg
+          ffmpeg -version | head -n 1
+          npx --yes playwright --version
+          echo "CHROME_BIN=${CHROME_BIN:-unset}"
+          echo "PUPPETEER_EXECUTABLE_PATH=${PUPPETEER_EXECUTABLE_PATH:-unset}"
 
       - name: Setup Node
         uses: actions/setup-node@v4
