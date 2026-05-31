@@ -66,6 +66,7 @@ type Job = {
   pinterest_quality_score: number | null;
   v7_reject_reasons: string[] | null;
   qa_composite_score: number | null;
+  validation_report: any | null;
 };
 
 type FilterKey = "all" | "queued" | "rendering" | "completed" | "failed" | "cancelled" | "stuck";
@@ -148,7 +149,7 @@ export default function CinematicAdsControlCenterPage() {
     const { data, error } = await supabase
       .from("cinematic_ad_jobs")
       .select(
-        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render,validation_v7_passed,scene_diversity_v7_score,camera_diversity_score,hook_strength_v7_score,text_safety_score,pinterest_quality_score,v7_reject_reasons,qa_composite_score"
+        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render,validation_v7_passed,scene_diversity_v7_score,camera_diversity_score,hook_strength_v7_score,text_safety_score,pinterest_quality_score,v7_reject_reasons,qa_composite_score,validation_report"
       )
       .order("updated_at", { ascending: false })
       .limit(200);
@@ -1136,6 +1137,47 @@ function V7QaPanel({ job }: { job: Job }) {
           ))}
         </div>
       )}
+      <V7DecisionTrace job={job} />
+    </div>
+  );
+}
+
+function V7DecisionTrace({ job }: { job: Job }) {
+  const trace: Array<any> = Array.isArray((job as any)?.validation_report?.v7_decision_trace)
+    ? (job as any).validation_report.v7_decision_trace
+    : [];
+  if (trace.length === 0) return null;
+
+  // Surface borderline rules + every retry decision so reviewers can audit
+  // exactly which detection pass (strict vs retry) drove the result.
+  const interesting = trace.filter(
+    (t) => t.borderline || t.decided_by === "retry_pass" || t.decided_by === "retry_failed",
+  );
+  if (interesting.length === 0) return null;
+
+  const colorFor = (d: string) =>
+    d === "strict_pass" ? "text-emerald-600 dark:text-emerald-400"
+    : d === "retry_pass" ? "text-amber-600 dark:text-amber-400"
+    : d === "not_applicable" ? "text-muted-foreground"
+    : "text-destructive";
+
+  return (
+    <div className="mt-1.5 rounded border border-border/40 bg-background/60 p-1.5">
+      <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        V7 detection trace (strict vs retry)
+      </div>
+      <div className="space-y-0.5">
+        {interesting.map((t) => (
+          <div key={t.rule} className="flex flex-wrap items-baseline gap-1.5 text-[11px]">
+            <span className="font-mono">{t.rule}</span>
+            <span className={`font-semibold ${colorFor(t.decided_by)}`}>{t.decided_by}</span>
+            <span className="text-muted-foreground">
+              strict={String(t.strict_value)} → final={String(t.final_value)} (≥{String(t.threshold)})
+            </span>
+            {t.note && <span className="text-muted-foreground italic">— {t.note}</span>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
