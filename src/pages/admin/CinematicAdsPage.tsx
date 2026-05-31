@@ -465,6 +465,28 @@ export default function CinematicAdsPage() {
     finally { setBusyId(null); }
   };
 
+  const prepareForRender = async (jobId: string) => {
+    setBusyId(jobId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare-for-render", {
+        body: { job_id: jobId },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "prepare-for-render failed");
+      if (data.ready) {
+        toast.success("Job is render-ready and re-queued.");
+      } else {
+        toast.warning(`Still blocked: ${(data.fail_reasons ?? []).join(", ") || "unknown"}`);
+      }
+      console.log("[prepare-for-render]", data);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const loadHealth = async () => {
     setHealthBusy(true);
     try {
