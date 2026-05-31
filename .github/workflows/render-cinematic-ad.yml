@@ -29,12 +29,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Install ffmpeg
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-liberation libnss3
+
+      - name: Install project dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile || bun install
 
       - name: Install Playwright Chromium (with system deps)
         shell: bash
@@ -52,16 +68,6 @@ jobs:
           echo "CHROME_BIN=${CHROME_PATH}" >> "$GITHUB_ENV"
           echo "PUPPETEER_EXECUTABLE_PATH=${CHROME_PATH}" >> "$GITHUB_ENV"
           echo "REMOTION_CHROME_EXECUTABLE=${CHROME_PATH}" >> "$GITHUB_ENV"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       - name: Fail-fast render diagnostics
         shell: bash
@@ -132,6 +138,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "--- Pre-render debug ---"
+          node --version
+          bun --version
+          ffmpeg -version | head -n 1
+          pwd
+          ls -la
+          ls -la remotion/scripts
+          if [ ! -f remotion/scripts/render-cinematic-ad.mjs ]; then
+            echo "Error: remotion/scripts/render-cinematic-ad.mjs not found"
+            exit 1
+          fi
+          echo "Confirmed remotion/scripts/render-cinematic-ad.mjs exists"
+          echo "------------------------"
           LOG_FILE="${RUNNER_TEMP:-/tmp}/render-cinematic-ad.log"
           set +e
           bun remotion/scripts/render-cinematic-ad.mjs --job="${JOB_ID}" 2>&1 | tee "${LOG_FILE}"
