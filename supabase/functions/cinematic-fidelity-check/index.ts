@@ -15,6 +15,9 @@
 //   - AI invented features not on the real product
 //   - product branding/logo missing or wrong
 //   - product cannot be matched to original PDP images
+//   - overall product visual similarity to source < 95%
+//   - cat (or any subject) intersects / clips through product geometry
+//   - scene realism score < 8/10
 //
 // Output: per-scene { passed, score 0-100, reasons[] } + aggregate
 // fidelity_score, fidelity_passed, scenes_needing_regen[].
@@ -52,7 +55,11 @@ interface SceneFidelity {
     no_invented_features: boolean;
     branding_match: boolean;
     product_identifiable: boolean;
+    geometry_match: boolean;
+    cat_no_intersection: boolean;
   };
+  similarity_percent: number;
+  scene_realism_score: number;
 }
 
 const FIDELITY_TOOL = {
@@ -60,7 +67,7 @@ const FIDELITY_TOOL = {
   function: {
     name: "report_product_fidelity",
     description:
-      "Compare a rendered scene image against the source product reference images and report per-rule pass/fail. Be strict — only mark a rule passed if there is clear visual evidence the scene matches the source.",
+      "Compare a rendered scene image against the source product reference images and report per-rule pass/fail. Be strict — only mark a rule passed if there is clear visual evidence the scene matches the source. The bar for shipping this ad is 95% visual product similarity, no subject/product intersection, and photoreal scene realism (>=8/10).",
     parameters: {
       type: "object",
       properties: {
@@ -73,6 +80,10 @@ const FIDELITY_TOOL = {
         no_invented_features: { type: "boolean", description: "Scene does NOT add features (lights, panels, accessories, badges) that are not on the real product" },
         branding_match: { type: "boolean", description: "Brand mark / logo placement matches the real product (true if real product has no visible branding)" },
         product_identifiable: { type: "boolean", description: "The product in the scene is recognizably the same SKU as the source images" },
+        geometry_match: { type: "boolean", description: "Overall 3D geometry / silhouette / volumetric footprint of the product matches the source images. False if the product has been morphed, simplified, or reshaped." },
+        cat_no_intersection: { type: "boolean", description: "The cat (or any subject/object in the scene) does NOT intersect, clip through, or merge with the product geometry. Cat must sit on, beside, or inside the product naturally — never through its walls. True if no cat is present." },
+        similarity_percent: { type: "integer", minimum: 0, maximum: 100, description: "Overall visual similarity of the rendered product vs the source product images, 0-100. Be strict: 95+ only when the product is visually indistinguishable from the source SKU." },
+        scene_realism_score: { type: "integer", minimum: 0, maximum: 10, description: "Photorealism of the entire scene on a 0-10 scale. 10 = indistinguishable from a real DSLR photo, 8 = production-grade UGC, 5 = obvious AI artifacts, 0 = clearly synthetic. Penalize warped anatomy, melted edges, impossible lighting, plastic-skin cat, fake fur, and uncanny-valley artifacts." },
         score: { type: "integer", minimum: 0, maximum: 100, description: "Overall fidelity score 0-100" },
         reasons: {
           type: "array",
@@ -83,7 +94,9 @@ const FIDELITY_TOOL = {
       required: [
         "shape_match", "color_match", "dimensions_match", "buttons_match",
         "display_match", "opening_match", "no_invented_features",
-        "branding_match", "product_identifiable", "score", "reasons",
+        "branding_match", "product_identifiable", "geometry_match",
+        "cat_no_intersection", "similarity_percent", "scene_realism_score",
+        "score", "reasons",
       ],
       additionalProperties: false,
     },
@@ -148,7 +161,10 @@ async function scoreScene(opts: {
         shape_match: true, color_match: true, dimensions_match: true,
         buttons_match: true, display_match: true, opening_match: true,
         no_invented_features: true, branding_match: true, product_identifiable: true,
+        geometry_match: true, cat_no_intersection: true,
       },
+      similarity_percent: 0,
+      scene_realism_score: 0,
     };
   }
 
@@ -167,12 +183,31 @@ async function scoreScene(opts: {
     no_invented_features: parsed.no_invented_features !== false,
     branding_match: parsed.branding_match !== false,
     product_identifiable: parsed.product_identifiable !== false,
+    geometry_match: parsed.geometry_match !== false,
+    cat_no_intersection: parsed.cat_no_intersection !== false,
   };
-  const allPass = Object.values(flags).every(Boolean);
-  const score = Math.max(0, Math.min(100, Number(parsed.score ?? (allPass ? 90 : 40))));
+  const similarity_percent = Math.max(0, Math.min(100, Number(parsed.similarity_percent ?? 0)));
+  const scene_realism_score = Math.max(0, Math.min(10, Number(parsed.scene_realism_score ?? 0)));
+  const allFlagsPass = Object.values(flags).every(Boolean);
+  const score = Math.max(0, Math.min(100, Number(parsed.score ?? (allFlagsPass ? similarity_percent : 40))));
   const reasons: string[] = Array.isArray(parsed.reasons) ? parsed.reasons.map(String) : [];
+  if (similarity_percent < 95) reasons.push(`similarity_below_threshold(${similarity_percent}<95)`);
+  if (scene_realism_score < 8) reasons.push(`scene_realism_below_threshold(${scene_realism_score}<8)`);
 
-  return { index: opts.sceneIndex, passed: allPass && score >= 70, score, reasons, rule_flags: flags };
+  const hardPass =
+    allFlagsPass &&
+    similarity_percent >= 95 &&
+    scene_realism_score >= 8;
+
+  return {
+    index: opts.sceneIndex,
+    passed: hardPass,
+    score,
+    reasons,
+    rule_flags: flags,
+    similarity_percent,
+    scene_realism_score,
+  };
 }
 
 async function authorize(req: Request, admin: any): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
@@ -212,14 +247,15 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, traceId, message: "no scene images to check", report: { scenes: [], score: 100, passed: true } });
     }
 
-    // Settings
-    let minScore = 75, enabled = true;
+    // Settings — strict defaults: 95% similarity, realism >= 8/10, all rules pass.
+    let minScore = 95, enabled = true;
     try {
       const { data: s } = await admin.from("cinematic_ad_settings")
         .select("product_fidelity_enabled, min_product_fidelity_score").limit(1).maybeSingle();
       if (s) {
         enabled = s.product_fidelity_enabled !== false;
-        minScore = Number(s.min_product_fidelity_score ?? minScore);
+        // Floor the configured threshold at 95 — the new rules require 95%+ similarity.
+        minScore = Math.max(95, Number(s.min_product_fidelity_score ?? minScore));
       }
     } catch (_) { /* defaults */ }
 
@@ -269,9 +305,20 @@ Deno.serve(async (req) => {
     }
 
     const avg = Math.round(results.reduce((a, r) => a + r.score, 0) / Math.max(1, results.length));
-    const failingScenes = results.filter((r) => !r.passed || r.score < minScore);
+    const failingScenes = results.filter((r) =>
+      !r.passed ||
+      r.score < minScore ||
+      r.similarity_percent < 95 ||
+      r.scene_realism_score < 8,
+    );
     const scenesNeedingRegen = failingScenes.map((r) => r.index);
-    const passed = scenesNeedingRegen.length === 0 && avg >= minScore;
+    const minSim = Math.min(...results.map((r) => r.similarity_percent));
+    const minRealism = Math.min(...results.map((r) => r.scene_realism_score));
+    const passed =
+      scenesNeedingRegen.length === 0 &&
+      avg >= minScore &&
+      minSim >= 95 &&
+      minRealism >= 8;
 
     // Aggregate reject reasons (unique).
     const reasonSet = new Set<string>();
@@ -287,7 +334,10 @@ Deno.serve(async (req) => {
       checked_at: new Date().toISOString(),
       source_image_count: sourceImages.length,
       min_score: minScore,
+      thresholds: { similarity_min: 95, realism_min: 8, score_min: minScore },
       score: avg,
+      min_similarity_percent: minSim,
+      min_scene_realism_score: minRealism,
       passed,
       scenes: results,
     };
