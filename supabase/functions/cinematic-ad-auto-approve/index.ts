@@ -88,6 +88,18 @@ function safeRenderSignals(job: Job): { ok: boolean; reasons: string[]; blocks: 
   if (!durationValid) blocks.push(`duration_invalid(${dur || "unknown"})`); else reasons.push("duration_valid");
   if (!motionExists) blocks.push("zero_motion"); else reasons.push("motion_exists");
   if (job.output_mp4_url && !validationPassed(job)) blocks.push("validation_not_passed");
+
+  // V7 strict Pinterest-grade gate: never auto-approve a video that's just
+  // a generated still with zoom/pan, has missing shots, unsafe text, or a
+  // composite pinterest_quality_score at/below 90.
+  if (job.output_mp4_url) {
+    if (job.validation_v7_passed === false) {
+      const reasons = Array.isArray(job.v7_reject_reasons) ? job.v7_reject_reasons.slice(0, 3).join("|") : "v7_failed";
+      blocks.push(`v7_reject:${reasons}`);
+    }
+    const pq = Number(job.pinterest_quality_score ?? 0);
+    if (pq > 0 && pq <= 90) blocks.push(`pinterest_quality(${pq}<=90)`);
+  }
   return { ok: blocks.length === 0, reasons, blocks };
 }
 
