@@ -788,7 +788,7 @@ Deno.serve(async (req) => {
       emotional_payoff_present,
       // hook_score & voice_score are written by their dedicated engines; only
       // backfill if missing so we don't overwrite a real candidate-derived score.
-      ...((job as any).hook_score == null ? { hook_score: hookScore } : {}),
+      ...((job as any).hook_score == null ? { hook_score: hookScoreDom } : {}),
       ...((job as any).voice_score == null ? { voice_score: voiceScore } : {}),
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
