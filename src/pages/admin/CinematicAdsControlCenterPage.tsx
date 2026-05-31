@@ -149,7 +149,7 @@ export default function CinematicAdsControlCenterPage() {
     const { data, error } = await supabase
       .from("cinematic_ad_jobs")
       .select(
-        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render,validation_v7_passed,scene_diversity_v7_score,camera_diversity_score,hook_strength_v7_score,text_safety_score,pinterest_quality_score,v7_reject_reasons,qa_composite_score"
+        "id,product_slug,product_name,product_id,status,status_message,created_at,updated_at,render_queued_at,render_started_at,render_complete_at,render_heartbeat_at,render_worker_id,render_attempts,render_log,output_mp4_url,output_thumbnail_url,output_duration_seconds,pinterest_pin_url,pinterest_pin_id,pinterest_publish_error,pinterest_uploaded_at,error_message,approved_for_render,validation_v7_passed,scene_diversity_v7_score,camera_diversity_score,hook_strength_v7_score,text_safety_score,pinterest_quality_score,v7_reject_reasons,qa_composite_score,validation_report"
       )
       .order("updated_at", { ascending: false })
       .limit(200);
