@@ -89,24 +89,12 @@ export default function PinterestAdStudio() {
         force_new: true,
       },
     });
-    if (error || !(data as any)?.ok === false) {
-      const jobId = (data as any)?.job_id;
-      if (jobId) {
-        // Kick off render queue immediately
-        await supabase.functions.invoke("cinematic-ad-queue-render", {
-          body: { job_id: jobId, preset: s.preset },
-        });
-        return jobId as string;
-      }
-    }
-    if ((data as any)?.job_id) {
-      const jobId = (data as any).job_id as string;
-      await supabase.functions.invoke("cinematic-ad-queue-render", {
-        body: { job_id: jobId, preset: s.preset },
-      });
-      return jobId;
-    }
-    throw new Error((data as any)?.message || error?.message || "Failed to start");
+    const jobId = (data as any)?.job_id as string | undefined;
+    if (!jobId) throw new Error((data as any)?.message || error?.message || "Failed to start");
+    await supabase.functions.invoke("cinematic-ad-queue-render", {
+      body: { job_id: jobId, preset: s.preset },
+    });
+    return jobId;
   }
 
   async function handleCreate() {
