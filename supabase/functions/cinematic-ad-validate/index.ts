@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getPreset } from "../_shared/cinematic-presets.ts";
 import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
+import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -517,228 +518,55 @@ Deno.serve(async (req) => {
   report.checks.push({ name: "v5_human_presence", passed: beatsV5.length === 0 || human_presence_ratio >= humanPresenceRatioMin, observed: human_presence_ratio, expected: `>= ${humanPresenceRatioMin}` });
 
   // ── V7 Pinterest-grade strict QA gate ─────────────────────────────────────
-  // Hard guard against single-image-with-zoom slop. Requires real scene
-  // variety, real camera variety, mandatory shot roles, safe + non-truncated
-  // text. Composite `pinterest_quality_score` must clear `min_pinterest_quality_score`
-  // (default 90) for auto-approval downstream.
-  let v7Enabled = true;
-  let minPinterestQuality = 90;
-  let minUniqueScenesV7 = 4;
-  let minUniqueCamerasV7 = 3;
-  let minSceneCountV7 = 5;
-  let minCloseupsV7 = 1;
-  let minLifestyleV7 = 1;
-  let minProductDemoV7 = 1;
-  let textSafeZoneTolerance = 0;
-  let maxCaptionDensityV7 = 0.25;
-  let maxDenseCaptionRatioV7 = 0.34;
+  // Hard guard against single-image-with-zoom slop. Logic lives in the pure
+  // `evaluateV7` helper (../_shared/cinematic-v7-eval.ts) so it can be
+  // unit-tested with fixture jobs without spinning the edge runtime.
+  const v7t: V7Thresholds = { ...DEFAULT_V7_THRESHOLDS };
   try {
     const { data: v7s } = await admin.from("cinematic_ad_settings")
       .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7")
       .eq("id", true).maybeSingle();
     if (v7s) {
-      v7Enabled = v7s.cinematic_v7_enabled !== false;
-      minPinterestQuality = Number(v7s.min_pinterest_quality_score ?? minPinterestQuality);
-      minUniqueScenesV7 = Number(v7s.min_unique_scenes_v7 ?? minUniqueScenesV7);
-      minUniqueCamerasV7 = Number(v7s.min_unique_cameras_v7 ?? minUniqueCamerasV7);
-      minSceneCountV7 = Number(v7s.min_scene_count_v7 ?? minSceneCountV7);
-      minCloseupsV7 = Number((v7s as any).min_closeups_v7 ?? minCloseupsV7);
-      minLifestyleV7 = Number((v7s as any).min_lifestyle_v7 ?? minLifestyleV7);
-      minProductDemoV7 = Number((v7s as any).min_product_demo_v7 ?? minProductDemoV7);
-      textSafeZoneTolerance = Number((v7s as any).text_safe_zone_tolerance ?? textSafeZoneTolerance);
-      maxCaptionDensityV7 = Number((v7s as any).max_caption_density_v7 ?? maxCaptionDensityV7);
-      maxDenseCaptionRatioV7 = Number((v7s as any).max_dense_caption_ratio_v7 ?? maxDenseCaptionRatioV7);
+      v7t.v7Enabled = v7s.cinematic_v7_enabled !== false;
+      v7t.minPinterestQuality = Number(v7s.min_pinterest_quality_score ?? v7t.minPinterestQuality);
+      v7t.minUniqueScenesV7 = Number(v7s.min_unique_scenes_v7 ?? v7t.minUniqueScenesV7);
+      v7t.minUniqueCamerasV7 = Number(v7s.min_unique_cameras_v7 ?? v7t.minUniqueCamerasV7);
+      v7t.minSceneCountV7 = Number(v7s.min_scene_count_v7 ?? v7t.minSceneCountV7);
+      v7t.minCloseupsV7 = Number((v7s as any).min_closeups_v7 ?? v7t.minCloseupsV7);
+      v7t.minLifestyleV7 = Number((v7s as any).min_lifestyle_v7 ?? v7t.minLifestyleV7);
+      v7t.minProductDemoV7 = Number((v7s as any).min_product_demo_v7 ?? v7t.minProductDemoV7);
+      v7t.textSafeZoneTolerance = Number((v7s as any).text_safe_zone_tolerance ?? v7t.textSafeZoneTolerance);
+      v7t.maxCaptionDensityV7 = Number((v7s as any).max_caption_density_v7 ?? v7t.maxCaptionDensityV7);
+      v7t.maxDenseCaptionRatioV7 = Number((v7s as any).max_dense_caption_ratio_v7 ?? v7t.maxDenseCaptionRatioV7);
     }
   } catch (_) { /* defaults */ }
 
-  const planRoles = plan.map((s) => String(s?.role ?? s?.category ?? s?.shotType ?? "").toLowerCase());
-  const planCrops = plan.map((s) => String(s?.crop ?? s?.framing ?? "").toLowerCase());
-  const planMotionsArr = plan.map((s) => String(s?.motion ?? "").toLowerCase());
-  const sceneSignatures = new Set(plan.map((s) => `${s?.crop ?? ""}|${s?.motion ?? ""}|${s?.category ?? s?.role ?? ""}`).filter((k) => k !== "||"));
-  const uniqueScenesV7 = sceneSignatures.size;
-  const uniqueCamerasV7 = new Set(planCrops.filter(Boolean)).size;
-
-  // Build a per-scene "haystack" of every searchable text signal we have for
-  // that scene. Strict pass uses role/crop/category only; retry pass widens
-  // to caption, prompt, asset metadata, voiceover line, beat description.
-  const sceneAssetsForDetect: any[] = Array.isArray((job as any).scene_assets) ? (job as any).scene_assets : [];
-  const beatsForDetect: any[] = Array.isArray((job as any).beats_v5) ? (job as any).beats_v5 : [];
-  const voLines: string[] = String(job.vo_script ?? "").split(/\r?\n|\.|;/);
-  const sceneHaystacks = plan.map((s, i) => {
-    const asset = sceneAssetsForDetect[i] ?? {};
-    const beat = beatsForDetect[i] ?? {};
-    return [
-      planRoles[i], planCrops[i], planMotionsArr[i],
-      String(s?.category ?? ""), String(s?.caption ?? ""), String(s?.prompt ?? ""),
-      String(s?.shotType ?? ""), String(s?.description ?? ""),
-      String(asset?.prompt ?? ""), String(asset?.label ?? ""), String(asset?.category ?? ""),
-      String(beat?.description ?? ""), String(beat?.action ?? ""),
-      String(voLines[i] ?? ""),
-    ].join(" ").toLowerCase();
-  });
-
-  const RX = {
-    closeup: /close[-_ ]?up|macro|tight|detail|texture|fabric|paw|whisker|fur|claw/,
-    lifestyle: /lifestyle|home|owner|room|environment|living|sofa|kitchen|bedroom|outdoor|garden|backyard|family|pet[-_ ]?parent/,
-    demoStrict: /demo|in[-_ ]?use|action|using|operating/,
-    demoBroad: /demo|in[-_ ]?use|action|using|operating|playing|eating|drinking|scooping|cleaning|chewing|scratching|grooming|sleeping|product[-_ ]?shot|hero[-_ ]?shot/,
-    cta: /\bcta\b|shop|buy|order|get yours|learn more|tap|swipe up|link in bio/,
-    appControlStrict: /app|phone|screen|ui|control|tap|swipe/,
-    appControlBroad: /app|phone|smartphone|ios|android|screen|display|ui|interface|control|tap|swipe|button|notification|dashboard|settings|remote/,
-  };
-
-  function countMatches(re: RegExp, sources: string[]) {
-    return sources.reduce((n, h) => n + (re.test(h) ? 1 : 0), 0);
-  }
-
-  // ── Strict pass (role/crop/category only) ───────────────────────────────
-  const strictRoles = planRoles.map((r, i) => `${r} ${String(plan[i]?.category ?? "")} ${planCrops[i] ?? ""}`);
-  const closeupStrict = countMatches(RX.closeup, strictRoles);
-  const lifestyleStrict = countMatches(RX.lifestyle, strictRoles);
-  const productDemoStrict = countMatches(RX.demoStrict, strictRoles);
-  const ctaFrameStrict = plan.some((s, i) => s?.isCta === true || /cta/i.test(strictRoles[i]));
-
-  const productCtxStr = `${String(productCtx?.name ?? "")} ${String(productCtx?.category ?? "")} ${String((productCtx as any)?.primary_keyword ?? "")}`.toLowerCase();
-  const isAppProduct = /\bapp\b|smart|wifi|bluetooth|automat|connected/.test(productCtxStr);
-  const appControlStrict = !isAppProduct || plan.some((s, i) =>
-    RX.appControlStrict.test(`${strictRoles[i]} ${String(s?.caption ?? "")}`),
-  );
-
-  // ── Retry pass (broader haystack) — only used when strict pass falls short ─
-  const retryUsed: string[] = [];
-  let closeupCount = closeupStrict;
-  let lifestyleCount = lifestyleStrict;
-  let productDemoCount = productDemoStrict;
-  let hasCtaFrame = ctaFrameStrict;
-  let hasAppControlShot = appControlStrict;
-
-  if (closeupCount < minCloseupsV7) {
-    const retry = countMatches(RX.closeup, sceneHaystacks);
-    if (retry > closeupCount) { retryUsed.push(`closeup:${closeupCount}->${retry}`); closeupCount = retry; }
-  }
-  if (lifestyleCount < minLifestyleV7) {
-    const retry = countMatches(RX.lifestyle, sceneHaystacks);
-    if (retry > lifestyleCount) { retryUsed.push(`lifestyle:${lifestyleCount}->${retry}`); lifestyleCount = retry; }
-  }
-  if (productDemoCount < minProductDemoV7) {
-    const retry = countMatches(RX.demoBroad, sceneHaystacks);
-    if (retry > productDemoCount) { retryUsed.push(`product_demo:${productDemoCount}->${retry}`); productDemoCount = retry; }
-  }
-  if (!hasCtaFrame) {
-    const retry = sceneHaystacks.some((h) => RX.cta.test(h)) || /shop|buy|order|cta/i.test(String(job.cta_text ?? ""));
-    if (retry) { retryUsed.push("cta:retry_hit"); hasCtaFrame = true; }
-  }
-  if (isAppProduct && !hasAppControlShot) {
-    const retry = sceneHaystacks.some((h) => RX.appControlBroad.test(h)) ||
-      sceneAssetsForDetect.some((a) => RX.appControlBroad.test(`${a?.prompt ?? ""} ${a?.label ?? ""}`));
-    if (retry) { retryUsed.push("app_control:retry_hit"); hasAppControlShot = true; }
-  }
-
-  const hasCloseup = closeupCount >= minCloseupsV7;
-  const hasLifestyle = lifestyleCount >= minLifestyleV7;
-  const hasProductDemo = productDemoCount >= minProductDemoV7;
-
-  const v7DetectionDebug = {
-    is_app_product: isAppProduct,
-    strict: {
-      closeup: closeupStrict,
-      lifestyle: lifestyleStrict,
-      product_demo: productDemoStrict,
-      cta_frame: ctaFrameStrict,
-      app_control: appControlStrict,
-    },
-    final: {
-      closeup: closeupCount,
-      lifestyle: lifestyleCount,
-      product_demo: productDemoCount,
-      cta_frame: hasCtaFrame,
-      app_control: hasAppControlShot,
-    },
-    retry_used: retryUsed,
-    scene_count: plan.length,
-    haystack_lengths: sceneHaystacks.map((h) => h.length),
-  };
+  const v7Out = evaluateV7({ job, productCtx, safeArea, v2 }, v7t);
+  const {
+    scene_diversity_v7_score,
+    camera_diversity_score,
+    hook_strength_v7_score,
+    text_safety_score,
+    pinterest_quality_score,
+    v7_reject_reasons,
+    validation_v7_passed,
+    detection_debug: v7DetectionDebug,
+  } = v7Out;
   console.log(`[validate] ${traceId} v7_detection job=${jobId}`, JSON.stringify(v7DetectionDebug));
   (report as any).v7_detection_debug = v7DetectionDebug;
 
-  // Ken-Burns-only detection: every motion is some flavour of zoom/pan with no real cuts/whip/parallax.
-  const motionTokens = planMotionsArr.filter(Boolean);
-  const kenBurnsOnly = motionTokens.length > 0 &&
-    motionTokens.every((m) => /zoom|ken[_ -]?burns|pan|push|pull|dolly_slow/.test(m)) &&
-    !motionTokens.some((m) => /whip|cut|parallax|handheld|shake|orbit|tilt/.test(m));
-
-  // Text safety from existing safeArea validator + truncation/clamp markers.
-  // `validateTextSafeArea` (shared) returns { ok, violations: string[] }. Treat
-  // any truncation/clamp/overflow indicator as "text cut off".
-  const safeAreaViolations = Array.isArray(safeArea.violations) ? safeArea.violations : [];
-  const textCutOff = safeAreaViolations.some((v: string) =>
-    /truncat|clamp|overflow|cut|too_long|exceeds/i.test(v),
-  );
-  // `text_safe_zone_tolerance` (0..1) allows a fraction of safe-area violations
-  // before we flag the whole video. 0 = strict, 0.2 = up to 20% of scenes may
-  // breach the safe zone before the gate fails.
-  const safeViolationRatio = plan.length > 0
-    ? Math.min(1, safeAreaViolations.length / plan.length)
-    : (safeArea.ok ? 0 : 1);
-  const textOutsideSafe = !safeArea.ok && safeViolationRatio > textSafeZoneTolerance;
-
-  // ≤25% text per frame proxy — caption length / chars-that-fit-a-frame.
-  // 1080px wide, ~96px max font ≈ ~18 chars per line × 2 lines ≈ 36 chars/frame.
-  const captionCharLimit = Math.max(8, Math.round(36 * maxCaptionDensityV7 * 4));
-  const overTextFrames = plan.filter((s) => {
-    const cap = String(s?.caption ?? "").trim();
-    return cap.length > 0 && (cap.length / 36) > maxCaptionDensityV7 && cap.length > captionCharLimit;
-  }).length;
-  const tooMuchText = plan.length > 0 && (overTextFrames / plan.length) > maxDenseCaptionRatioV7;
-
-  const v7_reject_reasons: string[] = [];
-  if (v7Enabled) {
-    if (plan.length < minSceneCountV7) v7_reject_reasons.push(`scene_count(${plan.length}<${minSceneCountV7})`);
-    if (uniqueScenesV7 < minUniqueScenesV7) v7_reject_reasons.push(`unique_scenes(${uniqueScenesV7}<${minUniqueScenesV7})`);
-    if (uniqueCamerasV7 < minUniqueCamerasV7) v7_reject_reasons.push(`unique_cameras(${uniqueCamerasV7}<${minUniqueCamerasV7})`);
-    if (textOutsideSafe) v7_reject_reasons.push("text_outside_safe_zone");
-    if (textCutOff) v7_reject_reasons.push("text_cut_off");
-    if (kenBurnsOnly) v7_reject_reasons.push("ken_burns_zoom_only");
-    if (!hasProductDemo) v7_reject_reasons.push("missing_product_demo_shot");
-    if (isAppProduct && !hasAppControlShot) v7_reject_reasons.push("missing_app_control_shot");
-    if (!hasCtaFrame) v7_reject_reasons.push("missing_cta_frame");
-    if (!hasCloseup) v7_reject_reasons.push("missing_closeup");
-    if (!hasLifestyle) v7_reject_reasons.push("missing_lifestyle_scene");
-    if (tooMuchText) v7_reject_reasons.push(`text_density_excessive(${overTextFrames}/${plan.length})`);
-  }
-
-  // Sub-scores (0–100)
-  const scene_diversity_v7_score = Math.min(100, Math.round((uniqueScenesV7 / Math.max(minUniqueScenesV7, 6)) * 100));
-  const camera_diversity_score = Math.min(100, Math.round((uniqueCamerasV7 / Math.max(minUniqueCamerasV7, 5)) * 100));
-  const hook_strength_v7_score = Math.round(v2.hook_strength);
-  const text_safety_score = Math.max(0, Math.min(100, Math.round(
-    (textOutsideSafe ? 0 : 50) +
-    (textCutOff ? 0 : 25) +
-    (tooMuchText ? 0 : 25),
-  )));
-  const pinterest_quality_score = Math.round(
-    scene_diversity_v7_score * 0.25 +
-    camera_diversity_score * 0.20 +
-    hook_strength_v7_score * 0.20 +
-    text_safety_score * 0.20 +
-    Math.min(100, v2.composite) * 0.15,
-  );
-
-  const validation_v7_passed = v7Enabled
-    ? (v7_reject_reasons.length === 0 && pinterest_quality_score > minPinterestQuality)
-    : true;
-
-  report.checks.push({ name: "v7_scene_count", passed: plan.length >= minSceneCountV7, observed: plan.length, expected: `>= ${minSceneCountV7}` });
-  report.checks.push({ name: "v7_unique_scenes", passed: uniqueScenesV7 >= minUniqueScenesV7, observed: uniqueScenesV7, expected: `>= ${minUniqueScenesV7}` });
-  report.checks.push({ name: "v7_camera_diversity", passed: uniqueCamerasV7 >= minUniqueCamerasV7, observed: uniqueCamerasV7, expected: `>= ${minUniqueCamerasV7}` });
-  report.checks.push({ name: "v7_no_ken_burns_only", passed: !kenBurnsOnly, observed: kenBurnsOnly ? "zoom/pan only" : "ok", expected: "varied camera motion" });
-  report.checks.push({ name: "v7_has_product_demo", passed: hasProductDemo, observed: hasProductDemo, expected: true });
-  report.checks.push({ name: "v7_has_app_control_if_app", passed: hasAppControlShot, observed: hasAppControlShot, expected: isAppProduct ? "required" : "n/a" });
-  report.checks.push({ name: "v7_has_cta_frame", passed: hasCtaFrame, observed: hasCtaFrame, expected: true });
-  report.checks.push({ name: "v7_has_closeup", passed: hasCloseup, observed: hasCloseup, expected: true });
-  report.checks.push({ name: "v7_has_lifestyle", passed: hasLifestyle, observed: hasLifestyle, expected: true });
-  report.checks.push({ name: "v7_text_safety", passed: !textOutsideSafe && !textCutOff && !tooMuchText, observed: `safe=${!textOutsideSafe} cut=${textCutOff} dense=${tooMuchText}`, expected: "all inside safe area, no cut-off, ≤25% text per frame" });
-  report.checks.push({ name: "v7_pinterest_quality_score", passed: pinterest_quality_score > minPinterestQuality, observed: pinterest_quality_score, expected: `> ${minPinterestQuality}` });
+  const dd = v7DetectionDebug;
+  report.checks.push({ name: "v7_scene_count", passed: dd.scene_count >= v7t.minSceneCountV7, observed: dd.scene_count, expected: `>= ${v7t.minSceneCountV7}` });
+  report.checks.push({ name: "v7_unique_scenes", passed: dd.unique_scenes >= v7t.minUniqueScenesV7, observed: dd.unique_scenes, expected: `>= ${v7t.minUniqueScenesV7}` });
+  report.checks.push({ name: "v7_camera_diversity", passed: dd.unique_cameras >= v7t.minUniqueCamerasV7, observed: dd.unique_cameras, expected: `>= ${v7t.minUniqueCamerasV7}` });
+  report.checks.push({ name: "v7_no_ken_burns_only", passed: !dd.ken_burns_only, observed: dd.ken_burns_only ? "zoom/pan only" : "ok", expected: "varied camera motion" });
+  report.checks.push({ name: "v7_has_product_demo", passed: dd.final.product_demo >= v7t.minProductDemoV7, observed: dd.final.product_demo >= v7t.minProductDemoV7, expected: true });
+  report.checks.push({ name: "v7_has_app_control_if_app", passed: dd.final.app_control, observed: dd.final.app_control, expected: dd.is_app_product ? "required" : "n/a" });
+  report.checks.push({ name: "v7_has_cta_frame", passed: dd.final.cta_frame, observed: dd.final.cta_frame, expected: true });
+  report.checks.push({ name: "v7_has_closeup", passed: dd.final.closeup >= v7t.minCloseupsV7, observed: dd.final.closeup >= v7t.minCloseupsV7, expected: true });
+  report.checks.push({ name: "v7_has_lifestyle", passed: dd.final.lifestyle >= v7t.minLifestyleV7, observed: dd.final.lifestyle >= v7t.minLifestyleV7, expected: true });
+  report.checks.push({ name: "v7_text_safety", passed: !dd.text_outside_safe && !dd.text_cut_off && !dd.too_much_text, observed: `safe=${!dd.text_outside_safe} cut=${dd.text_cut_off} dense=${dd.too_much_text}`, expected: "all inside safe area, no cut-off, ≤25% text per frame" });
+  report.checks.push({ name: "v7_pinterest_quality_score", passed: pinterest_quality_score > v7t.minPinterestQuality, observed: pinterest_quality_score, expected: `> ${v7t.minPinterestQuality}` });
 
   // ── V6 Product Fidelity gate ──────────────────────────────────────────────
   // Compares each AI-generated scene image to the source PDP images via the
