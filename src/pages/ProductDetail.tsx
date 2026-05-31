@@ -2215,6 +2215,7 @@ const ProductDetail = () => {
 
       {/* Spacer for sticky bar — fixed height, no transition to prevent layout oscillation */}
       {showStickyBar && <div className="h-20" />}
+      <CreatePinterestAdButton slug={product?.slug ?? slug ?? ""} />
     </Layout>
   );
 };
