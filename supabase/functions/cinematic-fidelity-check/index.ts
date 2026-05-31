@@ -20,7 +20,13 @@
 //   - scene realism score < 8/10
 //
 // Output: per-scene { passed, score 0-100, reasons[] } + aggregate
-// fidelity_score, fidelity_passed, scenes_needing_regen[].
+// fidelity_score, fidelity_passed, scenes_needing_regen[],
+// motion_quality_score, scene_consistency_score.
+//
+// Threshold (per "URGENT FIX – CINEMATIC ADS QUALITY GATE" v7):
+//   - product similarity >= 90
+//   - motion quality >= 90 (no intersections, geometry stable, realism >= 8)
+//   - scene consistency >= 90 (product looks like the same SKU across scenes)
 //
 // Auth: admin JWT OR service role (x-render-secret).
 //
@@ -247,15 +253,15 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, traceId, message: "no scene images to check", report: { scenes: [], score: 100, passed: true } });
     }
 
-    // Settings — strict defaults: 95% similarity, realism >= 8/10, all rules pass.
-    let minScore = 95, enabled = true;
+    // Settings — strict defaults: 90% similarity, realism >= 8/10, all rules pass.
+    let minScore = 90, enabled = true;
     try {
       const { data: s } = await admin.from("cinematic_ad_settings")
         .select("product_fidelity_enabled, min_product_fidelity_score").limit(1).maybeSingle();
       if (s) {
         enabled = s.product_fidelity_enabled !== false;
-        // Floor the configured threshold at 95 — the new rules require 95%+ similarity.
-        minScore = Math.max(95, Number(s.min_product_fidelity_score ?? minScore));
+        // Floor the configured threshold at 90 — the new rules require 90%+ similarity.
+        minScore = Math.max(90, Number(s.min_product_fidelity_score ?? minScore));
       }
     } catch (_) { /* defaults */ }
 
@@ -308,17 +314,56 @@ Deno.serve(async (req) => {
     const failingScenes = results.filter((r) =>
       !r.passed ||
       r.score < minScore ||
-      r.similarity_percent < 95 ||
+      r.similarity_percent < minScore ||
       r.scene_realism_score < 8,
     );
     const scenesNeedingRegen = failingScenes.map((r) => r.index);
     const minSim = Math.min(...results.map((r) => r.similarity_percent));
     const minRealism = Math.min(...results.map((r) => r.scene_realism_score));
+
+    // ----- Derived scores (0-100) -----
+    // Product Match Score = average per-scene similarity.
+    const productMatchScore = Math.round(
+      results.reduce((a, r) => a + r.similarity_percent, 0) / Math.max(1, results.length),
+    );
+
+    // Motion Quality Score:
+    //   start at realism (0-10) -> 0-100,
+    //   subtract 25 per scene with cat intersection,
+    //   subtract 20 per scene with geometry morph (geometry_match=false),
+    //   subtract 15 per scene with dimensions drift.
+    const realismAvg100 = Math.round(
+      (results.reduce((a, r) => a + r.scene_realism_score, 0) / Math.max(1, results.length)) * 10,
+    );
+    const intersections = results.filter((r) => !r.rule_flags.cat_no_intersection).length;
+    const morphs = results.filter((r) => !r.rule_flags.geometry_match).length;
+    const dimDrifts = results.filter((r) => !r.rule_flags.dimensions_match).length;
+    const motionQualityScore = Math.max(
+      0,
+      Math.min(100, realismAvg100 - intersections * 25 - morphs * 20 - dimDrifts * 15),
+    );
+
+    // Scene Consistency Score:
+    //   100 minus the spread of similarity across scenes (max - min),
+    //   minus penalties when the product is not identifiable in some scenes,
+    //   minus penalties when AI invents features in some scenes.
+    const sims = results.map((r) => r.similarity_percent);
+    const spread = sims.length > 1 ? Math.max(...sims) - Math.min(...sims) : 0;
+    const unidentifiable = results.filter((r) => !r.rule_flags.product_identifiable).length;
+    const invented = results.filter((r) => !r.rule_flags.no_invented_features).length;
+    const sceneConsistencyScore = Math.max(
+      0,
+      Math.min(100, 100 - spread - unidentifiable * 20 - invented * 15),
+    );
+
     const passed =
       scenesNeedingRegen.length === 0 &&
       avg >= minScore &&
-      minSim >= 95 &&
-      minRealism >= 8;
+      minSim >= minScore &&
+      minRealism >= 8 &&
+      productMatchScore >= minScore &&
+      motionQualityScore >= minScore &&
+      sceneConsistencyScore >= minScore;
 
     // Aggregate reject reasons (unique).
     const reasonSet = new Set<string>();
@@ -328,16 +373,29 @@ Deno.serve(async (req) => {
       }
       for (const txt of r.reasons) reasonSet.add(`scene${r.index}:${txt}`.slice(0, 160));
     }
+    if (productMatchScore < minScore) reasonSet.add(`product_match_below_threshold(${productMatchScore}<${minScore})`);
+    if (motionQualityScore < minScore) reasonSet.add(`motion_quality_below_threshold(${motionQualityScore}<${minScore})`);
+    if (sceneConsistencyScore < minScore) reasonSet.add(`scene_consistency_below_threshold(${sceneConsistencyScore}<${minScore})`);
     const rejectReasons = Array.from(reasonSet).slice(0, 24);
 
     const fidelityReport = {
       checked_at: new Date().toISOString(),
       source_image_count: sourceImages.length,
       min_score: minScore,
-      thresholds: { similarity_min: 95, realism_min: 8, score_min: minScore },
+      thresholds: {
+        similarity_min: minScore,
+        realism_min: 8,
+        score_min: minScore,
+        motion_quality_min: minScore,
+        scene_consistency_min: minScore,
+      },
       score: avg,
+      product_match_score: productMatchScore,
+      motion_quality_score: motionQualityScore,
+      scene_consistency_score: sceneConsistencyScore,
       min_similarity_percent: minSim,
       min_scene_realism_score: minRealism,
+      source_image_urls: sourceImages.slice(0, 6),
       passed,
       scenes: results,
     };
@@ -348,10 +406,12 @@ Deno.serve(async (req) => {
       fidelity_passed: passed,
       fidelity_reject_reasons: rejectReasons,
       scenes_needing_regen: scenesNeedingRegen,
+      motion_quality_score: motionQualityScore,
+      scene_consistency_score: sceneConsistencyScore,
       fidelity_checked_at: new Date().toISOString(),
     }).eq("id", jobId);
 
-    console.log(`[fidelity] ${traceId} job=${jobId} score=${avg} passed=${passed} regen=${scenesNeedingRegen.join(",")}`);
+    console.log(`[fidelity] ${traceId} job=${jobId} score=${avg} match=${productMatchScore} motion=${motionQualityScore} consistency=${sceneConsistencyScore} passed=${passed} regen=${scenesNeedingRegen.join(",")}`);
     return json(200, { ok: true, traceId, report: fidelityReport });
   } catch (e) {
     console.error("[fidelity] error", e);
