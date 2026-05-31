@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "description": "Real upload: 6-shot cinematic edit (hook → closeup → demo → lifestyle → feature → CTA). Diverse crops, motions, and roles — the gold-standard V7-passing render.",
+    "media": ["media/valid_multi_scene.mp4"],
+    "expected": {
+      "validation_v7_passed": true,
+      "must_include_reasons": [],
+      "min_pinterest_quality_score": 91
+    }
+  },
+  "job": {
+    "scene_plan": [
+      { "crop": "wide",     "motion": "handheld", "role": "hook",      "category": "lifestyle",    "caption": "Tired pup? Same." },
+      { "crop": "close_up", "motion": "orbit",    "role": "closeup",   "category": "closeup",      "caption": "Memory foam detail" },
+      { "crop": "medium",   "motion": "parallax", "role": "demo",      "category": "product_demo", "caption": "Watch him sink in" },
+      { "crop": "wide",     "motion": "tilt",     "role": "lifestyle", "category": "lifestyle",    "caption": "Living room ready" },
+      { "crop": "macro",    "motion": "whip",     "role": "feature",   "category": "closeup",      "caption": "Cooling gel layer" },
+      { "crop": "medium",   "motion": "cut",      "role": "cta",       "category": "cta",          "caption": "Shop now", "isCta": true }
+    ],
+    "scene_assets": [
+      { "label": "hook",      "category": "lifestyle",    "prompt": "Tired golden retriever yawning on rug, warm window light", "url": "media/valid_multi_scene.mp4#t=0.0,1.2" },
+      { "label": "closeup",   "category": "closeup",      "prompt": "Macro shot of memory-foam fabric texture",                  "url": "media/valid_multi_scene.mp4#t=1.2,2.4" },
+      { "label": "demo",      "category": "product_demo", "prompt": "Dog sinking into the bed, slow parallax push-in",            "url": "media/valid_multi_scene.mp4#t=2.4,3.6" },
+      { "label": "lifestyle", "category": "lifestyle",    "prompt": "Living-room scene, owner reading on sofa, dog on bed",       "url": "media/valid_multi_scene.mp4#t=3.6,4.8" },
+      { "label": "feature",   "category": "closeup",      "prompt": "Cooling-gel layer cross-section close-up",                   "url": "media/valid_multi_scene.mp4#t=4.8,6.0" },
+      { "label": "cta",       "category": "cta",          "prompt": "Brand end card, large CTA text",                              "url": "media/valid_multi_scene.mp4#t=6.0,7.2" }
+    ],
+    "beats_v5": [
+      { "description": "Hook — tired pup, relatable",                    "action": "yawn" },
+      { "description": "Closeup of memory foam fabric",                  "action": "orbit" },
+      { "description": "Product demo — dog sinks into bed",              "action": "demo" },
+      { "description": "Lifestyle living-room context",                  "action": "establish" },
+      { "description": "Feature shot — cooling gel layer",               "action": "reveal" },
+      { "description": "CTA — shop on GetPawsy",                         "action": "cta" }
+    ],
+    "vo_script": "Tired pup? Same.\nMemory foam holds the shape.\nWatch him sink right in.\nMade for your living room.\nA cooling-gel layer keeps him cozy.\nShop on GetPawsy.",
+    "hook_text": "Tired pup? Same.",
+    "cta_text": "Shop on GetPawsy"
+  },
+  "product_ctx": { "name": "Orthopedic Dog Bed", "category": "dog_bed" },
+  "safe_area": { "ok": true, "violations": [] },
+  "v2": { "hook_strength": 85, "composite": 90 }
+}
