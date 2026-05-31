@@ -166,6 +166,65 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
   const hasLifestyle = lifestyleCount >= t.minLifestyleV7;
   const hasProductDemo = productDemoCount >= t.minProductDemoV7;
 
+  // ── Decision trace ─────────────────────────────────────────────────────
+  // For each borderline-capable rule, record which detection pass (strict
+  // vs retry) produced the final value, so we can audit why a marginal job
+  // was approved or rejected.
+  const trace: V7Result["decision_trace"] = [];
+  const traceCount = (
+    rule: string,
+    threshold: number,
+    strictVal: number,
+    finalVal: number,
+  ) => {
+    const strictPassed = strictVal >= threshold;
+    const finalPassed = finalVal >= threshold;
+    let decided_by: V7Result["decision_trace"][number]["decided_by"];
+    if (strictPassed) decided_by = "strict_pass";
+    else if (finalPassed) decided_by = "retry_pass";
+    else if (finalVal > strictVal) decided_by = "retry_failed";
+    else decided_by = "strict_fail";
+    trace.push({
+      rule,
+      threshold,
+      strict_value: strictVal,
+      final_value: finalVal,
+      decided_by,
+      borderline: !strictPassed,
+      note: !strictPassed && finalPassed
+        ? `recovered by retry haystack (${strictVal}->${finalVal})`
+        : !strictPassed && finalVal > strictVal
+        ? `retry raised ${strictVal}->${finalVal} but still below ${threshold}`
+        : undefined,
+    });
+  };
+  const traceBool = (
+    rule: string,
+    strictVal: boolean,
+    finalVal: boolean,
+    applicable = true,
+  ) => {
+    let decided_by: V7Result["decision_trace"][number]["decided_by"];
+    if (!applicable) decided_by = "not_applicable";
+    else if (strictVal) decided_by = "strict_pass";
+    else if (finalVal) decided_by = "retry_pass";
+    else decided_by = "strict_fail";
+    trace.push({
+      rule,
+      threshold: true,
+      strict_value: strictVal,
+      final_value: finalVal,
+      decided_by,
+      borderline: applicable && !strictVal,
+      note: applicable && !strictVal && finalVal ? "recovered by retry haystack" : undefined,
+    });
+  };
+  traceCount("closeup", t.minCloseupsV7, closeupStrict, closeupCount);
+  traceCount("lifestyle", t.minLifestyleV7, lifestyleStrict, lifestyleCount);
+  traceCount("product_demo", t.minProductDemoV7, productDemoStrict, productDemoCount);
+  traceBool("cta_frame", ctaFrameStrict, hasCtaFrame);
+  traceBool("app_control", appControlStrict, hasAppControlShot, isAppProduct);
+
   // Ken-Burns-only detection
   const motionTokens = planMotionsArr.filter(Boolean);
   const kenBurnsOnly = motionTokens.length > 0 &&
@@ -259,5 +318,6 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
       text_cut_off: textCutOff,
       too_much_text: tooMuchText,
     },
+    decision_trace: trace,
   };
 }
