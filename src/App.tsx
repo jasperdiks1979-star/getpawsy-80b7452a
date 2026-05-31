@@ -428,6 +428,7 @@ const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/Cinemat
 const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/CinematicOneJobVerifyPage"));
 const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicQueueHealthPage"));
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
+const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
 const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/PinterestCleanupPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
