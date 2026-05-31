@@ -43,6 +43,11 @@ type Job = {
   render_attempts?: number | null;
   render_worker_id?: string | null;
   render_queued_at?: string | null;
+  preflight_status?: string | null;
+  preflight_reasons?: string[] | null;
+  creative_plan?: Record<string, unknown> | null;
+  blocked_reason?: string | null;
+  legacy_unverified?: boolean | null;
 };
 
 const STATUS_COLOR: Record<string, string> = {
