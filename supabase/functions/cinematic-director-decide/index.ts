@@ -1,102 +1,142 @@
-// AI Pinterest Director — auto-decides best style/hook/voice for a product
-// based on category, recent historical performance and Pinterest trend signals.
-// Returns a ranked list of concepts (top N) for the studio to render in parallel.
+// AI Pinterest Director — Phase 3 Self-Learning
+// Returns the 4 fundamental concept archetypes (Problem/Solution, Emotional,
+// Premium Lifestyle, Viral Pattern Interrupt) ranked by learned weights per
+// category × archetype + Pinterest historical performance. Creates a
+// director_run row so all 4 concepts can be tracked end-to-end through the
+// feedback loop.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-type Concept = {
-  style: "viral" | "lifestyle" | "cinematic" | "premium" | "conversion";
+type ArchetypeId = "problem_solution" | "emotional" | "premium_lifestyle" | "viral_interrupt";
+
+type ArchetypeSpec = {
+  id: ArchetypeId;
+  label: string;
   hookVariant: string;
   voiceStyle: "social_energetic" | "lifestyle_female" | "narrator" | "pet_parent";
   preset: "pin-organic" | "pin-ads";
-  predicted_score: number;
-  reasoning: string;
+  pacing: "snappy" | "warm" | "cinematic" | "punchy";
+  motionPlan: string;
+  ctaIntent: string;
 };
 
-const STYLE_DEFAULTS: Record<string, Omit<Concept, "predicted_score" | "reasoning">> = {
-  viral:      { style: "viral",      hookVariant: "viral",      voiceStyle: "social_energetic", preset: "pin-organic" },
-  lifestyle:  { style: "lifestyle",  hookVariant: "lifestyle",  voiceStyle: "lifestyle_female", preset: "pin-organic" },
-  cinematic:  { style: "cinematic",  hookVariant: "cinematic",  voiceStyle: "narrator",         preset: "pin-ads" },
-  premium:    { style: "premium",    hookVariant: "premium",    voiceStyle: "narrator",         preset: "pin-ads" },
-  conversion: { style: "conversion", hookVariant: "conversion", voiceStyle: "pet_parent",       preset: "pin-ads" },
-};
+const ARCHETYPES: ArchetypeSpec[] = [
+  { id: "problem_solution",  label: "Problem / Solution",       hookVariant: "conversion", voiceStyle: "pet_parent",       preset: "pin-ads",     pacing: "punchy",    motionPlan: "push_in on problem → demo → rack_focus → static CTA", ctaIntent: "Shop now" },
+  { id: "emotional",         label: "Emotional Connection",     hookVariant: "lifestyle",  voiceStyle: "lifestyle_female", preset: "pin-organic", pacing: "warm",      motionPlan: "slow dolly → orbit bond moment → warm grade → reveal", ctaIntent: "Treat them today" },
+  { id: "premium_lifestyle", label: "Premium Lifestyle",        hookVariant: "cinematic",  voiceStyle: "narrator",         preset: "pin-ads",     pacing: "cinematic", motionPlan: "wide reveal → tracking → rack_focus detail → hero static", ctaIntent: "Discover the collection" },
+  { id: "viral_interrupt",   label: "Viral Pattern Interrupt",  hookVariant: "viral",      voiceStyle: "social_energetic", preset: "pin-organic", pacing: "snappy",    motionPlan: "hard cut hook → handheld → parallax pop → snap zoom CTA", ctaIntent: "Tap to see why" },
+];
 
-function heuristicRank(category: string | null, history: Array<{ hook_variant: string | null; voice_style: string | null; qa_composite_score: number | null; pinterest_quality_score: number | null }>): Concept[] {
-  const cat = (category || "").toLowerCase();
-  const base: number[] = [];
-  const order: (keyof typeof STYLE_DEFAULTS)[] = ["viral", "lifestyle", "cinematic", "premium", "conversion"];
-
-  // Category priors
-  const prior: Record<string, number> = {
-    viral: 70, lifestyle: 70, cinematic: 72, premium: 65, conversion: 68,
+function categoryPriors(cat: string | null): Record<ArchetypeId, number> {
+  const c = (cat || "").toLowerCase();
+  const p: Record<ArchetypeId, number> = {
+    problem_solution: 70, emotional: 70, premium_lifestyle: 72, viral_interrupt: 70,
   };
-  if (/cat\s*tree|scratch|litter/.test(cat)) { prior.lifestyle += 8; prior.cinematic += 6; }
-  if (/bed|orthopedic|memory/.test(cat))      { prior.lifestyle += 10; prior.premium += 5; }
-  if (/toy|gadget|interactive/.test(cat))     { prior.viral += 10; prior.conversion += 4; }
-  if (/carrier|stroller|travel/.test(cat))    { prior.premium += 6; prior.cinematic += 4; }
-  if (/grooming|feed|bowl/.test(cat))         { prior.conversion += 6; prior.lifestyle += 4; }
-
-  // Historical signal
-  const hist: Record<string, { sum: number; n: number }> = {};
-  for (const h of history) {
-    const v = h.hook_variant || "";
-    if (!STYLE_DEFAULTS[v]) continue;
-    const s = (h.qa_composite_score ?? 0) * 0.6 + (h.pinterest_quality_score ?? 0) * 0.4;
-    if (!hist[v]) hist[v] = { sum: 0, n: 0 };
-    hist[v].sum += s; hist[v].n += 1;
-  }
-  for (const k of Object.keys(prior)) {
-    const h = hist[k];
-    if (h && h.n > 0) prior[k] = Math.round(prior[k] * 0.5 + (h.sum / h.n) * 0.5);
-  }
-
-  return order
-    .map(k => ({
-      ...STYLE_DEFAULTS[k],
-      predicted_score: prior[k],
-      reasoning: `Category prior + ${hist[k]?.n ?? 0} historical samples`,
-    }))
-    .sort((a, b) => b.predicted_score - a.predicted_score);
+  if (/cat\s*tree|scratch|litter/.test(c)) { p.premium_lifestyle += 6; p.emotional += 4; }
+  if (/bed|orthopedic|memory/.test(c))      { p.emotional += 8;          p.premium_lifestyle += 6; }
+  if (/toy|gadget|interactive/.test(c))     { p.viral_interrupt += 10;   p.problem_solution += 4; }
+  if (/carrier|stroller|travel/.test(c))    { p.premium_lifestyle += 6;  p.emotional += 4; }
+  if (/grooming|feed|bowl|health|supplement/.test(c)) { p.problem_solution += 8; p.emotional += 4; }
+  return p;
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { product_slug, top_n = 3 } = await req.json();
+    const { product_slug, persist = true } = await req.json();
     if (!product_slug) {
-      return new Response(JSON.stringify({ ok: false, message: "product_slug required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false, message: "product_slug required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { data: product } = await sb.from("products_public")
       .select("slug, name, category").eq("slug", product_slug).maybeSingle();
+    const category = product?.category ?? null;
 
-    const { data: history } = await sb.from("cinematic_ad_jobs")
-      .select("hook_variant, voice_style, qa_composite_score, pinterest_quality_score, product_slug, status")
-      .in("status", ["rendered", "render_complete", "pinterest_uploaded", "published"])
-      .order("created_at", { ascending: false })
-      .limit(200);
+    // 1. Learned weights (category-specific overlay onto wildcard)
+    const { data: wildcard } = await sb.from("director_archetype_weights")
+      .select("archetype, weight, samples, wins, avg_ctr, avg_engagement_rate")
+      .eq("category", "*");
+    const { data: catWeights } = category
+      ? await sb.from("director_archetype_weights")
+          .select("archetype, weight, samples, wins, avg_ctr, avg_engagement_rate")
+          .eq("category", category)
+      : { data: [] as any[] };
 
-    // Prefer same-category history if we can join via products_public
-    let scoped = history ?? [];
-    if (product?.category && scoped.length > 0) {
-      const slugs = Array.from(new Set(scoped.map(h => h.product_slug).filter(Boolean)));
-      const { data: catRows } = await sb.from("products_public").select("slug, category").in("slug", slugs);
-      const same = new Set((catRows ?? []).filter(r => r.category === product.category).map(r => r.slug));
-      const filtered = scoped.filter(h => same.has(h.product_slug));
-      if (filtered.length >= 5) scoped = filtered;
+    const weightMap = new Map<string, { weight: number; samples: number; wins: number; ctr: number; eng: number }>();
+    for (const w of wildcard ?? []) {
+      weightMap.set(w.archetype, { weight: Number(w.weight) || 1, samples: w.samples || 0, wins: w.wins || 0, ctr: Number(w.avg_ctr) || 0, eng: Number(w.avg_engagement_rate) || 0 });
+    }
+    for (const w of catWeights ?? []) {
+      const prev = weightMap.get(w.archetype) ?? { weight: 1, samples: 0, wins: 0, ctr: 0, eng: 0 };
+      // Category weights override when they have meaningful samples
+      const blend = (w.samples || 0) >= 3 ? 0.8 : 0.4;
+      weightMap.set(w.archetype, {
+        weight: prev.weight * (1 - blend) + Number(w.weight) * blend,
+        samples: prev.samples + (w.samples || 0),
+        wins: prev.wins + (w.wins || 0),
+        ctr: Math.max(prev.ctr, Number(w.avg_ctr) || 0),
+        eng: Math.max(prev.eng, Number(w.avg_engagement_rate) || 0),
+      });
     }
 
-    const ranked = heuristicRank(product?.category ?? null, scoped as any);
-    const concepts = ranked.slice(0, Math.max(1, Math.min(top_n, 5)));
-    const winner = concepts[0];
+    const priors = categoryPriors(category);
+
+    // 2. Build ranked concepts for all 4 archetypes
+    const concepts = ARCHETYPES.map((a) => {
+      const w = weightMap.get(a.id) ?? { weight: 1, samples: 0, wins: 0, ctr: 0, eng: 0 };
+      const predicted = Math.round((priors[a.id] * 0.5 + w.weight * 30) + w.ctr * 200 + w.eng * 50);
+      return {
+        archetype: a.id,
+        label: a.label,
+        style: a.id,
+        hookVariant: a.hookVariant,
+        voiceStyle: a.voiceStyle,
+        preset: a.preset,
+        pacing: a.pacing,
+        motionPlan: a.motionPlan,
+        ctaIntent: a.ctaIntent,
+        predicted_score: predicted,
+        learned_weight: Number(w.weight.toFixed(3)),
+        samples: w.samples,
+        wins: w.wins,
+        reasoning: `prior ${priors[a.id]} · weight ${w.weight.toFixed(2)} · ${w.samples} samples (${w.wins} wins)`,
+      };
+    }).sort((x, y) => y.predicted_score - x.predicted_score);
+
+    // 3. Create a director_run shell so jobs can be linked to it
+    let runId: string | null = null;
+    if (persist) {
+      const { data: run } = await sb.from("director_runs").insert({
+        product_slug,
+        category,
+        winner_archetype: concepts[0].archetype,
+        decided_reasoning: concepts.map(c => `${c.archetype}=${c.predicted_score}`).join(" · "),
+      }).select("id").maybeSingle();
+      runId = run?.id ?? null;
+
+      if (runId) {
+        await sb.from("director_concepts").insert(
+          concepts.map(c => ({
+            run_id: runId,
+            archetype: c.archetype,
+            product_slug,
+            category,
+            predicted_score: c.predicted_score,
+          })),
+        );
+      }
+    }
 
     return new Response(JSON.stringify({
       ok: true,
+      run_id: runId,
       product: product ?? { slug: product_slug },
-      winner,
+      winner: concepts[0],
       concepts,
-      meta: { history_samples: scoped.length, category: product?.category ?? null },
+      meta: { category, archetypes: ARCHETYPES.length },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, message: e instanceof Error ? e.message : "decide failed" }), {
