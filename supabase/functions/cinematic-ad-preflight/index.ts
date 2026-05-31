@@ -71,11 +71,11 @@ Deno.serve(async (req) => {
     // Product context lookup
     const { data: product } = await admin
       .from("products")
-      .select("name, slug, primary_image_url, price, category, is_active, in_stock, seo_keywords")
+      .select("name, slug, image_url, price, category, is_active, stock, seo_keywords")
       .eq("slug", job.product_slug).maybeSingle();
 
     const title = product?.name ?? job.product_name ?? "";
-    const imageUrl = product?.primary_image_url ?? null;
+    const imageUrl = product?.image_url ?? null;
     const price = product?.price ?? job.product_price ?? null;
     const productUrl = job.pin_destination_url
       ?? (product?.slug ? `https://getpawsy.pet/products/${product.slug}` : null);
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     if (!imageUrl) reasons.push("missing_primary_image");
     if (!price) reasons.push("missing_price");
     if (product && product.is_active === false) reasons.push("product_inactive");
-    if (product && product.in_stock === false) reasons.push("product_out_of_stock");
+    if (product && typeof product.stock === "number" && product.stock <= 0) reasons.push("product_out_of_stock");
 
     // Pet category
     const haystack = (

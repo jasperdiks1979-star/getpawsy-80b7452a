@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
   if (!job) return json(404, { ok: false, traceId, message: "job not found" });
 
   const { data: product } = await admin
-    .from("products").select("name, category, primary_image_url, primary_keyword")
+    .from("products").select("name, category, image_url, primary_keyword")
     .eq("slug", job.product_slug).maybeSingle();
 
   const productTitle = product?.name ?? job.product_name ?? job.product_slug;

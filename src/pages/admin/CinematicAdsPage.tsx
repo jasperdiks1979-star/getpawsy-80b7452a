@@ -43,6 +43,11 @@ type Job = {
   render_attempts?: number | null;
   render_worker_id?: string | null;
   render_queued_at?: string | null;
+  preflight_status?: string | null;
+  preflight_reasons?: string[] | null;
+  creative_plan?: Record<string, unknown> | null;
+  blocked_reason?: string | null;
+  legacy_unverified?: boolean | null;
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -458,6 +463,28 @@ export default function CinematicAdsPage() {
       load();
     } catch (e: any) { toast.error(e?.message ?? String(e)); }
     finally { setBusyId(null); }
+  };
+
+  const prepareForRender = async (jobId: string) => {
+    setBusyId(jobId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-prepare-for-render", {
+        body: { job_id: jobId },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message ?? "prepare-for-render failed");
+      if (data.ready) {
+        toast.success("Job is render-ready and re-queued.");
+      } else {
+        toast.warning(`Still blocked: ${(data.fail_reasons ?? []).join(", ") || "unknown"}`);
+      }
+      console.log("[prepare-for-render]", data);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const loadHealth = async () => {
@@ -1318,6 +1345,49 @@ export default function CinematicAdsPage() {
                   </div>
                   {j.status_message && <p className="text-xs text-muted-foreground">{j.status_message}</p>}
                   {j.error_message && <p className="text-xs text-destructive">{j.error_message}</p>}
+
+                  {(() => {
+                    const preflight = j.preflight_status ?? "not_run";
+                    const hasPlan = Boolean(j.creative_plan);
+                    const sceneCount = Array.isArray(j.scene_assets) ? j.scene_assets.length : 0;
+                    const hasVo = Boolean(j.vo_url);
+                    const gateOk = preflight === "pass" && hasPlan && sceneCount >= 2 && hasVo;
+                    const chip = (ok: boolean, label: string) => (
+                      <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${ok ? "bg-emerald-500/10 text-emerald-700" : "bg-destructive/10 text-destructive"}`}>
+                        {ok ? <CheckCircle2 className="size-3" /> : <XCircle className="size-3" />}
+                        {label}
+                      </span>
+                    );
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {chip(preflight === "pass", `Preflight: ${preflight}`)}
+                        {chip(hasPlan, `Plan: ${hasPlan ? "present" : "missing"}`)}
+                        {chip(sceneCount >= 2, `Scenes: ${sceneCount}`)}
+                        {chip(hasVo, `VO: ${hasVo ? "present" : "missing"}`)}
+                        {chip(gateOk, `Safety gate: ${gateOk ? "ready" : "blocked"}`)}
+                        {j.blocked_reason && (
+                          <span className="text-[10px] text-destructive">· {j.blocked_reason}</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {(() => {
+                    const preflight = j.preflight_status ?? "not_run";
+                    const hasPlan = Boolean(j.creative_plan);
+                    const sceneCount = Array.isArray(j.scene_assets) ? j.scene_assets.length : 0;
+                    const hasVo = Boolean(j.vo_url);
+                    const needsPrep = preflight !== "pass" || !hasPlan || sceneCount < 2 || !hasVo;
+                    if (!needsPrep) return null;
+                    return (
+                      <div>
+                        <Button size="sm" variant="default" onClick={() => prepareForRender(j.id)} disabled={busyId === j.id}>
+                          {busyId === j.id ? <Loader2 className="size-4 animate-spin mr-1" /> : <ShieldCheck className="size-4 mr-1" />}
+                          Prepare job for render
+                        </Button>
+                      </div>
+                    );
+                  })()}
 
                   {(j.vo_script || (j.scene_assets && j.scene_assets.length > 0)) && (() => {
                     const isOpen = openPreview[j.id] ?? (j.status === "prepared" || j.status === "render_queued");
