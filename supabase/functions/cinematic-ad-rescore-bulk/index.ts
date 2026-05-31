@@ -75,6 +75,10 @@ Deno.serve(async (req) => {
     if (withEngines) {
       await callFn("cinematic-hook-engine", { job_id: (j as any).id });
       await callFn("cinematic-voice-engine", { job_id: (j as any).id });
+      // Phase 2: Domination output engines (no reject logic, pure enrichment)
+      await callFn("cinematic-voice-selector",  { job_id: (j as any).id });
+      await callFn("cinematic-motion-engine",   { job_id: (j as any).id });
+      await callFn("cinematic-pinterest-perf",  { job_id: (j as any).id });
     }
     const r = await callFn("cinematic-ad-validate", { job_id: (j as any).id });
     if (r.ok) rescored++;

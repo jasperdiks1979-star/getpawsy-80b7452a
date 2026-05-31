@@ -20,6 +20,10 @@ type Row = {
   hard_reject_reasons: string[] | null;
   emotional_payoff_present: boolean | null;
   regenerate_count: number | null;
+  motion_ratio: number | null;
+  pinterest_perf_score: number | null;
+  selected_voice_id: string | null;
+  voice_fit_score: number | null;
 };
 
 function scoreBadge(v: number | null, floor = 95) {
@@ -39,7 +43,7 @@ export default function DominationScoreCard() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("cinematic_ad_jobs")
-      .select("id, product_slug, product_name, status, hook_score, voice_score, commercial_score, ctr_prediction_score, final_creative_score, pinterest_quality_score, hard_reject_reasons, emotional_payoff_present, regenerate_count")
+      .select("id, product_slug, product_name, status, hook_score, voice_score, commercial_score, ctr_prediction_score, final_creative_score, pinterest_quality_score, hard_reject_reasons, emotional_payoff_present, regenerate_count, motion_ratio, pinterest_perf_score, selected_voice_id, voice_fit_score")
       .in("status", ["render_complete", "pinterest_uploaded", "published", "awaiting_approval", "completed"])
       .order("updated_at", { ascending: false })
       .limit(50);
@@ -79,6 +83,20 @@ export default function DominationScoreCard() {
       toast.success(`Regenerate dispatched (#${(data as any)?.regenerate_count ?? "?"})`);
       load();
     } catch (e: any) { toast.error(e?.message ?? "Regenerate failed"); }
+    finally { setBusy((p) => ({ ...p, [id]: null })); }
+  };
+
+  const replanCreative = async (id: string) => {
+    setBusy((p) => ({ ...p, [id]: "replan" }));
+    try {
+      await supabase.functions.invoke("cinematic-hook-engine",      { body: { job_id: id, force: true } });
+      await supabase.functions.invoke("cinematic-voice-selector",   { body: { job_id: id } });
+      await supabase.functions.invoke("cinematic-motion-engine",    { body: { job_id: id } });
+      await supabase.functions.invoke("cinematic-pinterest-perf",   { body: { job_id: id } });
+      await supabase.functions.invoke("cinematic-ad-validate",      { body: { job_id: id } });
+      toast.success("Creative re-planned (no render)");
+      load();
+    } catch (e: any) { toast.error(e?.message ?? "Re-plan failed"); }
     finally { setBusy((p) => ({ ...p, [id]: null })); }
   };
 
@@ -133,6 +151,9 @@ export default function DominationScoreCard() {
                   <th className="text-center px-1">Comm</th>
                   <th className="text-center px-1">CTR</th>
                   <th className="text-center px-1">Pin</th>
+                  <th className="text-center px-1">Motion%</th>
+                  <th className="text-center px-1">PinPerf</th>
+                  <th className="text-left px-1">Voice</th>
                   <th className="text-left px-1">Hard rejects</th>
                   <th className="text-right pl-2">Actions</th>
                 </tr>
@@ -150,6 +171,17 @@ export default function DominationScoreCard() {
                     <td className="text-center px-1">{scoreBadge(r.commercial_score, 80)}</td>
                     <td className="text-center px-1">{scoreBadge(r.ctr_prediction_score, 90)}</td>
                     <td className="text-center px-1">{scoreBadge(r.pinterest_quality_score, 95)}</td>
+                    <td className="text-center px-1">
+                      {r.motion_ratio == null
+                        ? <Badge variant="outline">—</Badge>
+                        : <Badge variant={r.motion_ratio >= 0.7 ? "default" : "secondary"}>{Math.round(r.motion_ratio * 100)}%</Badge>}
+                    </td>
+                    <td className="text-center px-1">{scoreBadge(r.pinterest_perf_score, 75)}</td>
+                    <td className="px-1">
+                      {r.selected_voice_id
+                        ? <span className="text-[10px]">{r.selected_voice_id.replace(/_/g," ")} <span className="text-muted-foreground">({r.voice_fit_score ?? "—"})</span></span>
+                        : <span className="text-muted-foreground">—</span>}
+                    </td>
                     <td className="px-1">
                       {(r.hard_reject_reasons ?? []).length > 0 ? (
                         <span className="text-destructive">{(r.hard_reject_reasons ?? []).join(", ")}</span>
@@ -160,6 +192,9 @@ export default function DominationScoreCard() {
                     <td className="text-right pl-2 space-x-1">
                       <Button size="sm" variant="outline" disabled={!!busy[r.id]} onClick={() => rescore(r.id)}>
                         {busy[r.id] === "rescore" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Re-score"}
+                      </Button>
+                      <Button size="sm" variant="outline" disabled={!!busy[r.id]} onClick={() => replanCreative(r.id)}>
+                        {busy[r.id] === "replan" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Re-plan"}
                       </Button>
                       <Button size="sm" disabled={!!busy[r.id]} onClick={() => regenerate(r.id)}>
                         {busy[r.id] === "regen" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Regenerate"}
