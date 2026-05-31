@@ -516,6 +516,122 @@ Deno.serve(async (req) => {
   report.checks.push({ name: "v5_thumb_stop", passed: thumb_stop_score >= minThumbStop, observed: thumb_stop_score, expected: `>= ${minThumbStop}` });
   report.checks.push({ name: "v5_human_presence", passed: beatsV5.length === 0 || human_presence_ratio >= humanPresenceRatioMin, observed: human_presence_ratio, expected: `>= ${humanPresenceRatioMin}` });
 
+  // ── V7 Pinterest-grade strict QA gate ─────────────────────────────────────
+  // Hard guard against single-image-with-zoom slop. Requires real scene
+  // variety, real camera variety, mandatory shot roles, safe + non-truncated
+  // text. Composite `pinterest_quality_score` must clear `min_pinterest_quality_score`
+  // (default 90) for auto-approval downstream.
+  let v7Enabled = true;
+  let minPinterestQuality = 90;
+  let minUniqueScenesV7 = 4;
+  let minUniqueCamerasV7 = 3;
+  let minSceneCountV7 = 5;
+  try {
+    const { data: v7s } = await admin.from("cinematic_ad_settings")
+      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7")
+      .eq("id", true).maybeSingle();
+    if (v7s) {
+      v7Enabled = v7s.cinematic_v7_enabled !== false;
+      minPinterestQuality = Number(v7s.min_pinterest_quality_score ?? minPinterestQuality);
+      minUniqueScenesV7 = Number(v7s.min_unique_scenes_v7 ?? minUniqueScenesV7);
+      minUniqueCamerasV7 = Number(v7s.min_unique_cameras_v7 ?? minUniqueCamerasV7);
+      minSceneCountV7 = Number(v7s.min_scene_count_v7 ?? minSceneCountV7);
+    }
+  } catch (_) { /* defaults */ }
+
+  const planRoles = plan.map((s) => String(s?.role ?? s?.category ?? s?.shotType ?? "").toLowerCase());
+  const planCrops = plan.map((s) => String(s?.crop ?? s?.framing ?? "").toLowerCase());
+  const planMotionsArr = plan.map((s) => String(s?.motion ?? "").toLowerCase());
+  const sceneSignatures = new Set(plan.map((s) => `${s?.crop ?? ""}|${s?.motion ?? ""}|${s?.category ?? s?.role ?? ""}`).filter((k) => k !== "||"));
+  const uniqueScenesV7 = sceneSignatures.size;
+  const uniqueCamerasV7 = new Set(planCrops.filter(Boolean)).size;
+
+  const hasCloseup = planCrops.some((c) => /close|macro|tight|detail/.test(c)) ||
+    planRoles.some((r) => /close|macro|detail/.test(r));
+  const hasLifestyle = planRoles.some((r) => /lifestyle|home|owner|room|environment/.test(r)) ||
+    plan.some((s) => /lifestyle|home|owner/i.test(String(s?.category ?? "")));
+  const hasProductDemo = planRoles.some((r) => /demo|product|inuse|in_use|action/.test(r)) ||
+    plan.some((s) => /demo|product|in[-_ ]?use|action/i.test(String(s?.category ?? "")));
+  const hasCtaFrame = plan.some((s) => s?.isCta === true || /cta/i.test(String(s?.role ?? s?.category ?? "")));
+
+  const productCtxStr = `${String(productCtx?.name ?? "")} ${String(productCtx?.category ?? "")} ${String((productCtx as any)?.primary_keyword ?? "")}`.toLowerCase();
+  const isAppProduct = /\bapp\b|smart|wifi|bluetooth|automat|connected/.test(productCtxStr);
+  const hasAppControlShot = !isAppProduct || plan.some((s) =>
+    /app|phone|screen|ui|control|tap|swipe/i.test(`${s?.category ?? ""} ${s?.role ?? ""} ${s?.caption ?? ""}`),
+  );
+
+  // Ken-Burns-only detection: every motion is some flavour of zoom/pan with no real cuts/whip/parallax.
+  const motionTokens = planMotionsArr.filter(Boolean);
+  const kenBurnsOnly = motionTokens.length > 0 &&
+    motionTokens.every((m) => /zoom|ken[_ -]?burns|pan|push|pull|dolly_slow/.test(m)) &&
+    !motionTokens.some((m) => /whip|cut|parallax|handheld|shake|orbit|tilt/.test(m));
+
+  // Text safety from existing safeArea validator + truncation/clamp markers.
+  // `validateTextSafeArea` (shared) returns { ok, violations: string[] }. Treat
+  // any truncation/clamp/overflow indicator as "text cut off".
+  const safeAreaViolations = Array.isArray(safeArea.violations) ? safeArea.violations : [];
+  const textCutOff = safeAreaViolations.some((v: string) =>
+    /truncat|clamp|overflow|cut|too_long|exceeds/i.test(v),
+  );
+  const textOutsideSafe = !safeArea.ok;
+
+  // ≤25% text per frame proxy — caption length / chars-that-fit-a-frame.
+  // 1080px wide, ~96px max font ≈ ~18 chars per line × 2 lines ≈ 36 chars/frame.
+  const overTextFrames = plan.filter((s) => {
+    const cap = String(s?.caption ?? "").trim();
+    return cap.length > 0 && cap.length / 36 > 0.25 && cap.length > 45;
+  }).length;
+  const tooMuchText = plan.length > 0 && (overTextFrames / plan.length) > 0.34;
+
+  const v7_reject_reasons: string[] = [];
+  if (v7Enabled) {
+    if (plan.length < minSceneCountV7) v7_reject_reasons.push(`scene_count(${plan.length}<${minSceneCountV7})`);
+    if (uniqueScenesV7 < minUniqueScenesV7) v7_reject_reasons.push(`unique_scenes(${uniqueScenesV7}<${minUniqueScenesV7})`);
+    if (uniqueCamerasV7 < minUniqueCamerasV7) v7_reject_reasons.push(`unique_cameras(${uniqueCamerasV7}<${minUniqueCamerasV7})`);
+    if (textOutsideSafe) v7_reject_reasons.push("text_outside_safe_zone");
+    if (textCutOff) v7_reject_reasons.push("text_cut_off");
+    if (kenBurnsOnly) v7_reject_reasons.push("ken_burns_zoom_only");
+    if (!hasProductDemo) v7_reject_reasons.push("missing_product_demo_shot");
+    if (isAppProduct && !hasAppControlShot) v7_reject_reasons.push("missing_app_control_shot");
+    if (!hasCtaFrame) v7_reject_reasons.push("missing_cta_frame");
+    if (!hasCloseup) v7_reject_reasons.push("missing_closeup");
+    if (!hasLifestyle) v7_reject_reasons.push("missing_lifestyle_scene");
+    if (tooMuchText) v7_reject_reasons.push(`text_density_excessive(${overTextFrames}/${plan.length})`);
+  }
+
+  // Sub-scores (0–100)
+  const scene_diversity_v7_score = Math.min(100, Math.round((uniqueScenesV7 / Math.max(minUniqueScenesV7, 6)) * 100));
+  const camera_diversity_score = Math.min(100, Math.round((uniqueCamerasV7 / Math.max(minUniqueCamerasV7, 5)) * 100));
+  const hook_strength_v7_score = Math.round(v2.hook_strength);
+  const text_safety_score = Math.max(0, Math.min(100, Math.round(
+    (textOutsideSafe ? 0 : 50) +
+    (textCutOff ? 0 : 25) +
+    (tooMuchText ? 0 : 25),
+  )));
+  const pinterest_quality_score = Math.round(
+    scene_diversity_v7_score * 0.25 +
+    camera_diversity_score * 0.20 +
+    hook_strength_v7_score * 0.20 +
+    text_safety_score * 0.20 +
+    Math.min(100, v2.composite) * 0.15,
+  );
+
+  const validation_v7_passed = v7Enabled
+    ? (v7_reject_reasons.length === 0 && pinterest_quality_score > minPinterestQuality)
+    : true;
+
+  report.checks.push({ name: "v7_scene_count", passed: plan.length >= minSceneCountV7, observed: plan.length, expected: `>= ${minSceneCountV7}` });
+  report.checks.push({ name: "v7_unique_scenes", passed: uniqueScenesV7 >= minUniqueScenesV7, observed: uniqueScenesV7, expected: `>= ${minUniqueScenesV7}` });
+  report.checks.push({ name: "v7_camera_diversity", passed: uniqueCamerasV7 >= minUniqueCamerasV7, observed: uniqueCamerasV7, expected: `>= ${minUniqueCamerasV7}` });
+  report.checks.push({ name: "v7_no_ken_burns_only", passed: !kenBurnsOnly, observed: kenBurnsOnly ? "zoom/pan only" : "ok", expected: "varied camera motion" });
+  report.checks.push({ name: "v7_has_product_demo", passed: hasProductDemo, observed: hasProductDemo, expected: true });
+  report.checks.push({ name: "v7_has_app_control_if_app", passed: hasAppControlShot, observed: hasAppControlShot, expected: isAppProduct ? "required" : "n/a" });
+  report.checks.push({ name: "v7_has_cta_frame", passed: hasCtaFrame, observed: hasCtaFrame, expected: true });
+  report.checks.push({ name: "v7_has_closeup", passed: hasCloseup, observed: hasCloseup, expected: true });
+  report.checks.push({ name: "v7_has_lifestyle", passed: hasLifestyle, observed: hasLifestyle, expected: true });
+  report.checks.push({ name: "v7_text_safety", passed: !textOutsideSafe && !textCutOff && !tooMuchText, observed: `safe=${!textOutsideSafe} cut=${textCutOff} dense=${tooMuchText}`, expected: "all inside safe area, no cut-off, ≤25% text per frame" });
+  report.checks.push({ name: "v7_pinterest_quality_score", passed: pinterest_quality_score > minPinterestQuality, observed: pinterest_quality_score, expected: `> ${minPinterestQuality}` });
+
   // ── V6 Product Fidelity gate ──────────────────────────────────────────────
   // Compares each AI-generated scene image to the source PDP images via the
   // cinematic-fidelity-check function. Hard reject on shape/color/dimension/
@@ -623,6 +739,13 @@ Deno.serve(async (req) => {
       fidelity_score: fidelityScore,
       fidelity_reject_reasons: fidelityReasons,
       scenes_needing_regen: scenesNeedingRegen,
+      scene_diversity_v7_score,
+      camera_diversity_score,
+      hook_strength_v7_score,
+      text_safety_score,
+      pinterest_quality_score,
+      v7_reject_reasons,
+      validation_v7_passed,
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
@@ -637,6 +760,7 @@ Deno.serve(async (req) => {
       ...rejectReasons,
       ...v4_reject_reasons,
       ...v5_reject_reasons,
+      ...v7_reject_reasons,
       ...(fidelityEnabled && !fidelityPassed ? [`product_fidelity(${fidelityScore ?? "?"}<${minFidelityScore})`, ...fidelityReasons.slice(0, 4)] : []),
     ];
     if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
