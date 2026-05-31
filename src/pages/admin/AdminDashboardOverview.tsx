@@ -28,6 +28,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { WebhookHealthCard } from '@/components/admin/WebhookHealthCard';
 
 const sections = [
   {
@@ -177,7 +178,10 @@ export default function AdminDashboardOverview() {
 
         {/* Prominent Cinematic Ads shortcut */}
         {!query.trim() && (
-          <Card
+          <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <Card
             className="cursor-pointer border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 hover:shadow-md hover:border-primary/50 transition-all group"
             onClick={() => navigate('/admin/cinematic-ads')}
           >
@@ -202,6 +206,10 @@ export default function AdminDashboardOverview() {
               </Button>
             </CardContent>
           </Card>
+            </div>
+            <WebhookHealthCard />
+          </div>
+          </>
         )}
 
         {/* Search results view */}
