@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "description": "Real upload for the same smart litter box, this time with a phone/app-control scene included. V7 must approve.",
+    "media": ["media/valid_multi_scene.mp4", "media/app_control_screen.png"],
+    "expected": {
+      "validation_v7_passed": true,
+      "must_include_reasons": []
+    }
+  },
+  "job": {
+    "scene_plan": [
+      { "crop": "wide",     "motion": "handheld", "role": "hook",      "category": "lifestyle",    "caption": "Hands-free litter" },
+      { "crop": "close_up", "motion": "orbit",    "role": "closeup",   "category": "closeup",      "caption": "Self-cleaning detail" },
+      { "crop": "medium",   "motion": "parallax", "role": "demo",      "category": "product_demo", "caption": "Watch it cycle" },
+      { "crop": "phone",    "motion": "tilt",     "role": "app",       "category": "app_control",  "caption": "Tap the app to start a cycle" },
+      { "crop": "wide",     "motion": "whip",     "role": "lifestyle", "category": "lifestyle",    "caption": "Fresh home" },
+      { "crop": "medium",   "motion": "cut",      "role": "cta",       "category": "cta",          "caption": "Shop now", "isCta": true }
+    ],
+    "scene_assets": [
+      { "label": "hook",        "category": "lifestyle",    "prompt": "Calm cat owner home",                        "url": "media/valid_multi_scene.mp4#t=0.0,1.2" },
+      { "label": "closeup",     "category": "closeup",      "prompt": "Self-cleaning rake macro",                   "url": "media/valid_multi_scene.mp4#t=1.2,2.4" },
+      { "label": "demo",        "category": "product_demo", "prompt": "Full cycle demo",                            "url": "media/valid_multi_scene.mp4#t=2.4,3.6" },
+      { "label": "app_control", "category": "app_control",  "prompt": "Smartphone UI showing tap-to-start control", "url": "media/app_control_screen.png" },
+      { "label": "lifestyle",   "category": "lifestyle",    "prompt": "Owner cuddling cat on sofa",                 "url": "media/valid_multi_scene.mp4#t=3.6,4.8" },
+      { "label": "cta",         "category": "cta",          "prompt": "Brand end card",                              "url": "media/valid_multi_scene.mp4#t=6.0,7.2" }
+    ],
+    "beats_v5": [],
+    "vo_script": "Less scooping, more cuddles. Tap the app to start a cycle from anywhere.",
+    "hook_text": "Less scooping, more cuddles",
+    "cta_text": "Shop on GetPawsy"
+  },
+  "product_ctx": { "name": "Smart Self-Cleaning Litter Box", "category": "cat_litter", "primary_keyword": "app controlled litter box" },
+  "safe_area": { "ok": true, "violations": [] },
+  "v2": { "hook_strength": 85, "composite": 90 }
+}
