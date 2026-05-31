@@ -347,6 +347,7 @@ const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/Ti
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
 const AdminPaymentsPage = lazyWithRetry(() => import("./pages/admin/AdminPaymentsPage"));
+const WebhookHealthPage = lazyWithRetry(() => import("./pages/admin/WebhookHealthPage"));
 const AdminSmokeTestEventsPage = lazyWithRetry(() => import("./pages/admin/AdminSmokeTestEventsPage"));
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
@@ -1493,6 +1494,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <AdminPaymentsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="webhook-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <WebhookHealthPage />
                                 </Suspense>
                               }
                             />

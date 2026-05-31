@@ -28,6 +28,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { WebhookHealthCard } from '@/components/admin/WebhookHealthCard';
 
 const sections = [
   {
@@ -87,6 +88,7 @@ const sections = [
       { to: '/admin/security-credentials', label: 'Security & Credentials', icon: ShieldAlert, desc: 'API key management' },
       { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert, desc: 'Anti-suspension shield' },
       { to: '/admin/rejected-spam-events', label: 'Rejected Spam Events', icon: ShieldAlert, desc: 'Quarantined analytics & Pinterest payloads' },
+      { to: '/admin/webhook-health', label: 'Stripe Webhook Health', icon: Activity, desc: 'Endpoint ping, signature check, last paid order, Stripe events' },
     ],
   },
 ];
@@ -176,7 +178,10 @@ export default function AdminDashboardOverview() {
 
         {/* Prominent Cinematic Ads shortcut */}
         {!query.trim() && (
-          <Card
+          <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <Card
             className="cursor-pointer border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 hover:shadow-md hover:border-primary/50 transition-all group"
             onClick={() => navigate('/admin/cinematic-ads')}
           >
@@ -201,6 +206,10 @@ export default function AdminDashboardOverview() {
               </Button>
             </CardContent>
           </Card>
+            </div>
+            <WebhookHealthCard />
+          </div>
+          </>
         )}
 
         {/* Search results view */}
