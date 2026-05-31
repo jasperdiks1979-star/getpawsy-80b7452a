@@ -1822,6 +1822,7 @@ export type Database = {
           motion_diversity_score: number | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
+          motion_quality_score: number | null
           motion_score: number | null
           music_track_id: string | null
           music_url: string | null
@@ -1905,6 +1906,7 @@ export type Database = {
           root_cause: string | null
           scene_assets: Json
           scene_change_count: number | null
+          scene_consistency_score: number | null
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_roles: Json | null
@@ -2042,6 +2044,7 @@ export type Database = {
           motion_diversity_score?: number | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
+          motion_quality_score?: number | null
           motion_score?: number | null
           music_track_id?: string | null
           music_url?: string | null
@@ -2125,6 +2128,7 @@ export type Database = {
           root_cause?: string | null
           scene_assets?: Json
           scene_change_count?: number | null
+          scene_consistency_score?: number | null
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_roles?: Json | null
@@ -2262,6 +2266,7 @@ export type Database = {
           motion_diversity_score?: number | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
+          motion_quality_score?: number | null
           motion_score?: number | null
           music_track_id?: string | null
           music_url?: string | null
@@ -2345,6 +2350,7 @@ export type Database = {
           root_cause?: string | null
           scene_assets?: Json
           scene_change_count?: number | null
+          scene_consistency_score?: number | null
           scene_entropy_score?: number | null
           scene_plan?: Json | null
           scene_roles?: Json | null
@@ -18705,6 +18711,7 @@ export type Database = {
           motion_diversity_score: number | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
+          motion_quality_score: number | null
           motion_score: number | null
           music_track_id: string | null
           music_url: string | null
@@ -18788,6 +18795,7 @@ export type Database = {
           root_cause: string | null
           scene_assets: Json
           scene_change_count: number | null
+          scene_consistency_score: number | null
           scene_entropy_score: number | null
           scene_plan: Json | null
           scene_roles: Json | null

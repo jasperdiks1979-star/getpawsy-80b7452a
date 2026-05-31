@@ -485,6 +485,26 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "product_fidelity_reject" });
       continue;
     }
+    // V7 gate: triple-score quality gate.
+    //   - product match (fidelity_score) >= 90
+    //   - motion quality >= 90
+    //   - scene consistency >= 90
+    {
+      const matchScore = Number((job as any).fidelity_score ?? 0);
+      const motionScore = Number((job as any).motion_quality_score ?? 0);
+      const consistencyScore = Number((job as any).scene_consistency_score ?? 0);
+      const failures: string[] = [];
+      if (matchScore && matchScore < 90) failures.push(`product_match=${matchScore}`);
+      if (motionScore && motionScore < 90) failures.push(`motion_quality=${motionScore}`);
+      if (consistencyScore && consistencyScore < 90) failures.push(`scene_consistency=${consistencyScore}`);
+      if (failures.length > 0) {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: `quality_gate_v7:${failures.join("|")}`,
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "quality_gate_v7" });
+        continue;
+      }
+    }
     if (job.overlay_text_hash && qOverlays.has(job.overlay_text_hash)) {
       results.push({ job_id: job.id, ok: false, reason: "quarantined_overlay" }); continue;
     }
