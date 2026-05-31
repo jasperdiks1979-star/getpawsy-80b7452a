@@ -23,7 +23,7 @@ jobs:
       RENDER_WORKER_SECRET: ${{ secrets.RENDER_WORKER_SECRET }}
       JOB_ID: ${{ inputs.job_id }}
       RENDER_WORKER_ID: gh-actions-${{ github.run_id }}
-      EXPECTED_SUPABASE_HOST: udgzvfbeioadpvouugry.supabase.co
+      EXPECTED_SUPABASE_HOST: nojvgfbcjgipjxpfatmm.supabase.co
 
     steps:
       - name: Checkout repository

@@ -26,7 +26,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKER_SECRET = process.env.RENDER_WORKER_SECRET;
 const JOB_ID = process.env.JOB_ID || process.argv.find(a => a.startsWith("--job="))?.slice(6);
 const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
-const EXPECTED_PROJECT_REF = "udgzvfbeioadpvouugry";
+const EXPECTED_PROJECT_REF = "nojvgfbcjgipjxpfatmm";
 const SUPABASE_URL = SUPABASE_URL_RAW ? SUPABASE_URL_RAW.replace(/\/+$/, "") : "";
 const FUNCTIONS_BASE_URL = (process.env.FUNCTIONS_BASE_URL || process.env.SUPABASE_FUNCTIONS_BASE_URL || `${SUPABASE_URL}/functions/v1`).replace(/\/+$/, "");
 
