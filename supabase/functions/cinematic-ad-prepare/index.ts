@@ -39,6 +39,49 @@ const json = (status: number, body: unknown) =>
 
 const SARAH = "EXAVITQu4vr4xnSDxMaL"; // premium US female
 
+/**
+ * Provider health check. Hits the Lovable AI gateway with a trivial prompt
+ * and ElevenLabs with a 1-char TTS to detect outright outages BEFORE we
+ * commit to spending tokens / minutes on the full prepare flow.
+ * Never throws — always resolves to a structured health object.
+ */
+export type ProviderHealth = {
+  lovable_ai: { ok: boolean; status: number | null; reason: string | null };
+  elevenlabs: { ok: boolean; status: number | null; reason: string | null };
+  any_ok: boolean;
+};
+
+async function checkProviderHealth(lovableKey: string | undefined, elevenKey: string | undefined): Promise<ProviderHealth> {
+  const lov = { ok: false, status: null as number | null, reason: null as string | null };
+  const el  = { ok: false, status: null as number | null, reason: null as string | null };
+  if (!lovableKey) lov.reason = "missing_LOVABLE_API_KEY";
+  else {
+    try {
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "google/gemini-2.5-flash-lite", messages: [{ role: "user", content: "ping" }], max_tokens: 1 }),
+      });
+      lov.status = r.status;
+      lov.ok = r.ok;
+      if (!r.ok) lov.reason = `lovable_ai_${r.status}`;
+      try { await r.text(); } catch { /* drain */ }
+    } catch (e) { lov.reason = `lovable_ai_unreachable: ${e instanceof Error ? e.message : String(e)}`; }
+  }
+  if (!elevenKey) el.reason = "missing_ELEVENLABS_API_KEY";
+  else {
+    // Voice-list endpoint is the cheapest possible reachability probe.
+    try {
+      const r = await fetch("https://api.elevenlabs.io/v1/user", { headers: { "xi-api-key": elevenKey } });
+      el.status = r.status;
+      el.ok = r.ok;
+      if (!r.ok) el.reason = `elevenlabs_${r.status}`;
+      try { await r.text(); } catch { /* drain */ }
+    } catch (e) { el.reason = `elevenlabs_unreachable: ${e instanceof Error ? e.message : String(e)}`; }
+  }
+  return { lovable_ai: lov, elevenlabs: el, any_ok: lov.ok || el.ok };
+}
+
 type Scene = {
   index: number;
   duration_seconds: number;
