@@ -522,9 +522,11 @@ Deno.serve(async (req) => {
   // `evaluateV7` helper (../_shared/cinematic-v7-eval.ts) so it can be
   // unit-tested with fixture jobs without spinning the edge runtime.
   const v7t: V7Thresholds = { ...DEFAULT_V7_THRESHOLDS };
+  let minHookScore = 90, minVoiceScore = 90, minCtrPrediction = 90, minFinalCreative = 95;
+  let dominationMode = true;
   try {
     const { data: v7s } = await admin.from("cinematic_ad_settings")
-      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7")
+      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7, min_emotional_payoff_v7, require_cta_scene_v7, hard_reject_single_image, hard_reject_ken_burns_only, min_hook_score, min_voice_score, min_ctr_prediction_score, min_final_creative_score, creative_domination_mode")
       .eq("id", true).maybeSingle();
     if (v7s) {
       v7t.v7Enabled = v7s.cinematic_v7_enabled !== false;
@@ -538,6 +540,15 @@ Deno.serve(async (req) => {
       v7t.textSafeZoneTolerance = Number((v7s as any).text_safe_zone_tolerance ?? v7t.textSafeZoneTolerance);
       v7t.maxCaptionDensityV7 = Number((v7s as any).max_caption_density_v7 ?? v7t.maxCaptionDensityV7);
       v7t.maxDenseCaptionRatioV7 = Number((v7s as any).max_dense_caption_ratio_v7 ?? v7t.maxDenseCaptionRatioV7);
+      v7t.minEmotionalPayoffV7 = Number((v7s as any).min_emotional_payoff_v7 ?? v7t.minEmotionalPayoffV7);
+      v7t.requireCtaScene = (v7s as any).require_cta_scene_v7 !== false;
+      v7t.hardRejectSingleImage = (v7s as any).hard_reject_single_image !== false;
+      v7t.hardRejectKenBurnsOnly = (v7s as any).hard_reject_ken_burns_only !== false;
+      minHookScore = Number((v7s as any).min_hook_score ?? minHookScore);
+      minVoiceScore = Number((v7s as any).min_voice_score ?? minVoiceScore);
+      minCtrPrediction = Number((v7s as any).min_ctr_prediction_score ?? minCtrPrediction);
+      minFinalCreative = Number((v7s as any).min_final_creative_score ?? minFinalCreative);
+      dominationMode = (v7s as any).creative_domination_mode !== false;
     }
   } catch (_) { /* defaults */ }
 
@@ -549,6 +560,8 @@ Deno.serve(async (req) => {
     text_safety_score,
     pinterest_quality_score,
     v7_reject_reasons,
+    hard_reject_reasons,
+    emotional_payoff_present,
     validation_v7_passed,
     detection_debug: v7DetectionDebug,
   } = v7Out;
