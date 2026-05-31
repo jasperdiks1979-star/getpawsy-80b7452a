@@ -688,6 +688,8 @@ export default function CinematicAdsControlCenterPage() {
                     </div>
                   </div>
 
+                  <V7QaPanel job={j} />
+
                   {j.output_mp4_url && (
                     <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
                       <video
