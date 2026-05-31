@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw, ExternalLink, Download } from "lucide-react";
+import { downloadJobAuditCsv, downloadJobAuditPdf, buildAuditRow } from "@/utils/cinematicQaAudit";
 
 type Job = Record<string, any>;
 
@@ -155,8 +156,40 @@ export default function CinematicAdQaSummaryPage() {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={load}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
           <Button size="sm" variant="outline" onClick={downloadJson}><Download className="mr-1 h-3 w-3" /> JSON</Button>
+          <Button size="sm" variant="outline" onClick={() => job && downloadJobAuditCsv(job)}><Download className="mr-1 h-3 w-3" /> Audit CSV</Button>
+          <Button size="sm" variant="default" onClick={() => job && downloadJobAuditPdf(job)}><Download className="mr-1 h-3 w-3" /> Audit PDF</Button>
         </div>
       </div>
+
+      {job && (() => {
+        const row = buildAuditRow(job);
+        const decisionVariant: "default" | "destructive" | "secondary" =
+          row.final_decision.startsWith("auto_approved") ? "default"
+          : row.final_decision === "rejected" ? "destructive"
+          : "secondary";
+        return (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">V7 Audit Snapshot</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant={decisionVariant}>Decision: {row.final_decision}</Badge>
+                {row.decision_reason && <span className="text-muted-foreground">{row.decision_reason}</span>}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3">
+                <ScoreCell k="Pinterest quality" v={row.pinterest_quality_score} hi={90} />
+                <ScoreCell k="Scene diversity" v={row.scene_diversity_v7_score} />
+                <ScoreCell k="Camera diversity" v={row.camera_diversity_score} />
+                <ScoreCell k="Hook strength" v={row.hook_strength_v7_score} />
+                <ScoreCell k="Text safety" v={row.text_safety_score} />
+                <ScoreCell k="QA composite" v={row.qa_composite_score} />
+              </div>
+              {row.v7_reject_reasons && (
+                <p className="text-xs text-destructive">v7 reject: {row.v7_reject_reasons}</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Card>
         <CardHeader className="pb-3">
@@ -311,6 +344,19 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
     <div className="flex items-start justify-between gap-3 border-b border-border/30 py-1">
       <span className="text-muted-foreground">{k}</span>
       <span className="text-right">{v}</span>
+    </div>
+  );
+}
+
+function ScoreCell({ k, v, hi }: { k: string; v: string; hi?: number }) {
+  const n = Number(v);
+  const ok = Number.isFinite(n) && (hi == null ? true : n > hi);
+  return (
+    <div className="rounded border border-border/40 p-2">
+      <div className="text-muted-foreground">{k}</div>
+      <div className={`text-base font-semibold ${Number.isFinite(n) ? (ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive") : ""}`}>
+        {v || "—"}{hi != null ? <span className="ml-1 text-[10px] text-muted-foreground">/ &gt;{hi}</span> : null}
+      </div>
     </div>
   );
 }
