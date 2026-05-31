@@ -23,10 +23,10 @@
 // fidelity_score, fidelity_passed, scenes_needing_regen[],
 // motion_quality_score, scene_consistency_score.
 //
-// Threshold (per "URGENT FIX – CINEMATIC ADS QUALITY GATE" v7):
-//   - product similarity >= 90
-//   - motion quality >= 90 (no intersections, geometry stable, realism >= 8)
-//   - scene consistency >= 90 (product looks like the same SKU across scenes)
+// Threshold (per "PRODUCT LOCK" v8):
+//   - product similarity >= 95
+//   - motion quality >= 95 (no intersections, geometry stable, realism >= 8)
+//   - scene consistency >= 95 (product looks like the same SKU across scenes)
 //
 // Auth: admin JWT OR service role (x-render-secret).
 //
