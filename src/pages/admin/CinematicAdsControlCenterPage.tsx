@@ -20,6 +20,7 @@ import { ShieldCheck, BarChart3 } from "lucide-react";
 import AutopilotHealthPanel from "@/components/admin/AutopilotHealthPanel";
 import CinematicIntelligencePanel from "@/components/admin/cinematic/CinematicIntelligencePanel";
 import AutoApprovalSettingsCard from "@/components/admin/cinematic/AutoApprovalSettingsCard";
+import V7ThresholdsSettingsCard from "@/components/admin/cinematic/V7ThresholdsSettingsCard";
 import { CreativeDNAPanel } from "@/components/admin/cinematic/CreativeDNAPanel";
 import SystemTruthPanel from "@/components/admin/cinematic/SystemTruthPanel";
 import OperatorPanel from "@/components/admin/cinematic/OperatorPanel";
@@ -543,6 +544,8 @@ export default function CinematicAdsControlCenterPage() {
       <CinematicIntelligencePanel />
 
       <AutoApprovalSettingsCard />
+
+      <V7ThresholdsSettingsCard />
 
       <CreativeDNAPanel />
 

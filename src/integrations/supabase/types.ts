@@ -2584,6 +2584,8 @@ export type Database = {
           human_realism_min: number
           human_realism_required: boolean
           id: boolean
+          max_caption_density_v7: number
+          max_dense_caption_ratio_v7: number
           max_duplicate_threshold: number
           max_pins_per_day: number
           max_render_attempts: number | null
@@ -2592,14 +2594,17 @@ export type Database = {
           max_static_duration_frames_v5: number
           min_camera_motion_score: number
           min_caption_visibility: number | null
+          min_closeups_v7: number
           min_days_between_same_product: number
           min_emotional_arc: number
           min_engagement_pacing_score: number
           min_first_frame_originality_score: number
           min_hook_uniqueness_score: number
+          min_lifestyle_v7: number
           min_motion_diversity: number | null
           min_motion_entropy: number
           min_pinterest_quality_score: number
+          min_product_demo_v7: number
           min_product_fidelity_score: number
           min_publish_gap_minutes: number
           min_realism_consistency: number
@@ -2647,6 +2652,7 @@ export type Database = {
           style_bias_epsilon: number
           style_suppression_days: number
           text_safe_area_required: boolean
+          text_safe_zone_tolerance: number
           thumbnail_phash_distance_threshold: number
           updated_at: string
           updated_by: string | null
@@ -2687,6 +2693,8 @@ export type Database = {
           human_realism_min?: number
           human_realism_required?: boolean
           id?: boolean
+          max_caption_density_v7?: number
+          max_dense_caption_ratio_v7?: number
           max_duplicate_threshold?: number
           max_pins_per_day?: number
           max_render_attempts?: number | null
@@ -2695,14 +2703,17 @@ export type Database = {
           max_static_duration_frames_v5?: number
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
+          min_closeups_v7?: number
           min_days_between_same_product?: number
           min_emotional_arc?: number
           min_engagement_pacing_score?: number
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
+          min_lifestyle_v7?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
           min_pinterest_quality_score?: number
+          min_product_demo_v7?: number
           min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
@@ -2750,6 +2761,7 @@ export type Database = {
           style_bias_epsilon?: number
           style_suppression_days?: number
           text_safe_area_required?: boolean
+          text_safe_zone_tolerance?: number
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null
@@ -2790,6 +2802,8 @@ export type Database = {
           human_realism_min?: number
           human_realism_required?: boolean
           id?: boolean
+          max_caption_density_v7?: number
+          max_dense_caption_ratio_v7?: number
           max_duplicate_threshold?: number
           max_pins_per_day?: number
           max_render_attempts?: number | null
@@ -2798,14 +2812,17 @@ export type Database = {
           max_static_duration_frames_v5?: number
           min_camera_motion_score?: number
           min_caption_visibility?: number | null
+          min_closeups_v7?: number
           min_days_between_same_product?: number
           min_emotional_arc?: number
           min_engagement_pacing_score?: number
           min_first_frame_originality_score?: number
           min_hook_uniqueness_score?: number
+          min_lifestyle_v7?: number
           min_motion_diversity?: number | null
           min_motion_entropy?: number
           min_pinterest_quality_score?: number
+          min_product_demo_v7?: number
           min_product_fidelity_score?: number
           min_publish_gap_minutes?: number
           min_realism_consistency?: number
@@ -2853,6 +2870,7 @@ export type Database = {
           style_bias_epsilon?: number
           style_suppression_days?: number
           text_safe_area_required?: boolean
+          text_safe_zone_tolerance?: number
           thumbnail_phash_distance_threshold?: number
           updated_at?: string
           updated_by?: string | null

@@ -526,9 +526,15 @@ Deno.serve(async (req) => {
   let minUniqueScenesV7 = 4;
   let minUniqueCamerasV7 = 3;
   let minSceneCountV7 = 5;
+  let minCloseupsV7 = 1;
+  let minLifestyleV7 = 1;
+  let minProductDemoV7 = 1;
+  let textSafeZoneTolerance = 0;
+  let maxCaptionDensityV7 = 0.25;
+  let maxDenseCaptionRatioV7 = 0.34;
   try {
     const { data: v7s } = await admin.from("cinematic_ad_settings")
-      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7")
+      .select("cinematic_v7_enabled, min_pinterest_quality_score, min_unique_scenes_v7, min_unique_cameras_v7, min_scene_count_v7, min_closeups_v7, min_lifestyle_v7, min_product_demo_v7, text_safe_zone_tolerance, max_caption_density_v7, max_dense_caption_ratio_v7")
       .eq("id", true).maybeSingle();
     if (v7s) {
       v7Enabled = v7s.cinematic_v7_enabled !== false;
@@ -536,6 +542,12 @@ Deno.serve(async (req) => {
       minUniqueScenesV7 = Number(v7s.min_unique_scenes_v7 ?? minUniqueScenesV7);
       minUniqueCamerasV7 = Number(v7s.min_unique_cameras_v7 ?? minUniqueCamerasV7);
       minSceneCountV7 = Number(v7s.min_scene_count_v7 ?? minSceneCountV7);
+      minCloseupsV7 = Number((v7s as any).min_closeups_v7 ?? minCloseupsV7);
+      minLifestyleV7 = Number((v7s as any).min_lifestyle_v7 ?? minLifestyleV7);
+      minProductDemoV7 = Number((v7s as any).min_product_demo_v7 ?? minProductDemoV7);
+      textSafeZoneTolerance = Number((v7s as any).text_safe_zone_tolerance ?? textSafeZoneTolerance);
+      maxCaptionDensityV7 = Number((v7s as any).max_caption_density_v7 ?? maxCaptionDensityV7);
+      maxDenseCaptionRatioV7 = Number((v7s as any).max_dense_caption_ratio_v7 ?? maxDenseCaptionRatioV7);
     }
   } catch (_) { /* defaults */ }
 
@@ -546,12 +558,20 @@ Deno.serve(async (req) => {
   const uniqueScenesV7 = sceneSignatures.size;
   const uniqueCamerasV7 = new Set(planCrops.filter(Boolean)).size;
 
-  const hasCloseup = planCrops.some((c) => /close|macro|tight|detail/.test(c)) ||
-    planRoles.some((r) => /close|macro|detail/.test(r));
-  const hasLifestyle = planRoles.some((r) => /lifestyle|home|owner|room|environment/.test(r)) ||
-    plan.some((s) => /lifestyle|home|owner/i.test(String(s?.category ?? "")));
-  const hasProductDemo = planRoles.some((r) => /demo|product|inuse|in_use|action/.test(r)) ||
-    plan.some((s) => /demo|product|in[-_ ]?use|action/i.test(String(s?.category ?? "")));
+  const closeupCount = plan.reduce((n, s, i) => n + (
+    /close|macro|tight|detail/.test(planCrops[i] ?? "") || /close|macro|detail/.test(planRoles[i] ?? "") ? 1 : 0
+  ), 0);
+  const lifestyleCount = plan.reduce((n, s, i) => n + (
+    /lifestyle|home|owner|room|environment/.test(planRoles[i] ?? "") ||
+    /lifestyle|home|owner/i.test(String(s?.category ?? "")) ? 1 : 0
+  ), 0);
+  const productDemoCount = plan.reduce((n, s, i) => n + (
+    /demo|product|inuse|in_use|action/.test(planRoles[i] ?? "") ||
+    /demo|product|in[-_ ]?use|action/i.test(String(s?.category ?? "")) ? 1 : 0
+  ), 0);
+  const hasCloseup = closeupCount >= minCloseupsV7;
+  const hasLifestyle = lifestyleCount >= minLifestyleV7;
+  const hasProductDemo = productDemoCount >= minProductDemoV7;
   const hasCtaFrame = plan.some((s) => s?.isCta === true || /cta/i.test(String(s?.role ?? s?.category ?? "")));
 
   const productCtxStr = `${String(productCtx?.name ?? "")} ${String(productCtx?.category ?? "")} ${String((productCtx as any)?.primary_keyword ?? "")}`.toLowerCase();
@@ -573,15 +593,22 @@ Deno.serve(async (req) => {
   const textCutOff = safeAreaViolations.some((v: string) =>
     /truncat|clamp|overflow|cut|too_long|exceeds/i.test(v),
   );
-  const textOutsideSafe = !safeArea.ok;
+  // `text_safe_zone_tolerance` (0..1) allows a fraction of safe-area violations
+  // before we flag the whole video. 0 = strict, 0.2 = up to 20% of scenes may
+  // breach the safe zone before the gate fails.
+  const safeViolationRatio = plan.length > 0
+    ? Math.min(1, safeAreaViolations.length / plan.length)
+    : (safeArea.ok ? 0 : 1);
+  const textOutsideSafe = !safeArea.ok && safeViolationRatio > textSafeZoneTolerance;
 
   // ≤25% text per frame proxy — caption length / chars-that-fit-a-frame.
   // 1080px wide, ~96px max font ≈ ~18 chars per line × 2 lines ≈ 36 chars/frame.
+  const captionCharLimit = Math.max(8, Math.round(36 * maxCaptionDensityV7 * 4));
   const overTextFrames = plan.filter((s) => {
     const cap = String(s?.caption ?? "").trim();
-    return cap.length > 0 && cap.length / 36 > 0.25 && cap.length > 45;
+    return cap.length > 0 && (cap.length / 36) > maxCaptionDensityV7 && cap.length > captionCharLimit;
   }).length;
-  const tooMuchText = plan.length > 0 && (overTextFrames / plan.length) > 0.34;
+  const tooMuchText = plan.length > 0 && (overTextFrames / plan.length) > maxDenseCaptionRatioV7;
 
   const v7_reject_reasons: string[] = [];
   if (v7Enabled) {
