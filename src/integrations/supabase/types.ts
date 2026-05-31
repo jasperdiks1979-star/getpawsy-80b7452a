@@ -1829,10 +1829,13 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_quality_score: number | null
+          motion_ratio: number | null
           motion_score: number | null
+          motion_storyboard: Json | null
           music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
@@ -1856,6 +1859,8 @@ export type Database = {
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
+          pinterest_perf_breakdown: Json | null
+          pinterest_perf_score: number | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
           pinterest_publish_attempts: number
@@ -1930,6 +1935,7 @@ export type Database = {
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
+          selected_voice_id: string | null
           smart_retry_count: number
           status: string
           status_message: string | null
@@ -1966,7 +1972,9 @@ export type Database = {
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
+          voice_alt_id: string | null
           voice_candidates: Json
+          voice_fit_score: number | null
           voice_id: string
           voice_score: number | null
           voice_style: string | null
@@ -2070,10 +2078,13 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_quality_score?: number | null
+          motion_ratio?: number | null
           motion_score?: number | null
+          motion_storyboard?: Json | null
           music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
@@ -2097,6 +2108,8 @@ export type Database = {
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
+          pinterest_perf_breakdown?: Json | null
+          pinterest_perf_score?: number | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
           pinterest_publish_attempts?: number
@@ -2171,6 +2184,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
+          selected_voice_id?: string | null
           smart_retry_count?: number
           status?: string
           status_message?: string | null
@@ -2207,7 +2221,9 @@ export type Database = {
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
+          voice_alt_id?: string | null
           voice_candidates?: Json
+          voice_fit_score?: number | null
           voice_id?: string
           voice_score?: number | null
           voice_style?: string | null
@@ -2311,10 +2327,13 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_quality_score?: number | null
+          motion_ratio?: number | null
           motion_score?: number | null
+          motion_storyboard?: Json | null
           music_track_id?: string | null
           music_url?: string | null
           needs_admin_review?: boolean
@@ -2338,6 +2357,8 @@ export type Database = {
           pin_title?: string | null
           pinterest_asset_id?: string | null
           pinterest_live_pin_url?: string | null
+          pinterest_perf_breakdown?: Json | null
+          pinterest_perf_score?: number | null
           pinterest_pin_id?: string | null
           pinterest_pin_url?: string | null
           pinterest_publish_attempts?: number
@@ -2412,6 +2433,7 @@ export type Database = {
           scheduled_publish_at?: string | null
           selected_cta_index?: number
           selected_hook_index?: number
+          selected_voice_id?: string | null
           smart_retry_count?: number
           status?: string
           status_message?: string | null
@@ -2448,7 +2470,9 @@ export type Database = {
           vo_script?: string | null
           vo_script_variants?: Json
           vo_url?: string | null
+          voice_alt_id?: string | null
           voice_candidates?: Json
+          voice_fit_score?: number | null
           voice_id?: string
           voice_score?: number | null
           voice_style?: string | null
@@ -18847,10 +18871,13 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_quality_score: number | null
+          motion_ratio: number | null
           motion_score: number | null
+          motion_storyboard: Json | null
           music_track_id: string | null
           music_url: string | null
           needs_admin_review: boolean
@@ -18874,6 +18901,8 @@ export type Database = {
           pin_title: string | null
           pinterest_asset_id: string | null
           pinterest_live_pin_url: string | null
+          pinterest_perf_breakdown: Json | null
+          pinterest_perf_score: number | null
           pinterest_pin_id: string | null
           pinterest_pin_url: string | null
           pinterest_publish_attempts: number
@@ -18948,6 +18977,7 @@ export type Database = {
           scheduled_publish_at: string | null
           selected_cta_index: number
           selected_hook_index: number
+          selected_voice_id: string | null
           smart_retry_count: number
           status: string
           status_message: string | null
@@ -18984,7 +19014,9 @@ export type Database = {
           vo_script: string | null
           vo_script_variants: Json
           vo_url: string | null
+          voice_alt_id: string | null
           voice_candidates: Json
+          voice_fit_score: number | null
           voice_id: string
           voice_score: number | null
           voice_style: string | null
