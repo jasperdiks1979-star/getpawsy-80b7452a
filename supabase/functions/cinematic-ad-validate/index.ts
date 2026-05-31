@@ -659,6 +659,7 @@ Deno.serve(async (req) => {
     haystack_lengths: sceneHaystacks.map((h) => h.length),
   };
   console.log(`[validate] ${traceId} v7_detection job=${jobId}`, JSON.stringify(v7DetectionDebug));
+  (report as any).v7_detection_debug = v7DetectionDebug;
 
   // Ken-Burns-only detection: every motion is some flavour of zoom/pan with no real cuts/whip/parallax.
   const motionTokens = planMotionsArr.filter(Boolean);
