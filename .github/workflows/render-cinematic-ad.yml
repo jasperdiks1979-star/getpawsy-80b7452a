@@ -73,14 +73,6 @@ jobs:
           which ffmpeg
           ffmpeg -version | head -n 1
           npx playwright --version
-          echo "CHROME_BIN=${CHROME_BIN:-unset}"
-          echo "PUPPETEER_EXECUTABLE_PATH=${PUPPETEER_EXECUTABLE_PATH:-unset}"
-          echo "REMOTION_CHROME_EXECUTABLE=${REMOTION_CHROME_EXECUTABLE:-unset}"
-          if [ -n "${CHROME_BIN:-}" ] && [ ! -x "${CHROME_BIN}" ]; then
-            echo "Error: CHROME_BIN is not executable: ${CHROME_BIN}"
-            ls -la "${CHROME_BIN}" || true
-            exit 1
-          fi
 
       - name: Preflight env check
         shell: bash
