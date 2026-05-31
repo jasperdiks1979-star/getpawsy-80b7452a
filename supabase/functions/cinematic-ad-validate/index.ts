@@ -670,6 +670,68 @@ Deno.serve(async (req) => {
     message: fidelityReasons.length ? fidelityReasons.slice(0, 6).join(" | ") : undefined,
   });
 
+  // ── Creative Domination Mode — final composite scoring ────────────────────
+  // Hook / voice / commercial / CTR-prediction blend into one final_creative_score.
+  // Hard rejects (single-image, ken-burns only, text outside safe) zero out the
+  // score so they cannot sneak past a high V7 quality score.
+  const hookScoreStored = Number((job as any).hook_score ?? 0);
+  const hookScore = hookScoreStored > 0 ? hookScoreStored : Math.round(v2.hook_strength);
+  const voiceScoreStored = Number((job as any).voice_score ?? 0);
+  const voiceScore = voiceScoreStored > 0 ? voiceScoreStored : (job.vo_url ? 75 : 60);
+
+  const commercialScore = Math.round(
+    pinterest_quality_score * 0.40 +
+    Math.min(100, (ugc_authenticity_score ?? 0) * 10) * 0.20 +
+    Math.min(100, (thumb_stop_score ?? 0) * 10) * 0.20 +
+    creativeQuality * 0.20,
+  );
+
+  const ctrPredictionScore = Math.round(
+    hookScore * 0.45 +
+    Math.min(100, (thumb_stop_score ?? 0) * 10) * 0.25 +
+    scene_diversity_v7_score * 0.15 +
+    text_safety_score * 0.15,
+  );
+
+  const finalCreativeRaw = Math.round(
+    pinterest_quality_score * 0.25 +
+    hookScore * 0.20 +
+    voiceScore * 0.15 +
+    commercialScore * 0.20 +
+    ctrPredictionScore * 0.20,
+  );
+  const finalCreativeScore = hard_reject_reasons.length > 0 ? 0 : Math.max(0, Math.min(100, finalCreativeRaw));
+
+  const dominationRejects: string[] = [];
+  if (dominationMode) {
+    if (hookScore < minHookScore) dominationRejects.push(`hook_score(${hookScore}<${minHookScore})`);
+    if (voiceScore < minVoiceScore) dominationRejects.push(`voice_score(${voiceScore}<${minVoiceScore})`);
+    if (ctrPredictionScore < minCtrPrediction) dominationRejects.push(`ctr_prediction(${ctrPredictionScore}<${minCtrPrediction})`);
+    if (finalCreativeScore < minFinalCreative) dominationRejects.push(`final_score(${finalCreativeScore}<${minFinalCreative})`);
+    for (const hr of hard_reject_reasons) dominationRejects.push(`hard:${hr}`);
+  }
+
+  report.checks.push({ name: "domination_hook_score", passed: hookScore >= minHookScore, observed: hookScore, expected: `>= ${minHookScore}` });
+  report.checks.push({ name: "domination_voice_score", passed: voiceScore >= minVoiceScore, observed: voiceScore, expected: `>= ${minVoiceScore}` });
+  report.checks.push({ name: "domination_commercial_score", passed: commercialScore >= 80, observed: commercialScore, expected: ">= 80" });
+  report.checks.push({ name: "domination_ctr_prediction", passed: ctrPredictionScore >= minCtrPrediction, observed: ctrPredictionScore, expected: `>= ${minCtrPrediction}` });
+  report.checks.push({ name: "domination_final_creative_score", passed: finalCreativeScore >= minFinalCreative, observed: finalCreativeScore, expected: `>= ${minFinalCreative}`, message: hard_reject_reasons.length ? `hard rejects: ${hard_reject_reasons.join(", ")}` : undefined });
+  report.checks.push({ name: "domination_emotional_payoff", passed: emotional_payoff_present, observed: emotional_payoff_present, expected: true });
+  report.checks.push({ name: "domination_no_hard_rejects", passed: hard_reject_reasons.length === 0, observed: hard_reject_reasons.join(",") || "none", expected: "none" });
+
+  (report as any).domination = {
+    enabled: dominationMode,
+    hook_score: hookScore,
+    voice_score: voiceScore,
+    commercial_score: commercialScore,
+    ctr_prediction_score: ctrPredictionScore,
+    final_creative_score: finalCreativeScore,
+    hard_reject_reasons,
+    domination_rejects: dominationRejects,
+    emotional_payoff_present,
+    thresholds: { minHookScore, minVoiceScore, minCtrPrediction, minFinalCreative },
+  };
+
     const patch: Record<string, unknown> = {
       validation_report: report,
       motion_score: report.motion_score,
@@ -718,6 +780,16 @@ Deno.serve(async (req) => {
       pinterest_quality_score,
       v7_reject_reasons,
       validation_v7_passed,
+      // Creative Domination Mode columns
+      commercial_score: commercialScore,
+      ctr_prediction_score: ctrPredictionScore,
+      final_creative_score: finalCreativeScore,
+      hard_reject_reasons,
+      emotional_payoff_present,
+      // hook_score & voice_score are written by their dedicated engines; only
+      // backfill if missing so we don't overwrite a real candidate-derived score.
+      ...((job as any).hook_score == null ? { hook_score: hookScore } : {}),
+      ...((job as any).voice_score == null ? { voice_score: voiceScore } : {}),
     };
     // Don't auto-flip status; the webhook owns lifecycle. But surface failure
     // in status_message so the dashboard reflects it.
@@ -733,6 +805,7 @@ Deno.serve(async (req) => {
       ...v4_reject_reasons,
       ...v5_reject_reasons,
       ...v7_reject_reasons,
+      ...dominationRejects,
       ...(fidelityEnabled && !fidelityPassed ? [`product_fidelity(${fidelityScore ?? "?"}<${minFidelityScore})`, ...fidelityReasons.slice(0, 4)] : []),
     ];
     if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
