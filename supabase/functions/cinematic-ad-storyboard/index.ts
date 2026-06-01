@@ -256,10 +256,25 @@ Return ONLY valid JSON matching this schema:
       console.warn("[storyboard] ai failed", res.status);
       return fallbackStoryboard(productName);
     }
-    const data = await res.json();
+    // Non-JSON / HTML response guard — gateway sometimes returns an HTML
+    // error page during incidents. Treat as a soft failure and use fallback.
+    const ct = res.headers.get("content-type") ?? "";
+    const raw = await res.text();
+    if (raw.trim().startsWith("<") || !ct.includes("application/json")) {
+      console.warn("[storyboard] non-json response", { ct, preview: raw.slice(0, 160) });
+      return fallbackStoryboard(productName);
+    }
+    let data: any;
+    try { data = JSON.parse(raw); }
+    catch (e) {
+      console.warn("[storyboard] json parse failed", e instanceof Error ? e.message : String(e));
+      return fallbackStoryboard(productName);
+    }
     const content = data?.choices?.[0]?.message?.content;
     if (!content) return fallbackStoryboard(productName);
-    const parsed = JSON.parse(content);
+    let parsed: any;
+    try { parsed = JSON.parse(content); }
+    catch { return fallbackStoryboard(productName); }
 
     const hookVariants = Array.isArray(parsed.hookVariants) ? parsed.hookVariants.slice(0, 5) : [];
     const sel = Math.max(0, Math.min(hookVariants.length - 1, Number(parsed.selectedHookIndex ?? 0)));
