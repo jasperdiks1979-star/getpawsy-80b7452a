@@ -83,6 +83,67 @@ function json(obj: unknown, status = 200) {
   });
 }
 
+/**
+ * Merge worker-callback fields into the DB patch without overwriting
+ * existing values with NULL/undefined. Used so the auto-trim callback
+ * (which only carries mp4_url + duration) does NOT wipe motion_score,
+ * output_file_size_bytes, output_width/height, output_black_bars,
+ * output_thumbnail_url or scene_plan that were already captured on the
+ * original render callback.
+ */
+function mergePreserve(
+  patch: Record<string, unknown>,
+  body: Record<string, any>,
+  mapping: Record<string, (v: any) => unknown>,
+): void {
+  for (const [bodyKey, transform] of Object.entries(mapping)) {
+    const v = body?.[bodyKey];
+    if (v === undefined || v === null) continue;
+    if (Array.isArray(v) && v.length === 0) continue;
+    const out = transform(v);
+    if (out === undefined || out === null) continue;
+    // bodyKey doubles as patchKey unless transform returns [k, v] tuple
+    if (Array.isArray(out) && out.length === 2 && typeof out[0] === "string") {
+      patch[out[0] as string] = out[1];
+    } else {
+      patch[bodyKey] = out;
+    }
+  }
+}
+
+// Canonical field map: worker payload key -> coercion + target column.
+// Used by both the original render callback and the auto-trim callback so the
+// trim path never overwrites richer metadata captured on the first call.
+const FIELD_MAP: Record<string, (v: any) => unknown> = {
+  mp4_url:       (v) => ["output_mp4_url", stripDoubleSlash(String(v))],
+  duration:      (v) => ["output_duration_seconds", Number(v)],
+  file_size:     (v) => ["output_file_size_bytes", Number(v)],
+  width:         (v) => ["output_width", Number(v)],
+  height:        (v) => ["output_height", Number(v)],
+  motion_score:  (v) => ["motion_score", Number(v)],
+  motion_quality_score: (v) => ["motion_quality_score", Math.max(0, Math.min(100, Math.round(Number(v))))],
+  black_bars:    (v) => ["output_black_bars", Boolean(v)],
+  thumbnail_url: (v) => ["output_thumbnail_url", stripDoubleSlash(String(v))],
+  scene_plan:    (v) => Array.isArray(v) ? ["scene_plan", v] : undefined,
+};
+
+/**
+ * Strip accidental double slashes in path portion of a storage URL.
+ * Some workers/secrets carry a trailing slash on SUPABASE_URL which
+ * produces `…supabase.co//storage/…` — iPhone Safari sometimes refuses
+ * those. Keep `://` intact, collapse any other `//` to `/`.
+ */
+function stripDoubleSlash(url: string): string {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    u.pathname = u.pathname.replace(/\/{2,}/g, "/");
+    return u.toString();
+  } catch {
+    return url.replace(/([^:])\/{2,}/g, "$1/");
+  }
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
