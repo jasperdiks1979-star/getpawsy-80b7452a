@@ -432,6 +432,7 @@ const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/Cinem
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
+const CinematicMotionForensicsPage = lazyWithRetry(() => import("./pages/admin/CinematicMotionForensicsPage"));
 const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/PinterestCleanupPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
@@ -2105,6 +2106,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicQueueHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-ads/motion-forensics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicMotionForensicsPage />
                                 </Suspense>
                               }
                             />
