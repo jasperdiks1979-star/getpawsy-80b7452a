@@ -130,6 +130,7 @@ export default function PinterestAdStudio() {
   const [diagnostics, setDiagnostics] = useState<ConceptDiag[]>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [dryRun, setDryRun] = useState(false);
+  const [forceBudgetOverride, setForceBudgetOverride] = useState(false);
 
   // Preload product from ?slug=
   useEffect(() => {
@@ -166,7 +167,7 @@ export default function PinterestAdStudio() {
   }
 
   // Returns { jobId, prepare, queue } — never throws.
-  async function startOneWithDiag(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null }): Promise<{ jobId: string | null; prepare: EdgeCallDiag; queue: EdgeCallDiag | null }> {
+  async function startOneWithDiag(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null; forceBudget?: boolean }): Promise<{ jobId: string | null; prepare: EdgeCallDiag; queue: EdgeCallDiag | null }> {
     if (!product) {
       const fake: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: null, responseBody: null, traceId: null, errorMessage: "no product selected" };
       return { jobId: null, prepare: fake, queue: null };
@@ -189,6 +190,8 @@ export default function PinterestAdStudio() {
       // approval gate doesn't 412 when called as part of the run.
       auto_approve: true,
       dry_run: dryRun,
+      force_budget_override: opts.forceBudget === true,
+      force_budget_reason: opts.forceBudget ? "pinterest_ad_studio_admin_force" : null,
     });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
@@ -295,11 +298,11 @@ export default function PinterestAdStudio() {
         const c = concepts[i];
         if (i > 0) await new Promise((res) => setTimeout(res, STAGGER_MS));
         try {
-          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride });
           let retried = false;
           if (!r.jobId && c.archetype === "viral_interrupt") {
             retried = true;
-            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride });
           }
           settled.push({ status: "fulfilled", value: { idx: i, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun } });
         } catch (err) {
@@ -489,6 +492,24 @@ export default function PinterestAdStudio() {
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
             Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
           </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
+            <input
+              type="checkbox"
+              checked={forceBudgetOverride}
+              onChange={(e) => setForceBudgetOverride(e.target.checked)}
+              className="accent-amber-500 mt-0.5"
+            />
+            <span>
+              <span className="font-medium text-amber-700 dark:text-amber-400">Force render despite 24h product budget</span>
+              <span className="block text-muted-foreground">
+                Bypass the 1-render-per-product-per-24h cap. Admin-only. Use for testing or when re-rendering a product the same day. Each bypass is logged.
+              </span>
+            </span>
+          </label>
+          <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+            <span>Hit a render budget block? Inspect or clear it here.</span>
+            <Link to="/admin/render-budget" className="text-primary hover:underline">Render Budget dashboard →</Link>
+          </div>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
           )}

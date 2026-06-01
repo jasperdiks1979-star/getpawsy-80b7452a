@@ -1807,6 +1807,9 @@ export type Database = {
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          force_render_budget_by: string | null
+          force_render_budget_override: boolean
+          force_render_budget_reason: string | null
           hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
@@ -2082,6 +2085,9 @@ export type Database = {
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          force_render_budget_by?: string | null
+          force_render_budget_override?: boolean
+          force_render_budget_reason?: string | null
           hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
@@ -2357,6 +2363,9 @@ export type Database = {
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          force_render_budget_by?: string | null
+          force_render_budget_override?: boolean
+          force_render_budget_reason?: string | null
           hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
@@ -2670,19 +2679,28 @@ export type Database = {
       }
       cinematic_ad_render_budget: {
         Row: {
+          force_override_count: number
           last_expensive_render_at: string
+          last_force_at: string | null
+          last_force_by: string | null
           product_slug: string
           render_count_24h: number
           updated_at: string
         }
         Insert: {
+          force_override_count?: number
           last_expensive_render_at?: string
+          last_force_at?: string | null
+          last_force_by?: string | null
           product_slug: string
           render_count_24h?: number
           updated_at?: string
         }
         Update: {
+          force_override_count?: number
           last_expensive_render_at?: string
+          last_force_at?: string | null
+          last_force_by?: string | null
           product_slug?: string
           render_count_24h?: number
           updated_at?: string
@@ -18050,6 +18068,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_ad_render_budget_status: {
+        Row: {
+          currently_blocked: boolean | null
+          force_override_count: number | null
+          last_expensive_render_at: string | null
+          last_force_at: string | null
+          last_force_by: string | null
+          product_slug: string | null
+          render_count_24h: number | null
+          reset_at: string | null
+          seconds_until_reset: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          currently_blocked?: never
+          force_override_count?: number | null
+          last_expensive_render_at?: string | null
+          last_force_at?: string | null
+          last_force_by?: string | null
+          product_slug?: string | null
+          render_count_24h?: number | null
+          reset_at?: never
+          seconds_until_reset?: never
+          updated_at?: string | null
+        }
+        Update: {
+          currently_blocked?: never
+          force_override_count?: number | null
+          last_expensive_render_at?: string | null
+          last_force_at?: string | null
+          last_force_by?: string | null
+          product_slug?: string | null
+          render_count_24h?: number | null
+          reset_at?: never
+          seconds_until_reset?: never
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       clean_channel_performance: {
         Row: {
           add_to_carts: number | null
@@ -18756,14 +18813,28 @@ export type Database = {
         }
         Returns: string
       }
+      cinematic_clear_render_budget: {
+        Args: { p_product_slug: string; p_reason?: string }
+        Returns: {
+          cleared: boolean
+          previous_last_at: string
+        }[]
+      }
       cinematic_queue_health: { Args: never; Returns: Json }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
       cinematic_reserve_render_slot: {
-        Args: { p_force?: boolean; p_product_slug: string }
+        Args: {
+          p_admin_user_id?: string
+          p_force?: boolean
+          p_force_reason?: string
+          p_product_slug: string
+        }
         Returns: {
           allowed: boolean
+          forced: boolean
           last_at: string
           reason: string
+          reset_at: string
         }[]
       }
       claim_cinematic_ad_job: {
@@ -19157,6 +19228,9 @@ export type Database = {
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          force_render_budget_by: string | null
+          force_render_budget_override: boolean
+          force_render_budget_reason: string | null
           hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
