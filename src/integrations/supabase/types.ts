@@ -1843,6 +1843,7 @@ export type Database = {
           motion_plan_summary: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
+          motion_regen_attempts: number
           motion_score: number | null
           motion_storyboard: Json | null
           music_track_id: string | null
@@ -2107,6 +2108,7 @@ export type Database = {
           motion_plan_summary?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
+          motion_regen_attempts?: number
           motion_score?: number | null
           motion_storyboard?: Json | null
           music_track_id?: string | null
@@ -2371,6 +2373,7 @@ export type Database = {
           motion_plan_summary?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
+          motion_regen_attempts?: number
           motion_score?: number | null
           motion_storyboard?: Json | null
           music_track_id?: string | null
@@ -2733,6 +2736,8 @@ export type Database = {
           min_unique_scenes_v7: number
           min_visual_uniqueness_score: number
           min_voice_score: number
+          motion_quality_max_regen_attempts: number
+          motion_quality_min_score: number
           motion_score_min_threshold: number
           pattern_interrupt_every_max_frames: number
           pattern_interrupt_every_min_frames: number
@@ -2851,6 +2856,8 @@ export type Database = {
           min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
           min_voice_score?: number
+          motion_quality_max_regen_attempts?: number
+          motion_quality_min_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
           pattern_interrupt_every_min_frames?: number
@@ -2969,6 +2976,8 @@ export type Database = {
           min_unique_scenes_v7?: number
           min_visual_uniqueness_score?: number
           min_voice_score?: number
+          motion_quality_max_regen_attempts?: number
+          motion_quality_min_score?: number
           motion_score_min_threshold?: number
           pattern_interrupt_every_max_frames?: number
           pattern_interrupt_every_min_frames?: number
@@ -19091,6 +19100,7 @@ export type Database = {
           motion_plan_summary: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
+          motion_regen_attempts: number
           motion_score: number | null
           motion_storyboard: Json | null
           music_track_id: string | null
