@@ -118,6 +118,7 @@ type WatchdogResult = {
     qa_scored: number;
     error?: string;
   };
+  promoted?: Array<{ job_id: string; ok: boolean; reason?: string }>;
 };
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
