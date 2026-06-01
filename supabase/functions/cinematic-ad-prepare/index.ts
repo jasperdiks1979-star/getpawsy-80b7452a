@@ -1206,22 +1206,25 @@ const _handlerInner = async (req: Request): Promise<Response> => {
 
     const fallbackUsed = !aiAvailable || !voAvailable;
 
-    // Phase 3: invoke cinematic-motion-engine so each scene gets a real motion
-    // plan (parallax, depth_layers, camera_move, tracking_path) instead of the
-    // flat ffmpeg zoompan slideshow. Best-effort — never blocks `prepared`.
-    try {
-      const meRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cinematic-motion-engine`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        },
-        body: JSON.stringify({ job_id: jobId }),
+    // Phase 5: cinematic-motion-engine is now MANDATORY for engine_version >= v3.
+    // If it fails or produces a sub-minimum plan we mark the concept failed and
+    // refuse to hand off to the renderer — no more silent ffmpeg slideshow.
+    const me = await ensureMotionStoryboard(admin, jobId, {
+      engineVersion: (updated as any)?.engine_version ?? "v3",
+      traceId,
+    });
+    if (!me.ok) {
+      return json(200, {
+        ok: false,
+        recoverable: false,
+        fallback_used: false,
+        concept_status: "concept_failed",
+        error_code: me.error_code,
+        message: me.message,
+        details: (me as any).details ?? null,
+        traceId,
+        job_id: jobId,
       });
-      const meJson = await meRes.json().catch(() => ({}));
-      console.log(`[prepare] motion-engine job=${jobId} ok=${meJson?.ok} scenes=${meJson?.scene_count} ratio=${meJson?.motion_ratio}`);
-    } catch (e) {
-      console.warn(`[prepare] motion-engine invoke failed (non-fatal) job=${jobId}`, (e as Error).message);
     }
 
     return json(200, {
