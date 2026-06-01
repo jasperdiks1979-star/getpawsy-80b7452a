@@ -552,6 +552,93 @@ Return STRICT JSON, no markdown:
   }
 }
 
+// ---------------------------------------------------------------------------
+// Motion-engine enforcement (Phase 5)
+//
+// Every Pinterest ad with engine_version >= 'v3' MUST have a real motion
+// storyboard produced by cinematic-motion-engine — no silent ffmpeg ken-burns
+// fallback. This helper invokes the engine and, on failure, marks the job
+// `concept_failed` with an explicit error_code so callers can surface the
+// diagnostic instead of producing a slideshow.
+// ---------------------------------------------------------------------------
+const MOTION_ENGINE_MIN_RATIO = 0.7;
+const MOTION_ENGINE_MIN_SCENES = 6;
+
+async function ensureMotionStoryboard(
+  admin: any,
+  jobId: string,
+  opts: { engineVersion?: string | null; traceId: string },
+): Promise<{ ok: true; summary: any } | { ok: false; error_code: string; message: string; details?: any }> {
+  const isV3OrLater = (() => {
+    const v = String(opts.engineVersion ?? "v3").toLowerCase().replace(/^v/, "");
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n >= 3 : true; // default-deny: anything unrecognised treated as v3+
+  })();
+  try {
+    const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cinematic-motion-engine`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    const j: any = await resp.json().catch(() => ({}));
+    const ok = resp.ok && j?.ok === true;
+    const sceneCount = Number(j?.scene_count ?? j?.storyboard?.length ?? 0);
+    const motionRatio = Number(j?.motion_ratio ?? j?.summary?.motion_ratio ?? 0);
+    const meetsRules = ok && sceneCount >= MOTION_ENGINE_MIN_SCENES && motionRatio >= MOTION_ENGINE_MIN_RATIO;
+    console.log(`[prepare] motion-engine job=${jobId} ok=${ok} scenes=${sceneCount} ratio=${motionRatio} v3=${isV3OrLater}`);
+    if (meetsRules) {
+      // Record the engine label + transition count for admin diagnostics.
+      const transitions = Array.isArray(j?.storyboard)
+        ? j.storyboard.filter((s: any) => s?.transition_in || s?.transition_out).length
+        : sceneCount;
+      await admin.from("cinematic_ad_jobs").update({
+        motion_engine_used: "v2",
+        transition_count: transitions,
+      }).eq("id", jobId);
+      return { ok: true, summary: j?.summary ?? null };
+    }
+    // Hard fail for v3+ jobs. Older engines are still allowed to soft-fall-back.
+    if (!isV3OrLater) {
+      console.warn(`[prepare] motion-engine soft-fail (engine_version<v3) job=${jobId}`);
+      await admin.from("cinematic_ad_jobs").update({
+        motion_engine_used: ok ? "v2-partial" : "none",
+      }).eq("id", jobId);
+      return { ok: true, summary: j?.summary ?? null };
+    }
+    const reason = !ok
+      ? `motion-engine returned non-ok: ${j?.message ?? `HTTP ${resp.status}`}`
+      : `motion plan below minima (scenes=${sceneCount}/${MOTION_ENGINE_MIN_SCENES}, ratio=${motionRatio.toFixed(2)}/${MOTION_ENGINE_MIN_RATIO})`;
+    await admin.from("cinematic_ad_jobs").update({
+      status: "concept_failed",
+      motion_engine_used: "none",
+      error_message: `MOTION_ENGINE_FAILED: ${reason}`,
+      status_message: "motion engine did not produce a valid storyboard — render aborted",
+    }).eq("id", jobId);
+    return {
+      ok: false,
+      error_code: "MOTION_ENGINE_FAILED",
+      message: reason,
+      details: { scene_count: sceneCount, motion_ratio: motionRatio, engine_response: j ?? null },
+    };
+  } catch (e) {
+    const msg = (e as Error)?.message ?? String(e);
+    console.error(`[prepare] motion-engine invoke threw job=${jobId}`, msg);
+    if (!isV3OrLater) {
+      return { ok: true, summary: null };
+    }
+    await admin.from("cinematic_ad_jobs").update({
+      status: "concept_failed",
+      motion_engine_used: "none",
+      error_message: `MOTION_ENGINE_FAILED: ${msg}`,
+      status_message: "motion engine unreachable — render aborted",
+    }).eq("id", jobId);
+    return { ok: false, error_code: "MOTION_ENGINE_FAILED", message: msg };
+  }
+}
+
 const _handlerInner = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = trace();
