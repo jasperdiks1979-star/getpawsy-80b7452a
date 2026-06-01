@@ -1098,6 +1098,25 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     }
 
     const fallbackUsed = !aiAvailable || !voAvailable;
+
+    // Phase 3: invoke cinematic-motion-engine so each scene gets a real motion
+    // plan (parallax, depth_layers, camera_move, tracking_path) instead of the
+    // flat ffmpeg zoompan slideshow. Best-effort — never blocks `prepared`.
+    try {
+      const meRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cinematic-motion-engine`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+      const meJson = await meRes.json().catch(() => ({}));
+      console.log(`[prepare] motion-engine job=${jobId} ok=${meJson?.ok} scenes=${meJson?.scene_count} ratio=${meJson?.motion_ratio}`);
+    } catch (e) {
+      console.warn(`[prepare] motion-engine invoke failed (non-fatal) job=${jobId}`, (e as Error).message);
+    }
+
     return json(200, {
       ok: true, traceId, job_id: jobId,
       message: fallbackUsed ? "prepared — fallback mode (degraded providers)" : "prepared — awaiting approval",
