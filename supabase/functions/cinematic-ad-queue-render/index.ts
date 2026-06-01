@@ -19,7 +19,8 @@ import {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
-const MAX_ACTIVE_QUEUED = 5;
+const MAX_ACTIVE_QUEUED = 6;
+const MAX_QUEUE_WAIT_ATTEMPTS = 8;
 const SCENE_REGEN_MAX_RETRIES = 5;
 
 /**
