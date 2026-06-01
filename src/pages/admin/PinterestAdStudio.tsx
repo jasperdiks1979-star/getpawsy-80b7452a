@@ -274,18 +274,59 @@ export default function PinterestAdStudio() {
       }));
       setDiagnostics(initDiag);
 
-      // Run all concepts in parallel — failures isolated per concept
-      const settled = await Promise.allSettled(concepts.map(async (c, idx) => {
-        // dry-run mode is passed to queue-render via auto_approve+dry_run; prepare still runs normally
-        let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
-        let retried = false;
-        if (!r.jobId && c.archetype === "viral_interrupt") {
-          // Safer fallback prompt: use lifestyle hook + narrator voice
-          retried = true;
-          r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+      // Staggered sequential dispatch — first concept goes immediately, the
+      // rest are queued 30s apart so we don't fill MAX_ACTIVE_QUEUED in one
+      // burst. Concepts that come back as 202 queue_waiting are NOT failed;
+      // the watchdog promotes them as render slots free up.
+      const STAGGER_MS = 30_000;
+      const settled: Array<PromiseSettledResult<{
+        idx: number; c: typeof concepts[number]; jobId: string | null;
+        prepare: EdgeCallDiag; queue: EdgeCallDiag | null; retried: boolean; dryRun: boolean;
+      }>> = [];
+      for (let i = 0; i < concepts.length; i++) {
+        const c = concepts[i];
+        if (i > 0) await new Promise((res) => setTimeout(res, STAGGER_MS));
+        try {
+          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+          let retried = false;
+          if (!r.jobId && c.archetype === "viral_interrupt") {
+            retried = true;
+            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+          }
+          settled.push({ status: "fulfilled", value: { idx: i, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun } });
+        } catch (err) {
+          settled.push({ status: "rejected", reason: err });
         }
-        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRun };
-      }));
+        // Live-update so the UI reflects each concept as it lands.
+        setDiagnostics((prev) => {
+          const next = [...prev];
+          const last = settled[settled.length - 1];
+          if (last && last.status === "fulfilled") {
+            const { c, jobId, prepare, queue, retried, dryRun: isDry } = last.value;
+            const isQueueWaiting = (queue as any)?.responseBody && (() => {
+              try { return JSON.parse((queue as any).responseBody).status === "queue_waiting"; } catch { return false; }
+            })();
+            const ok = !!jobId && prepare.ok && (queue?.ok ?? true) && !isQueueWaiting;
+            let stage: ConceptStage;
+            if (isQueueWaiting) stage = "queue_waiting";
+            else if (ok) stage = isDry ? "success" : "rendering";
+            else stage = "concept_failed";
+            let queueWaiting: ConceptDiag["queueWaiting"] = null;
+            if (isQueueWaiting) {
+              try {
+                const parsed = JSON.parse((queue as any).responseBody);
+                queueWaiting = { retryAfterSec: parsed.retry_after_seconds ?? 30, attempts: parsed.attempts ?? 1, maxAttempts: parsed.max_attempts ?? 8 };
+              } catch { /* ignore */ }
+            }
+            next[i] = {
+              archetype: c.archetype, label: c.label, stage, jobId, prepare, queue, retried,
+              suggestedFix: ok || isQueueWaiting ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+              queueWaiting,
+            };
+          }
+          return next;
+        });
+      }
 
       const results: JobRow[] = [];
       const nextDiag: ConceptDiag[] = [...initDiag];
