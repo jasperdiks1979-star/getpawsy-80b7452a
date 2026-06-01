@@ -66,6 +66,8 @@ import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 // TrustMicrocopy removed — consolidated into TrustBadgesBlock
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
+import { RealSocialProofLine } from "@/components/products/RealSocialProofLine";
+import { ProductGuaranteeBadge } from "@/components/products/ProductGuaranteeBadge";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
