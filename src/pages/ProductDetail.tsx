@@ -1057,6 +1057,22 @@ const ProductDetail = () => {
                     + price block + sticky ATC already carry trust. Keeps
                     above-the-fold quiet for cold mobile traffic. */}
                 {!getConversionFlag('premiumPdpV2') && <MobileStickyTrustBar />}
+                {/*
+                  P0-2 (conversion sprint): the product H1 must be above the
+                  fold on iPhone widths. We render the title block here on
+                  mobile only; the duplicate title block in the right column
+                  is suppressed on mobile so we keep exactly one H1 in the DOM.
+                */}
+                <div className="mb-3">
+                  {product.category && (
+                    <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1.5">
+                      {safeString(product.category)}
+                    </p>
+                  )}
+                  <h1 className="text-2xl font-display font-bold text-foreground leading-tight break-words">
+                    {safeString(product.name)}
+                  </h1>
+                </div>
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
