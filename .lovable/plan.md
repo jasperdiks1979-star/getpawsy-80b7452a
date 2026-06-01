@@ -1,73 +1,91 @@
-## Goal
+## Root cause (confirmed by code + DB inspection)
 
-Stop losing concepts to HTTP 429 `queue_limit_reached`. When the render queue is full, concepts must wait in a `queue_waiting` state and get promoted automatically as slots free up, with a retry cap before manual review.
+There are **four stacked bypasses** that funnel every ad into the ffmpeg zoompan slideshow path:
 
-## Root cause
+1. `cinematic-ad-prepare` invokes `cinematic-motion-engine` only on the *first* prepare call. In Director mode (`director_run_id` set), prepare hits the idempotent-attach branch at `supabase/functions/cinematic-ad-prepare/index.ts:677` and returns early — the motion-engine call at line 1106 is never reached. Result for every concept in the audited run: `motion_storyboard = NULL`, `motion_engine_version = NULL`.
+2. Even if motion-engine ran, `cinematic-ad-claim-job` does not include `motion_storyboard`, `content_type`, or `engine_version` in the worker payload (`supabase/functions/cinematic-ad-claim-job/index.ts:175-223`). The worker sees `undefined`.
+3. Render worker dispatch (`remotion/scripts/render-cinematic-ad.mjs:457-483`) gates Remotion behind `REMOTION_TYPES.has(content_type) || hasMotionStoryboard`. Both are false ⇒ falls through to the ffmpeg ken-burns/zoompan slideshow at lines 609-665. Even when Remotion *is* dispatched, if it exits non-zero it silently falls back to the same ffmpeg slideshow (line 482).
+4. `cinematic-ad-render-webhook` has no `motion_score` publish gate. Output with `motion_score=0.21` was accepted as `awaiting_approval`.
 
-`cinematic-ad-queue-render` returns 429 when `>= MAX_ACTIVE_QUEUED (=5)` jobs are already in `render_queued`. The Pinterest Ad Studio frontend treats every non-OK queue response (including 429) as `concept_failed`, so 4-concept director runs frequently lose 3 of them. There is no waiting state, no staggering, and no auto-promotion when a render finishes.
+**Expected path:** prepare → ensure motion-engine wrote ≥6 scenes with motion_ratio ≥ 0.7 → queue → claim-job forwards `motion_storyboard` + `engine_version` → worker dispatches `render-cinematic-remotion.mjs` (real parallax/camera moves/transitions) → webhook records `motion_score`, `transition_count`, `motion_engine_used`; rejects when `motion_score < 0.5`.
 
-## Changes
+## Fix scope
 
-### 1. DB migration — new status + retry counter
-- Add allowed status `queue_waiting` to `cinematic_ad_jobs.status` enum/check constraint.
-- Add columns: `queue_wait_attempts INT DEFAULT 0`, `queue_wait_next_at TIMESTAMPTZ`, `queue_wait_reason TEXT`.
-- Index `(status, queue_wait_next_at)` for the watchdog.
+Per your constraint — do not touch queue concurrency / watchdog / retry / Remotion render mechanics. I'll modify only the activation gates, payload pass-through, dispatch decision, validation gate, and admin diagnostics.
 
-### 2. `cinematic-ad-queue-render/index.ts`
-- When `activeQueuedCount >= MAX_ACTIVE_QUEUED`:
-  - Do **not** mark the job failed.
-  - Update job: `status = 'queue_waiting'`, increment `queue_wait_attempts`, set `queue_wait_next_at = now() + jitter(30–60s)`, `queue_wait_reason = 'queue_limit_reached'`.
-  - Return HTTP **202** with `{ ok: true, status: 'queue_waiting', retry_after_seconds: <30–60>, attempts }` instead of `bad(429,…)`.
-- Honor an upstream `Retry-After` if present; otherwise base delay on `attempts` (30s, 45s, 60s, capped).
-- Add `MAX_QUEUE_WAIT_ATTEMPTS = 8`. When exceeded, set status `needs_admin_review` with `error_message = 'queue_wait_exhausted'`.
-- Raise `MAX_ACTIVE_QUEUED` from 5 → 6 so a single director run (4 concepts) doesn't immediately wait when the queue is otherwise idle (keeps capacity headroom).
+### 1. Migration (additive)
+Add diagnostic columns to `cinematic_ad_jobs`:
+- `motion_engine_used text` (e.g. `v2`, `none`)
+- `transition_count integer`
+- `motion_diversity_v2 numeric` (parallel to existing `motion_diversity_score`, written by webhook from worker payload)
 
-### 3. Staggered dispatch in `PinterestAdStudio.tsx`
-- Replace `Promise.allSettled(concepts.map(...))` with sequential dispatch:
-  - Concept 0: prepare + queue immediately.
-  - Concepts 1..N: prepare immediately (cheap), then call `queue-render` spaced 30s apart via `setTimeout`/await delay.
-- Concepts that return `status: 'queue_waiting'` render with stage `"queue_waiting"`, label **"Queued — waiting for render slot"** (not `concept_failed`).
-- Concept rows are never removed; sibling jobs preserved.
+### 2. `supabase/functions/cinematic-ad-prepare/index.ts`
+- Extract the motion-engine invocation into a helper `ensureMotionStoryboard(jobId)`.
+- Call it **before** every `return` path that exits with a prepared/attached job (including the Director idempotent-attach branch at line 677 and the main success branch at line 1102).
+- Make it **hard-required for `engine_version >= 'v3'`** (which is the project-wide default): await the response; if `ok=false` OR `motion_ratio < 0.7` OR `scene_count < 6`, mark the job `concept_failed` with `error_code='MOTION_ENGINE_FAILED'` and a clear status_message, and return failure to the caller. No silent swallow.
+- Persist `motion_engine_used`, `motion_engine_version`, `motion_storyboard`, `motion_ratio` (already done by the engine), plus `transition_count` derived from storyboard transitions.
 
-### 4. UI updates (`PinterestAdStudio.tsx`)
-- Extend `ConceptStage` with `"queue_waiting"`.
-- Badge: secondary variant, hourglass icon, copy "Queued — waiting for render slot · retry in {n}s".
-- `suggestFix` for 202/queue_waiting returns null (no fix needed).
-- Treat HTTP 202 as success in `invokeWithDiag`.
+### 3. `supabase/functions/cinematic-ad-claim-job/index.ts`
+- Extend the RPC SELECT (and the payload constructor at line 175-223) to include `motion_storyboard`, `motion_engine_version`, `engine_version`, `content_type`.
+- This is a payload pass-through change only — no queue logic, no concurrency, no watchdog touched.
 
-### 5. Watchdog auto-promotion
-- Extend `cinematic-ad-watchdog/index.ts` (already a cron entry point):
-  - Every run, count active `render_queued + rendering` jobs.
-  - If capacity available, pick oldest `queue_waiting` rows where `queue_wait_next_at <= now()`, call `cinematic-ad-queue-render` for them one at a time until capacity full.
-  - On render webhook completion (`cinematic-ad-render-webhook`): after persisting result, fire one promotion attempt for the oldest waiting concept (best-effort, non-blocking).
+### 4. `remotion/scripts/render-cinematic-ad.mjs`
+- Replace the silent-fallback dispatch (lines 443-483) with a hard gate:
+  - If `engine_version >= 'v3'` (default now) and `!hasMotionStoryboard`: post webhook `status=failed`, `error_code=MOTION_ENGINE_REQUIRED`, exit.
+  - If Remotion is dispatched and exits non-zero: post webhook `status=failed`, `error_code=REMOTION_RENDER_FAILED` (include exit code + last log tail), exit. **Do not** fall back to ffmpeg.
+  - The ffmpeg zoompan path remains in the file but is now unreachable for v3 jobs (kept for legacy `engine_version<v3` if any exist).
 
-### 6. End-to-end test
-- New `cinematic-ad-e2e-test` scenario (or extend existing): trigger a 4-concept director run, then assert:
-  - 4 jobs created.
-  - 1 in `rendering`, ≥1 in `queue_waiting` (when MAX_ACTIVE_QUEUED filled by pre-existing load) **or** all 4 enter `render_queued/rendering` if capacity allows.
-  - Watchdog promotes waiting → rendering on next tick.
-  - Final job has non-null `output_mp4_url`, `output_file_size_bytes`, `motion_quality_score`.
-  - URL has no `//`, returns `200` with `Content-Type: video/mp4` (Safari playback check already in place).
+### 5. `supabase/functions/cinematic-ad-render-webhook/index.ts`
+- On `status=uploaded`, write through `motion_engine_used`, `motion_diversity_v2`, `transition_count` from the worker payload.
+- Publish gate: if `motion_score < 0.5`, set `status='needs_admin_review'`, `publish_blocked_reason='motion_score_below_0.5'`, and refuse autopublish. (Stacks on top of existing v4/v5 gates.)
 
-### 7. Deployment report
-After deploy, run the E2E and return a markdown report:
-- Before: 4 concepts → 1 success, 3 `concept_failed (429)`.
-- After: 4 concepts → 1 rendering, 3 `queue_waiting` → all 4 succeed via watchdog promotion.
-- Affected files listed below.
+### 6. `cinematic-ad-render-webhook` worker payload
+- Worker (`render-cinematic-remotion.mjs`) already emits a richer scene_plan from the real motion storyboard; webhook persists it. Add the three new diagnostic fields.
 
-## Affected files
+### 7. Admin UI — `src/pages/admin/PinterestAdStudio.tsx` (and the per-job preview row in `CinematicAdsPage` job table)
+- Add a "Motion" diagnostic chip strip per concept row showing:
+  - `render_mode`
+  - `motion_engine_used` (`v2` / `none`)
+  - `motion_diversity` (from motion_plan_summary or motion_diversity_v2)
+  - `motion_score`
+  - `transition_count`
+- Red badge when `motion_engine_used='none'` or `motion_score<0.5`.
 
-```text
-supabase/migrations/<ts>_queue_waiting_status.sql                (new)
-supabase/functions/cinematic-ad-queue-render/index.ts            (429 → 202 queue_waiting, retry counter)
-supabase/functions/cinematic-ad-watchdog/index.ts                (promote oldest waiting)
-supabase/functions/cinematic-ad-render-webhook/index.ts          (post-complete promotion ping)
-supabase/functions/cinematic-ad-e2e-test/index.ts                (extended scenario)
-src/pages/admin/PinterestAdStudio.tsx                            (sequential dispatch + queue_waiting UI)
+## Files touched (7)
+
+```
+supabase/migrations/<ts>_motion_engine_enforcement.sql       (new)
+supabase/functions/cinematic-ad-prepare/index.ts             (motion-engine = hard required; call on both branches)
+supabase/functions/cinematic-ad-claim-job/index.ts           (pass motion_storyboard + engine_version to worker)
+supabase/functions/cinematic-ad-render-webhook/index.ts      (persist diagnostics; publish gate on motion_score<0.5)
+remotion/scripts/render-cinematic-ad.mjs                     (remove silent fallbacks; hard FAIL when motion engine missing or remotion crashes)
+src/pages/admin/PinterestAdStudio.tsx                        (motion diagnostic chips per concept)
+src/pages/admin/CinematicAdsPage.tsx                         (same chips in the master job list)
 ```
 
-## Risks
+## Untouched (per your constraint)
 
-- Sequential dispatch slows perceived start time by ~90s for 4 concepts. Acceptable — concepts now actually all run.
-- Watchdog promotion + webhook promotion can race; idempotent because `queue-render` re-checks capacity and `queue_waiting → render_queued` transition is atomic on a single row update.
-- Raising MAX_ACTIVE_QUEUED to 6 keeps load well under render-worker ceiling.
+- `cinematic-ad-queue-render` (concurrency, queue_waiting, queue_limit)
+- `cinematic-ad-watchdog`
+- retry & promotion logic
+- `render-cinematic-remotion.mjs` rendering internals (only its activation gate in `render-cinematic-ad.mjs` is hardened)
+
+## Verification after deploy
+
+1. New 4-concept director run on `interactive-rolling-cat-ball`.
+2. Expect each concept row to show `motion_engine_used=v2`, `motion_ratio ≥ 0.7`, `motion_storyboard.length ≥ 6` before queue.
+3. Expect the rendered MP4 row to show `motion_score > 0.7`, `transition_count > 0`, `render_mode≠standard`.
+4. Force a failure case: temporarily break the motion-engine fetch and confirm the concept is marked `concept_failed` with `MOTION_ENGINE_FAILED` instead of silently producing a slideshow.
+5. Confirm a job with `motion_score=0.3` lands in `needs_admin_review` with `publish_blocked_reason=motion_score_below_0.5`.
+
+## Before / after
+
+| | Before | After |
+|---|---|---|
+| Dispatch | ffmpeg ken-burns (silent) | Remotion motion engine (enforced) |
+| motion_engine_used | `null` for 100% of jobs | `v2` for 100% of v3 jobs |
+| motion_score (typical) | 0.21 | > 0.7 |
+| motion_storyboard | `null` | ≥ 6 scenes, motion_ratio ≥ 0.7 |
+| Failure mode | silent slideshow + `awaiting_approval` | `concept_failed` w/ explicit error code |
+| Publish gate | none | rejected when `motion_score < 0.5` |
+| Admin visibility | hidden | per-concept diagnostic chips |
