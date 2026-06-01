@@ -100,7 +100,13 @@ Deno.serve(async (req) => {
     if (!PET_CATEGORIES.some((k) => haystack.includes(k))) reasons.push("not_pet_category");
 
     // ≥2 usable media assets (scene_assets array OR product image + thumbnail)
-    const sceneAssets = Array.isArray(job.scene_assets) ? job.scene_assets.filter((a: any) => a && (a.url || a.src || typeof a === "string")) : [];
+    // Accept any of the field shapes the storyboard / renderer emit: image_url,
+    // url, src, asset_url, or a plain string entry.
+    const sceneAssets = Array.isArray(job.scene_assets)
+      ? job.scene_assets.filter((a: any) =>
+          a && (a.image_url || a.url || a.src || a.asset_url || typeof a === "string"),
+        )
+      : [];
     const mediaCount = sceneAssets.length + (imageUrl ? 1 : 0) + (job.output_thumbnail_url ? 1 : 0);
     if (mediaCount < 2) reasons.push("insufficient_media_assets");
 
