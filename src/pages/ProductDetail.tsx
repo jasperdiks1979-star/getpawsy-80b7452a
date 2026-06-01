@@ -1456,9 +1456,40 @@ const ProductDetail = () => {
                   const cat = (product.category || "").toLowerCase();
                   const n = (product.name || "").toLowerCase();
                   const bullets: string[] = [];
+                  const hay = `${n} ${cat}`;
+
+                  // P0-4 (conversion sprint): grooming / supplement / dispenser
+                  // branches MUST run before the toy branch — otherwise a
+                  // "Dog Paw Cleaner" or "Grooming Brush" filed under
+                  // "Dog Toys" picks up chew-toy copy ("aggressive chewers"),
+                  // which is the category-copy leak flagged in the PDP audit.
+                  const isGrooming = /paw\s*cleaner|brush|comb|groom|shampoo|nail|deshed|wipe/.test(hay);
+                  const isSupplement = /supplement|vitamin|calming\s*chew|probiotic|joint\s*chew|treat\s*chew/.test(hay);
+                  const isFeeder = /feeder|dispenser|water\s*fountain|automatic\s*food/.test(hay);
 
                   // Category-aware benefit bullets (problem → outcome)
-                  if (n.includes("bed") || cat.includes("bed")) {
+                  if (isGrooming) {
+                    bullets.push(
+                      "Gently cleans paws, coat, or nails without stress",
+                      "Skin-safe materials designed for sensitive pets",
+                      "Easy to rinse and store between uses",
+                      "Compact size — works at home or on the go",
+                    );
+                  } else if (isSupplement) {
+                    bullets.push(
+                      "Formulated for daily routine support",
+                      "Made with pet-friendly, palatable ingredients",
+                      "Clear dosing guidance on every label",
+                      "Trusted by US pet parents — ships from the United States",
+                    );
+                  } else if (isFeeder) {
+                    bullets.push(
+                      "Portion-controlled meals keep feeding consistent",
+                      "Quiet motor — won't startle anxious pets",
+                      "Easy to clean: dishwasher-safe parts",
+                      "Backup power option protects scheduled meals",
+                    );
+                  } else if (n.includes("bed") || cat.includes("bed")) {
                     bullets.push(
                       "Designed to support joint comfort and recovery",
                       "May help improve sleep quality for your pet",
