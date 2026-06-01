@@ -66,6 +66,11 @@ jobs:
           for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY RENDER_WORKER_SECRET JOB_ID MP4_URL; do
             test -n "${!v}" || { echo "missing $v"; exit 1; }
           done
+          # Strip trailing slashes from SUPABASE_URL to prevent `…supabase.co//storage/…`
+          # which iPhone Safari sometimes refuses to play inline.
+          SUPABASE_URL="${SUPABASE_URL%/}"
+          SUPABASE_URL="${SUPABASE_URL%/}"
+          echo "SUPABASE_URL=${SUPABASE_URL}" >> "$GITHUB_ENV"
           echo "TARGET_SEC=${TARGET_SEC}"
           echo "JOB_ID=${JOB_ID}"
 
@@ -116,6 +121,7 @@ jobs:
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: video/mp4" \
+            -H "Cache-Control: public, max-age=31536000" \
             -H "x-upsert: true" \
             --data-binary @/tmp/out.mp4)
           echo "upload http=${HTTP}"
@@ -124,6 +130,19 @@ jobs:
           PUB_URL="${SUPABASE_URL}/storage/v1/object/public/cinematic-ads/${PATH_KEY}"
           echo "url=${PUB_URL}" >> "$GITHUB_OUTPUT"
           echo "[trim] trimmed_url=${PUB_URL}"
+
+      - name: Probe trimmed metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          SIZE=$(stat -c%s /tmp/out.mp4)
+          WH=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 /tmp/out.mp4)
+          W=$(echo "$WH" | cut -d, -f1)
+          H=$(echo "$WH" | cut -d, -f2)
+          echo "size=${SIZE}"   >> "$GITHUB_OUTPUT"
+          echo "width=${W}"     >> "$GITHUB_OUTPUT"
+          echo "height=${H}"    >> "$GITHUB_OUTPUT"
+          echo "[trim] trimmed_size=${SIZE} width=${W} height=${H}"
 
       - name: Callback to render webhook
         run: |
@@ -136,10 +155,14 @@ jobs:
             --argjson dur $(echo "${{ steps.trim.outputs.trimmed }}" | awk '{printf "%s", $1}') \
             --argjson orig $(echo "${{ steps.probe.outputs.orig }}" | awk '{printf "%s", $1}') \
             --argjson ec   ${{ steps.trim.outputs.exit_code }} \
+            --argjson size ${{ steps.meta.outputs.size }} \
+            --argjson w    ${{ steps.meta.outputs.width }} \
+            --argjson h    ${{ steps.meta.outputs.height }} \
             '{job_id:$job_id, status:"uploaded", event:"auto_trim_complete",
               mp4_url:$url, duration:$dur, render_token:$tok, worker_id:$wid,
               duration_auto_trimmed:true, original_duration_seconds:$orig,
-              trim_ffmpeg_exit_code:$ec, auto_approve:true}')
+              trim_ffmpeg_exit_code:$ec, auto_approve:true,
+              file_size:$size, width:$w, height:$h, black_bars:false}')
           echo "$PAYLOAD"
           curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
             -H "Content-Type: application/json" \
