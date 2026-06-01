@@ -439,10 +439,22 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
         ? `stale heartbeat (last ${row.render_heartbeat_at})`
         : "zombie worker (no heartbeat)";
       const isOverLimit = attempts > MAX_RETRIES;
+      // Block self-healing requeue if the safety gate would reject the job.
+      const readiness = isOverLimit ? null : await ensureRenderReady(admin, row.id);
+      const blockedByGate = readiness && !readiness.ready;
       const patch: Record<string, unknown> = isOverLimit
         ? {
             status: "needs_admin_review",
             status_message: `Quarantined after ${MAX_RETRIES} retries: ${reason}`,
+            render_worker_id: null,
+            render_heartbeat_at: null,
+            updated_at: nowIso,
+          }
+        : blockedByGate
+        ? {
+            status: "needs_admin_review",
+            status_message: `Blocked before requeue: ${readiness!.reasons.join("; ")}`,
+            blocked_reason: `safety_gate_would_fail: ${readiness!.reasons.join(", ")}`,
             render_worker_id: null,
             render_heartbeat_at: null,
             updated_at: nowIso,
