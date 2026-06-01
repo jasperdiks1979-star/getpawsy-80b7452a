@@ -564,7 +564,12 @@ Deno.serve(async (req) => {
         motion_score: null,
         approved_at: null,
         approved_by: null,
-        status_message: "Queued for external render worker.",
+        status_message: forceBudgetOverride
+          ? "Queued for external render worker (admin force — 24h budget bypassed)."
+          : "Queued for external render worker.",
+        force_render_budget_override: forceBudgetOverride,
+        force_render_budget_reason: forceBudgetReason,
+        force_render_budget_by: forceBudgetOverride ? callerAdminId : null,
       })
       .eq("id", jobId);
     if (updErr) return bad(500, trace, "db_update_failed", updErr.message, diagnostics);
