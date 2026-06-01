@@ -208,6 +208,8 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const internalToken = req.headers.get("x-internal-token") ?? "";
     const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+    let callerAdminId: string | null = null;
+    let callerIsAdmin = false;
     if (!(workerSecret && internalToken && internalToken === workerSecret)) {
       const authHeader = req.headers.get("Authorization") ?? "";
       const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -220,6 +222,8 @@ Deno.serve(async (req) => {
       const { data: roleRow } = await admin
         .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
       if (!roleRow) return bad(403, trace, "forbidden", "admin role required", []);
+      callerAdminId = userData.user.id;
+      callerIsAdmin = true;
     }
 
     const body = await req.json().catch(() => ({}));
@@ -227,6 +231,13 @@ Deno.serve(async (req) => {
     const presetId = (body.preset ?? "") as string;
     const dryRun: boolean = body.dry_run === true;
     const autoApprove: boolean = body.auto_approve === true;
+    // Admin-only: "Force render despite 24h product budget" toggle from
+    // Pinterest Ad Studio. Persisted on the job row so claim-job can pass
+    // p_force=true to cinematic_reserve_render_slot.
+    const forceBudgetOverride: boolean =
+      callerIsAdmin && body.force_budget_override === true;
+    const forceBudgetReason: string | null =
+      forceBudgetOverride ? (typeof body.force_budget_reason === "string" ? body.force_budget_reason : "admin_force_render") : null;
     if (!jobId) return bad(400, trace, "missing_job_id", "job_id required", []);
     if (!UUID_RE.test(jobId)) return bad(400, trace, "invalid_job_id", `Full UUID required (got: "${jobId}")`, []);
 
