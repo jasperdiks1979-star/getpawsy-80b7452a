@@ -1139,19 +1139,23 @@ const ProductDetail = () => {
                 </div>
               )}
               {/* Desktop-only title block — the mobile copy renders above the
-                  gallery so the H1 sits above the fold on iPhone widths. */}
-              {product.category && (
+                  gallery so the H1 sits above the fold on iPhone widths.
+                  Runtime gate (not `hidden md:block`) so we keep exactly ONE
+                  H1 in the DOM at all times, per SEO core rule. */}
+              {!isMobile && product.category && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="hidden md:block text-sm text-primary font-medium uppercase tracking-wider mb-2"
+                  className="text-sm text-primary font-medium uppercase tracking-wider mb-2"
                 >
                   {safeString(product.category)}
                 </motion.p>
               )}
-              <h1 className="hidden md:block text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                {safeString(product.name)}
-              </h1>
+              {!isMobile && (
+                <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
+                  {safeString(product.name)}
+                </h1>
+              )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
               {adIntent.headline && allowHeadlineOverride && (
                 <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
