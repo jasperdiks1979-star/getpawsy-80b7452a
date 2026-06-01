@@ -179,7 +179,7 @@ export default function PinterestAdStudio() {
       // Director path is an authorized path — implicitly approve so the
       // approval gate doesn't 412 when called as part of the run.
       auto_approve: true,
-      dry_run: dryRunRef.current,
+      dry_run: dryRun,
     });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
@@ -283,7 +283,7 @@ export default function PinterestAdStudio() {
           retried = true;
           r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
         }
-        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRunRef.current };
+        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRun };
       }));
 
       const results: JobRow[] = [];
