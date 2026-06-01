@@ -11,6 +11,7 @@ import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinteres
 import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";
 import { normalizeScenePlan, estimateMotionScore } from "../_shared/cinematic-scene-normalizer.ts";
 import { rewriteForSafeZone } from "../_shared/cinematic-text-safe-rewriter.ts";
+import { rewriteForCategorySafety } from "../_shared/cinematic-category-safe-rewriter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -319,6 +320,57 @@ Deno.serve(async (req) => {
     hook: String(job.hook_text ?? ""),
   });
 
+  // ── Auto-rewrite copy for category safety ─────────────────────────────────
+  // If the category match fails (category_match / category_mismatch /
+  // product_mismatch / copy_product_conflict), regenerate pin_title,
+  // hook_text, cta_text and scene captions using ONLY the detected
+  // product category. Forbidden category nouns (toy, ball, scratcher,
+  // tree, bed, litter box) are stripped unless they appear in the
+  // product title / category / tags. Re-runs validateCategoryMatch
+  // after rewrite; only a second-pass failure surfaces to manual review.
+  let categoryRewriteResult: ReturnType<typeof rewriteForCategorySafety> | null = null;
+  let catCheckFinal = catCheck;
+  const prevCatRewritePasses = Number((job as any).category_safe_rewrite_passes ?? 0);
+  if (!catCheckFinal.ok && prevCatRewritePasses < 1) {
+    const cr = rewriteForCategorySafety({
+      product: productCtx,
+      pin_title: job.pin_title,
+      hook_text: job.hook_text,
+      cta_text: job.cta_text,
+      scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+    });
+    if (cr.changed) {
+      categoryRewriteResult = cr;
+      if (cr.pin_title !== undefined) { job.pin_title = cr.pin_title; persistPatch.pin_title = cr.pin_title; }
+      if (cr.hook_text !== undefined) { job.hook_text = cr.hook_text; persistPatch.hook_text = cr.hook_text; }
+      if (cr.cta_text !== undefined) { job.cta_text = cr.cta_text; persistPatch.cta_text = cr.cta_text; }
+      if (cr.scene_plan !== undefined && cr.scene_plan !== null) {
+        job.scene_plan = cr.scene_plan;
+        persistPatch.scene_plan = cr.scene_plan;
+      }
+      persistPatch.category_safe_rewrite_passes = prevCatRewritePasses + 1;
+      persistPatch.category_safe_rewrite_applied_at = new Date().toISOString();
+      persistPatch.category_safe_rewrite_mutations = cr.mutations;
+      console.log(`[validate] ${traceId} category_safe_rewrite job=${jobId} category=${cr.product_category} mutations=${cr.mutations.length} fields=${cr.mutations.map(m => m.field).join(",")}`);
+
+      // Re-run category check on rewritten copy.
+      catCheckFinal = validateCategoryMatch({
+        product: productCtx,
+        title: String(job.pin_title ?? ""),
+        description: String(job.pin_description ?? ""),
+        hook: String(job.hook_text ?? ""),
+      });
+
+      // Re-run safe-area on the rewritten copy too (lengths changed).
+      safeAreaFinal = validateTextSafeArea({
+        hook_text: job.hook_text,
+        pin_title: job.pin_title,
+        cta_text: job.cta_text,
+        scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+      });
+    }
+  }
+
   // Settings (motion floor + creative score floor)
   let motionMin = 8, creativeMin = 70, catRequired = true, safeRequired = true;
   try {
@@ -339,14 +391,14 @@ Deno.serve(async (req) => {
   // Composite creative_quality_score weights the most user-visible signals.
   const creativeQuality = Math.round(
     (safeAreaFinal.ok ? 100 : 30) * 0.25 +
-    (catCheck.ok ? 100 : 0) * 0.25 +
+    (catCheckFinal.ok ? 100 : 0) * 0.25 +
     Math.min(100, motionVal * 6) * 0.2 +
     v2.composite * 0.3,
   );
 
   const rejectReasons: string[] = [];
   if (safeRequired && !safeAreaFinal.ok) rejectReasons.push(`safe_area:${safeAreaFinal.violations.slice(0, 2).join("|")}`);
-  if (catRequired && !catCheck.ok) rejectReasons.push(`category_mismatch:${catCheck.reason}`);
+  if (catRequired && !catCheckFinal.ok) rejectReasons.push(`category_mismatch:${catCheckFinal.reason}`);
   if (!motionPass) rejectReasons.push(`motion_below_floor(${motionVal}<${motionMin})`);
   if (creativeQuality < creativeMin) rejectReasons.push(`creative_quality(${creativeQuality}<${creativeMin})`);
 
@@ -374,11 +426,28 @@ Deno.serve(async (req) => {
   }
   report.checks.push({
     name: "category_match",
-    passed: catCheck.ok,
-    observed: catCheck.ok ? catCheck.productCategory : `${catCheck.productCategory} vs copy=${catCheck.conflictingCategory}`,
-    expected: `copy matches product category (${catCheck.productCategory})`,
-    message: catCheck.reason,
+    passed: catCheckFinal.ok,
+    observed: catCheckFinal.ok ? catCheckFinal.productCategory : `${catCheckFinal.productCategory} vs copy=${catCheckFinal.conflictingCategory}`,
+    expected: `copy matches product category (${catCheckFinal.productCategory})`,
+    message: catCheckFinal.reason,
   });
+  if (categoryRewriteResult) {
+    report.checks.push({
+      name: "category_safe_auto_rewrite",
+      passed: catCheckFinal.ok,
+      observed: `mutations=${categoryRewriteResult.mutations.length} fields=${categoryRewriteResult.mutations.map(m => m.field).join(",")}`,
+      expected: `copy regenerated using only ${categoryRewriteResult.product_category}`,
+      message: catCheckFinal.ok
+        ? "copy regenerated for product category; second-pass passed"
+        : "second-pass category check still fails — manual review",
+    });
+    (report as any).category_safe_rewrite = {
+      applied: true,
+      product_category: categoryRewriteResult.product_category,
+      mutations: categoryRewriteResult.mutations,
+      resolved: catCheckFinal.ok,
+    };
+  }
   report.checks.push({
     name: "motion_floor",
     passed: motionPass,
@@ -832,7 +901,7 @@ Deno.serve(async (req) => {
       // Reconciled fields (scene_plan backfill, default 1080x1920, motion estimate)
       ...persistPatch,
       text_safe_area_passed: safeAreaFinal.ok,
-      category_match_passed: catCheck.ok,
+      category_match_passed: catCheckFinal.ok,
       creative_quality_score: creativeQuality,
       creative_reject_reason: rejectReasons.length ? rejectReasons.join(" ; ") : null,
       captions_visible: Boolean(job.hook_text || job.pin_title || job.cta_text || job.vo_script),

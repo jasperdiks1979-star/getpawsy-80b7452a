@@ -1763,6 +1763,9 @@ export type Database = {
           caption_visibility_score: number | null
           captions_visible: boolean | null
           category_match_passed: boolean | null
+          category_safe_rewrite_applied_at: string | null
+          category_safe_rewrite_mutations: Json | null
+          category_safe_rewrite_passes: number
           cinematic_quality_score: number | null
           classification_confidence: number | null
           commercial_score: number | null
@@ -2024,6 +2027,9 @@ export type Database = {
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
           category_match_passed?: boolean | null
+          category_safe_rewrite_applied_at?: string | null
+          category_safe_rewrite_mutations?: Json | null
+          category_safe_rewrite_passes?: number
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           commercial_score?: number | null
@@ -2285,6 +2291,9 @@ export type Database = {
           caption_visibility_score?: number | null
           captions_visible?: boolean | null
           category_match_passed?: boolean | null
+          category_safe_rewrite_applied_at?: string | null
+          category_safe_rewrite_mutations?: Json | null
+          category_safe_rewrite_passes?: number
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
           commercial_score?: number | null
@@ -19002,6 +19011,9 @@ export type Database = {
           caption_visibility_score: number | null
           captions_visible: boolean | null
           category_match_passed: boolean | null
+          category_safe_rewrite_applied_at: string | null
+          category_safe_rewrite_mutations: Json | null
+          category_safe_rewrite_passes: number
           cinematic_quality_score: number | null
           classification_confidence: number | null
           commercial_score: number | null
