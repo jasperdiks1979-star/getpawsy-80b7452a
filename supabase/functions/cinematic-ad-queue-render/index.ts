@@ -19,6 +19,77 @@ const MAX_ACTIVE_QUEUED = 5;
 const SCENE_REGEN_MAX_RETRIES = 5;
 
 /**
+ * Self-healing preparation gate. Mirrors the claim-job safety gate:
+ * a job cannot enter `render_queued` unless it has a non-null `creative_plan`
+ * AND `preflight_status='pass'`. If either is missing, this helper calls
+ * `cinematic-ad-plan` and/or `cinematic-ad-preflight` with the service-role
+ * key so claim-job will accept the job on the next dispatch.
+ */
+async function ensureRenderReady(
+  admin: ReturnType<typeof createClient>,
+  jobId: string,
+  traceLabel: string,
+): Promise<{ ready: boolean; reasons: string[]; preflight_status: string | null; creative_plan_present: boolean }> {
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${SERVICE_KEY}`,
+    apikey: SERVICE_KEY,
+  };
+  const fnBase = `${SUPABASE_URL}/functions/v1`;
+
+  const { data: pre } = await admin
+    .from("cinematic_ad_jobs")
+    .select("creative_plan, preflight_status")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (!pre?.creative_plan) {
+    try {
+      const r = await fetch(`${fnBase}/cinematic-ad-plan`, {
+        method: "POST", headers, body: JSON.stringify({ job_id: jobId }),
+      });
+      const txt = await r.text().catch(() => "");
+      console.log(`[queue-render] ${traceLabel} ensureRenderReady plan status=${r.status} ${txt.slice(0, 160)}`);
+    } catch (e) {
+      console.error(`[queue-render] ${traceLabel} plan call failed`, e);
+    }
+  }
+
+  if (pre?.preflight_status !== "pass") {
+    try {
+      const r = await fetch(`${fnBase}/cinematic-ad-preflight`, {
+        method: "POST", headers, body: JSON.stringify({ job_id: jobId }),
+      });
+      const txt = await r.text().catch(() => "");
+      console.log(`[queue-render] ${traceLabel} ensureRenderReady preflight status=${r.status} ${txt.slice(0, 160)}`);
+    } catch (e) {
+      console.error(`[queue-render] ${traceLabel} preflight call failed`, e);
+    }
+  }
+
+  const { data: post } = await admin
+    .from("cinematic_ad_jobs")
+    .select("creative_plan, preflight_status, preflight_reasons")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  const hasPlan = Boolean(post?.creative_plan);
+  const preflightPass = post?.preflight_status === "pass";
+  const reasons: string[] = [];
+  if (!hasPlan) reasons.push("creative_plan_missing");
+  if (!preflightPass) {
+    reasons.push(`preflight_${post?.preflight_status ?? "missing"}`);
+    if (Array.isArray(post?.preflight_reasons)) reasons.push(...post!.preflight_reasons.map((x: string) => `preflight:${x}`));
+  }
+  return {
+    ready: hasPlan && preflightPass,
+    reasons,
+    preflight_status: post?.preflight_status ?? null,
+    creative_plan_present: hasPlan,
+  };
+}
+
+/**
  * Recovery helper: when validateTimeline reports scene_count_invalid(<3),
  * attempt to (a) re-invoke the storyboard planner up to N times, then
  * (b) synthesize a 3-scene image-only fallback from scene_assets so the
@@ -386,6 +457,29 @@ Deno.serve(async (req) => {
         render_worker_id: null,
       });
     }
+
+    // ── PREPARATION GATE ── claim-job will reject any job lacking
+    // creative_plan or preflight_status='pass' with 412 blocked_by_safety_gate.
+    // Self-heal here so jobs cannot land in render_queued in a broken state.
+    const readiness = await ensureRenderReady(admin, jobId, trace);
+    diagnostics.push(
+      readiness.ready
+        ? pass("preparation_gate", `creative_plan + preflight=pass`)
+        : fail("preparation_gate", `not render-ready: ${readiness.reasons.join("; ")}`),
+    );
+    if (!readiness.ready) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "needs_admin_review",
+        status_message: `Blocked before render_queued: ${readiness.reasons.join("; ")}`,
+        blocked_reason: `safety_gate_would_fail: ${readiness.reasons.join(", ")}`,
+        recoverable: true,
+      }).eq("id", jobId);
+      return bad(412, trace, "not_render_ready",
+        `preparation gate failed: ${readiness.reasons.join("; ")}`,
+        diagnostics,
+        { fail_reasons: readiness.reasons });
+    }
+
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({

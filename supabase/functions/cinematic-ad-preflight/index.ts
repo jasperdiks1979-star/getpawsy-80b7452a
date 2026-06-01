@@ -44,13 +44,18 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
     auth: { persistSession: false },
   });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
-
   const admin = createClient(url, service, { auth: { persistSession: false } });
-  const { data: roleRow } = await admin
-    .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-  if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+  // Service-role bypass: queue-render / watchdog call this internally.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServiceRole = bearer === service && service.length > 0;
+  if (!isServiceRole) {
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
+    const { data: roleRow } = await admin
+      .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch {}
