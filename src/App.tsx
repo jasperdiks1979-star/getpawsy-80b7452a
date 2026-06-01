@@ -2110,6 +2110,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-ads/motion-forensics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicMotionForensicsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
