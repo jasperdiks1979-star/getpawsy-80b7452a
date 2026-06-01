@@ -11,6 +11,10 @@ import {
   HARD_MAX_DURATION_SEC,
   type CinematicPresetId,
 } from "../_shared/cinematic-presets.ts";
+import {
+  BLOCKING_STATUSES,
+  pickBlockingSibling,
+} from "../_shared/cinematic-duplicate-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -339,17 +343,24 @@ Deno.serve(async (req) => {
 
     const { data: sameProductActive } = await admin
       .from("cinematic_ad_jobs")
-      .select("id,status,render_queued_at,render_started_at")
+      .select("id,status,render_queued_at,render_started_at,director_run_id")
       .eq("product_slug", job.product_slug)
-      .in("status", ["preparing", "prepared", "render_queued", "rendering"])
+      .in("status", BLOCKING_STATUSES as unknown as string[])
       .neq("id", jobId)
       .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (sameProductActive && !dryRun) {
+      .limit(10);
+    const blocker = pickBlockingSibling(
+      { id: jobId, director_run_id: (job as any).director_run_id ?? null },
+      (sameProductActive ?? []) as Array<{
+        id: string;
+        status: string;
+        director_run_id: string | null;
+      }>,
+    );
+    if (blocker && !dryRun) {
       return bad(409, trace, "duplicate_active_job",
-        `duplicate active job exists for ${job.product_slug}: ${sameProductActive.id} (${sameProductActive.status})`,
-        diagnostics, { duplicate_job_id: sameProductActive.id });
+        `duplicate active job exists for ${job.product_slug}: ${blocker.id} (${blocker.status})`,
+        diagnostics, { duplicate_job_id: blocker.id });
     }
 
     // Resolve preset: explicit body > job row > default.
