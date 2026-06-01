@@ -331,32 +331,54 @@ export default function PinterestAdStudio() {
       const results: JobRow[] = [];
       const nextDiag: ConceptDiag[] = [...initDiag];
       let failedCount = 0;
+      let waitingCount = 0;
       for (const s of settled) {
         if (s.status !== "fulfilled") continue;
         const { idx, c, jobId, prepare, queue, retried, dryRun: isDry } = s.value;
-        const ok = !!jobId && prepare.ok && (queue?.ok ?? true);
+        // Detect queue_waiting (HTTP 202 with body.status==='queue_waiting')
+        let isQueueWaiting = false;
+        let qw: ConceptDiag["queueWaiting"] = null;
+        if (queue?.responseBody) {
+          try {
+            const parsed = JSON.parse(queue.responseBody);
+            if (parsed?.status === "queue_waiting") {
+              isQueueWaiting = true;
+              qw = { retryAfterSec: parsed.retry_after_seconds ?? 30, attempts: parsed.attempts ?? 1, maxAttempts: parsed.max_attempts ?? 8 };
+            }
+          } catch { /* ignore */ }
+        }
+        const ok = !!jobId && prepare.ok && (queue?.ok ?? true) && !isQueueWaiting;
+        let stage: ConceptStage;
+        if (isQueueWaiting) stage = "queue_waiting";
+        else if (ok) stage = isDry ? "success" : "rendering";
+        else stage = "concept_failed";
         nextDiag[idx] = {
-          archetype: c.archetype, label: c.label,
-          stage: ok ? (isDry ? "success" : "rendering") : "concept_failed",
+          archetype: c.archetype, label: c.label, stage,
           jobId, prepare, queue, retried,
-          suggestedFix: ok ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+          suggestedFix: ok || isQueueWaiting ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+          queueWaiting: qw,
         };
-        if (ok && !isDry && jobId) {
+        if ((ok || isQueueWaiting) && !isDry && jobId) {
           results.push({
-            id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
+            id: jobId, product_slug: product.slug,
+            status: isQueueWaiting ? "queue_waiting" : "preparing",
+            status_message: isQueueWaiting ? `Queued — waiting for render slot (retry in ${qw?.retryAfterSec ?? 30}s)` : "queued",
             output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
             pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
             hook_variant: c.hookVariant, voice_style: c.voiceStyle,
             archetype: c.archetype, predicted_score: c.predicted_score,
           });
         }
-        if (!ok) failedCount++;
+        if (isQueueWaiting) waitingCount++;
+        else if (!ok) failedCount++;
       }
       setDiagnostics(nextDiag);
 
       if (results.length > 0) {
         setJobs(results);
-        toast.success(`Director: ${results.length}/${concepts.length} concepts rendering${failedCount ? ` · ${failedCount} skipped` : ""}`);
+        const waitNote = waitingCount ? ` · ${waitingCount} waiting for render slot` : "";
+        const failNote = failedCount ? ` · ${failedCount} failed` : "";
+        toast.success(`Director: ${results.length}/${concepts.length} concepts dispatched${waitNote}${failNote}`);
       } else if (dryRun) {
         toast.success(`Dry run complete · ${concepts.length - failedCount}/${concepts.length} would render · ${failedCount} isolated`);
         setShowDebug(true);
