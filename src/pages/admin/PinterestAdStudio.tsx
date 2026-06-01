@@ -301,11 +301,11 @@ export default function PinterestAdStudio() {
         const c = concepts[i];
         if (i > 0) await new Promise((res) => setTimeout(res, STAGGER_MS));
         try {
-          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride });
+          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride, forcePreflight: forcePreflightOverride });
           let retried = false;
           if (!r.jobId && c.archetype === "viral_interrupt") {
             retried = true;
-            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride });
+            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId, forceBudget: forceBudgetOverride, forcePreflight: forcePreflightOverride });
           }
           settled.push({ status: "fulfilled", value: { idx: i, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun } });
         } catch (err) {
