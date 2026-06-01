@@ -1215,7 +1215,17 @@ const ProductDetail = () => {
                 // Use the already-computed activePrice (base price unless user selected variant)
                 const displayPrice = activePrice;
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
-                const showCompare = compareAt !== null && compareAt > displayPrice;
+                // P0-3 (conversion sprint): block the synthetic 1.20×–1.30×
+                // anchor band (seeded by an old import that wrote
+                // compare_at = price * 1.25 on every row). Show compare-at
+                // only when the discount is real and material.
+                const ratio = compareAt && displayPrice > 0 ? compareAt / displayPrice : 0;
+                const isSyntheticAnchor = ratio >= 1.20 && ratio <= 1.30;
+                const showCompare =
+                  compareAt !== null &&
+                  compareAt > displayPrice &&
+                  ratio >= 1.08 &&
+                  !isSyntheticAnchor;
                 const currentDiscount = discount;
 
                 return (
