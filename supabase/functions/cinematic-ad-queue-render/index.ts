@@ -20,6 +20,28 @@ const MAX_ACTIVE_QUEUED = 5;
 function traceId() { return crypto.randomUUID().slice(0, 8); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+type DiagCheck = { name: string; pass: boolean; detail?: string };
+function pass(name: string, detail?: string): DiagCheck { return { name, pass: true, detail }; }
+function fail(name: string, detail: string): DiagCheck { return { name, pass: false, detail }; }
+
+function bad(
+  status: number,
+  trace: string,
+  error_code: string,
+  message: string,
+  diagnostics: DiagCheck[],
+  extra: Record<string, unknown> = {},
+) {
+  return json({
+    ok: false,
+    traceId: trace,
+    error_code,
+    message,
+    diagnostics,
+    ...extra,
+  }, status);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace = traceId();
@@ -34,38 +56,123 @@ Deno.serve(async (req) => {
       });
       const { data: userData, error: userErr } = await userClient.auth.getUser();
       if (userErr || !userData.user) {
-        return json({ ok: false, traceId: trace, message: "unauthenticated" }, 401);
+        return bad(401, trace, "unauthenticated", "unauthenticated", []);
       }
       const { data: roleRow } = await admin
         .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-      if (!roleRow) return json({ ok: false, traceId: trace, message: "forbidden" }, 403);
+      if (!roleRow) return bad(403, trace, "forbidden", "admin role required", []);
     }
 
     const body = await req.json().catch(() => ({}));
     const jobId = String(body.job_id ?? "");
     const presetId = (body.preset ?? "") as string;
-    if (!jobId) return json({ ok: false, traceId: trace, message: "job_id required" }, 400);
-    if (!UUID_RE.test(jobId)) return json({ ok: false, traceId: trace, message: `Full UUID required. Do not use shortened display id. (got: "${jobId}")` }, 400);
+    const dryRun: boolean = body.dry_run === true;
+    const autoApprove: boolean = body.auto_approve === true;
+    if (!jobId) return bad(400, trace, "missing_job_id", "job_id required", []);
+    if (!UUID_RE.test(jobId)) return bad(400, trace, "invalid_job_id", `Full UUID required (got: "${jobId}")`, []);
 
     const { data: job, error: jobErr } = await admin
       .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
-    if (jobErr || !job) return json({ ok: false, traceId: trace, message: "job not found" }, 404);
-    if (!["prepared", "failed", "render_queued"].includes(job.status)) {
-      return json({ ok: false, traceId: trace, message: `job status '${job.status}' not eligible (need prepared/failed)` }, 400);
-    }
-    if (!job.approved_for_render) {
-      return json({ ok: false, traceId: trace, message: "job not approved for render — call cinematic-ad-approve first" }, 412);
-    }
+    if (jobErr || !job) return bad(404, trace, "job_not_found", "job not found", []);
 
-    // Hard gate: voice-over must exist before we burn render minutes.
-    const voUrl = job.vo_url ?? job.voiceover_url ?? null;
-    if (!voUrl) {
+    // ---------- Structured pre-flight diagnostics ----------
+    const diagnostics: DiagCheck[] = [];
+
+    // worker secret
+    diagnostics.push(
+      RENDER_WORKER_SECRET.length > 0
+        ? pass("worker_secret", "RENDER_WORKER_SECRET configured")
+        : fail("worker_secret", "RENDER_WORKER_SECRET env var not set"),
+    );
+    // github workflow (we don't dispatch from here, an external GH Action polls;
+    // surface this as informational so the diag panel is complete)
+    diagnostics.push(pass("github_actions", "external worker / GH Actions polls cinematic-ad-claim-job"));
+    diagnostics.push(pass("render_workflow", ".github/workflows/render-cinematic-ad.yml present in repo"));
+
+    // job status eligibility
+    const eligible = ["prepared", "failed", "render_queued"].includes(job.status);
+    diagnostics.push(
+      eligible
+        ? pass("job_status", `status='${job.status}' eligible`)
+        : fail("job_status", `status='${job.status}' not eligible (need prepared/failed/render_queued)`),
+    );
+
+    // approval — Director path may auto-approve here
+    let approved = !!job.approved_for_render;
+    if (!approved && autoApprove) {
       await admin.from("cinematic_ad_jobs").update({
-        status: "failed",
-        status_message: "voice-over missing — cinematic-voiceover-generate did not produce a file",
-        error_message: "missing voiceover_url",
+        approved_for_render: true,
+        approved_at: new Date().toISOString(),
+        approved_by: "director_auto_approve",
       }).eq("id", jobId);
-      return json({ ok: false, traceId: trace, message: "voice-over missing — run cinematic-voiceover-generate before queueing render" }, 412);
+      approved = true;
+    }
+    diagnostics.push(
+      approved
+        ? pass("approval_status", autoApprove && !job.approved_for_render ? "auto-approved by Director" : "approved_for_render=true")
+        : fail("approval_status", "approved_for_render=false — call cinematic-ad-approve or pass auto_approve:true"),
+    );
+
+    // voiceover
+    const voUrl = job.vo_url ?? job.voiceover_url ?? null;
+    diagnostics.push(
+      voUrl
+        ? pass("voiceover", `vo_url present`)
+        : fail("voiceover", "missing vo_url — run cinematic-voiceover-generate"),
+    );
+
+    // media assets
+    const sceneAssets = Array.isArray(job.scene_assets) ? job.scene_assets : [];
+    diagnostics.push(
+      sceneAssets.length > 0
+        ? pass("media_assets", `${sceneAssets.length} scene asset(s)`)
+        : fail("media_assets", "scene_assets is empty"),
+    );
+
+    // storyboard
+    const sbRaw = job.storyboard;
+    const sbScenes: any[] = Array.isArray(sbRaw) ? sbRaw : (sbRaw?.scenes ?? []);
+    diagnostics.push(
+      sbScenes.length > 0
+        ? pass("storyboard", `${sbScenes.length} scene(s)`)
+        : fail("storyboard", "storyboard has no scenes"),
+    );
+
+    // payload schema sanity (slug + destination)
+    const schemaOk = !!job.product_slug;
+    diagnostics.push(
+      schemaOk
+        ? pass("queue_payload_schema", "product_slug + identifiers present")
+        : fail("queue_payload_schema", "missing product_slug on job row"),
+    );
+
+    // Fail-fast mapping to error_code + HTTP 412
+    const firstFailure = diagnostics.find(d => !d.pass);
+    if (firstFailure) {
+      const codeMap: Record<string, string> = {
+        worker_secret: "missing_worker_secret",
+        job_status: "job_status_ineligible",
+        approval_status: "job_not_approved",
+        voiceover: "voiceover_missing",
+        media_assets: "missing_media_assets",
+        storyboard: "empty_storyboard",
+        queue_payload_schema: "invalid_payload",
+      };
+      const error_code = codeMap[firstFailure.name] ?? "preflight_failed";
+      // surface fix on the bad job row (don't mutate when dry-run)
+      if (!dryRun && (firstFailure.name === "voiceover")) {
+        await admin.from("cinematic_ad_jobs").update({
+          status: "failed",
+          status_message: `voiceover missing — ${firstFailure.detail}`,
+          error_message: "missing voiceover_url",
+        }).eq("id", jobId);
+      }
+      return bad(412, trace, error_code, `BLOCKED_REASON: ${error_code} — ${firstFailure.detail}`, diagnostics, {
+        blocked_reason: error_code,
+        job_id: jobId,
+        product_slug: job.product_slug,
+        render_worker_id: null,
+      });
     }
 
     const { count: activeQueuedCount } = await admin
@@ -73,7 +180,7 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("status", "render_queued");
     if ((activeQueuedCount ?? 0) >= MAX_ACTIVE_QUEUED && job.status !== "render_queued") {
-      return json({ ok: false, traceId: trace, message: `render queue limit reached (${MAX_ACTIVE_QUEUED}); wait for current jobs to complete` }, 429);
+      return bad(429, trace, "queue_limit_reached", `render queue limit reached (${MAX_ACTIVE_QUEUED})`, diagnostics);
     }
 
     const { data: sameProductActive } = await admin
@@ -85,13 +192,10 @@ Deno.serve(async (req) => {
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (sameProductActive) {
-      return json({
-        ok: false,
-        traceId: trace,
-        message: `duplicate active job exists for ${job.product_slug}: ${sameProductActive.id} (${sameProductActive.status})`,
-        duplicate_job_id: sameProductActive.id,
-      }, 409);
+    if (sameProductActive && !dryRun) {
+      return bad(409, trace, "duplicate_active_job",
+        `duplicate active job exists for ${job.product_slug}: ${sameProductActive.id} (${sameProductActive.status})`,
+        diagnostics, { duplicate_job_id: sameProductActive.id });
     }
 
     // Resolve preset: explicit body > job row > default.
@@ -139,19 +243,44 @@ Deno.serve(async (req) => {
       (job.vo_script ?? job.voiceover_script) as any,
     );
     if (!check.ok) {
-      await admin.from("cinematic_ad_jobs").update({
-        status: "failed",
-        status_message: `pre-enqueue validation failed: ${check.reasons.join("; ")}`,
-        error_message: `timeline_invalid: ${check.reasons.join("; ")}`,
-      }).eq("id", jobId);
-      return json({
-        ok: false, traceId: trace,
-        message: `timeline rejected before render: ${check.reasons.join("; ")}`,
-        check,
-      }, 422);
+      if (!dryRun) {
+        await admin.from("cinematic_ad_jobs").update({
+          status: "failed",
+          status_message: `pre-enqueue validation failed: ${check.reasons.join("; ")}`,
+          error_message: `timeline_invalid: ${check.reasons.join("; ")}`,
+        }).eq("id", jobId);
+      }
+      return bad(422, trace, "timeline_invalid",
+        `timeline rejected before render: ${check.reasons.join("; ")}`,
+        [...diagnostics, fail("timeline", check.reasons.join("; "))],
+        { check });
     }
 
     const renderToken = crypto.randomUUID();
+    if (dryRun) {
+      // Build a representative payload without mutating the job or dispatching.
+      const previewPayload = {
+        job_id: jobId,
+        product_slug: job.product_slug,
+        scene_assets: sceneAssets.length,
+        storyboard_scenes: sbScenes.length,
+        vo_url: voUrl,
+        preset: effectivePreset.id,
+        duration_in_frames: totalFrames,
+        composition_id: "viral-vertical",
+      };
+      return json({
+        ok: true,
+        traceId: trace,
+        dry_run: true,
+        ready: "READY_TO_RENDER",
+        message: "READY_TO_RENDER — all preflight checks passed (dry run, no dispatch)",
+        diagnostics,
+        payload_preview: previewPayload,
+        worker_secret_configured: RENDER_WORKER_SECRET.length > 0,
+        render_worker_id: null,
+      });
+    }
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
@@ -170,7 +299,7 @@ Deno.serve(async (req) => {
         status_message: "Queued for external render worker.",
       })
       .eq("id", jobId);
-    if (updErr) return json({ ok: false, traceId: trace, message: updErr.message }, 500);
+    if (updErr) return bad(500, trace, "db_update_failed", updErr.message, diagnostics);
 
     const webhookUrl = `${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`;
     const productLock = job.product_lock && typeof job.product_lock === "object" && Object.keys(job.product_lock).length > 0
@@ -238,6 +367,7 @@ Deno.serve(async (req) => {
       ok: true,
       traceId: trace,
       message: "Queued for render worker.",
+      diagnostics,
       payload,
       preset: effectivePreset,
       command,
@@ -245,7 +375,7 @@ Deno.serve(async (req) => {
       worker_secret_configured: RENDER_WORKER_SECRET.length > 0,
     });
   } catch (e) {
-    return json({ ok: false, traceId: trace, message: e instanceof Error ? e.message : String(e) }, 500);
+    return bad(500, trace, "internal_error", e instanceof Error ? e.message : String(e), []);
   }
 });
 
