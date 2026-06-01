@@ -456,6 +456,38 @@ Deno.serve(async (req) => {
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
     if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
 
+    // Best-effort promotion: when this update frees a render slot (terminal
+    // success or terminal failure), pop the oldest queue_waiting concept and
+    // dispatch it. Errors are swallowed — the watchdog is the safety net.
+    if (patch.status === "render_complete" || patch.status === "failed") {
+      (async () => {
+        try {
+          const { data: nextWaiting } = await admin
+            .from("cinematic_ad_jobs")
+            .select("id, preset")
+            .eq("status", "queue_waiting")
+            .order("queue_wait_next_at", { ascending: true, nullsFirst: true })
+            .limit(1)
+            .maybeSingle();
+          if (!nextWaiting) return;
+          const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+          const SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cinematic-ad-queue-render`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-token": SECRET,
+              "Authorization": `Bearer ${SVC}`,
+              "apikey": SVC,
+            },
+            body: JSON.stringify({ job_id: (nextWaiting as any).id, preset: (nextWaiting as any).preset ?? undefined, auto_approve: true }),
+          });
+        } catch (e) {
+          console.warn(`[webhook->promote] ${traceId} failed:`, (e as Error)?.message);
+        }
+      })();
+    }
+
     // On render success: run validator, then either auto-publish (if explicitly
     // approved upstream) or hold for admin approval in the preview panel.
     if (status === "heartbeat") return json({ ok: true, traceId, message: "heartbeat recorded" });
