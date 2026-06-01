@@ -509,6 +509,20 @@ export default function PinterestAdStudio() {
               </span>
             </span>
           </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
+            <input
+              type="checkbox"
+              checked={forcePreflightOverride}
+              onChange={(e) => setForcePreflightOverride(e.target.checked)}
+              className="accent-amber-500 mt-0.5"
+            />
+            <span>
+              <span className="font-medium text-amber-700 dark:text-amber-400">Force render even if product is out of stock</span>
+              <span className="block text-muted-foreground">
+                Bypass <code className="text-[10px]">product_out_of_stock</code> and <code className="text-[10px]">product_inactive</code> preflight gates. Admin-only. All other safety checks (copy, media, category, plan, storyboard) stay active. Each bypass is logged with product, user and reason.
+              </span>
+            </span>
+          </label>
           <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>Hit a render budget block? Inspect or clear it here.</span>
             <Link to="/admin/render-budget" className="text-primary hover:underline">Render Budget dashboard →</Link>
