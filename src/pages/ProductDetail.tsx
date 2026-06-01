@@ -1684,6 +1684,12 @@ const ProductDetail = () => {
               <TrustBadgesBlock compact />
             </motion.div>
 
+            {/* Category-specific guarantee — deterministic, no medical claims. */}
+            <ProductGuaranteeBadge
+              productName={product.name}
+              category={product.category}
+            />
+
             {/* Micro-friction reduction */}
             <MicroFrictionBlock />
 
