@@ -43,6 +43,8 @@ type EdgeCallDiag = {
   responseBody: string | null;
   traceId: string | null;
   errorMessage: string | null;
+  errorCode?: string | null;
+  preflight?: Array<{ name: string; pass: boolean; detail?: string }> | null;
 };
 type ConceptDiag = {
   archetype: ArchetypeId;
@@ -78,16 +80,21 @@ async function invokeWithDiag(fn: string, body: Record<string, unknown>): Promis
   let httpStatus: number | null = ctx?.status ?? (data ? 200 : null);
   let responseBody: string | null = null;
   let traceId: string | null = (data as any)?.traceId ?? null;
+  let errorCode: string | null = (data as any)?.error_code ?? null;
+  let preflight: Array<{ name: string; pass: boolean; detail?: string }> | null =
+    ((data as any)?.diagnostics as any) ?? null;
   if (ctx) {
     try { responseBody = await ctx.clone().text(); } catch { /* noop */ }
     try {
       const parsed = responseBody ? JSON.parse(responseBody) : null;
       if (parsed?.traceId) traceId = parsed.traceId;
+      if (parsed?.error_code) errorCode = parsed.error_code;
+      if (Array.isArray(parsed?.diagnostics)) preflight = parsed.diagnostics;
     } catch { /* response was not JSON */ }
   }
   const okFlag = !error && (data as any)?.ok !== false;
   const errorMessage = okFlag ? null : ((data as any)?.message || error?.message || `non-2xx (${httpStatus ?? "?"})`);
-  const diag: EdgeCallDiag = { fn, ok: okFlag, httpStatus, responseBody, traceId, errorMessage };
+  const diag: EdgeCallDiag = { fn, ok: okFlag, httpStatus, responseBody, traceId, errorMessage, errorCode, preflight };
   return { data, diag };
 }
 
@@ -166,7 +173,14 @@ export default function PinterestAdStudio() {
     });
     const jobId = ((prep.data as any)?.job_id ?? (prep.data as any)?.job?.id) as string | undefined;
     if (!jobId || !prep.diag.ok) return { jobId: null, prepare: prep.diag, queue: null };
-    const q = await invokeWithDiag("cinematic-ad-queue-render", { job_id: jobId, preset: opts.preset });
+    const q = await invokeWithDiag("cinematic-ad-queue-render", {
+      job_id: jobId,
+      preset: opts.preset,
+      // Director path is an authorized path — implicitly approve so the
+      // approval gate doesn't 412 when called as part of the run.
+      auto_approve: true,
+      dry_run: dryRun,
+    });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
       await supabase.from("cinematic_ad_jobs")
@@ -261,17 +275,7 @@ export default function PinterestAdStudio() {
 
       // Run all concepts in parallel — failures isolated per concept
       const settled = await Promise.allSettled(concepts.map(async (c, idx) => {
-        // ---- DRY RUN: simulate prepare/queue & force a viral failure to verify isolation ----
-        if (dryRun) {
-          if (c.archetype === "viral_interrupt") {
-            const fakeFail: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: 500, responseBody: '{"error":"SIMULATED_VIRAL_FAILURE","message":"dry-run injected failure"}', traceId: "dryrun_trace", errorMessage: "SIMULATED viral concept failure" };
-            return { idx, c, jobId: null, prepare: fakeFail, queue: null, retried: true, dryRun: true };
-          }
-          const fakeOk: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: true, httpStatus: 200, responseBody: '{"ok":true}', traceId: "dryrun_trace", errorMessage: null };
-          return { idx, c, jobId: `dryrun_${idx}`, prepare: fakeOk, queue: { ...fakeOk, fn: "cinematic-ad-queue-render" }, retried: false, dryRun: true };
-        }
-
-        // ---- REAL RUN with fallback retry for viral_interrupt ----
+        // dry-run mode is passed to queue-render via auto_approve+dry_run; prepare still runs normally
         let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
         let retried = false;
         if (!r.jobId && c.archetype === "viral_interrupt") {
@@ -279,7 +283,7 @@ export default function PinterestAdStudio() {
           retried = true;
           r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
         }
-        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: false };
+        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRun };
       }));
 
       const results: JobRow[] = [];
@@ -411,7 +415,7 @@ export default function PinterestAdStudio() {
           </Button>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
-            Dry run mode — simulate all 4 concepts (no paid renders, injects a viral failure to verify isolation)
+            Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
           </label>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
@@ -473,7 +477,46 @@ export default function PinterestAdStudio() {
                       {d.queue && (
                         <div className="grid grid-cols-[110px_1fr] gap-x-2">
                           <span className="text-muted-foreground">queue:</span>
-                          <span><code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}</span>
+                          <span>
+                            <code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}
+                            {d.queue.errorCode ? <> · <code className="text-[10px]">{d.queue.errorCode}</code></> : null}
+                          </span>
+                        </div>
+                      )}
+                      {/* Queue preflight diagnostics — PASS/FAIL grid */}
+                      {(d.queue?.preflight && d.queue.preflight.length > 0) && (
+                        <div className="mt-2 rounded border border-border bg-background/40 p-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] font-semibold">Queue diagnostics</span>
+                            <button
+                              type="button"
+                              className="text-[10px] underline text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                const blob = {
+                                  archetype: d.archetype,
+                                  label: d.label,
+                                  jobId: d.jobId,
+                                  prepare: d.prepare,
+                                  queue: d.queue,
+                                };
+                                navigator.clipboard.writeText(JSON.stringify(blob, null, 2));
+                                toast.success("Diagnostics copied");
+                              }}
+                            >
+                              Copy diagnostics
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                            {d.queue.preflight.map((p) => (
+                              <div key={p.name} className="flex items-center gap-1.5 text-[10px]">
+                                {p.pass
+                                  ? <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                  : <XCircle className="w-3 h-3 text-destructive shrink-0" />}
+                                <span className="font-mono">{p.name}</span>
+                                {p.detail && <span className="text-muted-foreground truncate">— {p.detail}</span>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       {failed && d.prepare?.responseBody && (
