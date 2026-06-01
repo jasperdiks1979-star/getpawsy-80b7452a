@@ -1853,6 +1853,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="profit-engine/trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
