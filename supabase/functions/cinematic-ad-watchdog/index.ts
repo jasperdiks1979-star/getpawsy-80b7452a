@@ -36,6 +36,44 @@ const MAX_RETRIES = 3;
 // Backoff in minutes per attempt number (1-indexed)
 const BACKOFF_MINUTES = [1, 5, 15];
 
+/**
+ * Self-healing preparation gate. Mirrors claim-job: a job cannot be
+ * (re)queued for render unless creative_plan exists AND
+ * preflight_status='pass'. Heals missing fields by invoking the
+ * preparation functions with the service-role key.
+ */
+async function ensureRenderReady(
+  admin: ReturnType<typeof createClient>,
+  jobId: string,
+): Promise<{ ready: boolean; reasons: string[] }> {
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${SERVICE_KEY}`,
+    apikey: SERVICE_KEY,
+  };
+  const fnBase = `${SUPABASE_URL}/functions/v1`;
+  const { data: pre } = await admin
+    .from("cinematic_ad_jobs")
+    .select("creative_plan, preflight_status")
+    .eq("id", jobId).maybeSingle();
+  if (!pre?.creative_plan) {
+    try { await fetch(`${fnBase}/cinematic-ad-plan`, { method: "POST", headers, body: JSON.stringify({ job_id: jobId }) }); } catch (_) {}
+  }
+  if (pre?.preflight_status !== "pass") {
+    try { await fetch(`${fnBase}/cinematic-ad-preflight`, { method: "POST", headers, body: JSON.stringify({ job_id: jobId }) }); } catch (_) {}
+  }
+  const { data: post } = await admin
+    .from("cinematic_ad_jobs")
+    .select("creative_plan, preflight_status, preflight_reasons")
+    .eq("id", jobId).maybeSingle();
+  const hasPlan = Boolean(post?.creative_plan);
+  const preflightPass = post?.preflight_status === "pass";
+  const reasons: string[] = [];
+  if (!hasPlan) reasons.push("creative_plan_missing");
+  if (!preflightPass) reasons.push(`preflight_${post?.preflight_status ?? "missing"}`);
+  return { ready: hasPlan && preflightPass, reasons };
+}
+
 const RETRYABLE_ERROR_PATTERNS = [
   /timeout/i,
   /timed out/i,
