@@ -761,6 +761,26 @@ const _handlerInner = async (req: Request): Promise<Response> => {
       .limit(1)
       .maybeSingle();
     if (existingConcept) {
+      // Phase 5: even on idempotent attach, ENFORCE motion-engine. Director
+      // mode used to hit this branch and skip motion-engine entirely, which
+      // is exactly how every ad ended up as an ffmpeg ken-burns slideshow.
+      const me = await ensureMotionStoryboard(admin, existingConcept.id, {
+        engineVersion: "v3",
+        traceId,
+      });
+      if (!me.ok) {
+        return json(200, {
+          ok: false,
+          recoverable: false,
+          fallback_used: false,
+          concept_status: "concept_failed",
+          error_code: me.error_code,
+          message: me.message,
+          details: (me as any).details ?? null,
+          traceId,
+          job_id: existingConcept.id,
+        });
+      }
       return json(200, {
         ok: true,
         traceId,
