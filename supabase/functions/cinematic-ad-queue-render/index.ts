@@ -34,6 +34,8 @@ async function ensureRenderReady(
   admin: ReturnType<typeof createClient>,
   jobId: string,
   traceLabel: string,
+  forcePreflightOverride: boolean = false,
+  forcePreflightReason: string | null = null,
 ): Promise<{ ready: boolean; reasons: string[]; preflight_status: string | null; creative_plan_present: boolean }> {
   const headers = {
     "Content-Type": "application/json",
@@ -63,7 +65,13 @@ async function ensureRenderReady(
   if (pre?.preflight_status !== "pass") {
     try {
       const r = await fetch(`${fnBase}/cinematic-ad-preflight`, {
-        method: "POST", headers, body: JSON.stringify({ job_id: jobId }),
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          job_id: jobId,
+          force_preflight_override: forcePreflightOverride,
+          force_preflight_override_reason: forcePreflightReason,
+        }),
       });
       const txt = await r.text().catch(() => "");
       console.log(`[queue-render] ${traceLabel} ensureRenderReady preflight status=${r.status} ${txt.slice(0, 160)}`);
