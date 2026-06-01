@@ -1,53 +1,78 @@
-# Cinematic Ads Recovery Plan
 
-## Production reality (verified just now)
-- 36 failures: `timeline_invalid: scene_count_invalid(0<3)` — storyboard returns 0 scenes, validator hard-fails instead of regenerating.
-- 2 failures: HTML response parsed as JSON (`Unexpected token '<'`).
-- 1 historical failure: GitHub `workflow_dispatch` missing — **already fixed in `.github/workflows/render-cinematic-ad.yml`** (trigger present on line 3). Will add a runtime preflight before dispatch so this can never regress silently.
-- Stuck jobs right now: 4 `preparing`, 4 `prepared`, 1 `render_queued`, 1 `needs_scene_regen`. `cinematic-ad-watchdog` exists (747 lines) but is not auto-advancing these states.
+## FASE 1 — Auto-trim callback verliest geen metadata meer
 
-## Scope (what I will build)
+**Probleem:** `cinematic-ad-render-webhook` returnt vroeg op duration-overrun (regel 312-361) zonder `body.file_size`, `motion_score`, `width/height`, `black_bars`, `thumbnail_url`, `scene_plan` te persisten. De trim-workflow callback bevat die velden niet → blijven NULL.
 
-### 1. Scene generation never returns 0 (`cinematic-ad-storyboard` + new helper)
-- After storyboard call, if `scenes.length < 3`: retry up to 5 times with mutated prompt seed (varied hook tone, beat reshuffle, temperature bump).
-- If still `< 3`: image-only fallback — synthesize 3 minimum scenes from product hero / detail / lifestyle images (Ken-Burns-safe specs, marked `fallback_source: 'product_images'`).
-- Set `status='needs_scene_regen'` only if both AI retries AND image fallback fail (should be near-zero).
-- Validator (`cinematic-ad-validate`) updated: instead of failing `scene_count_invalid`, it sets `status='needs_scene_regen'` so the regen loop runs once more before terminal fail.
+**Aanpak:**
+1. **In `cinematic-ad-render-webhook/index.ts`** — vóór het dispatchen van de trim-workflow alle metadata uit de eerste (originele) render-call wegschrijven naar de `patch`. Daarna trim-status zetten en return.
+2. **Defensieve guard:** een helper `mergePreserve(patch, body, fields)` die alleen toewijst als `body[field]` niet `null/undefined` is, zodat de trim-callback nooit eerder bewaarde waarden overschrijft met NULL.
+3. **Trim-callback pad** (regel 365-413) gebruikt dezelfde helper — `output_file_size_bytes`, `motion_score`, `output_black_bars`, `output_thumbnail_url`, `scene_plan` blijven bewaard als trim-callback ze weglaat.
+4. **Bonus:** `trim-cinematic-ad.yml` voegt `file_size` (van `stat -c%s /tmp/out.mp4`), `width`, `height` (uit ffprobe) toe aan zijn callback payload — zo blijft de getrimde bestandsgrootte ook accuraat.
 
-### 2. HTML / non-JSON response guard (shared helper inlined in storyboard + push-pinterest)
-- Wrap every upstream `fetch` (Lovable AI Gateway, Pinterest, GitHub) in `safeJsonFetch()`:
-  - If `content-type` is not `application/json` OR body starts with `<`, log endpoint + first 200 chars, throw `non_json_response` (caught by retry loop, not crash).
+## FASE 2 — Schone storage URLs
 
-### 3. Watchdog auto-advance (`cinematic-ad-watchdog`)
-- Every run (already cron-driven every 60s): scan `cinematic_ad_jobs` and:
-  - `prepared` → call `cinematic-ad-queue-render` → `render_queued`.
-  - `render_queued` older than 2 min with no `render_dispatched_at` → call `cinematic-ad-dispatch` (GitHub).
-  - `preparing` > 15 min → reset to `pending` with `smart_retry_count += 1` (cap 5).
-  - `render_queued` > 30 min → re-dispatch (cap 5).
-  - At cap: mark `failed` with `recoverable=false`.
-- Add GitHub dispatch preflight: `GET /repos/.../actions/workflows/render-cinematic-ad.yml` and verify `state=active` before queueing.
+**Probleem:** `${SUPABASE_URL}/storage/...` in `trim-cinematic-ad.yml` produceert `…supabase.co//storage/…` doordat secret trailing-slash heeft. iPhone Safari kan video soms cachen/weigeren bij dubbele slash.
 
-### 4. Admin dashboard (`/admin/cinematic-health`)
-New page reading from existing tables. Live cards:
-- Pipeline Health: counts by status (7d), failure rate, recoverable %.
-- Scene Generator Health: avg scene_count, % needing fallback, retry distribution.
-- Render Queue Health: oldest `render_queued`, stuck count, worker heartbeat age.
-- GitHub Dispatch Health: last successful dispatch, workflow_dispatch preflight status, last 422.
-- Pinterest Publisher Health: published 24h, last publish error.
-Auto-refresh every 30s. Lazy-loaded route.
+**Aanpak:**
+1. In `trim-cinematic-ad.yml`: `SUPABASE_URL="${SUPABASE_URL%/}"` als eerste preflight stap, daarna gebruiken.
+2. In `render-cinematic-ad.mjs`: bestaat al (`SUPABASE_URL_RAW.replace(/\/+$/, "")`) — geen wijziging nodig.
+3. **Backfill:** SQL `UPDATE` om bestaande `output_mp4_url` met `//storage` te herstellen naar `/storage`.
+4. `Content-Disposition: inline` op storage objects via `cache-control` header bij upload (iPhone Safari speelt MP4 direct).
 
-## Out of scope (intentional)
-- No DB schema changes (all columns needed already exist: `smart_retry_count`, `render_attempts`, `render_heartbeat_at`, `recoverable`, etc.).
-- No changes to Remotion render code or v5/v7 quality scoring.
-- No changes to Pinterest publishing logic — only the response-guard wrapper.
-- No new cron jobs (watchdog cron already runs every 60s; verified during last sprint).
+## FASE 3 — Motion-engine integratie (geen Ken Burns slideshow meer)
 
-## Files
-**Edit:** `supabase/functions/cinematic-ad-storyboard/index.ts`, `supabase/functions/cinematic-ad-validate/index.ts`, `supabase/functions/cinematic-ad-watchdog/index.ts`, `supabase/functions/cinematic-ad-push-pinterest/index.ts`, `src/App.tsx`.
-**Create:** `supabase/functions/cinematic-ad-storyboard/sceneFallback.ts` (inline helper section), `src/pages/admin/CinematicHealthPage.tsx`.
+**Probleem:** `cinematic-motion-engine` edge function genereert een rijke `motion_storyboard` (parallax, depth_layers, camera_move, tracking_path), maar wordt **nergens** aangeroepen. De renderer (`render-cinematic-ad.mjs`) gebruikt platte ffmpeg zoompan.
 
-## Risk
-- Image-fallback scenes will be visually weaker than AI storyboard; they still pass through v5/v7 validators so quality gates remain in force — fallback may be rejected and routed to `needs_scene_regen`, which is correct behavior (better than hard-fail).
-- Watchdog auto-advance may surface latent bugs in `cinematic-ad-queue-render` for jobs that were never meant to render; preflight + recoverable flag protects against runaway.
+**Aanpak — minimal invasive routing:**
+1. **In `cinematic-ad-prepare`** na storyboard generatie (regel ~817): roep `cinematic-motion-engine` aan met `job_id`. Resultaat (`motion_storyboard`, `motion_ratio`, `motion_plan_summary`) wordt automatisch op de job rij geschreven door de motion-engine zelf.
+2. **In `render-cinematic-ad.mjs`** — uitbreiden van de `REMOTION_TYPES` dispatch (regel 350-374): als `job.motion_storyboard` aanwezig is met `>=4` scenes, route naar `render-cinematic-remotion.mjs` (de echte Remotion compositie met parallax/depth/camera), ook als `content_type` niet in de hardcoded set zit.
+3. **In `render-cinematic-remotion.mjs`** — als `motion_storyboard` aanwezig is, gebruik die als input props voor de Remotion compositie i.p.v. flat scene_assets. Dit is alleen een prop-passing wijziging; de bestaande Remotion `MainVideo*` composities ondersteunen al layered backgrounds.
+4. **Fallback:** als Remotion render faalt, log waarschuwing en val terug op zoompan (nooit volledige render-fail).
 
-Confirm and I'll implement all four blocks in one pass, then deploy the 4 edge functions and verify against the 4 currently-stuck jobs.
+> Belangrijk: dit is een **routing/integratie** wijziging — geen herschrijven van de Remotion composities zelf. De bestaande `MainVideoViralVertical` en `LifestyleScene` componenten doen al parallax. Diepe re-implementatie van depth/foreground-separation in Remotion is een aparte epic.
+
+## FASE 4 — Motion Quality Score met floor 70
+
+**Probleem:** huidige `motion_score` is ffmpeg's `select=gt(scene,0)` count (typisch 0-30 schaal). Geen genormaliseerde 0-100 score, geen auto-regen onder een floor.
+
+**Aanpak:**
+1. **DB migratie:** kolom `motion_quality_score INTEGER` op `cinematic_ad_jobs` (genormaliseerd 0-100).
+2. **In `render-cinematic-ad.mjs`** — bestaande `motionScore()` blijft, maar bereken extra een `motionQualityScore` op basis van:
+   - Scene-change rate (ffmpeg `scdet`) — 35%
+   - Optical flow magnitude (`mestimate` filter) — 35%
+   - Camera motion variance over storyboard — 30%
+   - Output: 0-100 integer, in webhook payload als `motion_quality_score`.
+3. **In `cinematic-ad-render-webhook`:** persist `motion_quality_score`.
+4. **In `cinematic-ad-validate`:** check `motion_quality_score >= 70`; als lager, zet `status = 'render_queued'` met `motion_regen_attempts++` (max 2 retries). Daarna `needs_scene_regen` voor manual review.
+5. **Configurable threshold:** `cinematic_ad_settings.motion_quality_min_score` (default 70).
+
+---
+
+## Wijzigingsoverzicht
+
+```text
+FASE 1
+  supabase/functions/cinematic-ad-render-webhook/index.ts   (preserveMerge helper)
+  .github/workflows/trim-cinematic-ad.yml                   (callback payload uitbreiden)
+
+FASE 2
+  .github/workflows/trim-cinematic-ad.yml                   (SUPABASE_URL strip)
+  supabase/migrations/<ts>_fix_double_slash_mp4_urls.sql   (UPDATE backfill)
+
+FASE 3
+  supabase/functions/cinematic-ad-prepare/index.ts          (invoke motion-engine)
+  remotion/scripts/render-cinematic-ad.mjs                  (dispatch op motion_storyboard)
+  remotion/scripts/render-cinematic-remotion.mjs            (motion_storyboard prop wiring)
+
+FASE 4
+  supabase/migrations/<ts>_motion_quality_score.sql         (kolom + settings)
+  remotion/scripts/render-cinematic-ad.mjs                  (motionQualityScore func)
+  supabase/functions/cinematic-ad-render-webhook/index.ts   (persist)
+  supabase/functions/cinematic-ad-validate/index.ts         (floor=70, auto-regen)
+```
+
+## Risico's
+
+- **Phase 3** zonder eind-tot-eind test risico op zwarte render bij motion_storyboard zonder kloppende image URLs. Fallback naar zoompan dempt dat.
+- **Phase 4** auto-regen kan een retry-storm geven als score-berekening consistent <70 scoort. Max 2 retries cap is hard.
+- Migraties zijn additief, backwards compatible (nieuwe kolommen nullable, defaults).
