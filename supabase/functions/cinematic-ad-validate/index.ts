@@ -10,6 +10,7 @@ import { getPreset } from "../_shared/cinematic-presets.ts";
 import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
 import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";
 import { normalizeScenePlan, estimateMotionScore } from "../_shared/cinematic-scene-normalizer.ts";
+import { rewriteForSafeZone } from "../_shared/cinematic-text-safe-rewriter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
