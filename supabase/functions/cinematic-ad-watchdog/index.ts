@@ -680,7 +680,6 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
     })
     .eq("id", 1);
 
-  // === (4) Active recovery: chain the intelligence engine ===
   // === (3b) Promote queue_waiting jobs into the render queue ===
   //
   // Concepts parked by cinematic-ad-queue-render when MAX_ACTIVE_QUEUED was
