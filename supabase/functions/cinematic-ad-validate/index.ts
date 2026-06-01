@@ -401,6 +401,23 @@ Deno.serve(async (req) => {
   const motionVal = report.motion_score ?? Number(job.motion_score ?? 0);
   const motionPass = motionVal >= motionMin;
 
+  // ── Phase 4: Motion Quality floor (70/100) + auto-regen ─────────────────
+  let motionQualityMin = 70;
+  let motionQualityMaxRegen = 2;
+  try {
+    const { data: mqs } = await admin.from("cinematic_ad_settings")
+      .select("motion_quality_min_score, motion_quality_max_regen_attempts")
+      .limit(1).maybeSingle();
+    if (mqs) {
+      motionQualityMin = Number(mqs.motion_quality_min_score ?? motionQualityMin);
+      motionQualityMaxRegen = Number(mqs.motion_quality_max_regen_attempts ?? motionQualityMaxRegen);
+    }
+  } catch (_) { /* defaults */ }
+  const motionQualityVal = job.motion_quality_score != null ? Number(job.motion_quality_score) : null;
+  const motionQualityPass = motionQualityVal == null || motionQualityVal >= motionQualityMin;
+  const motionRegenAttempts = Number((job as any).motion_regen_attempts ?? 0);
+  const canMotionRegen = !motionQualityPass && motionRegenAttempts < motionQualityMaxRegen;
+
   // Composite creative_quality_score weights the most user-visible signals.
   const creativeQuality = Math.round(
     (safeAreaFinal.ok ? 100 : 30) * 0.25 +
@@ -466,6 +483,17 @@ Deno.serve(async (req) => {
     passed: motionPass,
     observed: motionVal,
     expected: `>= ${motionMin}`,
+  });
+  report.checks.push({
+    name: "motion_quality_score",
+    passed: motionQualityPass,
+    observed: motionQualityVal ?? "null",
+    expected: `>= ${motionQualityMin}`,
+    message: motionQualityPass
+      ? undefined
+      : canMotionRegen
+        ? `motion quality below floor — auto re-render (attempt ${motionRegenAttempts + 1}/${motionQualityMaxRegen})`
+        : `motion quality below floor — exhausted ${motionQualityMaxRegen} auto re-renders, manual review`,
   });
   report.checks.push({
     name: "creative_quality_score",
