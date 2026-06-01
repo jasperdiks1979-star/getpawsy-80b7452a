@@ -356,6 +356,22 @@ Deno.serve(async (req) => {
     observed: safeAreaFinal.violations.length ? safeAreaFinal.violations.join(" | ") : "ok",
     expected: "all overlay text within 9:16 safe frame, ≤34ch × 2 lines",
   });
+  if (textRewriteResult) {
+    report.checks.push({
+      name: "text_safe_auto_rewrite",
+      passed: safeAreaFinal.ok,
+      observed: `mutations=${textRewriteResult.mutations.length} fields=${textRewriteResult.mutations.map(m => m.field).join(",")}`,
+      expected: "auto-rewrite restores safe-zone compliance",
+      message: safeAreaFinal.ok
+        ? "overlay text shortened to fit safe zone"
+        : "auto-rewrite ran but violations remain",
+    });
+    (report as any).text_safe_rewrite = {
+      applied: true,
+      mutations: textRewriteResult.mutations,
+      resolved: safeAreaFinal.ok,
+    };
+  }
   report.checks.push({
     name: "category_match",
     passed: catCheck.ok,
