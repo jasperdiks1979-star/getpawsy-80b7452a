@@ -25,6 +25,13 @@ type JobRow = {
   voice_style: string | null;
   archetype?: ArchetypeId | null;
   predicted_score?: number | null;
+  // Phase 5: motion-engine enforcement diagnostics
+  render_mode?: string | null;
+  motion_engine_used?: string | null;
+  motion_score?: number | null;
+  motion_diversity_v2?: number | null;
+  transition_count?: number | null;
+  publish_blocked_reason?: string | null;
 };
 
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
