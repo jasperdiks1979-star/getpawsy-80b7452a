@@ -240,7 +240,26 @@ Rules:
       }),
     });
     if (!res.ok) {
-      console.error("[creative-kit] non-2xx", res.status, await res.text());
+      const body = await res.text();
+      console.error("[creative-kit] non-2xx", res.status, body);
+      // Hard-fail on credit/rate-limit conditions so the caller can mark the
+      // job concept_failed instead of persisting a broken empty storyboard.
+      if (res.status === 402 || res.status === 429 || res.status === 401) {
+        const err: any = new Error(
+          res.status === 402
+            ? "ai_gateway_payment_required: Lovable AI workspace has no credits"
+            : res.status === 429
+            ? "ai_gateway_rate_limited"
+            : "ai_gateway_unauthorized",
+        );
+        err.status = res.status;
+        err.code =
+          res.status === 402 ? "AI_CREDITS_EXHAUSTED"
+          : res.status === 429 ? "AI_RATE_LIMITED"
+          : "AI_UNAUTHORIZED";
+        err.upstream = body;
+        throw err;
+      }
       return fallbackKit(product.name);
     }
     const data = await res.json();
