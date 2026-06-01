@@ -453,6 +453,22 @@ Deno.serve(async (req) => {
       else patch.status_message = `attempt ${attempts} failed; re-queued (${attempts}/${MAX_ATTEMPTS}).`;
     }
 
+    // Phase 5: motion-score publish gate. Any render whose motion_score is
+    // below 0.5 (i.e. effectively a static slideshow) is parked in
+    // needs_admin_review with an explicit publish_blocked_reason. This stacks
+    // on top of the duration / safari-playback gates below.
+    if ((status === "rendered" || status === "uploaded") && patch.status === "render_complete") {
+      const motionScore = Number(
+        (patch as any).motion_score ?? job.motion_score ?? body?.motion_score ?? 0,
+      );
+      if (Number.isFinite(motionScore) && motionScore < 0.5) {
+        patch.status = "needs_admin_review";
+        (patch as any).publish_blocked_reason = `motion_score_below_0.5:${motionScore.toFixed(2)}`;
+        patch.status_message = `motion_score=${motionScore.toFixed(2)} < 0.5 — render rejected as low-motion; review in admin preview`;
+        console.warn(`[motion-gate] ${traceId} job=${jobId} motion_score=${motionScore.toFixed(2)} — blocked from autopublish`);
+      }
+    }
+
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
     if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
 
