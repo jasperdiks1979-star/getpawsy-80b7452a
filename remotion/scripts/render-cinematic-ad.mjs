@@ -212,6 +212,8 @@ async function motionScore(file, totalFrames) {
 async function motionQualityScore(file, totalFrames, storyboard) {
   // 1. scene-change rate via scdet
   let sceneRate = 0;
+  let cutCount = 0;
+  let durationSeconds = Math.max(1, totalFrames / 30);
   try {
     const r = await shCapture("ffmpeg", [
       "-i", file,
@@ -219,13 +221,16 @@ async function motionQualityScore(file, totalFrames, storyboard) {
       "-f", "null", "-",
     ]);
     const cuts = (r.stderr.match(/lavfi\.scd\.mafd/g) ?? []).length;
-    const seconds = Math.max(1, totalFrames / 30);
+    cutCount = cuts;
+    const seconds = durationSeconds;
     // ~1 cut per 2s = perfect (50). Above 0.5cps caps at 100.
     sceneRate = Math.min(100, Math.round((cuts / seconds) * 200));
   } catch (e) { console.warn("[motion-quality] scdet failed", e?.message); }
 
   // 2. optical-flow proxy via mestimate (motion vectors per frame)
   let flowScore = 0;
+  let mestimateLines = 0;
+  let mestimateAvailable = true;
   try {
     const r = await shCapture("ffmpeg", [
       "-i", file,
@@ -234,21 +239,28 @@ async function motionQualityScore(file, totalFrames, storyboard) {
     ]);
     // crude proxy: count emitted metadata lines (more = more motion)
     const lines = (r.stderr.match(/lavfi\.motion_vectors/g) ?? []).length;
+    mestimateLines = lines;
     flowScore = Math.min(100, Math.round((lines / 90) * 100));
     if (!flowScore && /Error|not found/i.test(r.stderr)) {
       // mestimate not in this ffmpeg build — fall back to scene-rate proxy
+      mestimateAvailable = false;
       flowScore = sceneRate;
     }
   } catch (e) {
     console.warn("[motion-quality] mestimate failed, falling back to scene proxy", e?.message);
+    mestimateAvailable = false;
     flowScore = sceneRate;
   }
 
   // 3. camera-move variance from storyboard
   let camScore = 0;
+  let cameraMoves = 0, shotDistances = 0, storyboardLen = 0;
   if (Array.isArray(storyboard) && storyboard.length > 0) {
     const moves = new Set(storyboard.map((s) => s?.camera_move).filter(Boolean));
     const dists = new Set(storyboard.map((s) => s?.shot_distance).filter(Boolean));
+    cameraMoves = moves.size;
+    shotDistances = dists.size;
+    storyboardLen = storyboard.length;
     camScore = Math.min(100, moves.size * 18 + dists.size * 14 + storyboard.length * 4);
   } else {
     // No storyboard → conservative midline so we never auto-zero a valid render
@@ -257,8 +269,32 @@ async function motionQualityScore(file, totalFrames, storyboard) {
 
   const composite = Math.round(sceneRate * 0.35 + flowScore * 0.35 + camScore * 0.30);
   const final = Math.max(0, Math.min(100, composite));
-  console.log("[motion-quality]", { sceneRate, flowScore, camScore, composite: final });
-  return final;
+  const breakdown = {
+    composite: final,
+    weights: { sceneRate: 0.35, flowScore: 0.35, camScore: 0.30 },
+    sceneRate: {
+      score: sceneRate,
+      cuts: cutCount,
+      duration_seconds: Number(durationSeconds.toFixed(2)),
+      cuts_per_second: Number((cutCount / durationSeconds).toFixed(3)),
+    },
+    flowScore: {
+      score: flowScore,
+      mestimate_lines: mestimateLines,
+      mestimate_available: mestimateAvailable,
+      sampled_frames: 90,
+    },
+    camScore: {
+      score: camScore,
+      camera_moves_distinct: cameraMoves,
+      shot_distances_distinct: shotDistances,
+      storyboard_scenes: storyboardLen,
+      had_storyboard: storyboardLen > 0,
+    },
+    computed_at: new Date().toISOString(),
+  };
+  console.log("[motion-quality]", JSON.stringify(breakdown));
+  return { score: final, breakdown };
 }
 
 /**
