@@ -5,6 +5,7 @@
 // IMPORTANT: keep this in lockstep with the V7 block in
 // supabase/functions/cinematic-ad-validate/index.ts. The validate function
 // imports `evaluateV7` from here — any logic change must land in this file.
+import { normalizeScenePlan } from "./cinematic-scene-normalizer.ts";
 
 export interface V7Thresholds {
   v7Enabled: boolean;
@@ -107,7 +108,15 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
   const { job, productCtx, safeArea, v2 } = input;
   const t = thresholds;
 
-  const plan: any[] = Array.isArray(job.scene_plan) ? job.scene_plan : [];
+  // Use the canonical normalizer so we accept scene_plan, scene_specs,
+  // storyboard, or scene_assets as the source of truth. This is the fix
+  // for the post-render QA blocker where the planner never wrote
+  // `scene_plan` on the job row even though 6 valid scenes existed in
+  // `storyboard` / `scene_specs`.
+  const planSrc = Array.isArray(job.scene_plan) && job.scene_plan.length > 0
+    ? job.scene_plan
+    : normalizeScenePlan(job).scenes;
+  const plan: any[] = planSrc;
 
   const planRoles = plan.map((s) => String(s?.role ?? s?.category ?? s?.shotType ?? "").toLowerCase());
   const planCrops = plan.map((s) => String(s?.crop ?? s?.framing ?? "").toLowerCase());
