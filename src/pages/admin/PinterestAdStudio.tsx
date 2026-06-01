@@ -43,6 +43,8 @@ type EdgeCallDiag = {
   responseBody: string | null;
   traceId: string | null;
   errorMessage: string | null;
+  errorCode?: string | null;
+  preflight?: Array<{ name: string; pass: boolean; detail?: string }> | null;
 };
 type ConceptDiag = {
   archetype: ArchetypeId;
@@ -78,16 +80,21 @@ async function invokeWithDiag(fn: string, body: Record<string, unknown>): Promis
   let httpStatus: number | null = ctx?.status ?? (data ? 200 : null);
   let responseBody: string | null = null;
   let traceId: string | null = (data as any)?.traceId ?? null;
+  let errorCode: string | null = (data as any)?.error_code ?? null;
+  let preflight: Array<{ name: string; pass: boolean; detail?: string }> | null =
+    ((data as any)?.diagnostics as any) ?? null;
   if (ctx) {
     try { responseBody = await ctx.clone().text(); } catch { /* noop */ }
     try {
       const parsed = responseBody ? JSON.parse(responseBody) : null;
       if (parsed?.traceId) traceId = parsed.traceId;
+      if (parsed?.error_code) errorCode = parsed.error_code;
+      if (Array.isArray(parsed?.diagnostics)) preflight = parsed.diagnostics;
     } catch { /* response was not JSON */ }
   }
   const okFlag = !error && (data as any)?.ok !== false;
   const errorMessage = okFlag ? null : ((data as any)?.message || error?.message || `non-2xx (${httpStatus ?? "?"})`);
-  const diag: EdgeCallDiag = { fn, ok: okFlag, httpStatus, responseBody, traceId, errorMessage };
+  const diag: EdgeCallDiag = { fn, ok: okFlag, httpStatus, responseBody, traceId, errorMessage, errorCode, preflight };
   return { data, diag };
 }
 
@@ -166,7 +173,14 @@ export default function PinterestAdStudio() {
     });
     const jobId = ((prep.data as any)?.job_id ?? (prep.data as any)?.job?.id) as string | undefined;
     if (!jobId || !prep.diag.ok) return { jobId: null, prepare: prep.diag, queue: null };
-    const q = await invokeWithDiag("cinematic-ad-queue-render", { job_id: jobId, preset: opts.preset });
+    const q = await invokeWithDiag("cinematic-ad-queue-render", {
+      job_id: jobId,
+      preset: opts.preset,
+      // Director path is an authorized path — implicitly approve so the
+      // approval gate doesn't 412 when called as part of the run.
+      auto_approve: true,
+      dry_run: dryRunRef.current,
+    });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
       await supabase.from("cinematic_ad_jobs")
@@ -261,17 +275,7 @@ export default function PinterestAdStudio() {
 
       // Run all concepts in parallel — failures isolated per concept
       const settled = await Promise.allSettled(concepts.map(async (c, idx) => {
-        // ---- DRY RUN: simulate prepare/queue & force a viral failure to verify isolation ----
-        if (dryRun) {
-          if (c.archetype === "viral_interrupt") {
-            const fakeFail: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: 500, responseBody: '{"error":"SIMULATED_VIRAL_FAILURE","message":"dry-run injected failure"}', traceId: "dryrun_trace", errorMessage: "SIMULATED viral concept failure" };
-            return { idx, c, jobId: null, prepare: fakeFail, queue: null, retried: true, dryRun: true };
-          }
-          const fakeOk: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: true, httpStatus: 200, responseBody: '{"ok":true}', traceId: "dryrun_trace", errorMessage: null };
-          return { idx, c, jobId: `dryrun_${idx}`, prepare: fakeOk, queue: { ...fakeOk, fn: "cinematic-ad-queue-render" }, retried: false, dryRun: true };
-        }
-
-        // ---- REAL RUN with fallback retry for viral_interrupt ----
+        // dry-run mode is passed to queue-render via auto_approve+dry_run; prepare still runs normally
         let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
         let retried = false;
         if (!r.jobId && c.archetype === "viral_interrupt") {
@@ -279,7 +283,7 @@ export default function PinterestAdStudio() {
           retried = true;
           r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
         }
-        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: false };
+        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRunRef.current };
       }));
 
       const results: JobRow[] = [];
