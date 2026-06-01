@@ -1837,6 +1837,8 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_diversity_v2: number | null
+          motion_engine_used: string | null
           motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
@@ -1972,6 +1974,7 @@ export type Database = {
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          transition_count: number | null
           trim_attempted_at: string | null
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null
@@ -2109,6 +2112,8 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_diversity_v2?: number | null
+          motion_engine_used?: string | null
           motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
@@ -2244,6 +2249,7 @@ export type Database = {
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          transition_count?: number | null
           trim_attempted_at?: string | null
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
@@ -2381,6 +2387,8 @@ export type Database = {
           media_warnings?: Json
           mobile_readability_score?: number | null
           motion_diversity_score?: number | null
+          motion_diversity_v2?: number | null
+          motion_engine_used?: string | null
           motion_engine_version?: string | null
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
@@ -2516,6 +2524,7 @@ export type Database = {
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
           thumbnail_phash?: string | null
+          transition_count?: number | null
           trim_attempted_at?: string | null
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
@@ -19178,6 +19187,8 @@ export type Database = {
           media_warnings: Json
           mobile_readability_score: number | null
           motion_diversity_score: number | null
+          motion_diversity_v2: number | null
+          motion_engine_used: string | null
           motion_engine_version: string | null
           motion_entropy_score: number | null
           motion_exists: boolean | null
@@ -19313,6 +19324,7 @@ export type Database = {
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
           thumbnail_phash: string | null
+          transition_count: number | null
           trim_attempted_at: string | null
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null

@@ -73,4 +73,9 @@ export const FIELD_MAP: Record<string, (v: any) => unknown> = {
   black_bars:    (v) => ["output_black_bars", Boolean(v)],
   thumbnail_url: (v) => ["output_thumbnail_url", stripDoubleSlash(String(v))],
   scene_plan:    (v) => Array.isArray(v) ? ["scene_plan", v] : undefined,
+  // Motion-engine enforcement diagnostics (worker → DB)
+  motion_engine_used:  (v) => typeof v === "string" && v.length > 0 ? ["motion_engine_used", v] : undefined,
+  motion_diversity:    (v) => Number.isFinite(Number(v)) ? ["motion_diversity_v2", Number(v)] : undefined,
+  transition_count:    (v) => Number.isFinite(Number(v)) ? ["transition_count", Math.max(0, Math.round(Number(v)))] : undefined,
+  render_mode:         (v) => typeof v === "string" && v.length > 0 ? ["render_mode", v] : undefined,
 };

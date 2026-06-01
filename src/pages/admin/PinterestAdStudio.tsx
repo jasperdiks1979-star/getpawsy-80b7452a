@@ -25,6 +25,13 @@ type JobRow = {
   voice_style: string | null;
   archetype?: ArchetypeId | null;
   predicted_score?: number | null;
+  // Phase 5: motion-engine enforcement diagnostics
+  render_mode?: string | null;
+  motion_engine_used?: string | null;
+  motion_score?: number | null;
+  motion_diversity_v2?: number | null;
+  transition_count?: number | null;
+  publish_blocked_reason?: string | null;
 };
 
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
@@ -144,7 +151,7 @@ export default function PinterestAdStudio() {
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("cinematic_ad_jobs")
-        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style")
+        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason")
         .in("id", ids);
       if (data) setJobs(data as JobRow[]);
       setPollKey(k => k + 1);
@@ -644,6 +651,57 @@ export default function PinterestAdStudio() {
                       </div>
                       {j.predicted_score != null && (
                         <div className="text-[10px] text-muted-foreground">Predicted {j.predicted_score}</div>
+                      )}
+                      {/* Phase 5 — motion-engine enforcement diagnostics */}
+                      {(j.render_mode || j.motion_engine_used || j.motion_score != null || j.motion_diversity_v2 != null || j.transition_count != null) && (
+                        <div className="flex flex-wrap gap-1 text-[10px]">
+                          {j.render_mode && (
+                            <Badge
+                              variant={j.render_mode === "remotion_cinematic" ? "outline" : "destructive"}
+                              className="font-mono"
+                              title="render_mode"
+                            >
+                              {j.render_mode}
+                            </Badge>
+                          )}
+                          {j.motion_engine_used && (
+                            <Badge
+                              variant={j.motion_engine_used === "v2" ? "outline" : "destructive"}
+                              className="font-mono"
+                              title="motion_engine_used"
+                            >
+                              engine {j.motion_engine_used}
+                            </Badge>
+                          )}
+                          {j.motion_score != null && (
+                            <Badge
+                              variant={j.motion_score >= 0.5 ? "outline" : "destructive"}
+                              className="font-mono"
+                              title="motion_score (publish gate ≥ 0.5)"
+                            >
+                              score {Number(j.motion_score).toFixed(2)}
+                            </Badge>
+                          )}
+                          {j.motion_diversity_v2 != null && (
+                            <Badge
+                              variant={j.motion_diversity_v2 >= 0.8 ? "outline" : "secondary"}
+                              className="font-mono"
+                              title="motion_diversity (target ≥ 0.8)"
+                            >
+                              div {Number(j.motion_diversity_v2).toFixed(2)}
+                            </Badge>
+                          )}
+                          {j.transition_count != null && (
+                            <Badge variant="outline" className="font-mono" title="transition_count">
+                              {j.transition_count} cuts
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      {j.publish_blocked_reason && (
+                        <div className="text-[10px] text-destructive">
+                          Publish blocked: <code className="font-mono">{j.publish_blocked_reason}</code>
+                        </div>
                       )}
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="outline" asChild disabled={!ready}>

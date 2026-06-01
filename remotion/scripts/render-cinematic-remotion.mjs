@@ -235,15 +235,33 @@ async function main() {
   log("rendered", { bytes: size });
   const objectPath = `cinematic-ads/${job.job_id}.mp4`;
   const publicUrl = await uploadMp4(out, objectPath);
+  // Phase 5: stamp motion-engine diagnostics so the admin UI can show
+  // render_mode / motion_engine_used / motion_diversity / transition_count
+  // per concept and the webhook gate can reject low-motion outputs.
+  const sb = Array.isArray(job.motion_storyboard) ? job.motion_storyboard : [];
+  const transitionCount = sb.filter((s) => s?.transition_in || s?.transition_out).length;
+  const cameraMoves = new Set(sb.map((s) => s?.camera_move).filter(Boolean));
+  const distances = new Set(sb.map((s) => s?.shot_distance).filter(Boolean));
+  // Diversity = blended fraction of unique camera moves + shot distances over
+  // scene count. Capped at 1.0.
+  const motionDiversity = sb.length === 0
+    ? 0
+    : Math.min(1, (cameraMoves.size + distances.size) / (sb.length * 2) + 0.2);
   await postWebhook({
     job_id: job.job_id,
     status: "rendered",
     render_token: job.render_token,
     worker_id: WORKER_ID,
+    mp4_url: publicUrl,
     output_mp4_url: publicUrl,
+    file_size: size,
     file_size_bytes: size,
     renderer: "remotion-cinematic-v4",
     composition_id: compositionId,
+    render_mode: "remotion_cinematic",
+    motion_engine_used: "v2",
+    motion_diversity: Number(motionDiversity.toFixed(3)),
+    transition_count: transitionCount,
   });
   log("done", publicUrl);
 }

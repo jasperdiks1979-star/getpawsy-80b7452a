@@ -168,6 +168,33 @@ Deno.serve(async (req) => {
     console.log(`[claim-job] ${traceId} selected job=${locked.id} previous_status=${locked.previous_status} lock_acquired=true worker=${workerId}`);
     console.log(`[claim-job] ${traceId} update success job=${locked.id} status=rendering attempts=${locked.render_attempts}`);
 
+    // Phase 5: the claim RPC return shape does not include motion_storyboard /
+    // engine_version / content_type — fetch them so the worker can route into
+    // the Remotion cinematic compositor instead of the ffmpeg ken-burns path.
+    let motionExtras: {
+      motion_storyboard: unknown;
+      motion_engine_version: string | null;
+      motion_engine_used: string | null;
+      engine_version: string | null;
+      content_type: string | null;
+    } = {
+      motion_storyboard: null,
+      motion_engine_version: null,
+      motion_engine_used: null,
+      engine_version: null,
+      content_type: null,
+    };
+    try {
+      const { data: extras } = await admin
+        .from("cinematic_ad_jobs")
+        .select("motion_storyboard, motion_engine_version, motion_engine_used, engine_version, content_type")
+        .eq("id", locked.id)
+        .maybeSingle();
+      if (extras) motionExtras = extras as any;
+    } catch (e) {
+      console.warn(`[claim-job] ${traceId} motion extras fetch failed:`, (e as Error)?.message);
+    }
+
     return json({
       ok: true, traceId,
       queued_count: queuedCount,
@@ -192,6 +219,14 @@ Deno.serve(async (req) => {
           render_token: locked.render_token,
           output_target: `cinematic-ads/${locked.product_slug}/${locked.id}.mp4`,
           webhook_url: `${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`,
+          // Phase 5: motion-engine enforcement payload — when motion_storyboard
+          // is present + engine_version >= v3, the worker MUST dispatch to the
+          // Remotion compositor; ffmpeg fallback is disabled in code.
+          motion_storyboard: motionExtras.motion_storyboard,
+          motion_engine_version: motionExtras.motion_engine_version,
+          motion_engine_used: motionExtras.motion_engine_used,
+          engine_version: motionExtras.engine_version,
+          content_type: motionExtras.content_type,
           // Viral-vertical worker contract
           composition_id: "viral-vertical",
           preset: preset.id,
