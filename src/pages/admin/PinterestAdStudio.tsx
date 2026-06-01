@@ -415,7 +415,7 @@ export default function PinterestAdStudio() {
           </Button>
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
-            Dry run mode — simulate all 4 concepts (no paid renders, injects a viral failure to verify isolation)
+            Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
           </label>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
