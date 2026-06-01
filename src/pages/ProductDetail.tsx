@@ -1314,8 +1314,8 @@ const ProductDetail = () => {
               className={`bg-muted/40 rounded-xl p-4 space-y-2.5 border border-border/50 ${getConversionFlag('mobileTrustBar') ? 'hidden md:block' : ''}`}
             >
               <div className="flex items-center gap-2 text-sm text-foreground font-medium">
-                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                In stock — Ships to United States
+                <CheckCircle className={`w-4 h-4 flex-shrink-0 ${inStock ? 'text-green-600' : 'text-destructive'}`} />
+                {inStock ? 'In stock — Ships to United States' : 'Currently unavailable'}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Truck className="w-4 h-4 text-primary flex-shrink-0" />
