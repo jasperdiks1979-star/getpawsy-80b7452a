@@ -1910,6 +1910,9 @@ export type Database = {
           qa_score: number | null
           qa_threshold_applied: number | null
           quarantined_assets: Json | null
+          queue_wait_attempts: number
+          queue_wait_next_at: string | null
+          queue_wait_reason: string | null
           realism_consistency_score: number | null
           realism_score: number | null
           recommended_fix: string | null
@@ -2179,6 +2182,9 @@ export type Database = {
           qa_score?: number | null
           qa_threshold_applied?: number | null
           quarantined_assets?: Json | null
+          queue_wait_attempts?: number
+          queue_wait_next_at?: string | null
+          queue_wait_reason?: string | null
           realism_consistency_score?: number | null
           realism_score?: number | null
           recommended_fix?: string | null
@@ -2448,6 +2454,9 @@ export type Database = {
           qa_score?: number | null
           qa_threshold_applied?: number | null
           quarantined_assets?: Json | null
+          queue_wait_attempts?: number
+          queue_wait_next_at?: string | null
+          queue_wait_reason?: string | null
           realism_consistency_score?: number | null
           realism_score?: number | null
           recommended_fix?: string | null
@@ -19242,6 +19251,9 @@ export type Database = {
           qa_score: number | null
           qa_threshold_applied: number | null
           quarantined_assets: Json | null
+          queue_wait_attempts: number
+          queue_wait_next_at: string | null
+          queue_wait_reason: string | null
           realism_consistency_score: number | null
           realism_score: number | null
           recommended_fix: string | null
