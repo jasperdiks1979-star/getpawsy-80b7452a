@@ -1841,6 +1841,7 @@ export type Database = {
           motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_plan_summary: Json | null
+          motion_quality_breakdown: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
           motion_regen_attempts: number
@@ -2109,6 +2110,7 @@ export type Database = {
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_plan_summary?: Json | null
+          motion_quality_breakdown?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
           motion_regen_attempts?: number
@@ -2377,6 +2379,7 @@ export type Database = {
           motion_entropy_score?: number | null
           motion_exists?: boolean | null
           motion_plan_summary?: Json | null
+          motion_quality_breakdown?: Json | null
           motion_quality_score?: number | null
           motion_ratio?: number | null
           motion_regen_attempts?: number
@@ -3225,6 +3228,69 @@ export type Database = {
           weights?: Json | null
         }
         Relationships: []
+      }
+      cinematic_motion_quality_events: {
+        Row: {
+          attempt_number: number
+          breakdown: Json | null
+          created_at: string
+          decision: string | null
+          id: string
+          job_id: string
+          max_regen_attempts: number | null
+          notes: string | null
+          passed: boolean | null
+          product_slug: string | null
+          score: number | null
+          source: string
+          threshold: number | null
+        }
+        Insert: {
+          attempt_number?: number
+          breakdown?: Json | null
+          created_at?: string
+          decision?: string | null
+          id?: string
+          job_id: string
+          max_regen_attempts?: number | null
+          notes?: string | null
+          passed?: boolean | null
+          product_slug?: string | null
+          score?: number | null
+          source: string
+          threshold?: number | null
+        }
+        Update: {
+          attempt_number?: number
+          breakdown?: Json | null
+          created_at?: string
+          decision?: string | null
+          id?: string
+          job_id?: string
+          max_regen_attempts?: number | null
+          notes?: string | null
+          passed?: boolean | null
+          product_slug?: string | null
+          score?: number | null
+          source?: string
+          threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_motion_quality_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_motion_quality_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_ad_pipeline_tracking"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cinematic_music_tracks: {
         Row: {
@@ -19107,6 +19173,7 @@ export type Database = {
           motion_entropy_score: number | null
           motion_exists: boolean | null
           motion_plan_summary: Json | null
+          motion_quality_breakdown: Json | null
           motion_quality_score: number | null
           motion_ratio: number | null
           motion_regen_attempts: number
