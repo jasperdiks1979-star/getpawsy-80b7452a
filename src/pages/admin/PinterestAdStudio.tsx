@@ -131,6 +131,7 @@ export default function PinterestAdStudio() {
   const [showDebug, setShowDebug] = useState(false);
   const [dryRun, setDryRun] = useState(false);
   const [forceBudgetOverride, setForceBudgetOverride] = useState(false);
+  const [forcePreflightOverride, setForcePreflightOverride] = useState(false);
 
   // Preload product from ?slug=
   useEffect(() => {
@@ -167,7 +168,7 @@ export default function PinterestAdStudio() {
   }
 
   // Returns { jobId, prepare, queue } — never throws.
-  async function startOneWithDiag(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null; forceBudget?: boolean }): Promise<{ jobId: string | null; prepare: EdgeCallDiag; queue: EdgeCallDiag | null }> {
+  async function startOneWithDiag(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null; forceBudget?: boolean; forcePreflight?: boolean }): Promise<{ jobId: string | null; prepare: EdgeCallDiag; queue: EdgeCallDiag | null }> {
     if (!product) {
       const fake: EdgeCallDiag = { fn: "cinematic-ad-prepare", ok: false, httpStatus: null, responseBody: null, traceId: null, errorMessage: "no product selected" };
       return { jobId: null, prepare: fake, queue: null };
@@ -192,6 +193,8 @@ export default function PinterestAdStudio() {
       dry_run: dryRun,
       force_budget_override: opts.forceBudget === true,
       force_budget_reason: opts.forceBudget ? "pinterest_ad_studio_admin_force" : null,
+      force_preflight_override: opts.forcePreflight === true,
+      force_preflight_reason: opts.forcePreflight ? "pinterest_ad_studio_admin_force_stock_bypass" : null,
     });
     // Best-effort: persist director_archetype + run_id on the job (idempotent)
     if (opts.archetype || opts.runId) {
