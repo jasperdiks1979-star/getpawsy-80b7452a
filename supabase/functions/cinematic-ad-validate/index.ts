@@ -15,6 +15,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+const INTERNAL_FUNCTION_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
 const trace = () => crypto.randomUUID().slice(0, 8);
 const json = (obj: unknown, status = 200) => new Response(JSON.stringify(obj), {
@@ -187,6 +188,10 @@ function evaluate(job: any): ValidationReport {
 async function authorize(req: Request, admin: any): Promise<{ ok: true; mode: "worker" | "admin" } | { ok: false; status: number; message: string }> {
   const workerSecret = req.headers.get("x-render-secret");
   if (workerSecret && RENDER_WORKER_SECRET && workerSecret === RENDER_WORKER_SECRET) {
+    return { ok: true, mode: "worker" };
+  }
+  const internalSecret = req.headers.get("x-internal-secret");
+  if (internalSecret && INTERNAL_FUNCTION_SECRET && internalSecret === INTERNAL_FUNCTION_SECRET) {
     return { ok: true, mode: "worker" };
   }
   const auth = req.headers.get("Authorization") ?? "";
