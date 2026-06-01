@@ -1138,16 +1138,18 @@ const ProductDetail = () => {
                   <PinterestLandingBanner hook={adIntent.keyword} />
                 </div>
               )}
+              {/* Desktop-only title block — the mobile copy renders above the
+                  gallery so the H1 sits above the fold on iPhone widths. */}
               {product.category && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-sm text-primary font-medium uppercase tracking-wider mb-2"
+                  className="hidden md:block text-sm text-primary font-medium uppercase tracking-wider mb-2"
                 >
                   {safeString(product.category)}
                 </motion.p>
               )}
-              <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
+              <h1 className="hidden md:block text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
                 {safeString(product.name)}
               </h1>
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
