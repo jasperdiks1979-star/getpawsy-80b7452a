@@ -104,6 +104,7 @@ function statusLabel(s: string) {
   if (TERMINAL_BAD.has(s)) return "Failed";
   if (s === "rendering") return "Rendering…";
   if (s === "render_queued") return "In queue";
+  if (s === "queue_waiting") return "Queued — waiting for render slot";
   if (s === "preparing" || s === "pending" || s === "prepared") return "Preparing…";
   return s;
 }
@@ -505,6 +506,9 @@ export default function PinterestAdStudio() {
                 </Badge>
                 {diagnostics.some(d => d.stage === "concept_failed") && (
                   <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />{diagnostics.filter(d => d.stage === "concept_failed").length} failed</Badge>
+                )}
+                {diagnostics.some(d => d.stage === "queue_waiting") && (
+                  <Badge variant="secondary" className="gap-1"><Hourglass className="w-3 h-3" />{diagnostics.filter(d => d.stage === "queue_waiting").length} waiting</Badge>
                 )}
               </CardTitle>
               <span className="text-xs text-muted-foreground">{showDebug ? "Hide" : "Show"}</span>
