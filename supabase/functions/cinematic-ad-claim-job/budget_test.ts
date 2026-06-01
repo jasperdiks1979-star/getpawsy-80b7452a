@@ -28,7 +28,7 @@ Deno.test({
     await db.from("cinematic_ad_render_budget").delete().eq("product_slug", TEST_SLUG);
 
     // 1) First call (no force) — should reserve a slot.
-    const first = await db.rpc("cinematic_reserve_render_slot", {
+    const first: any = await db.rpc("cinematic_reserve_render_slot", {
       p_product_slug: TEST_SLUG, p_force: false, p_admin_user_id: null, p_force_reason: null,
     }).maybeSingle();
     assertEquals(first.data?.allowed, true, "first call must reserve");
@@ -36,7 +36,7 @@ Deno.test({
     assert(first.data?.reset_at, "reset_at must be returned");
 
     // 2) Second call (no force) within window — must be blocked with reset_at.
-    const blocked = await db.rpc("cinematic_reserve_render_slot", {
+    const blocked: any = await db.rpc("cinematic_reserve_render_slot", {
       p_product_slug: TEST_SLUG, p_force: false, p_admin_user_id: null, p_force_reason: null,
     }).maybeSingle();
     assertEquals(blocked.data?.allowed, false, "second call inside window must be blocked");
@@ -44,7 +44,7 @@ Deno.test({
     assert(blocked.data?.reset_at, "blocked result must carry reset_at for UI");
 
     // 3) Third call WITH force — must bypass, forced=true.
-    const forced = await db.rpc("cinematic_reserve_render_slot", {
+    const forced: any = await db.rpc("cinematic_reserve_render_slot", {
       p_product_slug: TEST_SLUG, p_force: true, p_admin_user_id: null, p_force_reason: "test_force",
     }).maybeSingle();
     assertEquals(forced.data?.allowed, true, "force must bypass budget");
@@ -52,7 +52,7 @@ Deno.test({
     assertEquals(forced.data?.reason, "reserved_force");
 
     // 4) Override counter must have incremented in the budget row.
-    const { data: row } = await db.from("cinematic_ad_render_budget")
+    const { data: row }: any = await db.from("cinematic_ad_render_budget")
       .select("force_override_count").eq("product_slug", TEST_SLUG).maybeSingle();
     assert((row?.force_override_count ?? 0) >= 1, "force_override_count must be recorded");
 
@@ -73,7 +73,7 @@ Deno.test({
     // Direct service-role delete (cinematic_clear_render_budget needs an admin
     // JWT; we exercise the same effect here).
     await db.from("cinematic_ad_render_budget").delete().eq("product_slug", TEST_SLUG);
-    const second = await db.rpc("cinematic_reserve_render_slot", {
+    const second: any = await db.rpc("cinematic_reserve_render_slot", {
       p_product_slug: TEST_SLUG, p_force: false, p_admin_user_id: null, p_force_reason: null,
     }).maybeSingle();
     assertEquals(second.data?.allowed, true, "after clear, fresh non-force call must reserve");
