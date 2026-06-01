@@ -996,8 +996,46 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     }
 
     // Creative kit (5 hooks + 3 CTAs + pin copy + storyboard, scored).
-    // generateCreativeKit already falls back to a deterministic kit on AI failure.
-    const kit: CreativeKit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+    // Hard-fail on AI credit / rate-limit / auth errors so we never persist
+    // a broken job with storyboard=[].
+    let kit: CreativeKit;
+    try {
+      kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+    } catch (e: any) {
+      const code = e?.code || "AI_GATEWAY_FAILED";
+      const status = e?.status || 0;
+      console.error("[prepare] creative-kit hard-fail", { code, status, message: e?.message });
+      await admin.from("cinematic_ad_jobs").update({
+        status: "concept_failed",
+        status_message:
+          code === "AI_CREDITS_EXHAUSTED"
+            ? "AI credits exhausted on Lovable workspace — top up at Settings → Workspace → Usage"
+            : `AI gateway ${status || "error"}: ${e?.message ?? "unknown"}`,
+        approved_for_render: false,
+      }).eq("id", jobId);
+      return json(200, {
+        ok: false, recoverable: false, fallback_used: false,
+        concept_status: "concept_failed",
+        error_code: code, step: "creative-kit.generate",
+        message: e?.message ?? "AI gateway failure",
+        traceId, job_id: jobId,
+      });
+    }
+    if (!Array.isArray(kit.storyboard) || kit.storyboard.length === 0) {
+      console.error("[prepare] refusing to persist empty storyboard");
+      await admin.from("cinematic_ad_jobs").update({
+        status: "concept_failed",
+        status_message: "creative kit returned empty storyboard — not persisted",
+        approved_for_render: false,
+      }).eq("id", jobId);
+      return json(200, {
+        ok: false, recoverable: false, fallback_used: false,
+        concept_status: "concept_failed",
+        error_code: "EMPTY_STORYBOARD", step: "creative-kit.validate",
+        message: "creative kit returned empty storyboard",
+        traceId, job_id: jobId,
+      });
+    }
     const topHook = kit.hook_variants[0];
     const topCta = kit.cta_variants[0];
 
