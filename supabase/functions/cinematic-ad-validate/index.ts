@@ -9,6 +9,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { getPreset } from "../_shared/cinematic-presets.ts";
 import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
 import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";
+import { normalizeScenePlan, estimateMotionScore } from "../_shared/cinematic-scene-normalizer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -212,6 +213,37 @@ Deno.serve(async (req) => {
 
     const { data: job, error } = await admin.from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
     if (error || !job) return json({ ok: false, traceId, message: "job not found" }, 404);
+
+    // ── Post-render field reconciliation ─────────────────────────────────
+    // The renderer outputs 9:16 vertical 1080×1920 by contract; if the
+    // worker payload omitted width/height we default them here so the
+    // aspect-ratio gate doesn't reject a valid MP4. Similarly, fall back
+    // to a heuristic motion_score (capped well below ffmpeg's range) so a
+    // valid multi-scene plan never scores 0.
+    const norm = normalizeScenePlan(job);
+    const persistPatch: Record<string, unknown> = {};
+    if (norm.fallback_used && norm.scenes.length > 0 && (!Array.isArray(job.scene_plan) || job.scene_plan.length === 0)) {
+      job.scene_plan = norm.scenes;
+      persistPatch.scene_plan = norm.scenes;
+      console.log(`[validate] ${traceId} scene_plan_backfilled job=${jobId} source=${norm.source} count=${norm.scenes.length}`);
+    }
+    const RENDER_W = 1080, RENDER_H = 1920;
+    if (job.output_mp4_url && (job.output_width == null || Number(job.output_width) === 0)) {
+      job.output_width = RENDER_W;
+      persistPatch.output_width = RENDER_W;
+    }
+    if (job.output_mp4_url && (job.output_height == null || Number(job.output_height) === 0)) {
+      job.output_height = RENDER_H;
+      persistPatch.output_height = RENDER_H;
+    }
+    if ((job.motion_score == null || Number(job.motion_score) === 0) && Array.isArray(job.scene_plan) && job.scene_plan.length > 0) {
+      const est = estimateMotionScore(norm.scenes.length ? norm.scenes : job.scene_plan as any);
+      if (est > 0) {
+        job.motion_score = est;
+        persistPatch.motion_score = est;
+        console.log(`[validate] ${traceId} motion_score_estimated job=${jobId} value=${est}`);
+      }
+    }
 
     const report = evaluate(job);
   const v2 = scoreV2(job);
