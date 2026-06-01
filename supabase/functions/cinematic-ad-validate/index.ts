@@ -391,7 +391,7 @@ Deno.serve(async (req) => {
   // Composite creative_quality_score weights the most user-visible signals.
   const creativeQuality = Math.round(
     (safeAreaFinal.ok ? 100 : 30) * 0.25 +
-    (catCheck.ok ? 100 : 0) * 0.25 +
+    (catCheckFinal.ok ? 100 : 0) * 0.25 +
     Math.min(100, motionVal * 6) * 0.2 +
     v2.composite * 0.3,
   );
