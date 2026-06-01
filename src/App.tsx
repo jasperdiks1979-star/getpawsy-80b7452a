@@ -398,6 +398,7 @@ const WinnersBoostDashboard = lazyWithRetry(() => import("./pages/admin/WinnersB
 const ProfitSystemDashboard = lazyWithRetry(() => import("./pages/admin/ProfitSystemDashboard"));
 const ProfitEnginePage = lazyWithRetry(() => import("./pages/admin/ProfitEnginePage"));
 const PdpConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/PdpConversionDashboardPage"));
+const CinematicHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicHealthPage"));
 const ProfitEngineTrendsPage = lazyWithRetry(() => import("./pages/admin/ProfitEngineTrendsPage"));
 const HomepageAiPage = lazyWithRetry(() => import("./pages/admin/HomepageAiPage"));
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
@@ -1848,6 +1849,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PdpConversionDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicHealthPage />
                                 </Suspense>
                               }
                             />

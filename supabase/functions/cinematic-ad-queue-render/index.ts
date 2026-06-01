@@ -16,6 +16,89 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 const MAX_ACTIVE_QUEUED = 5;
+const SCENE_REGEN_MAX_RETRIES = 5;
+
+/**
+ * Recovery helper: when validateTimeline reports scene_count_invalid(<3),
+ * attempt to (a) re-invoke the storyboard planner up to N times, then
+ * (b) synthesize a 3-scene image-only fallback from scene_assets so the
+ * pipeline NEVER returns 0 scenes. Returns the fresh job row on success
+ * or null when both paths fail (caller marks needs_scene_regen).
+ */
+async function recoverEmptyStoryboard(
+  admin: ReturnType<typeof createClient>,
+  jobId: string,
+  scene_assets: any[],
+  traceLabel: string,
+): Promise<any | null> {
+  // (a) AI regen with retries
+  for (let i = 0; i < SCENE_REGEN_MAX_RETRIES; i++) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-storyboard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SERVICE_KEY}`,
+          "apikey": SERVICE_KEY,
+          "x-regen-attempt": String(i + 1),
+        },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+      const ct = res.headers.get("content-type") ?? "";
+      const raw = await res.text();
+      // HTML / non-JSON guard
+      if (raw.trim().startsWith("<") || !ct.includes("application/json")) {
+        console.warn(`[queue-render] ${traceLabel} storyboard non-json attempt ${i + 1}`, raw.slice(0, 160));
+        continue;
+      }
+      // Re-read job; if storyboard now has >= 3 scenes we're done.
+      const { data: refreshed } = await admin
+        .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
+      const sb = refreshed?.storyboard;
+      const sceneCount = Array.isArray(sb) ? sb.length : (sb?.scenes?.length ?? 0);
+      if (sceneCount >= 3) {
+        console.log(`[queue-render] ${traceLabel} storyboard recovered on attempt ${i + 1} (${sceneCount} scenes)`);
+        return refreshed;
+      }
+    } catch (e) {
+      console.warn(`[queue-render] ${traceLabel} storyboard regen err attempt ${i + 1}`, e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // (b) Image-only fallback storyboard from existing scene_assets.
+  // Use up to 7 / pad to minimum 3 by repeating the hero asset.
+  const assets = (Array.isArray(scene_assets) ? scene_assets : []).filter((a: any) =>
+    a && (typeof a === "string" || a.url || a.asset_url || a.image_url)
+  );
+  if (assets.length === 0) return null;
+
+  const padded = assets.slice(0, 7);
+  while (padded.length < 3) padded.push(assets[0]);
+  const ROLES = ["HOOK", "PROBLEM", "EMOTION", "FEATURE", "BENEFIT", "PROOF", "CTA"] as const;
+  const fallbackScenes = padded.map((_, i) => ({
+    role: ROLES[i] ?? "BENEFIT",
+    caption: i === 0 ? "Stop scrolling." : (i === padded.length - 1 ? "Tap to shop." : "Built for real homes."),
+    intent: "image_fallback",
+    motionIntensity: "medium",
+    durationFrames: 54,
+    fallback_source: "product_images",
+  }));
+  const fallbackStoryboard = {
+    scenes: fallbackScenes,
+    emotionalCurve: fallbackScenes.map((_, i) => 60 + i * 4),
+    totalFrames: fallbackScenes.reduce((a, s) => a + s.durationFrames, 0),
+    hookType: "image_fallback",
+    fallback_source: "product_images",
+  };
+  await admin.from("cinematic_ad_jobs").update({
+    storyboard: fallbackStoryboard,
+    status_message: "storyboard recovered via image-only fallback",
+  }).eq("id", jobId);
+  console.log(`[queue-render] ${traceLabel} image-fallback storyboard built (${fallbackScenes.length} scenes)`);
+  const { data: refreshed } = await admin
+    .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
+  return refreshed;
+}
 
 function traceId() { return crypto.randomUUID().slice(0, 8); }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -242,18 +325,40 @@ Deno.serve(async (req) => {
       enforcedScenePlan,
       (job.vo_script ?? job.voiceover_script) as any,
     );
-    if (!check.ok) {
+    let activeJob = job;
+    let activeStoryboard = enforcedStoryboard;
+    let activeCheck = check;
+    const sceneCountFailed = !check.ok && check.reasons.some((r: string) => /^scene_count_invalid\(\d+<3\)/.test(r));
+    if (sceneCountFailed && !dryRun) {
+      const recovered = await recoverEmptyStoryboard(admin, jobId, sceneAssets, trace);
+      if (recovered) {
+        activeJob = recovered;
+        activeStoryboard = recovered.storyboard;
+        activeCheck = validateTimeline(
+          effectivePreset,
+          activeStoryboard as any,
+          enforcedScenePlan,
+          (recovered.vo_script ?? recovered.voiceover_script) as any,
+        );
+      }
+    }
+    if (!activeCheck.ok) {
       if (!dryRun) {
+        // Soft-park instead of hard-failing: never lose the job to a transient
+        // storyboard miss. Watchdog/intelligence can pick it back up.
+        const stillEmpty = activeCheck.reasons.some((r: string) => /^scene_count_invalid\(\d+<3\)/.test(r));
+        const nextStatus = stillEmpty ? "needs_scene_regen" : "failed";
         await admin.from("cinematic_ad_jobs").update({
-          status: "failed",
-          status_message: `pre-enqueue validation failed: ${check.reasons.join("; ")}`,
-          error_message: `timeline_invalid: ${check.reasons.join("; ")}`,
+          status: nextStatus,
+          status_message: `pre-enqueue validation: ${activeCheck.reasons.join("; ")}`,
+          error_message: `timeline_invalid: ${activeCheck.reasons.join("; ")}`,
+          recoverable: stillEmpty,
         }).eq("id", jobId);
       }
       return bad(422, trace, "timeline_invalid",
-        `timeline rejected before render: ${check.reasons.join("; ")}`,
-        [...diagnostics, fail("timeline", check.reasons.join("; "))],
-        { check });
+        `timeline rejected before render: ${activeCheck.reasons.join("; ")}`,
+        [...diagnostics, fail("timeline", activeCheck.reasons.join("; "))],
+        { check: activeCheck });
     }
 
     const renderToken = crypto.randomUUID();
