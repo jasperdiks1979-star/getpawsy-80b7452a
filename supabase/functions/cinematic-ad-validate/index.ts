@@ -273,6 +273,45 @@ Deno.serve(async (req) => {
     scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
   });
 
+  // ── Auto-rewrite overlay text to fit safe zone ───────────────────────────
+  // If the first pass flags text_safe_area / text_cut_off violations, run
+  // the deterministic rewriter (truncate + filler-strip + y_pct clamp) so
+  // a fixable copy issue does not block render. Persist the new strings
+  // back to the row and re-evaluate. Idempotent — never loops.
+  let textRewriteResult: ReturnType<typeof rewriteForSafeZone> | null = null;
+  let safeAreaFinal = safeArea;
+  if (!safeArea.ok) {
+    const rw = rewriteForSafeZone({
+      hook_text: job.hook_text,
+      pin_title: job.pin_title,
+      cta_text: job.cta_text,
+      scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+    });
+    if (rw.changed) {
+      textRewriteResult = rw;
+      if (rw.hook_text !== undefined) { job.hook_text = rw.hook_text; persistPatch.hook_text = rw.hook_text; }
+      if (rw.pin_title !== undefined) { job.pin_title = rw.pin_title; persistPatch.pin_title = rw.pin_title; }
+      if (rw.cta_text !== undefined) { job.cta_text = rw.cta_text; persistPatch.cta_text = rw.cta_text; }
+      if (rw.scene_plan !== undefined && rw.scene_plan !== null) {
+        job.scene_plan = rw.scene_plan;
+        persistPatch.scene_plan = rw.scene_plan;
+      }
+      persistPatch.text_safe_rewrite_applied_at = new Date().toISOString();
+      persistPatch.text_safe_rewrite_mutations = rw.mutations;
+      const prev = Number((job as any).text_safe_rewrite_passes ?? 0);
+      persistPatch.text_safe_rewrite_passes = prev + 1;
+      console.log(`[validate] ${traceId} text_safe_rewrite job=${jobId} mutations=${rw.mutations.length} fields=${rw.mutations.map(m => m.field).join(",")}`);
+
+      // Re-evaluate with the rewritten copy.
+      safeAreaFinal = validateTextSafeArea({
+        hook_text: job.hook_text,
+        pin_title: job.pin_title,
+        cta_text: job.cta_text,
+        scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+      });
+    }
+  }
+
   const catCheck = validateCategoryMatch({
     product: productCtx,
     title: String(job.pin_title ?? ""),
