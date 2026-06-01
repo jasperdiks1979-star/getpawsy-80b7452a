@@ -457,6 +457,29 @@ Deno.serve(async (req) => {
         render_worker_id: null,
       });
     }
+
+    // ── PREPARATION GATE ── claim-job will reject any job lacking
+    // creative_plan or preflight_status='pass' with 412 blocked_by_safety_gate.
+    // Self-heal here so jobs cannot land in render_queued in a broken state.
+    const readiness = await ensureRenderReady(admin, jobId, trace);
+    diagnostics.push(
+      readiness.ready
+        ? pass("preparation_gate", `creative_plan + preflight=pass`)
+        : fail("preparation_gate", `not render-ready: ${readiness.reasons.join("; ")}`),
+    );
+    if (!readiness.ready) {
+      await admin.from("cinematic_ad_jobs").update({
+        status: "needs_admin_review",
+        status_message: `Blocked before render_queued: ${readiness.reasons.join("; ")}`,
+        blocked_reason: `safety_gate_would_fail: ${readiness.reasons.join(", ")}`,
+        recoverable: true,
+      }).eq("id", jobId);
+      return bad(412, trace, "not_render_ready",
+        `preparation gate failed: ${readiness.reasons.join("; ")}`,
+        diagnostics,
+        { fail_reasons: readiness.reasons });
+    }
+
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
