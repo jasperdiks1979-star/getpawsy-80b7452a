@@ -95,7 +95,7 @@ export function getDisplayPrice(product: MerchantProduct): DisplayPriceResult {
   }
 
   const compareAt = Number(product.compare_at_price) || 0;
-  const validCompareAt = compareAt > price ? compareAt : null;
+  const validCompareAt = isHonestCompareAt(compareAt, price) ? compareAt : null;
 
   return {
     price,
@@ -209,4 +209,30 @@ function extractFirstVariantPrice(variants: unknown): number | null {
     }
   }
   return null;
+}
+
+/**
+ * Synthetic-anchor guard.
+ *
+ * Historically a batch of seeded products got `compare_at_price = price * 1.25`
+ * written by an import script. That is fabricated price anchoring under GMC
+ * rules and triggered the "every product is 20 % off" pattern flagged in the
+ * PDP conversion audit.
+ *
+ * Rules:
+ *   - must be a real number above the live price
+ *   - must beat a minimum gap (≥ 8 %) — anything closer is rounding noise
+ *   - must not sit in the synthetic 1.20×–1.30× band centered on the seeded
+ *     1.25× multiplier; that band is treated as auto-generated, not historical
+ */
+function isHonestCompareAt(compareAt: number, price: number): boolean {
+  if (!Number.isFinite(compareAt) || !Number.isFinite(price)) return false;
+  if (compareAt <= price) return false;
+  if (price <= 0) return false;
+  const ratio = compareAt / price;
+  if (ratio < 1.08) return false;
+  // Synthetic seed band — drop it. Real historical sale prices either come in
+  // tighter (cleared inventory) or wider (markdown / clearance) than this.
+  if (ratio >= 1.20 && ratio <= 1.30) return false;
+  return true;
 }

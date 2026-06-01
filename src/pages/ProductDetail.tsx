@@ -1057,6 +1057,22 @@ const ProductDetail = () => {
                     + price block + sticky ATC already carry trust. Keeps
                     above-the-fold quiet for cold mobile traffic. */}
                 {!getConversionFlag('premiumPdpV2') && <MobileStickyTrustBar />}
+                {/*
+                  P0-2 (conversion sprint): the product H1 must be above the
+                  fold on iPhone widths. We render the title block here on
+                  mobile only; the duplicate title block in the right column
+                  is suppressed on mobile so we keep exactly one H1 in the DOM.
+                */}
+                <div className="mb-3">
+                  {product.category && (
+                    <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1.5">
+                      {safeString(product.category)}
+                    </p>
+                  )}
+                  <h1 className="text-2xl font-display font-bold text-foreground leading-tight break-words">
+                    {safeString(product.name)}
+                  </h1>
+                </div>
                 <SwipeBenefitChips
                   category={product.category || undefined}
                   productName={product.name}
@@ -1122,7 +1138,11 @@ const ProductDetail = () => {
                   <PinterestLandingBanner hook={adIntent.keyword} />
                 </div>
               )}
-              {product.category && (
+              {/* Desktop-only title block — the mobile copy renders above the
+                  gallery so the H1 sits above the fold on iPhone widths.
+                  Runtime gate (not `hidden md:block`) so we keep exactly ONE
+                  H1 in the DOM at all times, per SEO core rule. */}
+              {!isMobile && product.category && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -1131,9 +1151,11 @@ const ProductDetail = () => {
                   {safeString(product.category)}
                 </motion.p>
               )}
-              <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                {safeString(product.name)}
-              </h1>
+              {!isMobile && (
+                <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
+                  {safeString(product.name)}
+                </h1>
+              )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
               {adIntent.headline && allowHeadlineOverride && (
                 <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
@@ -1193,7 +1215,17 @@ const ProductDetail = () => {
                 // Use the already-computed activePrice (base price unless user selected variant)
                 const displayPrice = activePrice;
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
-                const showCompare = compareAt !== null && compareAt > displayPrice;
+                // P0-3 (conversion sprint): block the synthetic 1.20×–1.30×
+                // anchor band (seeded by an old import that wrote
+                // compare_at = price * 1.25 on every row). Show compare-at
+                // only when the discount is real and material.
+                const ratio = compareAt && displayPrice > 0 ? compareAt / displayPrice : 0;
+                const isSyntheticAnchor = ratio >= 1.20 && ratio <= 1.30;
+                const showCompare =
+                  compareAt !== null &&
+                  compareAt > displayPrice &&
+                  ratio >= 1.08 &&
+                  !isSyntheticAnchor;
                 const currentDiscount = discount;
 
                 return (
@@ -1424,9 +1456,40 @@ const ProductDetail = () => {
                   const cat = (product.category || "").toLowerCase();
                   const n = (product.name || "").toLowerCase();
                   const bullets: string[] = [];
+                  const hay = `${n} ${cat}`;
+
+                  // P0-4 (conversion sprint): grooming / supplement / dispenser
+                  // branches MUST run before the toy branch — otherwise a
+                  // "Dog Paw Cleaner" or "Grooming Brush" filed under
+                  // "Dog Toys" picks up chew-toy copy ("aggressive chewers"),
+                  // which is the category-copy leak flagged in the PDP audit.
+                  const isGrooming = /paw\s*cleaner|brush|comb|groom|shampoo|nail|deshed|wipe/.test(hay);
+                  const isSupplement = /supplement|vitamin|calming\s*chew|probiotic|joint\s*chew|treat\s*chew/.test(hay);
+                  const isFeeder = /feeder|dispenser|water\s*fountain|automatic\s*food/.test(hay);
 
                   // Category-aware benefit bullets (problem → outcome)
-                  if (n.includes("bed") || cat.includes("bed")) {
+                  if (isGrooming) {
+                    bullets.push(
+                      "Gently cleans paws, coat, or nails without stress",
+                      "Skin-safe materials designed for sensitive pets",
+                      "Easy to rinse and store between uses",
+                      "Compact size — works at home or on the go",
+                    );
+                  } else if (isSupplement) {
+                    bullets.push(
+                      "Formulated for daily routine support",
+                      "Made with pet-friendly, palatable ingredients",
+                      "Clear dosing guidance on every label",
+                      "Trusted by US pet parents — ships from the United States",
+                    );
+                  } else if (isFeeder) {
+                    bullets.push(
+                      "Portion-controlled meals keep feeding consistent",
+                      "Quiet motor — won't startle anxious pets",
+                      "Easy to clean: dishwasher-safe parts",
+                      "Backup power option protects scheduled meals",
+                    );
+                  } else if (n.includes("bed") || cat.includes("bed")) {
                     bullets.push(
                       "Designed to support joint comfort and recovery",
                       "May help improve sleep quality for your pet",

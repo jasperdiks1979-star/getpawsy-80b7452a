@@ -1,12 +1,17 @@
 /**
  * Single source of truth for product availability computation.
- * 
- * AVAILABILITY MODEL:
- * - is_active === false → OUT OF STOCK (disabled by admin)
- * - ANY stock value (0, null, positive) with is_active=true → IN STOCK
- * 
- * Stock numbers are informational only. Fulfillment partners manage real inventory.
- * Only is_active=false marks a product as unavailable.
+ *
+ * AVAILABILITY MODEL (updated 2026-06):
+ * - !product or is_active === false → OUT OF STOCK
+ * - explicit stock === 0           → OUT OF STOCK
+ *                                   (admin-confirmed sold out; never lie on the PDP)
+ * - stock > 0                       → IN STOCK
+ * - stock null/undefined            → IN STOCK
+ *                                   (dropship fulfillment model — partner manages
+ *                                   inventory and never writes a real 0)
+ *
+ * The conversion-fix sprint flipped explicit 0 to OOS so trust signals stop
+ * shipping the lie "In stock — ready to ship" on PDPs whose stock is 0.
  */
 
 export interface AvailabilityProduct {
@@ -42,11 +47,12 @@ export function computeAvailability(
   // Variant stock overrides product stock when provided
   const effectiveStock = variantStock !== undefined ? variantStock : product.stock;
 
-  // Fulfillment model: stock=0 is NOT out of stock (partner manages inventory)
-  // Only is_active=false triggers OOS
+  // Explicit 0 = admin-confirmed sold out. PDP must not claim "In Stock".
+  if (effectiveStock === 0) {
+    return { isInStock: false, reason: 'Stock = 0 (admin-confirmed sold out)' };
+  }
 
-  // Positive stock = in stock
-  if (effectiveStock !== null && effectiveStock !== undefined && effectiveStock > 0) {
+  if (typeof effectiveStock === 'number' && effectiveStock > 0) {
     return { isInStock: true, reason: `In stock (${effectiveStock} units)` };
   }
 
