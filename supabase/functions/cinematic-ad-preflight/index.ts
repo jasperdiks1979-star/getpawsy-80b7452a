@@ -63,15 +63,27 @@ Deno.serve(async (req) => {
     (body.job_id ? [body.job_id] : []);
   if (jobIds.length === 0) return json(400, { ok: false, traceId, message: "job_id or job_ids required" });
 
+  // Per-call override: when admin/service-role caller sets force_preflight_override=true,
+  // skip inventory/stock-related rules. The job row's persisted flag is also honored
+  // (so queue-render can write it once and any later preflight re-run inherits it).
+  const forceOverrideFromBody: boolean = body.force_preflight_override === true;
+  const forceOverrideReason: string | null =
+    typeof body.force_preflight_override_reason === "string" && body.force_preflight_override_reason.trim().length > 0
+      ? body.force_preflight_override_reason.trim()
+      : null;
+
   const { data: jobs } = await admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, product_name, product_price, pin_title, pin_description, pin_destination_url, scene_assets, output_thumbnail_url")
+    .select("id, product_slug, product_name, product_price, pin_title, pin_description, pin_destination_url, scene_assets, output_thumbnail_url, force_preflight_override, force_preflight_override_reason, force_preflight_override_by")
     .in("id", jobIds);
 
   const results: Array<Record<string, unknown>> = [];
 
   for (const job of jobs ?? []) {
     const reasons: string[] = [];
+    const bypassed: string[] = [];
+    const forceOverride: boolean =
+      forceOverrideFromBody || (job as any).force_preflight_override === true;
 
     // Product context lookup
     const { data: product } = await admin
@@ -90,8 +102,14 @@ Deno.serve(async (req) => {
     if (!productUrl) reasons.push("missing_product_url");
     if (!imageUrl) reasons.push("missing_primary_image");
     if (!price) reasons.push("missing_price");
-    if (product && product.is_active === false) reasons.push("product_inactive");
-    if (product && typeof product.stock === "number" && product.stock <= 0) reasons.push("product_out_of_stock");
+    if (product && product.is_active === false) {
+      if (forceOverride) bypassed.push("product_inactive");
+      else reasons.push("product_inactive");
+    }
+    if (product && typeof product.stock === "number" && product.stock <= 0) {
+      if (forceOverride) bypassed.push("product_out_of_stock");
+      else reasons.push("product_out_of_stock");
+    }
 
     // Pet category
     const haystack = (
@@ -129,7 +147,30 @@ Deno.serve(async (req) => {
         : null,
     }).eq("id", job.id);
 
-    results.push({ job_id: job.id, product_slug: job.product_slug, preflight_status: status, reasons });
+    // Audit log every bypass — product_slug, timestamp, user, reason, bypassed reasons.
+    if (forceOverride && bypassed.length > 0) {
+      const reasonText = forceOverrideReason
+        ?? (job as any).force_preflight_override_reason
+        ?? "admin_force_preflight_override";
+      const userId = (job as any).force_preflight_override_by ?? null;
+      await admin.from("cinematic_preflight_override_log").insert({
+        job_id: job.id,
+        product_slug: job.product_slug,
+        user_id: userId,
+        reason: reasonText,
+        bypassed_reasons: bypassed,
+      });
+      console.log(`[preflight] ${traceId} override applied job=${job.id} slug=${job.product_slug} bypassed=${bypassed.join(",")} reason=${reasonText}`);
+    }
+
+    results.push({
+      job_id: job.id,
+      product_slug: job.product_slug,
+      preflight_status: status,
+      reasons,
+      bypassed_reasons: bypassed,
+      force_preflight_override: forceOverride,
+    });
   }
 
   return json(200, { ok: true, traceId, count: results.length, results });
