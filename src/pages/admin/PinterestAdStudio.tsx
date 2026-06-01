@@ -477,7 +477,46 @@ export default function PinterestAdStudio() {
                       {d.queue && (
                         <div className="grid grid-cols-[110px_1fr] gap-x-2">
                           <span className="text-muted-foreground">queue:</span>
-                          <span><code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}</span>
+                          <span>
+                            <code className="text-[10px]">{d.queue.fn}</code> · HTTP {d.queue.httpStatus ?? "—"} · {d.queue.ok ? "ok" : (d.queue.errorMessage ?? "failed")}
+                            {d.queue.errorCode ? <> · <code className="text-[10px]">{d.queue.errorCode}</code></> : null}
+                          </span>
+                        </div>
+                      )}
+                      {/* Queue preflight diagnostics — PASS/FAIL grid */}
+                      {(d.queue?.preflight && d.queue.preflight.length > 0) && (
+                        <div className="mt-2 rounded border border-border bg-background/40 p-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] font-semibold">Queue diagnostics</span>
+                            <button
+                              type="button"
+                              className="text-[10px] underline text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                const blob = {
+                                  archetype: d.archetype,
+                                  label: d.label,
+                                  jobId: d.jobId,
+                                  prepare: d.prepare,
+                                  queue: d.queue,
+                                };
+                                navigator.clipboard.writeText(JSON.stringify(blob, null, 2));
+                                toast.success("Diagnostics copied");
+                              }}
+                            >
+                              Copy diagnostics
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                            {d.queue.preflight.map((p) => (
+                              <div key={p.name} className="flex items-center gap-1.5 text-[10px]">
+                                {p.pass
+                                  ? <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                  : <XCircle className="w-3 h-3 text-destructive shrink-0" />}
+                                <span className="font-mono">{p.name}</span>
+                                {p.detail && <span className="text-muted-foreground truncate">— {p.detail}</span>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       {failed && d.prepare?.responseBody && (
