@@ -1045,6 +1045,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Phase-4 observability: persist a per-attempt event capturing the
+    // decision taken by the validator (pass / regen queued / manual review)
+    // so the admin UI can answer "why was this re-rendered?" and "how many
+    // attempts has this job had?".
+    try {
+      const decision = motionQualityPass
+        ? "pass"
+        : canMotionRegen
+          ? "regen_queued"
+          : "manual_review";
+      console.log(
+        `[motion-quality-log] ${traceId} job=${jobId} source=validator decision=${decision} ` +
+        `score=${motionQualityVal ?? "null"} threshold=${motionQualityMin} ` +
+        `attempt=${motionRegenAttempts}/${motionQualityMaxRegen} passed=${motionQualityPass}`,
+      );
+      await admin.from("cinematic_motion_quality_events").insert({
+        job_id: jobId,
+        product_slug: (job as any).product_slug ?? null,
+        source: "validator",
+        attempt_number: motionRegenAttempts,
+        score: motionQualityVal,
+        threshold: motionQualityMin,
+        passed: motionQualityPass,
+        decision,
+        max_regen_attempts: motionQualityMaxRegen,
+        breakdown: (job as any).motion_quality_breakdown ?? null,
+        notes: motionQualityPass
+          ? `score ${motionQualityVal} >= floor ${motionQualityMin}`
+          : canMotionRegen
+            ? `score ${motionQualityVal} < floor ${motionQualityMin}; re-render ${motionRegenAttempts + 1}/${motionQualityMaxRegen}`
+            : `score ${motionQualityVal} < floor ${motionQualityMin}; ${motionQualityMaxRegen} re-renders exhausted, manual review`,
+      });
+    } catch (e) {
+      console.warn(`[motion-quality-log] ${traceId} validator insert failed:`, (e as Error)?.message);
+    }
+
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
     if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
 

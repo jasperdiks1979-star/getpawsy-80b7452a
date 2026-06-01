@@ -68,6 +68,8 @@ export const FIELD_MAP: Record<string, (v: any) => unknown> = {
   motion_score:  (v) => ["motion_score", Number(v)],
   motion_quality_score: (v) =>
     ["motion_quality_score", Math.max(0, Math.min(100, Math.round(Number(v))))],
+  motion_quality_breakdown: (v) =>
+    typeof v === "object" && !Array.isArray(v) ? ["motion_quality_breakdown", v] : undefined,
   black_bars:    (v) => ["output_black_bars", Boolean(v)],
   thumbnail_url: (v) => ["output_thumbnail_url", stripDoubleSlash(String(v))],
   scene_plan:    (v) => Array.isArray(v) ? ["scene_plan", v] : undefined,
