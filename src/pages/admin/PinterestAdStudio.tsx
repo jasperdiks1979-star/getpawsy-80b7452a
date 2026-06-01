@@ -151,7 +151,7 @@ export default function PinterestAdStudio() {
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("cinematic_ad_jobs")
-        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style")
+        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason")
         .in("id", ids);
       if (data) setJobs(data as JobRow[]);
       setPollKey(k => k + 1);
