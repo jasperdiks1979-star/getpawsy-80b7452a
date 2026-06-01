@@ -66,6 +66,8 @@ import USProductDescription from "@/components/products/USProductDescription";
 import { generateClarityIntro } from "@/components/products/ClarityIntro";
 // TrustMicrocopy removed — consolidated into TrustBadgesBlock
 import { TrustBadgesBlock } from "@/components/shared/TrustBadgesBlock";
+import { RealSocialProofLine } from "@/components/products/RealSocialProofLine";
+import { ProductGuaranteeBadge } from "@/components/products/ProductGuaranteeBadge";
 import { ProductSchema } from "@/components/seo/ProductSchema";
 import { FAQSchema, generateProductFAQs } from "@/components/seo/FAQSchema";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
@@ -673,7 +675,14 @@ const ProductDetail = () => {
     // Auto-select first variant for internal state (images, SKU), but do NOT
     // promote its price into display — the storefront shows product.price until
     // the user explicitly picks a variant.
-    setSelectedVariant(variants.length > 0 ? variants[0] : null);
+    // Prefer the first IN-STOCK variant so visitors landing on a multi-variant
+    // PDP don't see a disabled CTA when option #1 happens to be sold out.
+    const firstInStock =
+      variants.find((v) => {
+        const s = (v as { variantStock?: number | null }).variantStock;
+        return s === undefined || s === null || s > 0;
+      }) || variants[0] || null;
+    setSelectedVariant(firstInStock);
     setUserHasSelectedVariant(false);
 
     addToRecentlyViewed(currentProductId);
@@ -1268,6 +1277,10 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
+            {/* Real social proof — verified shopper signals only.
+                Hidden entirely when no signal clears its threshold. */}
+            <RealSocialProofLine productId={product.id} />
+
             {/*
               Above-the-fold conversion block with winner badge.
               On mobile, when the new MobileStickyTrustBar (hairline strip
@@ -1308,8 +1321,8 @@ const ProductDetail = () => {
               className={`bg-muted/40 rounded-xl p-4 space-y-2.5 border border-border/50 ${getConversionFlag('mobileTrustBar') ? 'hidden md:block' : ''}`}
             >
               <div className="flex items-center gap-2 text-sm text-foreground font-medium">
-                <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                In stock — Ships to United States
+                <CheckCircle className={`w-4 h-4 flex-shrink-0 ${inStock ? 'text-green-600' : 'text-destructive'}`} />
+                {inStock ? 'In stock — Ships to United States' : 'Currently unavailable'}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Truck className="w-4 h-4 text-primary flex-shrink-0" />
@@ -1677,6 +1690,12 @@ const ProductDetail = () => {
             >
               <TrustBadgesBlock compact />
             </motion.div>
+
+            {/* Category-specific guarantee — deterministic, no medical claims. */}
+            <ProductGuaranteeBadge
+              productName={product.name}
+              category={product.category}
+            />
 
             {/* Micro-friction reduction */}
             <MicroFrictionBlock />
