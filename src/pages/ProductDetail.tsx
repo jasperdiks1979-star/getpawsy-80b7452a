@@ -675,7 +675,14 @@ const ProductDetail = () => {
     // Auto-select first variant for internal state (images, SKU), but do NOT
     // promote its price into display — the storefront shows product.price until
     // the user explicitly picks a variant.
-    setSelectedVariant(variants.length > 0 ? variants[0] : null);
+    // Prefer the first IN-STOCK variant so visitors landing on a multi-variant
+    // PDP don't see a disabled CTA when option #1 happens to be sold out.
+    const firstInStock =
+      variants.find((v) => {
+        const s = (v as { variantStock?: number | null }).variantStock;
+        return s === undefined || s === null || s > 0;
+      }) || variants[0] || null;
+    setSelectedVariant(firstInStock);
     setUserHasSelectedVariant(false);
 
     addToRecentlyViewed(currentProductId);
