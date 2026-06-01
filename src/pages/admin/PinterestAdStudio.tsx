@@ -525,15 +525,16 @@ export default function PinterestAdStudio() {
                 {diagnostics.map((d, i) => {
                   const failed = d.stage === "concept_failed";
                   const okCall = d.stage === "success" || d.stage === "rendering";
+                  const waiting = d.stage === "queue_waiting";
                   return (
-                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
+                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : waiting ? "border-amber-400/40 bg-amber-400/5" : "border-border"}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-semibold">
-                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : waiting ? <Hourglass className="w-4 h-4 text-amber-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                           {d.label}
                           {d.retried && <Badge variant="outline" className="text-[10px]">retried (safer prompt)</Badge>}
                         </div>
-                        <span className="text-muted-foreground">{d.stage}</span>
+                        <span className="text-muted-foreground">{waiting && d.queueWaiting ? `queue_waiting · retry in ${d.queueWaiting.retryAfterSec}s (attempt ${d.queueWaiting.attempts}/${d.queueWaiting.maxAttempts})` : d.stage}</span>
                       </div>
                       {d.jobId && <div><span className="text-muted-foreground">Render job:</span> <code className="text-[10px]">{d.jobId}</code></div>}
                       {d.prepare && (
