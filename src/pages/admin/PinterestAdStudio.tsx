@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2, Bug, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2, Bug, AlertTriangle, CheckCircle2, XCircle, Hourglass } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
@@ -35,7 +35,7 @@ const TERMINAL_BAD = new Set(["failed", "cancelled"]);
 // "Debug Director Run" panel can show actionable error info
 // when an edge function returns a non-2xx status.
 // ============================================================
-type ConceptStage = "pending" | "preparing" | "queued" | "rendering" | "success" | "concept_failed";
+type ConceptStage = "pending" | "preparing" | "queued" | "queue_waiting" | "rendering" | "success" | "concept_failed";
 type EdgeCallDiag = {
   fn: string;
   ok: boolean;
@@ -55,6 +55,7 @@ type ConceptDiag = {
   queue: EdgeCallDiag | null;
   retried: boolean;
   suggestedFix: string | null;
+  queueWaiting?: { retryAfterSec: number; attempts: number; maxAttempts: number } | null;
 };
 
 function suggestFix(d: EdgeCallDiag): string {
