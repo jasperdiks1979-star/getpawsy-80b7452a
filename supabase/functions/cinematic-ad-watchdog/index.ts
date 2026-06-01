@@ -615,6 +615,27 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
     if (paused) continue;
 
     const nextAttempt = attempts + 1;
+    // Block requeue if safety gate would fail; route to admin review instead.
+    const readiness = await ensureRenderReady(admin, row.id);
+    if (!readiness.ready) {
+      await admin
+        .from("cinematic_ad_jobs")
+        .update({
+          status: "needs_admin_review",
+          status_message: `Blocked before retry: ${readiness.reasons.join("; ")}`,
+          blocked_reason: `safety_gate_would_fail: ${readiness.reasons.join(", ")}`,
+          updated_at: new Date(now).toISOString(),
+        })
+        .eq("id", row.id).eq("status", "failed");
+      result.quarantined.push({ job_id: row.id, reason: `gate_block: ${readiness.reasons.join(",")}` });
+      await logEvent(admin, {
+        job_id: row.id, event_type: "quarantined", action_taken: "gate_block",
+        previous_status: "failed", new_status: "needs_admin_review",
+        trace_id: traceId, recovery_result: "success",
+        payload: { reasons: readiness.reasons },
+      });
+      continue;
+    }
     const { error: updErr } = await admin
       .from("cinematic_ad_jobs")
       .update({
