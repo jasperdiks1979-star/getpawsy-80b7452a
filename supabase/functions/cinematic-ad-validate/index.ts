@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
   // back to the row and re-evaluate. Idempotent — never loops.
   let textRewriteResult: ReturnType<typeof rewriteForSafeZone> | null = null;
   let safeAreaFinal = safeArea;
-  if (!safeArea.ok) {
+  if (!safeAreaFinal.ok) {
     const rw = rewriteForSafeZone({
       hook_text: job.hook_text,
       pin_title: job.pin_title,
@@ -338,22 +338,22 @@ Deno.serve(async (req) => {
 
   // Composite creative_quality_score weights the most user-visible signals.
   const creativeQuality = Math.round(
-    (safeArea.ok ? 100 : 30) * 0.25 +
+    (safeAreaFinal.ok ? 100 : 30) * 0.25 +
     (catCheck.ok ? 100 : 0) * 0.25 +
     Math.min(100, motionVal * 6) * 0.2 +
     v2.composite * 0.3,
   );
 
   const rejectReasons: string[] = [];
-  if (safeRequired && !safeArea.ok) rejectReasons.push(`safe_area:${safeArea.violations.slice(0, 2).join("|")}`);
+  if (safeRequired && !safeAreaFinal.ok) rejectReasons.push(`safe_area:${safeAreaFinal.violations.slice(0, 2).join("|")}`);
   if (catRequired && !catCheck.ok) rejectReasons.push(`category_mismatch:${catCheck.reason}`);
   if (!motionPass) rejectReasons.push(`motion_below_floor(${motionVal}<${motionMin})`);
   if (creativeQuality < creativeMin) rejectReasons.push(`creative_quality(${creativeQuality}<${creativeMin})`);
 
   report.checks.push({
     name: "text_safe_area",
-    passed: safeArea.ok,
-    observed: safeArea.violations.length ? safeArea.violations.join(" | ") : "ok",
+    passed: safeAreaFinal.ok,
+    observed: safeAreaFinal.violations.length ? safeAreaFinal.violations.join(" | ") : "ok",
     expected: "all overlay text within 9:16 safe frame, ≤34ch × 2 lines",
   });
   report.checks.push({
@@ -629,7 +629,7 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* defaults */ }
 
-  const v7Out = evaluateV7({ job, productCtx, safeArea, v2 }, v7t);
+  const v7Out = evaluateV7({ job, productCtx, safeArea: safeAreaFinal, v2 }, v7t);
   const {
     scene_diversity_v7_score,
     camera_diversity_score,
@@ -815,7 +815,7 @@ Deno.serve(async (req) => {
       validation_passed: report.passed,
       // Reconciled fields (scene_plan backfill, default 1080x1920, motion estimate)
       ...persistPatch,
-      text_safe_area_passed: safeArea.ok,
+      text_safe_area_passed: safeAreaFinal.ok,
       category_match_passed: catCheck.ok,
       creative_quality_score: creativeQuality,
       creative_reject_reason: rejectReasons.length ? rejectReasons.join(" ; ") : null,
