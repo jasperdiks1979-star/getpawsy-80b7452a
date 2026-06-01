@@ -773,6 +773,8 @@ Deno.serve(async (req) => {
       validation_report: report,
       motion_score: report.motion_score,
       validation_passed: report.passed,
+      // Reconciled fields (scene_plan backfill, default 1080x1920, motion estimate)
+      ...persistPatch,
       text_safe_area_passed: safeArea.ok,
       category_match_passed: catCheck.ok,
       creative_quality_score: creativeQuality,
