@@ -2055,6 +2055,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="render-budget"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RenderBudgetDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-ads/:jobId/qa"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
