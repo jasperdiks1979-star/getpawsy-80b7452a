@@ -1954,6 +1954,9 @@ export type Database = {
           subhook_text: string | null
           superseded_at: string | null
           text_safe_area_passed: boolean | null
+          text_safe_rewrite_applied_at: string | null
+          text_safe_rewrite_mutations: Json | null
+          text_safe_rewrite_passes: number
           text_safety_score: number | null
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null
@@ -2212,6 +2215,9 @@ export type Database = {
           subhook_text?: string | null
           superseded_at?: string | null
           text_safe_area_passed?: boolean | null
+          text_safe_rewrite_applied_at?: string | null
+          text_safe_rewrite_mutations?: Json | null
+          text_safe_rewrite_passes?: number
           text_safety_score?: number | null
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
@@ -2470,6 +2476,9 @@ export type Database = {
           subhook_text?: string | null
           superseded_at?: string | null
           text_safe_area_passed?: boolean | null
+          text_safe_rewrite_applied_at?: string | null
+          text_safe_rewrite_mutations?: Json | null
+          text_safe_rewrite_passes?: number
           text_safety_score?: number | null
           thumb_stop_score?: number | null
           thumbnail_entropy_score?: number | null
@@ -19184,6 +19193,9 @@ export type Database = {
           subhook_text: string | null
           superseded_at: string | null
           text_safe_area_passed: boolean | null
+          text_safe_rewrite_applied_at: string | null
+          text_safe_rewrite_mutations: Json | null
+          text_safe_rewrite_passes: number
           text_safety_score: number | null
           thumb_stop_score: number | null
           thumbnail_entropy_score: number | null

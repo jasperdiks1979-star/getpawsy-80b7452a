@@ -10,6 +10,7 @@ import { getPreset } from "../_shared/cinematic-presets.ts";
 import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
 import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";
 import { normalizeScenePlan, estimateMotionScore } from "../_shared/cinematic-scene-normalizer.ts";
+import { rewriteForSafeZone } from "../_shared/cinematic-text-safe-rewriter.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -272,6 +273,45 @@ Deno.serve(async (req) => {
     scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
   });
 
+  // ── Auto-rewrite overlay text to fit safe zone ───────────────────────────
+  // If the first pass flags text_safe_area / text_cut_off violations, run
+  // the deterministic rewriter (truncate + filler-strip + y_pct clamp) so
+  // a fixable copy issue does not block render. Persist the new strings
+  // back to the row and re-evaluate. Idempotent — never loops.
+  let textRewriteResult: ReturnType<typeof rewriteForSafeZone> | null = null;
+  let safeAreaFinal = safeArea;
+  if (!safeAreaFinal.ok) {
+    const rw = rewriteForSafeZone({
+      hook_text: job.hook_text,
+      pin_title: job.pin_title,
+      cta_text: job.cta_text,
+      scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+    });
+    if (rw.changed) {
+      textRewriteResult = rw;
+      if (rw.hook_text !== undefined) { job.hook_text = rw.hook_text; persistPatch.hook_text = rw.hook_text; }
+      if (rw.pin_title !== undefined) { job.pin_title = rw.pin_title; persistPatch.pin_title = rw.pin_title; }
+      if (rw.cta_text !== undefined) { job.cta_text = rw.cta_text; persistPatch.cta_text = rw.cta_text; }
+      if (rw.scene_plan !== undefined && rw.scene_plan !== null) {
+        job.scene_plan = rw.scene_plan;
+        persistPatch.scene_plan = rw.scene_plan;
+      }
+      persistPatch.text_safe_rewrite_applied_at = new Date().toISOString();
+      persistPatch.text_safe_rewrite_mutations = rw.mutations;
+      const prev = Number((job as any).text_safe_rewrite_passes ?? 0);
+      persistPatch.text_safe_rewrite_passes = prev + 1;
+      console.log(`[validate] ${traceId} text_safe_rewrite job=${jobId} mutations=${rw.mutations.length} fields=${rw.mutations.map(m => m.field).join(",")}`);
+
+      // Re-evaluate with the rewritten copy.
+      safeAreaFinal = validateTextSafeArea({
+        hook_text: job.hook_text,
+        pin_title: job.pin_title,
+        cta_text: job.cta_text,
+        scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
+      });
+    }
+  }
+
   const catCheck = validateCategoryMatch({
     product: productCtx,
     title: String(job.pin_title ?? ""),
@@ -298,24 +338,40 @@ Deno.serve(async (req) => {
 
   // Composite creative_quality_score weights the most user-visible signals.
   const creativeQuality = Math.round(
-    (safeArea.ok ? 100 : 30) * 0.25 +
+    (safeAreaFinal.ok ? 100 : 30) * 0.25 +
     (catCheck.ok ? 100 : 0) * 0.25 +
     Math.min(100, motionVal * 6) * 0.2 +
     v2.composite * 0.3,
   );
 
   const rejectReasons: string[] = [];
-  if (safeRequired && !safeArea.ok) rejectReasons.push(`safe_area:${safeArea.violations.slice(0, 2).join("|")}`);
+  if (safeRequired && !safeAreaFinal.ok) rejectReasons.push(`safe_area:${safeAreaFinal.violations.slice(0, 2).join("|")}`);
   if (catRequired && !catCheck.ok) rejectReasons.push(`category_mismatch:${catCheck.reason}`);
   if (!motionPass) rejectReasons.push(`motion_below_floor(${motionVal}<${motionMin})`);
   if (creativeQuality < creativeMin) rejectReasons.push(`creative_quality(${creativeQuality}<${creativeMin})`);
 
   report.checks.push({
     name: "text_safe_area",
-    passed: safeArea.ok,
-    observed: safeArea.violations.length ? safeArea.violations.join(" | ") : "ok",
+    passed: safeAreaFinal.ok,
+    observed: safeAreaFinal.violations.length ? safeAreaFinal.violations.join(" | ") : "ok",
     expected: "all overlay text within 9:16 safe frame, ≤34ch × 2 lines",
   });
+  if (textRewriteResult) {
+    report.checks.push({
+      name: "text_safe_auto_rewrite",
+      passed: safeAreaFinal.ok,
+      observed: `mutations=${textRewriteResult.mutations.length} fields=${textRewriteResult.mutations.map(m => m.field).join(",")}`,
+      expected: "auto-rewrite restores safe-zone compliance",
+      message: safeAreaFinal.ok
+        ? "overlay text shortened to fit safe zone"
+        : "auto-rewrite ran but violations remain",
+    });
+    (report as any).text_safe_rewrite = {
+      applied: true,
+      mutations: textRewriteResult.mutations,
+      resolved: safeAreaFinal.ok,
+    };
+  }
   report.checks.push({
     name: "category_match",
     passed: catCheck.ok,
@@ -589,7 +645,7 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* defaults */ }
 
-  const v7Out = evaluateV7({ job, productCtx, safeArea, v2 }, v7t);
+  const v7Out = evaluateV7({ job, productCtx, safeArea: safeAreaFinal, v2 }, v7t);
   const {
     scene_diversity_v7_score,
     camera_diversity_score,
@@ -775,7 +831,7 @@ Deno.serve(async (req) => {
       validation_passed: report.passed,
       // Reconciled fields (scene_plan backfill, default 1080x1920, motion estimate)
       ...persistPatch,
-      text_safe_area_passed: safeArea.ok,
+      text_safe_area_passed: safeAreaFinal.ok,
       category_match_passed: catCheck.ok,
       creative_quality_score: creativeQuality,
       creative_reject_reason: rejectReasons.length ? rejectReasons.join(" ; ") : null,
