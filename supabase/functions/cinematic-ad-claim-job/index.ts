@@ -114,17 +114,48 @@ Deno.serve(async (req) => {
           supabase_host: supabaseHost,
         }, 412);
       }
-      // Render budget: 1 expensive render / product / 24h.
+      // Render budget: 1 expensive render / product / 24h, with admin force override.
+      // Reads the per-job force_render_budget_override flag (set by queue-render when
+      // an admin explicitly checks "Force render despite 24h product budget").
+      const { data: forceRow } = await admin
+        .from("cinematic_ad_jobs")
+        .select("force_render_budget_override, force_render_budget_by")
+        .eq("id", explicitJobId)
+        .maybeSingle();
+      const forceOverride = Boolean(forceRow?.force_render_budget_override);
       const { data: budget } = await admin.rpc("cinematic_reserve_render_slot", {
         p_product_slug: gateRow!.product_slug,
-        p_force: false,
+        p_force: forceOverride,
+        p_admin_user_id: (forceRow?.force_render_budget_by as string | null) ?? null,
+        p_force_reason: forceOverride ? "pinterest_ad_studio_admin_force" : null,
       }).maybeSingle();
       if (budget && budget.allowed === false) {
+        // Don't leave the job frozen in render_queued — move it to
+        // needs_admin_review with a clear status_message + reset_at so the UI
+        // can surface "Product render budget resets at <timestamp>" and the
+        // worker stops re-claiming it on every poll.
+        const resetAt = (budget as any).reset_at ?? (budget as any).last_at ?? null;
+        const resetIso = resetAt ? new Date(resetAt as string).toISOString() : null;
+        const msg = resetIso
+          ? `Render budget exhausted for ${gateRow!.product_slug} — resets at ${resetIso}. Use "Force render despite 24h product budget" to override.`
+          : `Render budget exhausted for ${gateRow!.product_slug}.`;
+        await admin.from("cinematic_ad_jobs").update({
+          status: "needs_admin_review",
+          status_message: msg,
+          blocked_reason: "render_budget_24h_exhausted",
+          render_queued_at: null,
+          render_dispatched_at: null,
+          render_token: null,
+          recoverable: true,
+        }).eq("id", explicitJobId);
+        console.warn(`[claim-job] ${traceId} budget block job=${explicitJobId} product=${gateRow!.product_slug} reset_at=${resetIso}`);
         return json({
           ok: false, traceId,
           reason: "render_budget_24h_exhausted",
           product_slug: gateRow!.product_slug,
-          last_render_at: budget.last_at,
+          last_render_at: (budget as any).last_at,
+          reset_at: resetIso,
+          job_status: "needs_admin_review",
           supabase_host: supabaseHost,
         }, 429);
       }
