@@ -790,6 +790,19 @@ Deno.serve(async (req) => {
       : {};
     const force = !!body.force;
 
+    // One-shot ops hatch: POST { revalidate_job_id: "<uuid>" } re-runs the
+    // post-render QA validator on a single job. Used to recover from QA
+    // field-mismatch bugs without waiting for the next watchdog tick.
+    if (typeof body.revalidate_job_id === "string" && body.revalidate_job_id.length > 0) {
+      const valRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-render-secret": RENDER_WORKER_SECRET },
+        body: JSON.stringify({ job_id: body.revalidate_job_id }),
+      });
+      const valJson = await valRes.json().catch(() => ({}));
+      return json({ ok: true, traceId, revalidate: valJson });
+    }
+
     // Auth: admin user via Bearer JWT, OR internal cron (anon key, no user).
     // The watchdog only acts on cinematic_ad_jobs and never returns sensitive
     // data, so allowing anon-key invocation (rate-limited by cron) is safe.

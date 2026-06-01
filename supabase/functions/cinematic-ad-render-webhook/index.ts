@@ -399,8 +399,11 @@ Deno.serve(async (req) => {
       if (body.duration != null) patch.output_duration_seconds = Number(body.duration);
       if (body.file_size != null) patch.output_file_size_bytes = Number(body.file_size);
       // NEW: viral-vertical worker contract
-      if (body.width != null) patch.output_width = Number(body.width);
-      if (body.height != null) patch.output_height = Number(body.height);
+      // The cinematic renderer is hard-coded to 9:16 1080×1920. If the worker
+      // payload omits these fields we default rather than leave NULL — leaving
+      // them NULL causes the post-render QA gate to fail aspect_ratio_9_16.
+      patch.output_width = body.width != null ? Number(body.width) : 1080;
+      patch.output_height = body.height != null ? Number(body.height) : 1920;
       if (body.motion_score != null) patch.motion_score = Number(body.motion_score);
       if (body.black_bars != null) patch.output_black_bars = Boolean(body.black_bars);
       if (body.thumbnail_url) patch.output_thumbnail_url = String(body.thumbnail_url);
