@@ -492,6 +492,24 @@ export default function PinterestAdStudio() {
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
             Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
           </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
+            <input
+              type="checkbox"
+              checked={forceBudgetOverride}
+              onChange={(e) => setForceBudgetOverride(e.target.checked)}
+              className="accent-amber-500 mt-0.5"
+            />
+            <span>
+              <span className="font-medium text-amber-700 dark:text-amber-400">Force render despite 24h product budget</span>
+              <span className="block text-muted-foreground">
+                Bypass the 1-render-per-product-per-24h cap. Admin-only. Use for testing or when re-rendering a product the same day. Each bypass is logged.
+              </span>
+            </span>
+          </label>
+          <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+            <span>Hit a render budget block? Inspect or clear it here.</span>
+            <Link to="/admin/render-budget" className="text-primary hover:underline">Render Budget dashboard →</Link>
+          </div>
           {directorNote && (
             <div className="text-xs text-muted-foreground p-2 rounded bg-muted/40">{directorNote}</div>
           )}
