@@ -19,6 +19,7 @@ import {
   HARD_MAX_DURATION_SEC,
   DURATION_OVERRUN_SLACK_SEC,
 } from "../_shared/cinematic-presets.ts";
+import { verifySafariPlayback } from "../_shared/safari-playback-check.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
