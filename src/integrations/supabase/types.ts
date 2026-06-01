@@ -1807,6 +1807,9 @@ export type Database = {
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          force_preflight_override: boolean
+          force_preflight_override_by: string | null
+          force_preflight_override_reason: string | null
           force_render_budget_by: string | null
           force_render_budget_override: boolean
           force_render_budget_reason: string | null
@@ -2085,6 +2088,9 @@ export type Database = {
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          force_preflight_override?: boolean
+          force_preflight_override_by?: string | null
+          force_preflight_override_reason?: string | null
           force_render_budget_by?: string | null
           force_render_budget_override?: boolean
           force_render_budget_reason?: string | null
@@ -2363,6 +2369,9 @@ export type Database = {
           first_frame_originality_score?: number | null
           first3s_phash?: string | null
           focal_bbox?: Json | null
+          force_preflight_override?: boolean
+          force_preflight_override_by?: string | null
+          force_preflight_override_reason?: string | null
           force_render_budget_by?: string | null
           force_render_budget_override?: boolean
           force_render_budget_reason?: string | null
@@ -3454,6 +3463,36 @@ export type Database = {
           pin_id?: string
           saves?: number
           watch_seconds_p50?: number | null
+        }
+        Relationships: []
+      }
+      cinematic_preflight_override_log: {
+        Row: {
+          bypassed_reasons: string[]
+          created_at: string
+          id: string
+          job_id: string | null
+          product_slug: string
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bypassed_reasons?: string[]
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          product_slug: string
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bypassed_reasons?: string[]
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          product_slug?: string
+          reason?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -19228,6 +19267,9 @@ export type Database = {
           first_frame_originality_score: number | null
           first3s_phash: string | null
           focal_bbox: Json | null
+          force_preflight_override: boolean
+          force_preflight_override_by: string | null
+          force_preflight_override_reason: string | null
           force_render_budget_by: string | null
           force_render_budget_override: boolean
           force_render_budget_reason: string | null

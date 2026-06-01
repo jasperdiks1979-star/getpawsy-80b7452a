@@ -34,6 +34,8 @@ async function ensureRenderReady(
   admin: ReturnType<typeof createClient>,
   jobId: string,
   traceLabel: string,
+  forcePreflightOverride: boolean = false,
+  forcePreflightReason: string | null = null,
 ): Promise<{ ready: boolean; reasons: string[]; preflight_status: string | null; creative_plan_present: boolean }> {
   const headers = {
     "Content-Type": "application/json",
@@ -63,7 +65,13 @@ async function ensureRenderReady(
   if (pre?.preflight_status !== "pass") {
     try {
       const r = await fetch(`${fnBase}/cinematic-ad-preflight`, {
-        method: "POST", headers, body: JSON.stringify({ job_id: jobId }),
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          job_id: jobId,
+          force_preflight_override: forcePreflightOverride,
+          force_preflight_override_reason: forcePreflightReason,
+        }),
       });
       const txt = await r.text().catch(() => "");
       console.log(`[queue-render] ${traceLabel} ensureRenderReady preflight status=${r.status} ${txt.slice(0, 160)}`);
@@ -238,12 +246,35 @@ Deno.serve(async (req) => {
       callerIsAdmin && body.force_budget_override === true;
     const forceBudgetReason: string | null =
       forceBudgetOverride ? (typeof body.force_budget_reason === "string" ? body.force_budget_reason : "admin_force_render") : null;
+    // Admin-only: "Force render even if product is out of stock" toggle.
+    // Allows admin/director runs to bypass product_out_of_stock + product_inactive
+    // gates inside cinematic-ad-preflight. Logged on the job row and in
+    // cinematic_preflight_override_log. All other safety checks remain active.
+    const forcePreflightOverride: boolean =
+      callerIsAdmin && body.force_preflight_override === true;
+    const forcePreflightReason: string | null =
+      forcePreflightOverride
+        ? (typeof body.force_preflight_reason === "string" && body.force_preflight_reason.trim().length > 0
+            ? body.force_preflight_reason.trim()
+            : "pinterest_ad_studio_admin_force_stock_bypass")
+        : null;
     if (!jobId) return bad(400, trace, "missing_job_id", "job_id required", []);
     if (!UUID_RE.test(jobId)) return bad(400, trace, "invalid_job_id", `Full UUID required (got: "${jobId}")`, []);
 
     const { data: job, error: jobErr } = await admin
       .from("cinematic_ad_jobs").select("*").eq("id", jobId).maybeSingle();
     if (jobErr || !job) return bad(404, trace, "job_not_found", "job not found", []);
+
+    // Persist preflight override BEFORE the preparation gate runs so the
+    // preflight re-run (and any later watchdog re-check) honors the flag.
+    if (forcePreflightOverride) {
+      await admin.from("cinematic_ad_jobs").update({
+        force_preflight_override: true,
+        force_preflight_override_reason: forcePreflightReason,
+        force_preflight_override_by: callerAdminId,
+      }).eq("id", jobId);
+      (job as any).force_preflight_override = true;
+    }
 
     // ---------- Structured pre-flight diagnostics ----------
     const diagnostics: DiagCheck[] = [];
@@ -530,7 +561,13 @@ Deno.serve(async (req) => {
     // ── PREPARATION GATE ── claim-job will reject any job lacking
     // creative_plan or preflight_status='pass' with 412 blocked_by_safety_gate.
     // Self-heal here so jobs cannot land in render_queued in a broken state.
-    const readiness = await ensureRenderReady(admin, jobId, trace);
+    const readiness = await ensureRenderReady(
+      admin,
+      jobId,
+      trace,
+      forcePreflightOverride || (job as any).force_preflight_override === true,
+      forcePreflightReason,
+    );
     diagnostics.push(
       readiness.ready
         ? pass("preparation_gate", `creative_plan + preflight=pass`)
