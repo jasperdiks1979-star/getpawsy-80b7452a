@@ -331,7 +331,18 @@ Deno.serve(async (req) => {
   let categoryRewriteResult: ReturnType<typeof rewriteForCategorySafety> | null = null;
   let catCheckFinal = catCheck;
   const prevCatRewritePasses = Number((job as any).category_safe_rewrite_passes ?? 0);
+  // ── Strict idempotency guard ────────────────────────────────────────────
+  // The category-safe rewriter may run AT MOST ONCE per job. The counter is
+  // incremented immediately upon entering the block so that even if the
+  // deterministic rewrite produces no mutations, subsequent validate runs
+  // (re-try webhooks, admin re-validate, watchdog) cannot loop.
   if (!catCheckFinal.ok && prevCatRewritePasses < 1) {
+    // Burn the one allowed attempt before calling the rewriter.
+    const nextPassCount = prevCatRewritePasses + 1;
+    persistPatch.category_safe_rewrite_passes = nextPassCount;
+    persistPatch.category_safe_rewrite_applied_at = new Date().toISOString();
+    (job as any).category_safe_rewrite_passes = nextPassCount;
+
     const cr = rewriteForCategorySafety({
       product: productCtx,
       pin_title: job.pin_title,
@@ -348,8 +359,6 @@ Deno.serve(async (req) => {
         job.scene_plan = cr.scene_plan;
         persistPatch.scene_plan = cr.scene_plan;
       }
-      persistPatch.category_safe_rewrite_passes = prevCatRewritePasses + 1;
-      persistPatch.category_safe_rewrite_applied_at = new Date().toISOString();
       persistPatch.category_safe_rewrite_mutations = cr.mutations;
       console.log(`[validate] ${traceId} category_safe_rewrite job=${jobId} category=${cr.product_category} mutations=${cr.mutations.length} fields=${cr.mutations.map(m => m.field).join(",")}`);
 
@@ -368,6 +377,10 @@ Deno.serve(async (req) => {
         cta_text: job.cta_text,
         scene_plan: Array.isArray(job.scene_plan) ? job.scene_plan : null,
       });
+    } else {
+      // No mutations produced, but the attempt is still consumed. Log it so
+      // forensic traces show the guard fired even on a no-op rewrite.
+      console.log(`[validate] ${traceId} category_safe_rewrite_no_op job=${jobId} category=${cr.product_category} reason=no_mutations_needed`);
     }
   }
 
