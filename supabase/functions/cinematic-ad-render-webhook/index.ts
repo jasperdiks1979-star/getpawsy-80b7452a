@@ -419,6 +419,31 @@ Deno.serve(async (req) => {
       if (patch.output_height == null && job.output_height == null) patch.output_height = 1920;
       patch.error_message = null;
       patch.status_message = "render complete — validating output";
+      // Phase-4 observability: log every motion_quality_score that arrives
+      // from the renderer, including the breakdown of how it was computed.
+      if (body?.motion_quality_score != null) {
+        try {
+          const attempt = Number(job.motion_regen_attempts ?? 0);
+          const scoreInt = Math.max(0, Math.min(100, Math.round(Number(body.motion_quality_score))));
+          console.log(`[motion-quality-log] ${traceId} job=${jobId} attempt=${attempt} score=${scoreInt} source=renderer`,
+            body.motion_quality_breakdown ? JSON.stringify(body.motion_quality_breakdown) : "(no breakdown)");
+          await admin.from("cinematic_motion_quality_events").insert({
+            job_id: jobId,
+            product_slug: job.product_slug ?? null,
+            source: "renderer",
+            attempt_number: attempt,
+            score: scoreInt,
+            threshold: null,
+            passed: null,
+            decision: "measured",
+            max_regen_attempts: null,
+            breakdown: body.motion_quality_breakdown ?? null,
+            notes: `renderer reported score=${scoreInt}; status=${status}`,
+          });
+        } catch (e) {
+          console.warn(`[motion-quality-log] ${traceId} insert failed:`, (e as Error)?.message);
+        }
+      }
     } else if (status === "failed") {
       const attempts = (job.render_attempts ?? 0);
       const willRetry = attempts < MAX_ATTEMPTS;
