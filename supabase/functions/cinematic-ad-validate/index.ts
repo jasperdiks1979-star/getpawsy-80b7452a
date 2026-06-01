@@ -1027,6 +1027,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Phase 4: motion quality auto-regen — re-queue the render up to N times
+    // before falling through to manual review. Takes priority over the
+    // creative_rejected status above (a low-motion render IS the problem).
+    if (!motionQualityPass) {
+      if (canMotionRegen) {
+        patch.motion_regen_attempts = motionRegenAttempts + 1;
+        patch.status = "render_queued";
+        patch.status_message = `motion quality ${motionQualityVal}<${motionQualityMin} — auto re-render ${motionRegenAttempts + 1}/${motionQualityMaxRegen}`;
+        // Clear render-output fields so the queue worker treats this as a fresh render.
+        patch.render_worker_id = null;
+        patch.render_started_at = null;
+        patch.render_complete_at = null;
+      } else {
+        patch.status = "needs_scene_regen";
+        patch.status_message = `motion quality ${motionQualityVal}<${motionQualityMin} — ${motionQualityMaxRegen} auto re-renders exhausted, manual review`;
+      }
+    }
+
     const { error: updErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
     if (updErr) return json({ ok: false, traceId, message: updErr.message }, 500);
 
