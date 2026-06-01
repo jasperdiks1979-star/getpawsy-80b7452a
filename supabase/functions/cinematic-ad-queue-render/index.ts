@@ -19,7 +19,8 @@ import {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
-const MAX_ACTIVE_QUEUED = 5;
+const MAX_ACTIVE_QUEUED = 6;
+const MAX_QUEUE_WAIT_ATTEMPTS = 8;
 const SCENE_REGEN_MAX_RETRIES = 5;
 
 /**
@@ -248,11 +249,11 @@ Deno.serve(async (req) => {
     diagnostics.push(pass("render_workflow", ".github/workflows/render-cinematic-ad.yml present in repo"));
 
     // job status eligibility
-    const eligible = ["prepared", "failed", "render_queued"].includes(job.status);
+    const eligible = ["prepared", "failed", "render_queued", "queue_waiting"].includes(job.status);
     diagnostics.push(
       eligible
         ? pass("job_status", `status='${job.status}' eligible`)
-        : fail("job_status", `status='${job.status}' not eligible (need prepared/failed/render_queued)`),
+        : fail("job_status", `status='${job.status}' not eligible (need prepared/failed/render_queued/queue_waiting)`),
     );
 
     // approval — Director path may auto-approve here
@@ -338,7 +339,53 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("status", "render_queued");
     if ((activeQueuedCount ?? 0) >= MAX_ACTIVE_QUEUED && job.status !== "render_queued") {
-      return bad(429, trace, "queue_limit_reached", `render queue limit reached (${MAX_ACTIVE_QUEUED})`, diagnostics);
+      // Queue full — park the job in `queue_waiting` instead of failing the
+      // concept. The watchdog (and the render-webhook on completion) will
+      // promote oldest waiting jobs back into the render queue as slots open.
+      const prevAttempts = Number((job as any).queue_wait_attempts ?? 0);
+      const nextAttempts = prevAttempts + 1;
+
+      if (nextAttempts > MAX_QUEUE_WAIT_ATTEMPTS) {
+        await admin.from("cinematic_ad_jobs").update({
+          status: "needs_admin_review",
+          status_message: `queue_wait_exhausted after ${prevAttempts} attempts`,
+          error_message: "queue_wait_exhausted",
+          queue_wait_attempts: nextAttempts,
+          queue_wait_reason: "queue_wait_exhausted",
+        }).eq("id", jobId);
+        return bad(409, trace, "queue_wait_exhausted",
+          `queue wait exceeded ${MAX_QUEUE_WAIT_ATTEMPTS} attempts — moved to needs_admin_review`,
+          diagnostics, { job_id: jobId, attempts: nextAttempts });
+      }
+
+      // 30 / 45 / 60s jittered backoff
+      const baseDelay = Math.min(30 + nextAttempts * 5, 60);
+      const jitter = Math.floor(Math.random() * 15);
+      const delaySec = baseDelay + jitter;
+      const nextAt = new Date(Date.now() + delaySec * 1000).toISOString();
+
+      await admin.from("cinematic_ad_jobs").update({
+        status: "queue_waiting",
+        status_message: `queue full (${activeQueuedCount}/${MAX_ACTIVE_QUEUED}) — waiting for slot`,
+        queue_wait_attempts: nextAttempts,
+        queue_wait_next_at: nextAt,
+        queue_wait_reason: "queue_limit_reached",
+      }).eq("id", jobId);
+
+      return json({
+        ok: true,
+        traceId: trace,
+        status: "queue_waiting",
+        retry_after_seconds: delaySec,
+        retry_at: nextAt,
+        attempts: nextAttempts,
+        max_attempts: MAX_QUEUE_WAIT_ATTEMPTS,
+        active_queued: activeQueuedCount,
+        capacity: MAX_ACTIVE_QUEUED,
+        job_id: jobId,
+        message: `Queued — waiting for render slot (retry in ${delaySec}s)`,
+        diagnostics,
+      }, 202);
     }
 
     const { data: sameProductActive } = await admin

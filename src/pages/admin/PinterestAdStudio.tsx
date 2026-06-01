@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2, Bug, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Sparkles, Pin, Download, RotateCw, Send, Settings2, Trophy, Play, Wand2, Bug, AlertTriangle, CheckCircle2, XCircle, Hourglass } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
@@ -35,7 +35,7 @@ const TERMINAL_BAD = new Set(["failed", "cancelled"]);
 // "Debug Director Run" panel can show actionable error info
 // when an edge function returns a non-2xx status.
 // ============================================================
-type ConceptStage = "pending" | "preparing" | "queued" | "rendering" | "success" | "concept_failed";
+type ConceptStage = "pending" | "preparing" | "queued" | "queue_waiting" | "rendering" | "success" | "concept_failed";
 type EdgeCallDiag = {
   fn: string;
   ok: boolean;
@@ -55,6 +55,7 @@ type ConceptDiag = {
   queue: EdgeCallDiag | null;
   retried: boolean;
   suggestedFix: string | null;
+  queueWaiting?: { retryAfterSec: number; attempts: number; maxAttempts: number } | null;
 };
 
 function suggestFix(d: EdgeCallDiag): string {
@@ -103,6 +104,7 @@ function statusLabel(s: string) {
   if (TERMINAL_BAD.has(s)) return "Failed";
   if (s === "rendering") return "Rendering…";
   if (s === "render_queued") return "In queue";
+  if (s === "queue_waiting") return "Queued — waiting for render slot";
   if (s === "preparing" || s === "pending" || s === "prepared") return "Preparing…";
   return s;
 }
@@ -273,48 +275,111 @@ export default function PinterestAdStudio() {
       }));
       setDiagnostics(initDiag);
 
-      // Run all concepts in parallel — failures isolated per concept
-      const settled = await Promise.allSettled(concepts.map(async (c, idx) => {
-        // dry-run mode is passed to queue-render via auto_approve+dry_run; prepare still runs normally
-        let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
-        let retried = false;
-        if (!r.jobId && c.archetype === "viral_interrupt") {
-          // Safer fallback prompt: use lifestyle hook + narrator voice
-          retried = true;
-          r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+      // Staggered sequential dispatch — first concept goes immediately, the
+      // rest are queued 30s apart so we don't fill MAX_ACTIVE_QUEUED in one
+      // burst. Concepts that come back as 202 queue_waiting are NOT failed;
+      // the watchdog promotes them as render slots free up.
+      const STAGGER_MS = 30_000;
+      const settled: Array<PromiseSettledResult<{
+        idx: number; c: typeof concepts[number]; jobId: string | null;
+        prepare: EdgeCallDiag; queue: EdgeCallDiag | null; retried: boolean; dryRun: boolean;
+      }>> = [];
+      for (let i = 0; i < concepts.length; i++) {
+        const c = concepts[i];
+        if (i > 0) await new Promise((res) => setTimeout(res, STAGGER_MS));
+        try {
+          let r = await startOneWithDiag({ hookVariant: c.hookVariant, voiceStyle: c.voiceStyle, preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+          let retried = false;
+          if (!r.jobId && c.archetype === "viral_interrupt") {
+            retried = true;
+            r = await startOneWithDiag({ hookVariant: "lifestyle", voiceStyle: "narrator", preset: c.preset as any, archetype: c.archetype, runId: newRunId });
+          }
+          settled.push({ status: "fulfilled", value: { idx: i, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun } });
+        } catch (err) {
+          settled.push({ status: "rejected", reason: err });
         }
-        return { idx, c, jobId: r.jobId, prepare: r.prepare, queue: r.queue, retried, dryRun: dryRun };
-      }));
+        // Live-update so the UI reflects each concept as it lands.
+        setDiagnostics((prev) => {
+          const next = [...prev];
+          const last = settled[settled.length - 1];
+          if (last && last.status === "fulfilled") {
+            const { c, jobId, prepare, queue, retried, dryRun: isDry } = last.value;
+            const isQueueWaiting = (queue as any)?.responseBody && (() => {
+              try { return JSON.parse((queue as any).responseBody).status === "queue_waiting"; } catch { return false; }
+            })();
+            const ok = !!jobId && prepare.ok && (queue?.ok ?? true) && !isQueueWaiting;
+            let stage: ConceptStage;
+            if (isQueueWaiting) stage = "queue_waiting";
+            else if (ok) stage = isDry ? "success" : "rendering";
+            else stage = "concept_failed";
+            let queueWaiting: ConceptDiag["queueWaiting"] = null;
+            if (isQueueWaiting) {
+              try {
+                const parsed = JSON.parse((queue as any).responseBody);
+                queueWaiting = { retryAfterSec: parsed.retry_after_seconds ?? 30, attempts: parsed.attempts ?? 1, maxAttempts: parsed.max_attempts ?? 8 };
+              } catch { /* ignore */ }
+            }
+            next[i] = {
+              archetype: c.archetype, label: c.label, stage, jobId, prepare, queue, retried,
+              suggestedFix: ok || isQueueWaiting ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+              queueWaiting,
+            };
+          }
+          return next;
+        });
+      }
 
       const results: JobRow[] = [];
       const nextDiag: ConceptDiag[] = [...initDiag];
       let failedCount = 0;
+      let waitingCount = 0;
       for (const s of settled) {
         if (s.status !== "fulfilled") continue;
         const { idx, c, jobId, prepare, queue, retried, dryRun: isDry } = s.value;
-        const ok = !!jobId && prepare.ok && (queue?.ok ?? true);
+        // Detect queue_waiting (HTTP 202 with body.status==='queue_waiting')
+        let isQueueWaiting = false;
+        let qw: ConceptDiag["queueWaiting"] = null;
+        if (queue?.responseBody) {
+          try {
+            const parsed = JSON.parse(queue.responseBody);
+            if (parsed?.status === "queue_waiting") {
+              isQueueWaiting = true;
+              qw = { retryAfterSec: parsed.retry_after_seconds ?? 30, attempts: parsed.attempts ?? 1, maxAttempts: parsed.max_attempts ?? 8 };
+            }
+          } catch { /* ignore */ }
+        }
+        const ok = !!jobId && prepare.ok && (queue?.ok ?? true) && !isQueueWaiting;
+        let stage: ConceptStage;
+        if (isQueueWaiting) stage = "queue_waiting";
+        else if (ok) stage = isDry ? "success" : "rendering";
+        else stage = "concept_failed";
         nextDiag[idx] = {
-          archetype: c.archetype, label: c.label,
-          stage: ok ? (isDry ? "success" : "rendering") : "concept_failed",
+          archetype: c.archetype, label: c.label, stage,
           jobId, prepare, queue, retried,
-          suggestedFix: ok ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+          suggestedFix: ok || isQueueWaiting ? null : suggestFix(prepare.ok && queue && !queue.ok ? queue : prepare),
+          queueWaiting: qw,
         };
-        if (ok && !isDry && jobId) {
+        if ((ok || isQueueWaiting) && !isDry && jobId) {
           results.push({
-            id: jobId, product_slug: product.slug, status: "preparing", status_message: "queued",
+            id: jobId, product_slug: product.slug,
+            status: isQueueWaiting ? "queue_waiting" : "preparing",
+            status_message: isQueueWaiting ? `Queued — waiting for render slot (retry in ${qw?.retryAfterSec ?? 30}s)` : "queued",
             output_mp4_url: null, output_thumbnail_url: null, qa_composite_score: null,
             pinterest_pin_url: null, pinterest_quality_score: null, error_message: null,
             hook_variant: c.hookVariant, voice_style: c.voiceStyle,
             archetype: c.archetype, predicted_score: c.predicted_score,
           });
         }
-        if (!ok) failedCount++;
+        if (isQueueWaiting) waitingCount++;
+        else if (!ok) failedCount++;
       }
       setDiagnostics(nextDiag);
 
       if (results.length > 0) {
         setJobs(results);
-        toast.success(`Director: ${results.length}/${concepts.length} concepts rendering${failedCount ? ` · ${failedCount} skipped` : ""}`);
+        const waitNote = waitingCount ? ` · ${waitingCount} waiting for render slot` : "";
+        const failNote = failedCount ? ` · ${failedCount} failed` : "";
+        toast.success(`Director: ${results.length}/${concepts.length} concepts dispatched${waitNote}${failNote}`);
       } else if (dryRun) {
         toast.success(`Dry run complete · ${concepts.length - failedCount}/${concepts.length} would render · ${failedCount} isolated`);
         setShowDebug(true);
@@ -442,6 +507,9 @@ export default function PinterestAdStudio() {
                 {diagnostics.some(d => d.stage === "concept_failed") && (
                   <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" />{diagnostics.filter(d => d.stage === "concept_failed").length} failed</Badge>
                 )}
+                {diagnostics.some(d => d.stage === "queue_waiting") && (
+                  <Badge variant="secondary" className="gap-1"><Hourglass className="w-3 h-3" />{diagnostics.filter(d => d.stage === "queue_waiting").length} waiting</Badge>
+                )}
               </CardTitle>
               <span className="text-xs text-muted-foreground">{showDebug ? "Hide" : "Show"}</span>
             </button>
@@ -457,15 +525,16 @@ export default function PinterestAdStudio() {
                 {diagnostics.map((d, i) => {
                   const failed = d.stage === "concept_failed";
                   const okCall = d.stage === "success" || d.stage === "rendering";
+                  const waiting = d.stage === "queue_waiting";
                   return (
-                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"}`}>
+                    <div key={`${d.archetype}-${i}`} className={`border rounded-md p-3 text-xs space-y-1.5 ${failed ? "border-destructive/40 bg-destructive/5" : okCall ? "border-emerald-500/30 bg-emerald-500/5" : waiting ? "border-amber-400/40 bg-amber-400/5" : "border-border"}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-semibold">
-                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+                          {failed ? <XCircle className="w-4 h-4 text-destructive" /> : okCall ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : waiting ? <Hourglass className="w-4 h-4 text-amber-500" /> : <Loader2 className="w-4 h-4 animate-spin" />}
                           {d.label}
                           {d.retried && <Badge variant="outline" className="text-[10px]">retried (safer prompt)</Badge>}
                         </div>
-                        <span className="text-muted-foreground">{d.stage}</span>
+                        <span className="text-muted-foreground">{waiting && d.queueWaiting ? `queue_waiting · retry in ${d.queueWaiting.retryAfterSec}s (attempt ${d.queueWaiting.attempts}/${d.queueWaiting.maxAttempts})` : d.stage}</span>
                       </div>
                       {d.jobId && <div><span className="text-muted-foreground">Render job:</span> <code className="text-[10px]">{d.jobId}</code></div>}
                       {d.prepare && (

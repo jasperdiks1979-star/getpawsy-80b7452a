@@ -118,6 +118,7 @@ type WatchdogResult = {
     qa_scored: number;
     error?: string;
   };
+  promoted?: Array<{ job_id: string; ok: boolean; reason?: string }>;
 };
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
@@ -678,6 +679,56 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
       updated_at: new Date(now).toISOString(),
     })
     .eq("id", 1);
+
+  // === (3b) Promote queue_waiting jobs into the render queue ===
+  //
+  // Concepts parked by cinematic-ad-queue-render when MAX_ACTIVE_QUEUED was
+  // reached. Promote oldest-ready first, only while capacity remains.
+  try {
+    const RENDER_CAPACITY = 6;
+    const { count: activeCount } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["render_queued", "rendering"]);
+    let slots = Math.max(0, RENDER_CAPACITY - (activeCount ?? 0));
+    const promoted: Array<{ job_id: string; ok: boolean; reason?: string }> = [];
+    if (slots > 0) {
+      const nowIsoP = new Date().toISOString();
+      const { data: waiting } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id, queue_wait_attempts, preset")
+        .eq("status", "queue_waiting")
+        .or(`queue_wait_next_at.is.null,queue_wait_next_at.lte.${nowIsoP}`)
+        .order("queue_wait_next_at", { ascending: true, nullsFirst: true })
+        .limit(slots);
+      for (const row of (waiting ?? []) as Array<{ id: string; preset: string | null }>) {
+        if (slots <= 0) break;
+        try {
+          const r = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-queue-render`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-token": RENDER_WORKER_SECRET,
+              "Authorization": `Bearer ${SERVICE_KEY}`,
+              "apikey": SERVICE_KEY,
+            },
+            body: JSON.stringify({ job_id: row.id, preset: row.preset ?? undefined, auto_approve: true }),
+          });
+          const txt = await r.text().catch(() => "");
+          let parsed: any = null;
+          try { parsed = JSON.parse(txt); } catch { /* */ }
+          const promotedOk = r.ok && parsed?.status !== "queue_waiting";
+          promoted.push({ job_id: row.id, ok: promotedOk, reason: parsed?.status ?? `http_${r.status}` });
+          if (promotedOk) slots--;
+        } catch (e) {
+          promoted.push({ job_id: row.id, ok: false, reason: e instanceof Error ? e.message : String(e) });
+        }
+      }
+    }
+    (result as any).promoted = promoted;
+  } catch (e) {
+    console.warn("[watchdog] queue_waiting promotion failed", e);
+  }
 
   // === (4) Active recovery: chain the intelligence engine ===
   //
