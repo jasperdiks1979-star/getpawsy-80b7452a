@@ -492,6 +492,37 @@ Deno.serve(async (req) => {
     if (status === "heartbeat") return json({ ok: true, traceId, message: "heartbeat recorded" });
 
     if ((status === "rendered" || status === "uploaded") && (body.mp4_url || job.output_mp4_url)) {
+      // iPhone Safari playback gate — fail-fast if the MP4 URL is not
+      // streamable inline (CORS / mime / Accept-Ranges / faststart / 206).
+      // Runs on every render-complete AND trim-callback path so the trimmed
+      // file is re-verified after re-encode + re-upload.
+      const checkUrl = stripDoubleSlash(String(body.mp4_url ?? job.output_mp4_url ?? ""));
+      try {
+        const safari = await verifySafariPlayback(checkUrl);
+        await admin.from("cinematic_ad_jobs").update({
+          safari_playback_check: safari,
+          safari_playback_passed: safari.passed,
+          safari_playback_checked_at: safari.checked_at,
+        }).eq("id", jobId);
+        if (!safari.passed) {
+          const failedNames = safari.checks.filter((c) => !c.passed).map((c) => c.name).join(",");
+          console.warn(`[safari-check] ${traceId} FAIL job=${jobId} url=${checkUrl} failed=${failedNames}`);
+          await admin.from("cinematic_ad_jobs").update({
+            status: "awaiting_approval",
+            status_message: `safari playback check failed: ${failedNames} — review in admin preview`,
+          }).eq("id", jobId);
+          return json({
+            ok: true,
+            traceId,
+            message: "safari playback check failed — awaiting admin review",
+            safari_playback: safari,
+          });
+        }
+        console.log(`[safari-check] ${traceId} OK job=${jobId} url=${checkUrl}`);
+      } catch (e) {
+        console.error(`[safari-check] ${traceId} crashed`, e);
+      }
+
       try {
         const valRes = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-validate`, {
           method: "POST",
