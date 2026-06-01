@@ -249,11 +249,11 @@ Deno.serve(async (req) => {
     diagnostics.push(pass("render_workflow", ".github/workflows/render-cinematic-ad.yml present in repo"));
 
     // job status eligibility
-    const eligible = ["prepared", "failed", "render_queued"].includes(job.status);
+    const eligible = ["prepared", "failed", "render_queued", "queue_waiting"].includes(job.status);
     diagnostics.push(
       eligible
         ? pass("job_status", `status='${job.status}' eligible`)
-        : fail("job_status", `status='${job.status}' not eligible (need prepared/failed/render_queued)`),
+        : fail("job_status", `status='${job.status}' not eligible (need prepared/failed/render_queued/queue_waiting)`),
     );
 
     // approval — Director path may auto-approve here
