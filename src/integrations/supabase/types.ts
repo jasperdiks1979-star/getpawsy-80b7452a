@@ -1933,6 +1933,9 @@ export type Database = {
           retention_likelihood_score: number | null
           risk_level: string | null
           root_cause: string | null
+          safari_playback_check: Json | null
+          safari_playback_checked_at: string | null
+          safari_playback_passed: boolean | null
           scene_assets: Json
           scene_change_count: number | null
           scene_consistency_score: number | null
@@ -2198,6 +2201,9 @@ export type Database = {
           retention_likelihood_score?: number | null
           risk_level?: string | null
           root_cause?: string | null
+          safari_playback_check?: Json | null
+          safari_playback_checked_at?: string | null
+          safari_playback_passed?: boolean | null
           scene_assets?: Json
           scene_change_count?: number | null
           scene_consistency_score?: number | null
@@ -2463,6 +2469,9 @@ export type Database = {
           retention_likelihood_score?: number | null
           risk_level?: string | null
           root_cause?: string | null
+          safari_playback_check?: Json | null
+          safari_playback_checked_at?: string | null
+          safari_playback_passed?: boolean | null
           scene_assets?: Json
           scene_change_count?: number | null
           scene_consistency_score?: number | null
@@ -19190,6 +19199,9 @@ export type Database = {
           retention_likelihood_score: number | null
           risk_level: string | null
           root_cause: string | null
+          safari_playback_check: Json | null
+          safari_playback_checked_at: string | null
+          safari_playback_passed: boolean | null
           scene_assets: Json
           scene_change_count: number | null
           scene_consistency_score: number | null
