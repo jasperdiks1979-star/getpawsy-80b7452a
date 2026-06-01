@@ -1270,6 +1270,10 @@ const ProductDetail = () => {
               )}
             </motion.div>
 
+            {/* Real social proof — verified shopper signals only.
+                Hidden entirely when no signal clears its threshold. */}
+            <RealSocialProofLine productId={product.id} />
+
             {/*
               Above-the-fold conversion block with winner badge.
               On mobile, when the new MobileStickyTrustBar (hairline strip
