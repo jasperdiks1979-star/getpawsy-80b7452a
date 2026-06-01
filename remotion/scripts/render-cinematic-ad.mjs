@@ -702,7 +702,9 @@ async function main() {
     const realDurationSec = probe.duration || sceneFiles.reduce((a, s) => a + s.duration, 0);
     const totalRenderedFrames = Math.round(realDurationSec * FPS);
     const motion = await motionScore(finalPath, totalRenderedFrames);
-    const motionQuality = await motionQualityScore(finalPath, totalRenderedFrames, job.motion_storyboard);
+    const motionQualityResult = await motionQualityScore(finalPath, totalRenderedFrames, job.motion_storyboard);
+    const motionQuality = motionQualityResult.score;
+    const motionQualityBreakdown = motionQualityResult.breakdown;
     const blackBars = await hasBlackBars(finalPath, probe.width || W, probe.height || H);
     const thumbPath = join(work, "thumb.jpg");
     let thumbnailUrl = null;
@@ -745,6 +747,7 @@ async function main() {
       height: probe.height || H,
       motion_score: motion,
       motion_quality_score: motionQuality,
+      motion_quality_breakdown: motionQualityBreakdown,
       black_bars: blackBars,
       thumbnail_url: thumbnailUrl,
       composition_id: COMPOSITION,
