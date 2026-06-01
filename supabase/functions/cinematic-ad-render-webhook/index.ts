@@ -413,10 +413,18 @@ Deno.serve(async (req) => {
         patch.status = "trimming";
         patch.status_message = `auto-trim dispatched (${reportedDuration.toFixed(1)}s → ${targetDuration}s)`;
         patch.original_duration_seconds = reportedDuration;
-        patch.output_duration_seconds = reportedDuration;
-        patch.output_mp4_url = incomingMp4;
         patch.trim_attempted_at = new Date().toISOString();
         patch.error_message = null;
+        // CRITICAL: persist ALL metadata from the original render callback BEFORE
+        // dispatching the trim workflow — the trim callback only carries
+        // mp4_url/duration so without this all motion_score / file_size /
+        // width / height / black_bars / thumbnail_url / scene_plan are lost.
+        mergePreserve(patch, body, FIELD_MAP);
+        // Backstops if body omitted these (defaults / pre-trim values)
+        if (patch.output_mp4_url == null) patch.output_mp4_url = stripDoubleSlash(incomingMp4);
+        if (patch.output_duration_seconds == null) patch.output_duration_seconds = reportedDuration;
+        if (patch.output_width == null) patch.output_width = 1080;
+        if (patch.output_height == null) patch.output_height = 1920;
         await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
         console.log(`[auto-trim] ${traceId} dispatched; awaiting trimmed callback`, { jobId, original_duration: reportedDuration, target_duration: targetDuration });
         return json({ ok: true, traceId, message: patch.status_message, auto_trim: "dispatched" });
@@ -456,20 +464,14 @@ Deno.serve(async (req) => {
       patch.rendered_at = new Date().toISOString();
       patch.render_complete_at = new Date().toISOString();
       patch.render_heartbeat_at = new Date().toISOString();
-      if (body.mp4_url) patch.output_mp4_url = String(body.mp4_url);
-      if (body.duration != null) patch.output_duration_seconds = Number(body.duration);
-      if (body.file_size != null) patch.output_file_size_bytes = Number(body.file_size);
-      // NEW: viral-vertical worker contract
-      // The cinematic renderer is hard-coded to 9:16 1080×1920. If the worker
-      // payload omits these fields we default rather than leave NULL — leaving
-      // them NULL causes the post-render QA gate to fail aspect_ratio_9_16.
-      patch.output_width = body.width != null ? Number(body.width) : 1080;
-      patch.output_height = body.height != null ? Number(body.height) : 1920;
-      if (body.motion_score != null) patch.motion_score = Number(body.motion_score);
-      if (body.black_bars != null) patch.output_black_bars = Boolean(body.black_bars);
-      if (body.thumbnail_url) patch.output_thumbnail_url = String(body.thumbnail_url);
-      // v2: persist structured scene plan for QA scoring
-      if (Array.isArray(body.scene_plan)) patch.scene_plan = body.scene_plan;
+      // Preserve-merge: only writes non-null fields, never clobbers existing
+      // values with NULL. Critical for the trim-callback path which omits
+      // motion_score / file_size / width / height / black_bars / thumbnail_url
+      // / scene_plan that were already captured on the original render.
+      mergePreserve(patch, body, FIELD_MAP);
+      // Aspect defaults only when neither the payload NOR the prior row has it.
+      if (patch.output_width == null && job.output_width == null) patch.output_width = 1080;
+      if (patch.output_height == null && job.output_height == null) patch.output_height = 1920;
       patch.error_message = null;
       patch.status_message = "render complete — validating output";
     } else if (status === "failed") {
