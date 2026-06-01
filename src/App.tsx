@@ -1844,6 +1844,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pdp-conversion"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PdpConversionDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="profit-engine/trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
