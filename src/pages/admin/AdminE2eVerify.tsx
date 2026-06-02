@@ -409,17 +409,56 @@ export default function AdminE2eVerify() {
               <div className="text-sm font-semibold mb-2">Step trace ({result.steps?.length ?? 0})</div>
               <table className="w-full text-xs">
                 <thead><tr className="text-left">
-                  <th>Step</th><th>Status</th><th>ms</th><th>Started</th>
+                  <th>Step</th><th>Status</th><th>ms</th><th>HTTP</th><th>Detail</th>
                 </tr></thead>
                 <tbody>
-                  {result.steps?.map((s, i) => (
-                    <tr key={i} className="border-t">
-                      <td className="py-1">{s.name}</td>
-                      <td><Badge variant={s.status === "ok" ? "default" : "destructive"}>{s.status}</Badge></td>
-                      <td className="font-mono">{s.ms}</td>
-                      <td className="font-mono">{s.started_at}</td>
-                    </tr>
-                  ))}
+                  {result.steps?.map((s, i) => {
+                    const d = (s.detail ?? {}) as Record<string, any>;
+                    const isDispatch = s.name === "dispatch";
+                    const httpStatus = isDispatch
+                      ? (d.gh_http_status ?? d.status ?? null)
+                      : (d.status ?? null);
+                    const errBody = isDispatch ? d.gh_error_body : null;
+                    const errMsg = isDispatch
+                      ? (d.gh_error_message ?? d.gh_error_code ?? null)
+                      : null;
+                    return (
+                      <tr key={i} className="border-t align-top">
+                        <td className="py-1">{s.name}</td>
+                        <td><Badge variant={s.status === "ok" ? "default" : "destructive"}>{s.status}</Badge></td>
+                        <td className="font-mono">{s.ms}</td>
+                        <td className="font-mono">
+                          {httpStatus != null ? (
+                            <Badge variant={Number(httpStatus) >= 200 && Number(httpStatus) < 300 ? "default" : "destructive"}>
+                              {String(httpStatus)}
+                            </Badge>
+                          ) : "—"}
+                        </td>
+                        <td className="font-mono text-[11px] max-w-md break-words">
+                          {isDispatch ? (
+                            <div className="space-y-0.5">
+                              <div>
+                                <span className="text-muted-foreground">repo:</span> {d.repo ?? "—"}
+                                {d.workflow ? <> · <span className="text-muted-foreground">wf:</span> {d.workflow}@{d.ref ?? "—"}</> : null}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">dispatched:</span> {String(d.dispatched ?? "—")}
+                                {d.runs_url ? <> · <a className="underline" href={d.runs_url} target="_blank" rel="noreferrer">runs</a></> : null}
+                              </div>
+                              {(errMsg || errBody) && (
+                                <div className="text-destructive whitespace-pre-wrap">
+                                  {errMsg ? <div>{errMsg}</div> : null}
+                                  {errBody ? <pre className="mt-1 max-h-32 overflow-auto bg-destructive/10 p-1 rounded">{errBody}</pre> : null}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">{s.started_at}</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <details className="mt-3">
