@@ -32,10 +32,83 @@ type JobRow = {
   motion_diversity_v2?: number | null;
   transition_count?: number | null;
   publish_blocked_reason?: string | null;
+  // Step 4 resolver + failure-reason fields
+  vo_url?: string | null;
+  preflight_reasons?: string[] | null;
+  hard_reject_reasons?: string[] | null;
+  admin_review_reason?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
 const TERMINAL_BAD = new Set(["failed", "cancelled"]);
+// A concept is previewable as soon as an MP4 exists and it's reached one of
+// these states — even if sibling concepts are still rendering or have failed.
+const PREVIEWABLE_STATES = new Set([
+  "rendered",
+  "render_complete",
+  "awaiting_approval",
+  "approved",
+  "pinterest_uploaded",
+  "published",
+]);
+// States in which a concept is still "in flight" — eligible for the 12-min
+// timeout sweep that marks stuck concepts needs_admin_review.
+const IN_FLIGHT_STATES = new Set([
+  "pending",
+  "preparing",
+  "prepared",
+  "queue_waiting",
+  "render_queued",
+  "rendering",
+]);
+const STUCK_TIMEOUT_MS = 12 * 60 * 1000;
+
+function isPreviewable(j: JobRow): boolean {
+  return !!j.output_mp4_url && PREVIEWABLE_STATES.has(j.status);
+}
+
+// Produce a user-facing failure message that reflects the ACTUAL reason.
+// Only blame voice synthesis when vo_url is truly missing. Surface
+// product_out_of_stock / preparation_gate / preflight failures verbatim.
+function failureMessage(j: JobRow): string {
+  const reasons: string[] = [
+    ...(Array.isArray(j.preflight_reasons) ? j.preflight_reasons : []),
+    ...(Array.isArray(j.hard_reject_reasons) ? j.hard_reject_reasons : []),
+    ...(j.admin_review_reason ? [j.admin_review_reason] : []),
+  ];
+  const lc = reasons.map((r) => String(r).toLowerCase());
+  const msg = (j.error_message || j.status_message || "").toLowerCase();
+
+  if (j.status === "needs_admin_review" && (lc.some((r) => r.includes("timeout")) || msg.includes("timeout"))) {
+    return "Timed out after 12 min — needs admin review";
+  }
+  if (lc.some((r) => r.includes("product_out_of_stock"))) {
+    return "Product is out of stock (enable the out-of-stock override to render anyway)";
+  }
+  if (lc.some((r) => r.includes("product_inactive"))) {
+    return "Product is inactive (enable the out-of-stock override to render anyway)";
+  }
+  if (lc.some((r) => r.includes("preparation_gate") || r.includes("preflight"))) {
+    const detail = reasons.find((r) => /preflight:/i.test(String(r))) || reasons[0];
+    return `Preparation gate failed${detail ? ` — ${detail}` : ""}`;
+  }
+  if (lc.some((r) => r.includes("budget_24h_exhausted"))) {
+    return "24h render budget exhausted (enable the budget override to retry)";
+  }
+  if (lc.some((r) => r.includes("motion_engine"))) {
+    return "Motion engine failed to produce a valid storyboard";
+  }
+  if (lc.some((r) => r.includes("remotion_render_failed"))) {
+    return "Remotion render failed";
+  }
+  // Only claim voice failure when vo_url is actually missing.
+  if (!j.vo_url && (msg.includes("voice") || lc.some((r) => r.includes("voice")))) {
+    return "Voice synthesis failed — retry with the narrator fallback voice";
+  }
+  return j.error_message || j.status_message || "Render failed";
+}
 
 // ============================================================
 // Director run diagnostics — captured per-concept so the
@@ -109,6 +182,8 @@ async function invokeWithDiag(fn: string, body: Record<string, unknown>): Promis
 function statusLabel(s: string) {
   if (TERMINAL_OK.has(s)) return "Ready";
   if (TERMINAL_BAD.has(s)) return "Failed";
+  if (s === "needs_admin_review") return "Needs admin review";
+  if (s === "awaiting_approval" || s === "approved") return "Ready";
   if (s === "rendering") return "Rendering…";
   if (s === "render_queued") return "In queue";
   if (s === "queue_waiting") return "Queued — waiting for render slot";
@@ -148,18 +223,67 @@ export default function PinterestAdStudio() {
   useEffect(() => {
     if (jobs.length === 0) return;
     const ids = jobs.map(j => j.id);
-    const pending = jobs.some(j => !TERMINAL_OK.has(j.status) && !TERMINAL_BAD.has(j.status));
+    const pending = jobs.some(
+      (j) => !TERMINAL_OK.has(j.status) && !TERMINAL_BAD.has(j.status) && j.status !== "needs_admin_review",
+    );
     if (!pending) return;
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("cinematic_ad_jobs")
-        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason")
+        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, created_at, updated_at")
         .in("id", ids);
       if (data) setJobs(data as JobRow[]);
       setPollKey(k => k + 1);
     }, 5000);
     return () => clearTimeout(t);
   }, [jobs, pollKey]);
+
+  // 12-min stuck-concept timeout sweep. Marks any job that has been
+  // in preparing/render_queued/rendering/queue_waiting for >12 min as
+  // needs_admin_review with a `timeout` reason. NEVER blocks the preview —
+  // the previewable resolver still picks the first ready sibling.
+  useEffect(() => {
+    if (jobs.length === 0) return;
+    const timer = setInterval(async () => {
+      const now = Date.now();
+      const stuck = jobs.filter((j) => {
+        if (!IN_FLIGHT_STATES.has(j.status)) return false;
+        const startIso = j.created_at || j.updated_at;
+        if (!startIso) return false;
+        const startMs = Date.parse(startIso);
+        if (!Number.isFinite(startMs)) return false;
+        return now - startMs > STUCK_TIMEOUT_MS;
+      });
+      if (stuck.length === 0) return;
+      for (const j of stuck) {
+        const { error } = await supabase
+          .from("cinematic_ad_jobs")
+          .update({
+            status: "needs_admin_review",
+            admin_review_reason: "timeout_after_12m",
+            error_message: j.error_message ?? "timeout_after_12m",
+            status_message: "timed out after 12 min — auto-escalated to admin review",
+          })
+          .eq("id", j.id);
+        if (!error) {
+          setJobs((prev) =>
+            prev.map((p) =>
+              p.id === j.id
+                ? {
+                    ...p,
+                    status: "needs_admin_review",
+                    admin_review_reason: "timeout_after_12m",
+                    error_message: p.error_message ?? "timeout_after_12m",
+                    status_message: "timed out after 12 min — auto-escalated to admin review",
+                  }
+                : p,
+            ),
+          );
+        }
+      }
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [jobs]);
 
   async function startOne(opts: { hookVariant: string; voiceStyle: string; preset: string; archetype?: ArchetypeId; runId?: string | null }) {
     const res = await startOneWithDiag(opts);
@@ -447,11 +571,20 @@ export default function PinterestAdStudio() {
     finally { setCreating(false); }
   }
 
+  // Pick the first previewable concept (any of rendered / awaiting_approval /
+  // approved / pinterest_uploaded / published) — DO NOT wait for all siblings.
+  // Sort by QA score so the "best available so far" wins.
   const winner = useMemo(() => {
-    const ready = jobs.filter(j => TERMINAL_OK.has(j.status) && j.output_mp4_url);
+    const ready = jobs.filter(isPreviewable);
     if (ready.length === 0) return null;
     return ready.slice().sort((a, b) => (b.qa_composite_score ?? 0) - (a.qa_composite_score ?? 0))[0];
   }, [jobs]);
+
+  const readyCount = useMemo(() => jobs.filter(isPreviewable).length, [jobs]);
+  const allDone = jobs.length > 0 && jobs.every((j) =>
+    isPreviewable(j) || TERMINAL_BAD.has(j.status) || j.status === "needs_admin_review",
+  );
+  const partialPreview = winner && jobs.length > 1 && !allDone;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -657,14 +790,21 @@ export default function PinterestAdStudio() {
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base">Step 4 · Preview & publish</CardTitle>
             {winner && jobs.length > 1 && (
-              <Badge variant="default" className="gap-1"><Trophy className="w-3 h-3" />Winner auto-selected</Badge>
+              partialPreview ? (
+                <Badge variant="secondary" className="gap-1">
+                  <Trophy className="w-3 h-3" />
+                  {readyCount}/{jobs.length} rendered — previewing best available
+                </Badge>
+              ) : (
+                <Badge variant="default" className="gap-1"><Trophy className="w-3 h-3" />Winner auto-selected</Badge>
+              )
             )}
           </CardHeader>
           <CardContent>
             <div className={`grid gap-4 ${jobs.length > 1 ? "md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1"}`}>
               {jobs.map(j => {
-                const ready = TERMINAL_OK.has(j.status) && j.output_mp4_url;
-                const failed = TERMINAL_BAD.has(j.status);
+                const ready = isPreviewable(j);
+                const failed = TERMINAL_BAD.has(j.status) || j.status === "needs_admin_review";
                 const isWinner = winner?.id === j.id && jobs.length > 1;
                 const archLabel = j.archetype ? getArchetype(j.archetype).shortLabel : (j.hook_variant ?? "—");
                 return (
@@ -673,7 +813,7 @@ export default function PinterestAdStudio() {
                       {ready ? (
                         <video src={j.output_mp4_url!} poster={j.output_thumbnail_url ?? undefined} controls className="w-full h-full object-cover" />
                       ) : failed ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-destructive text-xs p-3 text-center">{j.error_message ?? "Render failed"}</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-destructive text-xs p-3 text-center">{failureMessage(j)}</div>
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin" />
