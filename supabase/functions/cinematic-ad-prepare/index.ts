@@ -913,7 +913,12 @@ const _handlerInner = async (req: Request): Promise<Response> => {
 
   if (regenerate === "copy" || regenerate === "hook") {
     try {
-      const kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      let kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      const san = sanitizeCreativeKit(kit);
+      if (san.changed) {
+        console.log(`[prepare] ${traceId} sanitized regen kit job=${jobId}`, san.log);
+      }
+      kit = san.kit;
       const topHook = kit.hook_variants[0];
       const topCta = kit.cta_variants[0];
       const { data: u } = await admin.from("cinematic_ad_jobs").update({
