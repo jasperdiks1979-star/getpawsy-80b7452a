@@ -14594,6 +14594,7 @@ export type Database = {
           canonical_product_id: string | null
           category: string | null
           cj_product_id: string | null
+          cj_variant_id: string | null
           cluster_primary: string | null
           cluster_secondary: string | null
           compare_at_price: number | null
@@ -14619,10 +14620,15 @@ export type Database = {
           image_alt_text: string | null
           image_url: string | null
           images: string[] | null
+          inventory_manual_block: boolean
+          inventory_source: string | null
           is_active: boolean | null
           is_duplicate: boolean
           key_feature: string | null
           keyword_cluster: string | null
+          last_inventory_sync_at: string | null
+          last_inventory_sync_error: string | null
+          last_inventory_sync_status: string | null
           last_stock_sync_at: string | null
           meta_description: string | null
           meta_title: string | null
@@ -14658,6 +14664,7 @@ export type Database = {
           sku: string | null
           slug: string | null
           slug_suggestion: string | null
+          source_url: string | null
           stock: number | null
           stock_source: string | null
           stock_sync_error: string | null
@@ -14666,6 +14673,7 @@ export type Database = {
           supplier_warehouse: string | null
           title_optimized_at: string | null
           updated_at: string
+          variant_stock: Json | null
           variants: Json | null
           weight: number | null
         }
@@ -14683,6 +14691,7 @@ export type Database = {
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
+          cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
@@ -14708,10 +14717,15 @@ export type Database = {
           image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
+          inventory_manual_block?: boolean
+          inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
           key_feature?: string | null
           keyword_cluster?: string | null
+          last_inventory_sync_at?: string | null
+          last_inventory_sync_error?: string | null
+          last_inventory_sync_status?: string | null
           last_stock_sync_at?: string | null
           meta_description?: string | null
           meta_title?: string | null
@@ -14747,6 +14761,7 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           slug_suggestion?: string | null
+          source_url?: string | null
           stock?: number | null
           stock_source?: string | null
           stock_sync_error?: string | null
@@ -14755,6 +14770,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          variant_stock?: Json | null
           variants?: Json | null
           weight?: number | null
         }
@@ -14772,6 +14788,7 @@ export type Database = {
           canonical_product_id?: string | null
           category?: string | null
           cj_product_id?: string | null
+          cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
@@ -14797,10 +14814,15 @@ export type Database = {
           image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
+          inventory_manual_block?: boolean
+          inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
           key_feature?: string | null
           keyword_cluster?: string | null
+          last_inventory_sync_at?: string | null
+          last_inventory_sync_error?: string | null
+          last_inventory_sync_status?: string | null
           last_stock_sync_at?: string | null
           meta_description?: string | null
           meta_title?: string | null
@@ -14836,6 +14858,7 @@ export type Database = {
           sku?: string | null
           slug?: string | null
           slug_suggestion?: string | null
+          source_url?: string | null
           stock?: number | null
           stock_source?: string | null
           stock_sync_error?: string | null
@@ -14844,6 +14867,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          variant_stock?: Json | null
           variants?: Json | null
           weight?: number | null
         }
