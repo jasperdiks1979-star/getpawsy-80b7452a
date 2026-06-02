@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
 import { AD_STYLES, type AdStyleId, getAdStyle, ARCHETYPES, getArchetype, type ArchetypeId } from "@/components/admin/pinterest-ad-studio/adStyles";
+import QueueDiagnosticsPanel from "@/components/admin/pinterest-ad-studio/QueueDiagnosticsPanel";
 
 type JobRow = {
   id: string;
