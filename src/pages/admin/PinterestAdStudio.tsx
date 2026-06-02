@@ -392,8 +392,13 @@ export default function PinterestAdStudio() {
           description: `Last CJ inventory sync: ${label}. Refreshing now — retry after it finishes.`,
         });
         try {
+          const { data: row } = await supabase.from("products")
+            .select("id").eq("slug", product.slug).maybeSingle();
+          const pid = (row as any)?.id;
           await supabase.functions.invoke("cj-inventory-sync", {
-            body: { dry_run: false, product_ids: [product.slug], max_age_hours: 0 },
+            body: pid
+              ? { dry_run: false, product_ids: [pid], max_age_hours: 0 }
+              : { dry_run: false, max_age_hours: 0 },
           });
           const { data: fresh } = await supabase.from("products")
             .select("slug, name, image_url, images, price, category, stock, is_active, last_inventory_sync_at")
