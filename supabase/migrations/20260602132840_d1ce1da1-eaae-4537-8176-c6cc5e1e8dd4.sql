@@ -1,0 +1,1 @@
+ALTER TABLE public.cinematic_ad_jobs ADD COLUMN IF NOT EXISTS creative_kit_diagnostics jsonb;

@@ -1776,6 +1776,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_kit_diagnostics: Json | null
           creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null
@@ -2057,6 +2058,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_kit_diagnostics?: Json | null
           creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
@@ -2338,6 +2340,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creative_category?: string | null
+          creative_kit_diagnostics?: Json | null
           creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
@@ -19260,6 +19263,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           creative_category: string | null
+          creative_kit_diagnostics: Json | null
           creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null

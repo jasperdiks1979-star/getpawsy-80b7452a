@@ -869,6 +869,25 @@ export default function PinterestAdStudio() {
                           <span><code className="text-[10px]">{d.prepare.fn}</code> · HTTP {d.prepare.httpStatus ?? "—"} · {d.prepare.ok ? "ok" : (d.prepare.errorMessage ?? "failed")}{d.prepare.traceId ? ` · trace ${d.prepare.traceId}` : ""}</span>
                         </div>
                       )}
+                      {d.prepare?.responseBody && (() => {
+                        let kd: any = null;
+                        try { kd = JSON.parse(d.prepare.responseBody).kit_diagnostics ?? null; } catch { /* noop */ }
+                        if (!kd) return null;
+                        const src = String(kd.creative_kit_response_status ?? "unknown");
+                        const sceneCount = Number(kd.storyboard_scene_count ?? 0);
+                        const sceneTone =
+                          src === "fallback" ? "border-amber-400/60 text-amber-700"
+                          : src === "ai" ? "border-emerald-500/40 text-emerald-700"
+                          : "border-border text-muted-foreground";
+                        return (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            <Badge variant="outline" className="text-[10px]">images: {kd.image_count ?? "—"}</Badge>
+                            <Badge variant="outline" className="text-[10px]">videos: {kd.video_count ?? 0}</Badge>
+                            <Badge variant="outline" className={`text-[10px] ${sceneTone}`}>storyboard: {sceneCount} scenes</Badge>
+                            <Badge variant="outline" className={`text-[10px] ${sceneTone}`}>kit: {src}{kd.retry_reason ? ` (${kd.retry_reason})` : ""}</Badge>
+                          </div>
+                        );
+                      })()}
                       {d.queue && (
                         <div className="grid grid-cols-[110px_1fr] gap-x-2">
                           <span className="text-muted-foreground">queue:</span>
