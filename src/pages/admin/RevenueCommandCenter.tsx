@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, DollarSign, TrendingUp, Target, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, DollarSign, TrendingUp, Target, Zap, Flame, Brain, Play } from "lucide-react";
+import { toast } from "sonner";
 
 type OrderRow = {
   id: string;
@@ -34,6 +36,33 @@ type Recommendation = {
   created_at: string;
 };
 
+type HotProduct = {
+  product_id: string;
+  hot_score: number | null;
+  intent_score: number | null;
+  viral_score: number | null;
+  margin_score: number | null;
+  pinterest_fit_score: number | null;
+  revenue_30d: number | null;
+  units_30d: number | null;
+  recommended_action: string | null;
+  auto_promoted: boolean | null;
+  signals: any;
+};
+
+type ImprovementRun = {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  revenue_7d: number | null;
+  profit_7d: number | null;
+  winners_count: number | null;
+  losers_count: number | null;
+  actions_taken: number | null;
+  pattern_weights_updated: number | null;
+};
+
 const PAID_STATUSES = ["paid", "completed", "fulfilled", "shipped", "delivered"];
 
 function fmtMoney(n: number): string {
@@ -52,13 +81,17 @@ export default function RevenueCommandCenter() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [pins, setPins] = useState<PinRow[]>([]);
   const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [hot, setHot] = useState<HotProduct[]>([]);
+  const [runs, setRuns] = useState<ImprovementRun[]>([]);
+  const [running, setRunning] = useState<"hot" | "loop" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const since = daysAgoIso(30);
-        const [ordersRes, pinsRes, recsRes] = await Promise.all([
+        const today = new Date().toISOString().slice(0, 10);
+        const [ordersRes, pinsRes, recsRes, hotRes, runsRes] = await Promise.all([
           supabase
             .from("orders")
             .select("id,total_amount,status,created_at,items")
@@ -77,12 +110,25 @@ export default function RevenueCommandCenter() {
             .in("status", ["open", "pending", "new"])
             .order("created_at", { ascending: false })
             .limit(10),
+          supabase
+            .from("hot_product_scores")
+            .select("product_id,hot_score,intent_score,viral_score,margin_score,pinterest_fit_score,revenue_30d,units_30d,recommended_action,auto_promoted,signals")
+            .eq("day", today)
+            .order("hot_score", { ascending: false })
+            .limit(20),
+          supabase
+            .from("self_improvement_runs")
+            .select("id,started_at,finished_at,status,revenue_7d,profit_7d,winners_count,losers_count,actions_taken,pattern_weights_updated")
+            .order("started_at", { ascending: false })
+            .limit(5),
         ]);
         if (cancelled) return;
         if (ordersRes.error) throw ordersRes.error;
         setOrders((ordersRes.data ?? []) as OrderRow[]);
         setPins((pinsRes.data ?? []) as PinRow[]);
         setRecs((recsRes.data ?? []) as Recommendation[]);
+        setHot((hotRes.data ?? []) as HotProduct[]);
+        setRuns((runsRes.data ?? []) as ImprovementRun[]);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message || "Failed to load revenue data");
       } finally {
@@ -140,6 +186,24 @@ export default function RevenueCommandCenter() {
   const totalPinImpressions = pins.reduce((a, p) => a + Number(p.impressions || 0), 0);
   const totalPinClicks = pins.reduce((a, p) => a + Number(p.clicks || 0), 0);
   const totalPinSaves = pins.reduce((a, p) => a + Number(p.saves || 0), 0);
+
+  async function runEngine(kind: "hot" | "loop") {
+    setRunning(kind);
+    try {
+      const fn = kind === "hot" ? "hot-product-engine" : "self-improvement-loop";
+      const { data, error } = await supabase.functions.invoke(fn, { body: {} });
+      if (error) throw error;
+      toast.success(kind === "hot"
+        ? `Hot Product Engine: scored ${data?.scored ?? 0}, promoted ${data?.promoted ?? 0}`
+        : `Self-Improvement Loop: ${data?.actions ?? 0} actions, ${data?.winners ?? 0}W/${data?.losers ?? 0}L`);
+      // refresh
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e: any) {
+      toast.error(e?.message || "Engine run failed");
+    } finally {
+      setRunning(null);
+    }
+  }
 
   return (
     <>
@@ -275,6 +339,94 @@ export default function RevenueCommandCenter() {
                 )}
               </CardContent>
             </Card>
+
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-500" /> Hot Products (today)
+                  </CardTitle>
+                  <Button size="sm" variant="outline" disabled={running === "hot"} onClick={() => runEngine("hot")}>
+                    {running === "hot" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                    <span className="ml-1">Run engine</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="px-4 py-2 text-xs text-muted-foreground border-b">
+                    Score ≥85 auto-promotes to Autopilot + V8 Cinematic + Creative Director.
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left border-b">
+                        <th className="p-2">Product</th>
+                        <th className="p-2 text-right">Score</th>
+                        <th className="p-2 text-right">Rev 30d</th>
+                        <th className="p-2 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hot.length === 0 ? (
+                        <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">No scores yet. Click "Run engine".</td></tr>
+                      ) : hot.map((h) => (
+                        <tr key={h.product_id} className="border-b last:border-b-0">
+                          <td className="p-2 truncate max-w-[220px]" title={h.signals?.name ?? ""}>
+                            {h.signals?.name ?? h.product_id.slice(0, 8)}
+                            {h.auto_promoted && <span className="ml-1 text-[10px] px-1 rounded bg-orange-500/20 text-orange-600">PROMOTED</span>}
+                          </td>
+                          <td className="p-2 text-right font-bold">{Number(h.hot_score ?? 0).toFixed(0)}</td>
+                          <td className="p-2 text-right">{fmtMoney(Number(h.revenue_30d ?? 0))}</td>
+                          <td className="p-2 text-right text-xs text-muted-foreground">{h.recommended_action ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-violet-500" /> Self-Improvement Loop
+                  </CardTitle>
+                  <Button size="sm" variant="outline" disabled={running === "loop"} onClick={() => runEngine("loop")}>
+                    {running === "loop" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                    <span className="ml-1">Run now</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="px-4 py-2 text-xs text-muted-foreground border-b">
+                    Auto-pauses losers, boosts winners, retrains pattern weights, scales publishing.
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left border-b">
+                        <th className="p-2">Run</th>
+                        <th className="p-2 text-right">Rev 7d</th>
+                        <th className="p-2 text-right">W/L</th>
+                        <th className="p-2 text-right">Actions</th>
+                        <th className="p-2 text-right">Patterns</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {runs.length === 0 ? (
+                        <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No runs yet.</td></tr>
+                      ) : runs.map((r) => (
+                        <tr key={r.id} className="border-b last:border-b-0">
+                          <td className="p-2 text-xs">
+                            {new Date(r.started_at).toLocaleString()}
+                            <span className={`ml-1 text-[10px] px-1 rounded ${r.status === "ok" ? "bg-emerald-500/20 text-emerald-600" : r.status === "error" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"}`}>{r.status}</span>
+                          </td>
+                          <td className="p-2 text-right">{fmtMoney(Number(r.revenue_7d ?? 0))}</td>
+                          <td className="p-2 text-right">{r.winners_count ?? 0}/{r.losers_count ?? 0}</td>
+                          <td className="p-2 text-right">{r.actions_taken ?? 0}</td>
+                          <td className="p-2 text-right">{r.pattern_weights_updated ?? 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </section>
           </>
         )}
       </div>
