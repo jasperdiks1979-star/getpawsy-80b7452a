@@ -3,6 +3,7 @@
 // Writes preflight_status ('pass'|'fail') + preflight_reasons[] back to the job row.
 // Admin-only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sanitizeCompliance } from "../_shared/copy-compliance-sanitizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -129,9 +130,27 @@ Deno.serve(async (req) => {
     if (mediaCount < 2) reasons.push("insufficient_media_assets");
 
     // Pinterest-safe copy
-    const copy = ((job.pin_title ?? "") + " " + (job.pin_description ?? "")).toLowerCase();
+    // First sanitize the persisted pin copy. If the shared sanitizer rewrites
+    // anything (e.g. "heal" → "comfort"), persist the cleaned values back to
+    // the row so downstream queue-render / publish / autopublish all see the
+    // compliant copy. Only THEN run the BANNED_COPY guard — so a single
+    // generation hiccup never blocks the whole run on banned_copy:heal.
+    const titleSan = sanitizeCompliance(job.pin_title ?? "");
+    const descSan = sanitizeCompliance(job.pin_description ?? "");
+    if (titleSan.changed || descSan.changed) {
+      await admin.from("cinematic_ad_jobs").update({
+        pin_title: titleSan.text,
+        pin_description: descSan.text,
+      }).eq("id", job.id);
+      (job as any).pin_title = titleSan.text;
+      (job as any).pin_description = descSan.text;
+      const all = [...titleSan.replacements, ...descSan.replacements]
+        .map((r) => `${r.from}→${r.to}`).join(", ");
+      console.log(`[preflight] ${traceId} sanitized copy job=${job.id} slug=${job.product_slug} changes=${all}`);
+    }
+    const copy = (((job as any).pin_title ?? "") + " " + ((job as any).pin_description ?? "")).toLowerCase();
     const banned = BANNED_COPY.filter((b) => copy.includes(b));
-    if (banned.length) reasons.push(`banned_copy:${banned.join("|")}`);
+    if (banned.length) reasons.push(`banned_copy_after_sanitize:${banned.join("|")}`);
 
     // Image URL reachable (cheap HEAD)
     if (imageUrl && !(await urlReachable(imageUrl))) reasons.push("primary_image_unreachable");
