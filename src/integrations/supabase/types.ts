@@ -5598,6 +5598,69 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_revenue_reports: {
+        Row: {
+          aov_30d: number
+          expected_revenue_impact: number
+          generated_at: string
+          id: string
+          losers: Json
+          model: string | null
+          opportunities: Json
+          orders_30d: number
+          profit_30d: number
+          raw_signals: Json
+          recommended_actions: Json
+          report_date: string
+          revenue_30d: number
+          revenue_7d: number
+          revenue_today: number
+          summary: string | null
+          trigger: string
+          winners: Json
+        }
+        Insert: {
+          aov_30d?: number
+          expected_revenue_impact?: number
+          generated_at?: string
+          id?: string
+          losers?: Json
+          model?: string | null
+          opportunities?: Json
+          orders_30d?: number
+          profit_30d?: number
+          raw_signals?: Json
+          recommended_actions?: Json
+          report_date?: string
+          revenue_30d?: number
+          revenue_7d?: number
+          revenue_today?: number
+          summary?: string | null
+          trigger?: string
+          winners?: Json
+        }
+        Update: {
+          aov_30d?: number
+          expected_revenue_impact?: number
+          generated_at?: string
+          id?: string
+          losers?: Json
+          model?: string | null
+          opportunities?: Json
+          orders_30d?: number
+          profit_30d?: number
+          raw_signals?: Json
+          recommended_actions?: Json
+          report_date?: string
+          revenue_30d?: number
+          revenue_7d?: number
+          revenue_today?: number
+          summary?: string | null
+          trigger?: string
+          winners?: Json
+        }
+        Relationships: []
+      }
       frontend_error_logs: {
         Row: {
           component_name: string | null

@@ -63,6 +63,16 @@ type ImprovementRun = {
   pattern_weights_updated: number | null;
 };
 
+type ExecReport = {
+  id: string;
+  report_date: string;
+  generated_at: string;
+  summary: string | null;
+  recommended_actions: any;
+  expected_revenue_impact: number | null;
+  model: string | null;
+};
+
 const PAID_STATUSES = ["paid", "completed", "fulfilled", "shipped", "delivered"];
 
 function fmtMoney(n: number): string {
@@ -84,6 +94,8 @@ export default function RevenueCommandCenter() {
   const [hot, setHot] = useState<HotProduct[]>([]);
   const [runs, setRuns] = useState<ImprovementRun[]>([]);
   const [running, setRunning] = useState<"hot" | "loop" | null>(null);
+  const [report, setReport] = useState<ExecReport | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,7 +103,7 @@ export default function RevenueCommandCenter() {
       try {
         const since = daysAgoIso(30);
         const today = new Date().toISOString().slice(0, 10);
-        const [ordersRes, pinsRes, recsRes, hotRes, runsRes] = await Promise.all([
+        const [ordersRes, pinsRes, recsRes, hotRes, runsRes, reportRes] = await Promise.all([
           supabase
             .from("orders")
             .select("id,total_amount,status,created_at,items")
@@ -121,6 +133,12 @@ export default function RevenueCommandCenter() {
             .select("id,started_at,finished_at,status,revenue_7d,profit_7d,winners_count,losers_count,actions_taken,pattern_weights_updated")
             .order("started_at", { ascending: false })
             .limit(5),
+          supabase
+            .from("executive_revenue_reports")
+            .select("id,report_date,generated_at,summary,recommended_actions,expected_revenue_impact,model")
+            .order("report_date", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ]);
         if (cancelled) return;
         if (ordersRes.error) throw ordersRes.error;
@@ -129,6 +147,7 @@ export default function RevenueCommandCenter() {
         setRecs((recsRes.data ?? []) as Recommendation[]);
         setHot((hotRes.data ?? []) as HotProduct[]);
         setRuns((runsRes.data ?? []) as ImprovementRun[]);
+        setReport((reportRes.data ?? null) as ExecReport | null);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message || "Failed to load revenue data");
       } finally {
@@ -205,6 +224,22 @@ export default function RevenueCommandCenter() {
     }
   }
 
+  async function generateReport() {
+    setReportBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("executive-revenue-report", {
+        body: { trigger: "manual" },
+      });
+      if (error) throw error;
+      toast.success(`Executive report ready — ${data?.actions ?? 0} actions, ~$${Number(data?.expected_revenue_impact ?? 0).toFixed(0)} impact`);
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e: any) {
+      toast.error(e?.message || "Report generation failed");
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   return (
     <>
       <Helmet>
@@ -235,6 +270,54 @@ export default function RevenueCommandCenter() {
               <Stat label="Last 30 days" value={fmtMoney(revenue30d)} icon={<Target className="h-4 w-4" />} />
               <Stat label={`AOV (${orders30d} orders)`} value={fmtMoney(aov30d)} icon={<Zap className="h-4 w-4" />} />
             </section>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" /> Executive AI Report
+                  {report?.report_date && (
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      {report.report_date} · {report.model ?? "heuristic"}
+                    </span>
+                  )}
+                </CardTitle>
+                <Button size="sm" variant="outline" disabled={reportBusy} onClick={generateReport}>
+                  {reportBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                  <span className="ml-1">Generate now</span>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {!report ? (
+                  <p className="text-sm text-muted-foreground">
+                    No report yet. Auto-runs daily at 07:15 UTC, or click "Generate now".
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{report.summary}</p>
+                    {Array.isArray(report.recommended_actions) && report.recommended_actions.length > 0 && (
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                          Recommended actions · Expected impact {fmtMoney(Number(report.expected_revenue_impact ?? 0))}
+                        </div>
+                        <ul className="space-y-2">
+                          {report.recommended_actions.map((a: any, i: number) => (
+                            <li key={i} className="text-sm border rounded p-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium">{a.action}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  P{a.priority ?? "?"} · {fmtMoney(Number(a.expected_impact_usd ?? 0))}
+                                </span>
+                              </div>
+                              {a.why && <div className="text-xs text-muted-foreground mt-1">{a.why}</div>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>

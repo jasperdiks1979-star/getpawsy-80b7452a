@@ -2643,6 +2643,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="revenue-engine"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueCommandCenter />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="tiktok-automation"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
