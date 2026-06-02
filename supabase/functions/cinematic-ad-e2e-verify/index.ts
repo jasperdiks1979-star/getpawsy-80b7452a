@@ -200,11 +200,11 @@ Deno.serve(async (req) => {
     while (Date.now() < renderDeadline) {
       const { data: row } = await admin
         .from("cinematic_ad_jobs")
-        .select("output_mp4_url, render_completed_at, status, render_log")
+        .select("output_mp4_url, render_complete_at, status, render_log")
         .eq("id", job_id).maybeSingle();
       if (row?.output_mp4_url) {
         output_mp4_url = row.output_mp4_url;
-        render_completed_at = row.render_completed_at;
+        render_completed_at = row.render_complete_at;
         render_log_tail = Array.isArray(row.render_log) ? row.render_log.slice(-5) : null;
         break;
       }
