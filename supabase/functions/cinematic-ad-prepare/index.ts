@@ -1274,6 +1274,14 @@ const _handlerInner = async (req: Request): Promise<Response> => {
       vo_error: voError,
       job: updated,
       media_warnings: mediaWarnings,
+      kit_diagnostics: {
+        image_count: Math.max(1, productImages.length),
+        video_count: 0,
+        storyboard_scene_count: kit.storyboard.length,
+        creative_kit_response_status: kit.diagnostics?.source ?? "ai",
+        upstream_status: kit.diagnostics?.upstream_status ?? null,
+        retry_reason: kit.diagnostics?.retry_reason ?? null,
+      },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
