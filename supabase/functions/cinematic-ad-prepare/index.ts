@@ -1117,6 +1117,15 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     // Hard-fail on AI credit / rate-limit / auth errors so we never persist
     // a broken job with storyboard=[].
     let kit: CreativeKit;
+    console.log("[prepare] creative-kit.start", {
+      traceId, jobId,
+      product_id: product.id ?? null,
+      product_slug,
+      concept_name: directorArchetype ?? hook_variant ?? null,
+      image_count: Math.max(1, productImages.length),
+      video_count: 0,
+      prompt_used: "creative-kit.v1",
+    });
     try {
       kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
       // Compliance sanitizer — strip banned medical/efficacy claims
@@ -1137,6 +1146,7 @@ const _handlerInner = async (req: Request): Promise<Response> => {
             ? "AI credits exhausted on Lovable workspace — top up at Settings → Workspace → Usage"
             : `AI gateway ${status || "error"}: ${e?.message ?? "unknown"}`,
         approved_for_render: false,
+        creative_kit_diagnostics: { source: "fallback", scene_count: 0, error_message: e?.message ?? String(e), upstream_status: status, retry_reason: code },
       }).eq("id", jobId);
       return json(200, {
         ok: false, recoverable: false, fallback_used: false,
@@ -1146,21 +1156,31 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         traceId, job_id: jobId,
       });
     }
-    if (!Array.isArray(kit.storyboard) || kit.storyboard.length === 0) {
-      console.error("[prepare] refusing to persist empty storyboard");
-      await admin.from("cinematic_ad_jobs").update({
-        status: "concept_failed",
-        status_message: "creative kit returned empty storyboard — not persisted",
-        approved_for_render: false,
-      }).eq("id", jobId);
-      return json(200, {
-        ok: false, recoverable: false, fallback_used: false,
-        concept_status: "concept_failed",
-        error_code: "EMPTY_STORYBOARD", step: "creative-kit.validate",
-        message: "creative kit returned empty storyboard",
-        traceId, job_id: jobId,
+    // Safety net: storyboard must NEVER be empty after this point. The shared
+    // creative-kit module already falls back to a 6-scene deterministic
+    // storyboard, so this branch is defense-in-depth.
+    if (!Array.isArray(kit.storyboard) || kit.storyboard.length < 6) {
+      console.warn("[prepare] storyboard short or empty — injecting safety-net 6-scene fallback", {
+        traceId, jobId, scene_count: Array.isArray(kit.storyboard) ? kit.storyboard.length : 0,
       });
+      kit = {
+        ...kit,
+        storyboard: buildFallbackStoryboard(productName, product_slug),
+        diagnostics: {
+          source: "fallback",
+          scene_count: 6,
+          retry_reason: kit.diagnostics?.retry_reason ?? "safety_net_injected",
+          upstream_status: kit.diagnostics?.upstream_status,
+          error_message: kit.diagnostics?.error_message,
+        },
+      };
     }
+    console.log("[prepare] creative-kit.done", {
+      traceId, jobId,
+      creative_kit_response_status: kit.diagnostics?.upstream_status ?? null,
+      storyboard_scene_count: kit.storyboard.length,
+      source: kit.diagnostics?.source ?? "ai",
+    });
     const topHook = kit.hook_variants[0];
     const topCta = kit.cta_variants[0];
 
