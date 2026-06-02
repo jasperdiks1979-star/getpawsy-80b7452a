@@ -111,10 +111,24 @@ Deno.serve(async (req) => {
     const r = await fetch(`${fnBase}/cinematic-ad-prepare`, {
       method: "POST",
       headers: adminHeaders,
-      body: JSON.stringify({ product_slug, hook_variant, variant_count: 1 }),
+      body: JSON.stringify({ product_slug, hook_variant, variant_count: 1, force_new: true }),
     });
     const j = await r.json().catch(() => ({}));
-    return { ok: r.ok && !!j?.job?.id, detail: { status: r.status, job_id: j?.job?.id, message: j?.message } };
+    const jid = j?.job?.id ?? j?.job_id ?? null;
+    return {
+      ok: r.ok && !!jid,
+      detail: {
+        status: r.status,
+        job_id: jid,
+        message: j?.message,
+        error_code: j?.error_code ?? null,
+        step: j?.step ?? null,
+        existing_job_id: j?.existing_job_id ?? null,
+        existing_status: j?.existing_status ?? null,
+        traceId: j?.traceId ?? null,
+        body: j,
+      },
+    };
   });
   const job_id: string | null = prepared?.job_id ?? null;
   if (!job_id) {
