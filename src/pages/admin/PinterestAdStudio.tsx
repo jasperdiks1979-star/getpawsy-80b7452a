@@ -715,6 +715,7 @@ export default function PinterestAdStudio() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <QueueDiagnosticsPanel />
           <p className="text-sm text-muted-foreground">
             The Self-Learning Director renders 4 fundamentally different concepts in parallel — Problem/Solution, Emotional, Premium Lifestyle and Viral Pattern Interrupt — each with a unique hook, voice, CTA, pacing and motion plan. Winner is auto-selected and Pinterest performance is fed back into the learning model so every new ad gets smarter.
           </p>
