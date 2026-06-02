@@ -1068,6 +1068,64 @@ Deno.serve(async (req) => {
       ...dominationRejects,
       ...(fidelityEnabled && !fidelityPassed ? [`product_fidelity(${fidelityScore ?? "?"}<${minFidelityScore})`, ...fidelityReasons.slice(0, 4)] : []),
     ];
+
+    // ── V8 Creative Domination: self-heal auto-regenerate ──────────────────
+    // Replace the legacy `single_image_render` hard-reject with an automatic
+    // multi-scene regenerate (up to MAX 3 attempts). Same self-heal triggers
+    // when the composite final_creative_score is below the domination floor.
+    // After 3 exhausted attempts we fall through to the normal reject path
+    // so the admin still gets visibility.
+    const V8_MAX_AUTO_REGEN = 3;
+    const regenCount = Number((job as any).regenerate_count ?? 0);
+    const singleImageOnly = hard_reject_reasons.length === 1 && hard_reject_reasons[0] === "single_image_render";
+    const finalScoreFailedOnly = dominationRejects.length === 1 && dominationRejects[0].startsWith("final_score");
+    const v8AutoRegenTrigger = (singleImageOnly || finalScoreFailedOnly) && regenCount < V8_MAX_AUTO_REGEN;
+    let v8AutoRegenDispatched: { ok: boolean; reason: string; attempt: number } | null = null;
+    if (v8AutoRegenTrigger) {
+      const reason = singleImageOnly
+        ? "v8_auto_regenerate_multiscene_version"
+        : `v8_low_final_score(${finalCreativeScore})`;
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-regenerate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SERVICE_KEY}`,
+            "x-render-secret": RENDER_WORKER_SECRET,
+          },
+          body: JSON.stringify({ job_id: jobId, reason, mode: "auto" }),
+        });
+        v8AutoRegenDispatched = { ok: r.ok, reason, attempt: regenCount + 1 };
+        // Strip the soft hard-reject so the job lands in regen, not rejected.
+        if (singleImageOnly) {
+          const idx = hard_reject_reasons.indexOf("single_image_render");
+          if (idx >= 0) hard_reject_reasons.splice(idx, 1);
+        }
+        // Strip the matching combined reject too.
+        for (let i = combinedRejects.length - 1; i >= 0; i--) {
+          if (
+            combinedRejects[i] === "hard:single_image_render" ||
+            combinedRejects[i].startsWith("final_score")
+          ) {
+            combinedRejects.splice(i, 1);
+          }
+        }
+        (patch as any).v8_auto_regenerate_dispatched_at = new Date().toISOString();
+        (patch as any).status_message =
+          `v8 self-heal: regenerate ${regenCount + 1}/${V8_MAX_AUTO_REGEN} (${reason})`;
+        console.log(`[validate] ${traceId} v8_auto_regen job=${jobId} attempt=${regenCount + 1} reason=${reason} ok=${r.ok}`);
+      } catch (e) {
+        console.warn(`[validate] ${traceId} v8_auto_regen_failed`, e);
+      }
+    }
+    (report as any).v8_self_heal = {
+      enabled: true,
+      attempts_used: regenCount,
+      max_attempts: V8_MAX_AUTO_REGEN,
+      dispatched: v8AutoRegenDispatched,
+      single_image_softened: singleImageOnly && v8AutoRegenDispatched?.ok,
+    };
+
     if (combinedRejects.length > 0 && (job.status === "awaiting_approval" || job.status === "publishable" || job.status === "approved" || job.status === "completed" || job.status === "render_complete")) {
       patch.status = "creative_rejected";
       patch.status_message = `creative rejected: ${combinedRejects.slice(0, 3).join(" ; ")}`;
