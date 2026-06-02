@@ -734,7 +734,14 @@ const _handlerInner = async (req: Request): Promise<Response> => {
 
   console.log("[cinematic-ad-prepare]", traceId, { product_slug, found: !!product, prodErr: prodErr?.message });
   if (!product?.image_url) {
-    return json(404, { ok: false, traceId, message: `product not found or has no image_url: ${product_slug}${prodErr ? ` (${prodErr.message})` : ""}` });
+    console.error("[prepare] PREPARE_FAILED_PRODUCT_LOOKUP", traceId, { product_slug, prodErr: prodErr?.message, found: !!product, hasImage: !!product?.image_url });
+    return json(404, {
+      ok: false, traceId,
+      error_code: "PREPARE_FAILED_PRODUCT_LOOKUP",
+      step: "products_public.select",
+      message: `product not found or has no image_url: ${product_slug}${prodErr ? ` (${prodErr.message})` : ""}`,
+      details: { product_slug, found: !!product, prodErr: prodErr?.message ?? null },
+    });
   }
   // ── Stale cleanup: any active job for this slug older than 2 hours is auto-superseded
   await admin
@@ -805,9 +812,14 @@ const _handlerInner = async (req: Request): Promise<Response> => {
       .limit(1)
       .maybeSingle();
     if (activeDuplicate && !body.force_new) {
+      console.warn("[prepare] PREPARE_FAILED_DUPLICATE_ACTIVE_JOB", traceId, {
+        product_slug, existing_job_id: activeDuplicate.id, existing_status: activeDuplicate.status,
+      });
       return json(409, {
         ok: false,
         traceId,
+        error_code: "PREPARE_FAILED_DUPLICATE_ACTIVE_JOB",
+        step: "duplicate_guard",
         message: `active cinematic job already exists for ${product_slug}; wait for completion/failure or pass force_new`,
         existing_job_id: activeDuplicate.id,
         existing_status: activeDuplicate.status,
