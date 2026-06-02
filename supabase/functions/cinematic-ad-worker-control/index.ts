@@ -1345,6 +1345,19 @@ Deno.serve(async (req) => {
             validation: e.validation,
           }, 412);
         }
+        if (e?.code === "GH_DISPATCH_HTTP_FAILED") {
+          return json({
+            ok: false, traceId,
+            code: "GH_DISPATCH_HTTP_FAILED",
+            message: e.message,
+            http_status: e.http_status ?? null,
+            error_body: e.error_body ?? null,
+            job_id: e.job_id ?? null,
+            repo: e.repo ?? null,
+            workflow: e.workflow ?? null,
+            ref: e.ref ?? null,
+          }, 502);
+        }
         throw e;
       }
     }
