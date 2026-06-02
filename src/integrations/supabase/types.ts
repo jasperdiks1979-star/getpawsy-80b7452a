@@ -3946,6 +3946,97 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_sync_items: {
+        Row: {
+          action: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          error: string | null
+          id: string
+          product_id: string | null
+          product_name: string | null
+          run_id: string
+        }
+        Insert: {
+          action: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          run_id: string
+        }
+        Update: {
+          action?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          product_id?: string | null
+          product_name?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cj_sync_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cj_sync_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cj_sync_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cj_sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cj_sync_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string
+          status: string
+          totals: Json
+          triggered_by: string | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          triggered_by?: string | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       cj_token_cache: {
         Row: {
           access_token: string
@@ -14374,6 +14465,75 @@ export type Database = {
           },
         ]
       }
+      product_media: {
+        Row: {
+          alt_text: string | null
+          checksum: string | null
+          created_at: string
+          duration_sec: number | null
+          file_size: number | null
+          height: number | null
+          id: string
+          imported_at: string
+          media_type: string
+          product_id: string
+          sort_order: number
+          source: string
+          storage_url: string
+          supplier_url: string | null
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string | null
+          checksum?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          imported_at?: string
+          media_type: string
+          product_id: string
+          sort_order?: number
+          source?: string
+          storage_url: string
+          supplier_url?: string | null
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string | null
+          checksum?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          imported_at?: string
+          media_type?: string
+          product_id?: string
+          sort_order?: number
+          source?: string
+          storage_url?: string
+          supplier_url?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_media_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_media_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_priority: {
         Row: {
           created_at: string
@@ -14602,6 +14762,7 @@ export type Database = {
       }
       products: {
         Row: {
+          admin_review_reason: string | null
           ai_last_optimized_at: string | null
           ai_last_preview_at: string | null
           ai_locked: boolean | null
@@ -14612,8 +14773,10 @@ export type Database = {
           animal_type: string | null
           benefit_angle: string | null
           brand: string | null
+          calculated_price: number | null
           canonical_product_id: string | null
           category: string | null
+          cj_media_synced_at: string | null
           cj_product_id: string | null
           cj_variant_id: string | null
           cluster_primary: string | null
@@ -14635,6 +14798,7 @@ export type Database = {
           description: string | null
           description_bullets: string[] | null
           description_optimized_at: string | null
+          estimated_shipping_cost: number | null
           feed_readiness_score: number | null
           google_product_category: string | null
           id: string
@@ -14647,14 +14811,17 @@ export type Database = {
           is_duplicate: boolean
           key_feature: string | null
           keyword_cluster: string | null
+          landed_cost: number | null
           last_inventory_sync_at: string | null
           last_inventory_sync_error: string | null
           last_inventory_sync_status: string | null
           last_stock_sync_at: string | null
+          margin_percent: number | null
           meta_description: string | null
           meta_title: string | null
           metadata_optimized_at: string | null
           name: string
+          needs_admin_review: boolean
           optimized_description: string | null
           optimized_title: string | null
           original_name: string | null
@@ -14668,6 +14835,8 @@ export type Database = {
           pinterest_ready: boolean
           pinterest_status: string | null
           price: number
+          price_sync_status: string | null
+          price_synced_at: string | null
           primary_intent: string | null
           primary_keyword: string | null
           primary_species: string | null
@@ -14678,6 +14847,10 @@ export type Database = {
           seo_meta_description: string | null
           seo_tier: string
           seo_title: string | null
+          shipping_days_max: number | null
+          shipping_days_min: number | null
+          shipping_estimate_confidence: string | null
+          shipping_sync_status: string | null
           shipping_time: string | null
           shopping_priority_score: number | null
           shopping_title: string | null
@@ -14691,14 +14864,17 @@ export type Database = {
           stock_sync_error: string | null
           stock_sync_status: string | null
           supplier_name: string | null
+          supplier_status: string | null
           supplier_warehouse: string | null
           title_optimized_at: string | null
           updated_at: string
           variant_stock: Json | null
           variants: Json | null
+          warehouse_country: string | null
           weight: number | null
         }
         Insert: {
+          admin_review_reason?: string | null
           ai_last_optimized_at?: string | null
           ai_last_preview_at?: string | null
           ai_locked?: boolean | null
@@ -14709,8 +14885,10 @@ export type Database = {
           animal_type?: string | null
           benefit_angle?: string | null
           brand?: string | null
+          calculated_price?: number | null
           canonical_product_id?: string | null
           category?: string | null
+          cj_media_synced_at?: string | null
           cj_product_id?: string | null
           cj_variant_id?: string | null
           cluster_primary?: string | null
@@ -14732,6 +14910,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
@@ -14744,14 +14923,17 @@ export type Database = {
           is_duplicate?: boolean
           key_feature?: string | null
           keyword_cluster?: string | null
+          landed_cost?: number | null
           last_inventory_sync_at?: string | null
           last_inventory_sync_error?: string | null
           last_inventory_sync_status?: string | null
           last_stock_sync_at?: string | null
+          margin_percent?: number | null
           meta_description?: string | null
           meta_title?: string | null
           metadata_optimized_at?: string | null
           name: string
+          needs_admin_review?: boolean
           optimized_description?: string | null
           optimized_title?: string | null
           original_name?: string | null
@@ -14765,6 +14947,8 @@ export type Database = {
           pinterest_ready?: boolean
           pinterest_status?: string | null
           price: number
+          price_sync_status?: string | null
+          price_synced_at?: string | null
           primary_intent?: string | null
           primary_keyword?: string | null
           primary_species?: string | null
@@ -14775,6 +14959,10 @@ export type Database = {
           seo_meta_description?: string | null
           seo_tier?: string
           seo_title?: string | null
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          shipping_estimate_confidence?: string | null
+          shipping_sync_status?: string | null
           shipping_time?: string | null
           shopping_priority_score?: number | null
           shopping_title?: string | null
@@ -14788,14 +14976,17 @@ export type Database = {
           stock_sync_error?: string | null
           stock_sync_status?: string | null
           supplier_name?: string | null
+          supplier_status?: string | null
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
           variant_stock?: Json | null
           variants?: Json | null
+          warehouse_country?: string | null
           weight?: number | null
         }
         Update: {
+          admin_review_reason?: string | null
           ai_last_optimized_at?: string | null
           ai_last_preview_at?: string | null
           ai_locked?: boolean | null
@@ -14806,8 +14997,10 @@ export type Database = {
           animal_type?: string | null
           benefit_angle?: string | null
           brand?: string | null
+          calculated_price?: number | null
           canonical_product_id?: string | null
           category?: string | null
+          cj_media_synced_at?: string | null
           cj_product_id?: string | null
           cj_variant_id?: string | null
           cluster_primary?: string | null
@@ -14829,6 +15022,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
           id?: string
@@ -14841,14 +15035,17 @@ export type Database = {
           is_duplicate?: boolean
           key_feature?: string | null
           keyword_cluster?: string | null
+          landed_cost?: number | null
           last_inventory_sync_at?: string | null
           last_inventory_sync_error?: string | null
           last_inventory_sync_status?: string | null
           last_stock_sync_at?: string | null
+          margin_percent?: number | null
           meta_description?: string | null
           meta_title?: string | null
           metadata_optimized_at?: string | null
           name?: string
+          needs_admin_review?: boolean
           optimized_description?: string | null
           optimized_title?: string | null
           original_name?: string | null
@@ -14862,6 +15059,8 @@ export type Database = {
           pinterest_ready?: boolean
           pinterest_status?: string | null
           price?: number
+          price_sync_status?: string | null
+          price_synced_at?: string | null
           primary_intent?: string | null
           primary_keyword?: string | null
           primary_species?: string | null
@@ -14872,6 +15071,10 @@ export type Database = {
           seo_meta_description?: string | null
           seo_tier?: string
           seo_title?: string | null
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          shipping_estimate_confidence?: string | null
+          shipping_sync_status?: string | null
           shipping_time?: string | null
           shopping_priority_score?: number | null
           shopping_title?: string | null
@@ -14885,11 +15088,13 @@ export type Database = {
           stock_sync_error?: string | null
           stock_sync_status?: string | null
           supplier_name?: string | null
+          supplier_status?: string | null
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
           variant_stock?: Json | null
           variants?: Json | null
+          warehouse_country?: string | null
           weight?: number | null
         }
         Relationships: [
