@@ -33,6 +33,12 @@ const DEFAULT_PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+// Parallel render capacity. Each "slot" maps to one concurrent GitHub Actions
+// runner. A slot is considered occupied when a job is either actively
+// rendering or has been dispatched within DISPATCH_LOCK_MS but not yet claimed
+// (prevents a thundering-herd that exceeds the cap before workers pick up).
+const MAX_RENDER_SLOTS = Math.max(1, Number(Deno.env.get("MAX_RENDER_SLOTS") ?? "6"));
+const DISPATCH_LOCK_MS = 5 * 60 * 1000;
 const CANONICAL_FUNCTIONS = [
   "cinematic-ad-claim-job",
   "cinematic-ad-render-webhook",
