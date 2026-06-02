@@ -165,14 +165,32 @@ Deno.serve(async (req) => {
     return { ok: r.ok, detail: { status: r.status, raw: j } };
   });
 
-  // 4) dispatch (self_heal is internal-safe and idempotent)
+  // 4) dispatch — per-job trigger so we capture GitHub HTTP status + error body.
   await step("dispatch", async () => {
     const r = await fetch(`${fnBase}/cinematic-ad-worker-control`, {
-      method: "POST", headers: adminHeaders,
-      body: JSON.stringify({ action: "self_heal" }),
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({ action: "trigger_github_workflow", job_id }),
     });
-    const j = await r.json().catch(() => ({}));
-    return { ok: r.ok, detail: { status: r.status, dispatched: j?.dispatched ?? j?.recovered ?? null, raw: j } };
+    const j: any = await r.json().catch(() => ({}));
+    // GitHub-side HTTP details are surfaced on the body for forensic display.
+    return {
+      ok: r.ok && j?.ok !== false,
+      detail: {
+        status: r.status,
+        dispatched: j?.dispatched ?? null,
+        gh_http_status: j?.http_status ?? null,
+        gh_error_body: j?.error_body ?? null,
+        gh_error_code: j?.code ?? null,
+        gh_error_message: j?.message ?? null,
+        repo: j?.repo ?? null,
+        workflow: j?.workflow ?? null,
+        ref: j?.ref ?? null,
+        runs_url: j?.runsUrl ?? null,
+        job_id,
+        raw: j,
+      },
+    };
   });
 
   // 5) poll for claim (render_started_at)
