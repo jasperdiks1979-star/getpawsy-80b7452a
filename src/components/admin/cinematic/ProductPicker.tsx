@@ -13,6 +13,7 @@ export type PickerProduct = {
   category: string | null;
   is_active?: boolean | null;
   stock?: number | null;
+  last_inventory_sync_at?: string | null;
 };
 
 type Props = {
@@ -33,8 +34,8 @@ export default function ProductPicker({ value, onChange }: Props) {
     const t = setTimeout(async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("products_public")
-        .select("slug, name, image_url, images, price, category")
+        .from("products")
+        .select("slug, name, image_url, images, price, category, stock, is_active, last_inventory_sync_at")
         .or(`name.ilike.%${term}%,slug.ilike.%${term}%,category.ilike.%${term}%`)
         .limit(20);
       if (!error && data) setResults(data as PickerProduct[]);
@@ -50,6 +51,23 @@ export default function ProductPicker({ value, onChange }: Props) {
     if (!p.image_url) return "No image";
     if (imgCount(p) < 2) return "Thin media (1 image)";
     return null;
+  };
+
+  const STALE_MS = 12 * 60 * 60 * 1000;
+  const stockInfo = (p: PickerProduct) => {
+    const stock = typeof p.stock === "number" ? p.stock : null;
+    const syncedAt = p.last_inventory_sync_at ? new Date(p.last_inventory_sync_at) : null;
+    const ageMs = syncedAt ? Date.now() - syncedAt.getTime() : null;
+    const stale = ageMs === null || ageMs > STALE_MS;
+    const oos = stock !== null && stock <= 0;
+    return { stock, syncedAt, ageMs, stale, oos };
+  };
+  const fmtAge = (ms: number | null) => {
+    if (ms === null) return "never";
+    const h = Math.floor(ms / 3_600_000);
+    if (h < 1) return `${Math.floor(ms / 60_000)}m ago`;
+    if (h < 48) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
   };
 
   return (
@@ -111,6 +129,27 @@ export default function ProductPicker({ value, onChange }: Props) {
               <Badge variant="secondary">${value.price ?? "—"}</Badge>
               <Badge variant="outline">{value.category ?? "uncategorized"}</Badge>
               <Badge variant="outline">{imgCount(value)} images</Badge>
+            {(() => {
+              const s = stockInfo(value);
+              return (
+                <>
+                  <Badge
+                    variant="outline"
+                    className={s.oos ? "text-red-600 border-red-300" : "text-emerald-700 border-emerald-300"}
+                  >
+                    {s.stock === null ? "stock: —" : `stock: ${s.stock}`}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={s.stale ? "text-amber-600 border-amber-300" : "text-muted-foreground"}
+                    title={s.syncedAt ? s.syncedAt.toISOString() : "no CJ inventory sync recorded"}
+                  >
+                    {s.stale && <AlertTriangle className="w-3 h-3 mr-1" />}
+                    CJ synced {fmtAge(s.ageMs)}
+                  </Badge>
+                </>
+              );
+            })()}
               {warningFor(value) && (
                 <Badge variant="outline" className="text-amber-600 border-amber-300">
                   <AlertTriangle className="w-3 h-3 mr-1" />{warningFor(value)}
