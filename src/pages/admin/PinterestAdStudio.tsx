@@ -34,7 +34,9 @@ type JobRow = {
   publish_blocked_reason?: string | null;
   // Step 4 resolver + failure-reason fields
   vo_url?: string | null;
-  fail_reasons?: string[] | null;
+  preflight_reasons?: string[] | null;
+  hard_reject_reasons?: string[] | null;
+  admin_review_reason?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -71,11 +73,15 @@ function isPreviewable(j: JobRow): boolean {
 // Only blame voice synthesis when vo_url is truly missing. Surface
 // product_out_of_stock / preparation_gate / preflight failures verbatim.
 function failureMessage(j: JobRow): string {
-  const reasons = Array.isArray(j.fail_reasons) ? j.fail_reasons : [];
+  const reasons: string[] = [
+    ...(Array.isArray(j.preflight_reasons) ? j.preflight_reasons : []),
+    ...(Array.isArray(j.hard_reject_reasons) ? j.hard_reject_reasons : []),
+    ...(j.admin_review_reason ? [j.admin_review_reason] : []),
+  ];
   const lc = reasons.map((r) => String(r).toLowerCase());
   const msg = (j.error_message || j.status_message || "").toLowerCase();
 
-  if (j.status === "needs_admin_review" && (lc.includes("timeout") || msg.includes("timeout"))) {
+  if (j.status === "needs_admin_review" && (lc.some((r) => r.includes("timeout")) || msg.includes("timeout"))) {
     return "Timed out after 12 min — needs admin review";
   }
   if (lc.some((r) => r.includes("product_out_of_stock"))) {
@@ -224,7 +230,7 @@ export default function PinterestAdStudio() {
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("cinematic_ad_jobs")
-        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, fail_reasons, created_at, updated_at")
+        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, created_at, updated_at")
         .in("id", ids);
       if (data) setJobs(data as JobRow[]);
       setPollKey(k => k + 1);
@@ -250,12 +256,11 @@ export default function PinterestAdStudio() {
       });
       if (stuck.length === 0) return;
       for (const j of stuck) {
-        const nextReasons = Array.from(new Set([...(j.fail_reasons ?? []), "timeout"]));
         const { error } = await supabase
           .from("cinematic_ad_jobs")
           .update({
             status: "needs_admin_review",
-            fail_reasons: nextReasons,
+            admin_review_reason: "timeout_after_12m",
             error_message: j.error_message ?? "timeout_after_12m",
             status_message: "timed out after 12 min — auto-escalated to admin review",
           })
@@ -267,7 +272,7 @@ export default function PinterestAdStudio() {
                 ? {
                     ...p,
                     status: "needs_admin_review",
-                    fail_reasons: nextReasons,
+                    admin_review_reason: "timeout_after_12m",
                     error_message: p.error_message ?? "timeout_after_12m",
                     status_message: "timed out after 12 min — auto-escalated to admin review",
                   }
