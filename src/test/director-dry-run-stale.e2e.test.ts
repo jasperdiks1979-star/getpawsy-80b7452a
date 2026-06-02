@@ -35,11 +35,13 @@ async function runDirector(opts: {
   toast: Toast;
   supabase: ReturnType<typeof makeSupabase>;
   now: number;
+  staleStockOverride?: boolean;
 }): Promise<{ blocked: boolean; warned: boolean }> {
   const gate = evaluateCjStockGate({
     lastSyncAt: opts.product.last_inventory_sync_at,
     dryRun: opts.dryRun,
     now: opts.now,
+    override: opts.staleStockOverride === true,
   });
   let warned = false;
   if (gate.action === "block") {
@@ -50,7 +52,9 @@ async function runDirector(opts: {
   }
   if (gate.action === "warn") {
     opts.toast.warning("CJ stock data is stale", {
-      description: `Last sync: ${gate.label}. Dry-run will proceed but preflight may use outdated stock.`,
+      description: opts.dryRun
+        ? `Last sync: ${gate.label}. Dry-run will proceed but preflight may use outdated stock.`
+        : `Last sync: ${gate.label}. Proceeding under admin stale-stock override — preflight may use outdated stock.`,
     });
     warned = true;
   }
@@ -144,5 +148,66 @@ describe("Pinterest Ad Studio · director dry-run · stale CJ inventory", () => 
     expect(toast.error.mock.calls[0][0]).toBe("CJ stock data is stale");
     expect(toast.warning).not.toHaveBeenCalled();
     expect(supabase.functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it("paid run with stale stock + admin override: warns but still invokes the director", async () => {
+    const result = await runDirector({
+      product: { slug: "smart-litter-box", last_inventory_sync_at: hoursAgo(36) },
+      dryRun: false,
+      staleStockOverride: true,
+      toast,
+      supabase,
+      now: NOW,
+    });
+
+    // Contract: override downgrades block→warn, paid director call proceeds.
+    expect(result.blocked).toBe(false);
+    expect(result.warned).toBe(true);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledTimes(1);
+    const [title, payload] = toast.warning.mock.calls[0];
+    expect(title).toBe("CJ stock data is stale");
+    expect(payload.description).toMatch(/36h old/);
+    expect(payload.description).toMatch(/admin stale-stock override/i);
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
+    expect(supabase.functions.invoke).toHaveBeenCalledWith(
+      "cinematic-director-decide",
+      { body: { product_slug: "smart-litter-box", persist: true } },
+    );
+  });
+
+  it("paid run with never-synced stock + admin override: warns 'never synced' and proceeds", async () => {
+    const result = await runDirector({
+      product: { slug: "modern-cat-tree", last_inventory_sync_at: null },
+      dryRun: false,
+      staleStockOverride: true,
+      toast,
+      supabase,
+      now: NOW,
+    });
+
+    expect(result.blocked).toBe(false);
+    expect(result.warned).toBe(true);
+    expect(toast.warning).toHaveBeenCalledTimes(1);
+    expect(toast.warning.mock.calls[0][1].description).toMatch(/never synced/);
+    expect(toast.warning.mock.calls[0][1].description).toMatch(/admin stale-stock override/i);
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("paid run with fresh stock + override is a no-op for the gate (no warning, proceeds)", async () => {
+    const result = await runDirector({
+      product: { slug: "smart-litter-box", last_inventory_sync_at: hoursAgo(1) },
+      dryRun: false,
+      staleStockOverride: true,
+      toast,
+      supabase,
+      now: NOW,
+    });
+
+    expect(result.blocked).toBe(false);
+    expect(result.warned).toBe(false);
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
   });
 });

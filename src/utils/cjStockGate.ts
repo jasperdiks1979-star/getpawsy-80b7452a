@@ -7,6 +7,12 @@ export type CjStockGateInput = {
   lastSyncAt: string | Date | null | undefined;
   dryRun: boolean;
   now?: number;
+  /**
+   * Admin override: when true, a stale-stock state never blocks. The gate
+   * still returns `stale: true` and `action: "warn"` so the caller can
+   * surface the warning UI and log the bypass.
+   */
+  override?: boolean;
 };
 
 export type CjStockGateAction = "block" | "warn" | "pass";
@@ -36,5 +42,8 @@ export function evaluateCjStockGate(input: CjStockGateInput): CjStockGateResult 
   const label = ageLabel(ageMs);
   if (!stale) return { stale, ageMs, action: "pass", label };
   // Stale: block paid runs (forces refresh), warn-only for dry-run.
-  return { stale, ageMs, action: input.dryRun ? "warn" : "block", label };
+  // Admin override downgrades the paid block to a warning so the caller
+  // can proceed deliberately (still surfaces the stale-stock notice).
+  const action: CjStockGateAction = input.dryRun || input.override ? "warn" : "block";
+  return { stale, ageMs, action, label };
 }
