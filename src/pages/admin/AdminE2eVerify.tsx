@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const ADMIN_ALLOWLIST = ["jasperdiks@hotmail.com"];
@@ -178,6 +178,42 @@ export default function AdminE2eVerify() {
     setRouteEnabled(false);
   }
 
+  function exportAsJson() {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `e2e-verify-${result.traceId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAsCsv() {
+    if (!result) return;
+    const rows: string[][] = [
+      ["traceId", result.traceId],
+      ["ok", String(result.ok)],
+      ["message", result.message ?? ""],
+      ["output_mp4_url", result.output_mp4_url ?? ""],
+      ["job_id", result.job_id ?? ""],
+      ["preflight_status", result.preflight_status ?? ""],
+      ["render_started_at", result.render_started_at ?? ""],
+      ["render_completed_at", result.render_completed_at ?? ""],
+      ["publish_enabled", String(result.publish_enabled ?? false)],
+      ["total_ms", String(result.total_ms ?? 0)],
+      ["steps_count", String(result.steps?.length ?? 0)],
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `e2e-verify-${result.traceId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // Auto-redirect to studio once verification produced an MP4
   useEffect(() => {
     if (result?.ok && result.preview_url && !ranAutoRedirect.current) {
@@ -312,9 +348,13 @@ export default function AdminE2eVerify() {
             <CardTitle className="flex items-center justify-between">
               <span className={result.ok ? "text-emerald-600" : "text-destructive"}>
                 {result.ok ? "✅ PASS" : "❌ FAIL"}
-                {result.message ? <span className="ml-2 text-sm font-normal text-muted-foreground">— {result.message}</span> : null}
+              {result.message ? <span className="ml-2 text-sm font-normal text-muted-foreground">— {result.message}</span> : null}
               </span>
-              <span className="text-xs text-muted-foreground font-mono">{result.traceId}</span>
+              <span className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={exportAsJson}><Download className="w-3 h-3 mr-1" />JSON</Button>
+                <Button variant="outline" size="sm" onClick={exportAsCsv}><Download className="w-3 h-3 mr-1" />CSV</Button>
+                <span className="text-xs text-muted-foreground font-mono">{result.traceId}</span>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
