@@ -74,6 +74,7 @@ export default function AdminE2eVerify() {
   const [now, setNow] = useState(Date.now());
   const ranAutoRedirect = useRef(false);
   const ranAutoVerify = useRef(false);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   // Live JWT countdown
   useEffect(() => {
@@ -182,6 +183,9 @@ export default function AdminE2eVerify() {
     if (result?.ok && result.preview_url && !ranAutoRedirect.current) {
       ranAutoRedirect.current = true;
       // Surface but do not jump away — leave the link visible
+    }
+    if (result && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [result]);
 
@@ -303,24 +307,28 @@ export default function AdminE2eVerify() {
       </Card>
 
       {result && (
-        <Card>
+        <Card ref={resultRef} className={result.ok ? "border-emerald-500/60" : "border-destructive/60"}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Result {result.ok ? "✅ PASS" : "❌ FAIL"}</span>
+              <span className={result.ok ? "text-emerald-600" : "text-destructive"}>
+                {result.ok ? "✅ PASS" : "❌ FAIL"}
+                {result.message ? <span className="ml-2 text-sm font-normal text-muted-foreground">— {result.message}</span> : null}
+              </span>
               <span className="text-xs text-muted-foreground font-mono">{result.traceId}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-md border bg-muted/30 p-3 text-sm">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">output_mp4_url</div>
+              {result.output_mp4_url
+                ? <a className="underline break-all font-mono text-xs" href={result.output_mp4_url} target="_blank" rel="noreferrer">{result.output_mp4_url}</a>
+                : <span className="text-destructive font-mono text-xs">null — render did not produce an MP4</span>}
+            </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><span className="text-muted-foreground">Job ID:</span> <code className="text-xs">{result.job_id ?? "—"}</code></div>
               <div><span className="text-muted-foreground">Preflight:</span> <Badge>{result.preflight_status ?? "—"}</Badge></div>
               <div><span className="text-muted-foreground">Started:</span> <span className="font-mono text-xs">{result.render_started_at ?? "—"}</span></div>
               <div><span className="text-muted-foreground">Completed:</span> <span className="font-mono text-xs">{result.render_completed_at ?? "—"}</span></div>
-              <div className="col-span-2"><span className="text-muted-foreground">MP4:</span>{" "}
-                {result.output_mp4_url
-                  ? <a className="underline break-all text-xs" href={result.output_mp4_url} target="_blank" rel="noreferrer">{result.output_mp4_url}</a>
-                  : <span className="text-destructive">none</span>}
-              </div>
               <div><span className="text-muted-foreground">Publish:</span>{" "}
                 <Badge variant={result.publish_enabled ? "default" : "destructive"}>
                   {result.publish_enabled ? "enabled" : "blocked"}
@@ -345,9 +353,9 @@ export default function AdminE2eVerify() {
               </Button>
             )}
 
-            <details className="text-xs">
-              <summary className="cursor-pointer text-muted-foreground">Step trace ({result.steps?.length ?? 0})</summary>
-              <table className="w-full mt-2 text-xs">
+            <div className="text-xs">
+              <div className="text-sm font-semibold mb-2">Step trace ({result.steps?.length ?? 0})</div>
+              <table className="w-full text-xs">
                 <thead><tr className="text-left">
                   <th>Step</th><th>Status</th><th>ms</th><th>Started</th>
                 </tr></thead>
@@ -362,10 +370,13 @@ export default function AdminE2eVerify() {
                   ))}
                 </tbody>
               </table>
-              <pre className="mt-3 max-h-80 overflow-auto bg-muted/30 p-2 rounded">
-                {JSON.stringify(result.steps, null, 2)}
-              </pre>
-            </details>
+              <details className="mt-3">
+                <summary className="cursor-pointer text-muted-foreground">Raw step payloads</summary>
+                <pre className="mt-2 max-h-80 overflow-auto bg-muted/30 p-2 rounded">
+                  {JSON.stringify(result.steps, null, 2)}
+                </pre>
+              </details>
+            </div>
           </CardContent>
         </Card>
       )}
