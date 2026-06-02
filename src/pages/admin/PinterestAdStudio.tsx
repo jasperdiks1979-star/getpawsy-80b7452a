@@ -1102,6 +1102,8 @@ export default function PinterestAdStudio() {
                           Publish blocked: <code className="font-mono">{j.publish_blocked_reason}</code>
                         </div>
                       )}
+                      {/* Validator debug panel — every failed validator field + score */}
+                      <ValidatorDebugPanel job={j} />
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="outline" asChild disabled={!ready}>
                           <a href={j.output_mp4_url ?? "#"} download target="_blank" rel="noreferrer">
@@ -1114,6 +1116,16 @@ export default function PinterestAdStudio() {
                         <Button size="sm" disabled={!ready || !!j.pinterest_pin_url} onClick={() => publish(j)}>
                           {j.pinterest_pin_url ? <><Pin className="w-3 h-3 mr-1" />Published</> : <><Send className="w-3 h-3 mr-1" />Publish</>}
                         </Button>
+                        {ready && !j.pinterest_pin_url && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => publishOverride(j)}
+                            title="Bypass validator gates and publish to Pinterest. Logged."
+                          >
+                            <AlertTriangle className="w-3 h-3 mr-1" />Approve &amp; Publish Anyway
+                          </Button>
+                        )}
                       </div>
                       {j.pinterest_pin_url && (
                         <a href={j.pinterest_pin_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View pin →</a>
