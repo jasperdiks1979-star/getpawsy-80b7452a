@@ -35,17 +35,22 @@ Deno.serve(async (req) => {
   const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
-
+  const workerSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+  const internalToken = req.headers.get("x-internal-token") ?? "";
+  const isInternal = !!(workerSecret && internalToken === workerSecret);
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-  const { data: roleRow } = await admin
-    .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
-  if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+
+  if (!isInternal) {
+    const userClient = createClient(url, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) return json(401, { ok: false, traceId, message: "unauthorized" });
+    const { data: roleRow } = await admin
+      .from("user_roles").select("role").eq("user_id", userData.user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json(403, { ok: false, traceId, message: "admin role required" });
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch {}
@@ -77,7 +82,9 @@ Deno.serve(async (req) => {
   stamp("prepare_start");
   const prepRes = await fetch(`${url}/functions/v1/cinematic-ad-prepare`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
+    headers: isInternal
+      ? { "Content-Type": "application/json", "x-internal-token": workerSecret, apikey: anonKey }
+      : { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
     body: JSON.stringify({
       product_slug,
       voice_style: decisions.voice_style,
@@ -125,7 +132,9 @@ Deno.serve(async (req) => {
   stamp("approve_start");
   const apprRes = await fetch(`${url}/functions/v1/cinematic-ad-approve`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
+    headers: isInternal
+      ? { "Content-Type": "application/json", "x-internal-token": workerSecret, apikey: anonKey }
+      : { "Content-Type": "application/json", Authorization: authHeader, apikey: anonKey },
     body: JSON.stringify({
       job_id: jobId,
       preset: decisions.platform_fit,
