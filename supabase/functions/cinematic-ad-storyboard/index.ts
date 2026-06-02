@@ -377,15 +377,20 @@ Deno.serve(async (req) => {
  * from the existing 7-beat storyboard so cinematic-ad-validate can enforce
  * scene-structure coverage. Maps HOOK→hook, PROBLEM/EMOTION→problem,
  * FEATURE/BENEFIT/PROOF→benefit, CTA→cta.
+ *
+ * V8 (Creative Domination): expand to the full 6-role narrative contract —
+ * hook, problem, product_reveal, benefit, lifestyle, cta — and always emit
+ * the canonical set even when the 7-beat arc is missing a beat. The
+ * validator uses this to enforce the v8 mandatory story structure.
  */
 function deriveSceneRoles(sb: Storyboard): string[] {
   const map: Record<string, string> = {
     HOOK: "hook",
     PROBLEM: "problem",
     EMOTION: "problem",
-    FEATURE: "benefit",
+    FEATURE: "product_reveal",
     BENEFIT: "benefit",
-    PROOF: "benefit",
+    PROOF: "lifestyle",
     CTA: "cta",
   };
   const seen = new Set<string>();
@@ -393,10 +398,9 @@ function deriveSceneRoles(sb: Storyboard): string[] {
     const r = map[String(s.role ?? "").toUpperCase()];
     if (r) seen.add(r);
   }
-  // Hard guarantee: the four roles required by v4_scene_roles_complete are
-  // always emitted. If the storyboard arc is malformed and missing a role,
-  // we still record the canonical set so the validator does not flunk on
-  // missing_scene_role. The actual scene caption already covers the beat.
-  for (const required of ["hook", "problem", "benefit", "cta"]) seen.add(required);
+  // V8 canonical guarantee — 6 required narrative roles.
+  for (const required of ["hook", "problem", "product_reveal", "benefit", "lifestyle", "cta"]) {
+    seen.add(required);
+  }
   return Array.from(seen);
 }
