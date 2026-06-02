@@ -160,7 +160,7 @@ const ANGLES: HookAngle[] = [
   "emotional", "luxury", "problem_solution", "curiosity", "social_proof", "ugc",
 ];
 
-function fallbackKit(productName: string): CreativeKit {
+export function fallbackKit(productName: string): CreativeKit {
   const seed: Array<{ angle: HookAngle; text: string }> = [
     { angle: "emotional",        text: `You'll wonder how you lived without ${productName}.` },
     { angle: "problem_solution", text: `Tired of the mess? ${productName} fixes it.` },
