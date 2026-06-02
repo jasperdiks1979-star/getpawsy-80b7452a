@@ -332,3 +332,6 @@ verify_jwt = false
 
 [functions.pinterest-intelligence-api]
 verify_jwt = false
+
+[functions.cj-inventory-sync]
+verify_jwt = false
