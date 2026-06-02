@@ -204,6 +204,19 @@ export default function AdminE2eVerify() {
               placeholder="admin email"
               autoComplete="email"
             />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="admin password (instant sign-in)"
+              autoComplete="current-password"
+              onKeyDown={(e) => { if (e.key === "Enter") signInWithPassword(); }}
+            />
+            <Button onClick={signInWithPassword} disabled={signingIn} className="w-full">
+              {signingIn ? <Loader2 className="animate-spin mr-2" /> : null}
+              Sign in with password
+            </Button>
+            <div className="text-center text-xs text-muted-foreground">— or —</div>
             <Button onClick={sendMagicLink} disabled={sending} className="w-full">
               {sending ? <Loader2 className="animate-spin mr-2" /> : null}
               Send magic link
