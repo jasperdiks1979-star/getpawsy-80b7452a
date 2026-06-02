@@ -381,6 +381,34 @@ export default function PinterestAdStudio() {
 
   async function handleDirector() {
     if (!product) { toast.error("Select a product first"); return; }
+    // CJ inventory freshness gate — non-blocking for dry-run, blocking for paid.
+    const syncedAt = product.last_inventory_sync_at ? new Date(product.last_inventory_sync_at) : null;
+    const ageMs = syncedAt ? Date.now() - syncedAt.getTime() : null;
+    const stale = ageMs === null || ageMs > 12 * 60 * 60 * 1000;
+    if (stale) {
+      const label = ageMs === null ? "never synced" : `${Math.floor(ageMs / 3_600_000)}h old`;
+      if (!dryRun) {
+        toast.error("CJ stock data is stale", {
+          description: `Last CJ inventory sync: ${label}. Refreshing now — retry after it finishes.`,
+        });
+        try {
+          await supabase.functions.invoke("cj-inventory-sync", {
+            body: { dry_run: false, product_ids: [product.slug], max_age_hours: 0 },
+          });
+          const { data: fresh } = await supabase.from("products")
+            .select("slug, name, image_url, images, price, category, stock, is_active, last_inventory_sync_at")
+            .eq("slug", product.slug).maybeSingle();
+          if (fresh) setProduct(fresh as PickerProduct);
+          toast.message("CJ inventory refreshed — click Run again to continue.");
+        } catch (e) {
+          toast.error("CJ refresh failed", { description: e instanceof Error ? e.message : String(e) });
+        }
+        return;
+      }
+      toast.warning("CJ stock data is stale", {
+        description: `Last sync: ${label}. Dry-run will proceed but preflight may use outdated stock.`,
+      });
+    }
     // EMERGENCY GATE — paid render requires explicit confirmation.
     if (!dryRun && !paidConfirmed) {
       toast.error("Paid render not confirmed", {
