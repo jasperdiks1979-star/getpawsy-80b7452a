@@ -229,8 +229,8 @@ export default function PinterestAdStudio() {
   useEffect(() => {
     if (!initialSlug || product) return;
     (async () => {
-      const { data } = await supabase.from("products_public")
-        .select("slug, name, image_url, images, price, category")
+      const { data } = await supabase.from("products")
+        .select("slug, name, image_url, images, price, category, stock, is_active, last_inventory_sync_at")
         .eq("slug", initialSlug).maybeSingle();
       if (data) setProduct(data as PickerProduct);
     })();
