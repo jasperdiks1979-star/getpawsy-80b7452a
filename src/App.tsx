@@ -773,6 +773,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/admin/e2e-verify"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <AdminE2eVerify />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/wishlist"
                             element={
                               <Suspense fallback={<RouteLoader />}>
