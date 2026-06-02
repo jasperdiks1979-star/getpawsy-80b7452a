@@ -149,8 +149,52 @@ function ValidatorDebugPanel({ job }: { job: JobRow }) {
         <div className="space-y-1.5 pt-1">
           {/* Score summary */}
           <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+            <span className="text-muted-foreground font-semibold col-span-2 mt-1">V8 Domination Scores</span>
+            <span className="text-muted-foreground">final_creative_score:</span>
+            <span className={`font-mono ${Number((job as any).final_creative_score ?? 0) >= 95 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt((job as any).final_creative_score)} <span className="text-muted-foreground">/ &gt;=95</span>
+            </span>
+            <span className="text-muted-foreground">hook_score:</span>
+            <span className={`font-mono ${Number((job as any).hook_score ?? 0) >= 90 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt((job as any).hook_score)} / &gt;=90
+            </span>
+            <span className="text-muted-foreground">voice_score:</span>
+            <span className={`font-mono ${Number((job as any).voice_score ?? 0) >= 90 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt((job as any).voice_score)} / &gt;=90
+            </span>
+            <span className="text-muted-foreground">ctr_prediction:</span>
+            <span className={`font-mono ${Number((job as any).ctr_prediction_score ?? 0) >= 90 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt((job as any).ctr_prediction_score)} / &gt;=90
+            </span>
+            <span className="text-muted-foreground">commercial_score:</span>
+            <span className="font-mono">{fmt((job as any).commercial_score)} / &gt;=80</span>
+            <span className="text-muted-foreground">storyboard_roles:</span>
+            <span className="font-mono text-[9px]">
+              {Array.isArray((job as any).scene_roles) ? (job as any).scene_roles.join(",") : "—"}
+            </span>
+            <span className="text-muted-foreground">scene_plan_count:</span>
+            <span className="font-mono">
+              {Array.isArray((job as any).scene_plan) ? (job as any).scene_plan.length : 0}
+              {" / "}
+              <span className="text-muted-foreground">≥6</span>
+            </span>
+            <span className="text-muted-foreground">media_assets:</span>
+            <span className="font-mono">
+              {Array.isArray((job as any).scene_assets) ? (job as any).scene_assets.length : 0}
+            </span>
+            <span className="text-muted-foreground">file_size_mb:</span>
+            <span className={`font-mono ${Number((job as any).output_file_size_bytes ?? 0) >= 5 * 1024 * 1024 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(((Number((job as any).output_file_size_bytes ?? 0)) / 1024 / 1024).toFixed(2))} MB
+            </span>
+            <span className="text-muted-foreground">auto_regen (v8):</span>
+            <span className="font-mono">
+              {fmt((job as any).regenerate_count)} / 3
+              {(job as any).fidelity_regen_passes ? ` · fidelity:${(job as any).fidelity_regen_passes}` : ""}
+              {(job as any).motion_regen_attempts ? ` · motion:${(job as any).motion_regen_attempts}` : ""}
+            </span>
+            <span className="text-muted-foreground font-semibold col-span-2 mt-1">V7 Quality Axes</span>
             <span className="text-muted-foreground">pinterest_quality:</span>
-            <span className={`font-mono ${Number(job.pinterest_quality_score ?? 0) > 90 ? "text-emerald-600" : "text-destructive"}`}>
+            <span className={`font-mono ${Number(job.pinterest_quality_score ?? 0) >= 95 ? "text-emerald-600" : "text-destructive"}`}>
               {fmt(job.pinterest_quality_score)} <span className="text-muted-foreground">/ &gt;95</span>
             </span>
             <span className="text-muted-foreground">scene_diversity_v7:</span>
@@ -162,12 +206,12 @@ function ValidatorDebugPanel({ job }: { job: JobRow }) {
             <span className="text-muted-foreground">text_safety:</span>
             <span className="font-mono">{fmt(job.text_safety_score)} / 100</span>
             <span className="text-muted-foreground">emotional_arc:</span>
-            <span className={`font-mono ${Number(job.emotional_arc_score ?? 0) >= 6 ? "text-emerald-600" : "text-destructive"}`}>
-              {fmt(job.emotional_arc_score)} / &gt;=6
+            <span className={`font-mono ${Number(job.emotional_arc_score ?? 0) >= 8 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.emotional_arc_score)} / &gt;=8
             </span>
             <span className="text-muted-foreground">engagement_pacing:</span>
-            <span className={`font-mono ${Number(job.engagement_pacing_score ?? 0) >= 65 ? "text-emerald-600" : "text-destructive"}`}>
-              {fmt(job.engagement_pacing_score)} / &gt;=65
+            <span className={`font-mono ${Number(job.engagement_pacing_score ?? 0) >= 85 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.engagement_pacing_score)} / &gt;=85
             </span>
             <span className="text-muted-foreground">qa_composite:</span>
             <span className="font-mono">{fmt(job.qa_composite_score)}</span>
