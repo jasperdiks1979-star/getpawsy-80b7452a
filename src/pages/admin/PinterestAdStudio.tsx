@@ -10,6 +10,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import ProductPicker, { type PickerProduct } from "@/components/admin/cinematic/ProductPicker";
 import { AD_STYLES, type AdStyleId, getAdStyle, ARCHETYPES, getArchetype, type ArchetypeId } from "@/components/admin/pinterest-ad-studio/adStyles";
 import QueueDiagnosticsPanel from "@/components/admin/pinterest-ad-studio/QueueDiagnosticsPanel";
+import { evaluateCjStockGate } from "@/utils/cjStockGate";
 
 type JobRow = {
   id: string;
@@ -222,6 +223,9 @@ export default function PinterestAdStudio() {
   const [dryRun, setDryRun] = useState(true);
   const [forceBudgetOverride, setForceBudgetOverride] = useState(false);
   const [forcePreflightOverride, setForcePreflightOverride] = useState(false);
+  // Admin override: allow paid runs to proceed despite stale CJ inventory.
+  // The warning toast still fires so the operator sees the bypass.
+  const [forceStaleStockOverride, setForceStaleStockOverride] = useState(false);
   // EMERGENCY: paid renders are gated behind an explicit checkbox.
   // Default mode is dry-run only — no GitHub Actions, no paid renders.
   const [paidConfirmed, setPaidConfirmed] = useState(false);
@@ -382,15 +386,17 @@ export default function PinterestAdStudio() {
 
   async function handleDirector() {
     if (!product) { toast.error("Select a product first"); return; }
-    // CJ inventory freshness gate — non-blocking for dry-run, blocking for paid.
-    const syncedAt = product.last_inventory_sync_at ? new Date(product.last_inventory_sync_at) : null;
-    const ageMs = syncedAt ? Date.now() - syncedAt.getTime() : null;
-    const stale = ageMs === null || ageMs > 12 * 60 * 60 * 1000;
-    if (stale) {
-      const label = ageMs === null ? "never synced" : `${Math.floor(ageMs / 3_600_000)}h old`;
-      if (!dryRun) {
+    // CJ inventory freshness gate — non-blocking for dry-run, blocking for
+    // paid unless the admin explicitly bypasses with forceStaleStockOverride.
+    const gate = evaluateCjStockGate({
+      lastSyncAt: product.last_inventory_sync_at,
+      dryRun,
+      override: forceStaleStockOverride,
+    });
+    if (gate.stale) {
+      if (gate.action === "block") {
         toast.error("CJ stock data is stale", {
-          description: `Last CJ inventory sync: ${label}. Refreshing now — retry after it finishes.`,
+          description: `Last CJ inventory sync: ${gate.label}. Refreshing now — retry after it finishes.`,
         });
         try {
           const { data: row } = await supabase.from("products")
@@ -411,8 +417,12 @@ export default function PinterestAdStudio() {
         }
         return;
       }
+      // action === "warn": dry-run OR admin override. Surface the warning
+      // and continue. For paid+override we include an explicit bypass note.
       toast.warning("CJ stock data is stale", {
-        description: `Last sync: ${label}. Dry-run will proceed but preflight may use outdated stock.`,
+        description: dryRun
+          ? `Last sync: ${gate.label}. Dry-run will proceed but preflight may use outdated stock.`
+          : `Last sync: ${gate.label}. Proceeding under admin stale-stock override — preflight may use outdated stock.`,
       });
     }
     // EMERGENCY GATE — paid render requires explicit confirmation.
