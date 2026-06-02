@@ -796,6 +796,11 @@ async function triggerGithubWorkflow(
   admin: any,
   traceId: string,
   opts: { job_id?: string; claim_next?: boolean; ghPat?: string },
+): Promise<any>;
+async function triggerGithubWorkflow(
+  admin: any,
+  traceId: string,
+  opts: { job_id?: string; claim_next?: boolean; ghPat?: string },
 ) {
   const ghPat = opts.ghPat ?? (await getEffectiveGhPat(admin)).token;
   if (!ghPat) throw new Error("GH_PAT secret not configured");
