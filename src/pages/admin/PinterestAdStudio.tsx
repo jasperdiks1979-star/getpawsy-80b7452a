@@ -688,9 +688,33 @@ export default function PinterestAdStudio() {
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
             {dryRun ? "Dry-run Director (no renders)" : "Generate Best Possible Pinterest Ad"}
           </Button>
+          {!dryRun && (
+            <div className="rounded border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold">This may trigger paid external rendering.</div>
+                <div className="text-destructive/80">Each concept runs the full GitHub Actions render pipeline (Remotion + Chrome + ffmpeg) and consumes paid AI credits. Use dry-run to validate first.</div>
+              </div>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
-            Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
+            Free dry-run only (default) — validates product, images, stock/preflight, storyboard, voiceover, queue, secret, budget and worker readiness. NO GitHub Actions. NO paid renders.
+          </label>
+          <label className={`flex items-start gap-2 text-xs cursor-pointer select-none rounded border p-2 ${paidConfirmed ? "border-destructive/60 bg-destructive/10" : "border-border bg-muted/40"}`}>
+            <input
+              type="checkbox"
+              checked={paidConfirmed}
+              onChange={(e) => setPaidConfirmed(e.target.checked)}
+              disabled={dryRun}
+              className="accent-destructive mt-0.5"
+            />
+            <span>
+              <span className={`font-semibold ${paidConfirmed ? "text-destructive" : ""}`}>Paid render confirmed</span>
+              <span className="block text-muted-foreground">
+                Required before any paid/external render dispatch. Uncheck and use dry-run while iterating. Disabled while dry-run is on.
+              </span>
+            </span>
           </label>
           <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
             <input
@@ -865,6 +889,33 @@ export default function PinterestAdStudio() {
             )}
           </CardHeader>
           <CardContent>
+            {!winner && jobs.length > 0 && jobs.every((j) => !isPreviewable(j)) && (
+              <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  No preview available — diagnostic snapshot
+                </div>
+                <div className="text-muted-foreground">
+                  No concept has produced an <code>output_mp4_url</code> yet. Polling stops automatically after the 8-min circuit breaker.
+                </div>
+                <div className="grid gap-1">
+                  {jobs.map((j) => (
+                    <div key={j.id} className="grid grid-cols-[1fr_auto] gap-2 items-start border-t border-amber-500/20 pt-1">
+                      <div>
+                        <div className="font-mono text-[10px]">{j.id.slice(0, 8)} · {j.archetype ?? j.hook_variant ?? "—"}</div>
+                        <div className="text-[11px]">{statusLabel(j.status)} — {failureMessage(j)}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          started: {j.render_started_at ?? "—"} · heartbeat: {j.render_heartbeat_at ?? "—"}
+                        </div>
+                      </div>
+                      <Badge variant={TERMINAL_BAD.has(j.status) || j.status === "needs_admin_review" ? "destructive" : "secondary"} className="text-[10px]">
+                        {j.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className={`grid gap-4 ${jobs.length > 1 ? "md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1"}`}>
               {jobs.map(j => {
                 const ready = isPreviewable(j);
