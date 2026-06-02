@@ -1131,16 +1131,22 @@ Deno.serve(async (req) => {
       const ghPat = (await getEffectiveGhPat(admin)).token;
       const redispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
       if (ghPat) {
-        // Only redispatch one at a time — workflow refuses if a render is already active.
-        for (const row of queuedStale ?? []) {
+        // Dispatch up to (MAX_RENDER_SLOTS - active) jobs in parallel so the
+        // queue drains concurrently instead of one-at-a-time. Queue ordering
+        // is preserved by the .order(render_queued_at ASC) above; we simply
+        // take the head N candidates.
+        const activeSlots = await countActiveRenderSlots(admin, null);
+        const available = Math.max(0, MAX_RENDER_SLOTS - activeSlots);
+        const toDispatch = (queuedStale ?? []).slice(0, available);
+        const results = await Promise.all(toDispatch.map(async (row) => {
           try {
             const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
-            redispatched.push({ jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message });
-            if (r.dispatched) break;
+            return { jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message };
           } catch (e: any) {
-            redispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+            return { jobId: row.id, ok: false, reason: e?.message ?? String(e) };
           }
-        }
+        }));
+        redispatched.push(...results);
       }
 
       console.log(`[self-heal] ${traceId} done`, {
@@ -1148,6 +1154,7 @@ Deno.serve(async (req) => {
         redispatched: redispatched.filter((r) => r.ok).length,
         queue_candidates: queuedStale?.length ?? 0,
         gh_pat_present: !!ghPat,
+        max_render_slots: MAX_RENDER_SLOTS,
       });
       return json({
         ok: true,
@@ -1200,16 +1207,29 @@ Deno.serve(async (req) => {
         .limit(25);
       const ghPat = (await getEffectiveGhPat(admin)).token;
       if (!ghPat) return json({ ok: false, traceId, code: "GH_SECRETS_MISSING", message: "GH_PAT not configured" }, 412);
-      const dispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
-      for (const row of queued ?? []) {
+      // Dispatch up to the available parallel slot count concurrently. Excess
+      // jobs stay in render_queued and will be picked up by the next self_heal
+      // pass when slots free.
+      const activeSlots = await countActiveRenderSlots(admin, null);
+      const available = Math.max(0, MAX_RENDER_SLOTS - activeSlots);
+      const toDispatch = (queued ?? []).slice(0, available);
+      const dispatched = await Promise.all(toDispatch.map(async (row) => {
         try {
-          await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
-          dispatched.push({ jobId: row.id, ok: true });
+          const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
+          return { jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message };
         } catch (e: any) {
-          dispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+          return { jobId: row.id, ok: false, reason: e?.message ?? String(e) };
         }
-      }
-      return json({ ok: true, traceId, queued_count: queued?.length ?? 0, dispatched });
+      }));
+      return json({
+        ok: true,
+        traceId,
+        queued_count: queued?.length ?? 0,
+        dispatched_count: dispatched.filter((d) => d.ok).length,
+        dispatched,
+        active_slots: activeSlots,
+        max_render_slots: MAX_RENDER_SLOTS,
+      });
     }
 
     if (action === "publish_all_completed") {
