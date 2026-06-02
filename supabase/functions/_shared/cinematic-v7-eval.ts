@@ -268,9 +268,16 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
     .map((a) => String(a?.url ?? a?.image_url ?? a?.asset_url ?? a?.src ?? "").trim())
     .filter(Boolean);
   const uniqueAssetUrls = new Set(assetUrls);
-  const singleImageRender =
+  // True single-image render: identical underlying asset URL across all scene
+  // slots AND the scene plan itself has too few distinct compositions to
+  // visually carry the cut. A scene plan with ≥6 unique scene signatures
+  // (crop|motion|role) is treated as a varied edit even when the upstream
+  // asset library only stored one base image — the renderer composes scenes
+  // from generated frames, not from the raw asset URL.
+  const singleImageRenderRaw =
     (assetUrls.length >= 2 && uniqueAssetUrls.size === 1) ||
     (plan.length >= 2 && uniqueAssetUrls.size === 1 && assetUrls.length >= Math.max(2, Math.floor(plan.length / 2)));
+  const singleImageRender = singleImageRenderRaw && uniqueScenesV7 < 6;
 
   // Ken-Burns-only detection
   const motionTokens = planMotionsArr.filter(Boolean);
@@ -311,6 +318,13 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
     if (tooMuchText) v7_reject_reasons.push(`text_density_excessive(${overTextFrames}/${plan.length})`);
     if (!emotional_payoff_present) v7_reject_reasons.push("missing_emotional_payoff_scene");
     if (t.requireCtaScene && ctaSceneCount < 1) v7_reject_reasons.push("missing_dedicated_cta_scene");
+  }
+
+  // Insufficient unique assets — soft v7 reject when the asset library
+  // returned fewer than 6 distinct media URLs even though the scene plan
+  // asked for them. Drives the generator to fetch more variety on regen.
+  if (t.v7Enabled && assetUrls.length >= 2 && uniqueAssetUrls.size > 0 && uniqueAssetUrls.size < 6 && plan.length >= 6) {
+    v7_reject_reasons.push(`insufficient_unique_assets(${uniqueAssetUrls.size}<6)`);
   }
 
   // Hard rejects — absolute deal-breakers regardless of pinterest_quality_score.
