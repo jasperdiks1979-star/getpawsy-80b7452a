@@ -20,6 +20,7 @@
  * Response: { ok, traceId, message, job }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sanitizeCreativeKit } from "../_shared/copy-compliance-sanitizer.ts";
 import { resolveVoiceStyle, type VoiceStyle } from "../_shared/voice-styles.ts";
 import { generateCreativeKit, type CreativeKit } from "../_shared/creative-kit.ts";
 
@@ -912,7 +913,12 @@ const _handlerInner = async (req: Request): Promise<Response> => {
 
   if (regenerate === "copy" || regenerate === "hook") {
     try {
-      const kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      let kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      const san = sanitizeCreativeKit(kit);
+      if (san.changed) {
+        console.log(`[prepare] ${traceId} sanitized regen kit job=${jobId}`, san.log);
+      }
+      kit = san.kit;
       const topHook = kit.hook_variants[0];
       const topCta = kit.cta_variants[0];
       const { data: u } = await admin.from("cinematic_ad_jobs").update({
@@ -1108,6 +1114,13 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     let kit: CreativeKit;
     try {
       kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      // Compliance sanitizer — strip banned medical/efficacy claims
+      // (heal, cure, treatment, vet-approved, etc.) BEFORE persisting.
+      const san = sanitizeCreativeKit(kit);
+      if (san.changed) {
+        console.log(`[prepare] ${traceId} sanitized creative kit job=${jobId}`, san.log);
+      }
+      kit = san.kit;
     } catch (e: any) {
       const code = e?.code || "AI_GATEWAY_FAILED";
       const status = e?.status || 0;
