@@ -1127,6 +1127,10 @@ const _handlerInner = async (req: Request): Promise<Response> => {
       video_count: 0,
       prompt_used: "creative-kit.v1",
     });
+    // Track whether the AI itself produced a valid storyboard so diagnostics
+    // can distinguish ai / ai_retry / fallback even if we end up overriding
+    // the kit with a deterministic 6-scene plan below.
+    let kitHardFailError: { code: string; status: number; message: string } | null = null;
     try {
       kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
       // Compliance sanitizer — strip banned medical/efficacy claims
@@ -1139,27 +1143,33 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     } catch (e: any) {
       const code = e?.code || "AI_GATEWAY_FAILED";
       const status = e?.status || 0;
-      console.error("[prepare] creative-kit hard-fail", { code, status, message: e?.message });
-      await admin.from("cinematic_ad_jobs").update({
-        status: "concept_failed",
-        status_message:
-          code === "AI_CREDITS_EXHAUSTED"
-            ? "AI credits exhausted on Lovable workspace — top up at Settings → Workspace → Usage"
-            : `AI gateway ${status || "error"}: ${e?.message ?? "unknown"}`,
-        approved_for_render: false,
-        creative_kit_diagnostics: { source: "fallback", scene_count: 0, error_message: e?.message ?? String(e), upstream_status: status, retry_reason: code },
-      }).eq("id", jobId);
-      return json(200, {
-        ok: false, recoverable: false, fallback_used: false,
-        concept_status: "concept_failed",
-        error_code: code, step: "creative-kit.generate",
-        message: e?.message ?? "AI gateway failure",
-        traceId, job_id: jobId,
+      // Per Pinterest Ad Studio policy: AI failure (credits exhausted,
+      // rate-limit, upstream error) MUST NOT block render. Fall through to
+      // the deterministic 6-scene fallback storyboard so the pipeline can
+      // still produce a publishable MP4.
+      console.warn("[prepare] creative-kit hard-fail → using deterministic fallback", {
+        code, status, message: e?.message,
       });
+      kitHardFailError = { code, status, message: e?.message ?? String(e) };
+      const fb = fallbackKitInline(productName);
+      kit = {
+        ...fb,
+        diagnostics: {
+          source: "fallback",
+          scene_count: fb.storyboard.length,
+          retry_reason: code,
+          upstream_status: status,
+          error_message: e?.message ?? String(e),
+        },
+      };
+      // Sanitize the fallback too (defense-in-depth).
+      const san = sanitizeCreativeKit(kit);
+      if (san.changed) kit = san.kit;
     }
     // Safety net: storyboard must NEVER be empty after this point. The shared
     // creative-kit module already falls back to a 6-scene deterministic
     // storyboard, so this branch is defense-in-depth.
+    const originalSceneCount = Array.isArray(kit.storyboard) ? kit.storyboard.length : 0;
     if (!Array.isArray(kit.storyboard) || kit.storyboard.length < 6) {
       console.warn("[prepare] storyboard short or empty — injecting safety-net 6-scene fallback", {
         traceId, jobId, scene_count: Array.isArray(kit.storyboard) ? kit.storyboard.length : 0,
@@ -1176,6 +1186,46 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         },
       };
     }
+    // Build the merchant-safe creative_plan snapshot that downstream
+    // preflight / render / publish all read from. This column MUST NOT be
+    // null after prepare succeeds.
+    const planSource: "ai" | "ai_retry" | "fallback" =
+      (kit.diagnostics?.source as any) ?? (kitHardFailError ? "fallback" : "ai");
+    const creativePlan = {
+      version: "v1",
+      product: {
+        slug: product_slug,
+        name: productName,
+        price: product.price != null ? String(product.price) : null,
+        category: product.category ?? null,
+        hero_image: heroUrl,
+      },
+      hook_variants: kit.hook_variants,
+      cta_variants: kit.cta_variants,
+      pin_title: kit.pin_title,
+      pin_description: kit.pin_description,
+      hashtags: kit.hashtags,
+      vo_script: kit.vo_script,
+      storyboard: kit.storyboard,
+      selected_hook_index: 0,
+      selected_cta_index: 0,
+      concept: directorArchetype ?? hook_variant ?? "default",
+      archetype: directorArchetype ?? null,
+      generated_at: new Date().toISOString(),
+      source: planSource,
+    };
+    const creativeKitDiagnostics = {
+      source: planSource,
+      original_scene_count: originalSceneCount,
+      final_scene_count: kit.storyboard.length,
+      retry_reason: kit.diagnostics?.retry_reason ?? (kitHardFailError ? kitHardFailError.code : null),
+      upstream_status: kit.diagnostics?.upstream_status ?? (kitHardFailError ? kitHardFailError.status : null),
+      error_message: kit.diagnostics?.error_message ?? (kitHardFailError ? kitHardFailError.message : null),
+      product_slug,
+      concept: directorArchetype ?? hook_variant ?? "default",
+      archetype: directorArchetype ?? null,
+      generated_at: new Date().toISOString(),
+    };
     console.log("[prepare] creative-kit.done", {
       traceId, jobId,
       creative_kit_response_status: kit.diagnostics?.upstream_status ?? null,
@@ -1207,6 +1257,15 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         hook_variants_meta: kit.hook_variants,
         cta_variants_meta: kit.cta_variants,
         storyboard: kit.storyboard,
+        creative_plan: creativePlan,
+        creative_kit_diagnostics: creativeKitDiagnostics,
+        preflight_status: "pass",
+        status_message:
+          planSource === "fallback"
+            ? "assets ready — deterministic_fallback storyboard (AI unavailable)"
+            : planSource === "ai_retry"
+            ? "assets ready — ai_retry creative plan"
+            : "assets ready — ai creative plan",
         selected_hook_index: 0,
         selected_cta_index: 0,
         hook_text: topHook?.text ?? null,
