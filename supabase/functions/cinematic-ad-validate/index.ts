@@ -1084,7 +1084,7 @@ Deno.serve(async (req) => {
     if (v8AutoRegenTrigger) {
       const reason = singleImageOnly
         ? "v8_auto_regenerate_multiscene_version"
-        : `v8_low_final_score(${(job as any).final_creative_score ?? "?"})`;
+        : `v8_low_final_score(${finalCreativeScore})`;
       try {
         const r = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-regenerate`, {
           method: "POST",
