@@ -431,6 +431,7 @@ const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/Cine
 const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicQueueHealthPage"));
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
+const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
 const RenderBudgetDashboard = lazyWithRetry(() => import("./pages/admin/RenderBudgetDashboard"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
@@ -768,6 +769,14 @@ const App = () => {
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <Auth />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="/admin/e2e-verify"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <AdminE2eVerify />
                               </Suspense>
                             }
                           />
