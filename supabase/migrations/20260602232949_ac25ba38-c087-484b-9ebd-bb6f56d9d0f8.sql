@@ -1,0 +1,1 @@
+UPDATE public.cinematic_ad_settings SET fidelity_max_regen_passes = 10, fidelity_auto_regen = true, allow_static_fallback = false;
