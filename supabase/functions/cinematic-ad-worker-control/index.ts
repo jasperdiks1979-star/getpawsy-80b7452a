@@ -878,6 +878,48 @@ async function triggerGithubWorkflow(
     throw new Error(`Full UUID required. Do not use shortened display id. (got: "${jobId}")`);
   }
 
+  // ── PRE-DISPATCH SAFETY GATE ──
+  // The claim-job edge function will reject any render that lacks
+  // preflight_status='pass' or a creative_plan with HTTP 412
+  // blocked_by_safety_gate. Without this check we burn a GitHub Actions
+  // runner minute (and a render slot) just to fail in the claim step.
+  // Re-check here so a stale or partially-prepared job never reaches the
+  // runner: move it to needs_admin_review and skip dispatch.
+  const { data: gateRow } = await admin
+    .from("cinematic_ad_jobs")
+    .select("preflight_status, creative_plan, legacy_unverified, blocked_reason")
+    .eq("id", jobId)
+    .maybeSingle();
+  const preGateFailures: string[] = [];
+  if (!gateRow) preGateFailures.push("job_missing");
+  if (gateRow?.legacy_unverified) preGateFailures.push("legacy_unverified");
+  if (gateRow && gateRow.preflight_status !== "pass") {
+    preGateFailures.push(`preflight_${gateRow.preflight_status ?? "missing"}`);
+  }
+  if (gateRow && !gateRow.creative_plan) preGateFailures.push("creative_plan_missing");
+  if (preGateFailures.length > 0) {
+    const reasonStr = preGateFailures.join(", ");
+    await admin
+      .from("cinematic_ad_jobs")
+      .update({
+        status: "needs_admin_review",
+        status_message: `Dispatch skipped — safety gate would block render: ${reasonStr}`,
+        blocked_reason: `safety_gate_would_fail: ${reasonStr}`,
+        render_dispatched_at: null,
+        recoverable: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+    console.warn(`[gh-dispatch] ${traceId} skipped — safety gate`, { jobId, preGateFailures });
+    return {
+      ok: true,
+      dispatched: false,
+      jobId,
+      message: `safety gate would block — moved to needs_admin_review (${reasonStr})`,
+      fail_reasons: preGateFailures,
+    };
+  }
+
   // Atomically reserve the slot: only flip render_dispatched_at when the row
   // is not already mid-dispatch. Two concurrent self-heal passes targeting the
   // same jobId cannot both succeed — the second sees zero rows returned and
