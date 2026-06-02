@@ -189,6 +189,17 @@ export default function AdminE2eVerify() {
     URL.revokeObjectURL(url);
   }
 
+  async function copyJsonToClipboard() {
+    if (!result) return;
+    const text = JSON.stringify(result, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("JSON copied to clipboard");
+    } catch {
+      toast.error("Clipboard write failed — use the JSON export instead");
+    }
+  }
+
   function exportAsCsv() {
     if (!result) return;
     const rows: string[][] = [
