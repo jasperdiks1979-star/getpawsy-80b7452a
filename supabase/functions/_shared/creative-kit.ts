@@ -161,13 +161,14 @@ const ANGLES: HookAngle[] = [
 ];
 
 function fallbackKit(productName: string): CreativeKit {
-  const hooks: HookVariant[] = [
-    { angle: "emotional",        text: `You'll wonder how you lived without ${productName}.`, score: 0, reasoning: "" },
-    { angle: "problem_solution", text: `Tired of the mess? ${productName} fixes it.`,         score: 0, reasoning: "" },
-    { angle: "curiosity",        text: `Why pet parents are switching to ${productName}.`,    score: 0, reasoning: "" },
-    { angle: "social_proof",     text: `Trending with US pet parents this week.`,             score: 0, reasoning: "" },
-    { angle: "luxury",           text: `The premium upgrade your home deserves.`,             score: 0, reasoning: "" },
-  ].map((h) => ({ ...h, ...scoreHook(h.text) }));
+  const seed: Array<{ angle: HookAngle; text: string }> = [
+    { angle: "emotional",        text: `You'll wonder how you lived without ${productName}.` },
+    { angle: "problem_solution", text: `Tired of the mess? ${productName} fixes it.` },
+    { angle: "curiosity",        text: `Why pet parents are switching to ${productName}.` },
+    { angle: "social_proof",     text: `Trending with US pet parents this week.` },
+    { angle: "luxury",           text: `The premium upgrade your home deserves.` },
+  ];
+  const hooks: HookVariant[] = seed.map((h) => ({ angle: h.angle, text: h.text, ...scoreHook(h.text) }));
 
   const ctas: CtaVariant[] = [
     { text: "Shop now →",     score: 0 },
