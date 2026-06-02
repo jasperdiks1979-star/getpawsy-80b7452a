@@ -792,11 +792,35 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
   return { reset: targetIds.length, ids: targetIds };
 }
 
-async function triggerGithubWorkflow(
-  admin: any,
-  traceId: string,
-  opts: { job_id?: string; claim_next?: boolean; ghPat?: string },
-): Promise<any>;
+/**
+ * Counts render "slots" currently occupied. A slot is held by either:
+ *   - a job with status='rendering' (worker actively encoding), or
+ *   - a job with status='render_queued' whose render_dispatched_at is within
+ *     the dispatch lock window (already handed to GitHub Actions but the
+ *     runner has not yet claimed it).
+ * Pass excludeJobId to ignore a specific row (useful when we are about to
+ * dispatch that exact row and don't want to double-count it).
+ */
+async function countActiveRenderSlots(admin: any, excludeJobId: string | null): Promise<number> {
+  const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+  let renderingQuery = admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "rendering");
+  if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
+  const { count: rendering } = await renderingQuery;
+
+  let dispatchingQuery = admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "render_queued")
+    .gte("render_dispatched_at", lockCutoffIso);
+  if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
+  const { count: dispatching } = await dispatchingQuery;
+
+  return (rendering ?? 0) + (dispatching ?? 0);
+}
+
 async function triggerGithubWorkflow(
   admin: any,
   traceId: string,
