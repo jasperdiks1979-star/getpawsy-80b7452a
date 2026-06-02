@@ -803,22 +803,42 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
  */
 async function countActiveRenderSlots(admin: any, excludeJobId: string | null): Promise<number> {
   const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
-  let renderingQuery = admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "rendering");
-  if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
-  const { count: rendering } = await renderingQuery;
-
-  let dispatchingQuery = admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "render_queued")
-    .gte("render_dispatched_at", lockCutoffIso);
-  if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
-  const { count: dispatching } = await dispatchingQuery;
-
-  return (rendering ?? 0) + (dispatching ?? 0);
+  let rendering = 0;
+  let dispatching = 0;
+  try {
+    let renderingQuery = admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "rendering");
+    if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
+    const { count, error } = await renderingQuery;
+    if (error) throw error;
+    rendering = count ?? 0;
+  } catch (e: any) {
+    console.error("[slot-check] rendering count failed — assuming 0", {
+      message: e?.message, code: e?.code, details: e?.details, hint: e?.hint,
+    });
+    rendering = 0;
+  }
+  try {
+    let dispatchingQuery = admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "render_queued")
+      .gte("render_dispatched_at", lockCutoffIso);
+    if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
+    const { count, error } = await dispatchingQuery;
+    if (error) throw error;
+    dispatching = count ?? 0;
+  } catch (e: any) {
+    // If render_dispatched_at column is missing or schema cache is stale,
+    // never block dispatch — fall back to 0 dispatching so the next job goes out.
+    console.error("[slot-check] dispatching count failed — falling back to 0 (never block dispatch)", {
+      message: e?.message, code: e?.code, details: e?.details, hint: e?.hint,
+    });
+    dispatching = 0;
+  }
+  return rendering + dispatching;
 }
 
 async function triggerGithubWorkflow(
