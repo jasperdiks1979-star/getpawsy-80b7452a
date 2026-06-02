@@ -1109,6 +1109,13 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     let kit: CreativeKit;
     try {
       kit = await generateCreativeKit(product as any, voiceStyle, lovableKey);
+      // Compliance sanitizer — strip banned medical/efficacy claims
+      // (heal, cure, treatment, vet-approved, etc.) BEFORE persisting.
+      const san = sanitizeCreativeKit(kit);
+      if (san.changed) {
+        console.log(`[prepare] ${traceId} sanitized creative kit job=${jobId}`, san.log);
+      }
+      kit = san.kit;
     } catch (e: any) {
       const code = e?.code || "AI_GATEWAY_FAILED";
       const status = e?.status || 0;
