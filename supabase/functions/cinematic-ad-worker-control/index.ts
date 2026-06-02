@@ -818,18 +818,25 @@ async function triggerGithubWorkflow(
   }
 
   let jobId = opts.job_id ?? "";
-  const { count: activeRendering } = await admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "rendering");
-  if ((activeRendering ?? 0) > 0) {
-    return { ok: true, dispatched: false, message: "render already active — next job will dispatch after render_complete" };
+  // Slot accounting: enforce MAX_RENDER_SLOTS for true parallel rendering.
+  // A slot is occupied by either an actively rendering job OR a job that was
+  // dispatched within DISPATCH_LOCK_MS and not yet claimed by a worker.
+  const activeSlots = await countActiveRenderSlots(admin, jobId || null);
+  if (activeSlots >= MAX_RENDER_SLOTS) {
+    return {
+      ok: true,
+      dispatched: false,
+      message: `all ${MAX_RENDER_SLOTS} render slots active (${activeSlots}) — next job will dispatch when a slot frees up`,
+      active_slots: activeSlots,
+      max_render_slots: MAX_RENDER_SLOTS,
+    };
   }
   if (!jobId && opts.claim_next) {
     const { data: next, error: nextErr } = await admin
       .from("cinematic_ad_jobs")
       .select("id")
       .eq("status", "render_queued")
+      .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${new Date(Date.now() - DISPATCH_LOCK_MS).toISOString()}`)
       .order("render_queued_at", { ascending: true })
       .limit(1)
       .maybeSingle();
@@ -842,10 +849,13 @@ async function triggerGithubWorkflow(
     throw new Error(`Full UUID required. Do not use shortened display id. (got: "${jobId}")`);
   }
 
-  // Mark as queued before dispatching so GitHub cannot race ahead, claim the job,
-  // and then get overwritten back to render_queued by this control function.
+  // Atomically reserve the slot: only flip render_dispatched_at when the row
+  // is not already mid-dispatch. Two concurrent self-heal passes targeting the
+  // same jobId cannot both succeed — the second sees zero rows returned and
+  // bails out without invoking GitHub a second time.
   const nowIso = new Date().toISOString();
-  await admin
+  const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+  const { data: reserved, error: reserveErr } = await admin
     .from("cinematic_ad_jobs")
     .update({
       status: "render_queued",
@@ -856,7 +866,19 @@ async function triggerGithubWorkflow(
       status_message: `Dispatching to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
       updated_at: nowIso,
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${lockCutoffIso}`)
+    .select("id")
+    .maybeSingle();
+  if (reserveErr) throw reserveErr;
+  if (!reserved) {
+    return {
+      ok: true,
+      dispatched: false,
+      message: "duplicate dispatch suppressed — job already reserved within lock window",
+      jobId,
+    };
+  }
 
   const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
   const ghRes = await fetch(url, {
@@ -874,6 +896,13 @@ async function triggerGithubWorkflow(
   if (!ghRes.ok) {
     const text = await ghRes.text().catch(() => "");
     console.error(`[gh-dispatch] ${traceId} failed`, { status: ghRes.status, body: text.slice(0, 500) });
+    // Release the slot reservation so the watchdog can retry.
+    await admin
+      .from("cinematic_ad_jobs")
+      .update({ render_dispatched_at: null, updated_at: new Date().toISOString() })
+      .eq("id", jobId)
+      .eq("status", "render_queued")
+      .is("render_started_at", null);
     throw new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
   }
 
