@@ -825,6 +825,23 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         existing_status: activeDuplicate.status,
       });
     }
+    // force_new: supersede any remaining active solo job(s) for this slug so
+    // the unique partial index `uniq_cinematic_active_concept` doesn't reject
+    // the upcoming insert.
+    if (activeDuplicate && body.force_new) {
+      const { error: supErr } = await admin
+        .from("cinematic_ad_jobs")
+        .update({
+          status: "failed",
+          superseded_at: new Date().toISOString(),
+          status_message: "superseded by force_new prepare",
+          error_message: "auto-superseded: force_new",
+        })
+        .eq("product_slug", product_slug)
+        .is("director_run_id", null)
+        .in("status", ["pending", "preparing", "prepared", "render_queued", "rendering"]);
+      console.log("[prepare] force_new supersede", traceId, { product_slug, supErr: supErr?.message });
+    }
   }
   const productName: string = product.name ?? product_slug;
   const heroUrl: string = product.image_url;
