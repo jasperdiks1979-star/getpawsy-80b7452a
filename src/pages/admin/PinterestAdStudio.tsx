@@ -668,6 +668,22 @@ export default function PinterestAdStudio() {
     } catch (e: any) { toast.error(e.message || "publish failed"); }
   }
 
+  // Admin override: bypass validator gate and force-push to Pinterest.
+  // cinematic-ad-push-pinterest already supports { force: true } and logs
+  // the bypass against the calling admin user, so we just forward it.
+  async function publishOverride(j: JobRow) {
+    if (!confirm("Override validator and publish to Pinterest anyway?\n\nThis bypasses scene-diversity, hook-score, emotional-arc and Pinterest-quality gates. The bypass is logged against your admin user.")) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-push-pinterest", {
+        body: { job_id: j.id, force: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.ok === false) throw new Error((data as any)?.message || "force publish failed");
+      toast.success("Force-published to Pinterest");
+      setPollKey(k => k + 1);
+    } catch (e: any) { toast.error(e.message || "force publish failed"); }
+  }
+
   async function regenerate(j: JobRow) {
     if (!paidConfirmed) {
       toast.error("Paid render not confirmed — cannot regenerate", {
