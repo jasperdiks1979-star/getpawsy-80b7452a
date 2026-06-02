@@ -789,6 +789,21 @@ export default function PinterestAdStudio() {
               </span>
             </span>
           </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
+            <input
+              type="checkbox"
+              checked={forceStaleStockOverride}
+              onChange={(e) => setForceStaleStockOverride(e.target.checked)}
+              className="accent-amber-500 mt-0.5"
+              data-testid="stale-stock-override"
+            />
+            <span>
+              <span className="font-medium text-amber-700 dark:text-amber-400">Force render despite stale CJ inventory (&gt;12h)</span>
+              <span className="block text-muted-foreground">
+                Bypass the CJ stock freshness gate for paid runs. The warning still shows so you can confirm the bypass. Use only when you've verified stock by hand.
+              </span>
+            </span>
+          </label>
           <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>Hit a render budget block? Inspect or clear it here.</span>
             <Link to="/admin/render-budget" className="text-primary hover:underline">Render Budget dashboard →</Link>
