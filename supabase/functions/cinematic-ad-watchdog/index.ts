@@ -32,6 +32,13 @@ const AI_DIAG_MODEL = "google/gemini-2.5-flash";
 
 const HEARTBEAT_STALE_MS = 90 * 1000;
 const QUEUE_STALE_MS = 2 * 60 * 1000;
+// Hard-fail thresholds: when these are exceeded, the slot is released
+// immediately and the job is moved to `failed`. Used in addition to the
+// existing soft-recovery loop (HEARTBEAT_STALE_MS) so a worker that
+// silently disappeared can never permanently hold a render slot.
+const HEARTBEAT_HARD_FAIL_MS = 10 * 60 * 1000;       // 10 min
+const RENDERING_NO_PROGRESS_HARD_FAIL_MS = 15 * 60 * 1000; // 15 min
+const RENDER_QUEUED_UNCLAIMED_HARD_FAIL_MS = 30 * 60 * 1000; // 30 min
 const MAX_RETRIES = 3;
 // Backoff in minutes per attempt number (1-indexed)
 const BACKOFF_MINUTES = [1, 5, 15];
@@ -431,6 +438,115 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
     .or(`render_heartbeat_at.lt.${hbCutoff},and(render_heartbeat_at.is.null,render_started_at.lt.${hbCutoff})`)
     .limit(50);
   result.detections.rendering_stale_heartbeat = stuck?.length ?? 0;
+
+  // === (1z) ZOMBIE HARD-FAIL — release render slot ===
+  // Any `rendering` job whose heartbeat is older than 10 min, OR that has
+  // a render_started_at older than 15 min with no heartbeat at all, is
+  // declared dead. We mark it failed (not requeued) so the active-slot
+  // count drops and queue_waiting jobs can be promoted.
+  if (!paused) {
+    const hbHardCutoff = new Date(now - HEARTBEAT_HARD_FAIL_MS).toISOString();
+    const startHardCutoff = new Date(now - RENDERING_NO_PROGRESS_HARD_FAIL_MS).toISOString();
+    const { data: zombies } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,status,render_heartbeat_at,render_started_at,render_worker_id")
+      .eq("status", "rendering")
+      .or(
+        `render_heartbeat_at.lt.${hbHardCutoff},` +
+        `and(render_heartbeat_at.is.null,render_started_at.lt.${startHardCutoff})`,
+      )
+      .limit(50);
+    for (const row of zombies ?? []) {
+      const reason = row.render_heartbeat_at
+        ? `zombie_rendering: heartbeat ${row.render_heartbeat_at} > 10m old — slot released`
+        : `zombie_rendering: no heartbeat and render_started_at ${row.render_started_at} > 15m — slot released`;
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: reason,
+        error_message: "zombie_rendering_heartbeat_stale",
+        render_worker_id: null,
+        render_heartbeat_at: null,
+        updated_at: new Date(now).toISOString(),
+      }).eq("id", row.id).eq("status", "rendering");
+      result.quarantined.push({ job_id: row.id, reason });
+      await logEvent(admin, {
+        job_id: row.id, event_type: "zombie_killed", action_taken: "release_slot",
+        previous_status: "rendering", new_status: "failed",
+        trace_id: traceId, recovery_result: "success",
+        payload: { reason, render_heartbeat_at: row.render_heartbeat_at, render_started_at: row.render_started_at },
+      });
+    }
+  }
+
+  // === (1y) ZOMBIE HARD-FAIL — unclaimed render_queued > 30 min ===
+  // The GH workflow normally claims a queued job within seconds. If a job
+  // has sat in render_queued with no worker for more than 30 min, the
+  // dispatch never landed (PAT issue, workflow disabled, runner offline).
+  // Fail it so the slot frees up; the autopilot will resubmit the concept.
+  if (!paused) {
+    const unclaimedCutoff = new Date(now - RENDER_QUEUED_UNCLAIMED_HARD_FAIL_MS).toISOString();
+    const { data: unclaimed } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,render_queued_at,created_at")
+      .eq("status", "render_queued")
+      .is("render_worker_id", null)
+      .is("render_started_at", null)
+      .or(`render_queued_at.lt.${unclaimedCutoff},and(render_queued_at.is.null,created_at.lt.${unclaimedCutoff})`)
+      .limit(50);
+    for (const row of unclaimed ?? []) {
+      const reason = `zombie_unclaimed: render_queued >30m with no worker — slot released`;
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: reason,
+        error_message: "zombie_unclaimed_render_queued",
+        render_worker_id: null,
+        render_heartbeat_at: null,
+        updated_at: new Date(now).toISOString(),
+      }).eq("id", row.id).eq("status", "render_queued");
+      result.quarantined.push({ job_id: row.id, reason });
+      await logEvent(admin, {
+        job_id: row.id, event_type: "zombie_killed", action_taken: "release_slot",
+        previous_status: "render_queued", new_status: "failed",
+        trace_id: traceId, recovery_result: "success",
+        payload: { reason, render_queued_at: row.render_queued_at },
+      });
+    }
+  }
+
+  // === (1x) ZOMBIE HARD-FAIL — render_queued with a worker that died ===
+  // A job can sit in status='render_queued' with render_started_at +
+  // render_worker_id set when the GH Actions runner started a render but
+  // crashed before flipping status to 'rendering'. Without this rule those
+  // jobs hold a render slot forever because section (1) only checks
+  // status='rendering'.
+  if (!paused) {
+    const startedStaleCutoff = new Date(now - RENDERING_NO_PROGRESS_HARD_FAIL_MS).toISOString();
+    const { data: ghosts } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,render_started_at,render_worker_id")
+      .eq("status", "render_queued")
+      .not("render_started_at", "is", null)
+      .lt("render_started_at", startedStaleCutoff)
+      .limit(50);
+    for (const row of ghosts ?? []) {
+      const reason = `zombie_render_queued_with_dead_worker: worker ${row.render_worker_id} started ${row.render_started_at} but never flipped to rendering — slot released`;
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: reason,
+        error_message: "zombie_render_queued_with_dead_worker",
+        render_worker_id: null,
+        render_heartbeat_at: null,
+        updated_at: new Date(now).toISOString(),
+      }).eq("id", row.id).eq("status", "render_queued");
+      result.quarantined.push({ job_id: row.id, reason });
+      await logEvent(admin, {
+        job_id: row.id, event_type: "zombie_killed", action_taken: "release_slot",
+        previous_status: "render_queued", new_status: "failed",
+        trace_id: traceId, recovery_result: "success",
+        payload: { reason, render_started_at: row.render_started_at, render_worker_id: row.render_worker_id },
+      });
+    }
+  }
 
   if (!paused) {
     const nowIso = new Date(now).toISOString();
