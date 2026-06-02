@@ -95,6 +95,136 @@ function isPreviewable(j: JobRow): boolean {
   return !!j.output_mp4_url && PREVIEWABLE_STATES.has(j.status);
 }
 
+/**
+ * Validator debug panel — shows every failed validator check + score for a job.
+ * Sourced from cinematic_ad_jobs.validation_report (written by
+ * cinematic-ad-validate) plus the per-axis score columns. Collapsed by
+ * default; expand to see exact field, observed value, expected threshold and
+ * the reject-reason buckets (v4 / v5 / v7 / hard / auto-approve).
+ */
+function ValidatorDebugPanel({ job }: { job: JobRow }) {
+  const [open, setOpen] = useState(false);
+  const report = (job.validation_report ?? null) as any;
+  const checks: Array<{ name: string; passed: boolean; observed: unknown; expected?: unknown; message?: string }> =
+    Array.isArray(report?.checks) ? report.checks : [];
+  const failed = checks.filter((c) => c.passed === false);
+  const hard = Array.isArray(job.hard_reject_reasons) ? job.hard_reject_reasons : [];
+  const v4 = Array.isArray(job.v4_reject_reasons) ? job.v4_reject_reasons : [];
+  const v5 = Array.isArray(job.v5_reject_reasons) ? job.v5_reject_reasons : [];
+  const v7 = Array.isArray(job.v7_reject_reasons) ? job.v7_reject_reasons : [];
+  const hasAny =
+    failed.length > 0 || hard.length > 0 || v4.length > 0 || v5.length > 0 || v7.length > 0 ||
+    !!job.auto_approval_blocked_reason;
+  if (!hasAny && !report) return null;
+  const fmt = (v: unknown) => {
+    if (v == null) return "—";
+    if (typeof v === "boolean") return v ? "true" : "false";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+  return (
+    <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-[10px] space-y-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between w-full font-semibold text-amber-700 dark:text-amber-400"
+      >
+        <span className="flex items-center gap-1">
+          <Bug className="w-3 h-3" />
+          Validator debug
+          {failed.length > 0 && (
+            <Badge variant="destructive" className="text-[9px] px-1 py-0">
+              {failed.length} failed
+            </Badge>
+          )}
+          {hard.length > 0 && (
+            <Badge variant="destructive" className="text-[9px] px-1 py-0">
+              hard:{hard.length}
+            </Badge>
+          )}
+        </span>
+        <span className="text-muted-foreground">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="space-y-1.5 pt-1">
+          {/* Score summary */}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+            <span className="text-muted-foreground">pinterest_quality:</span>
+            <span className={`font-mono ${Number(job.pinterest_quality_score ?? 0) > 90 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.pinterest_quality_score)} <span className="text-muted-foreground">/ &gt;95</span>
+            </span>
+            <span className="text-muted-foreground">scene_diversity_v7:</span>
+            <span className="font-mono">{fmt(job.scene_diversity_v7_score)} / 100</span>
+            <span className="text-muted-foreground">camera_diversity:</span>
+            <span className="font-mono">{fmt(job.camera_diversity_score)} / 100</span>
+            <span className="text-muted-foreground">hook_strength_v7:</span>
+            <span className="font-mono">{fmt(job.hook_strength_v7_score)} / 100</span>
+            <span className="text-muted-foreground">text_safety:</span>
+            <span className="font-mono">{fmt(job.text_safety_score)} / 100</span>
+            <span className="text-muted-foreground">emotional_arc:</span>
+            <span className={`font-mono ${Number(job.emotional_arc_score ?? 0) >= 6 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.emotional_arc_score)} / &gt;=6
+            </span>
+            <span className="text-muted-foreground">engagement_pacing:</span>
+            <span className={`font-mono ${Number(job.engagement_pacing_score ?? 0) >= 65 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.engagement_pacing_score)} / &gt;=65
+            </span>
+            <span className="text-muted-foreground">qa_composite:</span>
+            <span className="font-mono">{fmt(job.qa_composite_score)}</span>
+          </div>
+
+          {/* Auto-approve block + reject buckets */}
+          {job.auto_approval_blocked_reason && (
+            <div>
+              <span className="text-muted-foreground">auto_approval_blocked: </span>
+              <code className="text-destructive">{job.auto_approval_blocked_reason}</code>
+            </div>
+          )}
+          {hard.length > 0 && (
+            <div>
+              <span className="text-muted-foreground">hard_rejects: </span>
+              {hard.map((r) => (
+                <code key={r} className="mr-1 px-1 rounded bg-destructive/15 text-destructive">{r}</code>
+              ))}
+            </div>
+          )}
+          {v7.length > 0 && (
+            <div><span className="text-muted-foreground">v7_rejects: </span>{v7.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+          {v5.length > 0 && (
+            <div><span className="text-muted-foreground">v5_rejects: </span>{v5.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+          {v4.length > 0 && (
+            <div><span className="text-muted-foreground">v4_rejects: </span>{v4.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+
+          {/* Per-check table (failed only) */}
+          {failed.length > 0 && (
+            <div className="border-t border-amber-500/20 pt-1">
+              <div className="text-muted-foreground mb-0.5">Failed checks:</div>
+              <ul className="space-y-0.5">
+                {failed.map((c) => (
+                  <li key={c.name} className="grid grid-cols-[auto_1fr] gap-x-1">
+                    <XCircle className="w-3 h-3 text-destructive shrink-0 mt-[1px]" />
+                    <span>
+                      <code className="font-mono">{c.name}</code>{" "}
+                      <span className="text-muted-foreground">observed=</span>
+                      <code>{fmt(c.observed)}</code>{" "}
+                      <span className="text-muted-foreground">expected=</span>
+                      <code>{fmt(c.expected)}</code>
+                      {c.message && <span className="text-destructive"> · {c.message}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Produce a user-facing failure message that reflects the ACTUAL reason.
 // Only blame voice synthesis when vo_url is truly missing. Surface
 // product_out_of_stock / preparation_gate / preflight failures verbatim.
