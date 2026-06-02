@@ -33,6 +33,12 @@ const DEFAULT_PAT_TEST_REPO = "jasperdiks1979-star/getpawsy-80b7452a";
 
 const STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
 const WORKER_LIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+// Parallel render capacity. Each "slot" maps to one concurrent GitHub Actions
+// runner. A slot is considered occupied when a job is either actively
+// rendering or has been dispatched within DISPATCH_LOCK_MS but not yet claimed
+// (prevents a thundering-herd that exceeds the cap before workers pick up).
+const MAX_RENDER_SLOTS = Math.max(1, Number(Deno.env.get("MAX_RENDER_SLOTS") ?? "6"));
+const DISPATCH_LOCK_MS = 5 * 60 * 1000;
 const CANONICAL_FUNCTIONS = [
   "cinematic-ad-claim-job",
   "cinematic-ad-render-webhook",
@@ -786,6 +792,35 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
   return { reset: targetIds.length, ids: targetIds };
 }
 
+/**
+ * Counts render "slots" currently occupied. A slot is held by either:
+ *   - a job with status='rendering' (worker actively encoding), or
+ *   - a job with status='render_queued' whose render_dispatched_at is within
+ *     the dispatch lock window (already handed to GitHub Actions but the
+ *     runner has not yet claimed it).
+ * Pass excludeJobId to ignore a specific row (useful when we are about to
+ * dispatch that exact row and don't want to double-count it).
+ */
+async function countActiveRenderSlots(admin: any, excludeJobId: string | null): Promise<number> {
+  const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+  let renderingQuery = admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "rendering");
+  if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
+  const { count: rendering } = await renderingQuery;
+
+  let dispatchingQuery = admin
+    .from("cinematic_ad_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "render_queued")
+    .gte("render_dispatched_at", lockCutoffIso);
+  if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
+  const { count: dispatching } = await dispatchingQuery;
+
+  return (rendering ?? 0) + (dispatching ?? 0);
+}
+
 async function triggerGithubWorkflow(
   admin: any,
   traceId: string,
@@ -812,18 +847,25 @@ async function triggerGithubWorkflow(
   }
 
   let jobId = opts.job_id ?? "";
-  const { count: activeRendering } = await admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "rendering");
-  if ((activeRendering ?? 0) > 0) {
-    return { ok: true, dispatched: false, message: "render already active — next job will dispatch after render_complete" };
+  // Slot accounting: enforce MAX_RENDER_SLOTS for true parallel rendering.
+  // A slot is occupied by either an actively rendering job OR a job that was
+  // dispatched within DISPATCH_LOCK_MS and not yet claimed by a worker.
+  const activeSlots = await countActiveRenderSlots(admin, jobId || null);
+  if (activeSlots >= MAX_RENDER_SLOTS) {
+    return {
+      ok: true,
+      dispatched: false,
+      message: `all ${MAX_RENDER_SLOTS} render slots active (${activeSlots}) — next job will dispatch when a slot frees up`,
+      active_slots: activeSlots,
+      max_render_slots: MAX_RENDER_SLOTS,
+    };
   }
   if (!jobId && opts.claim_next) {
     const { data: next, error: nextErr } = await admin
       .from("cinematic_ad_jobs")
       .select("id")
       .eq("status", "render_queued")
+      .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${new Date(Date.now() - DISPATCH_LOCK_MS).toISOString()}`)
       .order("render_queued_at", { ascending: true })
       .limit(1)
       .maybeSingle();
@@ -836,10 +878,13 @@ async function triggerGithubWorkflow(
     throw new Error(`Full UUID required. Do not use shortened display id. (got: "${jobId}")`);
   }
 
-  // Mark as queued before dispatching so GitHub cannot race ahead, claim the job,
-  // and then get overwritten back to render_queued by this control function.
+  // Atomically reserve the slot: only flip render_dispatched_at when the row
+  // is not already mid-dispatch. Two concurrent self-heal passes targeting the
+  // same jobId cannot both succeed — the second sees zero rows returned and
+  // bails out without invoking GitHub a second time.
   const nowIso = new Date().toISOString();
-  await admin
+  const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+  const { data: reserved, error: reserveErr } = await admin
     .from("cinematic_ad_jobs")
     .update({
       status: "render_queued",
@@ -850,7 +895,19 @@ async function triggerGithubWorkflow(
       status_message: `Dispatching to GitHub Actions (${GH_WORKFLOW}@${GH_REF}) at ${nowIso}`,
       updated_at: nowIso,
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${lockCutoffIso}`)
+    .select("id")
+    .maybeSingle();
+  if (reserveErr) throw reserveErr;
+  if (!reserved) {
+    return {
+      ok: true,
+      dispatched: false,
+      message: "duplicate dispatch suppressed — job already reserved within lock window",
+      jobId,
+    };
+  }
 
   const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
   const ghRes = await fetch(url, {
@@ -868,6 +925,13 @@ async function triggerGithubWorkflow(
   if (!ghRes.ok) {
     const text = await ghRes.text().catch(() => "");
     console.error(`[gh-dispatch] ${traceId} failed`, { status: ghRes.status, body: text.slice(0, 500) });
+    // Release the slot reservation so the watchdog can retry.
+    await admin
+      .from("cinematic_ad_jobs")
+      .update({ render_dispatched_at: null, updated_at: new Date().toISOString() })
+      .eq("id", jobId)
+      .eq("status", "render_queued")
+      .is("render_started_at", null);
     throw new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
   }
 
@@ -1067,16 +1131,22 @@ Deno.serve(async (req) => {
       const ghPat = (await getEffectiveGhPat(admin)).token;
       const redispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
       if (ghPat) {
-        // Only redispatch one at a time — workflow refuses if a render is already active.
-        for (const row of queuedStale ?? []) {
+        // Dispatch up to (MAX_RENDER_SLOTS - active) jobs in parallel so the
+        // queue drains concurrently instead of one-at-a-time. Queue ordering
+        // is preserved by the .order(render_queued_at ASC) above; we simply
+        // take the head N candidates.
+        const activeSlots = await countActiveRenderSlots(admin, null);
+        const available = Math.max(0, MAX_RENDER_SLOTS - activeSlots);
+        const toDispatch = (queuedStale ?? []).slice(0, available);
+        const results = await Promise.all(toDispatch.map(async (row) => {
           try {
             const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
-            redispatched.push({ jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message });
-            if (r.dispatched) break;
+            return { jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message };
           } catch (e: any) {
-            redispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+            return { jobId: row.id, ok: false, reason: e?.message ?? String(e) };
           }
-        }
+        }));
+        redispatched.push(...results);
       }
 
       console.log(`[self-heal] ${traceId} done`, {
@@ -1084,6 +1154,7 @@ Deno.serve(async (req) => {
         redispatched: redispatched.filter((r) => r.ok).length,
         queue_candidates: queuedStale?.length ?? 0,
         gh_pat_present: !!ghPat,
+        max_render_slots: MAX_RENDER_SLOTS,
       });
       return json({
         ok: true,
@@ -1136,16 +1207,29 @@ Deno.serve(async (req) => {
         .limit(25);
       const ghPat = (await getEffectiveGhPat(admin)).token;
       if (!ghPat) return json({ ok: false, traceId, code: "GH_SECRETS_MISSING", message: "GH_PAT not configured" }, 412);
-      const dispatched: Array<{ jobId: string; ok: boolean; reason?: string }> = [];
-      for (const row of queued ?? []) {
+      // Dispatch up to the available parallel slot count concurrently. Excess
+      // jobs stay in render_queued and will be picked up by the next self_heal
+      // pass when slots free.
+      const activeSlots = await countActiveRenderSlots(admin, null);
+      const available = Math.max(0, MAX_RENDER_SLOTS - activeSlots);
+      const toDispatch = (queued ?? []).slice(0, available);
+      const dispatched = await Promise.all(toDispatch.map(async (row) => {
         try {
-          await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
-          dispatched.push({ jobId: row.id, ok: true });
+          const r = await triggerGithubWorkflow(admin, traceId, { job_id: row.id, ghPat });
+          return { jobId: row.id, ok: !!r.dispatched, reason: r.dispatched ? undefined : r.message };
         } catch (e: any) {
-          dispatched.push({ jobId: row.id, ok: false, reason: e?.message ?? String(e) });
+          return { jobId: row.id, ok: false, reason: e?.message ?? String(e) };
         }
-      }
-      return json({ ok: true, traceId, queued_count: queued?.length ?? 0, dispatched });
+      }));
+      return json({
+        ok: true,
+        traceId,
+        queued_count: queued?.length ?? 0,
+        dispatched_count: dispatched.filter((d) => d.ok).length,
+        dispatched,
+        active_slots: activeSlots,
+        max_render_slots: MAX_RENDER_SLOTS,
+      });
     }
 
     if (action === "publish_all_completed") {
