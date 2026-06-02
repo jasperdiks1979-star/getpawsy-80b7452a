@@ -253,7 +253,15 @@ Rules:
 - vo_script mentions the product name once, naturally.
 - on_screen_text in scene 6 must be exactly: Get yours at GetPawsy.pet`;
 
-  try {
+  // Inner caller: runs one AI request and returns either a parsed kit candidate
+  // or throws a hard-fail error (credit / rate / auth) that the outer flow
+  // must propagate so the caller can mark the job concept_failed.
+  const tryGenerate = async (extraReminder?: string): Promise<{
+    hooks: HookVariant[]; ctas: CtaVariant[]; storyboard: StoryboardScene[];
+    vo_script: string; pin_title: string; pin_description: string; hashtags: string[];
+    upstream_status: number;
+  }> => {
+    const userMsg = extraReminder ? `${user}\n\nIMPORTANT REMINDER: ${extraReminder}` : user;
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -261,7 +269,7 @@ Rules:
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: user },
+          { role: "user", content: userMsg },
         ],
         response_format: { type: "json_object" },
       }),
@@ -269,25 +277,22 @@ Rules:
     if (!res.ok) {
       const body = await res.text();
       console.error("[creative-kit] non-2xx", res.status, body);
-      // Hard-fail on credit/rate-limit conditions so the caller can mark the
-      // job concept_failed instead of persisting a broken empty storyboard.
       if (res.status === 402 || res.status === 429 || res.status === 401) {
         const err: any = new Error(
           res.status === 402
             ? "ai_gateway_payment_required: Lovable AI workspace has no credits"
-            : res.status === 429
-            ? "ai_gateway_rate_limited"
-            : "ai_gateway_unauthorized",
+            : res.status === 429 ? "ai_gateway_rate_limited" : "ai_gateway_unauthorized",
         );
         err.status = res.status;
-        err.code =
-          res.status === 402 ? "AI_CREDITS_EXHAUSTED"
-          : res.status === 429 ? "AI_RATE_LIMITED"
-          : "AI_UNAUTHORIZED";
+        err.code = res.status === 402 ? "AI_CREDITS_EXHAUSTED"
+          : res.status === 429 ? "AI_RATE_LIMITED" : "AI_UNAUTHORIZED";
         err.upstream = body;
         throw err;
       }
-      return fallbackKit(product.name);
+      const err: any = new Error(`ai_gateway_${res.status}`);
+      err.status = res.status;
+      err.upstream = body;
+      throw err;
     }
     const data = await res.json();
     const raw: string = data?.choices?.[0]?.message?.content ?? "";
@@ -324,30 +329,82 @@ Rules:
           duration_s: Number(s?.duration_s ?? 4),
         }))
       : [];
-
-    if (hooks.length === 0 || ctas.length === 0) {
-      console.warn("[creative-kit] missing hooks/ctas, using fallback");
-      return fallbackKit(product.name);
-    }
-
-    hooks.sort((a, b) => b.score - a.score);
-    ctas.sort((a, b) => b.score - a.score);
-
     return {
-      hook_variants: hooks.slice(0, 6),
-      cta_variants: ctas.slice(0, 3),
-      vo_script: String(parsed?.vo_script ?? "").trim() || fallbackKit(product.name).vo_script,
+      hooks, ctas, storyboard,
+      vo_script: String(parsed?.vo_script ?? "").trim(),
       pin_title: String(parsed?.pin_title ?? "").slice(0, 100),
       pin_description: String(parsed?.pin_description ?? "").slice(0, 480),
       hashtags: Array.isArray(parsed?.hashtags)
         ? parsed.hashtags.map((h: unknown) => String(h ?? "").trim()).filter(Boolean).slice(0, 8)
         : [],
-      storyboard,
-      selected_hook_index: 0,
-      selected_cta_index: 0,
+      upstream_status: res.status,
     };
-  } catch (e) {
-    console.error("[creative-kit] failed", e);
-    return fallbackKit(product.name);
+  };
+
+  let source: KitDiagnostics["source"] = "ai";
+  let retry_reason: string | undefined;
+  let upstream_status: number | undefined;
+  let error_message: string | undefined;
+  let attempt: Awaited<ReturnType<typeof tryGenerate>> | null = null;
+
+  try {
+    attempt = await tryGenerate();
+    upstream_status = attempt.upstream_status;
+    if (attempt.storyboard.length === 0 || attempt.hooks.length === 0 || attempt.ctas.length === 0) {
+      retry_reason = attempt.storyboard.length === 0
+        ? "empty_storyboard_first_pass"
+        : "missing_hooks_or_ctas";
+      console.warn("[creative-kit] retrying once:", retry_reason);
+      try {
+        const retried = await tryGenerate(
+          "Your previous response was missing required fields. You MUST return exactly 6 storyboard scenes (scene_index 1-6), 5 hook_variants, and 3 cta_variants. Do not omit any field.",
+        );
+        attempt = retried;
+        upstream_status = retried.upstream_status;
+        source = "ai_retry";
+      } catch (retryErr: any) {
+        // Retry hard-failed on credits/rate-limit → propagate to caller.
+        if (retryErr?.code === "AI_CREDITS_EXHAUSTED" || retryErr?.code === "AI_RATE_LIMITED" || retryErr?.code === "AI_UNAUTHORIZED") {
+          throw retryErr;
+        }
+        console.error("[creative-kit] retry soft-failed, will fall back", retryErr);
+        error_message = retryErr?.message ?? String(retryErr);
+      }
+    }
+  } catch (e: any) {
+    if (e?.code === "AI_CREDITS_EXHAUSTED" || e?.code === "AI_RATE_LIMITED" || e?.code === "AI_UNAUTHORIZED") {
+      // Caller handles these as concept_failed.
+      throw e;
+    }
+    console.error("[creative-kit] first pass failed, will fall back", e);
+    error_message = e?.message ?? String(e);
+    upstream_status = e?.status;
   }
+
+  // Final assembly — guaranteed non-empty storyboard.
+  const fb = fallbackKit(product.name);
+  const storyboard: StoryboardScene[] =
+    attempt && attempt.storyboard.length > 0 ? attempt.storyboard : buildFallbackStoryboard(product.name, product.slug);
+  if (!attempt || attempt.storyboard.length === 0) {
+    source = "fallback";
+    if (!retry_reason) retry_reason = "no_ai_storyboard";
+  }
+
+  const hooks = (attempt?.hooks?.length ?? 0) > 0 ? attempt!.hooks : fb.hook_variants;
+  const ctas = (attempt?.ctas?.length ?? 0) > 0 ? attempt!.ctas : fb.cta_variants;
+  hooks.sort((a, b) => b.score - a.score);
+  ctas.sort((a, b) => b.score - a.score);
+
+  return {
+    hook_variants: hooks.slice(0, 6),
+    cta_variants: ctas.slice(0, 3),
+    vo_script: (attempt?.vo_script || fb.vo_script),
+    pin_title: attempt?.pin_title || fb.pin_title,
+    pin_description: attempt?.pin_description || fb.pin_description,
+    hashtags: (attempt?.hashtags?.length ?? 0) > 0 ? attempt!.hashtags : fb.hashtags,
+    storyboard,
+    selected_hook_index: 0,
+    selected_cta_index: 0,
+    diagnostics: { source, scene_count: storyboard.length, retry_reason, upstream_status, error_message },
+  };
 }
