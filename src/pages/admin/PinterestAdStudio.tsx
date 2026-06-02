@@ -89,7 +89,7 @@ const ACTIVE_PAID_STATES = new Set([
   "rendering",
 ]);
 
-const COLUMNS = "id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, validation_report, v4_reject_reasons, v5_reject_reasons, v7_reject_reasons, auto_approval_blocked_reason, scene_diversity_v7_score, camera_diversity_score, hook_strength_v7_score, text_safety_score, emotional_arc_score, engagement_pacing_score, created_at, updated_at, render_started_at, render_heartbeat_at";
+const COLUMNS = "id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, validation_report, v4_reject_reasons, v5_reject_reasons, v7_reject_reasons, auto_approval_blocked_reason, scene_diversity_v7_score, camera_diversity_score, hook_strength_v7_score, text_safety_score, emotional_arc_score, engagement_pacing_score, hook_score, voice_score, commercial_score, ctr_prediction_score, final_creative_score, regenerate_count, fidelity_regen_passes, motion_regen_attempts, scene_roles, scene_plan, scene_assets, output_file_size_bytes, created_at, updated_at, render_started_at, render_heartbeat_at";
 
 function isPreviewable(j: JobRow): boolean {
   return !!j.output_mp4_url && PREVIEWABLE_STATES.has(j.status);
