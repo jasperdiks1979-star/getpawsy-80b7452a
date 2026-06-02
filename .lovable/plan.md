@@ -1,105 +1,80 @@
-## Goal
+# CJ Nightly Full Sync — Implementation Plan
 
-Create a temporary, admin-only page that (a) lets you sign in with a magic link (no password), (b) shows live session/JWT info, and (c) runs the full Pinterest Ad Studio render pipeline end-to-end with a single click — returning every job id, status, and timestamp. Tear it down after verification.
+This is a large, multi-system build. Before writing 2000+ lines of edge functions and a new admin page, I want to confirm scope and the few critical unknowns. The existing system already has `cj-inventory-sync` (hourly stock-only), `cj-google-sync`, `cj-dropshipping` API wrapper, `cj-sync-packaging-stock`, `merchant-feed`, etc. I will extend, not replace.
 
-## Scope (admin allowlist)
+## Architecture
 
-Only `jasperdiks@hotmail.com` (the sole `admin` in `user_roles`) can request a link. All other emails get a generic "If your account is authorized, a link has been sent" response — no enumeration.
-
-## Files
-
-### 1. `src/pages/admin/AdminE2eVerify.tsx` (new) — route `/admin/e2e-verify`
-
-- **Unauthenticated state**
-  - Email input (prefilled with `jasperdiks@hotmail.com`)
-  - "Send magic link" → `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: `${origin}/admin/e2e-verify` } })`
-  - Client-side allowlist check before calling (single hard-coded admin email)
-  - Toast: "Check your inbox — link expires in 1 hour"
-- **Authenticated state**
-  - Auth gate: re-validate via `supabase.auth.getUser()` + role check against `user_roles`
-  - Session panel:
-    - Authenticated user (email + id)
-    - Role (`admin` confirmed)
-    - Session status (`active` / `expired`)
-    - JWT expiry (`exp` decoded from access token + live countdown)
-    - "Refresh now" button → `supabase.auth.refreshSession()`
-  - Product picker (defaults to `automatic-cat-litter-box-self-cleaning-app-control`, 256 in stock)
-  - **"Run Full E2E Verification" button** → calls new edge function `cinematic-ad-e2e-verify`
-  - Live trace table: one row per stage, each with status / ms / timestamp / payload preview
-  - On `output_mp4_url` present → shows inline `<video>` preview + "Open Pinterest Ad Studio" deep link + publish-readiness verdict
-- After completion: prominent "**Disable magic-link route**" button → calls `disable-e2e-route` edge function (sets a feature flag — see #4)
-- JWT persistence: relies on existing `AuthProvider` (already uses `localStorage` + `autoRefreshToken: true`); refresh test = page reload button that re-reads session
-
-### 2. `src/App.tsx` — add lazy route
-
-```tsx
-const AdminE2eVerify = lazy(() => import("@/pages/admin/AdminE2eVerify"));
-// ...
-<Route path="/admin/e2e-verify" element={<AdminE2eVerify />} />
+```text
+┌──────────────────────────────────────────────────────┐
+│  pg_cron 03:00 UTC → cj-nightly-product-sync (orch)  │
+└──────────────────────────────────────────────────────┘
+                          │
+       ┌──────────────────┼──────────────────┐
+       ▼                  ▼                  ▼
+  cj-product-sync   cj-media-sync     cj-price-shipping-sync
+  (variants +       (videos → own     (landed cost, margin,
+   inventory +       Supabase         psychological price,
+   supplier_status)  storage)         shipping estimate)
+                          │
+                          ▼
+                  product_media table
+                  (image|video, storage_url, hash, sort_order)
+                          │
+                          ▼
+                refresh google-merchant-feed cache
+                          │
+                          ▼
+                cj_sync_runs + cj_sync_items (report)
 ```
 
-Route is gated by a runtime check against the `e2e_route_enabled` flag from `app_config` — if disabled, redirect to `/`.
+Orchestrator processes the catalog in batches of 25, with retry/backoff, and writes a per-run report row.
 
-### 3. `supabase/functions/cinematic-ad-e2e-verify/index.ts` (new)
+## What I will build
 
-- Admin gate: `auth.getUser()` + `user_roles` admin check (returns 403 otherwise)
-- Body: `{ product_slug, hook_variant?: "problem_solution" }`
-- Orchestrates in series, capturing `{ name, status, ms, started_at, finished_at, payload }` per step:
-  1. **prepare** → `POST /cinematic-ad-prepare` with `{ product_slug, hook_variant, force_new: true }` → capture `job_id`
-  2. **preflight** → `POST /cinematic-ad-preflight` with `{ job_id }` → capture `preflight_status`
-  3. **queue** → `POST /cinematic-ad-queue-render` with `{ job_id }` → capture `render_queued_at`
-  4. **dispatch** → `POST /cinematic-ad-worker-control` `{ action: "self_heal" }` using `x-render-secret: RENDER_WORKER_SECRET` → confirms slot was reserved and GH workflow_dispatch HTTP 204
-  5. **claim** → poll `cinematic_ad_jobs` every 5s up to 90s for `render_started_at != null`
-  6. **render** → continue polling every 10s up to 7 min for `output_mp4_url != null`
-  7. **preview** → HEAD the `output_mp4_url`, confirm 200 + `content-type` starts with `video/`
-  8. **publish_ready** → check `preflight_status='pass' && output_mp4_url && pin_title && pin_description && pin_destination_url` → `publish_enabled: true/false` + reason
-- Returns:
-  ```json
-  {
-    "ok": true,
-    "traceId": "...",
-    "product_slug": "...",
-    "job_id": "...",
-    "preflight_status": "pass",
-    "render_queued_at": "...",
-    "render_started_at": "...",
-    "render_completed_at": "...",
-    "output_mp4_url": "...",
-    "preview_url": "https://.../admin/pinterest-ad-studio?focus=<job_id>",
-    "publish_enabled": true,
-    "publish_blockers": [],
-    "steps": [ { name, status, ms, started_at, finished_at, payload } ],
-    "total_ms": 412381
-  }
-  ```
-- Forwards the caller's `Authorization` header to the downstream admin-gated functions (prepare/preflight/queue) — no service-role bypass for those steps; service-role admin client only used for the DB polling + worker-control dispatch (which requires `RENDER_WORKER_SECRET`, already set).
+### 1. Database (one migration)
+- `product_media` — id, product_id, media_type (image|video), storage_url, supplier_url, sort_order, alt_text, source, checksum, duration_sec, file_size, imported_at. Unique (product_id, checksum).
+- New columns on `products`: `supplier_status` (available|unavailable|unknown), `landed_cost`, `estimated_shipping_cost`, `shipping_days_min/max`, `warehouse_country`, `margin_percent`, `price_sync_status`, `price_synced_at`, `shipping_sync_status`, `cj_media_synced_at`, `needs_admin_review`, `shipping_estimate_confidence`.
+- New columns on `product_variants` (if table exists; otherwise extend `variants` JSON): `cj_variant_id`, `cj_synced_at`, `archived_at`, `variant_weight`, `variant_shipping`.
+- `cj_sync_runs` — id, started_at, finished_at, mode (full|inventory|pricing|shipping|media|dry_run), totals JSONB, status.
+- `cj_sync_items` — id, run_id, product_id, action (video_imported|inventory_changed|variant_added|price_changed|...), before, after, error.
+- Proper GRANTs + admin-only RLS.
 
-### 4. `supabase/functions/cinematic-ad-e2e-verify-disable/index.ts` (new)
+### 2. Storage
+- New private bucket `product-media` with public read RLS (videos & images served from our domain).
 
-- Admin gate
-- Writes `e2e_route_enabled = false` to a tiny `app_config` table (`key text primary key, value jsonb`)
-- Frontend reads it on `/admin/e2e-verify` mount; when disabled, render a 404 immediately
+### 3. Edge functions (new)
+- `cj-nightly-product-sync` — orchestrator, accepts `{ mode, product_ids?, dry_run }`.
+- `cj-media-sync` — per product: query CJ, extract video URLs, download → bucket, dedupe by sha256, upsert `product_media`.
+- `cj-price-shipping-sync` — per product: pull CJ cost + shipping (US warehouse first), apply margin/psychological pricing rules, write fields, flag >25% delta as `needs_admin_review`.
+- `cj-variant-sync` — per product: match by `cj_variant_id` → sku → option signature, add/update/archive.
 
-### 5. Migration
+Existing `cj-inventory-sync` is reused for stock; orchestrator calls it per batch.
 
-`app_config` table with one seeded row `('e2e_route_enabled', 'true')`. Standard grants (authenticated SELECT; service_role ALL; no anon). RLS: only admins may SELECT/UPDATE; service_role bypasses.
+### 4. Pricing rules (from spec)
+- min margin 55%, target 65–72%, ending `.99`
+- never auto-lower below min
+- auto-allow price increases
+- >25% change → `needs_admin_review=true`, **do not** apply automatically
 
-## Teardown (one-click after verification)
+### 5. Cron
+- `pg_cron` at 03:00 UTC calling orchestrator via `net.http_post` with service-role header.
 
-Clicking "Disable magic-link route" on the page:
-1. Flips `e2e_route_enabled` to `false` via the disable function
-2. Future loads of `/admin/e2e-verify` 404 immediately (route still exists in code, but inert)
-3. Magic-link OTP delivery still works at the Supabase level (it's the normal email auth), but the page that triggers it is gone
+### 6. Admin UI
+- New page `/admin/cj-sync-report` (route + nav entry) with:
+  - Last run summary tiles (products checked, videos imported, inventory/price/shipping changes, OOS, missing mapping, failed, retry queue, next run ETA)
+  - Action buttons: Run now (full / inventory / pricing / shipping / media only / dry run / selected product)
+  - Per-product table with before/after diffs and image+video counts
+- Extend existing `/admin/cj-inventory-sync` link with a banner pointing to the new report.
 
-When you're fully done, tell me "remove the e2e route" and I'll delete the page + functions + migration in a single follow-up.
+### 7. Feed safety
+- `google-merchant-feed` already reads `products.image_url` (own storage). I will add a guard that rejects any image_url containing `cjdropshipping`/`cjjulistore` CDN hosts and excludes those rows from the feed, plus include first `product_media` video as `additional_image_link`/`video_link` when present.
 
-## Security notes
+## What I need confirmed before coding
 
-- Hard-coded single-email allowlist on client *and* server-side (`shouldCreateUser: false` means a non-existent email can't be created via OTP regardless)
-- E2E function never escalates: prepare/preflight/queue all run as **your** admin JWT, not service role
-- Only `worker-control self_heal` uses `RENDER_WORKER_SECRET` (already required for that endpoint — no new attack surface)
-- Disable flag is enforced server-side (the edge function refuses to run if `e2e_route_enabled=false`) *and* client-side (route 404s)
+1. **CJ video license** — CJ allows reseller use of supplier videos but quality varies. OK to import all videos and let admin demote in UI later?
+2. **Storage cost** — videos can be 5–50 MB each. With ~67 active winners that's ~1–3 GB total; fine on Supabase. If catalog grows to thousands, we should add a per-run video import cap (e.g. 50 videos/night) and skip products that already have ≥2 videos. Apply this cap by default?
+3. **Pricing auto-apply** — your spec says "never lower below min" and "auto-allow increases". Should price *decreases* that stay above min margin auto-apply, or always require admin review? I'll default to: small decreases (≤10%) auto-apply, larger decreases flag for review.
+4. **Variant table** — current schema stores variants as JSONB on `products.variants`. Should I keep JSONB (extend in place) or migrate to a proper `product_variants` table? JSONB is faster to ship and keeps the rest of the app working; proper table is cleaner long-term. **Default: extend JSONB** unless you say otherwise.
+5. **Schedule timezone** — spec says "03:00 lokale tijd / of UTC". I'll use **03:00 UTC** (matches existing crons). OK?
 
-## Approve to build?
-
-I'll create the migration first, then ship the edge functions and page in a single follow-up.
+If you reply with answers (or just "go with your defaults"), I'll ship the full build in one pass: migration → storage bucket → 4 edge functions → cron → admin page → feed guard → verification run on 3 sample products with before/after report.
