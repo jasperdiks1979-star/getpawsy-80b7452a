@@ -39,6 +39,17 @@ type JobRow = {
   preflight_reasons?: string[] | null;
   hard_reject_reasons?: string[] | null;
   admin_review_reason?: string | null;
+  validation_report?: any | null;
+  v4_reject_reasons?: string[] | null;
+  v5_reject_reasons?: string[] | null;
+  v7_reject_reasons?: string[] | null;
+  auto_approval_blocked_reason?: string | null;
+  scene_diversity_v7_score?: number | null;
+  camera_diversity_score?: number | null;
+  hook_strength_v7_score?: number | null;
+  text_safety_score?: number | null;
+  emotional_arc_score?: number | null;
+  engagement_pacing_score?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
   render_started_at?: string | null;
@@ -78,10 +89,140 @@ const ACTIVE_PAID_STATES = new Set([
   "rendering",
 ]);
 
-const COLUMNS = "id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, created_at, updated_at, render_started_at, render_heartbeat_at";
+const COLUMNS = "id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, validation_report, v4_reject_reasons, v5_reject_reasons, v7_reject_reasons, auto_approval_blocked_reason, scene_diversity_v7_score, camera_diversity_score, hook_strength_v7_score, text_safety_score, emotional_arc_score, engagement_pacing_score, created_at, updated_at, render_started_at, render_heartbeat_at";
 
 function isPreviewable(j: JobRow): boolean {
   return !!j.output_mp4_url && PREVIEWABLE_STATES.has(j.status);
+}
+
+/**
+ * Validator debug panel — shows every failed validator check + score for a job.
+ * Sourced from cinematic_ad_jobs.validation_report (written by
+ * cinematic-ad-validate) plus the per-axis score columns. Collapsed by
+ * default; expand to see exact field, observed value, expected threshold and
+ * the reject-reason buckets (v4 / v5 / v7 / hard / auto-approve).
+ */
+function ValidatorDebugPanel({ job }: { job: JobRow }) {
+  const [open, setOpen] = useState(false);
+  const report = (job.validation_report ?? null) as any;
+  const checks: Array<{ name: string; passed: boolean; observed: unknown; expected?: unknown; message?: string }> =
+    Array.isArray(report?.checks) ? report.checks : [];
+  const failed = checks.filter((c) => c.passed === false);
+  const hard = Array.isArray(job.hard_reject_reasons) ? job.hard_reject_reasons : [];
+  const v4 = Array.isArray(job.v4_reject_reasons) ? job.v4_reject_reasons : [];
+  const v5 = Array.isArray(job.v5_reject_reasons) ? job.v5_reject_reasons : [];
+  const v7 = Array.isArray(job.v7_reject_reasons) ? job.v7_reject_reasons : [];
+  const hasAny =
+    failed.length > 0 || hard.length > 0 || v4.length > 0 || v5.length > 0 || v7.length > 0 ||
+    !!job.auto_approval_blocked_reason;
+  if (!hasAny && !report) return null;
+  const fmt = (v: unknown) => {
+    if (v == null) return "—";
+    if (typeof v === "boolean") return v ? "true" : "false";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+  return (
+    <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-[10px] space-y-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between w-full font-semibold text-amber-700 dark:text-amber-400"
+      >
+        <span className="flex items-center gap-1">
+          <Bug className="w-3 h-3" />
+          Validator debug
+          {failed.length > 0 && (
+            <Badge variant="destructive" className="text-[9px] px-1 py-0">
+              {failed.length} failed
+            </Badge>
+          )}
+          {hard.length > 0 && (
+            <Badge variant="destructive" className="text-[9px] px-1 py-0">
+              hard:{hard.length}
+            </Badge>
+          )}
+        </span>
+        <span className="text-muted-foreground">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="space-y-1.5 pt-1">
+          {/* Score summary */}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+            <span className="text-muted-foreground">pinterest_quality:</span>
+            <span className={`font-mono ${Number(job.pinterest_quality_score ?? 0) > 90 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.pinterest_quality_score)} <span className="text-muted-foreground">/ &gt;95</span>
+            </span>
+            <span className="text-muted-foreground">scene_diversity_v7:</span>
+            <span className="font-mono">{fmt(job.scene_diversity_v7_score)} / 100</span>
+            <span className="text-muted-foreground">camera_diversity:</span>
+            <span className="font-mono">{fmt(job.camera_diversity_score)} / 100</span>
+            <span className="text-muted-foreground">hook_strength_v7:</span>
+            <span className="font-mono">{fmt(job.hook_strength_v7_score)} / 100</span>
+            <span className="text-muted-foreground">text_safety:</span>
+            <span className="font-mono">{fmt(job.text_safety_score)} / 100</span>
+            <span className="text-muted-foreground">emotional_arc:</span>
+            <span className={`font-mono ${Number(job.emotional_arc_score ?? 0) >= 6 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.emotional_arc_score)} / &gt;=6
+            </span>
+            <span className="text-muted-foreground">engagement_pacing:</span>
+            <span className={`font-mono ${Number(job.engagement_pacing_score ?? 0) >= 65 ? "text-emerald-600" : "text-destructive"}`}>
+              {fmt(job.engagement_pacing_score)} / &gt;=65
+            </span>
+            <span className="text-muted-foreground">qa_composite:</span>
+            <span className="font-mono">{fmt(job.qa_composite_score)}</span>
+          </div>
+
+          {/* Auto-approve block + reject buckets */}
+          {job.auto_approval_blocked_reason && (
+            <div>
+              <span className="text-muted-foreground">auto_approval_blocked: </span>
+              <code className="text-destructive">{job.auto_approval_blocked_reason}</code>
+            </div>
+          )}
+          {hard.length > 0 && (
+            <div>
+              <span className="text-muted-foreground">hard_rejects: </span>
+              {hard.map((r) => (
+                <code key={r} className="mr-1 px-1 rounded bg-destructive/15 text-destructive">{r}</code>
+              ))}
+            </div>
+          )}
+          {v7.length > 0 && (
+            <div><span className="text-muted-foreground">v7_rejects: </span>{v7.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+          {v5.length > 0 && (
+            <div><span className="text-muted-foreground">v5_rejects: </span>{v5.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+          {v4.length > 0 && (
+            <div><span className="text-muted-foreground">v4_rejects: </span>{v4.map((r) => <code key={r} className="mr-1 text-destructive">{r}</code>)}</div>
+          )}
+
+          {/* Per-check table (failed only) */}
+          {failed.length > 0 && (
+            <div className="border-t border-amber-500/20 pt-1">
+              <div className="text-muted-foreground mb-0.5">Failed checks:</div>
+              <ul className="space-y-0.5">
+                {failed.map((c) => (
+                  <li key={c.name} className="grid grid-cols-[auto_1fr] gap-x-1">
+                    <XCircle className="w-3 h-3 text-destructive shrink-0 mt-[1px]" />
+                    <span>
+                      <code className="font-mono">{c.name}</code>{" "}
+                      <span className="text-muted-foreground">observed=</span>
+                      <code>{fmt(c.observed)}</code>{" "}
+                      <span className="text-muted-foreground">expected=</span>
+                      <code>{fmt(c.expected)}</code>
+                      {c.message && <span className="text-destructive"> · {c.message}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Produce a user-facing failure message that reflects the ACTUAL reason.
@@ -657,6 +798,22 @@ export default function PinterestAdStudio() {
     } catch (e: any) { toast.error(e.message || "publish failed"); }
   }
 
+  // Admin override: bypass validator gate and force-push to Pinterest.
+  // cinematic-ad-push-pinterest already supports { force: true } and logs
+  // the bypass against the calling admin user, so we just forward it.
+  async function publishOverride(j: JobRow) {
+    if (!confirm("Override validator and publish to Pinterest anyway?\n\nThis bypasses scene-diversity, hook-score, emotional-arc and Pinterest-quality gates. The bypass is logged against your admin user.")) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("cinematic-ad-push-pinterest", {
+        body: { job_id: j.id, force: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.ok === false) throw new Error((data as any)?.message || "force publish failed");
+      toast.success("Force-published to Pinterest");
+      setPollKey(k => k + 1);
+    } catch (e: any) { toast.error(e.message || "force publish failed"); }
+  }
+
   async function regenerate(j: JobRow) {
     if (!paidConfirmed) {
       toast.error("Paid render not confirmed — cannot regenerate", {
@@ -1075,6 +1232,8 @@ export default function PinterestAdStudio() {
                           Publish blocked: <code className="font-mono">{j.publish_blocked_reason}</code>
                         </div>
                       )}
+                      {/* Validator debug panel — every failed validator field + score */}
+                      <ValidatorDebugPanel job={j} />
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="outline" asChild disabled={!ready}>
                           <a href={j.output_mp4_url ?? "#"} download target="_blank" rel="noreferrer">
@@ -1087,6 +1246,16 @@ export default function PinterestAdStudio() {
                         <Button size="sm" disabled={!ready || !!j.pinterest_pin_url} onClick={() => publish(j)}>
                           {j.pinterest_pin_url ? <><Pin className="w-3 h-3 mr-1" />Published</> : <><Send className="w-3 h-3 mr-1" />Publish</>}
                         </Button>
+                        {ready && !j.pinterest_pin_url && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => publishOverride(j)}
+                            title="Bypass validator gates and publish to Pinterest. Logged."
+                          >
+                            <AlertTriangle className="w-3 h-3 mr-1" />Approve &amp; Publish Anyway
+                          </Button>
+                        )}
                       </div>
                       {j.pinterest_pin_url && (
                         <a href={j.pinterest_pin_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">View pin →</a>
