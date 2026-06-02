@@ -73,6 +73,7 @@ export default function AdminE2eVerify() {
   const [productSlug, setProductSlug] = useState(DEFAULT_PRODUCT);
   const [now, setNow] = useState(Date.now());
   const ranAutoRedirect = useRef(false);
+  const ranAutoVerify = useRef(false);
 
   // Live JWT countdown
   useEffect(() => {
@@ -129,6 +130,7 @@ export default function AdminE2eVerify() {
         password,
       });
       if (error) throw error;
+      sessionStorage.setItem("e2e_auto_run", "1");
       toast.success("Signed in.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sign-in failed");
@@ -154,6 +156,18 @@ export default function AdminE2eVerify() {
       setRunning(false);
     }
   }
+
+  // Auto-run verification immediately after a successful admin sign-in
+  useEffect(() => {
+    if (ranAutoVerify.current) return;
+    if (!user || !isAdmin || isLoading) return;
+    if (routeEnabled === false) return;
+    if (sessionStorage.getItem("e2e_auto_run") !== "1") return;
+    ranAutoVerify.current = true;
+    sessionStorage.removeItem("e2e_auto_run");
+    runVerification();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAdmin, isLoading, routeEnabled]);
 
   async function disableRoute() {
     if (!confirm("Disable the magic-link E2E route? Re-enable requires editing the DB.")) return;
