@@ -433,6 +433,7 @@ const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/Pi
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
+const CjSyncReport = lazyWithRetry(() => import("./pages/admin/CjSyncReport"));
 const RenderBudgetDashboard = lazyWithRetry(() => import("./pages/admin/RenderBudgetDashboard"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
 const CinematicMotionForensicsPage = lazyWithRetry(() => import("./pages/admin/CinematicMotionForensicsPage"));
@@ -2069,6 +2070,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CjInventorySync />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cj-sync-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CjSyncReport />
                                 </Suspense>
                               }
                             />
