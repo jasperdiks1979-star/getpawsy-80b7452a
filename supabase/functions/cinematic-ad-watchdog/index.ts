@@ -513,6 +513,41 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
     }
   }
 
+  // === (1x) ZOMBIE HARD-FAIL — render_queued with a worker that died ===
+  // A job can sit in status='render_queued' with render_started_at +
+  // render_worker_id set when the GH Actions runner started a render but
+  // crashed before flipping status to 'rendering'. Without this rule those
+  // jobs hold a render slot forever because section (1) only checks
+  // status='rendering'.
+  if (!paused) {
+    const startedStaleCutoff = new Date(now - RENDERING_NO_PROGRESS_HARD_FAIL_MS).toISOString();
+    const { data: ghosts } = await admin
+      .from("cinematic_ad_jobs")
+      .select("id,render_started_at,render_worker_id")
+      .eq("status", "render_queued")
+      .not("render_started_at", "is", null)
+      .lt("render_started_at", startedStaleCutoff)
+      .limit(50);
+    for (const row of ghosts ?? []) {
+      const reason = `zombie_render_queued_with_dead_worker: worker ${row.render_worker_id} started ${row.render_started_at} but never flipped to rendering — slot released`;
+      await admin.from("cinematic_ad_jobs").update({
+        status: "failed",
+        status_message: reason,
+        error_message: "zombie_render_queued_with_dead_worker",
+        render_worker_id: null,
+        render_heartbeat_at: null,
+        updated_at: new Date(now).toISOString(),
+      }).eq("id", row.id).eq("status", "render_queued");
+      result.quarantined.push({ job_id: row.id, reason });
+      await logEvent(admin, {
+        job_id: row.id, event_type: "zombie_killed", action_taken: "release_slot",
+        previous_status: "render_queued", new_status: "failed",
+        trace_id: traceId, recovery_result: "success",
+        payload: { reason, render_started_at: row.render_started_at, render_worker_id: row.render_worker_id },
+      });
+    }
+  }
+
   if (!paused) {
     const nowIso = new Date(now).toISOString();
     for (const row of stuck ?? []) {
