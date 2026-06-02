@@ -362,6 +362,7 @@ export default function AdminE2eVerify() {
               {result.message ? <span className="ml-2 text-sm font-normal text-muted-foreground">— {result.message}</span> : null}
               </span>
               <span className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={copyJsonToClipboard}><Copy className="w-3 h-3 mr-1" />Copy JSON</Button>
                 <Button variant="outline" size="sm" onClick={exportAsJson}><Download className="w-3 h-3 mr-1" />JSON</Button>
                 <Button variant="outline" size="sm" onClick={exportAsCsv}><Download className="w-3 h-3 mr-1" />CSV</Button>
                 <span className="text-xs text-muted-foreground font-mono">{result.traceId}</span>
