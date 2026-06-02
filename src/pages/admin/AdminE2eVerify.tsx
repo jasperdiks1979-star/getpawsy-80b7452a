@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 const ADMIN_ALLOWLIST = ["jasperdiks@hotmail.com"];
@@ -189,6 +189,17 @@ export default function AdminE2eVerify() {
     URL.revokeObjectURL(url);
   }
 
+  async function copyJsonToClipboard() {
+    if (!result) return;
+    const text = JSON.stringify(result, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("JSON copied to clipboard");
+    } catch {
+      toast.error("Clipboard write failed — use the JSON export instead");
+    }
+  }
+
   function exportAsCsv() {
     if (!result) return;
     const rows: string[][] = [
@@ -351,6 +362,7 @@ export default function AdminE2eVerify() {
               {result.message ? <span className="ml-2 text-sm font-normal text-muted-foreground">— {result.message}</span> : null}
               </span>
               <span className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={copyJsonToClipboard}><Copy className="w-3 h-3 mr-1" />Copy JSON</Button>
                 <Button variant="outline" size="sm" onClick={exportAsJson}><Download className="w-3 h-3 mr-1" />JSON</Button>
                 <Button variant="outline" size="sm" onClick={exportAsCsv}><Download className="w-3 h-3 mr-1" />CSV</Button>
                 <span className="text-xs text-muted-foreground font-mono">{result.traceId}</span>
