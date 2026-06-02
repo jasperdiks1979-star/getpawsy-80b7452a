@@ -56,7 +56,34 @@ export type CreativeKit = {
   storyboard: StoryboardScene[];
   selected_hook_index: number;
   selected_cta_index: number;
+  diagnostics?: KitDiagnostics;
 };
+
+export type KitDiagnostics = {
+  source: "ai" | "ai_retry" | "fallback";
+  scene_count: number;
+  retry_reason?: string;
+  upstream_status?: number;
+  error_message?: string;
+};
+
+/**
+ * Deterministic 6-scene safety-net storyboard.
+ * Used whenever the AI gateway fails, returns malformed JSON, or returns
+ * an empty storyboard array. The shape matches StoryboardScene exactly so
+ * downstream render code never has to special-case it.
+ * Structure: Product hero → Problem → Feature → Benefit → Social proof → CTA.
+ */
+export function buildFallbackStoryboard(productName: string, _productSlug?: string): StoryboardScene[] {
+  return [
+    { scene_index: 1, role: "hook",      visual: `Centered hero beauty shot of ${productName} in a clean, warm US home setting`, on_screen_text: `Meet ${productName}`,                 vo_line: `Meet ${productName} — designed for real pet parents.`,             duration_s: 3 },
+    { scene_index: 2, role: "reveal",    visual: `Pet parent dealing with the everyday pain point ${productName} solves`,         on_screen_text: `Tired of the daily struggle?`,         vo_line: `Tired of the same daily struggle? You're not alone.`,              duration_s: 4 },
+    { scene_index: 3, role: "feature",   visual: `Close-up macro shot highlighting the key feature of ${productName}`,            on_screen_text: `Built for everyday life`,              vo_line: `Built with the details that actually matter.`,                     duration_s: 4 },
+    { scene_index: 4, role: "craft",     visual: `Side-profile lifestyle shot showing ${productName} in use in a real home`,      on_screen_text: `Real comfort, real results`,           vo_line: `Real comfort for your pet — real peace of mind for you.`,          duration_s: 4 },
+    { scene_index: 5, role: "lifestyle", visual: `Warm UGC-style moment: happy pet + owner enjoying ${productName} together`,     on_screen_text: `Loved by US pet parents`,              vo_line: `Loved by US pet parents who wanted better — without the compromise.`, duration_s: 4 },
+    { scene_index: 6, role: "cta",       visual: `Centered hero beauty shot of ${productName} with logo lockup`,                   on_screen_text: `Get yours at GetPawsy.pet`,            vo_line: `Get yours at GetPawsy dot pet.`,                                   duration_s: 4 },
+  ];
+}
 
 const POWER_WORDS = [
   "stop", "finally", "never", "why", "how", "secret", "truth", "real",
@@ -158,7 +185,7 @@ function fallbackKit(productName: string): CreativeKit {
     pin_title: `${productName} — premium for pet parents`,
     pin_description: `Designed for real US pet parents. See why ${productName} is trending at GetPawsy.pet.`,
     hashtags: ["#petparents", "#getpawsy", "#petfinds", "#pinterestfinds", "#dogmom"],
-    storyboard: [],
+    storyboard: buildFallbackStoryboard(productName),
     selected_hook_index: 0,
     selected_cta_index: 0,
   };
