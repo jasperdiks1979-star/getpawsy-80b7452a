@@ -15,6 +15,7 @@ const corsHeaders = {
 //     * pinterest-creative-director (creative regeneration)
 
 const PROMOTE_THRESHOLD = 85;
+const WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
 type ProductRow = {
   id: string;
@@ -171,6 +172,8 @@ Deno.serve(async (req) => {
       };
       upserts.push(row);
       if (hot >= PROMOTE_THRESHOLD) winners.push({ id: p.id, score: hot, signals: row });
+      // attach slug for downstream V8 invocation
+      (winners[winners.length - 1] as any) && ((winners[winners.length - 1] as any).slug = p.slug);
     }
 
     // Batch upsert
@@ -215,10 +218,25 @@ Deno.serve(async (req) => {
 
         // c) Trigger V8 cinematic commercial render (fire-and-forget)
         try {
-          await sb.functions.invoke("cinematic-ad-autopilot", {
-            body: { product_id: w.id, source: "hot_product_engine", priority: "high" },
-          });
-          promo.actions.push("cinematic_v8");
+          const slug = (w as any).slug ?? w.signals.signals?.slug;
+          if (slug) {
+            const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cinematic-ad-autopilot`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-internal-token": WORKER_SECRET,
+                "apikey": Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+              },
+              body: JSON.stringify({
+                product_slug: slug,
+                source: "hot_product_engine",
+                autopilot_threshold: 70,
+              }),
+            });
+            promo.actions.push(res.ok ? "cinematic_v8" : `cinematic_v8_http_${res.status}`);
+          } else {
+            promo.cinematic_error = "missing slug";
+          }
         } catch (e) {
           promo.cinematic_error = e instanceof Error ? e.message : String(e);
         }
