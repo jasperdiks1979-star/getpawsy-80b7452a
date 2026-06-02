@@ -7266,6 +7266,75 @@ export type Database = {
         }
         Relationships: []
       }
+      hot_product_scores: {
+        Row: {
+          auto_promoted: boolean
+          created_at: string
+          day: string
+          hot_score: number
+          id: string
+          intent_score: number
+          margin_score: number
+          pinterest_clicks_30d: number
+          pinterest_fit_score: number
+          pinterest_impressions_30d: number
+          pinterest_saves_30d: number
+          product_id: string
+          profit_30d: number
+          promotion_log: Json
+          recommended_action: string | null
+          revenue_30d: number
+          signals: Json
+          units_30d: number
+          updated_at: string
+          viral_score: number
+        }
+        Insert: {
+          auto_promoted?: boolean
+          created_at?: string
+          day?: string
+          hot_score?: number
+          id?: string
+          intent_score?: number
+          margin_score?: number
+          pinterest_clicks_30d?: number
+          pinterest_fit_score?: number
+          pinterest_impressions_30d?: number
+          pinterest_saves_30d?: number
+          product_id: string
+          profit_30d?: number
+          promotion_log?: Json
+          recommended_action?: string | null
+          revenue_30d?: number
+          signals?: Json
+          units_30d?: number
+          updated_at?: string
+          viral_score?: number
+        }
+        Update: {
+          auto_promoted?: boolean
+          created_at?: string
+          day?: string
+          hot_score?: number
+          id?: string
+          intent_score?: number
+          margin_score?: number
+          pinterest_clicks_30d?: number
+          pinterest_fit_score?: number
+          pinterest_impressions_30d?: number
+          pinterest_saves_30d?: number
+          product_id?: string
+          profit_30d?: number
+          promotion_log?: Json
+          recommended_action?: string | null
+          revenue_30d?: number
+          signals?: Json
+          units_30d?: number
+          updated_at?: string
+          viral_score?: number
+        }
+        Relationships: []
+      }
       indexing_submissions: {
         Row: {
           created_at: string
@@ -16080,6 +16149,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      self_improvement_actions: {
+        Row: {
+          action_type: string
+          after: Json
+          before: Json
+          created_at: string
+          id: string
+          reason: string | null
+          run_id: string | null
+          target_kind: string
+          target_ref: string
+        }
+        Insert: {
+          action_type: string
+          after?: Json
+          before?: Json
+          created_at?: string
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          target_kind: string
+          target_ref: string
+        }
+        Update: {
+          action_type?: string
+          after?: Json
+          before?: Json
+          created_at?: string
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          target_kind?: string
+          target_ref?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_improvement_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "self_improvement_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      self_improvement_runs: {
+        Row: {
+          actions_taken: number
+          finished_at: string | null
+          id: string
+          losers_count: number
+          notes: string | null
+          pattern_weights_updated: number
+          payload: Json
+          profit_7d: number
+          revenue_7d: number
+          started_at: string
+          status: string
+          trigger: string
+          winners_count: number
+        }
+        Insert: {
+          actions_taken?: number
+          finished_at?: string | null
+          id?: string
+          losers_count?: number
+          notes?: string | null
+          pattern_weights_updated?: number
+          payload?: Json
+          profit_7d?: number
+          revenue_7d?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          winners_count?: number
+        }
+        Update: {
+          actions_taken?: number
+          finished_at?: string | null
+          id?: string
+          losers_count?: number
+          notes?: string | null
+          pattern_weights_updated?: number
+          payload?: Json
+          profit_7d?: number
+          revenue_7d?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          winners_count?: number
+        }
+        Relationships: []
       }
       seo_actions_queue: {
         Row: {
