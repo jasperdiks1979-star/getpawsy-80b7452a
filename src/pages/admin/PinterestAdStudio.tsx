@@ -217,7 +217,8 @@ export default function PinterestAdStudio() {
   const [pollKey, setPollKey] = useState(0);
   const [diagnostics, setDiagnostics] = useState<ConceptDiag[]>([]);
   const [showDebug, setShowDebug] = useState(false);
-  const [dryRun, setDryRun] = useState(false);
+  // Default to dry-run. Paid renders require explicit opt-in via paidConfirmed.
+  const [dryRun, setDryRun] = useState(true);
   const [forceBudgetOverride, setForceBudgetOverride] = useState(false);
   const [forcePreflightOverride, setForcePreflightOverride] = useState(false);
   // EMERGENCY: paid renders are gated behind an explicit checkbox.
