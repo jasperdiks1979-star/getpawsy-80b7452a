@@ -563,6 +563,61 @@ Deno.serve(async (req) => {
   const plan: any[] = Array.isArray(job.scene_plan) ? job.scene_plan : [];
   const scene_change_count = plan.length;
 
+  // ── Backfill from storyboard ──────────────────────────────────────────────
+  // Older jobs (and any path that bypasses cinematic-ad-storyboard) can land
+  // here with scene_roles=[] and beats_v5=[], which used to flunk
+  // v4_scene_roles_complete (missing hook/problem/benefit/cta) and crater
+  // emotional_arc_score. Derive both from the 7-beat storyboard right here
+  // and persist them so the same job stops failing on the next attempt.
+  const sbScenes: any[] = Array.isArray((job as any).storyboard?.scenes)
+    ? (job as any).storyboard.scenes
+    : [];
+  if (
+    sbScenes.length > 0 &&
+    (!Array.isArray((job as any).scene_roles) || (job as any).scene_roles.length === 0)
+  ) {
+    const roleMap: Record<string, string> = {
+      HOOK: "hook", PROBLEM: "problem", EMOTION: "problem",
+      FEATURE: "benefit", BENEFIT: "benefit", PROOF: "benefit", CTA: "cta",
+    };
+    const derivedRoles: string[] = [];
+    for (const s of sbScenes) {
+      const r = roleMap[String(s?.role ?? "").toUpperCase()];
+      if (r && !derivedRoles.includes(r)) derivedRoles.push(r);
+    }
+    if (derivedRoles.length > 0) {
+      (job as any).scene_roles = derivedRoles;
+      (persistPatch as any).scene_roles = derivedRoles;
+    }
+  }
+  if (
+    sbScenes.length > 0 &&
+    (!Array.isArray((job as any).beats_v5) || (job as any).beats_v5.length === 0)
+  ) {
+    const beatMap: Record<string, string> = {
+      HOOK: "hook", PROBLEM: "problem", EMOTION: "emotional_payoff",
+      FEATURE: "pattern_interrupt", BENEFIT: "benefit", PROOF: "social_proof", CTA: "cta",
+    };
+    // Escalating valence: tension → relief → payoff → CTA peak.
+    const valenceArc = [55, 30, 80, 65, 78, 88, 95];
+    const beats = sbScenes.slice(0, 7).map((s: any, i: number) => {
+      const role = beatMap[String(s?.role ?? "").toUpperCase()] ?? "benefit";
+      return {
+        role,
+        caption: s?.caption,
+        durationFrames: Math.max(36, Math.min(75, Number(s?.durationFrames ?? 45))),
+        valence: valenceArc[i] ?? 70,
+        motion_intensity: s?.motionIntensity ?? "medium",
+        human_presence:
+          role === "hook" || role === "emotional_payoff" ||
+          role === "social_proof" || role === "cta",
+        subject_includes: ["product", "hand", "pet_reaction"],
+      };
+    });
+    (job as any).beats_v5 = beats;
+    (persistPatch as any).beats_v5 = beats;
+  }
+
   // camera_motion_score: distinct motions × 12 + zoom variance + crop diversity
   const motionsSet = new Set(plan.map((s) => s?.motion).filter(Boolean));
   const cropsSet = new Set(plan.map((s) => s?.crop).filter(Boolean));
