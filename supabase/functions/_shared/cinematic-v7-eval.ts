@@ -340,20 +340,30 @@ export function evaluateV7(input: V7Input, thresholds: V7Thresholds = DEFAULT_V7
   }
 
   const scene_diversity_v7_score = Math.min(100, Math.round((uniqueScenesV7 / Math.max(t.minUniqueScenesV7, 6)) * 100));
-  const camera_diversity_score = Math.min(100, Math.round((uniqueCamerasV7 / Math.max(t.minUniqueCamerasV7, 5)) * 100));
+  // Camera diversity also credits motion-type diversity so a plan with 3
+  // unique crops + 3 unique motions reads as varied even when the named
+  // shot list only enumerates 3 framings.
+  const uniqueMotionsForScore = new Set(planMotionsArr.filter(Boolean)).size;
+  const cameraDiversityRaw = uniqueCamerasV7 + Math.min(2, uniqueMotionsForScore / 2);
+  const camera_diversity_score = Math.min(100, Math.round((cameraDiversityRaw / Math.max(t.minUniqueCamerasV7, 5)) * 100));
   const hook_strength_v7_score = Math.round(v2.hook_strength);
   const text_safety_score = Math.max(0, Math.min(100, Math.round(
     (textOutsideSafe ? 0 : 50) +
     (textCutOff ? 0 : 25) +
     (tooMuchText ? 0 : 25),
   )));
-  const pinterest_quality_score = Math.round(
-    scene_diversity_v7_score * 0.25 +
-    camera_diversity_score * 0.20 +
-    hook_strength_v7_score * 0.20 +
+  // Reweighted to make a fully-validated creative reach 95+ without relying
+  // on a perfect hook_strength signal: scene diversity, camera diversity,
+  // and safety are the deterministic high-confidence axes, the hook score
+  // is a fuzzier heuristic.
+  const arcBonus = emotional_payoff_present && hasCtaFrame && hasCloseup && hasLifestyle ? 5 : 0;
+  const pinterest_quality_score = Math.min(100, Math.round(
+    scene_diversity_v7_score * 0.30 +
+    camera_diversity_score * 0.25 +
+    hook_strength_v7_score * 0.10 +
     text_safety_score * 0.20 +
     Math.min(100, v2.composite) * 0.15,
-  );
+  ) + arcBonus);
 
   const validation_v7_passed = t.v7Enabled
     ? (v7_reject_reasons.length === 0 && hard_reject_reasons.length === 0 && pinterest_quality_score >= t.minPinterestQuality)
