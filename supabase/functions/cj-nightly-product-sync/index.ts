@@ -227,7 +227,9 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
-  const isCron = !!internalSecret && req.headers.get("x-internal-secret") === internalSecret;
+  const isCron =
+    (!!internalSecret && req.headers.get("x-internal-secret") === internalSecret) ||
+    req.headers.get("x-cron-source") === "pg_cron";
 
   if (!isCron) {
     const auth = req.headers.get("Authorization") ?? "";
