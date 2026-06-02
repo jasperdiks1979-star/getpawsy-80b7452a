@@ -65,6 +65,8 @@ export default function AdminE2eVerify() {
   const { user, session, isAdmin, isLoading } = useAuth();
   const [routeEnabled, setRouteEnabled] = useState<boolean | null>(null);
   const [email, setEmail] = useState(ADMIN_ALLOWLIST[0]);
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
   const [sending, setSending] = useState(false);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -115,6 +117,23 @@ export default function AdminE2eVerify() {
       toast.error(e instanceof Error ? e.message : "Failed to send magic link");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function signInWithPassword() {
+    if (!password) { toast.error("Enter your password"); return; }
+    setSigningIn(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (error) throw error;
+      toast.success("Signed in.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sign-in failed");
+    } finally {
+      setSigningIn(false);
     }
   }
 
