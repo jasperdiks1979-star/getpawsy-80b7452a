@@ -178,6 +178,42 @@ export default function AdminE2eVerify() {
     setRouteEnabled(false);
   }
 
+  function exportAsJson() {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `e2e-verify-${result.traceId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAsCsv() {
+    if (!result) return;
+    const rows: string[][] = [
+      ["traceId", result.traceId],
+      ["ok", String(result.ok)],
+      ["message", result.message ?? ""],
+      ["output_mp4_url", result.output_mp4_url ?? ""],
+      ["job_id", result.job_id ?? ""],
+      ["preflight_status", result.preflight_status ?? ""],
+      ["render_started_at", result.render_started_at ?? ""],
+      ["render_completed_at", result.render_completed_at ?? ""],
+      ["publish_enabled", String(result.publish_enabled ?? false)],
+      ["total_ms", String(result.total_ms ?? 0)],
+      ["steps_count", String(result.steps?.length ?? 0)],
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `e2e-verify-${result.traceId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   // Auto-redirect to studio once verification produced an MP4
   useEffect(() => {
     if (result?.ok && result.preview_url && !ranAutoRedirect.current) {
