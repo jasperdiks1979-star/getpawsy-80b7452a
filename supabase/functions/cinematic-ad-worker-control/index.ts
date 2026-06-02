@@ -974,7 +974,15 @@ async function triggerGithubWorkflow(
       .eq("id", jobId)
       .eq("status", "render_queued")
       .is("render_started_at", null);
-    throw new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
+    const err: any = new Error(`GitHub workflow_dispatch failed: ${ghRes.status} ${text.slice(0, 200)}`);
+    err.code = "GH_DISPATCH_HTTP_FAILED";
+    err.http_status = ghRes.status;
+    err.error_body = text.slice(0, 500);
+    err.job_id = jobId;
+    err.repo = GH_REPO;
+    err.workflow = GH_WORKFLOW;
+    err.ref = GH_REF;
+    throw err;
   }
 
   // Confirm queued-for-render only while the job is still queued. If the worker
@@ -990,7 +998,16 @@ async function triggerGithubWorkflow(
 
   const runsUrl = `https://github.com/${GH_REPO}/actions/workflows/${GH_WORKFLOW}`;
   console.log(`[gh-dispatch] ${traceId} dispatched`, { jobId, repo: GH_REPO, workflow: GH_WORKFLOW });
-  return { ok: true, dispatched: true, jobId, repo: GH_REPO, workflow: GH_WORKFLOW, ref: GH_REF, runsUrl };
+  return {
+    ok: true,
+    dispatched: true,
+    jobId,
+    repo: GH_REPO,
+    workflow: GH_WORKFLOW,
+    ref: GH_REF,
+    runsUrl,
+    http_status: ghRes.status,
+  };
 }
 
 Deno.serve(async (req) => {
