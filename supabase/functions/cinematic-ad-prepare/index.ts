@@ -935,6 +935,7 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         storyboard: kit.storyboard,
         selected_hook_index: 0,
         selected_cta_index: 0,
+        creative_kit_diagnostics: kit.diagnostics ?? { source: "ai", scene_count: kit.storyboard.length },
         hook_text: topHook?.text ?? null,
         cta_text: topCta?.text ?? null,
         hook_variant: topHook?.text ?? hook_variant,
