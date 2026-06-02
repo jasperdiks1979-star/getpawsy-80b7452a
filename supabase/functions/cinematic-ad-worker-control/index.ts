@@ -802,23 +802,48 @@ async function resetStale(admin: any, traceId: string, ids?: string[]) {
  * dispatch that exact row and don't want to double-count it).
  */
 async function countActiveRenderSlots(admin: any, excludeJobId: string | null): Promise<number> {
+  console.log("[slot-check] SLOT_CHECK_START", { excludeJobId });
   const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
-  let renderingQuery = admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "rendering");
-  if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
-  const { count: rendering } = await renderingQuery;
 
-  let dispatchingQuery = admin
-    .from("cinematic_ad_jobs")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "render_queued")
-    .gte("render_dispatched_at", lockCutoffIso);
-  if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
-  const { count: dispatching } = await dispatchingQuery;
+  let rendering = 0;
+  try {
+    let renderingQuery = admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "rendering");
+    if (excludeJobId) renderingQuery = renderingQuery.neq("id", excludeJobId);
+    const { count, error } = await renderingQuery;
+    if (error) throw error;
+    rendering = count ?? 0;
+  } catch (e: any) {
+    console.warn("[slot-check] SLOT_CHECK_FALLBACK rendering-count failed", {
+      message: e?.message, code: e?.code,
+    });
+    rendering = 0;
+  }
 
-  return (rendering ?? 0) + (dispatching ?? 0);
+  let dispatching = 0;
+  try {
+    let dispatchingQuery = admin
+      .from("cinematic_ad_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "render_queued")
+      .gte("render_dispatched_at", lockCutoffIso);
+    if (excludeJobId) dispatchingQuery = dispatchingQuery.neq("id", excludeJobId);
+    const { count, error } = await dispatchingQuery;
+    if (error) throw error;
+    dispatching = count ?? 0;
+  } catch (e: any) {
+    // Schema cache / missing column / PostgREST 42703: never block dispatch.
+    console.warn("[slot-check] SLOT_CHECK_FALLBACK dispatching-count failed — returning 0", {
+      message: e?.message, code: e?.code,
+    });
+    dispatching = 0;
+  }
+
+  const total = rendering + dispatching;
+  console.log("[slot-check] SLOT_CHECK_SUCCESS", { rendering, dispatching, total });
+  return total;
 }
 
 async function triggerGithubWorkflow(
@@ -850,7 +875,17 @@ async function triggerGithubWorkflow(
   // Slot accounting: enforce MAX_RENDER_SLOTS for true parallel rendering.
   // A slot is occupied by either an actively rendering job OR a job that was
   // dispatched within DISPATCH_LOCK_MS and not yet claimed by a worker.
-  const activeSlots = await countActiveRenderSlots(admin, jobId || null);
+  // NEVER let a slot-query error block dispatch — countActiveRenderSlots is
+  // defensive and returns 0 on failure.
+  let activeSlots = 0;
+  try {
+    activeSlots = await countActiveRenderSlots(admin, jobId || null);
+  } catch (e: any) {
+    console.warn("[gh-dispatch] SLOT_CHECK_FALLBACK outer — proceeding with dispatch", {
+      message: e?.message, code: e?.code,
+    });
+    activeSlots = 0;
+  }
   if (activeSlots >= MAX_RENDER_SLOTS) {
     return {
       ok: true,
@@ -861,15 +896,35 @@ async function triggerGithubWorkflow(
     };
   }
   if (!jobId && opts.claim_next) {
-    const { data: next, error: nextErr } = await admin
-      .from("cinematic_ad_jobs")
-      .select("id")
-      .eq("status", "render_queued")
-      .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${new Date(Date.now() - DISPATCH_LOCK_MS).toISOString()}`)
-      .order("render_queued_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (nextErr) throw nextErr;
+    const lockCutoff = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+    let next: { id: string; render_dispatched_at: string | null } | null = null;
+    try {
+      const { data, error } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,render_dispatched_at")
+        .eq("status", "render_queued")
+        .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${lockCutoff}`)
+        .order("render_queued_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      next = data as any;
+    } catch (e: any) {
+      // Fallback: column-agnostic claim using two passes.
+      console.warn("[gh-dispatch] SLOT_CHECK_FALLBACK claim_next .or() failed — using plain select", {
+        message: e?.message, code: e?.code,
+      });
+      const { data, error } = await admin
+        .from("cinematic_ad_jobs")
+        .select("id,render_dispatched_at")
+        .eq("status", "render_queued")
+        .order("render_queued_at", { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      next = (data ?? []).find((r: any) =>
+        !r.render_dispatched_at || r.render_dispatched_at < lockCutoff
+      ) ?? null;
+    }
     if (!next) return { ok: true, dispatched: false, message: "no render_queued jobs to claim" };
     jobId = next.id;
   }
@@ -924,8 +979,34 @@ async function triggerGithubWorkflow(
   // is not already mid-dispatch. Two concurrent self-heal passes targeting the
   // same jobId cannot both succeed — the second sees zero rows returned and
   // bails out without invoking GitHub a second time.
+  //
+  // PostgREST regression: chaining .update().or() on a recently-added column
+  // returns 42703 even when SELECT works. Split into SELECT-then-UPDATE so a
+  // schema-cache hiccup can never block dispatch.
   const nowIso = new Date().toISOString();
   const lockCutoffIso = new Date(Date.now() - DISPATCH_LOCK_MS).toISOString();
+  const { data: current, error: currentErr } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id,render_dispatched_at,render_started_at,status")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (currentErr) throw currentErr;
+  if (!current) {
+    return { ok: true, dispatched: false, message: "job not found", jobId };
+  }
+  const lockHeld =
+    !!current.render_dispatched_at &&
+    current.render_dispatched_at >= lockCutoffIso &&
+    !current.render_started_at;
+  if (lockHeld) {
+    console.log("[gh-dispatch] duplicate suppressed", { jobId, render_dispatched_at: current.render_dispatched_at });
+    return {
+      ok: true,
+      dispatched: false,
+      message: "duplicate dispatch suppressed — job already reserved within lock window",
+      jobId,
+    };
+  }
   const { data: reserved, error: reserveErr } = await admin
     .from("cinematic_ad_jobs")
     .update({
@@ -938,18 +1019,14 @@ async function triggerGithubWorkflow(
       updated_at: nowIso,
     })
     .eq("id", jobId)
-    .or(`render_dispatched_at.is.null,render_dispatched_at.lt.${lockCutoffIso}`)
     .select("id")
     .maybeSingle();
   if (reserveErr) throw reserveErr;
   if (!reserved) {
-    return {
-      ok: true,
-      dispatched: false,
-      message: "duplicate dispatch suppressed — job already reserved within lock window",
-      jobId,
-    };
+    return { ok: true, dispatched: false, message: "reservation update returned no row", jobId };
   }
+  console.log("[gh-dispatch] SLOT_RESERVED", { jobId, render_dispatched_at: nowIso });
+  console.log("[gh-dispatch] DISPATCH_STARTED", { jobId, repo: GH_REPO, workflow: GH_WORKFLOW, ref: GH_REF });
 
   const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`;
   const ghRes = await fetch(url, {
