@@ -39,6 +39,8 @@ type JobRow = {
   admin_review_reason?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  render_started_at?: string | null;
+  render_heartbeat_at?: string | null;
 };
 
 const TERMINAL_OK = new Set(["rendered", "render_complete", "pinterest_uploaded", "published"]);
@@ -63,7 +65,18 @@ const IN_FLIGHT_STATES = new Set([
   "render_queued",
   "rendering",
 ]);
-const STUCK_TIMEOUT_MS = 12 * 60 * 1000;
+// Hard circuit breaker: 8 minutes without render_started_at/heartbeat
+// auto-escalates to needs_admin_review and stops polling.
+const STUCK_TIMEOUT_MS = 8 * 60 * 1000;
+// States that count as "active paid render in flight" — blocks new dispatch
+// unless render_started_at OR render_heartbeat_at is populated (i.e. worker
+// actually picked it up). Prevents firing duplicate GitHub Actions.
+const ACTIVE_PAID_STATES = new Set([
+  "render_queued",
+  "rendering",
+]);
+
+const COLUMNS = "id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, created_at, updated_at, render_started_at, render_heartbeat_at";
 
 function isPreviewable(j: JobRow): boolean {
   return !!j.output_mp4_url && PREVIEWABLE_STATES.has(j.status);
@@ -204,9 +217,13 @@ export default function PinterestAdStudio() {
   const [pollKey, setPollKey] = useState(0);
   const [diagnostics, setDiagnostics] = useState<ConceptDiag[]>([]);
   const [showDebug, setShowDebug] = useState(false);
-  const [dryRun, setDryRun] = useState(false);
+  // Default to dry-run. Paid renders require explicit opt-in via paidConfirmed.
+  const [dryRun, setDryRun] = useState(true);
   const [forceBudgetOverride, setForceBudgetOverride] = useState(false);
   const [forcePreflightOverride, setForcePreflightOverride] = useState(false);
+  // EMERGENCY: paid renders are gated behind an explicit checkbox.
+  // Default mode is dry-run only — no GitHub Actions, no paid renders.
+  const [paidConfirmed, setPaidConfirmed] = useState(false);
 
   // Preload product from ?slug=
   useEffect(() => {
@@ -230,7 +247,7 @@ export default function PinterestAdStudio() {
     const t = setTimeout(async () => {
       const { data } = await supabase
         .from("cinematic_ad_jobs")
-        .select("id, product_slug, status, status_message, output_mp4_url, output_thumbnail_url, qa_composite_score, pinterest_pin_url, pinterest_quality_score, error_message, hook_variant, voice_style, render_mode, motion_engine_used, motion_score, motion_diversity_v2, transition_count, publish_blocked_reason, vo_url, preflight_reasons, hard_reject_reasons, admin_review_reason, created_at, updated_at")
+        .select(COLUMNS)
         .in("id", ids);
       if (data) setJobs(data as JobRow[]);
       setPollKey(k => k + 1);
@@ -238,16 +255,18 @@ export default function PinterestAdStudio() {
     return () => clearTimeout(t);
   }, [jobs, pollKey]);
 
-  // 12-min stuck-concept timeout sweep. Marks any job that has been
-  // in preparing/render_queued/rendering/queue_waiting for >12 min as
-  // needs_admin_review with a `timeout` reason. NEVER blocks the preview —
-  // the previewable resolver still picks the first ready sibling.
+  // 8-min hard circuit breaker. If a concept has been in-flight for >8 min
+  // WITHOUT render_started_at OR render_heartbeat_at, mark it
+  // needs_admin_review with the exact blocking reason and stop polling it.
+  // Never blocks the preview — the resolver still picks the first ready sibling.
   useEffect(() => {
     if (jobs.length === 0) return;
     const timer = setInterval(async () => {
       const now = Date.now();
       const stuck = jobs.filter((j) => {
         if (!IN_FLIGHT_STATES.has(j.status)) return false;
+        // If the worker has started or is heart-beating, it's not stuck.
+        if (j.render_started_at || j.render_heartbeat_at) return false;
         const startIso = j.created_at || j.updated_at;
         if (!startIso) return false;
         const startMs = Date.parse(startIso);
@@ -256,13 +275,23 @@ export default function PinterestAdStudio() {
       });
       if (stuck.length === 0) return;
       for (const j of stuck) {
+        // Surface the exact blocking reason from the job row.
+        const reasonParts = [
+          ...(Array.isArray(j.preflight_reasons) ? j.preflight_reasons : []),
+          ...(Array.isArray(j.hard_reject_reasons) ? j.hard_reject_reasons : []),
+          j.status_message,
+          j.error_message,
+        ].filter(Boolean);
+        const exactReason = reasonParts.length
+          ? `timeout_after_8m · ${reasonParts.join(" | ")}`
+          : "timeout_after_8m · no worker heartbeat (render_started_at/render_heartbeat_at null)";
         const { error } = await supabase
           .from("cinematic_ad_jobs")
           .update({
             status: "needs_admin_review",
-            admin_review_reason: "timeout_after_12m",
-            error_message: j.error_message ?? "timeout_after_12m",
-            status_message: "timed out after 12 min — auto-escalated to admin review",
+            admin_review_reason: exactReason,
+            error_message: j.error_message ?? exactReason,
+            status_message: "timed out after 8 min — auto-escalated to admin review",
           })
           .eq("id", j.id);
         if (!error) {
@@ -272,9 +301,9 @@ export default function PinterestAdStudio() {
                 ? {
                     ...p,
                     status: "needs_admin_review",
-                    admin_review_reason: "timeout_after_12m",
-                    error_message: p.error_message ?? "timeout_after_12m",
-                    status_message: "timed out after 12 min — auto-escalated to admin review",
+                    admin_review_reason: exactReason,
+                    error_message: p.error_message ?? exactReason,
+                    status_message: "timed out after 8 min — auto-escalated to admin review",
                   }
                 : p,
             ),
@@ -352,6 +381,29 @@ export default function PinterestAdStudio() {
 
   async function handleDirector() {
     if (!product) { toast.error("Select a product first"); return; }
+    // EMERGENCY GATE — paid render requires explicit confirmation.
+    if (!dryRun && !paidConfirmed) {
+      toast.error("Paid render not confirmed", {
+        description: "Tick \"Paid render confirmed\" to allow paid external rendering, or keep dry-run mode.",
+      });
+      return;
+    }
+    // Block new paid dispatch while previous jobs are still queued/rendering
+    // without a worker heartbeat — prevents firing duplicate GitHub Actions.
+    if (!dryRun) {
+      const { data: inflight } = await supabase
+        .from("cinematic_ad_jobs")
+        .select("id, status, render_started_at, render_heartbeat_at")
+        .eq("product_slug", product.slug)
+        .in("status", Array.from(ACTIVE_PAID_STATES));
+      const orphan = (inflight ?? []).filter((j: any) => !j.render_started_at && !j.render_heartbeat_at);
+      if (orphan.length > 0) {
+        toast.error("Previous paid render still queued without worker heartbeat", {
+          description: `${orphan.length} job(s) in ${Array.from(ACTIVE_PAID_STATES).join("/")} without render_started_at. Resolve or wait for the 8-min circuit breaker before dispatching new paid renders.`,
+        });
+        return;
+      }
+    }
     // Guard: if a director run is already active for this product, offer to resume instead of starting duplicates.
     if (!dryRun) {
       const { data: active } = await supabase
@@ -539,6 +591,12 @@ export default function PinterestAdStudio() {
 
   async function handleManual() {
     if (!product) { toast.error("Select a product first"); return; }
+    if (!dryRun && !paidConfirmed) {
+      toast.error("Paid render not confirmed", {
+        description: "Tick \"Paid render confirmed\" to allow paid external rendering, or keep dry-run mode.",
+      });
+      return;
+    }
     setCreating(true);
     setDirectorNote(null);
     try { await runStyles([manualStyle], "Ad creation started"); }
@@ -556,6 +614,12 @@ export default function PinterestAdStudio() {
   }
 
   async function regenerate(j: JobRow) {
+    if (!paidConfirmed) {
+      toast.error("Paid render not confirmed — cannot regenerate", {
+        description: "Tick \"Paid render confirmed\" to allow paid external rendering.",
+      });
+      return;
+    }
     const sObj = AD_STYLES.find(s => s.hookVariant === j.hook_variant) ?? AD_STYLES[0];
     try {
       setCreating(true);
@@ -624,9 +688,33 @@ export default function PinterestAdStudio() {
             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
             {dryRun ? "Dry-run Director (no renders)" : "Generate Best Possible Pinterest Ad"}
           </Button>
+          {!dryRun && (
+            <div className="rounded border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold">This may trigger paid external rendering.</div>
+                <div className="text-destructive/80">Each concept runs the full GitHub Actions render pipeline (Remotion + Chrome + ffmpeg) and consumes paid AI credits. Use dry-run to validate first.</div>
+              </div>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} className="accent-primary" />
-            Render queue dry run — runs prepare + queue preflight only, no GitHub Actions, no paid renders.
+            Free dry-run only (default) — validates product, images, stock/preflight, storyboard, voiceover, queue, secret, budget and worker readiness. NO GitHub Actions. NO paid renders.
+          </label>
+          <label className={`flex items-start gap-2 text-xs cursor-pointer select-none rounded border p-2 ${paidConfirmed ? "border-destructive/60 bg-destructive/10" : "border-border bg-muted/40"}`}>
+            <input
+              type="checkbox"
+              checked={paidConfirmed}
+              onChange={(e) => setPaidConfirmed(e.target.checked)}
+              disabled={dryRun}
+              className="accent-destructive mt-0.5"
+            />
+            <span>
+              <span className={`font-semibold ${paidConfirmed ? "text-destructive" : ""}`}>Paid render confirmed</span>
+              <span className="block text-muted-foreground">
+                Required before any paid/external render dispatch. Uncheck and use dry-run while iterating. Disabled while dry-run is on.
+              </span>
+            </span>
           </label>
           <label className="flex items-start gap-2 text-xs cursor-pointer select-none rounded border border-amber-500/40 bg-amber-500/5 p-2">
             <input
@@ -801,6 +889,33 @@ export default function PinterestAdStudio() {
             )}
           </CardHeader>
           <CardContent>
+            {!winner && jobs.length > 0 && jobs.every((j) => !isPreviewable(j)) && (
+              <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="w-4 h-4" />
+                  No preview available — diagnostic snapshot
+                </div>
+                <div className="text-muted-foreground">
+                  No concept has produced an <code>output_mp4_url</code> yet. Polling stops automatically after the 8-min circuit breaker.
+                </div>
+                <div className="grid gap-1">
+                  {jobs.map((j) => (
+                    <div key={j.id} className="grid grid-cols-[1fr_auto] gap-2 items-start border-t border-amber-500/20 pt-1">
+                      <div>
+                        <div className="font-mono text-[10px]">{j.id.slice(0, 8)} · {j.archetype ?? j.hook_variant ?? "—"}</div>
+                        <div className="text-[11px]">{statusLabel(j.status)} — {failureMessage(j)}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          started: {j.render_started_at ?? "—"} · heartbeat: {j.render_heartbeat_at ?? "—"}
+                        </div>
+                      </div>
+                      <Badge variant={TERMINAL_BAD.has(j.status) || j.status === "needs_admin_review" ? "destructive" : "secondary"} className="text-[10px]">
+                        {j.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className={`grid gap-4 ${jobs.length > 1 ? "md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1"}`}>
               {jobs.map(j => {
                 const ready = isPreviewable(j);
