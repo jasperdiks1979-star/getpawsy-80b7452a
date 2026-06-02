@@ -818,6 +818,11 @@ const _handlerInner = async (req: Request): Promise<Response> => {
   const heroUrl: string = product.image_url;
   const productImages: string[] = Array.isArray((product as any).images) ? (product as any).images.filter(Boolean) : [];
   const mediaWarnings: Array<{ code: string; message: string }> = [];
+  if (productImages.length === 0 && !heroUrl) {
+    mediaWarnings.push({ code: "no_media", message: "No images on product — using product featured image as sole storyboard source." });
+  } else if (productImages.length === 0) {
+    mediaWarnings.push({ code: "no_extracted_media_fallback_to_featured", message: "No extracted media — falling back to product featured image." });
+  }
   if (productImages.length < 2) {
     mediaWarnings.push({ code: "thin_media", message: `Only ${productImages.length || 1} usable image — AI scene synth will be used to add motion.` });
   }
