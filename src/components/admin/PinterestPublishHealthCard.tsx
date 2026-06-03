@@ -56,6 +56,8 @@ const REQUIRED_SCOPES = [
 ];
 
 export function PinterestPublishHealthCard() {
+  // small inline subcomponent for dry-run probe tiles
+
   const [health, setHealth] = useState<Health | null>(null);
   const [conn, setConn] = useState<Connection | null>(null);
   const [loading, setLoading] = useState(false);
@@ -605,5 +607,16 @@ export function PinterestPublishHealthCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function Probe({ label, ok, detail }: { label: string; ok: boolean | undefined; detail: string }) {
+  const tone = ok === true ? "text-green-600" : ok === false ? "text-destructive" : "text-muted-foreground";
+  return (
+    <div className="rounded border p-2">
+      <div className="text-muted-foreground text-[10px] uppercase">{label}</div>
+      <div className={`font-medium ${tone}`}>{ok === true ? "OK" : ok === false ? "FAIL" : "—"}</div>
+      <div className="text-[10px] text-muted-foreground truncate" title={detail}>{detail}</div>
+    </div>
   );
 }
