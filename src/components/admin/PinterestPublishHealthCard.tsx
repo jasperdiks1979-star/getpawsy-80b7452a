@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Activity, Zap, RefreshCw, ShieldCheck, AlertCircle, Link2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Activity, Zap, RefreshCw, ShieldCheck, AlertCircle, Link2, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 
 type Health = {
@@ -62,6 +62,8 @@ export function PinterestPublishHealthCard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [autoApprove, setAutoApprove] = useState(false);
   const [lastResponse, setLastResponse] = useState<any>(null);
+  const [dryRunResult, setDryRunResult] = useState<any>(null);
+  const [dryRunPinId, setDryRunPinId] = useState<string>("");
   const [scopeDiag, setScopeDiag] = useState<ScopeDiagnostics | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
 
@@ -124,6 +126,19 @@ export function PinterestPublishHealthCard() {
         body: { mode: "next" },
       });
       if (error) throw error;
+      return data;
+    });
+
+  const dryRun = (mode: "next" | "pin") =>
+    run(mode === "next" ? "Dry-run next" : "Dry-run pin", async () => {
+      const body: Record<string, unknown> = { dryRun: true, mode };
+      if (mode === "pin") {
+        if (!dryRunPinId.trim()) throw new Error("Enter a pin queue id");
+        body.pinId = dryRunPinId.trim();
+      }
+      const { data, error } = await supabase.functions.invoke("pinterest-publish-now", { body });
+      if (error) throw error;
+      setDryRunResult(data);
       return data;
     });
 
@@ -433,6 +448,78 @@ export function PinterestPublishHealthCard() {
           <Button variant="secondary" onClick={retryFailed} disabled={!!busy}>
             Retry failed
           </Button>
+        </div>
+
+        {/* Dry-run panel — validates payload + Pinterest API auth/board
+            without creating a real pin. */}
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <FlaskConical className="h-4 w-4" />
+            Publish dry-run
+            <Badge variant="outline" className="ml-1">no pin created</Badge>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Validates the exact payload Pinterest would receive and probes <code>/user_account</code> + <code>/boards/&#123;id&#125;</code> with the live access token. Logged to <code>pinterest_publish_logs</code> as <code>dry_run_ok</code> / <code>dry_run_failed</code>.
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={() => dryRun("next")} disabled={!!busy}>
+              {busy === "Dry-run next"
+                ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                : <FlaskConical className="h-3.5 w-3.5 mr-1.5" />}
+              Dry-run next queued
+            </Button>
+            <input
+              type="text"
+              placeholder="pin queue id…"
+              value={dryRunPinId}
+              onChange={(e) => setDryRunPinId(e.target.value)}
+              className="h-8 rounded border bg-background px-2 text-xs w-56"
+            />
+            <Button size="sm" variant="secondary" onClick={() => dryRun("pin")} disabled={!!busy || !dryRunPinId.trim()}>
+              Dry-run this pin
+            </Button>
+          </div>
+          {dryRunResult && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge variant={dryRunResult.ok ? "default" : "destructive"} className="gap-1">
+                  {dryRunResult.ok
+                    ? <CheckCircle2 className="h-3 w-3" />
+                    : <XCircle className="h-3 w-3" />}
+                  {dryRunResult.ok ? "PASS" : "FAIL"}
+                </Badge>
+                <span className="text-muted-foreground">{dryRunResult.summary}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <Probe label="Validation" ok={dryRunResult.validation?.ok} detail={
+                  dryRunResult.validation?.ok
+                    ? `title ${dryRunResult.validation?.sizes?.title}, desc ${dryRunResult.validation?.sizes?.description}`
+                    : `${dryRunResult.validation?.issues?.length || 0} issue(s)`
+                } />
+                <Probe label="Payload safety" ok={dryRunResult.payload?.ok} detail={
+                  dryRunResult.payload?.ok
+                    ? `${(dryRunResult.payload?.rejected_fields?.length || 0)} rejected, ${(dryRunResult.payload?.coerced_fields?.length || 0)} coerced`
+                    : (dryRunResult.payload?.error || "invalid")
+                } />
+                <Probe label="/user_account" ok={dryRunResult.api_probe?.account?.ok} detail={
+                  `HTTP ${dryRunResult.api_probe?.account?.status ?? "—"} · ${dryRunResult.api_probe?.account?.duration_ms ?? 0}ms`
+                } />
+                <Probe label="/boards/{id}" ok={dryRunResult.api_probe?.board?.ok} detail={
+                  `HTTP ${dryRunResult.api_probe?.board?.status ?? "—"} · ${dryRunResult.api_probe?.board?.duration_ms ?? 0}ms`
+                } />
+              </div>
+              {Array.isArray(dryRunResult.validation?.issues) && dryRunResult.validation.issues.length > 0 && (
+                <ul className="text-[11px] text-destructive list-disc pl-4">
+                  {dryRunResult.validation.issues.map((i: any, idx: number) => (
+                    <li key={idx}>{i.field}: {i.reason}{i.value != null ? ` (${i.value})` : ""}</li>
+                  ))}
+                </ul>
+              )}
+              <pre className="rounded border bg-muted/40 p-2 text-[10px] max-h-56 overflow-auto">
+                {JSON.stringify(dryRunResult, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
 
         {lastResponse && (
