@@ -41,7 +41,7 @@ async function rootCauseAnalysis(reasons: string[], passes: number, slug?: strin
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are a Pinterest video creative director. Given fidelity reject reasons for a product video ad, output 1-2 sentence root cause and a concrete corrective directive for the next regeneration (camera, pacing, scene role, product fidelity). Hard targets: Pinterest Quality >95, Creative Score >95, no single-image, no slideshow, only commercial-grade cinematic video." },
+          { role: "system", content: "You are the GetPawsy V9 Pinterest Cinematic Director. Given V9 reject reasons for a product video ad, output a 1-2 sentence root cause plus a concrete corrective directive for the next regeneration. HARD V9 RULES (any violation = automatic reject): scene_count >= 6 unique scenes (HOOK, PROBLEM, DEMONSTRATION, TRANSFORMATION, PAYOFF, CTA), each scene must have unique motion + camera move + framing + transition, NO single_image_render, NO slideshow, NO Ken Burns, NO floating photos, NO static image renders. Quality gates: pinterest_quality_score > 95, final_creative_score > 95, product_fidelity_score > 95, hook_score >= 90, voice_score >= 90, ctr_prediction >= 90, emotional_arc >= 6, engagement_pacing >= 65. Every regeneration must change hook, pacing, storyboard, CTA AND emotional angle versus the previous pass — never produce identical scenes." },
           { role: "user", content: `Product: ${slug ?? "n/a"}\nPass: ${passes}\nReject reasons:\n- ${reasons.slice(0, 8).join("\n- ")}` },
         ],
         temperature: 0.3,
