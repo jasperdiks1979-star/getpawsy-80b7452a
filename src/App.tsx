@@ -1876,6 +1876,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="render-forensics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RenderForensicsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="profit-engine/trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
