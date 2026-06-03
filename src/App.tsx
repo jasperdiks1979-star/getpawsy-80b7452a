@@ -1885,6 +1885,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="worker"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <WorkerRecoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="profit-engine/trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
