@@ -246,6 +246,12 @@ Deno.serve(async (req) => {
 
   for (const job of jobs ?? []) {
     const verdict = evaluate(job as Job, settings, recentFfmpegFails);
+    const thresholdApplied = categoryThreshold(job as Job, settings.approval_confidence_threshold);
+    const qaScoreNum = Number(job.qa_score ?? 0);
+    // Permanent fix: persist the boolean qa_passed alongside the existing
+    // qa_decision_reason / qa_threshold_applied writes so the DB trigger
+    // `cinematic_ad_jobs_compute_safe_to_publish` can flip is_safe_to_publish.
+    const qaPassed = Number.isFinite(qaScoreNum) && qaScoreNum >= thresholdApplied;
     if (verdict.approve) {
       const completed = Boolean(job.output_mp4_url) || ["render_complete", "completed", "approved", "publishable"].includes(String(job.status));
       const { error: updErr } = await admin
@@ -259,7 +265,8 @@ Deno.serve(async (req) => {
           approval_confidence: verdict.confidence,
           approval_source: isServiceCall ? "autopilot" : "admin_manual",
           needs_admin_review: false,
-          qa_threshold_applied: categoryThreshold(job as Job, settings.approval_confidence_threshold),
+          qa_threshold_applied: thresholdApplied,
+          qa_passed: qaPassed,
           qa_decision_reason: verdict.reason,
           pipeline_stage: completed ? "approved" : "approved_for_render",
           render_queued_at: completed ? job.render_queued_at : (job.render_queued_at ?? new Date().toISOString()),
@@ -285,6 +292,8 @@ Deno.serve(async (req) => {
         .update({
           auto_approval_blocked_reason: verdict.blocked_reason ?? "unknown",
           approval_confidence: verdict.confidence,
+          qa_threshold_applied: thresholdApplied,
+          qa_passed: qaPassed,
         })
         .eq("id", job.id);
       results.push({ id: job.id, action: "manual_review", confidence: verdict.confidence, blocked: verdict.blocked_reason });
