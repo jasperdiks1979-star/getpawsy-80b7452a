@@ -5,6 +5,15 @@ import { getPreset, durationFrames } from "../_shared/cinematic-presets.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+// Only the GitHub Actions render-cinematic-ad.yml workflow may claim render_queued
+// jobs. Any other worker (e.g. an external Node.js render-worker that is failing
+// to actually render and just burns the per-product 24h budget) is locked out
+// unless the operator explicitly flips CLAIM_JOB_ALLOW_NON_GH=1.
+const ALLOW_NON_GH_WORKERS = (Deno.env.get("CLAIM_JOB_ALLOW_NON_GH") ?? "") === "1";
+const GH_WORKER_PREFIXES = ["gh-actions-", "gh-trim-"];
+function isGhWorker(workerId: string): boolean {
+  return GH_WORKER_PREFIXES.some((p) => workerId.startsWith(p));
+}
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
@@ -23,6 +32,19 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const workerId = String(body.worker_id ?? "anonymous");
     const explicitJobId = body.job_id ? String(body.job_id) : null;
+
+    // Gate: only the GitHub Actions render workflow may claim. Blocks rogue
+    // external Node workers from intercepting jobs and burning render budgets.
+    if (!ALLOW_NON_GH_WORKERS && !isGhWorker(workerId)) {
+      console.warn(`[claim-job] ${traceId} blocked non-gh worker=${workerId} job=${explicitJobId ?? "<auto>"}`);
+      return json({
+        ok: false,
+        traceId,
+        reason: "non_gh_worker_blocked",
+        message: "Only gh-actions-* workers may claim render_queued jobs. Set CLAIM_JOB_ALLOW_NON_GH=1 to override.",
+        worker_id: workerId,
+      }, 403);
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
