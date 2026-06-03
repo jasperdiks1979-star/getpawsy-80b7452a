@@ -416,6 +416,12 @@ function startHealthServer() {
           pollIntervalMs: POLL,
           workerId: WORKER_ID,
           envPresent: REQUIRED.reduce((a,k)=>(a[k]=!!process.env[k],a),{}),
+          serviceKey: {
+            ok: SERVICE_KEY_OK,
+            role: SERVICE_KEY_ROLE,
+            keyRef: SERVICE_KEY_REF,
+            urlRef: URL_REF,
+          },
           state,
         });
       }
