@@ -211,7 +211,87 @@ Deno.serve(async (req) => {
   }
 
   if (dryRun) {
-    return json({ ok: true, dryRun: true, pin_id: row.id, board_id: boardId, validation });
+    // ── Dry-run: build the exact payload that POST /pins would receive,
+    // sanitize it, and probe Pinterest with GETs to validate auth/board
+    // access without creating a pin.
+    const requestPayload = {
+      title: row.pin_title,
+      description: row.pin_description,
+      board_id: boardId,
+      media_source: { source_type: "image_url", url: row.pin_image_url },
+      link: row.destination_link,
+    };
+    let payloadSafe: any = null;
+    let payloadError: string | null = null;
+    try {
+      const safe = await preparePinterestPayload(sb, requestPayload, {
+        endpoint: "/pins",
+        function: "pinterest-publish-now",
+        pin_id: row.id,
+        dryRun: true,
+      });
+      payloadSafe = {
+        ok: true,
+        payload: safe.payload,
+        rejected_fields: safe.rejectedFields,
+        coerced_fields: safe.coercedFields,
+      };
+    } catch (e: any) {
+      payloadError = e?.message || String(e);
+      payloadSafe = { ok: false, error: payloadError };
+    }
+
+    const probe = async (path: string) => {
+      const t = Date.now();
+      try {
+        const res = await fetch(`${PINTEREST_API}${path}`, {
+          headers: { Authorization: `Bearer ${conn.access_token}` },
+        });
+        const text = await res.text();
+        let body: any = null;
+        try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 300) }; }
+        return { ok: res.ok, status: res.status, duration_ms: Date.now() - t, body };
+      } catch (e: any) {
+        return { ok: false, status: 0, duration_ms: Date.now() - t, error: e?.message || String(e) };
+      }
+    };
+    const [account, board] = await Promise.all([
+      probe("/user_account"),
+      probe(`/boards/${boardId}`),
+    ]);
+
+    const apiOk = account.ok && board.ok;
+    const overallOk = validation.ok && !!payloadSafe?.ok && apiOk;
+    const summary = overallOk
+      ? "Dry-run passed — payload valid, token + board reachable. No pin created."
+      : "Dry-run found issues — see details below. No pin created.";
+
+    // Log dry-run for audit trail (no queue mutation).
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: row.id,
+      attempt: row.publish_attempts || 0,
+      status: overallOk ? "dry_run_ok" : "dry_run_failed",
+      board_id: boardId,
+      image_url: row.pin_image_url,
+      pin_title: row.pin_title,
+      destination_link: row.destination_link,
+      request_payload: { dryRun: true, ...requestPayload },
+      response_payload: { validation, payload: payloadSafe, api_probe: { account, board } },
+      error_message: overallOk ? null : summary,
+      duration_ms: (account.duration_ms || 0) + (board.duration_ms || 0),
+    });
+
+    return json({
+      ok: overallOk,
+      dryRun: true,
+      pin_id: row.id,
+      board_id: boardId,
+      summary,
+      validation,
+      payload: payloadSafe,
+      api_probe: { account, board },
+      would_post: { url: `${PINTEREST_API}/pins`, method: "POST", body: requestPayload },
+    });
   }
 
   // ── Atomic claim ──
