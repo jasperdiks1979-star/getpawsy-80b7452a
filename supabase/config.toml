@@ -338,3 +338,6 @@ verify_jwt = false
 
 [functions.cj-nightly-product-sync]
 verify_jwt = false
+
+[functions.render-forensics]
+verify_jwt = false
