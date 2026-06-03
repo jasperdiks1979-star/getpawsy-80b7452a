@@ -32,6 +32,7 @@ import PinterestQualityPanel from "@/components/admin/cinematic/PinterestQuality
 import PinterestContentEnginePanel from "@/components/admin/cinematic/PinterestContentEnginePanel";
 import BackgroundBatchPanel from "@/components/admin/cinematic/BackgroundBatchPanel";
 import CampaignProgressPanel, { saveLastCampaign } from "@/components/admin/cinematic/CampaignProgressPanel";
+import PipelineHealthBanner from "@/components/admin/cinematic/PipelineHealthBanner";
 import { downloadAuditCsv } from "@/utils/cinematicQaAudit";
 
 type Job = {
@@ -525,6 +526,8 @@ export default function CinematicAdsControlCenterPage() {
       </header>
 
       <CampaignProgressPanel />
+
+      <PipelineHealthBanner />
 
       <SystemTruthPanel />
 
