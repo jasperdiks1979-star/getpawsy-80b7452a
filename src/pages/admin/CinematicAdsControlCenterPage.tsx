@@ -527,6 +527,8 @@ export default function CinematicAdsControlCenterPage() {
 
       <CampaignProgressPanel />
 
+      <PipelineHealthBanner />
+
       <SystemTruthPanel />
 
       <OperatorPanel />
