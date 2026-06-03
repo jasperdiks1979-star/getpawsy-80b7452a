@@ -485,6 +485,7 @@ const PinterestTrendsPage = lazyWithRetry(() => import("./pages/admin/PinterestT
 const PinterestRevenuePage = lazyWithRetry(() => import("./pages/admin/PinterestRevenuePage"));
 const RevenueCommandCenter = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenter"));
 const RenderForensicsPage = lazyWithRetry(() => import("./pages/admin/RenderForensicsPage"));
+const WorkerRecoveryPage = lazyWithRetry(() => import("./pages/admin/WorkerRecoveryPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
