@@ -2083,6 +2083,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cj-sync"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CjSyncReport />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="render-budget"
                               element={
                                 <Suspense fallback={<RouteLoader />}>

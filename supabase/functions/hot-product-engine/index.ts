@@ -15,6 +15,8 @@ const corsHeaders = {
 //     * pinterest-creative-director (creative regeneration)
 
 const PROMOTE_THRESHOLD = 85;
+const AGGRESSIVE_THRESHOLD = 90;
+const DOMINATION_THRESHOLD = 95;
 const WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
 type ProductRow = {
@@ -148,10 +150,18 @@ Deno.serve(async (req) => {
       const hot = Math.max(0, Math.min(100, marginScore + intentScore + viralScore + pinFit));
 
       const recommended =
-        hot >= PROMOTE_THRESHOLD ? "auto_promote_v8"
+        hot >= DOMINATION_THRESHOLD ? "domination_mode"
+        : hot >= AGGRESSIVE_THRESHOLD ? "aggressive_promote_v9"
+        : hot >= PROMOTE_THRESHOLD ? "auto_promote_v9"
         : hot >= 70 ? "boost_pinterest"
         : hot >= 50 ? "monitor"
         : "deprioritize";
+
+      const promotionTier =
+        hot >= DOMINATION_THRESHOLD ? "domination"
+        : hot >= AGGRESSIVE_THRESHOLD ? "aggressive"
+        : hot >= PROMOTE_THRESHOLD ? "candidate"
+        : "none";
 
       const row = {
         product_id: p.id,
@@ -170,6 +180,7 @@ Deno.serve(async (req) => {
         recommended_action: recommended,
         signals: { name: p.name, slug: p.slug, category: p.category, hook: g?.hook, angle: g?.angle, ctr },
       };
+      (row as any).signals.promotion_tier = promotionTier;
       upserts.push(row);
       if (hot >= PROMOTE_THRESHOLD) winners.push({ id: p.id, score: hot, signals: row });
       // attach slug for downstream V8 invocation
@@ -230,7 +241,15 @@ Deno.serve(async (req) => {
               body: JSON.stringify({
                 product_slug: slug,
                 source: "hot_product_engine",
-                autopilot_threshold: 70,
+                autopilot_threshold:
+                  w.score >= DOMINATION_THRESHOLD ? 95
+                  : w.score >= AGGRESSIVE_THRESHOLD ? 90
+                  : 85,
+                promotion_tier:
+                  w.score >= DOMINATION_THRESHOLD ? "domination"
+                  : w.score >= AGGRESSIVE_THRESHOLD ? "aggressive"
+                  : "candidate",
+                v9_strict: true,
               }),
             });
             promo.actions.push(res.ok ? "cinematic_v8" : `cinematic_v8_http_${res.status}`);
