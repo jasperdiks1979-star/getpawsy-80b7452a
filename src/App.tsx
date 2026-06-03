@@ -484,6 +484,7 @@ const PinterestSchedulerPage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestTrendsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrendsPage"));
 const PinterestRevenuePage = lazyWithRetry(() => import("./pages/admin/PinterestRevenuePage"));
 const RevenueCommandCenter = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenter"));
+const RenderForensicsPage = lazyWithRetry(() => import("./pages/admin/RenderForensicsPage"));
 const TikTokAutomationPage = lazyWithRetry(() => import("./pages/admin/TikTokAutomationPage"));
 const TikTokAdsPerformancePage = lazyWithRetry(() => import("./pages/admin/TikTokAdsPerformancePage"));
 const TikTokFunnelDebugPage = lazyWithRetry(() => import("./pages/admin/TikTokFunnelDebugPage"));
@@ -1871,6 +1872,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="render-forensics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RenderForensicsPage />
                                 </Suspense>
                               }
                             />

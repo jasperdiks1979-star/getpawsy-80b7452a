@@ -19335,6 +19335,13 @@ export type Database = {
       }
       cinematic_queue_health: { Args: never; Returns: Json }
       cinematic_recover_stuck_jobs: { Args: never; Returns: Json }
+      cinematic_render_avg_seconds_24h: {
+        Args: never
+        Returns: {
+          avg_seconds: number
+          sample_size: number
+        }[]
+      }
       cinematic_reserve_render_slot: {
         Args: {
           p_admin_user_id?: string
