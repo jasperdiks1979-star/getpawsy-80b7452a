@@ -29,6 +29,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { MobileProductGallery } from "@/components/products/MobileProductGallery";
 import { DesktopProductGallery } from "@/components/products/DesktopProductGallery";
+import { ProductVideoSection } from "@/components/products/ProductVideoSection";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
