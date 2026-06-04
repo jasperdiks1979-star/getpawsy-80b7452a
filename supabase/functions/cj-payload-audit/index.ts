@@ -55,6 +55,35 @@ async function fetchCjProduct(token: string, pid: string) {
   return { status: res.status, json };
 }
 
+async function fetchCjVariants(token: string, pid: string) {
+  const params = new URLSearchParams({ pid });
+  const res = await fetch(`${CJ_API_BASE}/product/variant/queryByVid?${params}`, {
+    headers: { "Content-Type": "application/json", "CJ-Access-Token": token },
+  }).catch(() => null);
+  if (!res) return { status: 0, json: null };
+  const json = await res.json().catch(() => null);
+  return { status: res.status, json };
+}
+
+async function fetchCjVariantsByPid(token: string, pid: string) {
+  // Correct CJ endpoint for product variants
+  const res = await fetch(`${CJ_API_BASE}/product/variant/query?pid=${pid}`, {
+    headers: { "Content-Type": "application/json", "CJ-Access-Token": token },
+  }).catch(() => null);
+  if (!res) return { status: 0, json: null };
+  const json = await res.json().catch(() => null);
+  return { status: res.status, json };
+}
+
+async function fetchCjStock(token: string, pid: string) {
+  const res = await fetch(`${CJ_API_BASE}/product/stock/queryByPid?pid=${pid}`, {
+    headers: { "Content-Type": "application/json", "CJ-Access-Token": token },
+  }).catch(() => null);
+  if (!res) return { status: 0, json: null };
+  const json = await res.json().catch(() => null);
+  return { status: res.status, json };
+}
+
 // Known CJ payload fields (top-level + variant-level) we explicitly recognise.
 const CONSUMED_TOP_LEVEL = new Set([
   "pid", "productSku", "productName", "productNameEn", "categoryId",
@@ -228,6 +257,15 @@ Deno.serve(async (req) => {
 
     const token = await getCjToken(supabase);
     const { status, json } = await fetchCjProduct(token, dbProduct.cj_product_id);
+    const variantsRes = await fetchCjVariantsByPid(token, dbProduct.cj_product_id);
+    const stockRes = await fetchCjStock(token, dbProduct.cj_product_id);
+
+    // Merge variants into payload if /product/query returned none
+    if (json?.data && (!Array.isArray(json.data.variants) || json.data.variants.length === 0)) {
+      if (Array.isArray(variantsRes.json?.data)) {
+        json.data.variants = variantsRes.json.data;
+      }
+    }
 
     const { data: media } = await supabase
       .from("product_media")
@@ -243,6 +281,17 @@ Deno.serve(async (req) => {
         ok: !!json?.result,
         cj_http_status: status,
         cj_api_message: json?.message ?? null,
+        cj_variant_endpoint: {
+          status: variantsRes.status,
+          message: variantsRes.json?.message ?? null,
+          count: Array.isArray(variantsRes.json?.data) ? variantsRes.json.data.length : null,
+          sample: Array.isArray(variantsRes.json?.data) ? variantsRes.json.data.slice(0, 3) : null,
+        },
+        cj_stock_endpoint: {
+          status: stockRes.status,
+          message: stockRes.json?.message ?? null,
+          data: stockRes.json?.data ?? null,
+        },
         product: {
           id: dbProduct.id,
           slug: dbProduct.slug,
