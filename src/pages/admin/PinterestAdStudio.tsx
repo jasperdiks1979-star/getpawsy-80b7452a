@@ -80,7 +80,14 @@ const IN_FLIGHT_STATES = new Set([
 ]);
 // Hard circuit breaker: 8 minutes without render_started_at/heartbeat
 // auto-escalates to needs_admin_review and stops polling.
-const STUCK_TIMEOUT_MS = 8 * 60 * 1000;
+// Hard circuit breaker: only flips jobs that have NEVER been claimed by a
+// worker. Raised from 8 -> 25 min to accommodate the worst-case GitHub
+// Actions cold start (runner spin-up + apt install ffmpeg + bun install +
+// Chrome download can legitimately take 8-15 min before the worker even
+// posts the first heartbeat). The breaker NEVER touches a job that already
+// has a heartbeat, render_started_at, or render_attempts > 0 — those are
+// the responsibility of cinematic-ad-watchdog with DB-level truth.
+const STUCK_TIMEOUT_MS = 25 * 60 * 1000;
 // States that count as "active paid render in flight" — blocks new dispatch
 // unless render_started_at OR render_heartbeat_at is populated (i.e. worker
 // actually picked it up). Prevents firing duplicate GitHub Actions.
