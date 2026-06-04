@@ -124,7 +124,7 @@ export default function CjVariantRepairPanel() {
     channelRef.current = ch;
   }
 
-  async function run(mode: Mode) {
+  async function runMode(mode: Mode) {
     if (mode === "repair_one" && !/^[0-9a-f-]{36}$/i.test(productId.trim())) {
       toast.error("Enter a valid products.id (UUID) for repair_one");
       return;
@@ -216,7 +216,7 @@ export default function CjVariantRepairPanel() {
 
         {/* Audit */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => run("audit")}>
+          <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => runMode("audit")}>
             {busy === "audit" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -238,7 +238,7 @@ export default function CjVariantRepairPanel() {
               spellCheck={false}
             />
           </div>
-          <Button size="sm" disabled={busy !== null} onClick={() => run("repair_one")}>
+          <Button size="sm" disabled={busy !== null} onClick={() => runMode("repair_one")}>
             {busy === "repair_one" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -265,7 +265,7 @@ export default function CjVariantRepairPanel() {
             size="sm"
             variant="destructive"
             disabled={busy !== null}
-            onClick={() => run("repair_all")}
+            onClick={() => runMode("repair_all")}
           >
             {busy === "repair_all" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
