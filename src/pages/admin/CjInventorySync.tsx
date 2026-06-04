@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, RefreshCcw, FlaskConical } from "lucide-react";
+import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
 
 interface SyncChange {
   id: string;
@@ -144,6 +145,8 @@ export default function CjInventorySync() {
           </CardContent>
         </Card>
       )}
+
+      <CjVariantRepairPanel />
     </div>
   );
 }
