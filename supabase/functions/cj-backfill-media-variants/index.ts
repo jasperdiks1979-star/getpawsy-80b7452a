@@ -77,35 +77,89 @@ async function sha256Hex(input: string): Promise<string> {
  * long-lived signed URL on success, or null on any failure (caller falls
  * back to the CJ CDN URL).
  */
+export type RehostResult = {
+  success: boolean;
+  signedUrl?: string;
+  storagePath?: string;
+  bytes?: number;
+  contentType?: string;
+  httpStatus?: number;
+  attempts: number;
+  error?: string;
+  reason?: string; // machine-readable failure category
+};
+
 async function rehostVideo(
   admin: ReturnType<typeof createClient>,
   productId: string,
   sourceUrl: string,
-): Promise<{ signedUrl: string; storagePath: string; bytes: number; contentType: string } | null> {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 45_000);
-    const res = await fetch(sourceUrl, { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") ?? "video/mp4";
-    const buf = new Uint8Array(await res.arrayBuffer());
-    if (buf.byteLength === 0 || buf.byteLength > REHOST_MAX_BYTES) return null;
-    const ext = extFromUrlOrType(sourceUrl, contentType);
-    const hash = (await sha256Hex(sourceUrl)).slice(0, 16);
-    const storagePath = `cj/${productId}/${hash}.${ext}`;
-    const { error: upErr } = await admin.storage
-      .from(REHOST_BUCKET)
-      .upload(storagePath, buf, { contentType, upsert: true, cacheControl: "31536000" });
-    if (upErr && !/exists/i.test(upErr.message)) return null;
-    const { data: signed, error: signErr } = await admin.storage
-      .from(REHOST_BUCKET)
-      .createSignedUrl(storagePath, REHOST_SIGNED_URL_TTL);
-    if (signErr || !signed?.signedUrl) return null;
-    return { signedUrl: signed.signedUrl, storagePath, bytes: buf.byteLength, contentType };
-  } catch {
-    return null;
+): Promise<RehostResult> {
+  const MAX_ATTEMPTS = 3;
+  let attempt = 0;
+  let lastErr = "unknown";
+  let lastStatus: number | undefined;
+  let lastReason = "unknown";
+  while (attempt < MAX_ATTEMPTS) {
+    attempt++;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 45_000);
+      const res = await fetch(sourceUrl, { signal: ctrl.signal });
+      clearTimeout(timer);
+      lastStatus = res.status;
+      if (!res.ok) {
+        lastErr = `http_${res.status}`;
+        lastReason = res.status === 429 ? "rate_limited" : res.status >= 500 ? "server_error" : "client_error";
+        // Only retry 429 and 5xx
+        if (res.status !== 429 && res.status < 500) {
+          return { success: false, attempts: attempt, httpStatus: res.status, error: lastErr, reason: lastReason };
+        }
+        await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+        continue;
+      }
+      const contentType = res.headers.get("content-type") ?? "video/mp4";
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.byteLength === 0) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: "empty_body", reason: "empty_body" };
+      }
+      if (buf.byteLength > REHOST_MAX_BYTES) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: "too_large", reason: "too_large", bytes: buf.byteLength, contentType };
+      }
+      const ext = extFromUrlOrType(sourceUrl, contentType);
+      const hash = (await sha256Hex(sourceUrl)).slice(0, 16);
+      const storagePath = `cj/${productId}/${hash}.${ext}`;
+      const { error: upErr } = await admin.storage
+        .from(REHOST_BUCKET)
+        .upload(storagePath, buf, { contentType, upsert: true, cacheControl: "31536000" });
+      if (upErr && !/exists/i.test(upErr.message)) {
+        lastErr = `upload_failed:${upErr.message}`;
+        lastReason = "upload_failed";
+        await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+        continue;
+      }
+      const { data: signed, error: signErr } = await admin.storage
+        .from(REHOST_BUCKET)
+        .createSignedUrl(storagePath, REHOST_SIGNED_URL_TTL);
+      if (signErr || !signed?.signedUrl) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: `sign_failed:${signErr?.message ?? "no_url"}`, reason: "sign_failed", bytes: buf.byteLength, contentType };
+      }
+      return {
+        success: true,
+        signedUrl: signed.signedUrl,
+        storagePath,
+        bytes: buf.byteLength,
+        contentType,
+        httpStatus: res.status,
+        attempts: attempt,
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      lastErr = msg;
+      lastReason = /abort|timeout/i.test(msg) ? "timeout" : "network_error";
+      await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+    }
   }
+  return { success: false, attempts: attempt, httpStatus: lastStatus, error: lastErr, reason: lastReason };
 }
 
 const VIDEO_FIELDS_TOP = [
