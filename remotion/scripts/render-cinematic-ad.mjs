@@ -43,6 +43,34 @@ if (!SUPABASE_HOST.startsWith(`${EXPECTED_PROJECT_REF}.`)) {
 }
 
 const HEADERS = { "Content-Type": "application/json", "x-render-secret": WORKER_SECRET };
+const GITHUB_RUN_ID = process.env.GITHUB_RUN_ID || process.env.RENDER_GH_RUN_ID || null;
+
+/**
+ * Persistent diagnostics bag shipped on every webhook call. The render
+ * webhook now mirrors this to cinematic_ad_jobs.admin_diagnostics, so
+ * even when GitHub Actions reports green the admin UI shows where the
+ * pipeline silently dropped (upload, webhook, DB write).
+ */
+const adminDiagnostics = {
+  latest_github_run_id: GITHUB_RUN_ID,
+  render_exit_code: null,
+  output_file_size_mb: null,
+  upload_url_created: null,
+  webhook_status: null,
+  webhook_response_body: null,
+  job_updated_output_mp4_url: null,
+  render_output_path: null,
+  output_file_exists: null,
+  last_status_update: new Date().toISOString(),
+};
+
+function diagLog(key, value) {
+  // Explicit, greppable lines for GH Actions logs. Required by the
+  // pipeline runbook so a green run can be reconciled with the DB row.
+  console.log(`[diag] ${key}=${value === null || value === undefined ? "null" : value}`);
+  adminDiagnostics[key.toLowerCase()] = value;
+  adminDiagnostics.last_status_update = new Date().toISOString();
+}
 
 async function fetchWithTimeout(url, opts = {}, timeoutMs = 30_000) {
   const ac = new AbortController();
@@ -54,18 +82,56 @@ async function fetchWithTimeout(url, opts = {}, timeoutMs = 30_000) {
   }
 }
 
-async function postWebhook(payload) {
+async function postWebhook(payload, { critical = false } = {}) {
+  // Always ship admin_diagnostics so the DB row stays observable even when
+  // intermediate calls (heartbeat / duplicate-scan) fail to fully reconcile.
+  const enriched = {
+    ...payload,
+    admin_diagnostics: { ...adminDiagnostics, ...(payload.admin_diagnostics ?? {}) },
+    latest_github_run_id: GITHUB_RUN_ID,
+  };
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const r = await fetchWithTimeout(`${FUNCTIONS_BASE_URL}/cinematic-ad-render-webhook`, {
-        method: "POST", headers: HEADERS, body: JSON.stringify(payload),
+        method: "POST", headers: HEADERS, body: JSON.stringify(enriched),
       }, 15_000);
       const t = await r.text();
       console.log("[webhook]", r.status, t);
-      if (r.ok) return;
+      adminDiagnostics.webhook_status = r.status;
+      adminDiagnostics.webhook_response_body = t.slice(0, 1500);
+      if (r.ok) return { ok: true, status: r.status, body: t };
     } catch (e) { console.error("[webhook] attempt", attempt, "failed", e?.message ?? e); }
     await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
   }
+  if (critical) {
+    throw new Error(`webhook_failed_after_retries status=${adminDiagnostics.webhook_status ?? "n/a"} body=${String(adminDiagnostics.webhook_response_body ?? "").slice(0, 400)}`);
+  }
+  return { ok: false, status: adminDiagnostics.webhook_status, body: adminDiagnostics.webhook_response_body };
+}
+
+/**
+ * After the webhook reported success, double-check that the DB row was
+ * actually updated with output_mp4_url. Required by the pipeline contract:
+ * a green GitHub run is ONLY allowed when cinematic_ad_jobs.output_mp4_url
+ * is non-null.
+ */
+async function verifyJobMp4Persisted(jobId) {
+  const url = `${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${encodeURIComponent(jobId)}&select=output_mp4_url,status`;
+  const r = await fetchWithTimeout(url, {
+    headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
+  }, 10_000);
+  if (!r.ok) {
+    const t = await r.text().catch(() => "");
+    throw new Error(`db_verify_fetch_failed status=${r.status} body=${t.slice(0, 300)}`);
+  }
+  const rows = await r.json().catch(() => []);
+  const row = Array.isArray(rows) ? rows[0] : null;
+  const mp4 = row?.output_mp4_url ?? null;
+  diagLog("JOB_UPDATED_OUTPUT_MP4_URL", mp4 ?? "null");
+  if (!mp4) {
+    throw new Error(`db_verify_failed: output_mp4_url still null after webhook (status=${row?.status ?? "n/a"})`);
+  }
+  return mp4;
 }
 
 function escapeDrawtext(text = "") {
