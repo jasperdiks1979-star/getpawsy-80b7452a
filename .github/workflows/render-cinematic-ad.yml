@@ -156,3 +156,33 @@ jobs:
             cat "${LOG_FILE}"
             exit "${status}"
           fi
+
+      - name: Verify output_mp4_url in DB
+        shell: bash
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Pipeline contract: a green GH run is only allowed when the DB row
+          # actually carries output_mp4_url. This prevents the failure mode
+          # where the worker exits 0 but the webhook silently dropped the
+          # update, leaving cinematic_ad_jobs in render_queued forever.
+          URL="${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${JOB_ID}&select=output_mp4_url,status,admin_diagnostics"
+          echo "[verify] GET ${URL}"
+          RESP=$(curl -fsS -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" "${URL}")
+          echo "[verify] response=${RESP}"
+          MP4=$(echo "${RESP}" | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{const j=JSON.parse(s);process.stdout.write(String(j[0]?.output_mp4_url ?? ''))}catch(e){process.exit(2)}})")
+          if [ -z "${MP4}" ]; then
+            echo "[verify] FAIL — cinematic_ad_jobs.output_mp4_url is null for job ${JOB_ID}"
+            echo "[verify] GitHub run ${GITHUB_RUN_ID} will exit 1 to honor pipeline contract."
+            # Best-effort: mark the job failed so the admin sees the truth.
+            curl -fsS -X PATCH \
+              -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: return=minimal" \
+              "${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${JOB_ID}" \
+              -d "{\"status\":\"failed\",\"error_message\":\"gh_green_but_url_missing\",\"status_message\":\"GitHub Actions exited 0 but output_mp4_url was never persisted — repair required\",\"latest_github_run_id\":\"${GITHUB_RUN_ID}\"}" || true
+            exit 1
+          fi
+          echo "[verify] OK — output_mp4_url=${MP4}"

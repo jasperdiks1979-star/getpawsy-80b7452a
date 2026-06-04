@@ -80,7 +80,14 @@ const IN_FLIGHT_STATES = new Set([
 ]);
 // Hard circuit breaker: 8 minutes without render_started_at/heartbeat
 // auto-escalates to needs_admin_review and stops polling.
-const STUCK_TIMEOUT_MS = 8 * 60 * 1000;
+// Hard circuit breaker: only flips jobs that have NEVER been claimed by a
+// worker. Raised from 8 -> 25 min to accommodate the worst-case GitHub
+// Actions cold start (runner spin-up + apt install ffmpeg + bun install +
+// Chrome download can legitimately take 8-15 min before the worker even
+// posts the first heartbeat). The breaker NEVER touches a job that already
+// has a heartbeat, render_started_at, or render_attempts > 0 — those are
+// the responsibility of cinematic-ad-watchdog with DB-level truth.
+const STUCK_TIMEOUT_MS = 25 * 60 * 1000;
 // States that count as "active paid render in flight" — blocks new dispatch
 // unless render_started_at OR render_heartbeat_at is populated (i.e. worker
 // actually picked it up). Prevents firing duplicate GitHub Actions.
@@ -465,6 +472,26 @@ export default function PinterestAdStudio() {
       });
       if (stuck.length === 0) return;
       for (const j of stuck) {
+        // DB-truth refetch before flipping. The local jobs[] state can be
+        // stale by several minutes during long GH cold starts; flipping on
+        // stale data was the dominant cause of bogus "timeout_after_8m".
+        const { data: fresh } = await supabase
+          .from("cinematic_ad_jobs")
+          .select("id,status,render_started_at,render_heartbeat_at,render_attempts,output_mp4_url,latest_github_run_id")
+          .eq("id", j.id)
+          .maybeSingle();
+        if (!fresh) continue;
+        if (
+          !IN_FLIGHT_STATES.has(fresh.status) ||
+          fresh.render_started_at ||
+          fresh.render_heartbeat_at ||
+          (fresh.render_attempts ?? 0) > 0 ||
+          fresh.output_mp4_url ||
+          fresh.latest_github_run_id
+        ) {
+          // Pipeline is actually progressing — leave it to the server watchdog.
+          continue;
+        }
         // Surface the exact blocking reason from the job row.
         const reasonParts = [
           ...(Array.isArray(j.preflight_reasons) ? j.preflight_reasons : []),
@@ -473,15 +500,15 @@ export default function PinterestAdStudio() {
           j.error_message,
         ].filter(Boolean);
         const exactReason = reasonParts.length
-          ? `timeout_after_8m · ${reasonParts.join(" | ")}`
-          : "timeout_after_8m · no worker heartbeat (render_started_at/render_heartbeat_at null)";
+          ? `timeout_after_25m_no_worker · ${reasonParts.join(" | ")}`
+          : "timeout_after_25m_no_worker · no worker ever claimed (render_started_at + heartbeat both null after 25 min)";
         const { error } = await supabase
           .from("cinematic_ad_jobs")
           .update({
             status: "needs_admin_review",
             admin_review_reason: exactReason,
             error_message: j.error_message ?? exactReason,
-            status_message: "timed out after 8 min — auto-escalated to admin review",
+            status_message: "timed out after 25 min with no worker claim — auto-escalated to admin review",
           })
           .eq("id", j.id);
         if (!error) {
@@ -493,7 +520,7 @@ export default function PinterestAdStudio() {
                     status: "needs_admin_review",
                     admin_review_reason: exactReason,
                     error_message: p.error_message ?? exactReason,
-                    status_message: "timed out after 8 min — auto-escalated to admin review",
+                    status_message: "timed out after 25 min with no worker claim — auto-escalated to admin review",
                   }
                 : p,
             ),
