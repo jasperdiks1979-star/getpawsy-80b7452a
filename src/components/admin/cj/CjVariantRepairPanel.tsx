@@ -167,6 +167,40 @@ export default function CjVariantRepairPanel() {
     }
   }
 
+  function downloadCsv(r: RepairResponse) {
+    const rows = r.results ?? [];
+    const header = [
+      "product_id",
+      "cj_product_id",
+      "ok",
+      "variants_written",
+      "total_stock",
+      "reason",
+    ];
+    const lines = [
+      header.join(","),
+      ...rows.map((row) =>
+        [
+          row.product_id,
+          row.cj_product_id ?? "",
+          row.ok ? "ok" : "fail",
+          row.variants_written ?? "",
+          row.total_stock ?? "",
+          `"${(row.reason ?? "").replace(/"/g, '""')}"`,
+        ].join(","),
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cj-variant-repair-${r.mode ?? "results"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <Card className="border-indigo-200 bg-indigo-50/30 dark:bg-indigo-950/10">
       <CardHeader className="pb-3">
@@ -312,10 +346,18 @@ export default function CjVariantRepairPanel() {
             {/* Repair all result */}
             {Array.isArray(response.results) && response.results.length > 0 && (
               <div className="space-y-2">
-                <div className="flex gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
                   <Badge variant="outline">scanned: {response.scanned}</Badge>
                   <Badge variant="default">repaired: {response.repaired}</Badge>
                   <Badge variant="destructive">failed: {response.failed}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto h-7 px-2 text-xs"
+                    onClick={() => downloadCsv(response)}
+                  >
+                    Download CSV
+                  </Button>
                 </div>
                 <div className="rounded-md border max-h-96 overflow-auto">
                   <table className="w-full text-xs">
