@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { PATTERNS, type PatternId } from '@/lib/pinterest-patterns-client';
+import RunDirectorViaSupabaseButton from '@/components/admin/pinterest-pin-status/RunDirectorViaSupabaseButton';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
