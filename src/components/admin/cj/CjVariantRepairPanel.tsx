@@ -167,6 +167,40 @@ export default function CjVariantRepairPanel() {
     }
   }
 
+  function downloadCsv(r: RepairResponse) {
+    const rows = r.results ?? [];
+    const header = [
+      "product_id",
+      "cj_product_id",
+      "ok",
+      "variants_written",
+      "total_stock",
+      "reason",
+    ];
+    const lines = [
+      header.join(","),
+      ...rows.map((row) =>
+        [
+          row.product_id,
+          row.cj_product_id ?? "",
+          row.ok ? "ok" : "fail",
+          row.variants_written ?? "",
+          row.total_stock ?? "",
+          `"${(row.reason ?? "").replace(/"/g, '""')}"`,
+        ].join(","),
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cj-variant-repair-${r.mode ?? "results"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <Card className="border-indigo-200 bg-indigo-50/30 dark:bg-indigo-950/10">
       <CardHeader className="pb-3">
