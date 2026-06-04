@@ -119,7 +119,24 @@ Deno.serve(async (req) => {
     const mode: string = body?.mode ?? "audit";
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    // Optional run row for realtime progress. Caller can pass run_id to
+    // pre-create the row client-side, or we generate one server-side.
+    const runId: string = body?.run_id ?? crypto.randomUUID();
+    async function upsertRun(patch: Record<string, unknown>) {
+      try {
+        await admin
+          .from("cj_variant_repair_runs")
+          .upsert(
+            { id: runId, mode, updated_at: new Date().toISOString(), ...patch },
+            { onConflict: "id" },
+          );
+      } catch (_e) {
+        // realtime progress is best-effort; never fail the run on it
+      }
+    }
+
     if (mode === "audit") {
+      await upsertRun({ status: "running", total: 1, completed: 0 });
       // Inline audit: matches the report shape the admin asked for.
       const { data: rows, error } = await admin.rpc("cj_variant_audit_report").maybeSingle();
       if (error) {
@@ -137,9 +154,21 @@ Deno.serve(async (req) => {
           no_variant_stock: safe.filter((r) => !r.variant_stock).length,
           many_images_zero_variants: safe.filter((r) => Array.isArray(r.images) && r.images.length > 5 && (!Array.isArray(r.variants) || r.variants.length === 0)).length,
         };
-        return json({ ok: true, traceId, mode, audit });
+        await upsertRun({
+          status: "complete",
+          completed: 1,
+          last_result: audit,
+          finished_at: new Date().toISOString(),
+        });
+        return json({ ok: true, traceId, run_id: runId, mode, audit });
       }
-      return json({ ok: true, traceId, mode, audit: rows });
+      await upsertRun({
+        status: "complete",
+        completed: 1,
+        last_result: rows as Record<string, unknown>,
+        finished_at: new Date().toISOString(),
+      });
+      return json({ ok: true, traceId, run_id: runId, mode, audit: rows });
     }
 
     // Helper: call cj-dropshipping/details for a single product id
@@ -224,8 +253,26 @@ Deno.serve(async (req) => {
         .select("id, name, slug, stock, cj_product_id, variants, variant_stock")
         .eq("id", productId).maybeSingle();
       if (error || !row) return json({ ok: false, traceId, message: "product_not_found" }, 404);
+      await upsertRun({
+        status: "running",
+        total: 1,
+        completed: 0,
+        current_product_id: row.id,
+        current_product_name: row.name,
+      });
       const result = await repairOne(row);
-      return json({ ok: true, traceId, mode, result });
+      await upsertRun({
+        status: "complete",
+        completed: 1,
+        repaired: result.ok ? 1 : 0,
+        failed: result.ok ? 0 : 1,
+        last_result: result,
+        results: [result],
+        current_product_id: null,
+        current_product_name: null,
+        finished_at: new Date().toISOString(),
+      });
+      return json({ ok: true, traceId, run_id: runId, mode, result });
     }
 
     if (mode === "repair_all") {
@@ -237,16 +284,44 @@ Deno.serve(async (req) => {
         .limit(2000);
       if (error) return json({ ok: false, traceId, message: error.message }, 500);
       const candidates = (list ?? []).filter((r: any) => !Array.isArray(r.variants) || r.variants.length === 0).slice(0, limit);
+      await upsertRun({
+        status: "running",
+        total: candidates.length,
+        completed: 0,
+        repaired: 0,
+        failed: 0,
+        results: [],
+      });
       const results: any[] = [];
+      let okCount = 0;
+      let failCount = 0;
       for (const row of candidates) {
         // sequential to avoid CJ rate limits
+        await upsertRun({
+          current_product_id: row.id,
+          current_product_name: row.name,
+        });
         // eslint-disable-next-line no-await-in-loop
         const r = await repairOne(row);
         results.push(r);
+        if (r.ok) okCount++; else failCount++;
+        await upsertRun({
+          completed: results.length,
+          repaired: okCount,
+          failed: failCount,
+          last_result: r,
+          results,
+        });
       }
       const ok = results.filter((r) => r.ok).length;
+      await upsertRun({
+        status: "complete",
+        current_product_id: null,
+        current_product_name: null,
+        finished_at: new Date().toISOString(),
+      });
       return json({
-        ok: true, traceId, mode,
+        ok: true, traceId, run_id: runId, mode,
         scanned: candidates.length,
         repaired: ok,
         failed: results.length - ok,
