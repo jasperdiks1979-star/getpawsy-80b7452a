@@ -495,9 +495,15 @@ async function uploadToStorage(localPath, objectPath) {
     },
     body: data,
   });
-  if (!r.ok) throw new Error(`upload failed: ${r.status} ${await r.text()}`);
+  if (!r.ok) {
+    const txt = await r.text().catch(() => "");
+    diagLog("UPLOAD_URL_CREATED", "null");
+    throw new Error(`upload failed: ${r.status} ${txt.slice(0, 400)}`);
+  }
   // Public URL
-  return `${SUPABASE_URL}/storage/v1/object/public/${objectPath}`;
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${objectPath}`;
+  diagLog("UPLOAD_URL_CREATED", publicUrl);
+  return publicUrl;
 }
 
 async function main() {
