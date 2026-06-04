@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, RefreshCcw, FlaskConical, FileSearch } from "lucide-react";
+import { Loader2, RefreshCcw, FlaskConical, FileSearch, Download, ExternalLink } from "lucide-react";
 import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
+import { Progress } from "@/components/ui/progress";
+import { Link } from "react-router-dom";
 
 interface SyncChange {
   id: string;
@@ -40,6 +42,53 @@ export default function CjInventorySync() {
       }
     | null
   >(null);
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillStop, setBackfillStop] = useState(false);
+  const [backfillRunId, setBackfillRunId] = useState<string | null>(null);
+  const [backfillProgress, setBackfillProgress] = useState<{
+    processed: number;
+    total: number;
+    totals: Record<string, number>;
+    done: boolean;
+  } | null>(null);
+
+  async function startBackfill(dryRun: boolean) {
+    setBackfillRunning(true);
+    setBackfillStop(false);
+    setBackfillRunId(null);
+    setBackfillProgress(null);
+    let offset = 0;
+    let runId: string | undefined = undefined;
+    let total = 0;
+    try {
+      while (true) {
+        if (backfillStop) break;
+        const { data, error } = await supabase.functions.invoke("cj-backfill-media-variants", {
+          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId },
+        });
+        if (error) throw error;
+        const d = data as {
+          run_id: string;
+          processed: number;
+          total: number;
+          next_offset: number | null;
+          done: boolean;
+          totals: Record<string, number>;
+        };
+        runId = d.run_id;
+        total = d.total;
+        setBackfillRunId(d.run_id);
+        setBackfillProgress({ processed: d.totals.completed ?? 0, total: d.total, totals: d.totals, done: d.done });
+        if (d.done || d.next_offset == null) break;
+        offset = d.next_offset;
+      }
+      toast.success(`Backfill complete (${total} products processed).`);
+    } catch (e) {
+      toast.error(`Backfill failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setBackfillRunning(false);
+    }
+  }
 
   async function run(dryRun: boolean) {
     setLoading(dryRun ? "dry" : "live");
@@ -173,6 +222,72 @@ export default function CjInventorySync() {
       )}
 
       <CjVariantRepairPanel />
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Backfill missing videos &amp; variants</CardTitle>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/admin/cj-video-diagnostic">
+              Open diagnostic <ExternalLink className="ml-2 h-3 w-3" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Iterates every product with a <code className="text-xs">cj_product_id</code>{" "}
+            (active <em>and</em> inactive), imports any CJ videos that aren't
+            yet in <code className="text-xs">product_media</code>, and rebuilds{" "}
+            <code className="text-xs">products.variants</code> when empty. Safe
+            to re-run — idempotent via the <code className="text-xs">(product_id, supplier_url)</code> unique index.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => startBackfill(true)}
+              disabled={backfillRunning}
+            >
+              {backfillRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" />}
+              Dry-run backfill
+            </Button>
+            <Button onClick={() => startBackfill(false)} disabled={backfillRunning}>
+              {backfillRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Backfill missing videos &amp; variants
+            </Button>
+            {backfillRunning && (
+              <Button variant="ghost" onClick={() => setBackfillStop(true)}>
+                Stop after current batch
+              </Button>
+            )}
+          </div>
+
+          {backfillProgress && (
+            <div className="space-y-3">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{backfillProgress.processed} / {backfillProgress.total} processed</span>
+                <span>{backfillProgress.done ? "Complete" : "Running…"}</span>
+              </div>
+              <Progress
+                value={backfillProgress.total === 0
+                  ? 0
+                  : Math.round((backfillProgress.processed / backfillProgress.total) * 100)}
+              />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <Stat label="Videos imported" value={backfillProgress.totals.videos_imported ?? 0} tone="success" />
+                <Stat label="Videos failed" value={backfillProgress.totals.videos_failed ?? 0} tone="destructive" />
+                <Stat label="No video" value={backfillProgress.totals.videos_none_found ?? 0} tone="muted" />
+                <Stat label="Variants recovered" value={backfillProgress.totals.variants_recovered ?? 0} tone="success" />
+                <Stat label="Variants failed" value={backfillProgress.totals.variants_failed ?? 0} tone="destructive" />
+                <Stat label="No variants" value={backfillProgress.totals.variants_none_found ?? 0} tone="muted" />
+                <Stat label="Unknown URL" value={backfillProgress.totals.videos_unknown_shape ?? 0} tone="warn" />
+                <Stat label="CJ fetch failed" value={backfillProgress.totals.cj_fetch_failed ?? 0} tone="destructive" />
+              </div>
+              {backfillRunId && (
+                <p className="text-xs text-muted-foreground">run_id: <code>{backfillRunId}</code></p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
