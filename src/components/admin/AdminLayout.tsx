@@ -82,6 +82,8 @@ const navItems = [
   { to: '/admin/placement-overview', label: 'Placement Overview', icon: Gauge },
   { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
+  { to: '/admin/cj-inventory-sync', label: 'CJ Inventory Sync', icon: Video },
+  { to: '/admin/cj-video-diagnostic', label: 'CJ Video Diagnostic', icon: Video },
 ];
 
 /**
