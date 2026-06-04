@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, RefreshCcw, FlaskConical } from "lucide-react";
+import { Loader2, RefreshCcw, FlaskConical, FileSearch } from "lucide-react";
 import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
 
 interface SyncChange {
@@ -32,6 +32,14 @@ interface SyncResult {
 export default function CjInventorySync() {
   const [loading, setLoading] = useState<"dry" | "live" | null>(null);
   const [result, setResult] = useState<SyncResult | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditResult, setAuditResult] = useState<
+    | {
+        aggregate: Record<string, number>;
+        reports: Array<Record<string, unknown>>;
+      }
+    | null
+  >(null);
 
   async function run(dryRun: boolean) {
     setLoading(dryRun ? "dry" : "live");
@@ -50,6 +58,24 @@ export default function CjInventorySync() {
       toast.error(`Sync failed: ${msg}`);
     } finally {
       setLoading(null);
+    }
+  }
+
+  async function runAudit(sample: number) {
+    setAuditLoading(true);
+    setAuditResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("cj-payload-audit", {
+        body: { sample_count: sample },
+      });
+      if (error) throw error;
+      const d = data as { aggregate: Record<string, number>; reports: Array<Record<string, unknown>> };
+      setAuditResult(d);
+      toast.success(`Audit complete: ${d.aggregate?.sampled ?? 0} sampled`);
+    } catch (e) {
+      toast.error(`Audit failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setAuditLoading(false);
     }
   }
 
@@ -147,6 +173,62 @@ export default function CjInventorySync() {
       )}
 
       <CjVariantRepairPanel />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>CJ payload audit (Phase A)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Pull the raw CJ payload for a random sample of CJ products and
+            compare it against <code className="text-xs">products</code>,{" "}
+            <code className="text-xs">product_media</code>, and variants.
+            Surfaces fields CJ returns that GetPawsy currently discards
+            (videos, variants, colors, sizes, gallery media).
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {[5, 10, 25].map((n) => (
+              <Button
+                key={n}
+                variant="outline"
+                size="sm"
+                disabled={auditLoading}
+                onClick={() => runAudit(n)}
+              >
+                {auditLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileSearch className="mr-2 h-4 w-4" />
+                )}
+                Audit {n} random products
+              </Button>
+            ))}
+          </div>
+
+          {auditResult && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <Stat label="Sampled" value={auditResult.aggregate.sampled ?? 0} />
+                <Stat label="CJ OK" value={auditResult.aggregate.cj_ok ?? 0} tone="success" />
+                <Stat label="CJ failed" value={auditResult.aggregate.cj_failed ?? 0} tone="destructive" />
+                <Stat label="Missing variants" value={auditResult.aggregate.products_missing_variants ?? 0} tone="warn" />
+                <Stat label="CJ videos (total)" value={auditResult.aggregate.total_cj_videos ?? 0} />
+                <Stat label="DB videos (total)" value={auditResult.aggregate.total_db_videos ?? 0} tone="muted" />
+                <Stat label="With CJ video" value={auditResult.aggregate.products_with_cj_videos ?? 0} />
+                <Stat label="Discarded URLs" value={auditResult.aggregate.discarded_video_urls ?? 0} tone="warn" />
+              </div>
+              <details className="rounded-md border bg-muted/30 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Per-product gap reports ({auditResult.reports.length})
+                </summary>
+                <pre className="mt-2 max-h-[480px] overflow-auto text-xs">
+                  {JSON.stringify(auditResult.reports, null, 2)}
+                </pre>
+              </details>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
