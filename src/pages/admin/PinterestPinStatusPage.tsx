@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from '@/hooks/use-toast';
 import { PATTERNS, type PatternId } from '@/lib/pinterest-patterns-client';
+import RunDirectorViaSupabaseButton from '@/components/admin/pinterest-pin-status/RunDirectorViaSupabaseButton';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
@@ -422,12 +423,14 @@ export default function PinterestPinStatusPage() {
               size="sm"
               onClick={() => setCdOpen((v) => !v)}
               disabled={!!maintLoading}
-              className="bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-700 hover:to-violet-700 text-white"
+              className="bg-muted text-muted-foreground hover:bg-muted/80 line-through"
+              title="Legacy endpoint — bypassed. Use the Supabase Director panel below."
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              AI Creative Director
+              AI Creative Director (legacy — bypassed)
             </Button>
           </div>
+          <RunDirectorViaSupabaseButton />
           {cdOpen && (
             <div className="rounded border p-3 space-y-3 bg-gradient-to-br from-fuchsia-50 to-violet-50 dark:from-fuchsia-950/20 dark:to-violet-950/20">
               <div className="flex items-center gap-2 font-semibold text-sm">
