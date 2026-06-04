@@ -161,7 +161,33 @@ async function claimJob() {
   let data;
   try { data = JSON.parse(text); } catch { data = { ok: false, message: text }; }
   console.log(`[claim] response status=${r.status} ok=${Boolean(data?.ok)} trace=${data?.traceId ?? "none"}`);
-  if (!data.ok || !data.job) throw new Error(`claim failed: ${JSON.stringify(data)}`);
+  if (!data.ok || !data.job) {
+    // Surface the claim rejection clearly into the DB row so the admin UI
+    // shows "claim rejected: <reason>" instead of a misleading
+    // "REMOTION_RENDER_FAILED" (which can only fire AFTER a successful claim).
+    const reason = data?.reason ?? "claim_rejected";
+    const currentStatus = data?.current_status ?? null;
+    const msg = `claim rejected (${reason})${currentStatus ? ` — current_status=${currentStatus}` : ""}. Use "Recover and requeue job" to reset to render_queued.`;
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${JOB_ID}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": Deno?.env?.get?.("SUPABASE_SERVICE_ROLE_KEY") ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
+          "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({
+          status_message: msg,
+          error_message: msg,
+          latest_github_run_id: process.env.GITHUB_RUN_ID ?? null,
+        }),
+      });
+    } catch (e) {
+      console.warn(`[claim] could not patch status_message: ${e?.message}`);
+    }
+    throw new Error(msg + ` raw=${JSON.stringify(data).slice(0, 400)}`);
+  }
   return data.job;
 }
 
