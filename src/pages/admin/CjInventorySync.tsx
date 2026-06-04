@@ -55,6 +55,64 @@ export default function CjInventorySync() {
     done: boolean;
   } | null>(null);
 
+  const [rehostRunning, setRehostRunning] = useState(false);
+  const rehostStopRef = useRef(false);
+  const [rehostForce, setRehostForce] = useState(false);
+  const [rehostRunId, setRehostRunId] = useState<string | null>(null);
+  const [rehostProgress, setRehostProgress] = useState<{
+    processed: number;
+    total: number;
+    totals: Record<string, number>;
+    done: boolean;
+  } | null>(null);
+
+  async function startRehost(dryRun: boolean) {
+    setRehostRunning(true);
+    rehostStopRef.current = false;
+    setRehostRunId(null);
+    setRehostProgress(null);
+    let offset = 0;
+    let runId: string | undefined = undefined;
+    let total = 0;
+    const cumulative: Record<string, number> = {};
+    try {
+      while (true) {
+        if (rehostStopRef.current) break;
+        const { data, error } = await supabase.functions.invoke("cj-rehost-existing-videos", {
+          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId, force: rehostForce },
+        });
+        if (error) throw error;
+        const d = data as {
+          run_id: string;
+          processed: number;
+          total: number;
+          next_offset: number | null;
+          done: boolean;
+          totals: Record<string, number>;
+        };
+        runId = d.run_id;
+        total = d.total;
+        for (const [k, v] of Object.entries(d.totals)) {
+          cumulative[k] = (cumulative[k] ?? 0) + (v ?? 0);
+        }
+        setRehostRunId(d.run_id);
+        setRehostProgress({
+          processed: (cumulative.processed ?? 0),
+          total: d.total,
+          totals: cumulative,
+          done: d.done,
+        });
+        if (d.done || d.next_offset == null) break;
+        offset = d.next_offset;
+      }
+      toast.success(`Rehost complete (${total} videos scanned).`);
+    } catch (e) {
+      toast.error(`Rehost failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setRehostRunning(false);
+    }
+  }
+
   async function startBackfill(dryRun: boolean) {
     setBackfillRunning(true);
     backfillStopRef.current = false;
@@ -225,6 +283,82 @@ export default function CjInventorySync() {
       )}
 
       <CjVariantRepairPanel />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rehost existing CJ videos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Reprocesses videos that were already imported into{" "}
+            <code className="text-xs">product_media</code> but still point at
+            the CJ CDN. Downloads each one, uploads it into the private{" "}
+            <code className="text-xs">product-media</code> bucket, and swaps{" "}
+            <code className="text-xs">storage_url</code> for a 10-year signed
+            URL. The original CJ URL is kept in{" "}
+            <code className="text-xs">supplier_url</code> as a fallback. Safe
+            to re-run — rows already marked rehosted are skipped unless you
+            enable <em>force</em>.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => startRehost(true)} disabled={rehostRunning}>
+              {rehostRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" />}
+              Dry-run rehost
+            </Button>
+            <Button onClick={() => startRehost(false)} disabled={rehostRunning}>
+              {rehostRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Rehost existing videos
+            </Button>
+            {rehostRunning && (
+              <Button variant="ghost" onClick={() => { rehostStopRef.current = true; }}>
+                Stop after current batch
+              </Button>
+            )}
+          </div>
+          <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-3">
+            <Checkbox
+              id="rehost-force"
+              checked={rehostForce}
+              onCheckedChange={(v) => setRehostForce(v === true)}
+              disabled={rehostRunning}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="rehost-force" className="cursor-pointer text-sm font-medium">
+                Force re-rehost rows already marked rehosted
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Re-downloads and re-uploads every CJ video, even when{" "}
+                <code className="text-xs">metadata.rehosted = true</code>.
+                Useful when signed URLs are near expiry or storage paths were
+                deleted.
+              </p>
+            </div>
+          </div>
+
+          {rehostProgress && (
+            <div className="space-y-3">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{rehostProgress.processed} / {rehostProgress.total} processed</span>
+                <span>{rehostProgress.done ? "Complete" : "Running…"}</span>
+              </div>
+              <Progress
+                value={rehostProgress.total === 0
+                  ? 0
+                  : Math.round((rehostProgress.processed / rehostProgress.total) * 100)}
+              />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <Stat label="Rehosted" value={rehostProgress.totals.rehosted ?? 0} tone="success" />
+                <Stat label="Failed" value={rehostProgress.totals.failed ?? 0} tone="destructive" />
+                <Stat label="Skipped (already)" value={rehostProgress.totals.skipped_already_rehosted ?? 0} tone="muted" />
+                <Stat label="Would rehost (dry)" value={rehostProgress.totals.dry_run_would_rehost ?? 0} tone="warn" />
+              </div>
+              {rehostRunId && (
+                <p className="text-xs text-muted-foreground">run_id: <code>{rehostRunId}</code></p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
