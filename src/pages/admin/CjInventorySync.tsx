@@ -8,6 +8,8 @@ import { Loader2, RefreshCcw, FlaskConical, FileSearch, Download, ExternalLink }
 import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface SyncChange {
   id: string;
@@ -45,6 +47,7 @@ export default function CjInventorySync() {
   const [backfillRunning, setBackfillRunning] = useState(false);
   const backfillStopRef = useRef(false);
   const [backfillRunId, setBackfillRunId] = useState<string | null>(null);
+  const [rehostVideos, setRehostVideos] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState<{
     processed: number;
     total: number;
@@ -64,7 +67,7 @@ export default function CjInventorySync() {
       while (true) {
         if (backfillStopRef.current) break;
         const { data, error } = await supabase.functions.invoke("cj-backfill-media-variants", {
-          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId },
+          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId, rehost: rehostVideos },
         });
         if (error) throw error;
         const d = data as {
