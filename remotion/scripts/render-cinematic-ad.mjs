@@ -569,6 +569,23 @@ async function main() {
     });
     if (remotionResult.ok) {
       console.log(`[render] remotion cinematic render complete job=${job.job_id}`);
+      // Pipeline contract: verify the sub-process actually persisted the URL.
+      try {
+        await verifyJobMp4Persisted(job.job_id);
+        adminDiagnostics.render_exit_code = 0;
+      } catch (verifyErr) {
+        console.error(`[render] remotion sub-process exited 0 but DB row has no output_mp4_url`, verifyErr?.message);
+        adminDiagnostics.render_exit_code = 1;
+        await postWebhook({
+          job_id: job.job_id,
+          status: "failed",
+          render_token: job.render_token,
+          worker_id: WORKER_ID,
+          error_code: "REMOTION_GREEN_BUT_DB_UNPERSISTED",
+          error_message: verifyErr?.message ?? String(verifyErr),
+        });
+        process.exit(1);
+      }
       return;
     }
     // Phase 5: NO silent ffmpeg fallback. Remotion crash = hard fail.
