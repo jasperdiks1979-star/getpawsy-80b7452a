@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export default function CjInventorySync() {
     | null
   >(null);
   const [backfillRunning, setBackfillRunning] = useState(false);
-  const [backfillStop, setBackfillStop] = useState(false);
+  const backfillStopRef = useRef(false);
   const [backfillRunId, setBackfillRunId] = useState<string | null>(null);
   const [backfillProgress, setBackfillProgress] = useState<{
     processed: number;
@@ -54,7 +54,7 @@ export default function CjInventorySync() {
 
   async function startBackfill(dryRun: boolean) {
     setBackfillRunning(true);
-    setBackfillStop(false);
+    backfillStopRef.current = false;
     setBackfillRunId(null);
     setBackfillProgress(null);
     let offset = 0;
@@ -62,7 +62,7 @@ export default function CjInventorySync() {
     let total = 0;
     try {
       while (true) {
-        if (backfillStop) break;
+        if (backfillStopRef.current) break;
         const { data, error } = await supabase.functions.invoke("cj-backfill-media-variants", {
           body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId },
         });
@@ -254,7 +254,7 @@ export default function CjInventorySync() {
               Backfill missing videos &amp; variants
             </Button>
             {backfillRunning && (
-              <Button variant="ghost" onClick={() => setBackfillStop(true)}>
+              <Button variant="ghost" onClick={() => { backfillStopRef.current = true; }}>
                 Stop after current batch
               </Button>
             )}
