@@ -312,10 +312,18 @@ export default function CjVariantRepairPanel() {
             {/* Repair all result */}
             {Array.isArray(response.results) && response.results.length > 0 && (
               <div className="space-y-2">
-                <div className="flex gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
                   <Badge variant="outline">scanned: {response.scanned}</Badge>
                   <Badge variant="default">repaired: {response.repaired}</Badge>
                   <Badge variant="destructive">failed: {response.failed}</Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto h-7 px-2 text-xs"
+                    onClick={() => downloadCsv(response)}
+                  >
+                    Download CSV
+                  </Button>
                 </div>
                 <div className="rounded-md border max-h-96 overflow-auto">
                   <table className="w-full text-xs">
