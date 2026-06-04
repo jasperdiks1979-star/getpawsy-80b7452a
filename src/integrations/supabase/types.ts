@@ -14667,6 +14667,7 @@ export type Database = {
         Row: {
           alt_text: string | null
           checksum: string | null
+          cj_product_id: string | null
           created_at: string
           duration_sec: number | null
           file_size: number | null
@@ -14674,16 +14675,20 @@ export type Database = {
           id: string
           imported_at: string
           media_type: string
+          metadata: Json
           product_id: string
           sort_order: number
           source: string
           storage_url: string
           supplier_url: string | null
+          variant_id: string | null
+          variant_key: string | null
           width: number | null
         }
         Insert: {
           alt_text?: string | null
           checksum?: string | null
+          cj_product_id?: string | null
           created_at?: string
           duration_sec?: number | null
           file_size?: number | null
@@ -14691,16 +14696,20 @@ export type Database = {
           id?: string
           imported_at?: string
           media_type: string
+          metadata?: Json
           product_id: string
           sort_order?: number
           source?: string
           storage_url: string
           supplier_url?: string | null
+          variant_id?: string | null
+          variant_key?: string | null
           width?: number | null
         }
         Update: {
           alt_text?: string | null
           checksum?: string | null
+          cj_product_id?: string | null
           created_at?: string
           duration_sec?: number | null
           file_size?: number | null
@@ -14708,11 +14717,14 @@ export type Database = {
           id?: string
           imported_at?: string
           media_type?: string
+          metadata?: Json
           product_id?: string
           sort_order?: number
           source?: string
           storage_url?: string
           supplier_url?: string | null
+          variant_id?: string | null
+          variant_key?: string | null
           width?: number | null
         }
         Relationships: [
