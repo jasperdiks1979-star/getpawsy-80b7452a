@@ -10,7 +10,12 @@
 //
 // POST body:
 //   { offset?: number, batch_size?: number (1-25), dry_run?: boolean,
-//     run_id?: string, product_ids?: string[], force?: boolean }
+//     run_id?: string, product_ids?: string[], media_ids?: string[],
+//     force?: boolean }
+//
+// When media_ids is provided, only those product_media rows are processed
+// (used by the per-row "Rehost video" button in the admin UI). Pagination
+// is bypassed and `force` is implied so the row is always re-attempted.
 //
 // force=true reprocesses rows that are already marked rehosted (useful when a
 // signed URL is close to expiry or the storage path was deleted).
@@ -62,35 +67,88 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+type RehostResult = {
+  success: boolean;
+  signedUrl?: string;
+  storagePath?: string;
+  bytes?: number;
+  contentType?: string;
+  httpStatus?: number;
+  attempts: number;
+  error?: string;
+  reason?: string;
+};
+
 async function rehostVideo(
   admin: ReturnType<typeof createClient>,
   productId: string,
   sourceUrl: string,
-): Promise<{ signedUrl: string; storagePath: string; bytes: number; contentType: string } | null> {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 45_000);
-    const res = await fetch(sourceUrl, { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") ?? "video/mp4";
-    const buf = new Uint8Array(await res.arrayBuffer());
-    if (buf.byteLength === 0 || buf.byteLength > REHOST_MAX_BYTES) return null;
-    const ext = extFromUrlOrType(sourceUrl, contentType);
-    const hash = (await sha256Hex(sourceUrl)).slice(0, 16);
-    const storagePath = `cj/${productId}/${hash}.${ext}`;
-    const { error: upErr } = await admin.storage
-      .from(REHOST_BUCKET)
-      .upload(storagePath, buf, { contentType, upsert: true, cacheControl: "31536000" });
-    if (upErr && !/exists/i.test(upErr.message)) return null;
-    const { data: signed, error: signErr } = await admin.storage
-      .from(REHOST_BUCKET)
-      .createSignedUrl(storagePath, REHOST_SIGNED_URL_TTL);
-    if (signErr || !signed?.signedUrl) return null;
-    return { signedUrl: signed.signedUrl, storagePath, bytes: buf.byteLength, contentType };
-  } catch {
-    return null;
+): Promise<RehostResult> {
+  const MAX_ATTEMPTS = 3;
+  let attempt = 0;
+  let lastErr = "unknown";
+  let lastStatus: number | undefined;
+  let lastReason = "unknown";
+  while (attempt < MAX_ATTEMPTS) {
+    attempt++;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 45_000);
+      const res = await fetch(sourceUrl, { signal: ctrl.signal });
+      clearTimeout(timer);
+      lastStatus = res.status;
+      if (!res.ok) {
+        lastErr = `http_${res.status}`;
+        lastReason = res.status === 429 ? "rate_limited" : res.status >= 500 ? "server_error" : "client_error";
+        if (res.status !== 429 && res.status < 500) {
+          return { success: false, attempts: attempt, httpStatus: res.status, error: lastErr, reason: lastReason };
+        }
+        await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+        continue;
+      }
+      const contentType = res.headers.get("content-type") ?? "video/mp4";
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.byteLength === 0) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: "empty_body", reason: "empty_body" };
+      }
+      if (buf.byteLength > REHOST_MAX_BYTES) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: "too_large", reason: "too_large", bytes: buf.byteLength, contentType };
+      }
+      const ext = extFromUrlOrType(sourceUrl, contentType);
+      const hash = (await sha256Hex(sourceUrl)).slice(0, 16);
+      const storagePath = `cj/${productId}/${hash}.${ext}`;
+      const { error: upErr } = await admin.storage
+        .from(REHOST_BUCKET)
+        .upload(storagePath, buf, { contentType, upsert: true, cacheControl: "31536000" });
+      if (upErr && !/exists/i.test(upErr.message)) {
+        lastErr = `upload_failed:${upErr.message}`;
+        lastReason = "upload_failed";
+        await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+        continue;
+      }
+      const { data: signed, error: signErr } = await admin.storage
+        .from(REHOST_BUCKET)
+        .createSignedUrl(storagePath, REHOST_SIGNED_URL_TTL);
+      if (signErr || !signed?.signedUrl) {
+        return { success: false, attempts: attempt, httpStatus: res.status, error: `sign_failed:${signErr?.message ?? "no_url"}`, reason: "sign_failed", bytes: buf.byteLength, contentType };
+      }
+      return {
+        success: true,
+        signedUrl: signed.signedUrl,
+        storagePath,
+        bytes: buf.byteLength,
+        contentType,
+        httpStatus: res.status,
+        attempts: attempt,
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      lastErr = msg;
+      lastReason = /abort|timeout/i.test(msg) ? "timeout" : "network_error";
+      await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** (attempt - 1)) + Math.random() * 250));
+    }
   }
+  return { success: false, attempts: attempt, httpStatus: lastStatus, error: lastErr, reason: lastReason };
 }
 
 function isAdminClaims(c: Record<string, unknown> | null): boolean {
@@ -136,14 +194,19 @@ Deno.serve(async (req) => {
   const offset: number = Math.max(0, Number(body?.offset ?? 0));
   const batchSize: number = Math.min(Math.max(Number(body?.batch_size ?? 10), 1), 25);
   const dryRun: boolean = !!body?.dry_run;
-  const force: boolean = !!body?.force;
+  const mediaIds: string[] | undefined = Array.isArray(body?.media_ids) && body.media_ids.length > 0 ? body.media_ids : undefined;
+  const force: boolean = !!body?.force || !!mediaIds;
   const productIds: string[] | undefined = Array.isArray(body?.product_ids) ? body.product_ids : undefined;
   let runId: string = body?.run_id ?? "";
 
   if (!runId) {
     const { data: runRow } = await admin
       .from("cj_sync_runs")
-      .insert({ mode: dryRun ? "dry_run_rehost" : "rehost_existing_videos", triggered_by: "admin", status: "running" })
+      .insert({
+        mode: dryRun ? "dry_run_rehost" : mediaIds ? "rehost_manual_single" : "rehost_existing_videos",
+        triggered_by: "admin",
+        status: "running",
+      })
       .select("id")
       .single();
     runId = runRow?.id as string;
@@ -154,8 +217,9 @@ Deno.serve(async (req) => {
   // marks them as rehosted=true).
   const baseFilter = (q: ReturnType<typeof admin.from> extends infer T ? any : any) => {
     q = q.eq("media_type", "video").eq("source", "cj").not("supplier_url", "is", null);
+    if (mediaIds?.length) q = q.in("id", mediaIds);
     if (productIds?.length) q = q.in("product_id", productIds);
-    if (!force) {
+    if (!force && !mediaIds) {
       // metadata->>rehosted is null OR 'false' — both treated as not yet rehosted.
       q = q.or("metadata->>rehosted.is.null,metadata->>rehosted.eq.false");
     }
@@ -167,13 +231,14 @@ Deno.serve(async (req) => {
   );
   const total = totalCount ?? 0;
 
-  const { data: rows, error: rowsErr } = await baseFilter(
+  let query = baseFilter(
     admin
       .from("product_media")
       .select("id, product_id, cj_product_id, supplier_url, storage_url, metadata")
-      .order("id", { ascending: true })
-      .range(offset, offset + batchSize - 1),
+      .order("id", { ascending: true }),
   );
+  if (!mediaIds) query = query.range(offset, offset + batchSize - 1);
+  const { data: rows, error: rowsErr } = await query;
   if (rowsErr) return json({ ok: false, traceId, run_id: runId, message: rowsErr.message }, 500);
 
   const stats = {
@@ -209,13 +274,36 @@ Deno.serve(async (req) => {
       continue;
     }
     const re = await rehostVideo(admin, row.product_id, row.supplier_url);
-    if (!re) {
+    if (!re.success) {
       stats.failed++;
+      // Mark fallback metadata so the row is still tracked even though
+      // storage_url remains the CJ CDN URL.
+      const fbMeta: Record<string, unknown> = {
+        ...(row.metadata ?? {}),
+        rehosted: false,
+        rehost_fallback: "cdn",
+        rehost_error: re.error,
+        rehost_reason: re.reason,
+        rehost_attempts: re.attempts,
+        rehost_http_status: re.httpStatus ?? null,
+        rehost_last_attempt_at: new Date().toISOString(),
+      };
+      await admin.from("product_media").update({ metadata: fbMeta }).eq("id", row.id);
       await admin.from("cj_sync_items").insert({
         run_id: runId, product_id: row.product_id, product_name: "",
         action: "video_rehost_failed",
-        error: "download_or_upload_failed",
-        after: { media_id: row.id, supplier_url: row.supplier_url },
+        error: re.error ?? "download_or_upload_failed",
+        after: {
+          media_id: row.id,
+          supplier_url: row.supplier_url,
+          storage_url: row.supplier_url, // CDN fallback in use
+          fallback_used: true,
+          reason: re.reason,
+          http_status: re.httpStatus ?? null,
+          attempts: re.attempts,
+          file_size: re.bytes ?? null,
+          content_type: re.contentType ?? null,
+        },
       });
       continue;
     }
@@ -227,10 +315,14 @@ Deno.serve(async (req) => {
       content_type: re.contentType,
       signed_url_expires_at: new Date(Date.now() + REHOST_SIGNED_URL_TTL * 1000).toISOString(),
       rehosted_at: new Date().toISOString(),
+      rehost_attempts: re.attempts,
+      rehost_http_status: re.httpStatus ?? null,
+      rehost_error: null,
+      rehost_reason: null,
     };
     const { error: updErr } = await admin
       .from("product_media")
-      .update({ storage_url: re.signedUrl, metadata: newMeta })
+      .update({ storage_url: re.signedUrl!, metadata: newMeta })
       .eq("id", row.id);
     if (updErr) {
       stats.failed++;
@@ -246,12 +338,23 @@ Deno.serve(async (req) => {
     await admin.from("cj_sync_items").insert({
       run_id: runId, product_id: row.product_id, product_name: "",
       action: "video_rehosted",
-      after: { media_id: row.id, storage_path: re.storagePath, bytes: re.bytes },
+      after: {
+        media_id: row.id,
+        storage_path: re.storagePath,
+        storage_url: re.signedUrl,
+        supplier_url: row.supplier_url,
+        fallback_used: false,
+        file_size: re.bytes,
+        content_type: re.contentType,
+        http_status: re.httpStatus ?? null,
+        attempts: re.attempts,
+        reason: "ok",
+      },
     });
   }
 
   const nextOffset = offset + (rows?.length ?? 0);
-  const done = !rows || rows.length < batchSize || nextOffset >= total;
+  const done = !!mediaIds || !rows || rows.length < batchSize || nextOffset >= total;
 
   if (done) {
     await admin.from("cj_sync_runs").update({

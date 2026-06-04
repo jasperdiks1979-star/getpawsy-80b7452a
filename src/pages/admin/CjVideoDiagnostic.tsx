@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, RefreshCcw } from "lucide-react";
+import { Loader2, Search, RefreshCcw, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 
 interface Aggregate {
@@ -44,6 +44,24 @@ export default function CjVideoDiagnostic() {
   const [live, setLive] = useState(true);
   const [perLoading, setPerLoading] = useState(false);
   const [perReport, setPerReport] = useState<PerProductReport | null>(null);
+  const [rehostingId, setRehostingId] = useState<string | null>(null);
+
+  async function rehostMedia(mediaId: string) {
+    setRehostingId(mediaId);
+    try {
+      const { data, error } = await supabase.functions.invoke("cj-rehost-existing-videos", {
+        body: { media_ids: [mediaId], force: true },
+      });
+      if (error) throw error;
+      const t = (data as { totals?: Record<string, number> })?.totals;
+      if (t?.rehosted) toast.success(`Rehosted ✓ (attempts logged in cj_sync_items)`);
+      else if (t?.failed) toast.error(`Rehost failed — CJ CDN fallback in use. See cj_sync_items.`);
+      else toast.message("Rehost finished — no change");
+      await loadProduct();
+    } catch (e) {
+      toast.error(`Rehost failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setRehostingId(null); }
+  }
 
   async function loadAggregate() {
     setAggLoading(true);
@@ -190,7 +208,47 @@ export default function CjVideoDiagnostic() {
 
               <details open className="rounded-md border bg-muted/30 p-3">
                 <summary className="cursor-pointer text-sm font-medium">Stored product_media ({perReport.product_media.length})</summary>
-                <pre className="mt-2 max-h-[280px] overflow-auto text-xs">{JSON.stringify(perReport.product_media, null, 2)}</pre>
+                <ul className="mt-2 space-y-2">
+                  {perReport.product_media.map((m, i) => {
+                    const id = String((m as { id?: string }).id ?? i);
+                    const mediaType = String((m as { media_type?: string }).media_type ?? "");
+                    const supplierUrl = (m as { supplier_url?: string | null }).supplier_url ?? null;
+                    const storageUrl = (m as { storage_url?: string | null }).storage_url ?? null;
+                    const meta = (m as { metadata?: Record<string, unknown> }).metadata ?? {};
+                    const rehosted = (meta as { rehosted?: boolean }).rehosted === true;
+                    return (
+                      <li key={id} className="rounded border bg-background p-2 text-xs space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">
+                            [{mediaType}] {rehosted ? <span className="text-emerald-600">rehosted</span> : <span className="text-amber-600">cdn</span>}
+                          </span>
+                          {mediaType === "video" && supplierUrl && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => rehostMedia(id)}
+                              disabled={rehostingId !== null}
+                            >
+                              {rehostingId === id
+                                ? <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                : <UploadCloud className="mr-1 h-3 w-3" />}
+                              {rehosted ? "Re-rehost" : "Rehost video"}
+                            </Button>
+                          )}
+                        </div>
+                        {storageUrl && <div className="break-all"><span className="text-muted-foreground">storage:</span> {storageUrl}</div>}
+                        {supplierUrl && <div className="break-all"><span className="text-muted-foreground">supplier:</span> {supplierUrl}</div>}
+                        <details>
+                          <summary className="cursor-pointer text-muted-foreground">metadata</summary>
+                          <pre className="mt-1 max-h-[160px] overflow-auto">{JSON.stringify(meta, null, 2)}</pre>
+                        </details>
+                      </li>
+                    );
+                  })}
+                  {perReport.product_media.length === 0 && (
+                    <li className="text-muted-foreground text-xs">No product_media rows for this product.</li>
+                  )}
+                </ul>
               </details>
 
               <details className="rounded-md border bg-muted/30 p-3">
