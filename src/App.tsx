@@ -2094,6 +2094,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cj-inventory-sync"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CjInventorySync />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cj-video-diagnostic"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
