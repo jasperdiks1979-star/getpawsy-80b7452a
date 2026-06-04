@@ -8,6 +8,8 @@ import { Loader2, RefreshCcw, FlaskConical, FileSearch, Download, ExternalLink }
 import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface SyncChange {
   id: string;
@@ -45,6 +47,7 @@ export default function CjInventorySync() {
   const [backfillRunning, setBackfillRunning] = useState(false);
   const backfillStopRef = useRef(false);
   const [backfillRunId, setBackfillRunId] = useState<string | null>(null);
+  const [rehostVideos, setRehostVideos] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState<{
     processed: number;
     total: number;
@@ -64,7 +67,7 @@ export default function CjInventorySync() {
       while (true) {
         if (backfillStopRef.current) break;
         const { data, error } = await supabase.functions.invoke("cj-backfill-media-variants", {
-          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId },
+          body: { offset, batch_size: 10, dry_run: dryRun, run_id: runId, rehost: rehostVideos },
         });
         if (error) throw error;
         const d = data as {
@@ -259,6 +262,26 @@ export default function CjInventorySync() {
               </Button>
             )}
           </div>
+          <div className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-3">
+            <Checkbox
+              id="rehost-videos"
+              checked={rehostVideos}
+              onCheckedChange={(v) => setRehostVideos(v === true)}
+              disabled={backfillRunning}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="rehost-videos" className="cursor-pointer text-sm font-medium">
+                Rehost videos to Supabase Storage (with CJ CDN fallback)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Downloads each CJ video into the private{" "}
+                <code className="text-xs">product-media</code> bucket and stores
+                a 10-year signed URL. If the download or upload fails, the row
+                falls back to the CJ CDN URL so the video is still playable.
+                Slower per product (network + upload) and uses storage quota.
+              </p>
+            </div>
+          </div>
 
           {backfillProgress && (
             <div className="space-y-3">
@@ -280,6 +303,8 @@ export default function CjInventorySync() {
                 <Stat label="No variants" value={backfillProgress.totals.variants_none_found ?? 0} tone="muted" />
                 <Stat label="Unknown URL" value={backfillProgress.totals.videos_unknown_shape ?? 0} tone="warn" />
                 <Stat label="CJ fetch failed" value={backfillProgress.totals.cj_fetch_failed ?? 0} tone="destructive" />
+                <Stat label="Rehosted" value={backfillProgress.totals.videos_rehosted ?? 0} tone="success" />
+                <Stat label="CDN fallback" value={backfillProgress.totals.videos_rehost_fallback_cdn ?? 0} tone="warn" />
               </div>
               {backfillRunId && (
                 <p className="text-xs text-muted-foreground">run_id: <code>{backfillRunId}</code></p>
