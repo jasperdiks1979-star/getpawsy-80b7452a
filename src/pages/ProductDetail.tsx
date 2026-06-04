@@ -1112,6 +1112,13 @@ const ProductDetail = () => {
                 }}
               />
             )}
+              {/* CJ-imported product videos (tap-to-play, safe for CWV) */}
+              <ProductVideoSection
+                productId={product.id}
+                productName={safeString(product.name)}
+                posterUrl={images?.[0]}
+                className="mt-4"
+              />
           </motion.div>
 
           {/* Product Details */}
