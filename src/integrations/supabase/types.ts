@@ -1755,6 +1755,7 @@ export type Database = {
       }
       cinematic_ad_jobs: {
         Row: {
+          admin_diagnostics: Json
           admin_review_reason: string | null
           ai_decisions: Json
           approval_confidence: number | null
@@ -1856,6 +1857,7 @@ export type Database = {
           is_safe_to_publish: boolean
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          latest_github_run_id: string | null
           legacy_unverified: boolean
           media_hash: string | null
           media_type: string | null
@@ -1881,6 +1883,7 @@ export type Database = {
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
+          output_file_size_mb: number | null
           output_height: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
@@ -1952,6 +1955,7 @@ export type Database = {
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
+          render_exit_code: number | null
           render_heartbeat_at: string | null
           render_log: Json
           render_mode: string | null
@@ -2037,6 +2041,7 @@ export type Database = {
           worker_last_error: string | null
         }
         Insert: {
+          admin_diagnostics?: Json
           admin_review_reason?: string | null
           ai_decisions?: Json
           approval_confidence?: number | null
@@ -2138,6 +2143,7 @@ export type Database = {
           is_safe_to_publish?: boolean
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          latest_github_run_id?: string | null
           legacy_unverified?: boolean
           media_hash?: string | null
           media_type?: string | null
@@ -2163,6 +2169,7 @@ export type Database = {
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_file_size_mb?: number | null
           output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
@@ -2234,6 +2241,7 @@ export type Database = {
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
+          render_exit_code?: number | null
           render_heartbeat_at?: string | null
           render_log?: Json
           render_mode?: string | null
@@ -2319,6 +2327,7 @@ export type Database = {
           worker_last_error?: string | null
         }
         Update: {
+          admin_diagnostics?: Json
           admin_review_reason?: string | null
           ai_decisions?: Json
           approval_confidence?: number | null
@@ -2420,6 +2429,7 @@ export type Database = {
           is_safe_to_publish?: boolean
           last_pinterest_attempt_at?: string | null
           last_publish_queue_at?: string | null
+          latest_github_run_id?: string | null
           legacy_unverified?: boolean
           media_hash?: string | null
           media_type?: string | null
@@ -2445,6 +2455,7 @@ export type Database = {
           output_black_bars?: boolean | null
           output_duration_seconds?: number | null
           output_file_size_bytes?: number | null
+          output_file_size_mb?: number | null
           output_height?: number | null
           output_mp4_url?: string | null
           output_thumbnail_url?: string | null
@@ -2516,6 +2527,7 @@ export type Database = {
           render_attempts?: number
           render_complete_at?: string | null
           render_dispatched_at?: string | null
+          render_exit_code?: number | null
           render_heartbeat_at?: string | null
           render_log?: Json
           render_mode?: string | null
@@ -19678,6 +19690,7 @@ export type Database = {
       reset_cinematic_ad_job_to_queued: {
         Args: { p_job_id: string }
         Returns: {
+          admin_diagnostics: Json
           admin_review_reason: string | null
           ai_decisions: Json
           approval_confidence: number | null
@@ -19779,6 +19792,7 @@ export type Database = {
           is_safe_to_publish: boolean
           last_pinterest_attempt_at: string | null
           last_publish_queue_at: string | null
+          latest_github_run_id: string | null
           legacy_unverified: boolean
           media_hash: string | null
           media_type: string | null
@@ -19804,6 +19818,7 @@ export type Database = {
           output_black_bars: boolean | null
           output_duration_seconds: number | null
           output_file_size_bytes: number | null
+          output_file_size_mb: number | null
           output_height: number | null
           output_mp4_url: string | null
           output_thumbnail_url: string | null
@@ -19875,6 +19890,7 @@ export type Database = {
           render_attempts: number
           render_complete_at: string | null
           render_dispatched_at: string | null
+          render_exit_code: number | null
           render_heartbeat_at: string | null
           render_log: Json
           render_mode: string | null
