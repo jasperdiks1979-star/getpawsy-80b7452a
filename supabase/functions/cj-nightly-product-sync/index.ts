@@ -132,30 +132,82 @@ async function fetchCjProduct(token: string, pid: string): Promise<Record<string
   return json.data as Record<string, unknown>;
 }
 
-function extractVideoUrls(p: Record<string, unknown>): string[] {
-  const urls = new Set<string>();
-  const push = (v: unknown) => {
-    if (typeof v === "string" && /^https?:\/\//.test(v) && /\.(mp4|mov|webm)(\?|$)/i.test(v)) {
-      urls.add(v);
+// Phase B: looser, telemetry-aware extractor.
+// Accepts:
+//   - explicit .mp4/.mov/.webm
+//   - any https URL on a known CJ video CDN, even without a file extension or
+//     with signed query params (CJ frequently serves video this way)
+// Rejects anything else but reports it as `unknown_url_shape` so we can log it.
+const CJ_VIDEO_HOSTS = [
+  "cf.cjdropshipping.com",
+  "oss-cf.cjdropshipping.com",
+  "cjvideopublic",
+  "cjvideo",
+  "video.cjdropshipping.com",
+  "oss-eu.cjdropshipping.com",
+  "oss-us.cjdropshipping.com",
+];
+
+export interface ExtractedVideo {
+  url: string;
+  source: string;
+  status: "accepted" | "rejected_unknown_shape";
+}
+
+function classifyVideoUrl(u: string): ExtractedVideo["status"] {
+  if (!/^https?:\/\//.test(u)) return "rejected_unknown_shape";
+  if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(u)) return "accepted";
+  try {
+    const host = new URL(u).hostname.toLowerCase();
+    if (CJ_VIDEO_HOSTS.some((h) => host.includes(h))) return "accepted";
+  } catch { /* invalid URL */ }
+  return "rejected_unknown_shape";
+}
+
+function extractVideoCandidates(p: Record<string, unknown>): ExtractedVideo[] {
+  const out: ExtractedVideo[] = [];
+  const seen = new Set<string>();
+  const consider = (raw: unknown, source: string) => {
+    if (raw == null) return;
+    const list = Array.isArray(raw) ? raw : [raw];
+    for (const item of list) {
+      const u = typeof item === "string"
+        ? item
+        : typeof (item as { url?: unknown })?.url === "string"
+          ? (item as { url: string }).url
+          : null;
+      if (!u || seen.has(u)) continue;
+      seen.add(u);
+      out.push({ url: u, source, status: classifyVideoUrl(u) });
     }
   };
-  push(p.productVideo);
-  if (Array.isArray(p.productVideo)) p.productVideo.forEach(push);
-  if (typeof p.video === "string") push(p.video);
-  if (Array.isArray((p as { videoUrls?: unknown }).videoUrls)) {
-    (p as { videoUrls: unknown[] }).videoUrls.forEach(push);
-  }
-  // Some payloads put media in variants
+
+  consider(p.productVideo, "productVideo");
+  consider(p.video, "video");
+  consider((p as Record<string, unknown>).videoUrl, "videoUrl");
+  consider((p as Record<string, unknown>).productVideoUrl, "productVideoUrl");
+  consider((p as Record<string, unknown>).videoUrls, "videoUrls");
+  consider((p as Record<string, unknown>).videoGallery, "videoGallery");
+
   const variants = (p as { variants?: unknown[] }).variants;
   if (Array.isArray(variants)) {
     for (const v of variants) {
-      if (v && typeof v === "object") {
-        push((v as Record<string, unknown>).variantVideo);
-        push((v as Record<string, unknown>).video);
-      }
+      if (!v || typeof v !== "object") continue;
+      const vr = v as Record<string, unknown>;
+      consider(vr.variantVideo, "variantVideo");
+      consider(vr.video, "variant.video");
+      consider(vr.variantVideoUrl, "variantVideoUrl");
+      consider(vr.variantVideoUrls, "variantVideoUrls");
     }
   }
-  return Array.from(urls);
+  return out;
+}
+
+// Back-compat helper: only the accepted URLs.
+function extractVideoUrls(p: Record<string, unknown>): string[] {
+  return extractVideoCandidates(p)
+    .filter((c) => c.status === "accepted")
+    .map((c) => c.url);
 }
 
 function extractCostAndShipping(p: Record<string, unknown>): {
@@ -368,21 +420,51 @@ serve(async (req) => {
           .eq("product_id", productId)
           .eq("media_type", "video");
         if ((existingVideos ?? 0) < MAX_VIDEOS_PER_PRODUCT) {
-          const videoUrls = extractVideoUrls(detail).slice(0, MAX_VIDEOS_PER_PRODUCT - (existingVideos ?? 0));
-          for (const url of videoUrls) {
+          const candidates = extractVideoCandidates(detail);
+          const accepted = candidates.filter((c) => c.status === "accepted");
+          const rejected = candidates.filter((c) => c.status === "rejected_unknown_shape");
+
+          // Telemetry: nothing returned from CJ at all
+          if (candidates.length === 0) {
+            await admin.from("cj_sync_items").insert({
+              run_id: runId, product_id: productId, product_name: p.name as string,
+              action: "video_none_found",
+            });
+          }
+          // Telemetry: CJ returned URLs we don't know how to import
+          for (const r of rejected) {
+            await admin.from("cj_sync_items").insert({
+              run_id: runId, product_id: productId, product_name: p.name as string,
+              action: "video_unknown_url_shape",
+              after: { supplier_url: r.url, source: r.source },
+            });
+          }
+
+          const slotsLeft = MAX_VIDEOS_PER_PRODUCT - (existingVideos ?? 0);
+          const videoCandidates = accepted.slice(0, slotsLeft);
+          for (const cand of videoCandidates) {
+            const url = cand.url;
             try {
               const r = await fetch(url);
               if (!r.ok) continue;
               const bytes = new Uint8Array(await r.arrayBuffer());
               if (bytes.byteLength < 50_000) continue; // skip tiny/broken
               const hash = await sha256Hex(bytes);
-              const ext = url.match(/\.(mp4|mov|webm)/i)?.[1].toLowerCase() ?? "mp4";
+              const ct = (r.headers.get("content-type") ?? "").toLowerCase();
+              const ctExt = ct.includes("webm") ? "webm"
+                : ct.includes("quicktime") ? "mov"
+                : ct.includes("mp4") ? "mp4"
+                : null;
+              const ext = (url.match(/\.(mp4|mov|webm|m4v)/i)?.[1].toLowerCase())
+                ?? ctExt
+                ?? "mp4";
               const key = `${productId}/${hash.slice(0, 16)}.${ext}`;
               if (dryRun) {
                 totals.videos_imported++;
                 await admin.from("cj_sync_items").insert({
                   run_id: runId, product_id: productId, product_name: p.name as string,
-                  action: "video_would_import", after: { supplier_url: url, bytes: bytes.byteLength },
+                  action: "video_would_import",
+                  after: { supplier_url: url, bytes: bytes.byteLength, source: cand.source },
                 });
                 continue;
               }
@@ -406,12 +488,14 @@ serve(async (req) => {
               await admin.from("cj_sync_items").insert({
                 run_id: runId, product_id: productId, product_name: p.name as string,
                 action: "video_imported",
-                after: { storage_url: pub.publicUrl, bytes: bytes.byteLength },
+                after: { storage_url: pub.publicUrl, bytes: bytes.byteLength, source: cand.source },
               });
             } catch (e) {
               await admin.from("cj_sync_items").insert({
                 run_id: runId, product_id: productId, product_name: p.name as string,
-                action: "video_import_failed", error: (e as Error).message,
+                action: "video_import_failed",
+                error: (e as Error).message,
+                after: { supplier_url: url, source: cand.source },
               });
             }
           }
