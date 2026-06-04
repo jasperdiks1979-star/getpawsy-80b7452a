@@ -69,7 +69,7 @@ export default function CjVariantRepairPanel() {
   const [productId, setProductId] = useState("");
   const [limit, setLimit] = useState(25);
   const [response, setResponse] = useState<RepairResponse | null>(null);
-  const [run, setRun] = useState<RunRow | null>(null);
+  const [runRow, setRunRow] = useState<RunRow | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Always tear down the realtime channel on unmount.
@@ -88,7 +88,7 @@ export default function CjVariantRepairPanel() {
       await supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
-    setRun({
+    setRunRow({
       id: runId,
       mode: "audit",
       status: "running",
@@ -117,7 +117,7 @@ export default function CjVariantRepairPanel() {
         },
         (payload) => {
           const row = (payload.new ?? payload.old) as RunRow | undefined;
-          if (row) setRun(row);
+          if (row) setRunRow(row);
         },
       )
       .subscribe();
@@ -181,34 +181,34 @@ export default function CjVariantRepairPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Live progress */}
-        {run && (
+        {runRow && (
           <div className="rounded-md border bg-background p-3 space-y-2">
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge
                 variant={
-                  run.status === "complete"
+                  runRow.status === "complete"
                     ? "default"
-                    : run.status === "running"
+                    : runRow.status === "running"
                       ? "secondary"
                       : "destructive"
                 }
               >
-                {run.status}
+                {runRow.status}
               </Badge>
-              <Badge variant="outline">{run.mode}</Badge>
+              <Badge variant="outline">{runRow.mode}</Badge>
               <span className="font-mono text-[10px] text-muted-foreground">
-                run: {run.id.slice(0, 8)}…
+                run: {runRow.id.slice(0, 8)}…
               </span>
               <span className="ml-auto font-mono">
-                {run.completed}/{run.total || "?"} done · {run.repaired} ok · {run.failed} fail
+                {runRow.completed}/{runRow.total || "?"} done · {runRow.repaired} ok · {runRow.failed} fail
               </span>
             </div>
             <Progress
-              value={run.total > 0 ? Math.min(100, (run.completed / run.total) * 100) : run.status === "complete" ? 100 : 5}
+              value={runRow.total > 0 ? Math.min(100, (runRow.completed / runRow.total) * 100) : runRow.status === "complete" ? 100 : 5}
             />
-            {run.current_product_name && run.status === "running" && (
+            {runRow.current_product_name && runRow.status === "running" && (
               <div className="text-xs text-muted-foreground truncate">
-                Processing: <span className="font-medium">{run.current_product_name}</span>
+                Processing: <span className="font-medium">{runRow.current_product_name}</span>
               </div>
             )}
           </div>
