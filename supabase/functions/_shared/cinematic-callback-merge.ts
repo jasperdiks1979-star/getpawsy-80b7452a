@@ -78,4 +78,16 @@ export const FIELD_MAP: Record<string, (v: any) => unknown> = {
   motion_diversity:    (v) => Number.isFinite(Number(v)) ? ["motion_diversity_v2", Number(v)] : undefined,
   transition_count:    (v) => Number.isFinite(Number(v)) ? ["transition_count", Math.max(0, Math.round(Number(v)))] : undefined,
   render_mode:         (v) => typeof v === "string" && v.length > 0 ? ["render_mode", v] : undefined,
+  // Admin diagnostics (worker -> DB). Surfaced in the admin pipeline drawer
+  // so a green GH run that failed to persist the URL is visible.
+  admin_diagnostics:   (v) =>
+    v && typeof v === "object" && !Array.isArray(v) ? ["admin_diagnostics", v] : undefined,
+  latest_github_run_id: (v) =>
+    typeof v === "string" || typeof v === "number"
+      ? ["latest_github_run_id", String(v)]
+      : undefined,
+  render_exit_code:    (v) =>
+    Number.isFinite(Number(v)) ? ["render_exit_code", Math.trunc(Number(v))] : undefined,
+  output_file_size_mb: (v) =>
+    Number.isFinite(Number(v)) ? ["output_file_size_mb", Number(v)] : undefined,
 };
