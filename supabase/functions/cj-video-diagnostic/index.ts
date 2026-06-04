@@ -74,15 +74,12 @@ async function fetchCjDetails(cjProductId: string): Promise<Record<string, unkno
     const r = await fetch(`${SUPABASE_URL}/functions/v1/cj-dropshipping`, {
       method: "POST",
       headers: { "apikey": SERVICE_KEY, "Authorization": `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "getProductDetails", productIds: [cjProductId] }),
+      body: JSON.stringify({ action: "get-product-details", productId: cjProductId, countryCode: "US" }),
     });
     if (!r.ok) return null;
     const j = await r.json();
-    const arr = Array.isArray(j?.results) ? j.results : Array.isArray(j) ? j : [];
-    const hit = arr.find((x: { success?: boolean; pid?: string; data?: unknown }) =>
-      x?.success && (x?.pid === cjProductId || x?.data));
-    if (!hit) return null;
-    return (hit.data as Record<string, unknown>) ?? (hit as Record<string, unknown>);
+    if (j?.data && typeof j.data === "object") return j.data as Record<string, unknown>;
+    return null;
   } catch { return null; }
 }
 function json(b: unknown, s = 200) {
