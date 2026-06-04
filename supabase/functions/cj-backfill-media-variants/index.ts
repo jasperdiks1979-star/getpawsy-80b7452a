@@ -469,7 +469,9 @@ Deno.serve(async (req) => {
           const meta: Record<string, unknown> = { source_field: cand.source };
           if (rehost) {
             const re = await rehostVideo(admin, productId, cand.url);
-            if (re) {
+            meta.rehost_attempts = re.attempts;
+            if (re.httpStatus !== undefined) meta.rehost_http_status = re.httpStatus;
+            if (re.success) {
               storageUrl = re.signedUrl;
               meta.rehosted = true;
               meta.storage_path = re.storagePath;
@@ -480,6 +482,8 @@ Deno.serve(async (req) => {
             } else {
               meta.rehosted = false;
               meta.rehost_fallback = "cdn";
+              meta.rehost_error = re.error;
+              meta.rehost_reason = re.reason;
               stats.videos_rehost_fallback_cdn++;
             }
           }
@@ -503,7 +507,19 @@ Deno.serve(async (req) => {
           await admin.from("cj_sync_items").insert({
             run_id: runId, product_id: productId, product_name: productName,
             action: "video_imported",
-            after: { storage_url: storageUrl, supplier_url: cand.url, source: cand.source, variant_key: cand.variantKey, rehosted: !!meta.rehosted },
+            after: {
+              storage_url: storageUrl,
+              supplier_url: cand.url,
+              source: cand.source,
+              variant_key: cand.variantKey,
+              rehosted: !!meta.rehosted,
+              fallback_used: rehost && !meta.rehosted,
+              http_status: meta.rehost_http_status ?? null,
+              file_size: meta.bytes ?? null,
+              content_type: meta.content_type ?? null,
+              attempts: meta.rehost_attempts ?? null,
+              reason: meta.rehost_reason ?? null,
+            },
           });
         } catch (e) {
           stats.videos_failed++;
