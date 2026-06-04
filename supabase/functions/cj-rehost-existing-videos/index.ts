@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     await admin.from("cj_sync_runs").update({
       status: "completed",
       finished_at: new Date().toISOString(),
-      stats: { ...stats, total },
+      totals: { ...stats, total },
     }).eq("id", runId);
   }
 
