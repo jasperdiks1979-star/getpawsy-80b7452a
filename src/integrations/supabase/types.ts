@@ -4145,6 +4145,60 @@ export type Database = {
           },
         ]
       }
+      cj_variant_repair_runs: {
+        Row: {
+          completed: number
+          current_product_id: string | null
+          current_product_name: string | null
+          failed: number
+          finished_at: string | null
+          id: string
+          last_result: Json | null
+          message: string | null
+          mode: string
+          repaired: number
+          results: Json
+          started_at: string
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          completed?: number
+          current_product_id?: string | null
+          current_product_name?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          last_result?: Json | null
+          message?: string | null
+          mode: string
+          repaired?: number
+          results?: Json
+          started_at?: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          completed?: number
+          current_product_id?: string | null
+          current_product_name?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          last_result?: Json | null
+          message?: string | null
+          mode?: string
+          repaired?: number
+          results?: Json
+          started_at?: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cj_webhook_logs: {
         Row: {
           created_at: string

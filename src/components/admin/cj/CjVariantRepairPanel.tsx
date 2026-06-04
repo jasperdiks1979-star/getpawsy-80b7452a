@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, Wrench, ListChecks, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type Mode = "audit" | "repair_one" | "repair_all";
 
@@ -22,6 +24,7 @@ interface RepairResult {
 interface RepairResponse {
   ok: boolean;
   traceId?: string;
+  run_id?: string;
   mode?: Mode;
   message?: string;
   // audit
@@ -33,6 +36,24 @@ interface RepairResponse {
   repaired?: number;
   failed?: number;
   results?: RepairResult[];
+}
+
+interface RunRow {
+  id: string;
+  mode: Mode;
+  status: "running" | "complete" | "error" | string;
+  total: number;
+  completed: number;
+  repaired: number;
+  failed: number;
+  current_product_id: string | null;
+  current_product_name: string | null;
+  last_result: Record<string, unknown> | null;
+  results: RepairResult[] | null;
+  message: string | null;
+  started_at: string;
+  updated_at: string;
+  finished_at: string | null;
 }
 
 /**
@@ -48,16 +69,76 @@ export default function CjVariantRepairPanel() {
   const [productId, setProductId] = useState("");
   const [limit, setLimit] = useState(25);
   const [response, setResponse] = useState<RepairResponse | null>(null);
+  const [run, setRun] = useState<RunRow | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
-  async function run(mode: Mode) {
+  // Always tear down the realtime channel on unmount.
+  useEffect(() => {
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, []);
+
+  async function subscribeToRun(runId: string) {
+    // Close any previous subscription
+    if (channelRef.current) {
+      await supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    setRun({
+      id: runId,
+      mode: "audit",
+      status: "running",
+      total: 0,
+      completed: 0,
+      repaired: 0,
+      failed: 0,
+      current_product_id: null,
+      current_product_name: null,
+      last_result: null,
+      results: null,
+      message: null,
+      started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      finished_at: null,
+    });
+    const ch = supabase
+      .channel(`cj-variant-repair-${runId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cj_variant_repair_runs",
+          filter: `id=eq.${runId}`,
+        },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as RunRow | undefined;
+          if (row) setRun(row);
+        },
+      )
+      .subscribe();
+    channelRef.current = ch;
+  }
+
+  async function runMode(mode: Mode) {
     if (mode === "repair_one" && !/^[0-9a-f-]{36}$/i.test(productId.trim())) {
       toast.error("Enter a valid products.id (UUID) for repair_one");
       return;
     }
     setBusy(mode);
     setResponse(null);
+    // Client-generate the run_id so realtime is wired up BEFORE the
+    // edge function inserts/updates the row.
+    const runId =
+      (crypto as Crypto & { randomUUID?: () => string }).randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    await subscribeToRun(runId);
     try {
-      const body: Record<string, unknown> = { mode };
+      const body: Record<string, unknown> = { mode, run_id: runId };
       if (mode === "repair_one") body.product_id = productId.trim();
       if (mode === "repair_all") body.limit = Math.max(1, Math.min(200, Number(limit) || 25));
       const { data, error } = await supabase.functions.invoke("cj-variant-repair", { body });
@@ -99,9 +180,43 @@ export default function CjVariantRepairPanel() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Live progress */}
+        {run && (
+          <div className="rounded-md border bg-background p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge
+                variant={
+                  run.status === "complete"
+                    ? "default"
+                    : run.status === "running"
+                      ? "secondary"
+                      : "destructive"
+                }
+              >
+                {run.status}
+              </Badge>
+              <Badge variant="outline">{run.mode}</Badge>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                run: {run.id.slice(0, 8)}…
+              </span>
+              <span className="ml-auto font-mono">
+                {run.completed}/{run.total || "?"} done · {run.repaired} ok · {run.failed} fail
+              </span>
+            </div>
+            <Progress
+              value={run.total > 0 ? Math.min(100, (run.completed / run.total) * 100) : run.status === "complete" ? 100 : 5}
+            />
+            {run.current_product_name && run.status === "running" && (
+              <div className="text-xs text-muted-foreground truncate">
+                Processing: <span className="font-medium">{run.current_product_name}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Audit */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => run("audit")}>
+          <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => runMode("audit")}>
             {busy === "audit" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -123,7 +238,7 @@ export default function CjVariantRepairPanel() {
               spellCheck={false}
             />
           </div>
-          <Button size="sm" disabled={busy !== null} onClick={() => run("repair_one")}>
+          <Button size="sm" disabled={busy !== null} onClick={() => runMode("repair_one")}>
             {busy === "repair_one" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -150,7 +265,7 @@ export default function CjVariantRepairPanel() {
             size="sm"
             variant="destructive"
             disabled={busy !== null}
-            onClick={() => run("repair_all")}
+            onClick={() => runMode("repair_all")}
           >
             {busy === "repair_all" ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
