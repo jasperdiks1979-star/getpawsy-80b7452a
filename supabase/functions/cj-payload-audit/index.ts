@@ -239,6 +239,92 @@ Deno.serve(async (req) => {
     const productId = body.product_id as string | undefined;
     const cjProductId = body.cj_product_id as string | undefined;
     const slug = body.slug as string | undefined;
+    const sampleCount = Math.min(
+      Math.max(Number(body.sample_count ?? 0) | 0, 0),
+      25,
+    );
+
+    // ===== Batch / sample mode =====
+    if (sampleCount > 0) {
+      const { data: pool, error: poolErr } = await supabase
+        .from("products")
+        .select("id, slug, sku, stock, variants, variant_stock, images, cj_product_id, cj_variant_id")
+        .not("cj_product_id", "is", null)
+        .eq("is_active", true)
+        .limit(500);
+      if (poolErr) throw poolErr;
+      const shuffled = (pool ?? []).sort(() => Math.random() - 0.5).slice(0, sampleCount);
+
+      const token = await getCjToken(supabase);
+      const reports: unknown[] = [];
+      const agg = {
+        sampled: 0,
+        cj_ok: 0,
+        cj_failed: 0,
+        products_with_cj_videos: 0,
+        products_with_db_videos: 0,
+        total_cj_videos: 0,
+        total_db_videos: 0,
+        discarded_video_urls: 0,
+        cj_variants_total: 0,
+        db_variants_total: 0,
+        products_missing_variants: 0,
+      };
+
+      for (const dbp of shuffled) {
+        agg.sampled++;
+        try {
+          const { json } = await fetchCjProduct(token, dbp.cj_product_id);
+          if (!json?.result || !json?.data) { agg.cj_failed++; continue; }
+          agg.cj_ok++;
+
+          if ((!Array.isArray(json.data.variants) || json.data.variants.length === 0)) {
+            const vr = await fetchCjVariantsByPid(token, dbp.cj_product_id);
+            if (Array.isArray(vr.json?.data)) json.data.variants = vr.json.data;
+          }
+          const { data: media } = await supabase
+            .from("product_media")
+            .select("media_type, storage_url")
+            .eq("product_id", dbp.id);
+          const gap = buildGapReport(json.data, dbp, media ?? []) as Record<string, any>;
+
+          const cjVideos = (gap.videos?.cj_product_videos?.length ?? 0)
+            + (gap.videos?.cj_variant_videos?.length ?? 0);
+          const dbVideos = gap.videos?.db_video_rows ?? 0;
+          if (cjVideos > 0) agg.products_with_cj_videos++;
+          if (dbVideos > 0) agg.products_with_db_videos++;
+          agg.total_cj_videos += cjVideos;
+          agg.total_db_videos += dbVideos;
+          agg.discarded_video_urls += gap.videos?.discarded_extensions?.length ?? 0;
+          agg.cj_variants_total += gap.variants?.cj_count ?? 0;
+          agg.db_variants_total += gap.variants?.db_count ?? 0;
+          if ((gap.variants?.cj_count ?? 0) > (gap.variants?.db_count ?? 0)) {
+            agg.products_missing_variants++;
+          }
+
+          reports.push({
+            product_id: dbp.id,
+            slug: dbp.slug,
+            cj_product_id: dbp.cj_product_id,
+            gap_report: gap,
+          });
+        } catch (e) {
+          agg.cj_failed++;
+          reports.push({
+            product_id: dbp.id,
+            slug: dbp.slug,
+            error: String((e as Error).message ?? e),
+          });
+        }
+        // gentle pacing
+        await new Promise((r) => setTimeout(r, 800));
+      }
+
+      return new Response(
+        JSON.stringify({ ok: true, mode: "sample", aggregate: agg, reports }, null, 2),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     let query = supabase
       .from("products")
@@ -247,7 +333,7 @@ Deno.serve(async (req) => {
     if (productId) query = query.eq("id", productId);
     else if (cjProductId) query = query.eq("cj_product_id", cjProductId);
     else if (slug) query = query.eq("slug", slug);
-    else throw new Error("Provide product_id, cj_product_id, or slug");
+    else throw new Error("Provide product_id, cj_product_id, slug, or sample_count");
 
     const { data: products, error: prodErr } = await query;
     if (prodErr) throw prodErr;
