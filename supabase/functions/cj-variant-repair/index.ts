@@ -181,12 +181,13 @@ Deno.serve(async (req) => {
             "Authorization": `Bearer ${SERVICE_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ action: "getProductDetails", productIds: [cjProductId] }),
+          body: JSON.stringify({ action: "get-product-details", productId: cjProductId, countryCode: "US" }),
         });
         if (!r.ok) return null;
         const j = await r.json();
-        const arr = Array.isArray(j?.results) ? j.results : Array.isArray(j) ? j : [];
-        return arr.find((x: any) => x?.success && (x?.pid === cjProductId || x?.data));
+        // get-product-details returns the raw CJ payload at j.data
+        if (j?.data && typeof j.data === "object") return { data: j.data, variants: (j.data as any).variants };
+        return null;
       } catch {
         return null;
       }
