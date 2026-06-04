@@ -489,8 +489,33 @@ export default function CjInventorySync() {
                 <Stat label="CJ videos (total)" value={auditResult.aggregate.total_cj_videos ?? 0} />
                 <Stat label="DB videos (total)" value={auditResult.aggregate.total_db_videos ?? 0} tone="muted" />
                 <Stat label="With CJ video" value={auditResult.aggregate.products_with_cj_videos ?? 0} />
+                <Stat label="No CJ video" value={auditResult.aggregate.products_with_no_cj_videos ?? 0} tone="muted" />
+                <Stat label="With US stock" value={auditResult.aggregate.products_with_us_stock ?? 0} tone="success" />
+                <Stat label="US units (sum)" value={auditResult.aggregate.cj_us_stock_total ?? 0} />
+                <Stat label="Recalc'd from inventories[]" value={auditResult.aggregate.products_stock_recalculated_from_inventories ?? 0} />
                 <Stat label="Discarded URLs" value={auditResult.aggregate.discarded_video_urls ?? 0} tone="warn" />
               </div>
+              {Array.isArray(auditResult.reports) && auditResult.reports.length > 0 && (
+                <div className="rounded-md border bg-muted/20 p-3 space-y-2 text-xs">
+                  <div className="font-medium text-sm">Per-product reasons</div>
+                  <div className="space-y-1 max-h-64 overflow-auto">
+                    {auditResult.reports.map((r, i) => {
+                      const rec = r as Record<string, unknown>;
+                      const reasons = Array.isArray(rec.reasons) ? rec.reasons as string[] : [];
+                      return (
+                        <div key={i} className="flex flex-wrap items-center gap-1">
+                          <span className="font-mono text-muted-foreground">{String(rec.slug ?? rec.product_id)}</span>
+                          {reasons.length === 0 ? (
+                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700">ok</span>
+                          ) : reasons.map((reason) => (
+                            <span key={reason} className="rounded bg-amber-500/10 px-1.5 py-0.5 text-amber-700">{reason}</span>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <details className="rounded-md border bg-muted/30 p-3">
                 <summary className="cursor-pointer text-sm font-medium">
                   Per-product gap reports ({auditResult.reports.length})

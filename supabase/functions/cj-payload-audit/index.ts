@@ -100,7 +100,8 @@ const CONSUMED_VARIANT_FIELDS = new Set([
   "variantSellPrice", "variantStandard", "variantImage", "variantWeight",
   "variantLength", "variantWidth", "variantHeight", "variantVolume",
   "variantUnit", "variantKey", "variantValue", "inventoryUs", "inventory",
-  "stockUs", "stockNum", "variantVideo", "video",
+  "stockUs", "stockNum", "variantVideo", "video", "inventories",
+  "variantSpecs",
 ]);
 
 // deno-lint-ignore no-explicit-any
@@ -143,17 +144,35 @@ function buildGapReport(cj: any, dbProduct: any, media: any[]) {
     db_cj_variant_id: dbProduct?.cj_variant_id ?? null,
   };
 
-  // 3. Stock mapping
-  const cjStockTotal = cjVariants.reduce((sum: number, v: any) => {
-    return sum + (Number(v?.inventoryUs ?? v?.stockUs ?? v?.inventory ?? v?.stockNum) || 0);
-  }, 0);
-  gaps.stock = {
-    cj_per_variant: cjVariants.map((v: any) => ({
+  // 3. Stock mapping — derive US stock from variant.inventories[]
+  // (countryCode === 'US'), summing totalInventory/cjInventory. Fall back
+  // to other warehouses only when US has zero.
+  const perVariantStock = cjVariants.map((v: any) => {
+    const invs: any[] = Array.isArray(v?.inventories) ? v.inventories : [];
+    let us = 0, other = 0;
+    for (const inv of invs) {
+      const qty = Number(inv?.totalInventory ?? inv?.cjInventory ?? inv?.storageNum ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      if (String(inv?.countryCode ?? "").toUpperCase() === "US") us += qty;
+      else other += qty;
+    }
+    return {
       sku: v?.variantSku,
-      us: v?.inventoryUs ?? v?.stockUs ?? null,
-      generic: v?.inventory ?? v?.stockNum ?? null,
-    })),
-    cj_total: cjStockTotal,
+      vid: v?.vid ?? null,
+      us,
+      other,
+      effective: us > 0 ? us : other,
+      inventories_count: invs.length,
+    };
+  });
+  const cjStockUsTotal = perVariantStock.reduce((s, r) => s + r.us, 0);
+  const cjStockEffectiveTotal = perVariantStock.reduce((s, r) => s + r.effective, 0);
+  const recalculatedFromInventories = perVariantStock.some((r) => r.inventories_count > 0);
+  gaps.stock = {
+    cj_per_variant: perVariantStock,
+    cj_us_total: cjStockUsTotal,
+    cj_total: cjStockEffectiveTotal, // backward-compat: prefer US, fallback other
+    recalculated_from_inventories: recalculatedFromInventories,
     db_aggregated_stock: dbProduct?.stock ?? null,
     db_variant_stock_json: dbProduct?.variant_stock ?? null,
   };
@@ -262,6 +281,7 @@ Deno.serve(async (req) => {
         cj_ok: 0,
         cj_failed: 0,
         products_with_cj_videos: 0,
+        products_with_no_cj_videos: 0,
         products_with_db_videos: 0,
         total_cj_videos: 0,
         total_db_videos: 0,
@@ -269,6 +289,9 @@ Deno.serve(async (req) => {
         cj_variants_total: 0,
         db_variants_total: 0,
         products_missing_variants: 0,
+        products_with_us_stock: 0,
+        products_stock_recalculated_from_inventories: 0,
+        cj_us_stock_total: 0,
       };
 
       for (const dbp of shuffled) {
@@ -292,6 +315,7 @@ Deno.serve(async (req) => {
             + (gap.videos?.cj_variant_videos?.length ?? 0);
           const dbVideos = gap.videos?.db_video_rows ?? 0;
           if (cjVideos > 0) agg.products_with_cj_videos++;
+          else agg.products_with_no_cj_videos++;
           if (dbVideos > 0) agg.products_with_db_videos++;
           agg.total_cj_videos += cjVideos;
           agg.total_db_videos += dbVideos;
@@ -301,11 +325,28 @@ Deno.serve(async (req) => {
           if ((gap.variants?.cj_count ?? 0) > (gap.variants?.db_count ?? 0)) {
             agg.products_missing_variants++;
           }
+          const usTot = Number(gap.stock?.cj_us_total ?? 0);
+          if (usTot > 0) agg.products_with_us_stock++;
+          agg.cj_us_stock_total += usTot;
+          if (gap.stock?.recalculated_from_inventories) {
+            agg.products_stock_recalculated_from_inventories++;
+          }
+
+          // Per-product machine-readable reason labels
+          const reasons: string[] = [];
+          if (cjVideos === 0) reasons.push("cj_returned_no_video");
+          else if (dbVideos === 0) reasons.push("cj_video_not_yet_imported");
+          if ((gap.variants?.cj_count ?? 0) === 0) reasons.push("cj_returned_no_variants");
+          else if ((gap.variants?.db_count ?? 0) === 0) reasons.push("db_variants_empty_needs_repair");
+          else if ((gap.variants?.cj_count ?? 0) > (gap.variants?.db_count ?? 0)) reasons.push("db_variants_partial");
+          if (usTot === 0 && (gap.stock?.cj_total ?? 0) > 0) reasons.push("no_us_stock_only_other_warehouse");
+          if (usTot === 0 && (gap.stock?.cj_total ?? 0) === 0) reasons.push("out_of_stock_everywhere");
 
           reports.push({
             product_id: dbp.id,
             slug: dbp.slug,
             cj_product_id: dbp.cj_product_id,
+            reasons,
             gap_report: gap,
           });
         } catch (e) {
