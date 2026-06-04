@@ -12,7 +12,15 @@
 //
 // POST body:
 //   { offset?: number, batch_size?: number, only_missing?: boolean,
-//     product_ids?: string[], dry_run?: boolean, run_id?: string }
+//     product_ids?: string[], dry_run?: boolean, run_id?: string,
+//     rehost?: boolean }
+//
+// When rehost=true, accepted CJ video URLs are downloaded and uploaded to the
+// private `product-media` Supabase Storage bucket. A long-lived signed URL
+// (~10y) is then stored in product_media.storage_url, while supplier_url
+// keeps the original CJ CDN link as a fallback. If the download or upload
+// fails for any reason the CJ CDN URL is used as storage_url instead (CDN
+// fallback) so the video is still playable.
 //
 // Returns:
 //   { ok, run_id, processed, total, next_offset|null, stats: { ... } }
@@ -43,6 +51,62 @@ const CJ_VIDEO_HOSTS = [
   "oss-eu.cjdropshipping.com",
   "oss-us.cjdropshipping.com",
 ];
+
+const REHOST_BUCKET = "product-media";
+const REHOST_MAX_BYTES = 60 * 1024 * 1024; // 60 MB per video
+const REHOST_SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 10; // 10 years
+
+function extFromUrlOrType(url: string, contentType: string | null): string {
+  const m = url.match(/\.(mp4|mov|webm|m4v)(\?|$)/i);
+  if (m) return m[1].toLowerCase();
+  const ct = (contentType ?? "").toLowerCase();
+  if (ct.includes("mp4")) return "mp4";
+  if (ct.includes("webm")) return "webm";
+  if (ct.includes("quicktime")) return "mov";
+  return "mp4";
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Download a CJ video and upload to the product-media bucket. Returns a
+ * long-lived signed URL on success, or null on any failure (caller falls
+ * back to the CJ CDN URL).
+ */
+async function rehostVideo(
+  admin: ReturnType<typeof createClient>,
+  productId: string,
+  sourceUrl: string,
+): Promise<{ signedUrl: string; storagePath: string; bytes: number; contentType: string } | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 45_000);
+    const res = await fetch(sourceUrl, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") ?? "video/mp4";
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > REHOST_MAX_BYTES) return null;
+    const ext = extFromUrlOrType(sourceUrl, contentType);
+    const hash = (await sha256Hex(sourceUrl)).slice(0, 16);
+    const storagePath = `cj/${productId}/${hash}.${ext}`;
+    const { error: upErr } = await admin.storage
+      .from(REHOST_BUCKET)
+      .upload(storagePath, buf, { contentType, upsert: true, cacheControl: "31536000" });
+    if (upErr && !/exists/i.test(upErr.message)) return null;
+    const { data: signed, error: signErr } = await admin.storage
+      .from(REHOST_BUCKET)
+      .createSignedUrl(storagePath, REHOST_SIGNED_URL_TTL);
+    if (signErr || !signed?.signedUrl) return null;
+    return { signedUrl: signed.signedUrl, storagePath, bytes: buf.byteLength, contentType };
+  } catch {
+    return null;
+  }
+}
 
 const VIDEO_FIELDS_TOP = [
   "productVideo",
@@ -238,6 +302,7 @@ Deno.serve(async (req) => {
   const dryRun: boolean = !!body?.dry_run;
   const onlyMissing: boolean = body?.only_missing !== false; // default true
   const productIds: string[] | undefined = Array.isArray(body?.product_ids) ? body.product_ids : undefined;
+  const rehost: boolean = !!body?.rehost;
   let runId: string = body?.run_id ?? "";
 
   // Create run row on first invocation
@@ -275,6 +340,8 @@ Deno.serve(async (req) => {
     videos_failed: 0,
     videos_none_found: 0,
     videos_unknown_shape: 0,
+    videos_rehosted: 0,
+    videos_rehost_fallback_cdn: 0,
     variants_recovered: 0,
     variants_failed: 0,
     variants_none_found: 0,
@@ -336,24 +403,43 @@ Deno.serve(async (req) => {
             await admin.from("cj_sync_items").insert({
               run_id: runId, product_id: productId, product_name: productName,
               action: "video_would_import",
-              after: { supplier_url: cand.url, source: cand.source, variant_key: cand.variantKey },
+              after: { supplier_url: cand.url, source: cand.source, variant_key: cand.variantKey, rehost },
             });
             stats.videos_imported++;
             continue;
           }
-          // Insert pointing directly at the CJ CDN URL (no re-host). Idempotent
-          // because (product_id, supplier_url) is unique.
+          // Optionally rehost to Supabase Storage. On failure we fall back to
+          // the CJ CDN URL so the row is still useful. Idempotent because
+          // (product_id, supplier_url) is unique.
+          let storageUrl = cand.url;
+          const meta: Record<string, unknown> = { source_field: cand.source };
+          if (rehost) {
+            const re = await rehostVideo(admin, productId, cand.url);
+            if (re) {
+              storageUrl = re.signedUrl;
+              meta.rehosted = true;
+              meta.storage_path = re.storagePath;
+              meta.bytes = re.bytes;
+              meta.content_type = re.contentType;
+              meta.signed_url_expires_at = new Date(Date.now() + REHOST_SIGNED_URL_TTL * 1000).toISOString();
+              stats.videos_rehosted++;
+            } else {
+              meta.rehosted = false;
+              meta.rehost_fallback = "cdn";
+              stats.videos_rehost_fallback_cdn++;
+            }
+          }
           const { error: insErr } = await admin.from("product_media").insert({
             product_id: productId,
             cj_product_id: cjId,
             variant_key: cand.variantKey,
             variant_id: cand.variantId,
             media_type: "video",
-            storage_url: cand.url,
+            storage_url: storageUrl,
             supplier_url: cand.url,
             source: "cj",
             sort_order: 50,
-            metadata: { source_field: cand.source },
+            metadata: meta,
           });
           if (insErr) {
             if (/duplicate key/i.test(insErr.message)) { stats.videos_skipped_existing++; continue; }
@@ -363,7 +449,7 @@ Deno.serve(async (req) => {
           await admin.from("cj_sync_items").insert({
             run_id: runId, product_id: productId, product_name: productName,
             action: "video_imported",
-            after: { storage_url: cand.url, source: cand.source, variant_key: cand.variantKey },
+            after: { storage_url: storageUrl, supplier_url: cand.url, source: cand.source, variant_key: cand.variantKey, rehosted: !!meta.rehosted },
           });
         } catch (e) {
           stats.videos_failed++;
