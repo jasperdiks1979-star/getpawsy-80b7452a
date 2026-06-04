@@ -800,6 +800,14 @@ async function main() {
 
     const size = statSync(finalPath).size;
     const durationSec = (Date.now() - startedAt) / 1000;
+    diagLog("RENDER_OUTPUT_PATH", finalPath);
+    diagLog("OUTPUT_FILE_EXISTS", "true");
+    const sizeMb = Number((size / (1024 * 1024)).toFixed(3));
+    adminDiagnostics.output_file_size_mb = sizeMb;
+    diagLog("OUTPUT_FILE_SIZE_MB", sizeMb);
+    if (!size || size < 10_000) {
+      throw new Error(`output_file_too_small: ${size} bytes — refusing to mark render successful`);
+    }
 
     // 5. Probe output: dimensions, real duration, motion score, black bars,
     //    thumbnail. These feed cinematic-ad-validate -> validation_report.passed.
@@ -873,10 +881,24 @@ async function main() {
       motion_floor: MOTION_FLOOR,
       motion_pass: motion >= MOTION_FLOOR,
     });
-    await postWebhook(webhookPayload);
+    // CRITICAL terminal webhook: if it fails, the GH run MUST exit non-zero.
+    await postWebhook(webhookPayload, { critical: true });
+    // Pipeline contract: a green GH run requires output_mp4_url in DB.
+    await verifyJobMp4Persisted(job.job_id);
+    adminDiagnostics.render_exit_code = 0;
+    // Best-effort: ship final diagnostics snapshot via a heartbeat post so
+    // the admin row shows the green pipeline trail end-to-end.
+    await postWebhook({
+      job_id: job.job_id,
+      render_token: job.render_token,
+      status: "heartbeat",
+      event: "diag_final",
+      worker_id: WORKER_ID,
+    });
     console.log("[render] done", publicUrl);
   } catch (e) {
     console.error("[render] failed", e);
+    adminDiagnostics.render_exit_code = 1;
     const stderrTail = e?.ffmpegStderr ? `\n--- ffmpeg stderr (tail) ---\n${String(e.ffmpegStderr).slice(-2000)}` : "";
     const errorMessage = `${e?.message ?? String(e)}${stderrTail}`.slice(0, 6000);
     await postWebhook({
