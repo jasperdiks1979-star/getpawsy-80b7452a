@@ -2593,6 +2593,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-warmup"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestWarmupPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-video-queue"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
