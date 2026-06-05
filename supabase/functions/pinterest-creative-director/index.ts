@@ -34,6 +34,11 @@ import {
   type LearningWeight,
   type HookCategory,
 } from "../_shared/pinterest-hooks.ts";
+import {
+  generateProductHooks,
+  scoreHookRelevance,
+  type ProductHook,
+} from "../_shared/pinterest-product-hooks.ts";
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
