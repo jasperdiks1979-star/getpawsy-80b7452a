@@ -186,7 +186,7 @@ async function loadOrBuildProfile(
 // ── 2. generate_briefs ─────────────────────────────────────────────────────
 
 async function generateBriefs(
-  product: { name: string; description?: string | null },
+  product: { name: string; description?: string | null; category?: string | null },
   dna: StyleDNA,
   count: number,
   patternIds?: PatternId[],
@@ -206,6 +206,22 @@ async function generateBriefs(
   const strategies: CreativeStrategy[] = patterns.map((p) =>
     pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights }),
   );
+
+  // PRODUCT-TRUTHFUL HEADLINES: generate N hooks straight from the
+  // product's name/description/category and override the bank-picked
+  // strategy.hook_phrase with them. The strategy still chooses the hook
+  // CATEGORY (for analytics + learning), but the actual headline copy is
+  // now grounded in this specific product instead of a generic niche bank.
+  const productHooks = await generateProductHooks({
+    product: {
+      name: product.name,
+      description: product.description ?? null,
+      category: product.category ?? dna.label,
+    },
+    niche: dna.niche_key,
+    dna,
+    count,
+  });
 
   // Pin-mode plan per brief (rotates through niche affinity for variety).
   const plans: VisualPlan[] = patterns.map((_, i) =>
@@ -251,10 +267,12 @@ async function generateBriefs(
     strategies: strategies.map((s, i) => ({
       index: i,
       hook_category: s.hook_category,
-      headline: s.hook_phrase,
+      headline: productHooks[i]?.headline ?? s.hook_phrase,
       cta: s.cta_phrase,
       scene_directive: s.scene_directive,
-      rationale: s.rationale,
+      rationale: productHooks[i]?.rationale ?? s.rationale,
+      hook_source: productHooks[i]?.source ?? "fallback_bank",
+      hook_relevance: productHooks[i]?.relevance ?? null,
     })),
     /** Locked Pinterest pin-mode per brief. Defines aesthetic + composition
      *  archetype the model must respect on top of the niche pattern. */
@@ -287,7 +305,7 @@ async function generateBriefs(
       pattern_lock:
         "For each brief at index i, embody patterns[i] — composition_rule defines the scene, hook_angle defines the headline emotion, must_have terms must appear in environment_summary or full_prompt, must_avoid terms must never appear.",
       strategy_lock:
-        "Use strategies[i].headline as the headline VERBATIM and strategies[i].cta as the cta VERBATIM. Build the scene around strategies[i].scene_directive.",
+        "Use strategies[i].headline as the headline VERBATIM (it has already been validated for relevance to this exact product) and strategies[i].cta as the cta VERBATIM. Build the scene around strategies[i].scene_directive.",
       pin_mode_lock:
         "Also respect pin_modes[i]: composition_rule, palette and cta_tone shape the scene aesthetic. must_have items must appear in environment_summary or full_prompt; must_avoid items must NEVER appear. If is_collage=true, the brief MUST describe a multi-tile composition (split or moodboard) — never a single hero shot.",
       retry_directive:
@@ -384,15 +402,22 @@ async function generateBriefs(
     environment_summary: String(b.environment_summary || ""),
     subject: String(b.subject || ""),
     emotional_hook: String(b.emotional_hook || ""),
-    // Strategy lock: prefer the strategy-picked phrase if the model drifted.
-    headline: safeText(String(b.headline || strategies[i]?.hook_phrase || ""), 42),
+    // Headline lock: the product-truthful hook ALWAYS wins. We do not let the
+    // image-brief AI rewrite it (it would drift back to generic copy).
+    headline: safeText(
+      productHooks[i]?.headline ||
+        String(b.headline || strategies[i]?.hook_phrase || ""),
+      42,
+    ),
     cta: safeText(String(b.cta || strategies[i]?.cta_phrase || ""), 18),
     full_prompt: String(b.full_prompt || ""),
     pattern_id: patterns[i]?.id,
     hook_category: strategies[i]?.hook_category,
-    strategy_rationale: strategies[i]?.rationale,
+    strategy_rationale: productHooks[i]?.rationale ?? strategies[i]?.rationale,
     retry_reasons: retryReasonsByIndex[i],
     pin_mode: plans[i]?.pin_mode,
+    hook_source: productHooks[i]?.source ?? "fallback_bank",
+    hook_relevance: productHooks[i]?.relevance,
   }));
 }
 
