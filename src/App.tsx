@@ -435,6 +435,7 @@ const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
 const CjVideoDiagnostic = lazyWithRetry(() => import("./pages/admin/CjVideoDiagnostic"));
 const CjSyncReport = lazyWithRetry(() => import("./pages/admin/CjSyncReport"));
+const CjHealthCheck = lazyWithRetry(() => import("./pages/admin/CjHealthCheck"));
 const RenderBudgetDashboard = lazyWithRetry(() => import("./pages/admin/RenderBudgetDashboard"));
 const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admin/CinematicPerformanceMetricsPage"));
 const CinematicMotionForensicsPage = lazyWithRetry(() => import("./pages/admin/CinematicMotionForensicsPage"));
@@ -2106,6 +2107,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CjVideoDiagnostic />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cj-health-check"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CjHealthCheck />
                                 </Suspense>
                               }
                             />
