@@ -310,13 +310,26 @@ export async function generateProductHooks(args: {
   candidateCount?: number;
 }): Promise<ProductHook[]> {
   const { product, niche, dna, count } = args;
-  const minRelevance = args.minRelevance ?? 90;
-  const maxRetries = args.maxRetries ?? 2;
-  // Always request at least 5 candidates per product so we can pick the
-  // top-scoring N. The caller still gets back exactly `count` hooks.
-  const candidateCount = Math.max(args.candidateCount ?? 5, count);
+  const maxRetries = args.maxRetries ?? 1;
 
-  if (!LOVABLE_API_KEY) return fallbackHooks(product, dna, count);
+  // SPEC §1 + §4 + §5: fallback bank is permitted ONLY when the product is
+  // missing the inputs we need to ground a hook in product truth. We never
+  // top-up to reach `count` from the bank — one product = one winning hook
+  // that we repeat across all requested briefs.
+  const desc = (product.description || "").trim();
+  if (!product.name || desc.length < 20) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
+  }
+  if (!LOVABLE_API_KEY) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
+  }
+
+  // Auto-derive benefits if the catalog row doesn't carry them.
+  const benefits = (product.benefits && product.benefits.length)
+    ? product.benefits
+    : deriveBenefits(product, niche);
 
   const banned = NICHE_BANNED_HOOK_TERMS[niche] || [];
   const positive = NICHE_POSITIVE_LEX[niche] || [];
@@ -327,6 +340,7 @@ export async function generateProductHooks(args: {
     "Hooks MUST be grounded in the product's name, description, category, and stated benefits.",
     "Never reuse hooks from other product categories (no toy phrasing on supplements, no supplement phrasing on toys, etc.).",
     "Each hook ≤42 characters, no emojis, no hashtags, no trailing punctuation.",
+    "Generate EXACTLY one hook per archetype: problem, benefit, curiosity, emotional, outcome.",
     "Voice: confident, US-native, premium but warm. No clickbait, no exaggerated claims, no medical/legal claims.",
   ].join(" ");
 
@@ -335,21 +349,25 @@ export async function generateProductHooks(args: {
       type: "function",
       function: {
         name: "product_hooks",
-        description: "Return N product-truthful Pinterest headlines.",
+        description: "Return 5 product-truthful Pinterest headlines — one per archetype.",
         parameters: {
           type: "object",
           properties: {
             hooks: {
               type: "array",
-              minItems: candidateCount,
-              maxItems: candidateCount + 2,
+              minItems: 5,
+              maxItems: 5,
               items: {
                 type: "object",
                 properties: {
                   headline: { type: "string", maxLength: 42 },
                   rationale: { type: "string" },
+                  archetype: {
+                    type: "string",
+                    enum: ARCHETYPES,
+                  },
                 },
-                required: ["headline", "rationale"],
+                required: ["headline", "rationale", "archetype"],
                 additionalProperties: false,
               },
             },
@@ -363,17 +381,25 @@ export async function generateProductHooks(args: {
 
   const baseUser = {
     product_name: product.name,
-    product_description: (product.description || "").slice(0, 1200),
+    product_description: desc.slice(0, 1200),
     product_category: product.category || dna.label,
     product_features: product.features || [],
-    product_benefits: product.benefits || [],
+    product_benefits: benefits,
     niche_key: niche,
     niche_label: dna.label,
     must_avoid_words: banned,
     encouraged_concepts: positive,
+    archetype_definitions: {
+      problem: "Name a pain the buyer wants to solve, framed for THIS product.",
+      benefit: "Lead with the strongest concrete benefit of THIS product.",
+      curiosity: "Open an information loop the pin image will resolve.",
+      emotional: "Evoke the feeling of using this product with their pet.",
+      outcome: "Describe the after-state once this product is in their home.",
+    },
     rules: {
       max_chars: 42,
-      count: candidateCount,
+      count: 5,
+      one_per_archetype: true,
       must_describe_this_product: true,
       must_not_reference_other_categories: true,
       no_medical_claims: true,
@@ -383,11 +409,10 @@ export async function generateProductHooks(args: {
   const accepted: ProductHook[] = [];
   let rejectionFeedback: Array<{ headline: string; reason: string }> = [];
 
-  for (let attempt = 0; attempt <= maxRetries && accepted.length < candidateCount; attempt++) {
-    const needed = candidateCount - accepted.length;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (accepted.length >= 5) break;
     const userPayload = {
       ...baseUser,
-      rules: { ...baseUser.rules, count: needed },
       previous_rejections: rejectionFeedback,
     };
 
@@ -406,7 +431,7 @@ export async function generateProductHooks(args: {
             {
               role: "user",
               content:
-                `Write ${needed} Pinterest headlines for THIS product only. ` +
+                `Write 5 Pinterest headlines for THIS product only — one per archetype. ` +
                 `Each headline must be obviously about this product's function, not about generic pet life.\n\n` +
                 JSON.stringify(userPayload, null, 2),
             },
@@ -430,18 +455,17 @@ export async function generateProductHooks(args: {
     }
 
     rejectionFeedback = [];
+    const seenArchetype = new Set(accepted.map((a) => a.archetype));
     for (const h of raw) {
       const headline = String(h?.headline || "").replace(/[.\s]+$/g, "").slice(0, 42).trim();
+      const arche = String(h?.archetype || "").toLowerCase() as HookArchetype;
       if (!headline) continue;
-      // De-duplicate within the batch
+      if (!ARCHETYPES.includes(arche)) continue;
+      if (seenArchetype.has(arche)) continue;
       if (accepted.some((a) => a.headline.toLowerCase() === headline.toLowerCase())) continue;
       const { score, banned: hit } = scoreHookRelevance(headline, product, niche);
       if (hit) {
         rejectionFeedback.push({ headline, reason: `contains banned term '${hit}' for niche '${niche}'` });
-        continue;
-      }
-      if (score < minRelevance) {
-        rejectionFeedback.push({ headline, reason: `relevance ${score}<${minRelevance}; add product-specific language` });
         continue;
       }
       accepted.push({
@@ -449,17 +473,21 @@ export async function generateProductHooks(args: {
         rationale: String(h?.rationale || "").slice(0, 240),
         source: "ai_product",
         relevance: score,
+        archetype: arche,
       });
-      if (accepted.length >= candidateCount) break;
+      seenArchetype.add(arche);
+      if (accepted.length >= 5) break;
     }
   }
 
-  // Sort by relevance descending so the top `count` are the strongest hooks.
-  accepted.sort((a, b) => b.relevance - a.relevance);
-
-  if (accepted.length < count) {
-    const filler = fallbackHooks(product, dna, count - accepted.length);
-    accepted.push(...filler);
+  // SPEC §3 + §4: keep the highest-scoring AI candidate regardless of score,
+  // persist its real score, and replay it across every requested brief slot
+  // so the product gets ONE final winning hook. No bank top-up.
+  if (accepted.length === 0) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
   }
-  return accepted.slice(0, count);
+  accepted.sort((a, b) => b.relevance - a.relevance);
+  const winner = accepted[0];
+  return Array.from({ length: count }, () => ({ ...winner }));
 }
