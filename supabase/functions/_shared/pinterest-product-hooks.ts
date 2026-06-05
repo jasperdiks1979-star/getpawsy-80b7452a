@@ -499,6 +499,12 @@ export async function generateProductHooks(args: {
 
     rejectionFeedback = [];
     const seenArchetype = new Set(accepted.map((a) => a.archetype));
+    // V2.2 hard validation: products whose title screams "containment" must
+    // NEVER receive travel/carrier/transport phrasing.
+    const titleLc = (product.name || "").toLowerCase();
+    const isContainmentProduct = /(playpen|enclosure|catio|cat tent|cat pen|containment)/.test(titleLc)
+      || (/(pen|tent)\b/.test(titleLc) && /(cat|kitten)/.test(titleLc));
+    const TRAVEL_BAN_RE = /(travel|carrier|trip|transport|stroller|on the go|road trip)/i;
     for (const h of raw) {
       const headline = String(h?.headline || "").replace(/[.\s]+$/g, "").slice(0, 42).trim();
       const arche = String(h?.archetype || "").toLowerCase() as HookArchetype;
@@ -506,6 +512,13 @@ export async function generateProductHooks(args: {
       if (!ARCHETYPES.includes(arche)) continue;
       if (seenArchetype.has(arche)) continue;
       if (accepted.some((a) => a.headline.toLowerCase() === headline.toLowerCase())) continue;
+      if (isContainmentProduct && TRAVEL_BAN_RE.test(headline)) {
+        rejectionFeedback.push({
+          headline,
+          reason: "containment product cannot use travel/carrier/trip/transport phrasing — rewrite around safe/contained indoor or patio space",
+        });
+        continue;
+      }
       const { score, banned: hit } = scoreHookRelevance(headline, product, niche);
       if (hit) {
         rejectionFeedback.push({ headline, reason: `contains banned term '${hit}' for niche '${niche}'` });
