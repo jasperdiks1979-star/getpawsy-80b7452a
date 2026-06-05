@@ -38,6 +38,7 @@ import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-q
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
+import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -689,6 +690,24 @@ async function uploadAndInsertDraft(
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const imageUrl = pub.publicUrl;
 
+  // Compute deterministic image hashes so the visual-review UI can dedupe.
+  let imageHash: string | null = null;
+  let pinPhash: string | null = null;
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    imageHash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 32);
+  } catch (e) {
+    console.warn("[creative-director] sha256 failed", (e as Error).message);
+  }
+  try {
+    pinPhash = await computePhashFromBytes(bytes);
+  } catch (e) {
+    console.warn("[creative-director] phash failed", (e as Error).message);
+  }
+
   const patternTag = brief.pattern_id ? `_${brief.pattern_id.slice(0, 12)}` : "";
   const variant = `cd_${niche}${patternTag}_${stamp}_${brief.id.slice(-6)}`;
 
@@ -722,6 +741,8 @@ async function uploadAndInsertDraft(
     hook_group: brief.pattern_id || niche,
     category_key: niche,
     overlay_text: `${brief.headline} • ${brief.cta}`,
+    image_hash: imageHash,
+    pin_image_phash: pinPhash,
     meta: intelligence
       ? {
           intelligence: {
@@ -732,6 +753,9 @@ async function uploadAndInsertDraft(
               pin_mode: brief.pin_mode ?? null,
             rationale: intelligence.rationale ?? null,
           },
+          emotional_hook: brief.emotional_hook,
+          headline: brief.headline,
+          cta: brief.cta,
         }
       : undefined,
   };

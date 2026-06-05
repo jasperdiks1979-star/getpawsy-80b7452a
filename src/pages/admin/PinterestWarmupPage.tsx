@@ -54,6 +54,7 @@ export default function PinterestWarmupPage() {
   const [running, setRunning] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [imgInfo, setImgInfo] = useState<Record<string, ImgInfo>>({});
+  const [regenProgress, setRegenProgress] = useState<{ done: number; total: number } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -62,7 +63,7 @@ export default function PinterestWarmupPage() {
       .select(
         "id,product_id,product_slug,product_name,category_key,pin_variant,pin_title,pin_description,pin_image_url,destination_link,board_name,status,scheduled_at,hook_group,content_type,approved_at,rejection_reason,image_hash,pin_image_phash,meta"
       )
-      .like("idempotency_key", "warmup30:%")
+      .or("idempotency_key.like.warmup30:%,idempotency_key.like.warmup30:%:r%")
       .order("scheduled_at", { ascending: true, nullsFirst: false })
       .limit(1000);
     setRows((data || []) as Row[]);
@@ -147,13 +148,51 @@ export default function PinterestWarmupPage() {
   const reopen = (ids: string[]) =>
     update(ids, { status: STATUS_DRAFT, approved_at: null, rejection_reason: null });
 
-  const regenerateOverusedHooks = async () => {
+  const runRegenerate = async (scope: "all" | "overused", ids?: string[]) => {
+    setBusy(`regen:${scope}`);
+    setRegenProgress({ done: 0, total: 0 });
+    try {
+      let safety = 60; // max 60 batches (≈180 products) per click
+      let totalDone = 0;
+      let totalSeen = 0;
+      while (safety-- > 0) {
+        const { data, error } = await supabase.functions.invoke("pinterest-warmup-regenerate", {
+          body: { scope, ids, batchSize: 3 },
+        });
+        if (error) throw error;
+        const j = data as any;
+        const processed = Number(j?.processed || 0);
+        const remaining = Number(j?.remainingProducts || 0);
+        totalDone += processed;
+        totalSeen = totalDone + remaining;
+        setRegenProgress({ done: totalDone, total: totalSeen });
+        if (j?.failed?.length) {
+          console.warn("[warmup-regen] failed", j.failed);
+        }
+        if (processed === 0 || remaining === 0) break;
+      }
+      toast.success(`Regenerated ${totalDone} product${totalDone === 1 ? "" : "s"} with fresh AI hooks + images`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Regeneration failed");
+    } finally {
+      setBusy(null);
+      setRegenProgress(null);
+    }
+  };
+
+  const regenerateOverusedHooks = () => {
     const overused = [...analytics.hookCount.entries()].filter(([, n]) => n > 3).map(([k]) => k);
-    if (!overused.length) return toast.info("No overused hooks (>3) found");
-    const ids = rows.filter((r) => overused.includes((r.hook_group || "").trim().toLowerCase()) && r.status === STATUS_DRAFT).map((r) => r.id);
-    if (!ids.length) return toast.info("Nothing to regenerate");
-    await reject(ids, "overused_hook_regen");
-    toast.message("Rejected overused-hook drafts. Click 'Build / Refresh Drafts' to regenerate.");
+    if (!overused.length) {
+      toast.info("No overused hooks (>3) found");
+      return;
+    }
+    return runRegenerate("overused");
+  };
+
+  const regenerateAll = () => {
+    if (!confirm("Regenerate ALL warmup drafts with AI hooks + images? This calls the Creative Director for every product and may take several minutes.")) return;
+    return runRegenerate("all");
   };
 
   // ---------- partitions ----------
@@ -193,12 +232,28 @@ export default function PinterestWarmupPage() {
             <Wand2 className="h-4 w-4 mr-2" />
             Regenerate overused hooks
           </Button>
+          <Button variant="outline" size="sm" onClick={regenerateAll} disabled={!!busy}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Regenerate ALL (AI)
+          </Button>
           <Button onClick={run} disabled={running}>
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
             Build / Refresh Drafts
           </Button>
         </div>
       </header>
+
+      {regenProgress && (
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="text-sm">
+              Regenerating with AI Creative Director — {regenProgress.done}
+              {regenProgress.total ? ` / ${regenProgress.total}` : ""} products done
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
