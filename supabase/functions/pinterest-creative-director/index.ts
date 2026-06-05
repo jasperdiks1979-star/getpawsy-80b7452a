@@ -129,6 +129,10 @@ interface SceneBrief {
   strategy_rationale?: string;
   retry_reasons?: string[];
   pin_mode?: PinModeKey;
+  /** Where the headline came from: 'ai_product' (per-product AI) or 'fallback_bank'. */
+  hook_source?: ProductHook["source"];
+  /** Relevance score (0-100) of the headline vs. the product. */
+  hook_relevance?: number;
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
