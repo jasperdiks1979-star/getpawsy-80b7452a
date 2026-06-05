@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BUILD_ID } from '@/lib/boot-diagnostics';
 import { useState, useEffect } from 'react';
+import { AiBalanceBanner } from '@/components/admin/AiBalanceBanner';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -204,6 +205,7 @@ export function AdminLayout() {
 
           {/* Main content — admin pages render here via <Outlet /> */}
           <main className="flex-1 overflow-auto">
+            <AiBalanceBanner />
             <Outlet />
           </main>
         </div>
