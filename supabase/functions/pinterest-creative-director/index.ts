@@ -37,7 +37,9 @@ import {
 import {
   generateProductHooks,
   scoreHookRelevance,
+  deriveBenefits,
   type ProductHook,
+  type HookArchetype,
 } from "../_shared/pinterest-product-hooks.ts";
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
@@ -97,6 +99,21 @@ function containsBanned(s: string, banned: string[]): string | null {
   return null;
 }
 
+/**
+ * SPEC §3 — persist a predicted CTR per draft. Lightweight heuristic that
+ * blends quality score (0-100) and hook relevance (0-100) into a 0-5%
+ * range. Real Pinterest CTR rolls up nightly via the winner pipeline.
+ */
+function predictCtr(brief: SceneBrief, scores: Record<string, number>): number {
+  const q = Number(scores?.total ?? 80);
+  const r = Number(brief.hook_relevance ?? 80);
+  const base = 0.012 + (q / 100) * 0.018 + (r / 100) * 0.012; // 1.2% – 4.2%
+  const archBoost: Record<string, number> = {
+    problem: 0.003, outcome: 0.002, benefit: 0.002, curiosity: 0.0015, emotional: 0.001,
+  };
+  return Math.round((base + (archBoost[brief.hook_archetype ?? ""] ?? 0)) * 10000) / 100;
+}
+
 // Decode base64 (data URL or raw) into Uint8Array
 function decodeBase64Image(input: string): { bytes: Uint8Array; mime: string } {
   let mime = "image/png";
@@ -133,6 +150,9 @@ interface SceneBrief {
   hook_source?: ProductHook["source"];
   /** Relevance score (0-100) of the headline vs. the product. */
   hook_relevance?: number;
+  hook_archetype?: HookArchetype;
+  product_benefits?: string[];
+  product_features?: string[];
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
@@ -232,19 +252,19 @@ async function generateBriefs(
     .map((s) => (s ?? "").toString().trim())
     .filter((s) => s.length > 0);
 
+  const hookInput = {
+    name: product.name,
+    description: product.description ?? null,
+    category: product.category ?? dna.label,
+    features: featureList,
+    benefits: benefitList,
+  };
+  const derivedBenefits = benefitList.length ? benefitList : deriveBenefits(hookInput, dna.niche_key);
   const productHooks = await generateProductHooks({
-    product: {
-      name: product.name,
-      description: product.description ?? null,
-      category: product.category ?? dna.label,
-      features: featureList,
-      benefits: benefitList,
-    },
+    product: { ...hookInput, benefits: derivedBenefits },
     niche: dna.niche_key,
     dna,
     count,
-    candidateCount: 5,
-    minRelevance: 90,
   });
 
   // Pin-mode plan per brief (rotates through niche affinity for variety).
@@ -266,6 +286,9 @@ async function generateBriefs(
   const user = {
     product_name: product.name,
     product_summary: safeText(product.description || "", 600),
+    product_features: featureList,
+    product_benefits: derivedBenefits,
+    product_category: product.category ?? dna.label,
     niche: dna.niche_key,
     environment: dna.environment,
     light: dna.light,
@@ -442,6 +465,9 @@ async function generateBriefs(
     pin_mode: plans[i]?.pin_mode,
     hook_source: productHooks[i]?.source ?? "fallback_bank",
     hook_relevance: productHooks[i]?.relevance,
+    hook_archetype: productHooks[i]?.archetype,
+    product_benefits: derivedBenefits,
+    product_features: featureList,
   }));
 }
 
@@ -490,6 +516,15 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     : styleSuffix;
 
   const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
+  // SPEC §6 — Image grounding: explicitly inject product truth into the
+  // image prompt so the visual model can't drift to generic stock scenes.
+  const benefitLine = (brief.product_benefits || []).slice(0, 4).join(", ");
+  const featureLine = (brief.product_features || []).slice(0, 4).join(", ");
+  const groundedPrompt =
+    `Product: ${brief.subject || ""}. ` +
+    (benefitLine ? `Benefits to show: ${benefitLine}. ` : "") +
+    (featureLine ? `Key features: ${featureLine}. ` : "") +
+    prompt;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -499,7 +534,7 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     },
     body: JSON.stringify({
       model: IMAGE_MODEL,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: groundedPrompt }],
       modalities: ["image", "text"],
     }),
   });
@@ -812,6 +847,12 @@ async function uploadAndInsertDraft(
             rationale: intelligence.rationale ?? null,
             hook_source: brief.hook_source ?? "fallback_bank",
             hook_relevance: brief.hook_relevance ?? null,
+            hook_archetype: brief.hook_archetype ?? null,
+            niche_key: niche,
+            predicted_ctr: predictCtr(brief, intelligence.scores),
+            product_benefits: brief.product_benefits ?? null,
+            product_features: brief.product_features ?? null,
+            engine_version: "v2.1",
           },
           emotional_hook: brief.emotional_hook,
           headline: brief.headline,

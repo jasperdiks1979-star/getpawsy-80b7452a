@@ -24,7 +24,11 @@ export interface ProductHook {
   rationale: string;         // why this hook fits the product
   source: "ai_product" | "fallback_bank";
   relevance: number;         // 0-100
+  archetype?: HookArchetype;
 }
+
+export type HookArchetype = "problem" | "benefit" | "curiosity" | "emotional" | "outcome";
+export const ARCHETYPES: HookArchetype[] = ["problem", "benefit", "curiosity", "emotional", "outcome"];
 
 export interface HookGenInput {
   name: string;
@@ -226,6 +230,69 @@ function fallbackHooks(product: HookGenInput, dna: StyleDNA, count: number): Pro
 }
 
 /**
+ * Extract benefits from a product when the catalog row doesn't expose explicit
+ * benefit fields. Looks at title + description for benefit-shaped phrases and
+ * falls back to niche-templated outcomes.
+ */
+export function deriveBenefits(product: HookGenInput, niche: NicheKey): string[] {
+  const explicit = (product.benefits || []).map((b) => (b || "").trim()).filter(Boolean);
+  if (explicit.length) return explicit.slice(0, 5);
+  const blob = `${product.name || ""}. ${product.description || ""}`.toLowerCase();
+  const out: string[] = [];
+  const patterns: Array<[RegExp, string]> = [
+    [/digest|tummy|gut|probiotic/, "digestive support"],
+    [/calm|anxiety|relax/, "calmer behavior"],
+    [/joint|hip|mobility/, "joint comfort"],
+    [/immune|vitamin|wellness/, "immune support"],
+    [/sleep|rest|orthopedic|memory foam/, "deeper sleep"],
+    [/hydrat|fountain|water flow|drink/, "fresh hydration"],
+    [/odor|smell|litter/, "odor-free home"],
+    [/scratch|sisal|claw/, "saves the furniture"],
+    [/play|toy|interactive|chase|fetch/, "active play"],
+    [/groom|brush|shed|coat/, "clean coat"],
+    [/dental|teeth|breath/, "fresher breath"],
+    [/train|behave|focus|command/, "better focus"],
+    [/walk|leash|harness|collar/, "easier walks"],
+    [/feed|portion|meal/, "tidy mealtimes"],
+    [/travel|carrier|stroller|car/, "stress-free travel"],
+    [/outdoor|weather|shelter|house/, "weatherproof shelter"],
+    [/cozy|warm|nest|cuddle/, "cozy comfort"],
+    [/safe|durable|sturdy|reinforced/, "built to last"],
+    [/led|night|visib|reflect/, "night-time visibility"],
+  ];
+  for (const [re, label] of patterns) if (re.test(blob) && !out.includes(label)) out.push(label);
+  if (out.length) return out.slice(0, 5);
+  const nicheDefaults: Partial<Record<NicheKey, string[]>> = {
+    supplement: ["digestive support", "happier calmer pet", "daily wellness"],
+    treats: ["training reward", "tail wags", "tasty bite"],
+    interactive_toy: ["active play", "less boredom", "more energy out"],
+    cat_litter: ["odor-free home", "less scooping", "tidy litter area"],
+    cat_fountain: ["fresh circulating water", "more hydration", "cooler summer drink"],
+    cat_tree: ["climb and perch", "saves the furniture", "cozy lookout"],
+    cat_scratcher: ["saves the furniture", "healthy claws", "satisfying scratch"],
+    cat_bed: ["sunny-spot naps", "cozy nook", "deeper rest"],
+    dog_bed: ["deeper sleep", "joint support", "quiet corner"],
+    calming_bed: ["calmer nights", "anxiety relief", "settled sleep"],
+    dog_harness: ["easier walks", "no pulling", "trail-ready fit"],
+    dog_collar: ["safe walks", "comfortable fit", "stylish look"],
+    dog_carrier: ["stress-free travel", "secure ride", "easy outings"],
+    cat_carrier: ["calmer vet trips", "secure ride", "easy outings"],
+    feeder: ["tidy mealtimes", "portion control", "automatic feeding"],
+    bowl_station: ["tidy mealtimes", "kitchen looks neater", "no spills"],
+    grooming: ["clean coat", "less shedding", "softer fur"],
+    dental_care: ["fresher breath", "cleaner teeth", "healthier mouth"],
+    dog_training: ["better focus", "calmer routine", "well-behaved walks"],
+    outdoor_house: ["weatherproof shelter", "cozy outdoor spot", "dry through storms"],
+    potty_training: ["indoor potty", "tidy floors", "fewer accidents"],
+    pet_camera: ["peace of mind", "watch from anywhere", "talk to your pet"],
+    dog_clothing: ["warm and dry", "stylish outfit", "all-weather wear"],
+    dog_car: ["clean car seats", "secure trips", "less mess after rides"],
+    generic_pet: ["happier pet", "easier routine", "premium quality"],
+  };
+  return (nicheDefaults[niche] || nicheDefaults.generic_pet)!.slice(0, 3);
+}
+
+/**
  * Generate N product-truthful Pinterest hooks for `product` in `niche`.
  * Each hook is validated against `NICHE_BANNED_HOOK_TERMS[niche]` and scored
  * for semantic relevance. Anything below `minRelevance` (default 80) is
@@ -243,13 +310,26 @@ export async function generateProductHooks(args: {
   candidateCount?: number;
 }): Promise<ProductHook[]> {
   const { product, niche, dna, count } = args;
-  const minRelevance = args.minRelevance ?? 90;
-  const maxRetries = args.maxRetries ?? 2;
-  // Always request at least 5 candidates per product so we can pick the
-  // top-scoring N. The caller still gets back exactly `count` hooks.
-  const candidateCount = Math.max(args.candidateCount ?? 5, count);
+  const maxRetries = args.maxRetries ?? 1;
 
-  if (!LOVABLE_API_KEY) return fallbackHooks(product, dna, count);
+  // SPEC §1 + §4 + §5: fallback bank is permitted ONLY when the product is
+  // missing the inputs we need to ground a hook in product truth. We never
+  // top-up to reach `count` from the bank — one product = one winning hook
+  // that we repeat across all requested briefs.
+  const desc = (product.description || "").trim();
+  if (!product.name || desc.length < 20) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
+  }
+  if (!LOVABLE_API_KEY) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
+  }
+
+  // Auto-derive benefits if the catalog row doesn't carry them.
+  const benefits = (product.benefits && product.benefits.length)
+    ? product.benefits
+    : deriveBenefits(product, niche);
 
   const banned = NICHE_BANNED_HOOK_TERMS[niche] || [];
   const positive = NICHE_POSITIVE_LEX[niche] || [];
@@ -260,6 +340,7 @@ export async function generateProductHooks(args: {
     "Hooks MUST be grounded in the product's name, description, category, and stated benefits.",
     "Never reuse hooks from other product categories (no toy phrasing on supplements, no supplement phrasing on toys, etc.).",
     "Each hook ≤42 characters, no emojis, no hashtags, no trailing punctuation.",
+    "Generate EXACTLY one hook per archetype: problem, benefit, curiosity, emotional, outcome.",
     "Voice: confident, US-native, premium but warm. No clickbait, no exaggerated claims, no medical/legal claims.",
   ].join(" ");
 
@@ -268,21 +349,25 @@ export async function generateProductHooks(args: {
       type: "function",
       function: {
         name: "product_hooks",
-        description: "Return N product-truthful Pinterest headlines.",
+        description: "Return 5 product-truthful Pinterest headlines — one per archetype.",
         parameters: {
           type: "object",
           properties: {
             hooks: {
               type: "array",
-              minItems: candidateCount,
-              maxItems: candidateCount + 2,
+              minItems: 5,
+              maxItems: 5,
               items: {
                 type: "object",
                 properties: {
                   headline: { type: "string", maxLength: 42 },
                   rationale: { type: "string" },
+                  archetype: {
+                    type: "string",
+                    enum: ARCHETYPES,
+                  },
                 },
-                required: ["headline", "rationale"],
+                required: ["headline", "rationale", "archetype"],
                 additionalProperties: false,
               },
             },
@@ -296,17 +381,25 @@ export async function generateProductHooks(args: {
 
   const baseUser = {
     product_name: product.name,
-    product_description: (product.description || "").slice(0, 1200),
+    product_description: desc.slice(0, 1200),
     product_category: product.category || dna.label,
     product_features: product.features || [],
-    product_benefits: product.benefits || [],
+    product_benefits: benefits,
     niche_key: niche,
     niche_label: dna.label,
     must_avoid_words: banned,
     encouraged_concepts: positive,
+    archetype_definitions: {
+      problem: "Name a pain the buyer wants to solve, framed for THIS product.",
+      benefit: "Lead with the strongest concrete benefit of THIS product.",
+      curiosity: "Open an information loop the pin image will resolve.",
+      emotional: "Evoke the feeling of using this product with their pet.",
+      outcome: "Describe the after-state once this product is in their home.",
+    },
     rules: {
       max_chars: 42,
-      count: candidateCount,
+      count: 5,
+      one_per_archetype: true,
       must_describe_this_product: true,
       must_not_reference_other_categories: true,
       no_medical_claims: true,
@@ -316,11 +409,10 @@ export async function generateProductHooks(args: {
   const accepted: ProductHook[] = [];
   let rejectionFeedback: Array<{ headline: string; reason: string }> = [];
 
-  for (let attempt = 0; attempt <= maxRetries && accepted.length < candidateCount; attempt++) {
-    const needed = candidateCount - accepted.length;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (accepted.length >= 5) break;
     const userPayload = {
       ...baseUser,
-      rules: { ...baseUser.rules, count: needed },
       previous_rejections: rejectionFeedback,
     };
 
@@ -339,7 +431,7 @@ export async function generateProductHooks(args: {
             {
               role: "user",
               content:
-                `Write ${needed} Pinterest headlines for THIS product only. ` +
+                `Write 5 Pinterest headlines for THIS product only — one per archetype. ` +
                 `Each headline must be obviously about this product's function, not about generic pet life.\n\n` +
                 JSON.stringify(userPayload, null, 2),
             },
@@ -363,18 +455,17 @@ export async function generateProductHooks(args: {
     }
 
     rejectionFeedback = [];
+    const seenArchetype = new Set(accepted.map((a) => a.archetype));
     for (const h of raw) {
       const headline = String(h?.headline || "").replace(/[.\s]+$/g, "").slice(0, 42).trim();
+      const arche = String(h?.archetype || "").toLowerCase() as HookArchetype;
       if (!headline) continue;
-      // De-duplicate within the batch
+      if (!ARCHETYPES.includes(arche)) continue;
+      if (seenArchetype.has(arche)) continue;
       if (accepted.some((a) => a.headline.toLowerCase() === headline.toLowerCase())) continue;
       const { score, banned: hit } = scoreHookRelevance(headline, product, niche);
       if (hit) {
         rejectionFeedback.push({ headline, reason: `contains banned term '${hit}' for niche '${niche}'` });
-        continue;
-      }
-      if (score < minRelevance) {
-        rejectionFeedback.push({ headline, reason: `relevance ${score}<${minRelevance}; add product-specific language` });
         continue;
       }
       accepted.push({
@@ -382,17 +473,21 @@ export async function generateProductHooks(args: {
         rationale: String(h?.rationale || "").slice(0, 240),
         source: "ai_product",
         relevance: score,
+        archetype: arche,
       });
-      if (accepted.length >= candidateCount) break;
+      seenArchetype.add(arche);
+      if (accepted.length >= 5) break;
     }
   }
 
-  // Sort by relevance descending so the top `count` are the strongest hooks.
-  accepted.sort((a, b) => b.relevance - a.relevance);
-
-  if (accepted.length < count) {
-    const filler = fallbackHooks(product, dna, count - accepted.length);
-    accepted.push(...filler);
+  // SPEC §3 + §4: keep the highest-scoring AI candidate regardless of score,
+  // persist its real score, and replay it across every requested brief slot
+  // so the product gets ONE final winning hook. No bank top-up.
+  if (accepted.length === 0) {
+    const fb = fallbackHooks(product, dna, 1);
+    return Array.from({ length: count }, () => ({ ...fb[0] }));
   }
-  return accepted.slice(0, count);
+  accepted.sort((a, b) => b.relevance - a.relevance);
+  const winner = accepted[0];
+  return Array.from({ length: count }, () => ({ ...winner }));
 }
