@@ -237,19 +237,19 @@ async function generateBriefs(
     .map((s) => (s ?? "").toString().trim())
     .filter((s) => s.length > 0);
 
+  const hookInput = {
+    name: product.name,
+    description: product.description ?? null,
+    category: product.category ?? dna.label,
+    features: featureList,
+    benefits: benefitList,
+  };
+  const derivedBenefits = benefitList.length ? benefitList : deriveBenefits(hookInput, dna.niche_key);
   const productHooks = await generateProductHooks({
-    product: {
-      name: product.name,
-      description: product.description ?? null,
-      category: product.category ?? dna.label,
-      features: featureList,
-      benefits: benefitList,
-    },
+    product: { ...hookInput, benefits: derivedBenefits },
     niche: dna.niche_key,
     dna,
     count,
-    candidateCount: 5,
-    minRelevance: 90,
   });
 
   // Pin-mode plan per brief (rotates through niche affinity for variety).
