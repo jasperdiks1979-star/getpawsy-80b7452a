@@ -699,7 +699,10 @@ Deno.serve(async (req) => {
       }
 
       // 🛡️ Pre-publish QA gate — last line of defense before Pinterest API call.
-      const qaReasons = runPinQa(pin);
+      // Propagate runtime Domination Mode flag onto the pin so the QA gate's
+      // allowlist + hook-bank relaxations apply to catalog-wide v2.2 rollout.
+      (pin as any).domination_mode = dominationActive;
+      const qaReasons = runPinQa(pin as any);
       if (qaReasons.length > 0) {
         const reasonStr = qaReasons.join(",");
         console.warn(`[cron] Pin ${pin.id} blocked by QA gate: ${reasonStr}`);
