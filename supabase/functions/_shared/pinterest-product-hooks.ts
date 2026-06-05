@@ -24,7 +24,11 @@ export interface ProductHook {
   rationale: string;         // why this hook fits the product
   source: "ai_product" | "fallback_bank";
   relevance: number;         // 0-100
+  archetype?: HookArchetype;
 }
+
+export type HookArchetype = "problem" | "benefit" | "curiosity" | "emotional" | "outcome";
+export const ARCHETYPES: HookArchetype[] = ["problem", "benefit", "curiosity", "emotional", "outcome"];
 
 export interface HookGenInput {
   name: string;
