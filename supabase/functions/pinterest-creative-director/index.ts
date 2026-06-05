@@ -37,7 +37,9 @@ import {
 import {
   generateProductHooks,
   scoreHookRelevance,
+  deriveBenefits,
   type ProductHook,
+  type HookArchetype,
 } from "../_shared/pinterest-product-hooks.ts";
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
