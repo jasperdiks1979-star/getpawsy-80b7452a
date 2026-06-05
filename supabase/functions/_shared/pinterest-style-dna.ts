@@ -624,11 +624,22 @@ export function detectNiche(input: {
 
   if (has("scratcher", "scratching post", "sisal post", "cardboard scratcher")) return "cat_scratcher";
 
+  // CAT enclosures / playpens / tents MUST route to cat_enclosure BEFORE
+  // the carrier or outdoor_house branches — otherwise they receive
+  // travel/transport phrasing that fails relevance and mismatch checks.
+  if (
+    has("cat playpen", "cat enclosure", "cat tent", "cat pen", "cat containment",
+        "catio", "outdoor cat enclosure") ||
+    (has("playpen", "enclosure", "pen", "tent", "containment") && has("cat", "kitten"))
+  ) {
+    return "cat_enclosure";
+  }
+
   if (has("stroller", "bike trailer", "pet wagon", "pet carrier") && has("dog", "pet")) return "dog_carrier";
   if (has("carrier", "tote") && has("cat", "kitten")) return "cat_carrier";
   if (has("backpack carrier", "sling carrier")) return "dog_carrier";
 
-  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "outdoor cat enclosure", "catio", "playpen", "crate", "cage", "gate", "barrier") )
+  if (has("kennel", "outdoor house", "dog house", "cat house", "pet enclosure", "outdoor enclosure", "playpen", "crate", "cage", "gate", "barrier") )
     return "outdoor_house";
 
   if (has("gps", "tracker", "wireless fence", "shock collar", "training collar", "bark collar", "remote trainer") )
