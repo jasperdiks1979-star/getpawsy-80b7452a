@@ -169,7 +169,9 @@ Deno.serve(async (req) => {
         hashtags: [p.category.replace(/[^a-z]+/gi, ""), "PetParents", "USA", "PetCare"],
         priority: "high",
         status: "draft",
-        content_type: variantKind === "idea" ? "idea_pin" : "product",
+        // content_type CHECK only allows guide|comparison|lifestyle|product.
+        // We tag idea-pin variants as "lifestyle" and keep variant_kind in meta.
+        content_type: variantKind === "idea" ? "lifestyle" : "product",
         hook_group: hook,
         overlay_text: cta,
         us_audience_score: 0.85,
