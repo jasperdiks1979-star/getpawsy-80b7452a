@@ -554,6 +554,32 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     compositions: ["editorial wide shot", "intimate eye-level lifestyle"],
     cta_bank: ["Shop now", "See it", "Learn more"],
   },
+
+  supplement: {
+    niche_key: "supplement",
+    label: "Supplement / Chews / Vitamins",
+    environment:
+      "clean kitchen counter or styled wellness flatlay, oak surface, ceramic dish with a few chews, linen napkin, plant nearby",
+    light: "bright soft daylight, gentle reflections",
+    mood: "wellness, daily ritual, trustworthy, gentle",
+    typography: "serif elegant",
+    hook_bank: [
+      "daily support they actually enjoy",
+      "gentle digestive support",
+      "a calmer tummy, day after day",
+      "the chew that fits the routine",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: [
+      "calm dog or cat sitting near a small ceramic dish of soft chews",
+      "owner hand-feeding one chew to an attentive pet",
+    ],
+    compositions: [
+      "styled kitchen flatlay with chews, dish, and label-free packaging shape",
+      "intimate hand-and-pet moment with one chew being offered",
+    ],
+    cta_bank: ["See the chew", "Shop wellness", "Daily support"],
+  },
 };
 
 /** Heuristic niche detection from product name + slug + category. */
