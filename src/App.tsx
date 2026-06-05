@@ -514,6 +514,11 @@ const TrendingProducts = lazyWithRetry(() => import("./pages/TrendingProducts"))
 
 // SEO Traffic Machine pages
 const BestCatLitterBox2026 = lazyWithRetry(() => import("./pages/seo/BestCatLitterBox2026"));
+const BestDogToysLander = lazyWithRetry(() => import("./pages/seo/BestCategoryLander").then(m => ({ default: m.BestDogToysLander })));
+const BestCatTreesLander = lazyWithRetry(() => import("./pages/seo/BestCategoryLander").then(m => ({ default: m.BestCatTreesLander })));
+const BestCatLitterBoxesLander = lazyWithRetry(() => import("./pages/seo/BestCategoryLander").then(m => ({ default: m.BestCatLitterBoxesLander })));
+const BestDogBedsLander = lazyWithRetry(() => import("./pages/seo/BestCategoryLander").then(m => ({ default: m.BestDogBedsLander })));
+const BestDogCollarsLander = lazyWithRetry(() => import("./pages/seo/BestCategoryLander").then(m => ({ default: m.BestDogCollarsLander })));
 const BestDogCarSeatSafety = lazyWithRetry(() => import("./pages/seo/BestDogCarSeatSafety"));
 const BestInteractiveCatToys = lazyWithRetry(() => import("./pages/seo/BestInteractiveCatToys"));
 const BestDogAnxietySolutions = lazyWithRetry(() => import("./pages/seo/BestDogAnxietySolutions"));
@@ -1132,6 +1137,26 @@ const App = () => {
                                 <BestCatLitterBox2026 />
                               </Suspense>
                             }
+                          />
+                          <Route
+                            path="/best-dog-toys"
+                            element={<Suspense fallback={<RouteLoader />}><BestDogToysLander /></Suspense>}
+                          />
+                          <Route
+                            path="/best-cat-trees"
+                            element={<Suspense fallback={<RouteLoader />}><BestCatTreesLander /></Suspense>}
+                          />
+                          <Route
+                            path="/best-cat-litter-boxes"
+                            element={<Suspense fallback={<RouteLoader />}><BestCatLitterBoxesLander /></Suspense>}
+                          />
+                          <Route
+                            path="/best-dog-beds"
+                            element={<Suspense fallback={<RouteLoader />}><BestDogBedsLander /></Suspense>}
+                          />
+                          <Route
+                            path="/best-dog-collars"
+                            element={<Suspense fallback={<RouteLoader />}><BestDogCollarsLander /></Suspense>}
                           />
                           <Route
                             path="/best-dog-car-seat-safety"
