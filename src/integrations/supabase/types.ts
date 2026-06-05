@@ -5542,6 +5542,45 @@ export type Database = {
           },
         ]
       }
+      dynamic_collections: {
+        Row: {
+          created_at: string
+          criteria: Json
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          product_count: number
+          product_ids: string[]
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          product_count?: number
+          product_ids?: string[]
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          product_count?: number
+          product_ids?: string[]
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_campaign_events: {
         Row: {
           campaign_id: string
