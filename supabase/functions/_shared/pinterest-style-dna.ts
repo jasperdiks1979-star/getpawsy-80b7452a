@@ -34,6 +34,7 @@ export type NicheKey =
   | "pet_camera"
   | "dental_care"
   | "supplement"
+  | "cat_enclosure"
   | "generic_pet";
 
 export interface StyleDNA {
