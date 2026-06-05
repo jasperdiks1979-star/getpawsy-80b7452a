@@ -581,6 +581,31 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     ],
     cta_bank: ["See the chew", "Shop wellness", "Daily support"],
   },
+
+  cat_enclosure: {
+    niche_key: "cat_enclosure",
+    label: "Cat Playpen / Enclosure / Catio / Tent",
+    environment:
+      "sunlit patio, balcony or living-room corner, mesh-paneled enclosure with a curious cat inside, indoor plants, soft rug",
+    light: "soft daylight through a window or patio",
+    mood: "safe, contained, calm, curious, private",
+    typography: "serif refined",
+    hook_bank: [
+      "safe outdoor time, indoors",
+      "her own private cat space",
+      "contained, curious, calm",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: [
+      "cat lounging or playing inside a mesh playpen on a sunlit patio",
+      "cat watching the world from a window-side enclosure",
+    ],
+    compositions: [
+      "wide editorial of enclosure with cat inside",
+      "intimate eye-level shot through the mesh panel",
+    ],
+    cta_bank: ["Shop the enclosure", "See sizes", "Build her space"],
+  },
 };
 
 /** Heuristic niche detection from product name + slug + category. */
