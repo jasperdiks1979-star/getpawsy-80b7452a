@@ -15008,6 +15008,7 @@ export type Database = {
           description: string | null
           description_bullets: string[] | null
           description_optimized_at: string | null
+          estimated_delivery_days: number | null
           estimated_shipping_cost: number | null
           feed_readiness_score: number | null
           google_product_category: string | null
@@ -15019,6 +15020,8 @@ export type Database = {
           inventory_source: string | null
           is_active: boolean | null
           is_duplicate: boolean
+          is_fast_shipping: boolean | null
+          is_us_warehouse: boolean | null
           key_feature: string | null
           keyword_cluster: string | null
           landed_cost: number | null
@@ -15057,9 +15060,12 @@ export type Database = {
           seo_meta_description: string | null
           seo_tier: string
           seo_title: string | null
+          shipping_cost: number | null
           shipping_days_max: number | null
           shipping_days_min: number | null
           shipping_estimate_confidence: string | null
+          shipping_method: string | null
+          shipping_score: number | null
           shipping_sync_status: string | null
           shipping_time: string | null
           shopping_priority_score: number | null
@@ -15081,6 +15087,7 @@ export type Database = {
           variant_stock: Json | null
           variants: Json | null
           warehouse_country: string | null
+          warehouse_name: string | null
           weight: number | null
         }
         Insert: {
@@ -15120,6 +15127,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
@@ -15131,6 +15139,8 @@ export type Database = {
           inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
+          is_fast_shipping?: boolean | null
+          is_us_warehouse?: boolean | null
           key_feature?: string | null
           keyword_cluster?: string | null
           landed_cost?: number | null
@@ -15169,9 +15179,12 @@ export type Database = {
           seo_meta_description?: string | null
           seo_tier?: string
           seo_title?: string | null
+          shipping_cost?: number | null
           shipping_days_max?: number | null
           shipping_days_min?: number | null
           shipping_estimate_confidence?: string | null
+          shipping_method?: string | null
+          shipping_score?: number | null
           shipping_sync_status?: string | null
           shipping_time?: string | null
           shopping_priority_score?: number | null
@@ -15193,6 +15206,7 @@ export type Database = {
           variant_stock?: Json | null
           variants?: Json | null
           warehouse_country?: string | null
+          warehouse_name?: string | null
           weight?: number | null
         }
         Update: {
@@ -15232,6 +15246,7 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
@@ -15243,6 +15258,8 @@ export type Database = {
           inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
+          is_fast_shipping?: boolean | null
+          is_us_warehouse?: boolean | null
           key_feature?: string | null
           keyword_cluster?: string | null
           landed_cost?: number | null
@@ -15281,9 +15298,12 @@ export type Database = {
           seo_meta_description?: string | null
           seo_tier?: string
           seo_title?: string | null
+          shipping_cost?: number | null
           shipping_days_max?: number | null
           shipping_days_min?: number | null
           shipping_estimate_confidence?: string | null
+          shipping_method?: string | null
+          shipping_score?: number | null
           shipping_sync_status?: string | null
           shipping_time?: string | null
           shopping_priority_score?: number | null
@@ -15305,6 +15325,7 @@ export type Database = {
           variant_stock?: Json | null
           variants?: Json | null
           warehouse_country?: string | null
+          warehouse_name?: string | null
           weight?: number | null
         }
         Relationships: [
