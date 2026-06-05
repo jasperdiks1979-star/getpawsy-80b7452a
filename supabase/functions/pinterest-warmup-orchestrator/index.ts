@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
         pin_image_url: p.image_url,
         destination_link: `https://getpawsy.pet/products/${p.slug}?utm_source=pinterest&utm_medium=pin&utm_campaign=warmup30&utm_content=${variantKind}_${i + 1}`,
         board_id: pickBoard(p.category),
-        board_name: null,
+        board_name: p.category,
         hashtags: [p.category.replace(/[^a-z]+/gi, ""), "PetParents", "USA", "PetCare"],
         priority: "high",
         status: "draft",
