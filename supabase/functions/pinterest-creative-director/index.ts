@@ -144,7 +144,7 @@ async function loadOrBuildProfile(
 ): Promise<{ niche: NicheKey; dna: StyleDNA; product: any; cached: boolean }> {
   const { data: product, error } = await supabase
     .from("products")
-    .select("id, name, slug, description, category, product_type, image_url")
+    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets")
     .eq("id", productId)
     .maybeSingle();
   if (error) throw new Error(`product lookup failed: ${error.message}`);
@@ -186,7 +186,14 @@ async function loadOrBuildProfile(
 // ── 2. generate_briefs ─────────────────────────────────────────────────────
 
 async function generateBriefs(
-  product: { name: string; description?: string | null; category?: string | null },
+  product: {
+    name: string;
+    description?: string | null;
+    category?: string | null;
+    key_feature?: string | null;
+    benefit_angle?: string | null;
+    description_bullets?: string[] | string | null;
+  },
   dna: StyleDNA,
   count: number,
   patternIds?: PatternId[],
@@ -212,15 +219,32 @@ async function generateBriefs(
   // strategy.hook_phrase with them. The strategy still chooses the hook
   // CATEGORY (for analytics + learning), but the actual headline copy is
   // now grounded in this specific product instead of a generic niche bank.
+  // Normalize product features + benefits coming out of the products table.
+  const featureList = [product.key_feature, ...(Array.isArray(product.description_bullets)
+    ? product.description_bullets
+    : typeof product.description_bullets === "string"
+      ? product.description_bullets.split(/\n|•|\u2022|;|\|/)
+      : [])]
+    .map((s) => (s ?? "").toString().trim())
+    .filter((s) => s.length > 0)
+    .slice(0, 8);
+  const benefitList = [product.benefit_angle]
+    .map((s) => (s ?? "").toString().trim())
+    .filter((s) => s.length > 0);
+
   const productHooks = await generateProductHooks({
     product: {
       name: product.name,
       description: product.description ?? null,
       category: product.category ?? dna.label,
+      features: featureList,
+      benefits: benefitList,
     },
     niche: dna.niche_key,
     dna,
     count,
+    candidateCount: 5,
+    minRelevance: 90,
   });
 
   // Pin-mode plan per brief (rotates through niche affinity for variety).

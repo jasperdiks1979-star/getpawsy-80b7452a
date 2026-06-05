@@ -240,10 +240,14 @@ export async function generateProductHooks(args: {
   count: number;
   minRelevance?: number;
   maxRetries?: number;
+  candidateCount?: number;
 }): Promise<ProductHook[]> {
   const { product, niche, dna, count } = args;
-  const minRelevance = args.minRelevance ?? 80;
+  const minRelevance = args.minRelevance ?? 90;
   const maxRetries = args.maxRetries ?? 2;
+  // Always request at least 5 candidates per product so we can pick the
+  // top-scoring N. The caller still gets back exactly `count` hooks.
+  const candidateCount = Math.max(args.candidateCount ?? 5, count);
 
   if (!LOVABLE_API_KEY) return fallbackHooks(product, dna, count);
 
@@ -270,8 +274,8 @@ export async function generateProductHooks(args: {
           properties: {
             hooks: {
               type: "array",
-              minItems: count,
-              maxItems: count + 2,
+              minItems: candidateCount,
+              maxItems: candidateCount + 2,
               items: {
                 type: "object",
                 properties: {
@@ -302,7 +306,7 @@ export async function generateProductHooks(args: {
     encouraged_concepts: positive,
     rules: {
       max_chars: 42,
-      count,
+      count: candidateCount,
       must_describe_this_product: true,
       must_not_reference_other_categories: true,
       no_medical_claims: true,
@@ -312,8 +316,8 @@ export async function generateProductHooks(args: {
   const accepted: ProductHook[] = [];
   let rejectionFeedback: Array<{ headline: string; reason: string }> = [];
 
-  for (let attempt = 0; attempt <= maxRetries && accepted.length < count; attempt++) {
-    const needed = count - accepted.length;
+  for (let attempt = 0; attempt <= maxRetries && accepted.length < candidateCount; attempt++) {
+    const needed = candidateCount - accepted.length;
     const userPayload = {
       ...baseUser,
       rules: { ...baseUser.rules, count: needed },
@@ -379,9 +383,12 @@ export async function generateProductHooks(args: {
         source: "ai_product",
         relevance: score,
       });
-      if (accepted.length >= count) break;
+      if (accepted.length >= candidateCount) break;
     }
   }
+
+  // Sort by relevance descending so the top `count` are the strongest hooks.
+  accepted.sort((a, b) => b.relevance - a.relevance);
 
   if (accepted.length < count) {
     const filler = fallbackHooks(product, dna, count - accepted.length);
