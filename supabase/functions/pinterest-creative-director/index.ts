@@ -786,6 +786,8 @@ async function uploadAndInsertDraft(
             pattern_id: brief.pattern_id ?? null,
               pin_mode: brief.pin_mode ?? null,
             rationale: intelligence.rationale ?? null,
+            hook_source: brief.hook_source ?? "fallback_bank",
+            hook_relevance: brief.hook_relevance ?? null,
           },
           emotional_hook: brief.emotional_hook,
           headline: brief.headline,
