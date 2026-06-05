@@ -134,6 +134,7 @@ const NICHE_HOOK_AFFINITY: Partial<Record<NicheKey, HookCategory[]>> = {
   pet_camera: ["curiosity", "convenience", "anxiety_reduction"],
   dental_care: ["cleanliness", "social_proof"],
   interactive_toy: ["pet_happiness", "transformation"],
+  supplement: ["transformation", "pet_happiness", "social_proof", "anxiety_reduction"],
   generic_pet: ["pet_happiness", "luxury", "social_proof"],
 };
 

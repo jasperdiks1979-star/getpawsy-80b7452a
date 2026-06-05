@@ -33,6 +33,7 @@ export type NicheKey =
   | "potty_training"
   | "pet_camera"
   | "dental_care"
+  | "supplement"
   | "generic_pet";
 
 export interface StyleDNA {
@@ -553,6 +554,32 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     compositions: ["editorial wide shot", "intimate eye-level lifestyle"],
     cta_bank: ["Shop now", "See it", "Learn more"],
   },
+
+  supplement: {
+    niche_key: "supplement",
+    label: "Supplement / Chews / Vitamins",
+    environment:
+      "clean kitchen counter or styled wellness flatlay, oak surface, ceramic dish with a few chews, linen napkin, plant nearby",
+    light: "bright soft daylight, gentle reflections",
+    mood: "wellness, daily ritual, trustworthy, gentle",
+    typography: "serif elegant",
+    hook_bank: [
+      "daily support they actually enjoy",
+      "gentle digestive support",
+      "a calmer tummy, day after day",
+      "the chew that fits the routine",
+    ],
+    banned_terms: BANNED_BASE,
+    subjects: [
+      "calm dog or cat sitting near a small ceramic dish of soft chews",
+      "owner hand-feeding one chew to an attentive pet",
+    ],
+    compositions: [
+      "styled kitchen flatlay with chews, dish, and label-free packaging shape",
+      "intimate hand-and-pet moment with one chew being offered",
+    ],
+    cta_bank: ["See the chew", "Shop wellness", "Daily support"],
+  },
 };
 
 /** Heuristic niche detection from product name + slug + category. */
@@ -582,7 +609,15 @@ export function detectNiche(input: {
   if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
     return "dog_clothing";
 
-  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin", "digestive"))
+  // Supplements / chews / vitamins must be detected BEFORE treats so they
+  // get product-truthful wellness hooks instead of "treat time" copy.
+  if (has(
+    "supplement","probiotic","vitamin","digestive","calming chew",
+    "joint support","hip & joint","hip and joint","omega","fish oil",
+    "multivitamin","immune support","skin and coat","skin & coat",
+    "anxiety chew","calming bite","wellness chew"
+  )) return "supplement";
+  if (has("treat", "jerky", "biscuit", "kibble"))
     return "treats";
   if (has("chew") && !has("toy", "chew toy", "chew-resistant", "chew resistant")) return "treats";
 
