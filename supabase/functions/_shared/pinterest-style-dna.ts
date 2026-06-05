@@ -33,6 +33,7 @@ export type NicheKey =
   | "potty_training"
   | "pet_camera"
   | "dental_care"
+  | "supplement"
   | "generic_pet";
 
 export interface StyleDNA {
