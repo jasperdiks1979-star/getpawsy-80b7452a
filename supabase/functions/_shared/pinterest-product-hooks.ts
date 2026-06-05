@@ -148,6 +148,13 @@ export const NICHE_BANNED_HOOK_TERMS: Partial<Record<NicheKey, string[]>> = {
     "litter","scoop","probiotic","tummy","scratch","climb","tree",
     "bed","sleep","toy","fetch",
   ],
+  // Cat playpens / enclosures / tents — NEVER allow travel/carrier framing.
+  cat_enclosure: [
+    "travel","carrier","trip","transport","stroller","car ride","road",
+    "leash","harness","walk",
+    "litter","odor","scoop","probiotic","tummy","fountain","hydrat",
+    "toy","fetch","bed","sleep","scratch","climb","tree",
+  ],
 };
 
 // ── Niche-positive lexicon (relevance scoring) ─────────────────────────────
@@ -176,6 +183,7 @@ const NICHE_POSITIVE_LEX: Partial<Record<NicheKey, string[]>> = {
   pet_camera: ["watch","see","monitor","home","peace","check"],
   dog_clothing: ["coat","jacket","rain","warm","dry","wear"],
   dog_car: ["road","trip","drive","car","seat","cover","mess"],
+  cat_enclosure: ["enclosure","playpen","pen","tent","catio","safe","private","contained","outdoor","indoor","mesh","space","window","patio","balcony","curious"],
   generic_pet: [],
 };
 
@@ -190,6 +198,30 @@ const STOPWORDS = new Set([
 function tokens(s: string): string[] {
   return (s.toLowerCase().match(/[a-z]{4,}/g) || []).filter((t) => !STOPWORDS.has(t));
 }
+
+// Words that describe how the product FEELS or what it DOES for the pet/owner.
+// Adds a small relevance boost on top of niche-specific lexicon so hooks like
+// "safe, private cat space" score above generic filler.
+const EXPERIENTIAL_LEX = [
+  "comfortable","cozy","safe","private","quiet","enclosed","interactive",
+  "healthy","hydrated","organized","mess-free","calm","calmer","relaxed",
+  "secure","contained","durable","tidy","fresh",
+];
+
+// Concrete product nouns that, when present in a hook, strongly signal the
+// hook is grounded in product truth. +10 per unique hit (capped).
+const PRODUCT_NOUNS = [
+  "cat tower","cat tree","cat condo","cat scratcher","scratcher","scratching post",
+  "water fountain","fountain","drinking fountain",
+  "playpen","enclosure","catio","cat tent","cat pen",
+  "dog bed","cat bed","calming bed","orthopedic bed",
+  "harness","collar","leash","stroller","carrier",
+  "litter box","litter mat",
+  "feeder","auto feeder","bowl","feeding station",
+  "brush","groomer","clipper","nail trimmer",
+  "supplement","chew","probiotic",
+  "led collar","night collar","gps tracker",
+];
 
 /** Score a hook 0-100 against the product + niche lexicon. */
 export function scoreHookRelevance(
@@ -211,7 +243,18 @@ export function scoreHookRelevance(
   ]);
   const hookTokens = tokens(hook);
   const overlap = hookTokens.filter((t) => productTokens.has(t)).length;
-  if (overlap > 0) s += Math.min(15, overlap * 8);
+  // V2.2 — stronger reward for product-truth token overlap.
+  if (overlap > 0) s += Math.min(25, overlap * 9);
+  // V2.2 — product noun bonus: +10 per concrete product noun present in
+  // BOTH the product name/description AND the hook, capped at +20.
+  const nameDescBlob = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+  const nounHits = PRODUCT_NOUNS.filter(
+    (n) => nameDescBlob.includes(n) && text.includes(n),
+  ).length;
+  if (nounHits > 0) s += Math.min(20, nounHits * 10);
+  // V2.2 — experiential lexicon bonus (capped at +12).
+  const expHits = EXPERIENTIAL_LEX.filter((w) => text.includes(w)).length;
+  if (expHits > 0) s += Math.min(12, expHits * 4);
   // Penalize generic filler hooks
   if (/^(the\s+\w+\s+(we|they|she|he)\s+)/i.test(hook)) s -= 10;
   return { score: Math.max(0, Math.min(100, Math.round(s))) };
@@ -456,6 +499,12 @@ export async function generateProductHooks(args: {
 
     rejectionFeedback = [];
     const seenArchetype = new Set(accepted.map((a) => a.archetype));
+    // V2.2 hard validation: products whose title screams "containment" must
+    // NEVER receive travel/carrier/transport phrasing.
+    const titleLc = (product.name || "").toLowerCase();
+    const isContainmentProduct = /(playpen|enclosure|catio|cat tent|cat pen|containment)/.test(titleLc)
+      || (/(pen|tent)\b/.test(titleLc) && /(cat|kitten)/.test(titleLc));
+    const TRAVEL_BAN_RE = /(travel|carrier|trip|transport|stroller|on the go|road trip)/i;
     for (const h of raw) {
       const headline = String(h?.headline || "").replace(/[.\s]+$/g, "").slice(0, 42).trim();
       const arche = String(h?.archetype || "").toLowerCase() as HookArchetype;
@@ -463,6 +512,13 @@ export async function generateProductHooks(args: {
       if (!ARCHETYPES.includes(arche)) continue;
       if (seenArchetype.has(arche)) continue;
       if (accepted.some((a) => a.headline.toLowerCase() === headline.toLowerCase())) continue;
+      if (isContainmentProduct && TRAVEL_BAN_RE.test(headline)) {
+        rejectionFeedback.push({
+          headline,
+          reason: "containment product cannot use travel/carrier/trip/transport phrasing — rewrite around safe/contained indoor or patio space",
+        });
+        continue;
+      }
       const { score, banned: hit } = scoreHookRelevance(headline, product, niche);
       if (hit) {
         rejectionFeedback.push({ headline, reason: `contains banned term '${hit}' for niche '${niche}'` });
