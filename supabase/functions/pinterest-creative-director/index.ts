@@ -99,6 +99,21 @@ function containsBanned(s: string, banned: string[]): string | null {
   return null;
 }
 
+/**
+ * SPEC §3 — persist a predicted CTR per draft. Lightweight heuristic that
+ * blends quality score (0-100) and hook relevance (0-100) into a 0-5%
+ * range. Real Pinterest CTR rolls up nightly via the winner pipeline.
+ */
+function predictCtr(brief: SceneBrief, scores: Record<string, number>): number {
+  const q = Number(scores?.total ?? 80);
+  const r = Number(brief.hook_relevance ?? 80);
+  const base = 0.012 + (q / 100) * 0.018 + (r / 100) * 0.012; // 1.2% – 4.2%
+  const archBoost: Record<string, number> = {
+    problem: 0.003, outcome: 0.002, benefit: 0.002, curiosity: 0.0015, emotional: 0.001,
+  };
+  return Math.round((base + (archBoost[brief.hook_archetype ?? ""] ?? 0)) * 10000) / 100;
+}
+
 // Decode base64 (data URL or raw) into Uint8Array
 function decodeBase64Image(input: string): { bytes: Uint8Array; mime: string } {
   let mime = "image/png";
