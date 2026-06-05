@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, RefreshCcw, FlaskConical, FileSearch, Download, ExternalLink } from "lucide-react";
+import { Loader2, RefreshCcw, FlaskConical, FileSearch, Download, ExternalLink, Wand2 } from "lucide-react";
 import CjVariantRepairPanel from "@/components/admin/cj/CjVariantRepairPanel";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
@@ -65,6 +65,104 @@ export default function CjInventorySync() {
     totals: Record<string, number>;
     done: boolean;
   } | null>(null);
+
+  const [recoveryRunning, setRecoveryRunning] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<string>("");
+  const [recoverySummary, setRecoverySummary] = useState<null | {
+    audit_before?: Record<string, number>;
+    audit_after?: Record<string, number>;
+    variant_repair?: { scanned: number; repaired: number; failed: number };
+    backfill?: Record<string, number>;
+    reconcile?: { totals: Record<string, number>; corrections: any[] };
+    duration_ms: number;
+  }>(null);
+
+  async function runFullRecovery() {
+    setRecoveryRunning(true);
+    setRecoverySummary(null);
+    const t0 = Date.now();
+    try {
+      // 1. Audit before
+      setRecoveryStep("Auditing 25 random CJ products (before)…");
+      const auditBefore = await supabase.functions.invoke("cj-payload-audit", { body: { sample_count: 25 } });
+      const auditBeforeData = (auditBefore.data as any)?.aggregate ?? {};
+
+      // 2. Variant repair (all CJ products with 0 variants, capped at 200/call)
+      setRecoveryStep("Repairing missing variants…");
+      const repair = await supabase.functions.invoke("cj-variant-repair", {
+        body: { mode: "repair_all", limit: 200 },
+      });
+      const repairData = repair.data as any;
+
+      // 3. Backfill missing videos + variants (full pagination, no rehost to stay fast)
+      setRecoveryStep("Backfilling missing media + variants…");
+      let bfOffset = 0;
+      let bfRunId: string | undefined;
+      const bfTotals: Record<string, number> = {};
+      let bfTotal = 0;
+      while (true) {
+        const { data, error } = await supabase.functions.invoke("cj-backfill-media-variants", {
+          body: { offset: bfOffset, batch_size: 10, dry_run: false, run_id: bfRunId, rehost: false },
+        });
+        if (error) throw error;
+        const d = data as any;
+        bfRunId = d.run_id;
+        bfTotal = d.total;
+        for (const [k, v] of Object.entries(d.totals ?? {})) bfTotals[k] = (bfTotals[k] ?? 0) + Number(v ?? 0);
+        setRecoveryStep(`Backfilling media + variants… ${bfTotals.completed ?? 0}/${bfTotal}`);
+        if (d.done || d.next_offset == null) break;
+        bfOffset = d.next_offset;
+      }
+
+      // 4. Stock reconcile (full pagination)
+      setRecoveryStep("Reconciling US stock from CJ inventories[]…");
+      let rcOffset = 0;
+      let rcRunId: string | undefined;
+      const rcTotals: Record<string, number> = {};
+      let rcTotal = 0;
+      const rcCorrections: any[] = [];
+      while (true) {
+        const { data, error } = await supabase.functions.invoke("cj-stock-reconcile", {
+          body: { offset: rcOffset, batch_size: 10, dry_run: false, run_id: rcRunId },
+        });
+        if (error) throw error;
+        const d = data as any;
+        rcRunId = d.run_id;
+        rcTotal = d.total;
+        for (const [k, v] of Object.entries(d.totals ?? {})) rcTotals[k] = (rcTotals[k] ?? 0) + Number(v ?? 0);
+        if (Array.isArray(d.corrections)) rcCorrections.push(...d.corrections);
+        setRecoveryStep(`Reconciling US stock… ${rcTotals.processed ?? 0}/${rcTotal}`);
+        if (d.done || d.next_offset == null) break;
+        rcOffset = d.next_offset;
+      }
+
+      // 5. Audit after
+      setRecoveryStep("Auditing 25 random CJ products (after)…");
+      const auditAfter = await supabase.functions.invoke("cj-payload-audit", { body: { sample_count: 25 } });
+      const auditAfterData = (auditAfter.data as any)?.aggregate ?? {};
+
+      setRecoverySummary({
+        audit_before: auditBeforeData,
+        audit_after: auditAfterData,
+        variant_repair: {
+          scanned: repairData?.scanned ?? 0,
+          repaired: repairData?.repaired ?? 0,
+          failed: repairData?.failed ?? 0,
+        },
+        backfill: { ...bfTotals, total: bfTotal },
+        reconcile: { totals: rcTotals, corrections: rcCorrections },
+        duration_ms: Date.now() - t0,
+      });
+      // also show audit-after in the audit panel for the per-product chips
+      setAuditResult(auditAfter.data as any);
+      toast.success("One-click CJ recovery complete.");
+    } catch (e) {
+      toast.error(`Recovery failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setRecoveryRunning(false);
+      setRecoveryStep("");
+    }
+  }
 
   async function startRehost(dryRun: boolean) {
     setRehostRunning(true);
@@ -205,6 +303,66 @@ export default function CjInventorySync() {
           first to preview changes.
         </p>
       </header>
+
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wand2 className="h-5 w-5 text-primary" /> One-click full CJ recovery
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Runs the full recovery sequence end-to-end without follow-up
+            questions: payload audit → repair missing variants → backfill
+            missing videos + variants → reconcile US stock from{" "}
+            <code className="text-xs">variant.inventories[]</code> →
+            deactivate products with no US stock → re-audit.
+          </p>
+          <Button onClick={runFullRecovery} disabled={recoveryRunning}>
+            {recoveryRunning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Wand2 className="mr-2 h-4 w-4" />
+            )}
+            Run full CJ recovery
+          </Button>
+          {recoveryRunning && recoveryStep && (
+            <p className="text-xs text-muted-foreground">{recoveryStep}</p>
+          )}
+          {recoverySummary && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <Stat label="Variants repaired" value={recoverySummary.variant_repair?.repaired ?? 0} tone="success" />
+                <Stat label="Variants failed" value={recoverySummary.variant_repair?.failed ?? 0} tone="destructive" />
+                <Stat label="Stock corrected" value={recoverySummary.reconcile?.totals?.stock_corrected ?? 0} tone="success" />
+                <Stat label="Stale stock zeroed" value={recoverySummary.reconcile?.totals?.stale_stock_zeroed ?? 0} tone="warn" />
+                <Stat label="Products deactivated" value={recoverySummary.reconcile?.totals?.deactivated ?? 0} tone="warn" />
+                <Stat label="Out of stock everywhere" value={recoverySummary.reconcile?.totals?.out_of_stock_everywhere ?? 0} tone="muted" />
+                <Stat label="Videos imported" value={recoverySummary.backfill?.videos_imported ?? 0} tone="success" />
+                <Stat label="No CJ video" value={recoverySummary.backfill?.videos_none_found ?? 0} tone="muted" />
+              </div>
+              {(recoverySummary.audit_after?.total_cj_videos ?? 0) === 0 && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900">
+                  CJ did not return product videos for the sampled products.
+                  No video import is possible for these products unless CJ
+                  exposes video URLs in the product payload.
+                </div>
+              )}
+              <details className="rounded-md border bg-muted/30 p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Stock corrections ({recoverySummary.reconcile?.corrections?.length ?? 0})
+                </summary>
+                <pre className="mt-2 max-h-[360px] overflow-auto text-xs">
+                  {JSON.stringify(recoverySummary.reconcile?.corrections ?? [], null, 2)}
+                </pre>
+              </details>
+              <p className="text-xs text-muted-foreground">
+                Completed in {(recoverySummary.duration_ms / 1000).toFixed(1)}s.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
