@@ -271,6 +271,9 @@ async function generateBriefs(
   const user = {
     product_name: product.name,
     product_summary: safeText(product.description || "", 600),
+    product_features: featureList,
+    product_benefits: derivedBenefits,
+    product_category: product.category ?? dna.label,
     niche: dna.niche_key,
     environment: dna.environment,
     light: dna.light,
