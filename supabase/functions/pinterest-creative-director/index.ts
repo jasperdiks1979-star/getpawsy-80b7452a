@@ -450,6 +450,9 @@ async function generateBriefs(
     pin_mode: plans[i]?.pin_mode,
     hook_source: productHooks[i]?.source ?? "fallback_bank",
     hook_relevance: productHooks[i]?.relevance,
+    hook_archetype: productHooks[i]?.archetype,
+    product_benefits: derivedBenefits,
+    product_features: featureList,
   }));
 }
 
