@@ -135,6 +135,9 @@ interface SceneBrief {
   hook_source?: ProductHook["source"];
   /** Relevance score (0-100) of the headline vs. the product. */
   hook_relevance?: number;
+  hook_archetype?: HookArchetype;
+  product_benefits?: string[];
+  product_features?: string[];
 }
 
 // ── 1. profile_product ─────────────────────────────────────────────────────
