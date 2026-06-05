@@ -183,7 +183,8 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   }
 
   // 6. CTA must exist (overlay split format: "TOP | BOTTOM")
-  const parts = overlayRaw.split("|").map((p) => p.trim()).filter(Boolean);
+  // Accept "|" (legacy) or " • " / "•" (v2.2 creative-director format).
+  const parts = overlayRaw.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2 || parts[1].length < 2) {
     reasons.add("missing_cta");
   }
@@ -246,7 +247,11 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   ];
   const hasViralKeyword = VIRAL_KEYWORDS.some((kw) => top.includes(kw));
   const looksReasonable = top.length >= 8 && top.length <= 60 && /\s/.test(top);
-  if (top && !matchesApproved && !(hasViralKeyword && looksReasonable)) {
+  // In Domination Mode (catalog-wide v2.2 rollout) the AI hook bank is
+  // pre-validated by the creative-director relevance score, so we relax the
+  // legacy keyword bank gate and only require a reasonable-length hook.
+  const dominationRelax = !!pin.domination_mode && looksReasonable;
+  if (top && !matchesApproved && !(hasViralKeyword && looksReasonable) && !dominationRelax) {
     reasons.add("weak_hook");
   }
 
