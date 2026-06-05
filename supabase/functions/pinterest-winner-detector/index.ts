@@ -8,6 +8,8 @@ const corsHeaders = {
 
 const MIN_IMPRESSIONS = 1000;
 const SAVE_RATE_FLOOR = 0.005;
+const TOP_N = 10;
+const REGEN_COUNT = 3;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -83,7 +85,66 @@ Deno.serve(async (req) => {
     }
     if (verdicts.length) await sb.from("pinterest_pin_verdicts").insert(verdicts);
 
-    return new Response(JSON.stringify({ ok: true, traceId, scored: verdicts.length, winners, losers }), {
+    // ---- Top-10 winners / losers ranking (composite ranking) ----
+    const scored = [...agg.entries()]
+      .filter(([, a]) => a.imp >= MIN_IMPRESSIONS)
+      .map(([pin_id, a]) => {
+        const d = dimMap.get(pin_id);
+        const cat = d?.category_key ?? "unknown";
+        const b = bm.get(cat) ?? { ctr: 0.005, save: 0.003 };
+        const ctr = a.out / a.imp;
+        const saveRate = a.sav / a.imp;
+        // Composite: impressions weight + saves + outbound + CTR ratio
+        const score =
+          Math.log10(a.imp + 1) * 1.0 +
+          (ctr / Math.max(b.ctr, 0.0001)) * 2.0 +
+          (saveRate / Math.max(b.save, 0.0001)) * 1.5 +
+          Math.log10(a.out + 1) * 1.2;
+        return { pin_id, ...a, ctr, saveRate, score, product_slug: d?.product_slug ?? null, asset_id: d?.asset_id ?? null };
+      });
+    const top10 = [...scored].sort((a, b) => b.score - a.score).slice(0, TOP_N);
+    const bottom10 = [...scored].sort((a, b) => a.score - b.score).slice(0, TOP_N);
+
+    // ---- Auto-generate new pins for winners (unique product slugs) ----
+    const winnerSlugs = [...new Set(top10.map((w) => w.product_slug).filter(Boolean))] as string[];
+    const regenResults: Array<{ slug: string; ok: boolean; error?: string }> = [];
+    for (const slug of winnerSlugs) {
+      try {
+        const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-creative-director`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ action: "run_full", productSlug: slug, count: REGEN_COUNT }),
+        });
+        regenResults.push({ slug, ok: r.ok, error: r.ok ? undefined : `HTTP ${r.status}` });
+      } catch (e) {
+        regenResults.push({ slug, ok: false, error: (e as Error).message });
+      }
+    }
+
+    // ---- Auto-block losers by product_slug (stop generating for these) ----
+    const loserSlugs = [...new Set(bottom10.map((l) => l.product_slug).filter(Boolean))] as string[];
+    for (const slug of loserSlugs) {
+      await sb.from("pinterest_loser_blocklist").insert({
+        product_slug: slug,
+        reason: "Top-10 loser (24h detector)",
+        blocked_until: new Date(Date.now() + 30 * 86400000).toISOString(),
+      });
+    }
+
+    return new Response(JSON.stringify({
+      ok: true, traceId, scored: verdicts.length, winners, losers,
+      top10: top10.map(({ pin_id, imp, out, sav, ctr, saveRate, score, product_slug }) => ({
+        pin_id, impressions: imp, outbound_clicks: out, saves: sav, ctr, saveRate, score, product_slug,
+      })),
+      bottom10: bottom10.map(({ pin_id, imp, out, sav, ctr, saveRate, score, product_slug }) => ({
+        pin_id, impressions: imp, outbound_clicks: out, saves: sav, ctr, saveRate, score, product_slug,
+      })),
+      regenerated: regenResults,
+      blockedProductSlugs: loserSlugs,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

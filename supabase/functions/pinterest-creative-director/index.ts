@@ -933,6 +933,23 @@ Deno.serve(async (req) => {
   if (!resolvedId) return fail("productId or productSlug required");
 
   try {
+    // Honor loser blocklist — skip generation for products marked as losers.
+    if (!force) {
+      const slugForCheck = productSlug ?? (await supabase
+        .from("products").select("slug").eq("id", resolvedId).maybeSingle()).data?.slug;
+      if (slugForCheck) {
+        const { data: blocked } = await supabase
+          .from("pinterest_loser_blocklist")
+          .select("id, blocked_until, reason")
+          .eq("product_slug", slugForCheck)
+          .gt("blocked_until", new Date().toISOString())
+          .limit(1);
+        if (blocked && blocked.length) {
+          return ok({ traceId: trace, skipped: true, reason: "loser_blocklist", details: blocked[0] });
+        }
+      }
+    }
+
     if (action === "profile_product") {
       const { niche, dna, cached } = await loadOrBuildProfile(supabase, resolvedId, force);
       return ok({ traceId: trace, niche, cached, dna });
