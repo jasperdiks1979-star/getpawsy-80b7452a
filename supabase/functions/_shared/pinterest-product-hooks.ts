@@ -148,6 +148,13 @@ export const NICHE_BANNED_HOOK_TERMS: Partial<Record<NicheKey, string[]>> = {
     "litter","scoop","probiotic","tummy","scratch","climb","tree",
     "bed","sleep","toy","fetch",
   ],
+  // Cat playpens / enclosures / tents — NEVER allow travel/carrier framing.
+  cat_enclosure: [
+    "travel","carrier","trip","transport","stroller","car ride","road",
+    "leash","harness","walk",
+    "litter","odor","scoop","probiotic","tummy","fountain","hydrat",
+    "toy","fetch","bed","sleep","scratch","climb","tree",
+  ],
 };
 
 // ── Niche-positive lexicon (relevance scoring) ─────────────────────────────
@@ -176,6 +183,7 @@ const NICHE_POSITIVE_LEX: Partial<Record<NicheKey, string[]>> = {
   pet_camera: ["watch","see","monitor","home","peace","check"],
   dog_clothing: ["coat","jacket","rain","warm","dry","wear"],
   dog_car: ["road","trip","drive","car","seat","cover","mess"],
+  cat_enclosure: ["enclosure","playpen","pen","tent","catio","safe","private","contained","outdoor","indoor","mesh","space","window","patio","balcony","curious"],
   generic_pet: [],
 };
 
