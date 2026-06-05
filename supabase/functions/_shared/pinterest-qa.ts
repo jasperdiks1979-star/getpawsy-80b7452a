@@ -183,7 +183,8 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   }
 
   // 6. CTA must exist (overlay split format: "TOP | BOTTOM")
-  const parts = overlayRaw.split("|").map((p) => p.trim()).filter(Boolean);
+  // Accept "|" (legacy) or " • " / "•" (v2.2 creative-director format).
+  const parts = overlayRaw.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2 || parts[1].length < 2) {
     reasons.add("missing_cta");
   }
