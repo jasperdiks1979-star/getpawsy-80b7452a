@@ -84,6 +84,7 @@ const navItems = [
   { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
   { to: '/admin/cj-inventory-sync', label: 'CJ Inventory Sync', icon: Video },
   { to: '/admin/cj-video-diagnostic', label: 'CJ Video Diagnostic', icon: Video },
+  { to: '/admin/cj-health-check', label: 'CJ Health Check', icon: Activity },
 ];
 
 /**
