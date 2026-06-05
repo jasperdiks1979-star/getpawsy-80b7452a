@@ -230,6 +230,69 @@ function fallbackHooks(product: HookGenInput, dna: StyleDNA, count: number): Pro
 }
 
 /**
+ * Extract benefits from a product when the catalog row doesn't expose explicit
+ * benefit fields. Looks at title + description for benefit-shaped phrases and
+ * falls back to niche-templated outcomes.
+ */
+export function deriveBenefits(product: HookGenInput, niche: NicheKey): string[] {
+  const explicit = (product.benefits || []).map((b) => (b || "").trim()).filter(Boolean);
+  if (explicit.length) return explicit.slice(0, 5);
+  const blob = `${product.name || ""}. ${product.description || ""}`.toLowerCase();
+  const out: string[] = [];
+  const patterns: Array<[RegExp, string]> = [
+    [/digest|tummy|gut|probiotic/, "digestive support"],
+    [/calm|anxiety|relax/, "calmer behavior"],
+    [/joint|hip|mobility/, "joint comfort"],
+    [/immune|vitamin|wellness/, "immune support"],
+    [/sleep|rest|orthopedic|memory foam/, "deeper sleep"],
+    [/hydrat|fountain|water flow|drink/, "fresh hydration"],
+    [/odor|smell|litter/, "odor-free home"],
+    [/scratch|sisal|claw/, "saves the furniture"],
+    [/play|toy|interactive|chase|fetch/, "active play"],
+    [/groom|brush|shed|coat/, "clean coat"],
+    [/dental|teeth|breath/, "fresher breath"],
+    [/train|behave|focus|command/, "better focus"],
+    [/walk|leash|harness|collar/, "easier walks"],
+    [/feed|portion|meal/, "tidy mealtimes"],
+    [/travel|carrier|stroller|car/, "stress-free travel"],
+    [/outdoor|weather|shelter|house/, "weatherproof shelter"],
+    [/cozy|warm|nest|cuddle/, "cozy comfort"],
+    [/safe|durable|sturdy|reinforced/, "built to last"],
+    [/led|night|visib|reflect/, "night-time visibility"],
+  ];
+  for (const [re, label] of patterns) if (re.test(blob) && !out.includes(label)) out.push(label);
+  if (out.length) return out.slice(0, 5);
+  const nicheDefaults: Partial<Record<NicheKey, string[]>> = {
+    supplement: ["digestive support", "happier calmer pet", "daily wellness"],
+    treats: ["training reward", "tail wags", "tasty bite"],
+    interactive_toy: ["active play", "less boredom", "more energy out"],
+    cat_litter: ["odor-free home", "less scooping", "tidy litter area"],
+    cat_fountain: ["fresh circulating water", "more hydration", "cooler summer drink"],
+    cat_tree: ["climb and perch", "saves the furniture", "cozy lookout"],
+    cat_scratcher: ["saves the furniture", "healthy claws", "satisfying scratch"],
+    cat_bed: ["sunny-spot naps", "cozy nook", "deeper rest"],
+    dog_bed: ["deeper sleep", "joint support", "quiet corner"],
+    calming_bed: ["calmer nights", "anxiety relief", "settled sleep"],
+    dog_harness: ["easier walks", "no pulling", "trail-ready fit"],
+    dog_collar: ["safe walks", "comfortable fit", "stylish look"],
+    dog_carrier: ["stress-free travel", "secure ride", "easy outings"],
+    cat_carrier: ["calmer vet trips", "secure ride", "easy outings"],
+    feeder: ["tidy mealtimes", "portion control", "automatic feeding"],
+    bowl_station: ["tidy mealtimes", "kitchen looks neater", "no spills"],
+    grooming: ["clean coat", "less shedding", "softer fur"],
+    dental_care: ["fresher breath", "cleaner teeth", "healthier mouth"],
+    dog_training: ["better focus", "calmer routine", "well-behaved walks"],
+    outdoor_house: ["weatherproof shelter", "cozy outdoor spot", "dry through storms"],
+    potty_training: ["indoor potty", "tidy floors", "fewer accidents"],
+    pet_camera: ["peace of mind", "watch from anywhere", "talk to your pet"],
+    dog_clothing: ["warm and dry", "stylish outfit", "all-weather wear"],
+    dog_car: ["clean car seats", "secure trips", "less mess after rides"],
+    generic_pet: ["happier pet", "easier routine", "premium quality"],
+  };
+  return (nicheDefaults[niche] || nicheDefaults.generic_pet)!.slice(0, 3);
+}
+
+/**
  * Generate N product-truthful Pinterest hooks for `product` in `niche`.
  * Each hook is validated against `NICHE_BANNED_HOOK_TERMS[niche]` and scored
  * for semantic relevance. Anything below `minRelevance` (default 80) is
