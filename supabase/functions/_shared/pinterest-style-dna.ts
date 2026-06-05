@@ -609,7 +609,15 @@ export function detectNiche(input: {
   if (has("raincoat", "rain coat", "dog jacket", "dog coat", "dog sweater", "dog hoodie", "dog clothing", "dog clothes", "dog shirt", "winter coat") )
     return "dog_clothing";
 
-  if (has("treat", "jerky", "biscuit", "kibble", "supplement", "probiotic", "vitamin", "digestive"))
+  // Supplements / chews / vitamins must be detected BEFORE treats so they
+  // get product-truthful wellness hooks instead of "treat time" copy.
+  if (has(
+    "supplement","probiotic","vitamin","digestive","calming chew",
+    "joint support","hip & joint","hip and joint","omega","fish oil",
+    "multivitamin","immune support","skin and coat","skin & coat",
+    "anxiety chew","calming bite","wellness chew"
+  )) return "supplement";
+  if (has("treat", "jerky", "biscuit", "kibble"))
     return "treats";
   if (has("chew") && !has("toy", "chew toy", "chew-resistant", "chew resistant")) return "treats";
 
