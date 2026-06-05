@@ -199,6 +199,30 @@ function tokens(s: string): string[] {
   return (s.toLowerCase().match(/[a-z]{4,}/g) || []).filter((t) => !STOPWORDS.has(t));
 }
 
+// Words that describe how the product FEELS or what it DOES for the pet/owner.
+// Adds a small relevance boost on top of niche-specific lexicon so hooks like
+// "safe, private cat space" score above generic filler.
+const EXPERIENTIAL_LEX = [
+  "comfortable","cozy","safe","private","quiet","enclosed","interactive",
+  "healthy","hydrated","organized","mess-free","calm","calmer","relaxed",
+  "secure","contained","durable","tidy","fresh",
+];
+
+// Concrete product nouns that, when present in a hook, strongly signal the
+// hook is grounded in product truth. +10 per unique hit (capped).
+const PRODUCT_NOUNS = [
+  "cat tower","cat tree","cat condo","cat scratcher","scratcher","scratching post",
+  "water fountain","fountain","drinking fountain",
+  "playpen","enclosure","catio","cat tent","cat pen",
+  "dog bed","cat bed","calming bed","orthopedic bed",
+  "harness","collar","leash","stroller","carrier",
+  "litter box","litter mat",
+  "feeder","auto feeder","bowl","feeding station",
+  "brush","groomer","clipper","nail trimmer",
+  "supplement","chew","probiotic",
+  "led collar","night collar","gps tracker",
+];
+
 /** Score a hook 0-100 against the product + niche lexicon. */
 export function scoreHookRelevance(
   hook: string,
@@ -219,7 +243,18 @@ export function scoreHookRelevance(
   ]);
   const hookTokens = tokens(hook);
   const overlap = hookTokens.filter((t) => productTokens.has(t)).length;
-  if (overlap > 0) s += Math.min(15, overlap * 8);
+  // V2.2 — stronger reward for product-truth token overlap.
+  if (overlap > 0) s += Math.min(25, overlap * 9);
+  // V2.2 — product noun bonus: +10 per concrete product noun present in
+  // BOTH the product name/description AND the hook, capped at +20.
+  const nameDescBlob = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+  const nounHits = PRODUCT_NOUNS.filter(
+    (n) => nameDescBlob.includes(n) && text.includes(n),
+  ).length;
+  if (nounHits > 0) s += Math.min(20, nounHits * 10);
+  // V2.2 — experiential lexicon bonus (capped at +12).
+  const expHits = EXPERIENTIAL_LEX.filter((w) => text.includes(w)).length;
+  if (expHits > 0) s += Math.min(12, expHits * 4);
   // Penalize generic filler hooks
   if (/^(the\s+\w+\s+(we|they|she|he)\s+)/i.test(hook)) s -= 10;
   return { score: Math.max(0, Math.min(100, Math.round(s))) };
