@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS pinterest_pin_queue_idem_key_uniq ON public.pinterest_pin_queue(idempotency_key) WHERE idempotency_key IS NOT NULL;
