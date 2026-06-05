@@ -501,6 +501,15 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     : styleSuffix;
 
   const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
+  // SPEC §6 — Image grounding: explicitly inject product truth into the
+  // image prompt so the visual model can't drift to generic stock scenes.
+  const benefitLine = (brief.product_benefits || []).slice(0, 4).join(", ");
+  const featureLine = (brief.product_features || []).slice(0, 4).join(", ");
+  const groundedPrompt =
+    `Product: ${brief.subject || ""}. ` +
+    (benefitLine ? `Benefits to show: ${benefitLine}. ` : "") +
+    (featureLine ? `Key features: ${featureLine}. ` : "") +
+    prompt;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -510,7 +519,7 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     },
     body: JSON.stringify({
       model: IMAGE_MODEL,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: groundedPrompt }],
       modalities: ["image", "text"],
     }),
   });
