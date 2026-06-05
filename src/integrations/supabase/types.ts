@@ -15020,6 +15020,7 @@ export type Database = {
           ai_optimizer_status: string | null
           ai_optimizer_version: string | null
           animal_type: string | null
+          availability: string | null
           benefit_angle: string | null
           brand: string | null
           calculated_price: number | null
@@ -15031,6 +15032,7 @@ export type Database = {
           cluster_primary: string | null
           cluster_secondary: string | null
           compare_at_price: number | null
+          condition: string
           content_readiness_score: number | null
           conversion_angle: string | null
           cost_price: number | null
@@ -15051,7 +15053,9 @@ export type Database = {
           estimated_shipping_cost: number | null
           feed_readiness_score: number | null
           google_product_category: string | null
+          gtin: string | null
           id: string
+          identifier_exists: boolean
           image_alt_text: string | null
           image_url: string | null
           images: string[] | null
@@ -15072,6 +15076,7 @@ export type Database = {
           meta_description: string | null
           meta_title: string | null
           metadata_optimized_at: string | null
+          mpn: string | null
           name: string
           needs_admin_review: boolean
           optimized_description: string | null
@@ -15139,6 +15144,7 @@ export type Database = {
           ai_optimizer_status?: string | null
           ai_optimizer_version?: string | null
           animal_type?: string | null
+          availability?: string | null
           benefit_angle?: string | null
           brand?: string | null
           calculated_price?: number | null
@@ -15150,6 +15156,7 @@ export type Database = {
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
+          condition?: string
           content_readiness_score?: number | null
           conversion_angle?: string | null
           cost_price?: number | null
@@ -15170,7 +15177,9 @@ export type Database = {
           estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
+          gtin?: string | null
           id?: string
+          identifier_exists?: boolean
           image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
@@ -15191,6 +15200,7 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           metadata_optimized_at?: string | null
+          mpn?: string | null
           name: string
           needs_admin_review?: boolean
           optimized_description?: string | null
@@ -15258,6 +15268,7 @@ export type Database = {
           ai_optimizer_status?: string | null
           ai_optimizer_version?: string | null
           animal_type?: string | null
+          availability?: string | null
           benefit_angle?: string | null
           brand?: string | null
           calculated_price?: number | null
@@ -15269,6 +15280,7 @@ export type Database = {
           cluster_primary?: string | null
           cluster_secondary?: string | null
           compare_at_price?: number | null
+          condition?: string
           content_readiness_score?: number | null
           conversion_angle?: string | null
           cost_price?: number | null
@@ -15289,7 +15301,9 @@ export type Database = {
           estimated_shipping_cost?: number | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
+          gtin?: string | null
           id?: string
+          identifier_exists?: boolean
           image_alt_text?: string | null
           image_url?: string | null
           images?: string[] | null
@@ -15310,6 +15324,7 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           metadata_optimized_at?: string | null
+          mpn?: string | null
           name?: string
           needs_admin_review?: boolean
           optimized_description?: string | null
