@@ -1132,6 +1132,17 @@ Deno.serve(async (req) => {
 
       const drafts: any[] = [];
       const rejected: any[] = [];
+      const fidelityAudit: Array<{
+        product_slug: string;
+        product_image_url: string | null;
+        score: number;
+        approved: boolean;
+        notes: string;
+      }> = [];
+      const productImageUrl: string | null = (product as any).image_url ?? null;
+      if (!productImageUrl) {
+        console.warn("[creative-director] product has no image_url — falling back to text-only render", product.slug);
+      }
 
       // Per-brief retry: render → score → if fail, regen JUST that brief with
       // the failure reasons appended, up to MAX_RETRIES extra attempts.
@@ -1143,7 +1154,7 @@ Deno.serve(async (req) => {
 
         for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
           try {
-            const bytes = await renderScene(brief, dna);
+            const bytes = await renderSceneWithSource(brief, dna, productImageUrl);
             const qc = await qualityCheck(brief, bytes, dna);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
@@ -1175,6 +1186,38 @@ Deno.serve(async (req) => {
               continue;
             }
 
+            // Product-truth audit BEFORE publishing the draft.
+            let fidelityScore = 100;
+            let fidelityNotes = "no_source_image";
+            if (productImageUrl) {
+              const audit = await auditProductFidelity(bytes, productImageUrl);
+              fidelityScore = audit.score;
+              fidelityNotes = audit.notes;
+              fidelityAudit.push({
+                product_slug: product.slug,
+                product_image_url: productImageUrl,
+                score: fidelityScore,
+                approved: fidelityScore >= PRODUCT_FIDELITY_THRESHOLD,
+                notes: fidelityNotes,
+              });
+              if (fidelityScore < PRODUCT_FIDELITY_THRESHOLD) {
+                lastReasons = [
+                  ...(qc.reasons ?? []),
+                  `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
+                ];
+                if (attempt > MAX_RETRIES) break;
+                // Retry: regen this brief, source-lock still applied next loop.
+                const single = await generateBriefs(
+                  product, dna, 1,
+                  [brief.pattern_id!] as PatternId[],
+                  weights,
+                  { 0: [`product fidelity ${fidelityScore} — ${fidelityNotes}`] },
+                );
+                brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+                continue;
+              }
+            }
+
             const inserted = await uploadAndInsertDraft(
               supabase,
               { id: product.id, slug: product.slug, name: product.name },
@@ -1188,7 +1231,10 @@ Deno.serve(async (req) => {
                 rationale: brief.strategy_rationale,
               },
             );
-            drafts.push({ ...inserted, brief, scores: lastScores, attempts: attempt });
+            drafts.push({
+              ...inserted, brief, scores: lastScores, attempts: attempt,
+              product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
+            });
             accepted = true;
             break;
           } catch (e) {
@@ -1202,12 +1248,24 @@ Deno.serve(async (req) => {
         }
       }
 
+      const approvedCount = fidelityAudit.filter((a) => a.approved).length;
+      const rejectedByFidelity = fidelityAudit.filter((a) => !a.approved).length;
+
       return ok({
         traceId: trace,
         message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
         approved_required: true,
         threshold: QUALITY_THRESHOLD,
+        product_truth: {
+          enforced: !!productImageUrl,
+          source_image: productImageUrl,
+          threshold: PRODUCT_FIDELITY_THRESHOLD,
+          audited: fidelityAudit.length,
+          approved: approvedCount,
+          rejected: rejectedByFidelity,
+          audit: fidelityAudit,
+        },
         drafts,
         rejected,
       });
