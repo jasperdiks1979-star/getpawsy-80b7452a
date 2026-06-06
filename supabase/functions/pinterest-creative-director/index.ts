@@ -475,6 +475,21 @@ async function generateBriefs(
 
 async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+  return await renderSceneWithSource(brief, dna, null);
+}
+
+/**
+ * SPEC §Product-Truth — image-to-image render that uses the actual Shopify
+ * product photo as the visual source. The image model is instructed to
+ * preserve product shape/color/material/structure and ONLY change the
+ * surrounding lifestyle context (room, lighting, camera angle, pet, decor).
+ */
+async function renderSceneWithSource(
+  brief: SceneBrief,
+  dna: StyleDNA,
+  productImageUrl: string | null,
+): Promise<Uint8Array> {
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
   const patternDirective = pattern
@@ -520,11 +535,36 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
   // image prompt so the visual model can't drift to generic stock scenes.
   const benefitLine = (brief.product_benefits || []).slice(0, 4).join(", ");
   const featureLine = (brief.product_features || []).slice(0, 4).join(", ");
+  const sourceLock = productImageUrl
+    ? "SOURCE IMAGE LOCK — the attached photo IS the exact product to render. " +
+      "You MUST preserve the product's shape, silhouette, proportions, dimensions, color palette, materials, textures, accessories, levels/tiers, and structural details with photographic fidelity. " +
+      "Do NOT redesign, recolor, add or remove levels, swap materials, change the model, or generate a different product. " +
+      "ONLY change the surrounding lifestyle context: room, set dressing, lighting, camera angle, pet presence, decor. " +
+      "Place THIS EXACT product into the new scene as if photographed there. "
+    : "";
   const groundedPrompt =
+    sourceLock +
     `Product: ${brief.subject || ""}. ` +
     (benefitLine ? `Benefits to show: ${benefitLine}. ` : "") +
     (featureLine ? `Key features: ${featureLine}. ` : "") +
     prompt;
+
+  // Build multimodal content: when we have a product image, attach it as
+  // an image_url so the image model performs image-to-image generation.
+  let sourceDataUrl: string | null = null;
+  if (productImageUrl) {
+    try {
+      sourceDataUrl = await fetchAsDataUrl(productImageUrl);
+    } catch (e) {
+      console.warn("[creative-director] source image fetch failed", (e as Error).message);
+    }
+  }
+  const userContent: unknown = sourceDataUrl
+    ? [
+        { type: "image_url", image_url: { url: sourceDataUrl } },
+        { type: "text", text: groundedPrompt },
+      ]
+    : groundedPrompt;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -534,7 +574,7 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
     },
     body: JSON.stringify({
       model: IMAGE_MODEL,
-      messages: [{ role: "user", content: groundedPrompt }],
+      messages: [{ role: "user", content: userContent }],
       modalities: ["image", "text"],
     }),
   });
@@ -549,6 +589,111 @@ async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array
   if (!url) throw new Error("image model returned no image");
   const { bytes } = decodeBase64Image(url);
   return bytes;
+}
+
+// Fetch a URL and return a base64 data URL. Used to attach the product photo
+// as a source image for image-to-image generation and fidelity audits.
+async function fetchAsDataUrl(url: string): Promise<string> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`source fetch ${r.status}`);
+  const ct = r.headers.get("content-type") || "image/jpeg";
+  const buf = new Uint8Array(await r.arrayBuffer());
+  // Chunked base64 to avoid stack overflow on large images.
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < buf.length; i += CHUNK) {
+    bin += String.fromCharCode(...buf.subarray(i, i + CHUNK));
+  }
+  return `data:${ct};base64,${btoa(bin)}`;
+}
+
+/**
+ * Product-fidelity audit. Uses a multimodal LLM to compare the generated
+ * Pinterest image against the original Shopify product photo and returns a
+ * 0-100 score plus a short rationale. Threshold ≥ 90 is required to publish.
+ */
+const PRODUCT_FIDELITY_THRESHOLD = 90;
+const FIDELITY_MODEL = "google/gemini-2.5-flash";
+
+async function auditProductFidelity(
+  generatedBytes: Uint8Array,
+  productImageUrl: string,
+): Promise<{ score: number; notes: string; sourceUsed: string }> {
+  if (!LOVABLE_API_KEY) return { score: 0, notes: "no_api_key", sourceUsed: productImageUrl };
+  let sourceDataUrl: string;
+  try {
+    sourceDataUrl = await fetchAsDataUrl(productImageUrl);
+  } catch (e) {
+    return { score: 0, notes: `source_fetch_failed:${(e as Error).message}`, sourceUsed: productImageUrl };
+  }
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < generatedBytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...generatedBytes.subarray(i, i + CHUNK));
+  }
+  const genDataUrl = `data:image/png;base64,${btoa(bin)}`;
+
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "rate_fidelity",
+        description: "Score how faithfully the generated lifestyle pin preserves the exact product from the reference photo.",
+        parameters: {
+          type: "object",
+          properties: {
+            score: { type: "number", description: "0-100. 100 = identical product, only context changed. <90 = product is a different model/color/structure/redesign." },
+            shape_match: { type: "number" },
+            color_match: { type: "number" },
+            structure_match: { type: "number" },
+            notes: { type: "string" },
+          },
+          required: ["score", "notes"],
+        },
+      },
+    },
+  ];
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: FIDELITY_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a strict QA inspector for a DTC pet brand's Pinterest ads. The FIRST image is the canonical Shopify product photo (the SKU we sell). The SECOND image is an AI-generated lifestyle pin that is supposed to feature the SAME exact product. Compare them on shape, silhouette, proportions, color, materials, levels/tiers, and accessory presence. Lifestyle context (room, lighting, pets, decor) is allowed to differ — only product identity matters. Use the rate_fidelity tool. Score 100 if the depicted product would be indistinguishable from the source SKU. Score below 90 if shape, color, materials, or structure differ enough that a buyer would feel misled.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Image 1 = canonical product photo. Image 2 = generated Pinterest pin. Rate product fidelity." },
+              { type: "image_url", image_url: { url: sourceDataUrl } },
+              { type: "image_url", image_url: { url: genDataUrl } },
+            ],
+          },
+        ],
+        tools,
+        tool_choice: { type: "function", function: { name: "rate_fidelity" } },
+      }),
+    });
+    if (!resp.ok) {
+      const t = await resp.text();
+      return { score: 0, notes: `auditor_${resp.status}:${t.slice(0, 120)}`, sourceUsed: productImageUrl };
+    }
+    const data = await resp.json();
+    const call = data?.choices?.[0]?.message?.tool_calls?.[0];
+    if (!call) return { score: 0, notes: "no_tool_call", sourceUsed: productImageUrl };
+    const parsed = JSON.parse(call.function.arguments || "{}");
+    const score = Math.max(0, Math.min(100, Number(parsed.score ?? 0)));
+    return { score, notes: String(parsed.notes || ""), sourceUsed: productImageUrl };
+  } catch (e) {
+    return { score: 0, notes: `audit_error:${(e as Error).message}`, sourceUsed: productImageUrl };
+  }
 }
 
 // ── 4. quality filter (delegates to multi-axis scorer) ─────────────────────
@@ -987,6 +1132,17 @@ Deno.serve(async (req) => {
 
       const drafts: any[] = [];
       const rejected: any[] = [];
+      const fidelityAudit: Array<{
+        product_slug: string;
+        product_image_url: string | null;
+        score: number;
+        approved: boolean;
+        notes: string;
+      }> = [];
+      const productImageUrl: string | null = (product as any).image_url ?? null;
+      if (!productImageUrl) {
+        console.warn("[creative-director] product has no image_url — falling back to text-only render", product.slug);
+      }
 
       // Per-brief retry: render → score → if fail, regen JUST that brief with
       // the failure reasons appended, up to MAX_RETRIES extra attempts.
@@ -998,7 +1154,7 @@ Deno.serve(async (req) => {
 
         for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
           try {
-            const bytes = await renderScene(brief, dna);
+            const bytes = await renderSceneWithSource(brief, dna, productImageUrl);
             const qc = await qualityCheck(brief, bytes, dna);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
@@ -1030,6 +1186,38 @@ Deno.serve(async (req) => {
               continue;
             }
 
+            // Product-truth audit BEFORE publishing the draft.
+            let fidelityScore = 100;
+            let fidelityNotes = "no_source_image";
+            if (productImageUrl) {
+              const audit = await auditProductFidelity(bytes, productImageUrl);
+              fidelityScore = audit.score;
+              fidelityNotes = audit.notes;
+              fidelityAudit.push({
+                product_slug: product.slug,
+                product_image_url: productImageUrl,
+                score: fidelityScore,
+                approved: fidelityScore >= PRODUCT_FIDELITY_THRESHOLD,
+                notes: fidelityNotes,
+              });
+              if (fidelityScore < PRODUCT_FIDELITY_THRESHOLD) {
+                lastReasons = [
+                  ...(qc.reasons ?? []),
+                  `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
+                ];
+                if (attempt > MAX_RETRIES) break;
+                // Retry: regen this brief, source-lock still applied next loop.
+                const single = await generateBriefs(
+                  product, dna, 1,
+                  [brief.pattern_id!] as PatternId[],
+                  weights,
+                  { 0: [`product fidelity ${fidelityScore} — ${fidelityNotes}`] },
+                );
+                brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+                continue;
+              }
+            }
+
             const inserted = await uploadAndInsertDraft(
               supabase,
               { id: product.id, slug: product.slug, name: product.name },
@@ -1043,7 +1231,10 @@ Deno.serve(async (req) => {
                 rationale: brief.strategy_rationale,
               },
             );
-            drafts.push({ ...inserted, brief, scores: lastScores, attempts: attempt });
+            drafts.push({
+              ...inserted, brief, scores: lastScores, attempts: attempt,
+              product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
+            });
             accepted = true;
             break;
           } catch (e) {
@@ -1057,12 +1248,24 @@ Deno.serve(async (req) => {
         }
       }
 
+      const approvedCount = fidelityAudit.filter((a) => a.approved).length;
+      const rejectedByFidelity = fidelityAudit.filter((a) => !a.approved).length;
+
       return ok({
         traceId: trace,
         message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
         approved_required: true,
         threshold: QUALITY_THRESHOLD,
+        product_truth: {
+          enforced: !!productImageUrl,
+          source_image: productImageUrl,
+          threshold: PRODUCT_FIDELITY_THRESHOLD,
+          audited: fidelityAudit.length,
+          approved: approvedCount,
+          rejected: rejectedByFidelity,
+          audit: fidelityAudit,
+        },
         drafts,
         rejected,
       });
