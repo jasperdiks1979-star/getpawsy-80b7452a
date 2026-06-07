@@ -20,6 +20,8 @@ import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import { CheckoutTrustBlock } from '@/components/checkout/CheckoutTrustBlock';
+import { CheckoutSocialProof } from '@/components/checkout/CheckoutSocialProof';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
@@ -1016,6 +1018,11 @@ const Checkout = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
+              {/* Social proof above payment section */}
+              <div className="mt-4">
+                <CheckoutSocialProof />
+              </div>
+
               {klarna.eligible && (
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
@@ -1048,8 +1055,8 @@ const Checkout = () => {
               >
               <Button
                 size="lg"
-                className="w-full mt-6 gap-2"
-                disabled={isProcessing || !acceptedTerms}
+                className="w-full mt-4 gap-2"
+                disabled={isProcessing}
                 onClick={handleStripeCheckout}
                 data-testid="checkout-cta-desktop"
               >
@@ -1067,11 +1074,8 @@ const Checkout = () => {
               </Button>
               </div>
 
-              {!acceptedTerms && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 text-center mt-3">
-                  Please accept the terms above to continue
-                </p>
-              )}
+              {/* Trust block directly under primary CTA */}
+              <CheckoutTrustBlock />
 
               {/* Trust Signals - Checkout Reassurance */}
               {premiumCheckoutV2 ? (
