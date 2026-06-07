@@ -183,7 +183,9 @@ const Checkout = () => {
   const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
   const [email, setEmail] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Pre-accepted by default — never block checkout because users missed a checkbox.
+  // Users can still uncheck. Terms remain visible & linkable for compliance.
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
