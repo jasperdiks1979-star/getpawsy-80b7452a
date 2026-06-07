@@ -39,6 +39,7 @@ export function RecommendedProductsBlock({
         .from('products_public')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
+        .gt('stock', 0)
         .in('category', categories)
         .order('price', { ascending: false })
         .limit(limit);

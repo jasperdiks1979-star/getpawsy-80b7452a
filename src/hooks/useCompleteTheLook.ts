@@ -204,6 +204,7 @@ export const useCompleteTheLook = ({
         .from('products_public')
         .select('id, name, description, price, compare_at_price, image_url, images, category, stock, is_active, variants')
         .eq('is_active', true)
+        .gt('stock', 0)
         .neq('id', productId)
         .limit(50); // Reduced from 100 for better performance
       

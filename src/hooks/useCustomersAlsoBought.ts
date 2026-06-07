@@ -90,7 +90,8 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
       const { data: productDetails, error: productsError } = await supabase
         .from('products_public')
         .select('id, name, price, image_url, slug, category')
-        .in('id', sortedProductIds);
+        .in('id', sortedProductIds)
+        .gt('stock', 0);
 
       if (productsError) {
         console.error('Error fetching product details:', productsError);

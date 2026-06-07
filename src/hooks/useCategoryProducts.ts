@@ -124,6 +124,7 @@ export function useCategoryProducts(categorySlug: string | null) {
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .in('category', categoryNames)
         .order('created_at', { ascending: false })
         .limit(24);
