@@ -285,6 +285,19 @@ const Checkout = () => {
     if (user?.email) {
       setEmail(user.email);
       setAbandonedCartEmail(user.email);
+      return;
+    }
+    // Guest autofill: prior session email persisted from earlier checkouts
+    try {
+      const saved =
+        localStorage.getItem('gp_guest_email') ||
+        localStorage.getItem('getpawsy_last_email');
+      if (saved && /@/.test(saved)) {
+        setEmail(saved);
+        setAbandonedCartEmail(saved);
+      }
+    } catch {
+      /* ignore storage errors */
     }
   }, [user, setAbandonedCartEmail]);
   
@@ -293,6 +306,7 @@ const Checkout = () => {
     setEmail(newEmail);
     if (newEmail && newEmail.includes('@')) {
       setAbandonedCartEmail(newEmail);
+      try { localStorage.setItem('gp_guest_email', newEmail); } catch { /* ignore */ }
     }
   };
 
