@@ -20,6 +20,8 @@ import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { CartUpsell } from '@/components/cart/CartUpsell';
+import { CheckoutTrustBlock } from '@/components/checkout/CheckoutTrustBlock';
+import { CheckoutSocialProof } from '@/components/checkout/CheckoutSocialProof';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
@@ -183,7 +185,9 @@ const Checkout = () => {
   const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
   const [email, setEmail] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Pre-accepted by default — never block checkout because users missed a checkbox.
+  // Users can still uncheck. Terms remain visible & linkable for compliance.
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
@@ -1014,6 +1018,11 @@ const Checkout = () => {
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
 
+              {/* Social proof above payment section */}
+              <div className="mt-4">
+                <CheckoutSocialProof />
+              </div>
+
               {klarna.eligible && (
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   or 4 interest-free payments of{' '}
@@ -1025,6 +1034,9 @@ const Checkout = () => {
                   . Select at checkout.
                 </p>
               )}
+
+              {/* Trust block directly above primary CTA */}
+              <CheckoutTrustBlock />
 
               <div
                 className="contents"
@@ -1046,8 +1058,8 @@ const Checkout = () => {
               >
               <Button
                 size="lg"
-                className="w-full mt-6 gap-2"
-                disabled={isProcessing || !acceptedTerms}
+                className="w-full mt-4 gap-2"
+                disabled={isProcessing}
                 onClick={handleStripeCheckout}
                 data-testid="checkout-cta-desktop"
               >
@@ -1065,11 +1077,6 @@ const Checkout = () => {
               </Button>
               </div>
 
-              {!acceptedTerms && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 text-center mt-3">
-                  Please accept the terms above to continue
-                </p>
-              )}
 
               {/* Trust Signals - Checkout Reassurance */}
               {premiumCheckoutV2 ? (
@@ -1152,7 +1159,7 @@ const Checkout = () => {
                 maxWidth: '100%',
                 boxSizing: 'border-box'
               }}
-              disabled={isProcessing || !acceptedTerms}
+              disabled={isProcessing}
               onClick={handleStripeCheckout}
               data-testid="checkout-cta-mobile"
             >
