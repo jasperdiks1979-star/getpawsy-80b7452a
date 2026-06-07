@@ -1035,6 +1035,9 @@ const Checkout = () => {
                 </p>
               )}
 
+              {/* Trust block directly above primary CTA */}
+              <CheckoutTrustBlock />
+
               <div
                 className="contents"
                 onPointerDownCapture={() => {
@@ -1074,8 +1077,6 @@ const Checkout = () => {
               </Button>
               </div>
 
-              {/* Trust block directly under primary CTA */}
-              <CheckoutTrustBlock />
 
               {/* Trust Signals - Checkout Reassurance */}
               {premiumCheckoutV2 ? (
