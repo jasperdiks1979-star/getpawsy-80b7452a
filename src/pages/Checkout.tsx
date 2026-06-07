@@ -950,8 +950,9 @@ const Checkout = () => {
 
               {/* Discount Code Input */}
               <div className="mb-4">
-                <Label htmlFor="discount" className="text-sm font-medium mb-2 block">Discount Code</Label>
                 {discountApplied ? (
+                  <>
+                  <Label htmlFor="discount" className="text-sm font-medium mb-2 block">Discount Code</Label>
                   <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
                     <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span className="flex-1 text-sm font-medium text-green-700 dark:text-green-300">
@@ -964,7 +965,14 @@ const Checkout = () => {
                       <X className="w-4 h-4 text-green-600 dark:text-green-400" />
                     </button>
                   </div>
+                  </>
                 ) : (
+                  <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
+                    <CollapsibleTrigger className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+                      <Tag className="w-3.5 h-3.5" />
+                      Have a discount code?
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -988,9 +996,11 @@ const Checkout = () => {
                       Apply
                     </Button>
                   </div>
-                )}
-                {discountError && (
-                  <p className="text-xs text-destructive mt-1">{discountError}</p>
+                  {discountError && (
+                    <p className="text-xs text-destructive mt-1">{discountError}</p>
+                  )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </div>
 
