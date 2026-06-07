@@ -1159,7 +1159,7 @@ const Checkout = () => {
                 maxWidth: '100%',
                 boxSizing: 'border-box'
               }}
-              disabled={isProcessing || !acceptedTerms}
+              disabled={isProcessing}
               onClick={handleStripeCheckout}
               data-testid="checkout-cta-mobile"
             >
