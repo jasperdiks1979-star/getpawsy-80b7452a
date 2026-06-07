@@ -61,6 +61,48 @@ const MIRRORED_EVENTS = new Set([
 
 const SESSION_ID_KEY = 'gp_session_id';
 
+/**
+ * Navigation-time events — fired inside a click handler that immediately
+ * triggers a route change (CTA click → /products/...). The default
+ * supabase-js insert uses `fetch()` WITHOUT `keepalive`, so the browser
+ * aborts the in-flight request when the page tears down. That is why the
+ * /go funnel showed 199 `lp_cta_impression` rows for TikTok traffic in
+ * the last 72h but ZERO `lp_cta_click` / `tiktok_deep_link_click` rows
+ * and zero downstream `view_item` events with utm_source=tiktok.
+ *
+ * For these events we POST directly to the PostgREST endpoint with
+ * `keepalive: true` so the request survives the unmount + navigation.
+ */
+const NAVIGATION_TIME_EVENTS = new Set([
+  'lp_cta_click',
+  'lp_cta_repeat_click',
+  'lp_cta_misclick',
+  'tiktok_deep_link_click',
+]);
+
+function insertWithKeepalive(row: Record<string, unknown>): void {
+  try {
+    const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+    const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+    if (!base || !anon) return;
+    void fetch(`${base}/rest/v1/lp_funnel_events`, {
+      method: 'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anon,
+        Authorization: `Bearer ${anon}`,
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify(row),
+    }).catch(() => {
+      /* analytics must never block UX */
+    });
+  } catch {
+    /* noop */
+  }
+}
+
 function getSessionId(): string {
   try {
     const store = window.sessionStorage;
