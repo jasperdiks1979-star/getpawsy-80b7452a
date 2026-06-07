@@ -30,16 +30,35 @@ interface CheckoutRequest {
   };
 }
 
-// Map discount codes to Stripe coupon IDs
-const DISCOUNT_CODE_MAP: Record<string, string> = {
-  "WELCOME10": "oq9OCWlu",
-  "DONTGO15": "dfTnk1lW",
-  "BUNDLE10": "BtVGjBLG",
-  "BUNDLE15": "HFLKdq0J",
-  "BUNDLE18": "HJHBWcew",
-  "BUNDLE20": "MhlvpT13",
-  "SLOWFEEDER25": "7tjpXiXi",
+// Coupon code → discount percent. Kept server-side so Stripe is charged
+// EXACTLY what the UI displayed (subtotal − tier% − coupon% + shipping).
+// Must stay in sync with VALID_DISCOUNT_CODES in src/pages/Checkout.tsx.
+const COUPON_CODE_PERCENT: Record<string, number> = {
+  WELCOME10: 10,
+  DONTGO15: 15,
+  BUNDLE10: 10,
+  BUNDLE15: 15,
+  BUNDLE18: 18,
+  BUNDLE20: 20,
+  SLOWFEEDER25: 25,
 };
+
+// Shipping mirrors src/lib/shipping-constants.ts. Kept inline because edge
+// functions cannot import from `src/`.
+const FREE_SHIPPING_THRESHOLD = 35;
+const FLAT_SHIPPING_RATE_CENTS = 599; // $5.99
+const TIERED_INCENTIVES = [
+  { threshold: 35, discountPercent: 0 },
+  { threshold: 65, discountPercent: 5 },
+  { threshold: 99, discountPercent: 10 },
+] as const;
+
+function getTierPercent(subtotal: number): number {
+  for (let i = TIERED_INCENTIVES.length - 1; i >= 0; i--) {
+    if (subtotal >= TIERED_INCENTIVES[i].threshold) return TIERED_INCENTIVES[i].discountPercent;
+  }
+  return 0;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -126,28 +145,88 @@ serve(async (req) => {
       quantity: item.quantity,
     }));
 
-    // Calculate totals
-    const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    // ---- Server-side mirror of Checkout.tsx totals ------------------------
+    // Frontend math:
+    //   subtotal       = Σ price*qty
+    //   tierAmount     = subtotal * tier% / 100
+    //   couponAmount   = subtotal * coupon% / 100   (off ORIGINAL subtotal, not post-tier)
+    //   shipping       = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT
+    //   total          = subtotal − tierAmount − couponAmount + shipping
+    // Stripe must charge the same `total`.
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const subtotalCents = items.reduce(
+      (sum, i) => sum + Math.round(i.price * 100) * i.quantity,
+      0,
+    );
     const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
-    // Calculate order metadata for analytics
+    const normalizedCode = discountCode ? discountCode.toUpperCase().trim() : "";
+    const couponPercent = normalizedCode && COUPON_CODE_PERCENT[normalizedCode]
+      ? COUPON_CODE_PERCENT[normalizedCode]
+      : 0;
+    const tierPercent = getTierPercent(subtotal);
+
+    // Combined deduction in cents — applied as ONE Stripe coupon so Stripe
+    // can render both lines while charging the exact displayed total.
+    const tierDeductionCents = Math.round((subtotalCents * tierPercent) / 100);
+    const couponDeductionCents = Math.round((subtotalCents * couponPercent) / 100);
+    const totalDeductionCents = Math.min(
+      subtotalCents,
+      tierDeductionCents + couponDeductionCents,
+    );
+
+    const shippingCents = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE_CENTS;
+    const expectedTotalCents = subtotalCents - totalDeductionCents + shippingCents;
+    const totalAmount = expectedTotalCents / 100;
+
+    // Order metadata for analytics + reconciliation
     const orderMetadata = {
       items: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }))),
       total_items: totalItems.toString(),
+      subtotal: (subtotalCents / 100).toFixed(2),
+      tier_percent: String(tierPercent),
+      tier_amount: (tierDeductionCents / 100).toFixed(2),
+      coupon_code: normalizedCode,
+      coupon_percent: String(couponPercent),
+      coupon_amount: (couponDeductionCents / 100).toFixed(2),
+      shipping_amount: (shippingCents / 100).toFixed(2),
       total_value: totalAmount.toFixed(2),
-      discount_code: discountCode || "",
     };
 
-    // Prepare discount configuration
+    // Build ONE one-off coupon for the combined deduction so Stripe charges
+    // exactly the UI total. Created on every checkout (duration: 'once') —
+    // small extra API call, but guarantees parity with the displayed math
+    // and avoids stacking-order drift between tier% and coupon%.
     const discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
-    if (discountCode) {
-      const normalizedCode = discountCode.toUpperCase().trim();
-      const couponId = DISCOUNT_CODE_MAP[normalizedCode];
-      if (couponId) {
-        discounts.push({ coupon: couponId });
-        console.log("[CREATE-CHECKOUT] Applying discount code:", normalizedCode, "->", couponId);
-      } else {
-        console.log("[CREATE-CHECKOUT] Invalid discount code:", normalizedCode);
+    if (totalDeductionCents > 0) {
+      try {
+        const labelParts: string[] = [];
+        if (tierPercent > 0) labelParts.push(`Tier ${tierPercent}%`);
+        if (couponPercent > 0) labelParts.push(`${normalizedCode} (${couponPercent}%)`);
+        const dynamicCoupon = await stripe.coupons.create({
+          amount_off: totalDeductionCents,
+          currency: "usd",
+          duration: "once",
+          name: labelParts.join(" + ") || "Order discount",
+          metadata: {
+            tier_percent: String(tierPercent),
+            coupon_code: normalizedCode,
+            coupon_percent: String(couponPercent),
+            subtotal_cents: String(subtotalCents),
+          },
+        });
+        discounts.push({ coupon: dynamicCoupon.id });
+        console.log("[CREATE-CHECKOUT] Discount applied", {
+          coupon: dynamicCoupon.id,
+          amount_off_cents: totalDeductionCents,
+          tier_percent: tierPercent,
+          coupon_percent: couponPercent,
+        });
+      } catch (e) {
+        // Don't fail checkout if coupon creation fails — log and continue
+        // without discount. Better to capture a sale at full price than to
+        // lose it. The mismatch will be visible in `total_value` metadata.
+        console.error("[CREATE-CHECKOUT] Failed to create dynamic coupon:", e);
       }
     }
 
@@ -168,6 +247,24 @@ serve(async (req) => {
         // accidental international orders we cannot fulfill.
         allowed_countries: ["US"],
       },
+      // Show shipping line in Stripe's order summary so the customer sees
+      // the same breakdown as the site (subtotal − discount + shipping).
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: shippingCents, currency: "usd" },
+            display_name:
+              shippingCents === 0
+                ? "Free shipping (US)"
+                : "Standard shipping (US)",
+            delivery_estimate: {
+              minimum: { unit: "business_day", value: 5 },
+              maximum: { unit: "business_day", value: 10 },
+            },
+          },
+        },
+      ],
       // Pre-fill phone (helps wallet payments + carrier delivery)
       phone_number_collection: { enabled: true },
       // Locale-tag UI as English for US shoppers
@@ -177,7 +274,10 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/checkout`,
       metadata: orderMetadata,
-      allow_promotion_codes: discounts.length === 0, // Allow manual entry if no code pre-applied
+      // Never allow promotion codes — discount is already applied as a
+      // one-off coupon for the exact UI-displayed amount. Allowing manual
+      // codes would stack and undercharge.
+      allow_promotion_codes: false,
     };
 
     // Only add discounts if we have a valid code
