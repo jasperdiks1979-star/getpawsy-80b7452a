@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -191,6 +192,7 @@ const Checkout = () => {
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
@@ -257,6 +259,7 @@ const Checkout = () => {
     if (savedCode && VALID_DISCOUNT_CODES[savedCode]) {
       setDiscountCode(savedCode);
       setDiscountApplied(savedCode);
+      setDiscountOpen(true);
       localStorage.removeItem('getpawsy_discount_code'); // Use only once
     }
   }, []);
@@ -283,6 +286,19 @@ const Checkout = () => {
     if (user?.email) {
       setEmail(user.email);
       setAbandonedCartEmail(user.email);
+      return;
+    }
+    // Guest autofill: prior session email persisted from earlier checkouts
+    try {
+      const saved =
+        localStorage.getItem('gp_guest_email') ||
+        localStorage.getItem('getpawsy_last_email');
+      if (saved && /@/.test(saved)) {
+        setEmail(saved);
+        setAbandonedCartEmail(saved);
+      }
+    } catch {
+      /* ignore storage errors */
     }
   }, [user, setAbandonedCartEmail]);
   
@@ -291,6 +307,7 @@ const Checkout = () => {
     setEmail(newEmail);
     if (newEmail && newEmail.includes('@')) {
       setAbandonedCartEmail(newEmail);
+      try { localStorage.setItem('gp_guest_email', newEmail); } catch { /* ignore */ }
     }
   };
 
@@ -933,8 +950,9 @@ const Checkout = () => {
 
               {/* Discount Code Input */}
               <div className="mb-4">
-                <Label htmlFor="discount" className="text-sm font-medium mb-2 block">Discount Code</Label>
                 {discountApplied ? (
+                  <>
+                  <Label htmlFor="discount" className="text-sm font-medium mb-2 block">Discount Code</Label>
                   <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
                     <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span className="flex-1 text-sm font-medium text-green-700 dark:text-green-300">
@@ -947,7 +965,14 @@ const Checkout = () => {
                       <X className="w-4 h-4 text-green-600 dark:text-green-400" />
                     </button>
                   </div>
+                  </>
                 ) : (
+                  <Collapsible open={discountOpen} onOpenChange={setDiscountOpen}>
+                    <CollapsibleTrigger className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
+                      <Tag className="w-3.5 h-3.5" />
+                      Have a discount code?
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -971,9 +996,11 @@ const Checkout = () => {
                       Apply
                     </Button>
                   </div>
-                )}
-                {discountError && (
-                  <p className="text-xs text-destructive mt-1">{discountError}</p>
+                  {discountError && (
+                    <p className="text-xs text-destructive mt-1">{discountError}</p>
+                  )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </div>
 
