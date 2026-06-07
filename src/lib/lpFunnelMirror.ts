@@ -284,10 +284,17 @@ export function mirrorLpFunnelEvent(
   };
 
   // Fire-and-forget — analytics must never affect the user experience.
-  void supabase
-    .from('lp_funnel_events')
-    .insert(row)
-    .then(({ error }) => {
-      if (error) console.debug('[lpFunnelMirror] insert failed:', error.message);
-    });
+  // Navigation-time clicks (lp_cta_click, tiktok_deep_link_click, etc.)
+  // route through `keepalive: true` so the request survives the route
+  // change that follows the click — see NAVIGATION_TIME_EVENTS above.
+  if (NAVIGATION_TIME_EVENTS.has(eventName)) {
+    insertWithKeepalive(row as unknown as Record<string, unknown>);
+  } else {
+    void supabase
+      .from('lp_funnel_events')
+      .insert(row)
+      .then(({ error }) => {
+        if (error) console.debug('[lpFunnelMirror] insert failed:', error.message);
+      });
+  }
 }
