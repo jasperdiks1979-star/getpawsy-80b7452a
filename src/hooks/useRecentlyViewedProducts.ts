@@ -47,6 +47,7 @@ export const useRecentlyViewedProducts = ({
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .in('id', idsToFetch);
 
       if (error) throw error;

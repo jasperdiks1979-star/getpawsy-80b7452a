@@ -143,7 +143,8 @@ export const useRelatedProducts = ({
           .from('products_public')
           .select('*')
           .in('id', curatedIds)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .gt('stock', 0);
         if (cp) curatedProducts = cp as ProductPublic[];
       }
 
@@ -168,6 +169,7 @@ export const useRelatedProducts = ({
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .neq('id', productId)
         .limit(60);
       
@@ -200,6 +202,7 @@ export const useRelatedProducts = ({
           .from('products_public')
           .select('*')
           .eq('is_active', true)
+          .gt('stock', 0)
           .eq('category', category)
           .neq('id', productId)
           .limit(maxItems - merged.length + 5);

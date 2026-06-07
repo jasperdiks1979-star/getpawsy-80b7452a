@@ -107,6 +107,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
           .from('products_public')
           .select('*')
           .eq('is_active', true)
+          .gt('stock', 0)
           .limit(maxItems * 2);
         
         if (error) throw error;
@@ -124,6 +125,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
         .from('products_public')
         .select('*')
         .eq('is_active', true)
+        .gt('stock', 0)
         .in('category', cartCategories)
         .limit(maxItems * 3);
       
