@@ -259,6 +259,7 @@ const Checkout = () => {
     if (savedCode && VALID_DISCOUNT_CODES[savedCode]) {
       setDiscountCode(savedCode);
       setDiscountApplied(savedCode);
+      setDiscountOpen(true);
       localStorage.removeItem('getpawsy_discount_code'); // Use only once
     }
   }, []);
