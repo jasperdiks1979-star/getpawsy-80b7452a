@@ -13592,6 +13592,57 @@ export type Database = {
           },
         ]
       }
+      pinterest_pin_repair_log: {
+        Row: {
+          action: string
+          before_image_match_score: number | null
+          before_repair_strategy: string | null
+          before_validation_status: string | null
+          confidence: number | null
+          created_at: string
+          id: string
+          new_product_id: string | null
+          new_slug: string | null
+          notes: string | null
+          old_product_id: string | null
+          old_slug: string | null
+          phase: string
+          pin_queue_id: string
+        }
+        Insert: {
+          action: string
+          before_image_match_score?: number | null
+          before_repair_strategy?: string | null
+          before_validation_status?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          new_product_id?: string | null
+          new_slug?: string | null
+          notes?: string | null
+          old_product_id?: string | null
+          old_slug?: string | null
+          phase: string
+          pin_queue_id: string
+        }
+        Update: {
+          action?: string
+          before_image_match_score?: number | null
+          before_repair_strategy?: string | null
+          before_validation_status?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          new_product_id?: string | null
+          new_slug?: string | null
+          notes?: string | null
+          old_product_id?: string | null
+          old_slug?: string | null
+          phase?: string
+          pin_queue_id?: string
+        }
+        Relationships: []
+      }
       pinterest_pin_verdicts: {
         Row: {
           action_taken: string | null
@@ -20731,6 +20782,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      run_pinterest_mass_repair: {
+        Args: { p_phase: string; p_threshold: number }
+        Returns: Json
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       test_tiktok_exclusion_fixtures: {
         Args: { p_prefix: string }
         Returns: Json
