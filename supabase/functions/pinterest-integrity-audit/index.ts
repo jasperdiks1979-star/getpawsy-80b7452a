@@ -38,7 +38,7 @@ interface Row {
   destination_url: string;
 }
 
-async function gatherRows(sb: any, mode: string, limit: number): Promise<Row[]> {
+async function gatherRows(sb: any, mode: string, limit: number, offset: number = 0, dedupe: boolean = false): Promise<Row[]> {
   const rows: Row[] = [];
 
   if (mode !== "historical") {
@@ -52,9 +52,15 @@ async function gatherRows(sb: any, mode: string, limit: number): Promise<Row[]> 
       .select("id, pinterest_pin_id, destination_link, status")
       .in("status", statuses)
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
+    const seen = new Set<string>();
     for (const r of data || []) {
-      if (r.destination_link) rows.push({
+      if (!r.destination_link) continue;
+      if (dedupe) {
+        if (seen.has(r.destination_link)) continue;
+        seen.add(r.destination_link);
+      }
+      rows.push({
         source: "pin_queue",
         pin_queue_id: r.id,
         pinterest_pin_id: r.pinterest_pin_id,
@@ -157,7 +163,9 @@ Deno.serve(async (req) => {
     .single();
   const runId = run!.id;
 
-  const rows = await gatherRows(sb, mode, limit);
+  const offset = Math.max(0, Number(body.offset) || Number(url.searchParams.get("offset")) || 0);
+  const dedupe = body.dedupe === true || url.searchParams.get("dedupe") === "true";
+  const rows = await gatherRows(sb, mode, limit, offset, dedupe);
 
   const buckets: Record<string, number> = {
     total: 0, valid: 0, broken: 0,
