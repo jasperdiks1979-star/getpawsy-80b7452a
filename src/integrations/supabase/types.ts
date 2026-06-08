@@ -13263,12 +13263,17 @@ export type Database = {
           destination_link: string
           error_message: string | null
           external_url: string | null
+          final_resolved_url: string | null
           hashtags: string[] | null
           hook_group: string | null
+          http_status: number | null
           id: string
           idempotency_key: string | null
           image_hash: string | null
           last_publish_error: string | null
+          last_validated_at: string | null
+          last_validation_error: string | null
+          live_pin_verified_at: string | null
           meta: Json | null
           overlay_text: string | null
           pin_description: string
@@ -13286,6 +13291,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          product_slug_found: boolean | null
           profit_state: string | null
           publish_attempts: number
           publishing_started_at: string | null
@@ -13298,6 +13304,7 @@ export type Database = {
           status: string
           updated_at: string
           us_audience_score: number | null
+          validation_status: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -13312,12 +13319,17 @@ export type Database = {
           destination_link: string
           error_message?: string | null
           external_url?: string | null
+          final_resolved_url?: string | null
           hashtags?: string[] | null
           hook_group?: string | null
+          http_status?: number | null
           id?: string
           idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
           pin_description: string
@@ -13335,6 +13347,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_slug: string
+          product_slug_found?: boolean | null
           profit_state?: string | null
           publish_attempts?: number
           publishing_started_at?: string | null
@@ -13347,6 +13360,7 @@ export type Database = {
           status?: string
           updated_at?: string
           us_audience_score?: number | null
+          validation_status?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -13361,12 +13375,17 @@ export type Database = {
           destination_link?: string
           error_message?: string | null
           external_url?: string | null
+          final_resolved_url?: string | null
           hashtags?: string[] | null
           hook_group?: string | null
+          http_status?: number | null
           id?: string
           idempotency_key?: string | null
           image_hash?: string | null
           last_publish_error?: string | null
+          last_validated_at?: string | null
+          last_validation_error?: string | null
+          live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
           pin_description?: string
@@ -13384,6 +13403,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           product_slug?: string
+          product_slug_found?: boolean | null
           profit_state?: string | null
           publish_attempts?: number
           publishing_started_at?: string | null
@@ -13396,6 +13416,7 @@ export type Database = {
           status?: string
           updated_at?: string
           us_audience_score?: number | null
+          validation_status?: string | null
         }
         Relationships: []
       }
