@@ -20021,6 +20021,17 @@ export type Database = {
       }
     }
     Functions: {
+      apply_pinterest_pin_repair: {
+        Args: {
+          p_error: string
+          p_final_url: string
+          p_http_status: number
+          p_pin_id: string
+          p_repair_strategy: string
+          p_validation_status: string
+        }
+        Returns: undefined
+      }
       bulk_reactivate_cat_dog_products: {
         Args: never
         Returns: {
@@ -20125,6 +20136,10 @@ export type Database = {
       cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
       cleanup_old_web_vitals: { Args: never; Returns: undefined }
+      cleanup_pinterest_audit_run: {
+        Args: { p_run_id: string }
+        Returns: undefined
+      }
       cleanup_preview_visitor_activity: { Args: never; Returns: number }
       clear_stale_cinematic_duplicates: { Args: never; Returns: Json }
       count_rejected_events: {
@@ -20147,6 +20162,16 @@ export type Database = {
       evaluate_render_trace_alerts: {
         Args: { p_record?: boolean }
         Returns: Json
+      }
+      finalize_pinterest_audit_run: {
+        Args: {
+          p_broken: number
+          p_run_id: string
+          p_summary: Json
+          p_total: number
+          p_valid: number
+        }
+        Returns: undefined
       }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       get_crawler_sampling_decision_stats: {
