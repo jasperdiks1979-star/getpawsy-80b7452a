@@ -57,6 +57,14 @@ export default function PinterestUrlRecoveryPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [reports, setReports] = useState<{
+    worst: any[];
+    traffic: any[];
+    deleted: any[];
+    mismatch: any[];
+    trafficSource: string;
+  }>({ worst: [], traffic: [], deleted: [], mismatch: [], trafficSource: "none" });
+  const [reportTab, setReportTab] = useState<"worst" | "traffic" | "deleted" | "mismatch">("worst");
 
   const load = async () => {
     setLoading(true);
@@ -100,6 +108,108 @@ export default function PinterestUrlRecoveryPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    (async () => {
+      // Top 100 worst by image match score
+      const { data: worst } = await supabase
+        .from("pinterest_pin_image_match" as any)
+        .select("pin_queue_id, score, verdict, vision_verdict, reasons")
+        .order("score", { ascending: true })
+        .limit(100);
+      const worstIds = (worst as any[] || []).map((w) => w.pin_queue_id);
+      const { data: worstPins } = worstIds.length
+        ? await supabase
+            .from("pinterest_pin_queue" as any)
+            .select("id, pin_title, pinterest_pin_id, final_resolved_url, pin_image_url, product_slug, validation_status")
+            .in("id", worstIds)
+        : { data: [] };
+      const pinMap: Record<string, any> = {};
+      for (const p of (worstPins as any[] || [])) pinMap[p.id] = p;
+      const worstJoined = (worst as any[] || []).map((w) => ({ ...w, pin: pinMap[w.pin_queue_id] }));
+
+      // Pins linking to deleted/unrecoverable products
+      const { data: deleted } = await supabase
+        .from("pinterest_pin_queue" as any)
+        .select("id, pinterest_pin_id, pin_title, destination_link, product_slug, final_resolved_url, repair_strategy, last_validated_at")
+        .eq("status", "posted")
+        .eq("validation_status", "invalid")
+        .order("posted_at", { ascending: false })
+        .limit(100);
+
+      // Pins with mismatching images
+      const { data: mismatchRows } = await supabase
+        .from("pinterest_pin_image_match" as any)
+        .select("pin_queue_id, score, verdict, vision_verdict, reasons")
+        .eq("verdict", "mismatch")
+        .order("score", { ascending: true })
+        .limit(100);
+      const mIds = (mismatchRows as any[] || []).map((w) => w.pin_queue_id);
+      const { data: mPins } = mIds.length
+        ? await supabase
+            .from("pinterest_pin_queue" as any)
+            .select("id, pin_title, pinterest_pin_id, final_resolved_url, pin_image_url")
+            .in("id", mIds)
+        : { data: [] };
+      const mMap: Record<string, any> = {};
+      for (const p of (mPins as any[] || [])) mMap[p.id] = p;
+      const mismatchJoined = (mismatchRows as any[] || []).map((w) => ({ ...w, pin: mMap[w.pin_queue_id] }));
+
+      // Top 100 highest-traffic pins (prefer pinterest_analytics_daily, fall back to gi_pinterest_pin_metrics)
+      let trafficSource = "pinterest_analytics_daily";
+      let traffic: any[] = [];
+      const { data: pad } = await supabase
+        .from("pinterest_analytics_daily" as any)
+        .select("pin_id, impressions, outbound_clicks")
+        .order("impressions", { ascending: false })
+        .limit(500);
+      if ((pad as any[] || []).length === 0) {
+        trafficSource = "gi_pinterest_pin_metrics";
+        const { data: gi } = await supabase
+          .from("gi_pinterest_pin_metrics" as any)
+          .select("pin_id, impressions, outbound_clicks")
+          .order("impressions", { ascending: false })
+          .limit(500);
+        traffic = (gi as any[] || []);
+      } else {
+        traffic = (pad as any[] || []);
+      }
+      // Aggregate by pin_id (analytics tables are per-day rows)
+      const agg: Record<string, { impressions: number; clicks: number }> = {};
+      for (const r of traffic) {
+        const k = r.pin_id;
+        if (!k) continue;
+        agg[k] = agg[k] || { impressions: 0, clicks: 0 };
+        agg[k].impressions += Number(r.impressions || 0);
+        agg[k].clicks += Number(r.outbound_clicks || 0);
+      }
+      const top = Object.entries(agg)
+        .sort((a, b) => b[1].impressions - a[1].impressions)
+        .slice(0, 100)
+        .map(([pid, v]) => ({ pinterest_pin_id: pid, ...v }));
+      let trafficJoined: any[] = top;
+      if (top.length) {
+        const { data: tp } = await supabase
+          .from("pinterest_pin_queue" as any)
+          .select("pinterest_pin_id, pin_title, final_resolved_url, validation_status, image_match_score")
+          .in("pinterest_pin_id", top.map((t) => t.pinterest_pin_id));
+        const tm: Record<string, any> = {};
+        for (const p of (tp as any[] || [])) tm[p.pinterest_pin_id] = p;
+        trafficJoined = top.map((t) => ({ ...t, pin: tm[t.pinterest_pin_id] }));
+      } else {
+        trafficSource = "none";
+      }
+
+      setReports({
+        worst: worstJoined,
+        traffic: trafficJoined,
+        deleted: (deleted as any[] || []),
+        mismatch: mismatchJoined,
+        trafficSource,
+      });
+    })();
+  }, [run?.id, matchSummary.mismatch]);
+
 
   const callFn = async (name: string) => {
     setBusy(name);
