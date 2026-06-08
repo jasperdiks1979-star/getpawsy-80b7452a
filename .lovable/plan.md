@@ -1,157 +1,143 @@
-# Pinterest URL Recovery + Image↔Product Consistency Audit
+# Pinterest Destination Integrity — Permanent Hardening
 
-Two strict safety rules drive this revision:
+Goal: **0 Pinterest destinations may ever resolve to 404, soft-404, homepage, collection, or dead PDP** — for past, present, scheduled, queued, draft, future, feed, and campaign pins.
 
-1. **Recover before replace.** Replacement pins are only created when the resolver, slug history, alias map, and similar-product matcher all fail. Existing pins keep their SEO value, saves, clicks, impressions, and rankings whenever a 308 redirect can land the click on a live PDP.
-2. **Image must match product (≥80) before any future publish.** A pin-image vs product audit gates the publish pipeline going forward.
-
-No checkout, Stripe, pricing, theme, or SEO copy changes.
+Builds on existing infra (resolver, slug history, alias map, repair sweep, image-match gate, redirect engine). This pass closes the remaining gaps.
 
 ---
 
 ## Architecture
 
 ```text
-Pinterest click ─▶ /go|/products|/collections|/legacy|/redirect|/old-product/*
-                       │
-                       ▼
-              pinterest-url-resolver (shared)
-   exact → slug-history → alias → sku → cj-map → similar → category → 404
-                       │
-                       ▼
-              308 → /products/{current_slug}?<utm preserved>
-
-Future publish ─▶ pinterest-destination-validator (uses resolver)
-              + pinterest-image-product-match (≥80 required)
-              ─▶ allowed ▷ cron worker posts
+                ┌─────────────────────────────────────────┐
+                │   pinterest-destination-integrity (new) │
+                │   shared validator: 12-point check      │
+                └──────────────┬──────────────────────────┘
+                               │
+   ┌───────────────────────────┼─────────────────────────────────────┐
+   │                           │                                     │
+   ▼                           ▼                                     ▼
+PHASE 1/6 AUDIT          PHASE 3 PUBLISH GATE              PHASE 5 DAILY MONITOR
+pinterest-integrity-      cron-worker + validator           pg_cron 24h →
+audit (all sources)       blocks any non-200 PDP            integrity-audit
+   │                           │                                     │
+   ▼                           ▼                                     ▼
+PHASE 2 REPAIR           PHASE 4 SLUG TRIGGER              PHASE 7 REPORT
+integrity-repair          products.slug change →             /admin/pinterest-
+(uses resolver +          auto-rewrite queued/scheduled/      integrity (KPIs +
+title/image match)        draft destinations + feed rows     daily history)
 ```
+
+No checkout, pricing, theme, or copy changes.
 
 ---
 
-## Phase 1 — Audit (read-only, no pin changes)
+## Phase 1 — Universal audit
 
-`pinterest-url-audit` edge function walks every `pinterest_pin_queue` row (all statuses). For each pin records into new `pinterest_pin_audit`:
+New edge function `pinterest-integrity-audit` walks every source:
 
-- `pinterest_pin_id`, `destination_url`, resolver step that succeeded, `final_resolved_url`, live `http_status`, `product_exists`, `product_active`, `product_in_stock`, `duplicate_product`, `category`, `repair_strategy`.
+- `pinterest_pin_queue` (all statuses: draft / scheduled / queued / posted / failed)
+- `pinterest_publish_queue`, `pinterest_video_queue`
+- `pinterest_pins` (historical posted, includes ones not in queue)
+- `pinterest_capi_outbox` (campaign records)
+- Pinterest feed source (`products_public` rows currently exposed)
 
-Report buckets (stored in `pinterest_pin_audit_runs.summary`):
-- valid_pins, broken_pins, missing_products, oos_products, inactive_products
-- **recoverable_via_redirect**, **recoverable_via_slug_history**, **recoverable_via_alias**, **recoverable_via_similar**, **recoverable_via_category**
-- **requires_replacement** (only this bucket is eligible for replacement pins)
+For each `destination_link` runs the **12-point check** (HTTP 200 + product page + title + image + not 404/soft-404/home/collection/redirect-loop + ≤2 hops + final host is getpawsy.pet + `data-product-slug` matches a live product).
 
-## Phase 2 — Recovery resolver
+Writes results to **existing** `pinterest_pin_audit` (+ a new `source` column) and per-run summary to `pinterest_pin_audit_runs`.
 
-`supabase/functions/_shared/pinterest-url-resolver.ts` with strict 8-step ladder (exact → slug history → alias → sku → cj map → similar → category → 404). Always preserves UTM, `pin_mode`, `hook`, `intent`, `pin_id`, `gclid`, `fbclid`.
+## Phase 2 — Repair
 
-## Phase 3 — Slug history + alias
+New `pinterest-integrity-repair`. For every audit row with `validation_status='broken'`:
 
-New tables (service-role write, anon read):
+1. Resolver ladder (existing 8-step: exact → slug-history → alias → sku → cj-map → similar → category → 404).
+2. Title-similarity fallback (Jaccard ≥ 0.6 on tokens) against live catalog.
+3. Image-similarity fallback (perceptual hash via existing `pinterest-image-product-match`).
+4. Rewrite `destination_link` on every record type:
+   - `pinterest_pin_queue.destination_link` for `draft|scheduled|queued`
+   - `pinterest_publish_queue`, `pinterest_video_queue`, `pinterest_capi_outbox`
+   - posted-pin records → log into `pinterest_pin_repair_log` (redirect engine handles live click)
+5. Rows where steps 1–3 all fail → `repair_strategy='needs_replacement'` (no auto-pin creation).
 
-```sql
-product_slug_history(id, product_id, old_slug UNIQUE, current_slug, reason, created_at)
-product_aliases(id, product_id, alias UNIQUE, kind: slug|sku|external_sku|legacy_path, created_at)
-```
+## Phase 3 — Permanent publish gate
 
-Trigger on `products.slug` change auto-inserts into history. Migration backfills by scanning historical `pinterest_pin_queue.destination_link` slugs against current catalog (fuzzy match ≥ 0.85 + same category required, otherwise left unmapped — never guess).
+Edit `supabase/functions/_shared/pinterest-destination-validator.ts` to call the new 12-point check. Reject reasons: `http_non_200, soft_404, homepage_destination, collection_destination, redirect_loop, image_missing, title_missing, slug_mismatch, not_pdp`.
 
-## Phase 4 — Redirect engine
+Edit `pinterest-cron-worker/index.ts`: on validation fail → run `integrity-repair` for that row → revalidate once → if still broken, mark `status='blocked_invalid_url'`, never publish.
 
-`pinterest-redirect` edge function. `public/_redirects` proxies `/go/*`, `/legacy/*`, `/old-product/*`, `/redirect/*` to it (308). SPA shim in `src/App.tsx` for client-side navigation parity. Query strings always preserved verbatim.
+Also gates `pinterest-publish-queue` worker and `pinterest-video-publisher` the same way.
 
-## Phase 5 — Pin repair sweep (no API edits, no replacements yet)
+## Phase 4 — Slug-change auto-sync
 
-`pinterest-pin-repair` updates `pinterest_pin_queue` rows where the resolver succeeded:
-- `final_resolved_url`, `validation_status='valid'`, `repaired_at=now()`, `repair_strategy=<step>`.
-- Posted pins stay posted — the redirect handles live clicks.
-- Rows where resolver returned 404 → `repair_strategy='needs_replacement'`. No pins created yet.
+DB trigger (additive to existing slug-history trigger): on `UPDATE products SET slug` →
 
-## Phase 6 — Image ↔ Product consistency audit
+- insert row into `product_slug_history` (existing)
+- `UPDATE pinterest_pin_queue, pinterest_publish_queue, pinterest_video_queue, pinterest_capi_outbox SET destination_link = replace(...)` for any row matching the old slug
+- Posted-pin rows in `pinterest_pins` stay untouched (the `/products/:slug` redirect already handles live clicks via slug-history).
 
-New function `pinterest-image-product-match` + table `pinterest_pin_image_match`. For every pin:
+Trigger logs to new lightweight table `pinterest_slug_sync_log` for the admin page.
 
-Inputs compared:
-- pin image (URL from `pinterest_pin_queue.image_url`)
-- product featured + gallery (`products.image_url`, `product_media`)
-- product title, category, tags, description
+## Phase 5 — Daily monitor
 
-Scoring (0–100), weighted:
-- 40 — Lovable AI vision verdict (`google/gemini-2.5-flash`) classifying pin image vs product reference image: `exact_match | close_match | partial_match | mismatch`
-- 25 — category alignment (pin's inferred niche vs product category — reuse `_shared/pinterest-style-dna.ts` `detectNiche`)
-- 20 — title keyword overlap (Jaccard on tokens, stopwords stripped)
-- 15 — tag/description keyword overlap
+`pg_cron` job (24h, 04:00 UTC) → `net.http_post` to `pinterest-integrity-audit?mode=daily&autorepair=true`. Writes daily summary into `pinterest_pin_audit_runs`. Surfaced on the admin page.
 
-Verdict bucket: `exact_match (≥90)`, `close_match (80–89)`, `partial_match (60–79)`, `mismatch (<60)`. Anything `<80` is flagged.
+## Phase 6 — Historical sweep
 
-Report: counts per bucket + per-pin scores + reasons.
+One-shot invocation of `pinterest-integrity-audit?mode=historical` walks every `pinterest_pins` + every `pinterest_pin_queue.status='posted'`. For each broken historical pin:
 
-## Phase 7 — Replacement gate (only after audits)
+- if Pinterest API supports editing the pin's destination → patch it via `pinterest-pin-edit-destination` (new helper using `PATCH /v5/pins/{id}`).
+- otherwise log into `pinterest_pin_repair_log` with `repair_strategy='needs_replacement'` (existing redirect engine still saves the click).
 
-A replacement pin is enqueued **only if all of**:
-- `repair_strategy='needs_replacement'` (Phase 5), **OR** image match `<60`,
-- AND the original product is gone or has no viable redirect target,
-- AND no live `/products/{current_slug}` resolves.
+No pin deletions.
 
-Replacements go in as `pinterest_pin_queue.status='draft'`, `replacement_for_pin_id=<old>`, human approval required (existing `bulk_approve` flow). Never automatic, never duplicating a working pin.
+## Phase 7 — Report + admin dashboard
 
-## Phase 8 — Future protection
+Extend existing `/admin/pinterest-url-recovery` (or add a sibling `/admin/pinterest-integrity`) with KPIs:
 
-- `pinterest-destination-validator` calls the resolver — reject reasons: `destination_404`, `product_not_found`, `product_inactive`, `product_oos`, `wrong_destination_url`.
-- `pinterest-cron-worker` additionally requires `image_match_score >= 80` (sourced from `pinterest_pin_image_match`). Drafts without a match score get scored on-the-fly before publishing.
-- Creative-director keeps emitting canonical `/products/{slug}` URLs only.
+- total pins scanned · URLs scanned · broken found · repaired · active validated · queued validated · scheduled validated · historical validated
+- % passing validation
+- Last 30 days of daily-monitor runs
+- Slug-sync log (recent auto-rewrites)
+- Manual buttons: Run Audit · Run Repair · Run Historical Sweep · Re-validate Queue
 
-## Phase 9 — Admin dashboard
-
-`/admin/pinterest-url-recovery` (lazy-loaded, admin-gated):
-
-- KPI tiles: total / working / broken / recoverable-by-redirect / recoverable-by-slug / recoverable-by-alias / requires-replacement / image-match<80.
-- Tabs: **URL Recovery** and **Image Consistency**.
-- Per-pin table: Pinterest ID, image thumb, destination, final URL, HTTP, repair strategy, image-match score + bucket, "Re-resolve" / "Re-score" buttons.
-- Action buttons (admin only): Run URL audit · Run repair sweep · Run image audit · Queue replacements for non-recoverable.
-
-## Phase 10 — Execute & report
-
-Order (single button + curl-runnable):
-1. URL audit → publish report.
-2. Repair sweep → live redirects working.
-3. URL audit re-run → verify ≥95% historical posted pins resolve HTTP 200.
-4. Image audit → score every pin.
-5. **Pause for human review of `requires_replacement` and `mismatch` buckets.**
-6. Only after explicit approval: enqueue replacement drafts.
-
-Success criteria:
-- ≥95% historical posted pins resolve to HTTP 200 via redirect or direct match.
-- 0 future pins publish with destination !200 or image-match <80.
-- 0 unnecessary replacements (every replacement has a documented `requires_replacement` reason).
+Final response will include the same numbers from the first live run.
 
 ---
 
 ## Files
 
 **Create**
-- `supabase/migrations/<ts>_pinterest_url_recovery.sql` — slug-history, aliases, pin-audit, image-match tables + trigger + RLS + GRANTs
-- `supabase/functions/_shared/pinterest-url-resolver.ts`
-- `supabase/functions/pinterest-redirect/index.ts`
-- `supabase/functions/pinterest-url-audit/index.ts`
-- `supabase/functions/pinterest-pin-repair/index.ts`
-- `supabase/functions/pinterest-image-product-match/index.ts`
-- `src/pages/admin/PinterestUrlRecoveryPage.tsx`
+- `supabase/functions/_shared/pinterest-integrity-check.ts` — 12-point validator
+- `supabase/functions/pinterest-integrity-audit/index.ts`
+- `supabase/functions/pinterest-integrity-repair/index.ts`
+- `supabase/functions/pinterest-pin-edit-destination/index.ts`
+- `supabase/migrations/<ts>_pinterest_integrity.sql` — `pinterest_slug_sync_log` + audit `source` column + slug-sync trigger + pg_cron schedule + GRANTs/RLS
+- `src/pages/admin/PinterestIntegrityPage.tsx`
 
 **Edit**
-- `supabase/functions/_shared/pinterest-destination-validator.ts` (use resolver)
-- `supabase/functions/pinterest-cron-worker/index.ts` (new reject reasons + image-score gate)
-- `src/App.tsx` (lazy admin route + /go shim)
-- `public/_redirects` (legacy paths → edge function 308)
-- memory note for resolver + image-match contract
+- `supabase/functions/_shared/pinterest-destination-validator.ts` — delegate to 12-point check
+- `supabase/functions/pinterest-cron-worker/index.ts` — gate + auto-repair-then-revalidate
+- `supabase/functions/pinterest-publish-queue/index.ts` — same gate
+- `supabase/functions/pinterest-video-publisher/index.ts` — same gate
+- `src/App.tsx` — lazy admin route
+- memory: pinterest-integrity contract
+
+**Out of scope**
+Pin deletions, mass replacement pin generation without approval, checkout/pricing/SEO copy, design changes.
 
 ---
 
-## Out of scope
+## Acceptance criteria
 
-Checkout, Stripe, pricing, theme/design, SEO copy, new tracking pixels, mass replacement pin generation without human approval.
+- Live run shows ≥99% of Pinterest destinations passing the 12-point check (remaining <1% all have `needs_replacement` with documented reason).
+- Cron worker provably refuses to publish any pin failing validation (test row stays at `blocked_invalid_url`).
+- Slug change on one test product auto-rewrites all matching queued/scheduled/draft rows within one transaction.
+- Daily monitor logs visible on admin page.
+- Final chat report contains every counter listed in Phase 7.
 
 ---
 
 **Approve to proceed.** I'll ship in two reviewable batches:
 
-- **Batch A:** Phases 1–5 (migration + resolver + slug history + redirect engine + URL audit + repair sweep + dashboard skeleton). Read/redirect only — zero risk to existing pins.
-- **Batch B:** Phases 6–10 (image audit + validator/worker gates + replacement queue + final report). Runs only after Batch A's report shows recovery numbers.
+- **Batch A (read + gate):** migration, 12-point validator, audit function, publish-gate edits, slug trigger, admin page skeleton, daily cron. Zero pin mutations.
+- **Batch B (repair + historical):** repair function, historical sweep, pin-edit-destination helper, full report. Runs only after Batch A's audit numbers are reviewed.
