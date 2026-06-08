@@ -181,7 +181,10 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
   };
 
   const fetchPublicBy = async (column: "id" | "slug", value: string) => {
-    const { data, error } = await supabase.from("products_public").select("*").eq(column, value).maybeSingle();
+    // products_detail exposes ALL active non-duplicate products (including out-of-stock)
+    // so the PDP URL stays reachable for SEO. The page itself renders an OOS state
+    // and disables Add to Cart when availability fails.
+    const { data, error } = await supabase.from("products_detail").select("*").eq(column, value).maybeSingle();
 
     if (error) throw error;
     return data;
@@ -189,7 +192,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
   const fetchBaseBy = async (column: "id" | "slug", value: string) => {
     const { data, error } = await supabase
-      .from("products_public")
+      .from("products_detail")
       .select("*")
       .eq(column, value)
       .eq("is_active", true)
@@ -201,7 +204,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
   const resolveDuplicateRedirect = async (column: "id" | "slug", value: string) => {
     const { data } = await supabase
-      .from("products_public")
+      .from("products_detail")
       .select("is_duplicate, canonical_product_id")
       .eq(column, value)
       .maybeSingle();
@@ -219,7 +222,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
       .from("bestsellers")
       .select(`
         slug,
-        products_public!bestsellers_product_id_fkey (
+        products_detail!bestsellers_product_id_fkey (
           *
         )
       `)
@@ -229,9 +232,9 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
     if (error) throw error;
 
-    const canonicalProduct = Array.isArray(data?.products_public)
-      ? data?.products_public?.[0]
-      : data?.products_public;
+    const canonicalProduct = Array.isArray((data as any)?.products_detail)
+      ? (data as any)?.products_detail?.[0]
+      : (data as any)?.products_detail;
 
     if (canonicalProduct) {
       return { ...canonicalProduct, _redirect: true, _aliasSlug: value };
@@ -268,7 +271,7 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
 
     const searchName = productIdentifier.replace(/-/g, " ").toLowerCase();
     const { data, error } = await supabase
-      .from("products_public")
+      .from("products_detail")
       .select("*")
       .ilike("name", `%${searchName}%`)
       .eq("is_active", true)
