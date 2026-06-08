@@ -117,6 +117,45 @@ export async function resolveDestination(
     }
   }
 
+  // 1b) inactive product with same slug — use its category to find a live sibling.
+  // This is the dominant failure mode for already-published Pinterest pins whose
+  // products were later deactivated (out of stock / discontinued).
+  let inactiveCategory: string | null = null;
+  let inactiveTokens: Set<string> | null = null;
+  {
+    const { data: inactive } = await sb
+      .from("products")
+      .select("id, slug, name, category, is_active")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (inactive && inactive.is_active === false) {
+      inactiveCategory = inactive.category || null;
+      inactiveTokens = new Set(tokens(inactive.name || inactive.slug || slug.replace(/-/g, " ")));
+      if (inactiveCategory) {
+        const { data: siblings } = await sb
+          .from("products_public")
+          .select("id, slug, name, category")
+          .eq("category", inactiveCategory)
+          .limit(200);
+        let best: { score: number; row: any } | null = null;
+        for (const row of siblings || []) {
+          const score = jaccard(inactiveTokens, new Set(tokens(row.name || row.slug || "")));
+          if (!best || score > best.score) best = { score, row };
+        }
+        if (best) {
+          return mk(
+            "similar",
+            withQuery(pdp(best.row.slug), rawQuery),
+            best.row.id,
+            best.row.slug,
+            best.row.category,
+            `inactive_sibling jaccard=${best.score.toFixed(2)}`,
+          );
+        }
+      }
+    }
+  }
+
   // 2) slug history
   {
     const { data: hist } = await sb
@@ -207,6 +246,7 @@ export async function resolveDestination(
   // 7) category fallback — only if path was a collection or slug encodes a known category
   {
     const catFromPath = u.pathname.match(/^\/collections?\/([^\/?#]+)/i)?.[1] ||
+      inactiveCategory ||
       slug.split("-").slice(-2).join("-");
     if (catFromPath) {
       const { count } = await sb
