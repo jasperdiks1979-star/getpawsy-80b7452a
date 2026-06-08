@@ -2613,6 +2613,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-pin-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestPinPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
