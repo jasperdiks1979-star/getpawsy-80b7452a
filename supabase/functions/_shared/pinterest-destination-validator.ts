@@ -28,7 +28,13 @@ export type ValidationReason =
   | "product_not_found"
   | "product_oos"
   | "wrong_destination_url"
-  | "category_mismatch";
+  | "category_mismatch"
+  | "homepage_destination"
+  | "soft_404"
+  | "redirect_loop"
+  | "title_missing"
+  | "image_missing"
+  | "slug_mismatch";
 
 export interface ValidationResult {
   ok: boolean;
