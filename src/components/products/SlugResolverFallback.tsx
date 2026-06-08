@@ -34,12 +34,21 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
           body: { slug },
         });
         const targetSlug = (data as any)?.product_slug as string | null;
+        const category = (data as any)?.category as string | null;
         const step = (data as any)?.step as string | undefined;
+        const search = typeof window !== "undefined" ? window.location.search : "";
+        const hash = typeof window !== "undefined" ? window.location.hash : "";
         if (!error && targetSlug && targetSlug !== slug && step && step !== "not_found" && step !== "category") {
           setPhase("redirecting");
-          const search = typeof window !== "undefined" ? window.location.search : "";
-          const hash = typeof window !== "undefined" ? window.location.hash : "";
           navigate(`/products/${targetSlug}${search}${hash}`, { replace: true });
+          return;
+        }
+        // Category-level fallback: redirect to /collections/{category} so the
+        // user lands on a real shopping surface instead of a 404. This
+        // recovers Pinterest traffic for pins whose product was deactivated.
+        if (!error && step === "category" && category) {
+          setPhase("redirecting");
+          navigate(`/collections/${category}${search}${hash}`, { replace: true });
           return;
         }
       } catch {
