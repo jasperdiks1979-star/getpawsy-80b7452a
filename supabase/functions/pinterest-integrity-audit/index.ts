@@ -25,6 +25,7 @@ import { resolveDestination } from "../_shared/pinterest-url-resolver.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET = Deno.env.get("PINTEREST_CRON_SECRET") || "";
+const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") || "";
 
 const tid = () => crypto.randomUUID().slice(0, 8);
 
@@ -115,6 +116,8 @@ async function authorize(req: Request, sb: any): Promise<{ ok: boolean; userId?:
   // Cron-secret bypass for the daily monitor
   const cron = req.headers.get("X-Cron-Secret") || "";
   if (CRON_SECRET && cron === CRON_SECRET) return { ok: true };
+  const internal = req.headers.get("X-Internal-Secret") || "";
+  if (INTERNAL_SECRET && internal === INTERNAL_SECRET) return { ok: true };
 
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) return { ok: false, reason: "missing_token" };
