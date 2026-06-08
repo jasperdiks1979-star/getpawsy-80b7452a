@@ -60,6 +60,7 @@ const sections = [
       { to: '/admin/funnel-by-source', label: 'Funnel by Source', icon: Filter, desc: 'view_item → add_to_cart → begin_checkout → purchase per UTM-bron met drop-off %' },
       { to: '/admin/revenue-scaling', label: 'Revenue Scaling', icon: TrendingUp, desc: '12-month blueprint' },
       { to: '/dashboard', label: 'Product Manager', icon: Package, desc: 'Products, orders, CJ tools' },
+      { to: '/admin/product-stock-audit', label: 'Product Stock Audit', icon: Package, desc: 'Verify zero OOS leaks into storefront/feed/ATC' },
       { to: '/admin/winners-boost', label: 'Winners Auto-Boost', icon: TrendingUp, desc: 'Top products & homepage promotion' },
       { to: '/admin/shopping-optimizer', label: 'Shopping Traffic Engine', icon: Zap, desc: 'Optimize product data for Google Shopping' },
     ],
