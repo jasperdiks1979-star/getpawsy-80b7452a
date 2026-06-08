@@ -27,6 +27,9 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
 const SENTINEL_JOB_ID = "00000000-0000-0000-0000-000000000000";
+// claim-job restricts non-destructive probes to gh-actions-* worker_ids
+// (see CLAIM_JOB_ALLOW_NON_GH). Use a gh-actions-prefixed sentinel id.
+const PROBE_WORKER_ID = "gh-actions-deploy-verify-probe";
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
@@ -74,7 +77,7 @@ Deno.serve(async (req) => {
             "x-render-secret": RENDER_WORKER_SECRET,
           },
           body: JSON.stringify({
-            worker_id: "deploy-verify-probe",
+            worker_id: PROBE_WORKER_ID,
             job_id: SENTINEL_JOB_ID,
           }),
         });
