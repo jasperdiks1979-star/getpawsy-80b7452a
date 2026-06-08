@@ -834,7 +834,7 @@ const ProductDetail = () => {
   // TRUE 404: loading is complete, no error, and no product found.
   // Only now is it safe to render NotFound with noindex.
   if (!product) {
-    return <NotFound />;
+    return <SlugResolverFallback slug={slug ?? ""} />;
   }
 
   // ── TikTok Bio fast PDP ────────────────────────────────────────────────
