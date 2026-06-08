@@ -2604,6 +2604,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-redirect-map"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestRedirectMapPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
