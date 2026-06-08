@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   const mode = url.searchParams.get("mode") || "all";
   const autorepair = url.searchParams.get("autorepair") || "true";
   const batch = url.searchParams.get("batch_size") || "1000";
+  const offset = url.searchParams.get("offset") || "0";
+  const dedupe = url.searchParams.get("dedupe") || "false";
 
   const r = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-integrity-audit`, {
     method: "POST",
@@ -20,7 +22,13 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
       "X-Internal-Secret": INTERNAL,
     },
-    body: JSON.stringify({ mode, autorepair: autorepair === "true", batch_size: Number(batch) }),
+    body: JSON.stringify({
+      mode,
+      autorepair: autorepair === "true",
+      batch_size: Number(batch),
+      offset: Number(offset),
+      dedupe: dedupe === "true",
+    }),
   });
   const text = await r.text();
   return new Response(text, {
