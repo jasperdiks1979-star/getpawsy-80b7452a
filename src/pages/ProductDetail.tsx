@@ -83,6 +83,7 @@ import { DogBedsClusterLinks } from "@/components/seo/DogBedsClusterLinks";
 import { PDPClusterLinks } from "@/components/seo/PDPClusterLinks";
 import { WhyTrustGetPawsy } from "@/components/seo/WhyTrustGetPawsy";
 import NotFound from "@/pages/NotFound";
+import SlugResolverFallback from "@/components/products/SlugResolverFallback";
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
@@ -834,7 +835,7 @@ const ProductDetail = () => {
   // TRUE 404: loading is complete, no error, and no product found.
   // Only now is it safe to render NotFound with noindex.
   if (!product) {
-    return <NotFound />;
+    return <SlugResolverFallback slug={slug ?? ""} />;
   }
 
   // ── TikTok Bio fast PDP ────────────────────────────────────────────────
