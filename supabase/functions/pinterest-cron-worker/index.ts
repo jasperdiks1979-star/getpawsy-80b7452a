@@ -3,6 +3,7 @@ import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_share
 import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
+import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
 
 const MAX_RETRIES = 2;
 const BATCH_SIZE = 3; // max concurrency per cron run
@@ -796,6 +797,30 @@ Deno.serve(async (req) => {
         } catch {
           // leave destination as-is if URL parsing fails — QA gate already validates
         }
+
+        // 🛡️ Pre-publish destination validator — refuse any URL that does not
+        // return HTTP 200 on a real, in-stock /products/{slug} page.
+        const destVerdict = await validateDestination(sb, destinationLink);
+        await sb.from("pinterest_pin_queue").update({
+          final_resolved_url: destVerdict.final_resolved_url,
+          http_status: destVerdict.http_status,
+          product_slug_found: destVerdict.product_slug_found,
+          validation_status: destVerdict.validation_status,
+          last_validation_error: destVerdict.last_validation_error,
+          last_validated_at: new Date().toISOString(),
+        }).eq("id", pin.id);
+        if (!destVerdict.ok) {
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: destVerdict.last_validation_error,
+            last_publish_error: `Destination validator rejected: ${destVerdict.last_validation_error} ${destVerdict.reason_detail ?? ""}`.trim(),
+            updated_at: new Date().toISOString(),
+          }).eq("id", pin.id);
+          console.warn(`[cron] Pin ${pin.id} REJECTED by destination validator: ${destVerdict.last_validation_error}`);
+          results.push({ pinId: pin.id, status: "rejected", error: destVerdict.last_validation_error ?? "invalid_destination" });
+          continue;
+        }
+
         const requestPayload = {
           title: pin.pin_title,
           description: pin.pin_description,
