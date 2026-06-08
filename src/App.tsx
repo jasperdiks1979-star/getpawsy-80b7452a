@@ -2622,6 +2622,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-integrity"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestIntegrityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
