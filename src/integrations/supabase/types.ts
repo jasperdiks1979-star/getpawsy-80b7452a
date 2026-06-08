@@ -13108,6 +13108,111 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_audit: {
+        Row: {
+          category: string | null
+          created_at: string
+          destination_url: string
+          duplicate_product: boolean
+          final_resolved_url: string | null
+          http_status: number | null
+          id: string
+          notes: string | null
+          pin_queue_id: string | null
+          pinterest_pin_id: string | null
+          product_active: boolean
+          product_exists: boolean
+          product_in_stock: boolean
+          repair_strategy: string | null
+          resolver_step: string | null
+          run_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          destination_url: string
+          duplicate_product?: boolean
+          final_resolved_url?: string | null
+          http_status?: number | null
+          id?: string
+          notes?: string | null
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_active?: boolean
+          product_exists?: boolean
+          product_in_stock?: boolean
+          repair_strategy?: string | null
+          resolver_step?: string | null
+          run_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          destination_url?: string
+          duplicate_product?: boolean
+          final_resolved_url?: string | null
+          http_status?: number | null
+          id?: string
+          notes?: string | null
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_active?: boolean
+          product_exists?: boolean
+          product_in_stock?: boolean
+          repair_strategy?: string | null
+          resolver_step?: string | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_pin_audit_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_pin_audit_runs: {
+        Row: {
+          finished_at: string | null
+          id: string
+          pins_broken: number
+          pins_total: number
+          pins_valid: number
+          started_at: string
+          summary: Json
+          triggered_by: string | null
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          pins_broken?: number
+          pins_total?: number
+          pins_valid?: number
+          started_at?: string
+          summary?: Json
+          triggered_by?: string | null
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          pins_broken?: number
+          pins_total?: number
+          pins_valid?: number
+          started_at?: string
+          summary?: Json
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       pinterest_pin_deletion_verifications: {
         Row: {
           created_at: string
@@ -13185,6 +13290,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pinterest_pin_image_match: {
+        Row: {
+          category_score: number | null
+          id: string
+          pin_queue_id: string
+          reasons: Json
+          score: number
+          scored_at: string
+          tag_score: number | null
+          title_score: number | null
+          verdict: string
+          vision_verdict: string | null
+        }
+        Insert: {
+          category_score?: number | null
+          id?: string
+          pin_queue_id: string
+          reasons?: Json
+          score: number
+          scored_at?: string
+          tag_score?: number | null
+          title_score?: number | null
+          verdict: string
+          vision_verdict?: string | null
+        }
+        Update: {
+          category_score?: number | null
+          id?: string
+          pin_queue_id?: string
+          reasons?: Json
+          score?: number
+          scored_at?: string
+          tag_score?: number | null
+          title_score?: number | null
+          verdict?: string
+          vision_verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_pin_image_match_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_pin_performance: {
         Row: {
@@ -13270,6 +13422,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           image_hash: string | null
+          image_match_score: number | null
           last_publish_error: string | null
           last_validated_at: string | null
           last_validation_error: string | null
@@ -13299,6 +13452,9 @@ export type Database = {
           recovery_mode_publish: boolean
           recovery_trace: Json | null
           rejection_reason: string | null
+          repair_strategy: string | null
+          repaired_at: string | null
+          replacement_for_pin_id: string | null
           retries: number
           scheduled_at: string | null
           status: string
@@ -13326,6 +13482,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           image_hash?: string | null
+          image_match_score?: number | null
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
@@ -13355,6 +13512,9 @@ export type Database = {
           recovery_mode_publish?: boolean
           recovery_trace?: Json | null
           rejection_reason?: string | null
+          repair_strategy?: string | null
+          repaired_at?: string | null
+          replacement_for_pin_id?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string
@@ -13382,6 +13542,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           image_hash?: string | null
+          image_match_score?: number | null
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
@@ -13411,6 +13572,9 @@ export type Database = {
           recovery_mode_publish?: boolean
           recovery_trace?: Json | null
           rejection_reason?: string | null
+          repair_strategy?: string | null
+          repaired_at?: string | null
+          replacement_for_pin_id?: string | null
           retries?: number
           scheduled_at?: string | null
           status?: string
@@ -13418,7 +13582,15 @@ export type Database = {
           us_audience_score?: number | null
           validation_status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_pin_queue_replacement_for_pin_id_fkey"
+            columns: ["replacement_for_pin_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_pin_verdicts: {
         Row: {
@@ -14558,6 +14730,52 @@ export type Database = {
         }
         Relationships: []
       }
+      product_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          kind: string
+          product_id: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          kind: string
+          product_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_bundles: {
         Row: {
           created_at: string
@@ -15059,6 +15277,55 @@ export type Database = {
           },
           {
             foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_slug_history: {
+        Row: {
+          created_at: string
+          current_slug: string
+          id: string
+          old_slug: string
+          product_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_slug: string
+          id?: string
+          old_slug: string
+          product_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_slug?: string
+          id?: string
+          old_slug?: string
+          product_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_public"
