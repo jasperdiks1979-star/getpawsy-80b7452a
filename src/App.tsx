@@ -2595,6 +2595,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-url-recovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestUrlRecoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
