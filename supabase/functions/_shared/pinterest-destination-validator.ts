@@ -57,14 +57,15 @@ function extractSlug(url: string): string | null {
   }
 }
 
-async function fetchFinal(url: string): Promise<{ status: number; finalUrl: string }> {
+async function fetchFinal(url: string): Promise<{ status: number; finalUrl: string; body: string }> {
   // Use GET (HEAD is sometimes 405 on Vite/CDN edges) with a sane UA.
   const res = await fetch(url, {
     method: "GET",
     redirect: "follow",
     headers: { "User-Agent": "GetPawsyDestinationValidator/1.0" },
   });
-  return { status: res.status, finalUrl: res.url };
+  const body = await res.text().catch(() => "");
+  return { status: res.status, finalUrl: res.url, body };
 }
 
 export async function validateDestination(
