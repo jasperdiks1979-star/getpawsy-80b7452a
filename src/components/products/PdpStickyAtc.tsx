@@ -105,7 +105,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
               ${price.toFixed(2)}
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
-              {qualifiesFreeShip ? 'Free US shipping' : `Free over $${FREE_SHIPPING_THRESHOLD}`}
+              {qualifiesFreeShip ? 'Free US shipping • Secure checkout' : `Free over $${FREE_SHIPPING_THRESHOLD} • Secure checkout`}
             </span>
           </div>
           <Button
@@ -114,7 +114,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
             className="ml-auto h-14 flex-1 gap-2 text-[15px] font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-transform"
           >
             <ShoppingCart className="w-[18px] h-[18px]" />
-            {inStock ? ctaLabel : 'Out of stock'}
+            {inStock ? `${ctaLabel} →` : 'Out of stock'}
           </Button>
         </div>
       </div>
@@ -132,7 +132,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-base font-bold text-foreground">${price.toFixed(2)}</span>
           <span className="text-[10px] text-muted-foreground truncate">
-            {qualifiesFreeShip ? 'Free US shipping' : `Free shipping over $${FREE_SHIPPING_THRESHOLD}`}
+            {qualifiesFreeShip ? 'Free US shipping • Secure checkout' : `Free over $${FREE_SHIPPING_THRESHOLD} • Secure checkout`}
           </span>
         </div>
         <Button
@@ -141,7 +141,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
           className="ml-auto h-12 flex-1 gap-2 text-sm font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl active:scale-[0.98] transition-transform"
         >
           <ShoppingCart className="w-4 h-4" />
-          {inStock ? ctaLabel : 'Out of stock'}
+          {inStock ? `${ctaLabel} →` : 'Out of stock'}
         </Button>
       </div>
     </div>

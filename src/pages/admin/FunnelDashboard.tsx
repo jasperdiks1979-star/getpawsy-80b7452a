@@ -98,7 +98,7 @@ export default function FunnelDashboard() {
         .select('event_name, session_id, utm_source, utm_campaign, device, is_bot')
         .gte('created_at', since)
         .eq('qa', false)
-        .in('event_name', ['view_item', 'pdp_view', 'add_to_cart', 'begin_checkout', 'payment_success'])
+        .in('event_name', ['view_item', 'pdp_view', 'add_to_cart', 'sticky_atc_visible', 'begin_checkout', 'payment_success'])
         .limit(50000),
       supabase.from('checkout_funnel_events')
         .select('step, session_id, stripe_session_id, value, is_bot')
@@ -150,13 +150,17 @@ export default function FunnelDashboard() {
     const { allowed } = filteredSessions;
     const view = new Set<string>();
     const atc = new Set<string>();
+    const stickyAtcImpressions = new Set<string>();
     const checkout = new Set<string>();
     const purchase = new Set<string>();
 
     for (const r of lp) {
       if (!allowed.has(r.session_id)) continue;
       if (r.event_name === 'view_item' || r.event_name === 'pdp_view') view.add(r.session_id);
+      // IMPORTANT: `sticky_atc_visible` is an IMPRESSION, not a conversion.
+      // It must NEVER be aggregated into the add_to_cart bucket.
       if (r.event_name === 'add_to_cart') atc.add(r.session_id);
+      if (r.event_name === 'sticky_atc_visible') stickyAtcImpressions.add(r.session_id);
       if (r.event_name === 'begin_checkout') checkout.add(r.session_id);
       if (r.event_name === 'payment_success') purchase.add(r.session_id);
     }
@@ -171,7 +175,14 @@ export default function FunnelDashboard() {
       if (r.step === 'begin_checkout' || r.step === 'checkout_click') checkout.add(r.session_id);
       if (r.step === 'payment_success' || r.step === 'checkout_redirect_success') purchase.add(r.session_id);
     }
-    return { view: view.size, atc: atc.size, checkout: checkout.size, purchase: purchase.size, allowSidsAll };
+    return {
+      view: view.size,
+      atc: atc.size,
+      stickyAtcImpressions: stickyAtcImpressions.size,
+      checkout: checkout.size,
+      purchase: purchase.size,
+      allowSidsAll,
+    };
   }, [lp, ck, filteredSessions, excludeBots, source]);
 
   /** Revenue from paid orders, attributed via stripe_session_id → session_id → utm_source. */
@@ -343,6 +354,24 @@ export default function FunnelDashboard() {
               sub={`${pct(funnel.checkout, funnel.atc)} of ATC`} />
             <Kpi label="Purchases" value={funnel.purchase.toLocaleString()}
               sub={`${pct(funnel.purchase, funnel.checkout)} of checkouts`} />
+          </CardContent>
+        </Card>
+
+        {/* Impression diagnostics — explicitly separated from conversion metrics. */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Impression diagnostics</CardTitle>
+            <CardDescription>
+              Visibility/impression signals. These are NOT conversions and must never be
+              aggregated into the Add To Cart KPI above.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Kpi
+              label="Sticky Add To Cart Visible (Impression)"
+              value={funnel.stickyAtcImpressions.toLocaleString()}
+              sub={`${pct(funnel.stickyAtcImpressions, funnel.view)} of product views`}
+            />
           </CardContent>
         </Card>
 
