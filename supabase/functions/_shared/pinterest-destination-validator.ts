@@ -132,7 +132,7 @@ export async function validateDestination(
 
   // 3. Live HTTP check — must return 200 and stay on /products/{slug}
   try {
-    const { status, finalUrl } = await fetchFinal(destinationLink);
+    const { status, finalUrl, body } = await fetchFinal(destinationLink);
     if (status !== 200) {
       return {
         ...base,
@@ -144,18 +144,69 @@ export async function validateDestination(
         last_validation_error: "destination_404",
       };
     }
+    // Path-shape checks
+    const finalUrlObj = new URL(finalUrl);
+    const path = finalUrlObj.pathname.replace(/\/+$/, "") || "/";
+    if (path === "/" || path === "") {
+      return {
+        ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+        ok: false, validation_status: "invalid", last_validation_error: "homepage_destination",
+      };
+    }
+    if (/^\/collections?\//i.test(path)) {
+      return {
+        ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+        ok: false, validation_status: "invalid", last_validation_error: "category_mismatch",
+      };
+    }
     const finalSlug = extractSlug(finalUrl);
     if (!finalSlug) {
       return {
-        ...base,
-        product_slug_found: true,
-        final_resolved_url: finalUrl,
-        http_status: status,
-        ok: false,
-        validation_status: "invalid",
-        last_validation_error: "category_mismatch",
+        ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+        ok: false, validation_status: "invalid", last_validation_error: "category_mismatch",
         reason_detail: "Final URL is not a /products/{slug} page",
       };
+    }
+    if (finalSlug !== slug) {
+      // Slug changed mid-flight (redirect to a different product). Still valid if the new slug
+      // exists in catalog, but flag the original record so it gets rewritten by repair.
+      const { data: redirected } = await sb.from("products_public").select("slug").eq("slug", finalSlug).maybeSingle();
+      if (!redirected) {
+        return {
+          ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+          ok: false, validation_status: "invalid", last_validation_error: "slug_mismatch",
+          reason_detail: `redirected to inactive slug ${finalSlug}`,
+        };
+      }
+    }
+    // Soft-404 / content heuristics on the SSR HTML payload
+    if (body && body.length > 0) {
+      const html = body.toLowerCase();
+      // soft-404 fingerprints used by the SPA shell
+      if (/data-page=["']404["']|page-not-found|404 — page not found|not found/i.test(body)
+          && !/og:type[^>]+product/i.test(body)) {
+        return {
+          ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+          ok: false, validation_status: "invalid", last_validation_error: "soft_404",
+        };
+      }
+      // Title required (either <title> or og:title)
+      const hasTitle = /<title>[^<]{3,}<\/title>/i.test(body) || /property=["']og:title["'][^>]+content=["'][^"']{3,}/i.test(body);
+      if (!hasTitle) {
+        return {
+          ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+          ok: false, validation_status: "invalid", last_validation_error: "title_missing",
+        };
+      }
+      // og:image required for any product page
+      const hasImage = /property=["']og:image["'][^>]+content=["']https?:\/\/[^"']+/i.test(body);
+      if (!hasImage) {
+        return {
+          ...base, product_slug_found: true, final_resolved_url: finalUrl, http_status: status,
+          ok: false, validation_status: "invalid", last_validation_error: "image_missing",
+        };
+      }
+      void html;
     }
     return {
       final_resolved_url: finalUrl,
