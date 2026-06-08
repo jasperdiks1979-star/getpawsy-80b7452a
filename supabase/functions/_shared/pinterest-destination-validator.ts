@@ -20,6 +20,8 @@
 
 const ALLOWED_HOST = "getpawsy.pet";
 
+import { resolveDestination } from "./pinterest-url-resolver.ts";
+
 export type ValidationStatus = "valid" | "invalid";
 export type ValidationReason =
   | "destination_404"
@@ -73,6 +75,12 @@ export async function validateDestination(
   // 1. Shape check
   const slug = extractSlug(destinationLink);
   if (!slug) {
+    // Allow the resolver one chance — slug_history / alias may recover
+    // legacy /go/, /lp/, /collections/ shapes into a valid /products/{slug}.
+    const recovered = await resolveDestination(sb, destinationLink);
+    if (recovered.ok && recovered.target && recovered.step !== "category") {
+      return validateDestination(sb, recovered.target);
+    }
     return {
       ...base,
       ok: false,

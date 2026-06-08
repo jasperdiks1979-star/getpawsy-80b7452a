@@ -5,6 +5,15 @@
 # ── Canonical product URL redirect (singular → plural) ──
 /product/:slug /products/:slug 301
 
+# ── Pinterest URL Recovery — legacy paths funnel through resolver ──
+# Sends every historical Pinterest destination through the recovery engine,
+# which 308-redirects to the live canonical PDP (or /collections/all as a
+# final soft fallback). UTM and tracking query strings are preserved.
+/go/*           https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-redirect?url=/go/:splat        302
+/legacy/*       https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-redirect?url=/legacy/:splat    302
+/old-product/*  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-redirect?url=/old-product/:splat 302
+/redirect/*     https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-redirect?url=/redirect/:splat   302
+
 # ── Pinterest catalog feed ──
 # Lovable static hosting does not proxy (status 200) to external hosts,
 # so we 302-redirect to the edge function. Pinterest's catalog crawler
