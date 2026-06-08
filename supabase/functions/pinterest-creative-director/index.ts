@@ -949,20 +949,15 @@ async function uploadAndInsertDraft(
   const patternTag = brief.pattern_id ? `_${brief.pattern_id.slice(0, 12)}` : "";
   const variant = `cd_${niche}${patternTag}_${stamp}_${brief.id.slice(-6)}`;
 
-  // Phase 1 congruency: route to /go/{slug} when a landing template exists
-  // for this niche/hook, otherwise keep the PDP destination. The choice is
-  // also recorded in `pinterest_creative_intents` for analytics.
-  const landingSlug = await pickLandingSlug(
-    supabase,
-    niche,
-    brief.hook_category ?? null,
-    brief.pin_mode ?? null,
-  );
+  // Destination URL safety policy (2026-06):
+  // The pin generator MUST use the canonical live product URL. The legacy
+  // /go/{slug} fan-out invented destinations that did not always resolve to
+  // a live in-stock product, which produced 404s in production. We always
+  // build /products/{slug} — the cron worker re-validates this server-side
+  // before publish via the shared destination validator.
+  const landingSlug: string | null = null;
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
-  const modeParam = brief.pin_mode ? `&pin_mode=${encodeURIComponent(brief.pin_mode)}` : "";
-  const destination = landingSlug
-    ? `${BASE_URL}/go/${landingSlug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${landingSlug}&hook=${hookParam}&intent=${encodeURIComponent(brief.hook_category ?? "")}${modeParam}`
-    : `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
+  const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
   const row = {
     product_id: product.id,
