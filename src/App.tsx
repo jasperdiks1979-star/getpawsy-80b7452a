@@ -474,6 +474,7 @@ const PinterestPinStatusPage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestUrlRecoveryPage = lazyWithRetry(() => import("./pages/admin/PinterestUrlRecoveryPage"));
 const PinterestRedirectMapPage = lazyWithRetry(() => import("./pages/admin/PinterestRedirectMapPage"));
 const PinterestPinPerformancePage = lazyWithRetry(() => import("./pages/admin/PinterestPinPerformancePage"));
+const PinterestIntegrityPage = lazyWithRetry(() => import("./pages/admin/PinterestIntegrityPage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
 const PinterestVideoQueuePage = lazyWithRetry(() => import("./pages/admin/PinterestVideoQueuePage"));
 const PinterestVideoLogsPage = lazyWithRetry(() => import("./pages/admin/PinterestVideoLogsPage"));
