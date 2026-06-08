@@ -13126,6 +13126,7 @@ export type Database = {
           repair_strategy: string | null
           resolver_step: string | null
           run_id: string | null
+          source: string
         }
         Insert: {
           category?: string | null
@@ -13144,6 +13145,7 @@ export type Database = {
           repair_strategy?: string | null
           resolver_step?: string | null
           run_id?: string | null
+          source?: string
         }
         Update: {
           category?: string | null
@@ -13162,6 +13164,7 @@ export type Database = {
           repair_strategy?: string | null
           resolver_step?: string | null
           run_id?: string | null
+          source?: string
         }
         Relationships: [
           {
@@ -14169,6 +14172,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_slug_sync_log: {
+        Row: {
+          created_at: string
+          id: string
+          new_slug: string
+          notes: string | null
+          old_slug: string
+          product_id: string | null
+          rows_updated: number
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_slug: string
+          notes?: string | null
+          old_slug: string
+          product_id?: string | null
+          rows_updated?: number
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_slug?: string
+          notes?: string | null
+          old_slug?: string
+          product_id?: string | null
+          rows_updated?: number
+          table_name?: string
+        }
+        Relationships: []
       }
       pinterest_strategy_state: {
         Row: {
