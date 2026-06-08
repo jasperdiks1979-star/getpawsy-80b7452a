@@ -352,6 +352,152 @@ export default function PinterestUrlRecoveryPage() {
               <div className="p-2 text-xs text-muted-foreground">Showing first 200 of {filtered.length}</div>
             )}
           </Card>
+
+          <section className="space-y-3 pt-4 border-t">
+            <header className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-lg font-semibold">Recovery reports</h2>
+              <div className="flex gap-2">
+                {([
+                  ["worst", `Worst pins (${reports.worst.length})`],
+                  ["traffic", `Top traffic (${reports.traffic.length})`],
+                  ["deleted", `Deleted-product pins (${reports.deleted.length})`],
+                  ["mismatch", `Image mismatches (${reports.mismatch.length})`],
+                ] as const).map(([k, label]) => (
+                  <Button key={k} size="sm" variant={reportTab === k ? "default" : "outline"} onClick={() => setReportTab(k)}>
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </header>
+
+            {reportTab === "worst" && (
+              <Card className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-2">Pinterest ID</th>
+                      <th className="text-left p-2">Pin title</th>
+                      <th className="text-center p-2">Score</th>
+                      <th className="text-left p-2">Verdict</th>
+                      <th className="text-left p-2">Vision</th>
+                      <th className="text-left p-2">Final URL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reports.worst.map((r: any) => (
+                      <tr key={r.pin_queue_id} className="border-t">
+                        <td className="p-2 font-mono">{r.pin?.pinterest_pin_id?.slice(0,18) || "—"}</td>
+                        <td className="p-2 truncate max-w-[280px]">{r.pin?.pin_title || "—"}</td>
+                        <td className="p-2 text-center"><Badge variant="destructive">{r.score}</Badge></td>
+                        <td className="p-2">{r.verdict}</td>
+                        <td className="p-2">{r.vision_verdict || "—"}</td>
+                        <td className="p-2 truncate max-w-[260px]" title={r.pin?.final_resolved_url || ""}>{r.pin?.final_resolved_url || "—"}</td>
+                      </tr>
+                    ))}
+                    {reports.worst.length === 0 && (
+                      <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">Run the image audit to populate this table.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+
+            {reportTab === "traffic" && (
+              <Card className="overflow-x-auto">
+                <div className="p-2 text-xs text-muted-foreground border-b">Source: {reports.trafficSource}</div>
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-2">Pinterest ID</th>
+                      <th className="text-left p-2">Pin title</th>
+                      <th className="text-right p-2">Impressions</th>
+                      <th className="text-right p-2">Clicks</th>
+                      <th className="text-left p-2">Validation</th>
+                      <th className="text-center p-2">Img match</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reports.traffic.map((r: any) => (
+                      <tr key={r.pinterest_pin_id} className="border-t">
+                        <td className="p-2 font-mono">{r.pinterest_pin_id?.slice(0,18) || "—"}</td>
+                        <td className="p-2 truncate max-w-[280px]">{r.pin?.pin_title || "—"}</td>
+                        <td className="p-2 text-right">{r.impressions}</td>
+                        <td className="p-2 text-right">{r.clicks}</td>
+                        <td className="p-2">{r.pin?.validation_status || "—"}</td>
+                        <td className="p-2 text-center">{r.pin?.image_match_score ?? "—"}</td>
+                      </tr>
+                    ))}
+                    {reports.traffic.length === 0 && (
+                      <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No Pinterest analytics ingested yet (pinterest_analytics_daily and gi_pinterest_pin_metrics are empty).</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+
+            {reportTab === "deleted" && (
+              <Card className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-2">Pinterest ID</th>
+                      <th className="text-left p-2">Pin title</th>
+                      <th className="text-left p-2">Dead slug</th>
+                      <th className="text-left p-2">Resolver</th>
+                      <th className="text-left p-2">Last validated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reports.deleted.map((r: any) => (
+                      <tr key={r.id} className="border-t">
+                        <td className="p-2 font-mono">{r.pinterest_pin_id?.slice(0,18) || "—"}</td>
+                        <td className="p-2 truncate max-w-[260px]">{r.pin_title || "—"}</td>
+                        <td className="p-2 truncate max-w-[220px]">{r.product_slug || "—"}</td>
+                        <td className="p-2">{r.repair_strategy || "—"}</td>
+                        <td className="p-2">{r.last_validated_at ? new Date(r.last_validated_at).toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                    {reports.deleted.length === 0 && (
+                      <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No invalid pins.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+
+            {reportTab === "mismatch" && (
+              <Card className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-2">Pinterest ID</th>
+                      <th className="text-left p-2">Pin title</th>
+                      <th className="text-center p-2">Score</th>
+                      <th className="text-left p-2">Vision verdict</th>
+                      <th className="text-left p-2">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reports.mismatch.map((r: any) => {
+                      const visionReason = Array.isArray(r.reasons) ? r.reasons.find((x: any) => x?.kind === "vision")?.reason : null;
+                      return (
+                        <tr key={r.pin_queue_id} className="border-t">
+                          <td className="p-2 font-mono">{r.pin?.pinterest_pin_id?.slice(0,18) || "—"}</td>
+                          <td className="p-2 truncate max-w-[280px]">{r.pin?.pin_title || "—"}</td>
+                          <td className="p-2 text-center"><Badge variant="destructive">{r.score}</Badge></td>
+                          <td className="p-2">{r.vision_verdict || "—"}</td>
+                          <td className="p-2 truncate max-w-[320px]" title={visionReason || ""}>{visionReason || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                    {reports.mismatch.length === 0 && (
+                      <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No mismatches detected yet (run the image audit).</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+          </section>
         </>
       )}
     </div>
