@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Shield, RotateCcw, Lock, Headphones } from 'lucide-react';
+import { Truck, Shield, RotateCcw, Lock, Headphones, ShieldCheck } from 'lucide-react';
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
@@ -18,11 +18,12 @@ interface TrustStackProps {
 export const TrustStack: React.FC<TrustStackProps> = ({ className = '' }) => {
   const badges = [
     { icon: <Lock className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Secure checkout (Stripe)' },
+    { icon: <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />, text: 'SSL Secured (256-bit)' },
     { icon: <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" />, text: `${RETURN_WINDOW_DAYS}-day returns` },
     { icon: <Truck className="w-4 h-4 text-primary flex-shrink-0" />, text: `Free shipping over $${FREE_SHIPPING_THRESHOLD}` },
     { icon: <Headphones className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Dedicated support team' },
     { icon: <Shield className="w-4 h-4 text-primary flex-shrink-0" />, text: 'Pet-safe materials' },
-    { icon: <span className="text-sm flex-shrink-0">🇺🇸</span>, text: `Estimated delivery: ${DELIVERY_TIME_STANDARD}` },
+    { icon: <span className="text-sm flex-shrink-0">🇺🇸</span>, text: `Fast US Shipping: ${DELIVERY_TIME_STANDARD}` },
   ];
 
   return (
