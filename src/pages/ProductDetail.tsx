@@ -83,6 +83,7 @@ import { DogBedsClusterLinks } from "@/components/seo/DogBedsClusterLinks";
 import { PDPClusterLinks } from "@/components/seo/PDPClusterLinks";
 import { WhyTrustGetPawsy } from "@/components/seo/WhyTrustGetPawsy";
 import NotFound from "@/pages/NotFound";
+import SlugResolverFallback from "@/components/products/SlugResolverFallback";
 
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
