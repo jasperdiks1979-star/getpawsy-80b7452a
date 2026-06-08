@@ -1,4 +1,4 @@
-import { Lock, Truck, RotateCcw, Star, Clock, Flame } from 'lucide-react';
+import { Lock, Truck, RotateCcw, Star, Clock, Flame, ShieldCheck } from 'lucide-react';
 
 /**
  * CheckoutTrustBlock — high-conversion reassurance shown directly above
@@ -30,8 +30,12 @@ export function CheckoutTrustBlock() {
           <span className="text-[12px] font-medium leading-tight">Secure Stripe Checkout</span>
         </li>
         <li className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
+          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden />
+          <span className="text-[12px] font-medium leading-tight">SSL Secured (256-bit)</span>
+        </li>
+        <li className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
           <span className="text-sm flex-shrink-0" aria-hidden>🇺🇸</span>
-          <span className="text-[12px] font-medium leading-tight">Ships from US warehouse</span>
+          <span className="text-[12px] font-medium leading-tight">Fast US Shipping (5–10 business days)</span>
         </li>
         <li className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden />
