@@ -45,6 +45,13 @@ type PinRow = {
   destination_link: string | null;
   board_id: string | null;
   created_at: string;
+  final_resolved_url: string | null;
+  http_status: number | null;
+  product_slug_found: boolean | null;
+  validation_status: string | null;
+  last_validation_error: string | null;
+  last_validated_at: string | null;
+  live_pin_verified_at: string | null;
 };
 
 const STATUS_FILTERS = ['all', 'queued', 'publishing', 'posted', 'failed', 'draft', 'rejected', 'skipped'] as const;
@@ -82,7 +89,7 @@ export default function PinterestPinStatusPage() {
     queryFn: async () => {
       let q = supabase
         .from('pinterest_pin_queue')
-        .select('id, product_slug, pin_title, pin_variant, status, scheduled_at, posted_at, publishing_started_at, publish_attempts, last_publish_error, error_message, rejection_reason, pinterest_pin_id, external_url, hook_group, pin_image_url, destination_link, board_id, created_at')
+        .select('id, product_slug, pin_title, pin_variant, status, scheduled_at, posted_at, publishing_started_at, publish_attempts, last_publish_error, error_message, rejection_reason, pinterest_pin_id, external_url, hook_group, pin_image_url, destination_link, board_id, created_at, final_resolved_url, http_status, product_slug_found, validation_status, last_validation_error, last_validated_at, live_pin_verified_at')
         .order('scheduled_at', { ascending: false, nullsFirst: false })
         .limit(500);
       if (filter !== 'all') q = q.eq('status', filter);
@@ -762,6 +769,31 @@ export default function PinterestPinStatusPage() {
                                   {r.destination_link
                                     ? <a href={r.destination_link} target="_blank" rel="noopener noreferrer" className="underline">{r.destination_link}</a>
                                     : '—'}
+                                </div>
+                                <div className="mt-2 rounded border border-border/50 bg-background/60 p-2 space-y-1">
+                                  <div className="font-semibold text-foreground">Destination validation</div>
+                                  <div>
+                                    <span className="text-muted-foreground">Status:</span>{' '}
+                                    <span className={
+                                      r.validation_status === 'valid' ? 'text-emerald-600 font-medium'
+                                      : r.validation_status === 'invalid' ? 'text-rose-600 font-medium'
+                                      : 'text-muted-foreground'
+                                    }>
+                                      {r.validation_status ?? 'not_validated'}
+                                    </span>
+                                  </div>
+                                  <div><span className="text-muted-foreground">HTTP status:</span> {r.http_status ?? '—'}</div>
+                                  <div><span className="text-muted-foreground">Product slug found:</span> {r.product_slug_found === null ? '—' : String(r.product_slug_found)}</div>
+                                  <div className="break-all"><span className="text-muted-foreground">Final resolved URL:</span>{' '}
+                                    {r.final_resolved_url
+                                      ? <a href={r.final_resolved_url} target="_blank" rel="noopener noreferrer" className="underline">{r.final_resolved_url}</a>
+                                      : '—'}
+                                  </div>
+                                  {r.last_validation_error && (
+                                    <div className="text-rose-600"><span className="text-muted-foreground">Last error:</span> {r.last_validation_error}</div>
+                                  )}
+                                  <div><span className="text-muted-foreground">Live pin verified at:</span> {fmt(r.live_pin_verified_at)}</div>
+                                  <div><span className="text-muted-foreground">Last validated at:</span> {fmt(r.last_validated_at)}</div>
                                 </div>
                                 <div className="text-destructive whitespace-pre-wrap break-words pt-1">
                                   {err || 'No error recorded.'}
