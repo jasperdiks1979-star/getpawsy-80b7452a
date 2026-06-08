@@ -473,6 +473,7 @@ const PinterestAutopilotDailyPage = lazyWithRetry(() => import("./pages/admin/Pi
 const PinterestPinStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestPinStatusPage"));
 const PinterestUrlRecoveryPage = lazyWithRetry(() => import("./pages/admin/PinterestUrlRecoveryPage"));
 const PinterestRedirectMapPage = lazyWithRetry(() => import("./pages/admin/PinterestRedirectMapPage"));
+const PinterestPinPerformancePage = lazyWithRetry(() => import("./pages/admin/PinterestPinPerformancePage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
 const PinterestVideoQueuePage = lazyWithRetry(() => import("./pages/admin/PinterestVideoQueuePage"));
 const PinterestVideoLogsPage = lazyWithRetry(() => import("./pages/admin/PinterestVideoLogsPage"));
@@ -2608,6 +2609,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestRedirectMapPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-pin-performance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestPinPerformancePage />
                                 </Suspense>
                               }
                             />
