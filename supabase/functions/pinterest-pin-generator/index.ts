@@ -35,8 +35,13 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Fetch product
-    let query = sb.from("products").select("id, name, slug, description, price, category, image_url");
+    // Fetch product — only allow pins for active, in-stock products.
+    let query = sb
+      .from("products")
+      .select("id, name, slug, description, price, category, image_url, stock, availability, is_active")
+      .eq("is_active", true)
+      .or("stock.is.null,stock.gt.0")
+      .or("availability.is.null,availability.eq.in stock");
     if (productId) query = query.eq("id", productId);
     else if (productSlug) query = query.eq("slug", productSlug);
     else return respond({ ok: false, code: "MISSING_INPUT", message: "productId or productSlug required" });
@@ -44,7 +49,7 @@ serve(async (req) => {
     const { data: product, error } = await query.single();
     if (error || !product) {
       console.error(`[pinterest-pin-generator] Product lookup failed:`, error?.message);
-      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: "Product not found" });
+      return respond({ ok: false, code: "PRODUCT_NOT_FOUND", message: "Product not found or out of stock" });
     }
     if (!product.image_url) {
       console.error(`[pinterest-pin-generator] Product "${product.slug}" has no image_url`);

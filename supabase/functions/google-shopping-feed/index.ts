@@ -379,8 +379,12 @@ function buildItemXml(p: Product): BuildResult {
 
   extra += `      <g:shipping_weight>${normalizeShippingWeight(p.weight, p.name)}</g:shipping_weight>\n`;
 
-  // Dropship model: only is_active=false marks OOS
-  const avail = p.is_active === false ? "out of stock" : "in stock";
+  // Stock-aware availability: only mark in-stock when stock is null (untracked) or > 0
+  // AND the product is active. Anything with stock = 0 is admin-confirmed sold out.
+  const avail =
+    p.is_active === false || (typeof p.stock === "number" && p.stock <= 0)
+      ? "out of stock"
+      : "in stock";
   const shippingCost = p.price >= FREE_SHIPPING_THRESHOLD ? "0.00" : "5.99";
 
   const xml = `    <item>
@@ -421,12 +425,15 @@ Deno.serve(async (req) => {
     // Fetch eligible products: active, not duplicate, priced, with image & slug
     const { data: rawProducts, error } = await client
       .from("products")
-      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description,product_type")
+      .select("id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,optimized_title,optimized_description,product_type,availability")
       .eq("is_active", true)
       .eq("is_duplicate", false)
       .gt("price", 0)
       .not("image_url", "is", null)
       .not("slug", "is", null)
+      // Hide out-of-stock products from the Google Shopping feed entirely.
+      .or("stock.is.null,stock.gt.0")
+      .or("availability.is.null,availability.eq.in stock")
       .order("created_at", { ascending: false })
       .limit(5000);
 

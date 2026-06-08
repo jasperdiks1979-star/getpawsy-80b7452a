@@ -340,6 +340,7 @@ const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThre
 const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const DegradedEventsPage = lazyWithRetry(() => import("./pages/admin/DegradedEventsPage"));
 const FunnelDashboardPage = lazyWithRetry(() => import("./pages/admin/FunnelDashboard"));
+const ProductStockAuditPage = lazyWithRetry(() => import("./pages/admin/ProductStockAuditPage"));
 const ProductsPerformancePage = lazyWithRetry(() => import("./pages/admin/ProductsPerformance"));
 const TrafficPerformancePage = lazyWithRetry(() => import("./pages/admin/TrafficPerformance"));
 const TrackingHealthPage = lazyWithRetry(() => import("./pages/admin/TrackingHealth"));
@@ -2965,6 +2966,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <FunnelDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="product-stock-audit"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductStockAuditPage />
                                 </Suspense>
                               }
                             />
