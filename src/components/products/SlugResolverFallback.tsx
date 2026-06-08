@@ -11,8 +11,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import NotFound from "@/pages/NotFound";
-import ProductDetailSkeleton from "@/components/products/ProductDetailSkeleton";
-import Layout from "@/components/Layout";
+import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
+import { Layout } from "@/components/layout/Layout";
 
 type Phase = "resolving" | "redirecting" | "not_found";
 
