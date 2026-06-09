@@ -204,14 +204,23 @@ export class DiversityGuard {
     this.last90Total = last90.length;
     this.last25Total = last25.length;
 
+    const splitOverlay = (s: string): [string, string] => {
+      const t = s || "";
+      const sep = t.includes(" • ") ? " • " : t.includes(" | ") ? " | " : null;
+      if (!sep) return [t, ""];
+      const [h, c] = t.split(sep);
+      return [h || "", c || ""];
+    };
+
     for (const p of last25) {
       const ov = norm(p.overlay_text);
       if (ov) this.c25Exact.add(ov);
     }
 
     for (const p of last90) {
-      const headline = (p.overlay_text || "").split(" • ")[0] || p.pin_title || "";
-      const cta = (p.overlay_text || "").split(" • ")[1] || "";
+      const [hRaw, cRaw] = splitOverlay(p.overlay_text || "");
+      const headline = hRaw || p.pin_title || "";
+      const cta = cRaw || "";
       const text = `${p.overlay_text || ""} ${p.pin_title || ""} ${p.pin_description || ""}`;
       const angle = detectAngle(text);
       const benefit = detectBenefit(text);
