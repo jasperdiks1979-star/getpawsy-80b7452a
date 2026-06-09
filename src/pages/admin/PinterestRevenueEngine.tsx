@@ -615,6 +615,133 @@ export default function PinterestRevenueEngine() {
         </CardContent>
       </Card>
 
+      {/* Creative Variety Engine — 90-day rule + replacement pools */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5" /> Creative Variety Engine
+            {varietyReport && (
+              <Badge variant={varietyReport.goal.compliant ? "secondary" : "destructive"}>
+                {varietyReport.goal.compliant
+                  ? "Compliant: ≤5 per overlay in last 90"
+                  : `${varietyReport.goal.violations_in_90} overlay(s) over 5× in last 90`}
+              </Badge>
+            )}
+            <Badge variant="outline">Publishing paused</Badge>
+            <Button size="sm" className="ml-auto" disabled={auditing} onClick={runVarietyAudit}>
+              {auditing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
+              {varietyReport ? "Re-run audit" : "Run variety audit"}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 text-sm">
+          {!varietyReport ? (
+            <div className="text-muted-foreground">
+              Run the audit to analyse all published pins, score diversity per board & category, and surface
+              repeated overlays, hooks, CTAs, angles, and benefits — plus the replacement creative pools.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Kpi label="Published pins (total)" value={fmt(varietyReport.totals.published_pins_total)} />
+                <Kpi label="In last 90" value={fmt(varietyReport.totals.pins_in_window_90)} />
+                <Kpi label="Unique overlays (all-time)" value={fmt(varietyReport.totals.unique_overlays_total)} />
+                <Kpi label="Unique overlays (last 90)" value={fmt(varietyReport.totals.unique_overlays_in_90)} />
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  Rule: {varietyReport.goal.rule}
+                  {varietyReport.goal.compliant ? (
+                    <Badge variant="secondary" className="gap-1"><CheckCircle2 className="w-3 h-3" /> pass</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" /> fail</Badge>
+                  )}
+                </h4>
+                {varietyReport.overused_overlays_last_90.length === 0 ? (
+                  <div className="text-muted-foreground text-xs">No overlay exceeds 5 uses within the last 90 pins.</div>
+                ) : (
+                  <ul className="divide-y border rounded">
+                    {varietyReport.overused_overlays_last_90.map((o) => (
+                      <li key={o.value} className="py-1.5 px-2 flex justify-between gap-3 text-xs">
+                        <span className="truncate" title={o.value}>{o.value}</span>
+                        <Badge variant="destructive" className="shrink-0">×{o.count}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="grid lg:grid-cols-3 gap-6">
+                <ReportList title="Top repeated overlays (all-time)" rows={varietyReport.top_repeated.overlays} threshold={15} />
+                <ReportList title="Top repeated titles" rows={varietyReport.top_repeated.titles} threshold={15} />
+                <ReportList title="Top repeated hooks" rows={varietyReport.top_repeated.hooks} threshold={15} />
+                <ReportList title="Top CTAs" rows={varietyReport.top_repeated.ctas} threshold={50} />
+                <ReportList title="Top emotional angles" rows={varietyReport.top_repeated.angles} threshold={50} />
+                <ReportList title="Top benefit statements" rows={varietyReport.top_repeated.benefits} threshold={50} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-2">Diversity per board</h4>
+                  <ul className="divide-y border rounded">
+                    {varietyReport.diversity_by_board.map((b) => (
+                      <li key={b.board} className="py-1.5 px-2 flex items-center justify-between gap-3 text-xs">
+                        <span className="truncate" title={b.board}>{b.board}</span>
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          {b.uniques}/{b.total} ·{" "}
+                          <Badge variant={b.diversity < 30 ? "destructive" : b.diversity < 60 ? "outline" : "secondary"} className="text-[10px]">
+                            {b.diversity}%
+                          </Badge>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Diversity per category</h4>
+                  <ul className="divide-y border rounded">
+                    {varietyReport.diversity_by_category.map((c) => (
+                      <li key={c.category} className="py-1.5 px-2 flex items-center justify-between gap-3 text-xs">
+                        <span className="truncate" title={c.category}>{c.category}</span>
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          {c.uniques}/{c.total} ·{" "}
+                          <Badge variant={c.diversity < 30 ? "destructive" : c.diversity < 60 ? "outline" : "secondary"} className="text-[10px]">
+                            {c.diversity}%
+                          </Badge>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Replacement creative pools (ready for next generation)</h4>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Object.entries(varietyReport.replacement_pools).map(([cat, byType]) => (
+                    <div key={cat} className="border rounded p-3">
+                      <div className="font-semibold text-xs mb-2 uppercase tracking-wide">{cat}</div>
+                      <ul className="space-y-1 text-xs">
+                        {Object.entries(byType).map(([t, arr]) => (
+                          <li key={t} className="flex justify-between gap-2">
+                            <span className="text-muted-foreground">{t}</span>
+                            <Badge variant="secondary" className="text-[10px]">{arr.length}</Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-2">
+                  These pools feed the next creative generation cycle so no headline crosses the 5/90 threshold. Publishing remains paused until manual approval.
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
