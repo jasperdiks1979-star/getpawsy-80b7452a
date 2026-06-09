@@ -866,6 +866,22 @@ export default function PinterestRevenueEngine() {
                 <Kpi label="Unique overlays (all-time)" value={fmt(varietyReport.totals.unique_overlays_total)} />
                 <Kpi label="Unique overlays (last 90)" value={fmt(varietyReport.totals.unique_overlays_in_90)} />
               </div>
+              {(() => {
+                const board = varietyReport.diversity_by_board;
+                const cat = varietyReport.diversity_by_category;
+                const avg = (xs: { diversity: number }[]) =>
+                  xs.length ? Math.round(xs.reduce((a, b) => a + b.diversity, 0) / xs.length) : 0;
+                const total = varietyReport.totals.published_pins_total;
+                const uniq = varietyReport.totals.unique_overlays_total;
+                const global = total ? Math.round((uniq / total) * 100) : 0;
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <Kpi label="Global diversity" value={`${global}%`} />
+                    <Kpi label="Avg board diversity" value={`${avg(board)}%`} />
+                    <Kpi label="Avg category diversity" value={`${avg(cat)}%`} />
+                  </div>
+                );
+              })()}
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
