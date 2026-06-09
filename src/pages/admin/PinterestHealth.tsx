@@ -3,7 +3,9 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 type Kpi = {
   sessions: number;
@@ -26,6 +28,32 @@ export default function PinterestHealth() {
   const [kpi, setKpi] = useState<Kpi>(empty);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<any>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function loadCatalog() {
+    const { data } = await (supabase as any)
+      .from("pinterest_catalog_status")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    setCatalog(data);
+  }
+
+  async function callCatalog(action: "register" | "status") {
+    setBusy(action);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-catalog-sync", { body: { action } });
+      if (error) throw error;
+      if (!data?.ok) toast({ title: "Catalog", description: data?.message || data?.code || "Failed", variant: "destructive" });
+      else toast({ title: action === "register" ? "Feed registered" : "Status refreshed", description: data?.processing_status || "ok" });
+      await loadCatalog();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message ?? "Failed", variant: "destructive" });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +104,8 @@ export default function PinterestHealth() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => { loadCatalog(); }, []);
+
   const cr = kpi.sessions > 0 ? ((kpi.purchases / kpi.sessions) * 100).toFixed(2) : "0.00";
 
   if (loading) {
@@ -97,6 +127,43 @@ export default function PinterestHealth() {
         <Badge variant="outline">Domain verified · {`a2f2f61…`}</Badge>
       </header>
       {err && <div className="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm">{err}</div>}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2">
+            Pinterest Product Catalog
+            {catalog?.accepted_at ? (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />Accepted</Badge>
+            ) : catalog?.feed_status === "scope_missing" ? (
+              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Scope missing</Badge>
+            ) : catalog?.feed_id ? (
+              <Badge variant="secondary">{catalog.processing_status || catalog.feed_status || "registered"}</Badge>
+            ) : (
+              <Badge variant="outline">Not registered</Badge>
+            )}
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => callCatalog("status")}>
+              <RefreshCw className={`h-3 w-3 mr-1 ${busy === "status" ? "animate-spin" : ""}`} />Check status
+            </Button>
+            <Button size="sm" disabled={busy !== null} onClick={() => callCatalog("register")}>
+              {busy === "register" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+              {catalog?.feed_id ? "Re-register" : "Register feed"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm space-y-1">
+          <div className="flex justify-between"><span className="text-muted-foreground">Feed URL</span><span className="font-mono text-xs truncate max-w-[60%]" title={catalog?.feed_url || ""}>{catalog?.feed_url || "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Feed ID</span><span className="font-mono text-xs">{catalog?.feed_id || "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Items in feed</span><span>{catalog?.items_total ?? "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Invalid items</span><span>{catalog?.items_invalid ?? "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Accepted at</span><span>{catalog?.accepted_at ? new Date(catalog.accepted_at).toLocaleString() : "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Last checked</span><span>{catalog?.last_checked_at ? new Date(catalog.last_checked_at).toLocaleString() : "—"}</span></div>
+          {catalog?.last_error && (
+            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs mt-2">{catalog.last_error}</div>
+          )}
+        </CardContent>
+      </Card>
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
