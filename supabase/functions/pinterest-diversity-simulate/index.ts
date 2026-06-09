@@ -55,9 +55,16 @@ Deno.serve(async (req) => {
     let fail = 0;
     let replaced = 0;
 
+    const splitOverlay = (s: string): [string, string] => {
+      const t = s || "";
+      const sep = t.includes(" • ") ? " • " : t.includes(" | ") ? " | " : null;
+      if (!sep) return [t, ""];
+      const [h, c] = t.split(sep);
+      return [h || "", c || ""];
+    };
+
     for (const d of drafts ?? []) {
-      const overlay = String(d.overlay_text || "");
-      const [headline, cta] = overlay.split(" • ");
+      const [headline, cta] = splitOverlay(String(d.overlay_text || ""));
       const category = d.category_key || "(uncategorised)";
       const evalRes = guard.evaluate(
         {
