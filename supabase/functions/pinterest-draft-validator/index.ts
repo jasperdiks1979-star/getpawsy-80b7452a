@@ -76,14 +76,15 @@ Deno.serve(async (req) => {
     if (productIds.length > 0) {
       const { data: products } = await supabase
         .from("products")
-        .select("id,active,is_active,in_stock,inventory_quantity,availability")
+        .select("id,is_active,availability")
         .in("id", productIds);
       for (const p of products ?? []) {
-        const active = (p as any).active !== false && (p as any).is_active !== false;
+        const active = (p as any).is_active !== false;
+        const availability = ((p as any).availability ?? "").toString().toLowerCase();
         const inStock =
-          (p as any).in_stock === true ||
-          ((p as any).inventory_quantity ?? 0) > 0 ||
-          ((p as any).availability ?? "").toString().toLowerCase().includes("in_stock");
+          availability.includes("in stock") ||
+          availability.includes("in_stock") ||
+          availability === "instock";
         stockMap.set((p as any).id, { active, inStock });
       }
     }
@@ -94,10 +95,13 @@ Deno.serve(async (req) => {
     if (boardNames.length > 0) {
       const { data: boards } = await supabase
         .from("pinterest_boards")
-        .select("board_name,name,active,is_active");
+        .select("name,is_sandbox,is_blacklisted,production_verified");
       for (const b of boards ?? []) {
-        const name = ((b as any).board_name ?? (b as any).name) as string | null;
-        const enabled = (b as any).active !== false && (b as any).is_active !== false;
+        const name = (b as any).name as string | null;
+        const enabled =
+          (b as any).is_sandbox === false &&
+          (b as any).is_blacklisted === false &&
+          (b as any).production_verified === true;
         if (name && enabled) boardOk.add(name);
       }
     }
