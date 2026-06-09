@@ -23,8 +23,10 @@ function resolveFrontendBase(req: Request) {
   return ALLOWED_ORIGINS.includes(origin) ? origin : DEFAULT_FRONTEND_BASE;
 }
 
-function encodeState(state: string, frontendBase: string) {
-  return `${state}::${btoa(frontendBase)}`;
+function encodeState(state: string, meta: Record<string, unknown>) {
+  // Backwards-compatible: legacy callers split on "::" and atob the tail.
+  // We now encode a JSON blob so we can carry { base, scopes, autoSync }.
+  return `${state}::${btoa(JSON.stringify(meta))}`;
 }
 
 function getCorsHeaders(req: Request) {
@@ -40,6 +42,25 @@ function getCorsHeaders(req: Request) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: getCorsHeaders(req) });
+  }
+
+  // Allow caller to request extra scopes (e.g. catalogs:read/write) and
+  // to ask the callback to auto-run the catalog sync after success.
+  let extraScopes: string[] = [];
+  let autoSyncCatalog = false;
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (Array.isArray(body?.extra_scopes)) {
+        extraScopes = body.extra_scopes.filter((s: unknown) => typeof s === "string");
+      }
+      autoSyncCatalog = Boolean(body?.auto_sync_catalog);
+    } catch { /* no body */ }
+  } else {
+    const url = new URL(req.url);
+    const qsScopes = url.searchParams.get("extra_scopes");
+    if (qsScopes) extraScopes = qsScopes.split(",").map((s) => s.trim()).filter(Boolean);
+    autoSyncCatalog = url.searchParams.get("auto_sync_catalog") === "1";
   }
 
   const clientId = Deno.env.get("PINTEREST_CLIENT_ID");
@@ -65,8 +86,11 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Generate a random state for CSRF protection
-  const state = encodeState(crypto.randomUUID(), resolveFrontendBase(req));
+  // Generate a random state for CSRF protection (carries post-success metadata).
+  const state = encodeState(crypto.randomUUID(), {
+    base: resolveFrontendBase(req),
+    autoSyncCatalog,
+  });
 
   // Store state in DB for verification during callback
   const sb = createClient(
@@ -85,13 +109,19 @@ Deno.serve(async (req) => {
   });
 
   // Pinterest OAuth 2.0 authorization URL
-  const scopes = [
+  const baseScopes = [
     "boards:read",
     "boards:write",
     "pins:read",
     "pins:write",
     "user_accounts:read",
-  ].join(",");
+  ];
+  const ALLOWED_EXTRA = new Set([
+    "catalogs:read",
+    "catalogs:write",
+  ]);
+  const sanitizedExtra = extraScopes.filter((s) => ALLOWED_EXTRA.has(s));
+  const scopes = Array.from(new Set([...baseScopes, ...sanitizedExtra])).join(",");
 
   const authUrl = new URL("https://www.pinterest.com/oauth/");
   authUrl.searchParams.set("client_id", clientId);
