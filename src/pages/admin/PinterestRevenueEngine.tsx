@@ -982,6 +982,11 @@ export default function PinterestRevenueEngine() {
             <AlertTriangle className="w-5 h-5" /> Automation log (latest 100)
           </CardTitle>
         </CardHeader>
+      </Card>
+
+      {/* anchor below intentionally re-opened — see next patch */}
+      <Card style={{ display: "none" }}>
+        <CardHeader><CardTitle>placeholder</CardTitle></CardHeader>
         <CardContent>
           {actions.length === 0 ? (
             <div className="text-sm text-muted-foreground">No actions yet.</div>
