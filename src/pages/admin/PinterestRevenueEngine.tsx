@@ -457,6 +457,37 @@ export default function PinterestRevenueEngine() {
         <Kpi label="Revenue" value={money(totals.revenue_cents)} />
       </div>
 
+      {/* Attribution Health (last 24h) — Pinterest-attributed funnel from gi_attribution_events */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" /> Attribution Health (last 24h)
+          </CardTitle>
+          <Badge variant={attribution && attribution.total > 0 ? "default" : "destructive"}>
+            {attribution ? `${attribution.total} events` : "loading"}
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <Kpi label="Events" value={fmt(attribution?.total ?? 0)} />
+            <Kpi label="Attributed sessions" value={fmt(attribution?.sessions ?? 0)} />
+            <Kpi label="Product views" value={fmt(attribution?.views ?? 0)} />
+            <Kpi label="Add to cart" value={fmt(attribution?.atcs ?? 0)} />
+            <Kpi label="Checkouts" value={fmt(attribution?.checkouts ?? 0)} />
+            <Kpi label="Purchases" value={fmt(attribution?.purchases ?? 0)} sub={money(attribution?.revenueCents ?? 0)} />
+          </div>
+          <div className="mt-3 text-xs text-muted-foreground">
+            Source: <span className="font-mono">gi_attribution_events</span> · meta.source=pinterest ·{" "}
+            Last event: {attribution?.lastEventAt ? new Date(attribution.lastEventAt).toLocaleString() : "—"}
+          </div>
+          {attribution && attribution.total === 0 && (
+            <div className="mt-3 text-xs text-amber-600">
+              No Pinterest-attributed events captured in the last 24h. Visit a PDP via a Pinterest UTM link to verify the pipeline.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
