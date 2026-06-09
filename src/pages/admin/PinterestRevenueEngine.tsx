@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, TrendingUp, TrendingDown, AlertTriangle, Pause, Rocket, PlayCircle, ShieldCheck } from "lucide-react";
+import { Link2, Clock, Eye, Sparkles, CheckCircle2, XCircle } from "lucide-react";
 
 type FunnelRow = {
   day: string;
@@ -42,6 +43,49 @@ type ActionRow = {
   created_at: string;
 };
 
+type ConnectionRow = {
+  account_name: string | null;
+  status: string | null;
+  token_expires_at: string | null;
+  last_account_status: number | null;
+  last_boards_status: number | null;
+  board_count: number | null;
+  last_publish_at: string | null;
+  last_error: string | null;
+};
+
+type CronRow = {
+  id: string;
+  job_name: string;
+  started_at: string;
+  completed_at: string | null;
+  success: boolean | null;
+  items_processed: number | null;
+  items_failed: number | null;
+  error_message: string | null;
+};
+
+type ReviewRow = {
+  id: string;
+  product_slug: string | null;
+  product_name: string | null;
+  pin_title: string | null;
+  overlay_text: string | null;
+  board_name: string | null;
+  category_key: string | null;
+  pin_image_url: string | null;
+  destination_link: string | null;
+  created_at: string;
+};
+
+type VarietySample = {
+  overlay_text: string | null;
+  pin_title: string | null;
+  hook_group: string | null;
+  board_name: string | null;
+  category_key: string | null;
+};
+
 function fmt(n: number) {
   return n.toLocaleString("en-US");
 }
@@ -57,10 +101,14 @@ export default function PinterestRevenueEngine() {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [actions, setActions] = useState<ActionRow[]>([]);
   const [running, setRunning] = useState<"score" | "validate" | null>(null);
+  const [connection, setConnection] = useState<ConnectionRow | null>(null);
+  const [cronRuns, setCronRuns] = useState<CronRow[]>([]);
+  const [reviewQueue, setReviewQueue] = useState<ReviewRow[]>([]);
+  const [varietySamples, setVarietySamples] = useState<VarietySample[]>([]);
 
   async function load() {
     setLoading(true);
-    const [s, a] = await Promise.all([
+    const [s, a, c, cr, rq, vs] = await Promise.all([
       supabase
         .from("pinterest_revenue_scores")
         .select("*")
@@ -72,11 +120,43 @@ export default function PinterestRevenueEngine() {
         .select("id,action_type,product_slug,reason,details,created_at")
         .order("created_at", { ascending: false })
         .limit(100),
+      supabase
+        .from("pinterest_connection")
+        .select("account_name,status,token_expires_at,last_account_status,last_boards_status,board_count,last_publish_at,last_error")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("cron_job_logs")
+        .select("id,job_name,started_at,completed_at,success,items_processed,items_failed,error_message")
+        .ilike("job_name", "%pinterest%")
+        .order("started_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("pinterest_pin_queue")
+        .select("id,product_slug,product_name,pin_title,overlay_text,board_name,category_key,pin_image_url,destination_link,created_at")
+        .eq("validation_status", "ready_for_review")
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("pinterest_pin_queue")
+        .select("overlay_text,pin_title,hook_group,board_name,category_key")
+        .eq("status", "posted")
+        .gte("created_at", new Date(Date.now() - 30 * 86400_000).toISOString())
+        .limit(2000),
     ]);
     if (s.error) toast.error(`scores: ${s.error.message}`);
     if (a.error) toast.error(`actions: ${a.error.message}`);
+    if (c.error) console.warn("connection:", c.error.message);
+    if (cr.error) console.warn("cron:", cr.error.message);
+    if (rq.error) console.warn("review:", rq.error.message);
+    if (vs.error) console.warn("variety:", vs.error.message);
     setScores((s.data as ScoreRow[]) ?? []);
     setActions((a.data as ActionRow[]) ?? []);
+    setConnection((c.data as ConnectionRow) ?? null);
+    setCronRuns((cr.data as CronRow[]) ?? []);
+    setReviewQueue((rq.data as ReviewRow[]) ?? []);
+    setVarietySamples((vs.data as VarietySample[]) ?? []);
     setLoading(false);
   }
 
@@ -140,6 +220,49 @@ export default function PinterestRevenueEngine() {
     [byProduct],
   );
 
+  // ---- Token health
+  const tokenStatus = useMemo(() => {
+    if (!connection?.token_expires_at) return { level: "unknown" as const, daysLeft: 0, label: "Unknown" };
+    const days = Math.floor((new Date(connection.token_expires_at).getTime() - Date.now()) / 86400_000);
+    if (days < 0) return { level: "expired" as const, daysLeft: days, label: "Expired" };
+    if (days < 7) return { level: "critical" as const, daysLeft: days, label: `${days}d left` };
+    if (days < 14) return { level: "warn" as const, daysLeft: days, label: `${days}d left` };
+    return { level: "ok" as const, daysLeft: days, label: `${days}d left` };
+  }, [connection]);
+
+  // ---- Variety audit (top 30d posted)
+  const variety = useMemo(() => {
+    const total = varietySamples.length;
+    const tally = (key: keyof VarietySample) => {
+      const m = new Map<string, number>();
+      for (const r of varietySamples) {
+        const v = (r[key] as string | null)?.trim();
+        if (!v) continue;
+        m.set(v, (m.get(v) ?? 0) + 1);
+      }
+      return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+    };
+    const overlays = tally("overlay_text");
+    const titles = tally("pin_title");
+    const hooks = tally("hook_group");
+    const byBoard = new Map<string, Map<string, number>>();
+    for (const r of varietySamples) {
+      const b = r.board_name ?? "—";
+      const o = r.overlay_text ?? r.pin_title ?? "—";
+      if (!byBoard.has(b)) byBoard.set(b, new Map());
+      const inner = byBoard.get(b)!;
+      inner.set(o, (inner.get(o) ?? 0) + 1);
+    }
+    const boardDiversity = Array.from(byBoard.entries()).map(([board, inner]) => {
+      const sum = Array.from(inner.values()).reduce((a, b) => a + b, 0);
+      const unique = inner.size;
+      const diversity = sum > 0 ? unique / sum : 0;
+      return { board, sum, unique, diversity };
+    }).sort((a, b) => a.diversity - b.diversity);
+    const overlayDup = overlays.filter(([, c]) => c >= 15).length;
+    return { total, overlays, titles, hooks, boardDiversity, overlayDup };
+  }, [varietySamples]);
+
   async function runScoring() {
     setRunning("score");
     const { data, error } = await supabase.functions.invoke("pinterest-revenue-engine", { body: { days: 30 } });
@@ -182,6 +305,74 @@ export default function PinterestRevenueEngine() {
           </Button>
         </div>
       </header>
+
+      {/* Token health banner */}
+      {connection && (tokenStatus.level === "critical" || tokenStatus.level === "expired" || tokenStatus.level === "warn") && (
+        <Card className={
+          tokenStatus.level === "expired" || tokenStatus.level === "critical"
+            ? "border-rose-500/60 bg-rose-50 dark:bg-rose-950/30"
+            : "border-amber-500/60 bg-amber-50 dark:bg-amber-950/30"
+        }>
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <div className="min-w-0">
+                <div className="font-semibold">
+                  Pinterest token {tokenStatus.level === "expired" ? "expired" : `expires in ${tokenStatus.daysLeft} day(s)`}
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  Account: <span className="font-mono">{connection.account_name ?? "—"}</span>
+                  {" · "}publishing will stop until reconnected.
+                </div>
+              </div>
+            </div>
+            <Button asChild size="sm" variant="default">
+              <a href="/admin/pinterest-health">Reconnect</a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Connection status strip */}
+      <Card>
+        <CardContent className="p-4 flex items-center gap-6 flex-wrap text-sm">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4" />
+            <span className="font-medium">{connection?.account_name ?? "Not connected"}</span>
+            <Badge variant={connection?.status === "connected" ? "default" : "destructive"}>
+              {connection?.status ?? "unknown"}
+            </Badge>
+          </div>
+          <Separator />
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Token:</span>
+            <Badge variant={tokenStatus.level === "ok" ? "secondary" : tokenStatus.level === "warn" ? "outline" : "destructive"}>
+              {tokenStatus.label}
+            </Badge>
+          </div>
+          <Separator />
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Boards:</span>
+            <span className="font-medium">{connection?.board_count ?? 0}</span>
+            <Badge variant={connection?.last_boards_status === 200 ? "secondary" : "destructive"}>
+              {connection?.last_boards_status ?? "?"}
+            </Badge>
+          </div>
+          <Separator />
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Last publish:</span>
+            <span className="font-medium">
+              {connection?.last_publish_at ? new Date(connection.last_publish_at).toLocaleString() : "—"}
+            </span>
+          </div>
+          {connection?.last_error && (
+            <div className="text-xs text-rose-600 truncate max-w-md" title={connection.last_error}>
+              ⚠ {connection.last_error}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Funnel KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -253,6 +444,141 @@ export default function PinterestRevenueEngine() {
         </Card>
       </div>
 
+      {/* Daily run status: cron health */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" /> Daily automation runs (last 20)
+          </CardTitle>
+          <Badge variant="secondary">{cronRuns.length}</Badge>
+        </CardHeader>
+        <CardContent>
+          {cronRuns.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No Pinterest cron runs recorded yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted-foreground">
+                  <tr className="text-left border-b">
+                    <th className="py-2 pr-3">Status</th>
+                    <th className="py-2 pr-3">Job</th>
+                    <th className="py-2 pr-3">Started</th>
+                    <th className="py-2 pr-3 text-right">Processed</th>
+                    <th className="py-2 pr-3 text-right">Failed</th>
+                    <th className="py-2 pr-3">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cronRuns.map((r) => (
+                    <tr key={r.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3">
+                        {r.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        ) : r.completed_at ? (
+                          <XCircle className="w-4 h-4 text-rose-600" />
+                        ) : (
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </td>
+                      <td className="py-2 pr-3 font-mono text-xs">{r.job_name}</td>
+                      <td className="py-2 pr-3 text-xs whitespace-nowrap">{new Date(r.started_at).toLocaleString()}</td>
+                      <td className="py-2 pr-3 text-right">{r.items_processed ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right">{r.items_failed ?? 0}</td>
+                      <td className="py-2 pr-3 text-xs text-rose-600 truncate max-w-xs" title={r.error_message ?? ""}>
+                        {r.error_message ?? ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Approval queue (read-only inline) */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="w-5 h-5" /> Ready for review
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{reviewQueue.length}</Badge>
+            <Button asChild size="sm" variant="outline">
+              <a href="/admin/pinterest-pin-status">Open approval workflow</a>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {reviewQueue.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Nothing pending review. Drafts will appear here after validation passes.</div>
+          ) : (
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {reviewQueue.slice(0, 12).map((p) => (
+                <li key={p.id} className="border rounded-lg overflow-hidden flex flex-col">
+                  {p.pin_image_url ? (
+                    <img src={p.pin_image_url} alt={p.overlay_text ?? p.pin_title ?? ""} loading="lazy" className="w-full aspect-[3/4] object-cover bg-muted" />
+                  ) : (
+                    <div className="w-full aspect-[3/4] bg-muted" />
+                  )}
+                  <div className="p-2 space-y-1 text-xs">
+                    <div className="font-medium truncate" title={p.overlay_text ?? ""}>{p.overlay_text ?? p.pin_title ?? "—"}</div>
+                    <div className="text-muted-foreground truncate">{p.product_slug ?? p.product_name}</div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {p.board_name && <Badge variant="outline" className="text-[10px]">{p.board_name}</Badge>}
+                      {p.category_key && <Badge variant="secondary" className="text-[10px]">{p.category_key}</Badge>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {reviewQueue.length > 12 && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Showing 12 of {reviewQueue.length}. Approve/Reject in the full workflow.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Creative variety audit (read-only) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5" /> Creative variety audit
+            <Badge variant="secondary" className="ml-2">{variety.total} posted (30d)</Badge>
+            {variety.overlayDup > 0 && (
+              <Badge variant="destructive">{variety.overlayDup} overlay(s) reused ≥15×</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid lg:grid-cols-3 gap-6 text-sm">
+          <VarietyList title="Most repeated overlays" rows={variety.overlays.slice(0, 10)} />
+          <VarietyList title="Most repeated titles" rows={variety.titles.slice(0, 10)} />
+          <VarietyList title="Most repeated hooks" rows={variety.hooks.slice(0, 10)} />
+          <div className="lg:col-span-3">
+            <h4 className="font-semibold mb-2">Diversity per board (lower = more repetitive)</h4>
+            {variety.boardDiversity.length === 0 ? (
+              <div className="text-muted-foreground">No board data.</div>
+            ) : (
+              <ul className="divide-y">
+                {variety.boardDiversity.map((b) => (
+                  <li key={b.board} className="py-1.5 flex items-center justify-between gap-3">
+                    <span className="truncate">{b.board}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {b.unique} unique / {b.sum} pins ·{" "}
+                      <Badge variant={b.diversity < 0.3 ? "destructive" : b.diversity < 0.6 ? "outline" : "secondary"} className="text-[10px]">
+                        {(b.diversity * 100).toFixed(0)}%
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -298,5 +624,29 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
         {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+function Separator() {
+  return <span className="h-4 w-px bg-border" aria-hidden />;
+}
+
+function VarietyList({ title, rows }: { title: string; rows: [string, number][] }) {
+  return (
+    <div>
+      <h4 className="font-semibold mb-2">{title}</h4>
+      {rows.length === 0 ? (
+        <div className="text-muted-foreground text-xs">No data.</div>
+      ) : (
+        <ul className="divide-y">
+          {rows.map(([v, c]) => (
+            <li key={v} className="py-1.5 flex items-center justify-between gap-3 text-xs">
+              <span className="truncate" title={v}>{v}</span>
+              <Badge variant={c >= 15 ? "destructive" : c >= 8 ? "outline" : "secondary"} className="text-[10px] shrink-0">×{c}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
