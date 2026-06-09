@@ -14099,6 +14099,81 @@ export type Database = {
           },
         ]
       }
+      pinterest_revenue_scores: {
+        Row: {
+          add_to_carts: number
+          atc_rate: number
+          board_name: string | null
+          category_key: string | null
+          checkouts: number
+          classification: string
+          computed_at: string
+          ctr: number
+          day: string
+          id: string
+          impressions: number
+          outbound_clicks: number
+          pin_id: string
+          pinterest_score: number
+          product_id: string | null
+          product_slug: string | null
+          product_views: number
+          purchase_rate: number
+          purchases: number
+          revenue_cents: number
+          save_rate: number
+          saves: number
+        }
+        Insert: {
+          add_to_carts?: number
+          atc_rate?: number
+          board_name?: string | null
+          category_key?: string | null
+          checkouts?: number
+          classification?: string
+          computed_at?: string
+          ctr?: number
+          day: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id: string
+          pinterest_score?: number
+          product_id?: string | null
+          product_slug?: string | null
+          product_views?: number
+          purchase_rate?: number
+          purchases?: number
+          revenue_cents?: number
+          save_rate?: number
+          saves?: number
+        }
+        Update: {
+          add_to_carts?: number
+          atc_rate?: number
+          board_name?: string | null
+          category_key?: string | null
+          checkouts?: number
+          classification?: string
+          computed_at?: string
+          ctr?: number
+          day?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id?: string
+          pinterest_score?: number
+          product_id?: string | null
+          product_slug?: string | null
+          product_views?: number
+          purchase_rate?: number
+          purchases?: number
+          revenue_cents?: number
+          save_rate?: number
+          saves?: number
+        }
+        Relationships: []
+      }
       pinterest_runtime_settings: {
         Row: {
           active_board_id: string | null
@@ -14816,6 +14891,42 @@ export type Database = {
             referencedColumns: ["asset_id"]
           },
         ]
+      }
+      pinterest_winner_actions_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json
+          id: string
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          reason: string
+          source: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason: string
+          source?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string
+          source?: string
+        }
+        Relationships: []
       }
       pinterest_winner_dimensions: {
         Row: {
@@ -19469,6 +19580,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_revenue_funnel_daily: {
+        Row: {
+          add_to_carts: number | null
+          board_name: string | null
+          category_key: string | null
+          checkouts: number | null
+          day: string | null
+          impressions: number | null
+          outbound_clicks: number | null
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          saves: number | null
+        }
+        Relationships: []
       }
       pinterest_score_distribution_v: {
         Row: {
