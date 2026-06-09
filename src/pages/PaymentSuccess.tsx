@@ -72,6 +72,13 @@ const PaymentSuccess = () => {
         stripe_session_id: sessionId,
         ...utm,
       });
+      // Pinterest DB funnel mirror — no-op if session not Pinterest
+      import('@/lib/pinterestTracker')
+        .then((m) => m.trackPinterestEvent('purchase', {
+          value: typeof totalPrice === 'number' ? totalPrice : null,
+          currency: 'USD',
+        }))
+        .catch(() => {});
     } catch {
       /* analytics never breaks UX */
     }
