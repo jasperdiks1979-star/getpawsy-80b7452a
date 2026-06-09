@@ -388,6 +388,7 @@ const ProductDetail = () => {
     data: product,
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
@@ -400,6 +401,8 @@ const ProductDetail = () => {
     // or visible error/retry state.
     retry: 1,
     retryDelay: 600,
+    // Do NOT keep failed results around for 10 minutes — that keeps the page
+    // broken even after a network blip recovers.
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
   });
