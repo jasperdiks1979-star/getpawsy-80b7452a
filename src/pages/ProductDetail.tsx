@@ -369,8 +369,11 @@ const ProductDetail = () => {
       return fetchExistingProduct(slug);
     },
     enabled: !!slug,
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    // Cap retries so the PDP can never stay in skeleton longer than ~3s
+    // before resolving to product, replacement (via SlugResolverFallback),
+    // or visible error/retry state.
+    retry: 1,
+    retryDelay: 600,
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
   });
