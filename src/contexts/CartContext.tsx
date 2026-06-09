@@ -261,6 +261,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // GA4 Add to Cart
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
+
+    // Pinterest funnel mirror — fire-and-forget, no-op if session not Pinterest
+    import('@/lib/pinterestTracker')
+      .then((m) => m.trackPinterestEvent('add_to_cart', {
+        product_slug: newItem.slug ?? null,
+        value: newItem.price,
+        currency: 'USD',
+      }))
+      .catch(() => {});
     
     // Google Ads Add to Cart
     trackGoogleAdsAddToCart(newItem.id, newItem.name, newItem.price, 1);

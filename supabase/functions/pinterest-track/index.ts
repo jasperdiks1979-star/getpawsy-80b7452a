@@ -1,0 +1,155 @@
+import { createClient } from "npm:@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+function isPinterest(utmSource: string | null, referrer: string | null, pinId: string | null) {
+  if (pinId) return true;
+  if (utmSource && /pinterest/i.test(utmSource)) return true;
+  if (referrer && /pinterest\.(com|[a-z.]+)/i.test(referrer)) return true;
+  return false;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const traceId = crypto.randomUUID();
+  try {
+    const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const body = await req.json().catch(() => ({}));
+    const kind = String(body?.kind ?? "");
+    const sessionKey = String(body?.sessionKey ?? "");
+    if (!sessionKey) {
+      return new Response(JSON.stringify({ ok: false, traceId, message: "sessionKey required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (kind === "session") {
+      const utm_source = body.utm_source ?? null;
+      const utm_medium = body.utm_medium ?? null;
+      const utm_campaign = body.utm_campaign ?? null;
+      const utm_term = body.utm_term ?? null;
+      const utm_content = body.utm_content ?? null;
+      const utm_id = body.utm_id ?? null;
+      const referrer = body.referrer ?? null;
+      const landing_page = body.landing_page ?? null;
+      const pin_id = body.pin_id ?? null;
+      const is_pinterest = isPinterest(utm_source, referrer, pin_id);
+      const source_channel = is_pinterest
+        ? "pinterest"
+        : utm_source
+          ? "utm"
+          : referrer
+            ? "referral"
+            : "direct";
+
+      const { error: utmErr } = await sb.from("utm_session_log").insert({
+        session_id: sessionKey,
+        visitor_id: body.visitor_id ?? null,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_term,
+        utm_content,
+        utm_id,
+        referrer,
+        landing_page,
+        source_channel,
+        validation_status: "captured",
+        is_internal: false,
+      });
+
+      let attrErr: unknown = null;
+      if (is_pinterest) {
+        const { error } = await sb
+          .from("pinterest_attribution_sessions")
+          .upsert(
+            {
+              session_key: sessionKey,
+              pin_id: pin_id,
+              pin_mode: body.pin_mode ?? null,
+              landing_slug: body.landing_slug ?? null,
+              niche_key: body.niche_key ?? null,
+              hook_category: body.hook_category ?? null,
+              utm_source,
+              utm_campaign,
+              utm_content,
+              first_seen: new Date().toISOString(),
+              last_seen: new Date().toISOString(),
+              events_seen: 1,
+            },
+            { onConflict: "session_key" }
+          );
+        attrErr = error;
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          traceId,
+          is_pinterest,
+          utm_error: utmErr?.message ?? null,
+          attr_error: (attrErr as { message?: string } | null)?.message ?? null,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (kind === "event") {
+      const event_name = String(body.event_name ?? "");
+      if (!event_name) {
+        return new Response(JSON.stringify({ ok: false, traceId, message: "event_name required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Only stamp event when session was Pinterest-attributed
+      const { data: attr } = await sb
+        .from("pinterest_attribution_sessions")
+        .select("session_key,pin_id")
+        .eq("session_key", sessionKey)
+        .maybeSingle();
+      if (!attr) {
+        return new Response(JSON.stringify({ ok: true, traceId, skipped: "not_pinterest" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error } = await sb.from("pinterest_funnel_events").insert({
+        session_key: sessionKey,
+        pin_id: (attr as { pin_id?: string | null })?.pin_id ?? body.pin_id ?? null,
+        event_name,
+        product_slug: body.product_slug ?? null,
+        value: body.value ?? null,
+        currency: body.currency ?? null,
+      });
+      await sb
+        .from("pinterest_attribution_sessions")
+        .update({ last_seen: new Date().toISOString() })
+        .eq("session_key", sessionKey);
+
+      return new Response(
+        JSON.stringify({ ok: true, traceId, recorded: !error, error: error?.message ?? null }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(JSON.stringify({ ok: false, traceId, message: "unknown kind" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, traceId, message: (e as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

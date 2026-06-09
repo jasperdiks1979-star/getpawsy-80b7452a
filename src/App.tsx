@@ -667,6 +667,9 @@ const RouteLoader = () => {
 };
 
 const App = () => {
+  useEffect(() => {
+    import("@/lib/pinterestTracker").then((m) => m.bootstrapPinterestSession()).catch(() => {});
+  }, []);
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
