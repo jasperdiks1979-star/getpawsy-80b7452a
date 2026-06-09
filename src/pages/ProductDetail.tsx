@@ -158,6 +158,23 @@ type ProductRecord = Record<string, any>;
 async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
 
+  // Hard 10s timeout: if Supabase hangs (slow network, Pinterest in-app browser
+  // proxy stall, cold edge), the PDP must not stay in skeleton forever.
+  // Any rejection here falls through to the catch below which returns local
+  // fallback or null, so the query resolves with a definitive result.
+  const PDP_FETCH_TIMEOUT_MS = 10_000;
+  const withTimeout = <T,>(p: PromiseLike<T>, label: string): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`PDP_TIMEOUT:${label}:${PDP_FETCH_TIMEOUT_MS}ms`)),
+        PDP_FETCH_TIMEOUT_MS,
+      );
+      Promise.resolve(p).then(
+        (v) => { clearTimeout(timer); resolve(v); },
+        (e) => { clearTimeout(timer); reject(e); },
+      );
+    });
+
   const mapLocalProduct = (localProduct: any): ProductRecord => ({
     id: localProduct.id,
     slug: localProduct.slug,
@@ -185,19 +202,25 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     // products_detail exposes ALL active non-duplicate products (including out-of-stock)
     // so the PDP URL stays reachable for SEO. The page itself renders an OOS state
     // and disables Add to Cart when availability fails.
-    const { data, error } = await supabase.from("products_detail").select("*").eq(column, value).maybeSingle();
+    const { data, error } = await withTimeout(
+      supabase.from("products_detail").select("*").eq(column, value).maybeSingle(),
+      `public:${column}`,
+    );
 
     if (error) throw error;
     return data;
   };
 
   const fetchBaseBy = async (column: "id" | "slug", value: string) => {
-    const { data, error } = await supabase
-      .from("products_detail")
-      .select("*")
-      .eq(column, value)
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data, error } = await withTimeout(
+      supabase
+        .from("products_detail")
+        .select("*")
+        .eq(column, value)
+        .eq("is_active", true)
+        .maybeSingle(),
+      `base:${column}`,
+    );
 
     if (error) throw error;
     return data;
@@ -283,7 +306,10 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     if (data) return data;
 
     return getLocalFallback();
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn(`[PDP] fetchExistingProduct fallback for ${productIdentifier}:`, err);
+    }
     return getLocalFallback();
   }
 }
