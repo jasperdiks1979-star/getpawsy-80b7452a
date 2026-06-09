@@ -136,6 +136,61 @@ Deno.serve(async (req) => {
         .update({ last_seen: new Date().toISOString() })
         .eq("session_key", sessionKey);
 
+      // ── Mirror into gi_attribution_events (canonical attribution store) ──
+      const eventTypeMap: Record<string, string> = {
+        page_view: "view",
+        product_view: "view",
+        view_item: "view",
+        add_to_cart: "add_to_cart",
+        begin_checkout: "checkout",
+        checkout: "checkout",
+        purchase: "purchase",
+      };
+      const mapped = eventTypeMap[event_name];
+      if (mapped) {
+        const pinId = (attr as { pin_id?: string | null })?.pin_id ?? body.pin_id ?? null;
+        let productId: string | null = body.product_id ?? null;
+        let boardId: string | null = null;
+        // Enrich pin → board_id (+ fallback product_id) via pinterest_pin_queue
+        if (pinId) {
+          const { data: pinRow } = await sb
+            .from("pinterest_pin_queue")
+            .select("board_id,product_id")
+            .eq("pinterest_pin_id", pinId)
+            .maybeSingle();
+          if (pinRow) {
+            boardId = (pinRow as { board_id?: string | null }).board_id ?? null;
+            if (!productId) productId = (pinRow as { product_id?: string | null }).product_id ?? null;
+          }
+        }
+        // Resolve product_id from slug if still missing
+        if (!productId && body.product_slug) {
+          const { data: prod } = await sb
+            .from("products")
+            .select("id")
+            .eq("slug", body.product_slug)
+            .maybeSingle();
+          if (prod) productId = (prod as { id?: string | null }).id ?? null;
+        }
+        const revenueCents =
+          typeof body.value === "number" && body.value > 0 ? Math.round(body.value * 100) : 0;
+        await sb.from("gi_attribution_events").insert({
+          session_id: sessionKey,
+          event_type: mapped,
+          occurred_at: new Date().toISOString(),
+          product_id: productId,
+          product_slug: body.product_slug ?? null,
+          revenue_cents: revenueCents,
+          meta: {
+            source: "pinterest",
+            event_name,
+            pin_id: pinId,
+            board_id: boardId,
+            currency: body.currency ?? null,
+          },
+        });
+      }
+
       return new Response(
         JSON.stringify({ ok: true, traceId, recorded: !error, error: error?.message ?? null }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
