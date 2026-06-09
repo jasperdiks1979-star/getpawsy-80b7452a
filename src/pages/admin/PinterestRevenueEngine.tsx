@@ -134,6 +134,45 @@ export default function PinterestRevenueEngine() {
     revenueCents: number;
     lastEventAt: string | null;
   } | null>(null);
+  const [testingAttribution, setTestingAttribution] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    sessionId?: string;
+    inserted?: number;
+    verified?: Array<{ event_type: string; occurred_at: string; revenue_cents: number }>;
+    message?: string;
+  } | null>(null);
+
+  async function runAttributionTest() {
+    setTestingAttribution(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("attribution-health-test", { body: { mode: "run" } });
+      if (error) throw error;
+      setTestResult(data as typeof testResult);
+      if ((data as { ok?: boolean })?.ok) {
+        toast.success("Synthetic Pinterest funnel inserted — refreshing widget");
+        await load();
+      } else {
+        toast.error((data as { message?: string })?.message ?? "Test failed");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setTestingAttribution(false);
+    }
+  }
+
+  async function cleanupAttributionTests() {
+    try {
+      const { data, error } = await supabase.functions.invoke("attribution-health-test", { body: { mode: "cleanup" } });
+      if (error) throw error;
+      toast.success(`Removed ${(data as { deleted?: number })?.deleted ?? 0} synthetic test events`);
+      setTestResult(null);
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
 
   async function runVarietyAudit() {
     setAuditing(true);
@@ -463,9 +502,19 @@ export default function PinterestRevenueEngine() {
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" /> Attribution Health (last 24h)
           </CardTitle>
-          <Badge variant={attribution && attribution.total > 0 ? "default" : "destructive"}>
-            {attribution ? `${attribution.total} events` : "loading"}
-          </Badge>
+          {(() => {
+            const a = attribution;
+            const stages = a ? [a.views, a.atcs, a.checkouts, a.purchases].filter((n) => n > 0).length : 0;
+            const tone = !a ? "secondary" : a.total === 0 ? "destructive" : stages >= 4 ? "default" : "outline";
+            const dot = !a ? "bg-muted" : a.total === 0 ? "bg-rose-500" : stages >= 4 ? "bg-emerald-500" : "bg-amber-500";
+            const label = !a ? "loading" : a.total === 0 ? "RED — no events" : stages >= 4 ? "GREEN — full funnel" : `YELLOW — ${stages}/4 stages`;
+            return (
+              <div className="flex items-center gap-2">
+                <span className={`inline-block w-2.5 h-2.5 rounded-full ${dot}`} />
+                <Badge variant={tone as "default" | "destructive" | "outline" | "secondary"}>{label}</Badge>
+              </div>
+            );
+          })()}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -482,9 +531,81 @@ export default function PinterestRevenueEngine() {
           </div>
           {attribution && attribution.total === 0 && (
             <div className="mt-3 text-xs text-amber-600">
-              No Pinterest-attributed events captured in the last 24h. Visit a PDP via a Pinterest UTM link to verify the pipeline.
+              No Pinterest-attributed events captured in the last 24h. Run the synthetic funnel test below to verify the pipeline end-to-end.
             </div>
           )}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
+            <Button size="sm" onClick={runAttributionTest} disabled={testingAttribution}>
+              {testingAttribution ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
+              Run live test funnel
+            </Button>
+            <Button size="sm" variant="outline" onClick={cleanupAttributionTests}>
+              Remove synthetic test events
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Inserts product_view → add_to_cart → begin_checkout → purchase into <span className="font-mono">gi_attribution_events</span> (meta.test=true).
+            </span>
+          </div>
+
+          {testResult && (
+            <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs">
+              <div className="font-semibold mb-1">
+                Last test: {testResult.ok ? "✅ inserted" : "❌ failed"}
+                {testResult.sessionId && <> · session <span className="font-mono">{testResult.sessionId}</span></>}
+              </div>
+              {testResult.verified && testResult.verified.length > 0 && (
+                <ul className="ml-4 list-disc">
+                  {testResult.verified.map((v, i) => (
+                    <li key={i}>
+                      <span className="font-mono">{v.event_type}</span> @ {new Date(v.occurred_at).toLocaleTimeString()}
+                      {v.revenue_cents > 0 && <> · {money(v.revenue_cents)}</>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {testResult.message && <div className="mt-1 text-muted-foreground">{testResult.message}</div>}
+            </div>
+          )}
+
+          {/* Readiness Report — generated from live signals */}
+          {(() => {
+            const a = attribution;
+            const stages = a ? [a.views, a.atcs, a.checkouts, a.purchases].filter((n) => n > 0).length : 0;
+            const attrOk = !!a && a.total > 0;
+            const tokenOk = !!connection?.token_expires_at && new Date(connection.token_expires_at) > new Date();
+            const queueOk = reviewQueue.length >= 5;
+            const varietyOk = !varietyReport || varietyReport.goal?.compliant !== false;
+            const checks = [
+              { ok: attrOk, label: "Attribution pipeline writing to gi_attribution_events" },
+              { ok: stages >= 4, label: "Full funnel observed (view → atc → checkout → purchase)" },
+              { ok: tokenOk, label: "Pinterest token valid" },
+              { ok: queueOk, label: "≥5 drafts ready for review" },
+              { ok: varietyOk, label: "Creative variety guard clean (≤5 repeats / 90 pins)" },
+            ];
+            const goNoGo = checks.every((c) => c.ok);
+            return (
+              <div className="mt-4 rounded-md border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold">Readiness Report — first batch of 5 drafts</div>
+                  <Badge variant={goNoGo ? "default" : "destructive"}>
+                    {goNoGo ? "GO" : "HOLD"}
+                  </Badge>
+                </div>
+                <ul className="text-xs space-y-1">
+                  {checks.map((c, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      {c.ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <XCircle className="w-3.5 h-3.5 text-rose-600" />}
+                      <span className={c.ok ? "" : "text-muted-foreground"}>{c.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Publishing remains paused until all checks are GO and a real Pinterest-attributed session has been observed.
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
