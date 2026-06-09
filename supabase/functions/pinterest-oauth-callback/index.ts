@@ -313,8 +313,18 @@ Deno.serve(async (req) => {
 
     // If this reconnect was initiated to grant catalog scopes, automatically
     // (re)register the Pinterest Product Catalog feed and pull its status.
+    // We also run this whenever the granted scopes include catalogs:* — even
+    // if the user did not enter via the explicit "Reconnect + grant catalog
+    // scopes" CTA — so the feed is always (re)registered after any reconnect
+    // that *could* support it. This prevents the previous failure mode where
+    // the callback only polled status (which returns not_registered when no
+    // feed exists upstream) and never actually created the feed.
+    const grantedScopes = String(tokenData.scope || "").toLowerCase();
+    const hasCatalogScopes =
+      grantedScopes.includes("catalogs:read") || grantedScopes.includes("catalogs:write");
+    const shouldSyncCatalog = autoSyncCatalog || hasCatalogScopes;
     let catalogSyncResult: { register?: any; status?: any; error?: string } | null = null;
-    if (autoSyncCatalog) {
+    if (shouldSyncCatalog) {
       const fnBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-catalog-sync`;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       catalogSyncResult = {};
@@ -346,11 +356,11 @@ Deno.serve(async (req) => {
         action: "oauth_catalog_autosync",
         status: catalogSyncResult.error ? "failed" : "success",
         error_message: catalogSyncResult.error || null,
-        response_data: catalogSyncResult,
+        response_data: { ...catalogSyncResult, triggered_by: autoSyncCatalog ? "flag" : "scopes" },
       });
     }
 
-    const successQs = autoSyncCatalog
+    const successQs = shouldSyncCatalog
       ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
       : `oauth_success=true`;
     return Response.redirect(`${adminUrl}?${successQs}`, 302);
