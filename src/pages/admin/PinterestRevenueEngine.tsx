@@ -124,6 +124,21 @@ export default function PinterestRevenueEngine() {
   const [varietySamples, setVarietySamples] = useState<VarietySample[]>([]);
   const [varietyReport, setVarietyReport] = useState<VarietyReport | null>(null);
   const [auditing, setAuditing] = useState(false);
+  const [simulation, setSimulation] = useState<null | {
+    summary: {
+      pass: number;
+      fail: number;
+      replaced_from_pool: number;
+      projected_global_diversity: number;
+      delta_global_diversity: number;
+    };
+    before: { global: number };
+    after: { global: number };
+    input: { requested: number; considered: number };
+    results: Array<{ id: string; product_slug: string | null; headline: string; cta: string; pass: boolean; reasons: string[]; replaced: Record<string, { from: string; to: string }>; category: string | null; }>;
+    caps: Record<string, number | boolean>;
+  }>(null);
+  const [simulating, setSimulating] = useState(false);
   const [attribution, setAttribution] = useState<{
     total: number;
     sessions: number;
@@ -188,6 +203,22 @@ export default function PinterestRevenueEngine() {
       toast.error((e as Error).message);
     } finally {
       setAuditing(false);
+    }
+  }
+
+  async function runDiversitySimulation() {
+    setSimulating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-diversity-simulate", { body: { limit: 30 } });
+      if (error) throw error;
+      if (!(data as { ok?: boolean })?.ok) throw new Error((data as { message?: string })?.message ?? "simulation failed");
+      setSimulation(data as never);
+      const s = (data as { summary: { pass: number; fail: number } }).summary;
+      toast.success(`Simulation: ${s.pass} would pass, ${s.fail} would fail`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSimulating(false);
     }
   }
 
