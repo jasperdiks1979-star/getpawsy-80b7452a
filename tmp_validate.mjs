@@ -5,7 +5,7 @@ const rows = fs.readFileSync('/tmp/pins.txt','utf8').trim().split('\n').slice(1)
 const pins = rows.map(r => { const [pid,purl,dest,slug]=r.split('|'); return {pid,purl,dest,slug}; });
 
 const iPhone = devices['iPhone 13'];
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: '/bin/chromium', args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ ...iPhone });
 const results = [];
 
