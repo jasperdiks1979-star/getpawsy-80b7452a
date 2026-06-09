@@ -134,6 +134,45 @@ export default function PinterestRevenueEngine() {
     revenueCents: number;
     lastEventAt: string | null;
   } | null>(null);
+  const [testingAttribution, setTestingAttribution] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    sessionId?: string;
+    inserted?: number;
+    verified?: Array<{ event_type: string; occurred_at: string; revenue_cents: number }>;
+    message?: string;
+  } | null>(null);
+
+  async function runAttributionTest() {
+    setTestingAttribution(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("attribution-health-test", { body: { mode: "run" } });
+      if (error) throw error;
+      setTestResult(data as typeof testResult);
+      if ((data as { ok?: boolean })?.ok) {
+        toast.success("Synthetic Pinterest funnel inserted — refreshing widget");
+        await load();
+      } else {
+        toast.error((data as { message?: string })?.message ?? "Test failed");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setTestingAttribution(false);
+    }
+  }
+
+  async function cleanupAttributionTests() {
+    try {
+      const { data, error } = await supabase.functions.invoke("attribution-health-test", { body: { mode: "cleanup" } });
+      if (error) throw error;
+      toast.success(`Removed ${(data as { deleted?: number })?.deleted ?? 0} synthetic test events`);
+      setTestResult(null);
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
 
   async function runVarietyAudit() {
     setAuditing(true);
