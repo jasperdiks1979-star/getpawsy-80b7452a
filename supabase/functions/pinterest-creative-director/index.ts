@@ -1223,6 +1223,43 @@ Deno.serve(async (req) => {
               }
             }
 
+            // Diversity guard: enforce headline/cta/angle/benefit caps over
+            // the last 90 published pins. If a candidate violates a cap we
+            // try to swap from the category creative pool; if no replacement
+            // exists the draft is rejected.
+            const guardResult = guard.evaluate(
+              {
+                headline: brief.headline,
+                cta: brief.cta,
+                hook: brief.hook_category ?? null,
+                product_id: product.id,
+              },
+              niche,
+            );
+            if (!guardResult.ok) {
+              lastReasons = [
+                ...lastReasons,
+                ...guardResult.reasons.map((r) => `diversity:${r}`),
+              ];
+              rejected.push({
+                brief,
+                reasons: lastReasons,
+                scores: lastScores,
+                diversity: guardResult,
+              });
+              accepted = false;
+              break;
+            }
+            if (Object.keys(guardResult.replacedFromPool).length) {
+              if (guardResult.replacedFromPool.headline) brief.headline = guardResult.final.headline;
+              if (guardResult.replacedFromPool.cta) brief.cta = guardResult.final.cta;
+              console.log(
+                "[creative-director] diversity swap",
+                product.slug,
+                guardResult.replacedFromPool,
+              );
+            }
+
             const inserted = await uploadAndInsertDraft(
               supabase,
               { id: product.id, slug: product.slug, name: product.name },
