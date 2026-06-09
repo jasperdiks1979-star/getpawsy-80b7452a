@@ -12188,6 +12188,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_category_creative_pools: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          pool_type: string
+          times_used: number
+          value: string
+          weight: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          pool_type: string
+          times_used?: number
+          value: string
+          weight?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          pool_type?: string
+          times_used?: number
+          value?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       pinterest_category_rotation: {
         Row: {
           category: string | null
