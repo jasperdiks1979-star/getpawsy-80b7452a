@@ -158,6 +158,23 @@ type ProductRecord = Record<string, any>;
 async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
 
+  // Hard 10s timeout: if Supabase hangs (slow network, Pinterest in-app browser
+  // proxy stall, cold edge), the PDP must not stay in skeleton forever.
+  // Any rejection here falls through to the catch below which returns local
+  // fallback or null, so the query resolves with a definitive result.
+  const PDP_FETCH_TIMEOUT_MS = 10_000;
+  const withTimeout = <T,>(p: PromiseLike<T>, label: string): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`PDP_TIMEOUT:${label}:${PDP_FETCH_TIMEOUT_MS}ms`)),
+        PDP_FETCH_TIMEOUT_MS,
+      );
+      Promise.resolve(p).then(
+        (v) => { clearTimeout(timer); resolve(v); },
+        (e) => { clearTimeout(timer); reject(e); },
+      );
+    });
+
   const mapLocalProduct = (localProduct: any): ProductRecord => ({
     id: localProduct.id,
     slug: localProduct.slug,
@@ -185,19 +202,25 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     // products_detail exposes ALL active non-duplicate products (including out-of-stock)
     // so the PDP URL stays reachable for SEO. The page itself renders an OOS state
     // and disables Add to Cart when availability fails.
-    const { data, error } = await supabase.from("products_detail").select("*").eq(column, value).maybeSingle();
+    const { data, error } = await withTimeout(
+      supabase.from("products_detail").select("*").eq(column, value).maybeSingle(),
+      `public:${column}`,
+    );
 
     if (error) throw error;
     return data;
   };
 
   const fetchBaseBy = async (column: "id" | "slug", value: string) => {
-    const { data, error } = await supabase
-      .from("products_detail")
-      .select("*")
-      .eq(column, value)
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data, error } = await withTimeout(
+      supabase
+        .from("products_detail")
+        .select("*")
+        .eq(column, value)
+        .eq("is_active", true)
+        .maybeSingle(),
+      `base:${column}`,
+    );
 
     if (error) throw error;
     return data;
@@ -283,7 +306,10 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     if (data) return data;
 
     return getLocalFallback();
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn(`[PDP] fetchExistingProduct fallback for ${productIdentifier}:`, err);
+    }
     return getLocalFallback();
   }
 }
@@ -362,6 +388,7 @@ const ProductDetail = () => {
     data: product,
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
@@ -374,6 +401,8 @@ const ProductDetail = () => {
     // or visible error/retry state.
     retry: 1,
     retryDelay: 600,
+    // Do NOT keep failed results around for 10 minutes — that keeps the page
+    // broken even after a network blip recovers.
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
   });
@@ -819,7 +848,6 @@ const ProductDetail = () => {
   if (isError) {
     const slugName = slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Product";
     const truncatedSlugName = slugName.length > 80 ? slugName.substring(0, 77) + "..." : slugName;
-    const errorCanonical = `https://getpawsy.pet/products/${slug || ""}`;
 
     return (
       <Layout>
@@ -830,7 +858,26 @@ const ProductDetail = () => {
             name="googlebot"
             content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
           /></Helmet>
-        <ProductDetailSkeleton />
+        <div className="container mx-auto px-4 py-16 max-w-xl text-center">
+          <h2 className="text-2xl font-semibold mb-3">We couldn't load this product</h2>
+          <p className="text-muted-foreground mb-6">
+            A temporary network issue prevented loading <strong>{truncatedSlugName}</strong>. Please try again — your cart is safe.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => refetch()}
+              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:opacity-90 transition"
+            >
+              Try again
+            </button>
+            <a
+              href="/products"
+              className="inline-flex items-center justify-center rounded-md border px-5 py-2.5 text-sm font-medium hover:bg-muted transition"
+            >
+              Browse all products
+            </a>
+          </div>
+        </div>
       </Layout>
     );
   }
