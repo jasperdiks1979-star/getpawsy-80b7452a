@@ -124,6 +124,16 @@ export default function PinterestRevenueEngine() {
   const [varietySamples, setVarietySamples] = useState<VarietySample[]>([]);
   const [varietyReport, setVarietyReport] = useState<VarietyReport | null>(null);
   const [auditing, setAuditing] = useState(false);
+  const [attribution, setAttribution] = useState<{
+    total: number;
+    sessions: number;
+    views: number;
+    atcs: number;
+    checkouts: number;
+    purchases: number;
+    revenueCents: number;
+    lastEventAt: string | null;
+  } | null>(null);
 
   async function runVarietyAudit() {
     setAuditing(true);
@@ -194,6 +204,31 @@ export default function PinterestRevenueEngine() {
     setReviewQueue((rq.data as ReviewRow[]) ?? []);
     setVarietySamples((vs.data as VarietySample[]) ?? []);
     setLoading(false);
+    // Attribution health (last 24h, pinterest only)
+    const since = new Date(Date.now() - 86400_000).toISOString();
+    const { data: attrRows } = await supabase
+      .from("gi_attribution_events")
+      .select("session_id,event_type,revenue_cents,occurred_at,meta")
+      .gte("occurred_at", since)
+      .contains("meta", { source: "pinterest" })
+      .order("occurred_at", { ascending: false })
+      .limit(5000);
+    const rows = (attrRows as Array<{ session_id: string; event_type: string; revenue_cents: number | null; occurred_at: string }> | null) ?? [];
+    const sessions = new Set<string>();
+    let views = 0, atcs = 0, checkouts = 0, purchases = 0, revenueCents = 0;
+    for (const r of rows) {
+      sessions.add(r.session_id);
+      if (r.event_type === "view") views++;
+      else if (r.event_type === "add_to_cart") atcs++;
+      else if (r.event_type === "checkout") checkouts++;
+      else if (r.event_type === "purchase") { purchases++; revenueCents += r.revenue_cents ?? 0; }
+    }
+    setAttribution({
+      total: rows.length,
+      sessions: sessions.size,
+      views, atcs, checkouts, purchases, revenueCents,
+      lastEventAt: rows[0]?.occurred_at ?? null,
+    });
   }
 
   useEffect(() => {
