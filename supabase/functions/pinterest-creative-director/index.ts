@@ -46,6 +46,7 @@ import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-in
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
+import { DiversityGuard } from "../_shared/pinterest-diversity-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
