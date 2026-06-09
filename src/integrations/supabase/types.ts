@@ -12107,6 +12107,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_catalog_status: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          feed_id: string | null
+          feed_status: string | null
+          feed_url: string | null
+          id: number
+          items_invalid: number | null
+          items_total: number | null
+          last_checked_at: string | null
+          last_error: string | null
+          processing_status: string | null
+          raw: Json | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          feed_id?: string | null
+          feed_status?: string | null
+          feed_url?: string | null
+          id?: number
+          items_invalid?: number | null
+          items_total?: number | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          processing_status?: string | null
+          raw?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          feed_id?: string | null
+          feed_status?: string | null
+          feed_url?: string | null
+          id?: number
+          items_invalid?: number | null
+          items_total?: number | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          processing_status?: string | null
+          raw?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_category_benchmarks: {
         Row: {
           avg_ctr: number
