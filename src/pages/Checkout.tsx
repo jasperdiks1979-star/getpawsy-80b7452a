@@ -469,6 +469,11 @@ const Checkout = () => {
         currency: 'USD',
         metadata: { item_count: items.reduce((s, i) => s + i.quantity, 0) },
       });
+
+      // Pinterest DB funnel mirror — no-op if session not Pinterest
+      import('@/lib/pinterestTracker')
+        .then((m) => m.trackPinterestEvent('begin_checkout', { value: totalPrice, currency: 'USD' }))
+        .catch(() => {});
       
       // Pinterest Checkout tracking — deferred, non-blocking
       // Fires as a Pinterest `custom` event (event_name: initiate_checkout)
