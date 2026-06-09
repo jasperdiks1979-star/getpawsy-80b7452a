@@ -46,6 +46,7 @@ import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-in
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
+import { DiversityGuard } from "../_shared/pinterest-diversity-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1127,6 +1128,15 @@ Deno.serve(async (req) => {
 
       const drafts: any[] = [];
       const rejected: any[] = [];
+      // Diversity guard — loads last 90/25 published pins + same-category
+      // history + replacement creative pools, then enforces the merchant-safe
+      // headline/cta/angle/benefit caps before every draft insert.
+      const guard = new DiversityGuard();
+      try {
+        await guard.load(supabase);
+      } catch (e) {
+        console.warn("[creative-director] diversity guard load failed", (e as Error).message);
+      }
       const fidelityAudit: Array<{
         product_slug: string;
         product_image_url: string | null;
@@ -1213,6 +1223,43 @@ Deno.serve(async (req) => {
               }
             }
 
+            // Diversity guard: enforce headline/cta/angle/benefit caps over
+            // the last 90 published pins. If a candidate violates a cap we
+            // try to swap from the category creative pool; if no replacement
+            // exists the draft is rejected.
+            const guardResult = guard.evaluate(
+              {
+                headline: brief.headline,
+                cta: brief.cta,
+                hook: brief.hook_category ?? null,
+                product_id: product.id,
+              },
+              niche,
+            );
+            if (!guardResult.ok) {
+              lastReasons = [
+                ...lastReasons,
+                ...guardResult.reasons.map((r) => `diversity:${r}`),
+              ];
+              rejected.push({
+                brief,
+                reasons: lastReasons,
+                scores: lastScores,
+                diversity: guardResult,
+              });
+              accepted = false;
+              break;
+            }
+            if (Object.keys(guardResult.replacedFromPool).length) {
+              if (guardResult.replacedFromPool.headline) brief.headline = guardResult.final.headline;
+              if (guardResult.replacedFromPool.cta) brief.cta = guardResult.final.cta;
+              console.log(
+                "[creative-director] diversity swap",
+                product.slug,
+                guardResult.replacedFromPool,
+              );
+            }
+
             const inserted = await uploadAndInsertDraft(
               supabase,
               { id: product.id, slug: product.slug, name: product.name },
@@ -1230,6 +1277,10 @@ Deno.serve(async (req) => {
               ...inserted, brief, scores: lastScores, attempts: attempt,
               product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
             });
+            guard.register(
+              { headline: brief.headline, cta: brief.cta, hook: brief.hook_category ?? null, product_id: product.id },
+              niche,
+            );
             accepted = true;
             break;
           } catch (e) {
