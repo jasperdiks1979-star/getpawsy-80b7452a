@@ -34,27 +34,48 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
           body: { slug },
         });
         const targetSlug = (data as any)?.product_slug as string | null;
-        const category = (data as any)?.category as string | null;
         const step = (data as any)?.step as string | undefined;
+        const target = (data as any)?.target as string | null;
         const search = typeof window !== "undefined" ? window.location.search : "";
         const hash = typeof window !== "undefined" ? window.location.hash : "";
-        if (!error && targetSlug && targetSlug !== slug && step && step !== "not_found" && step !== "category") {
+        if (!error && step && step !== "not_found") {
+          // Prefer routing to a sibling PDP when we have one.
+          if (targetSlug && targetSlug !== slug) {
+            setPhase("redirecting");
+            navigate(`/products/${targetSlug}${search}${hash}`, { replace: true });
+            return;
+          }
+          // Otherwise honor whatever target the resolver returned
+          // (category collection, /collections/all, or /).
+          if (target) {
+            try {
+              const t = new URL(target, window.location.origin);
+              const path = `${t.pathname}${t.search || search}${t.hash || hash}`;
+              setPhase("redirecting");
+              navigate(path, { replace: true });
+              return;
+            } catch {
+              // ignore — fall through
+            }
+          }
+          // Last-resort safety net: never render NotFound for a Pinterest hit.
           setPhase("redirecting");
-          navigate(`/products/${targetSlug}${search}${hash}`, { replace: true });
+          navigate(`/collections/all${search}${hash}`, { replace: true });
           return;
         }
-        // Category-level fallback: redirect to /collections/{category} so the
-        // user lands on a real shopping surface instead of a 404. This
-        // recovers Pinterest traffic for pins whose product was deactivated.
-        if (!error && step === "category" && category) {
-          setPhase("redirecting");
-          navigate(`/collections/${category}${search}${hash}`, { replace: true });
-          return;
-        }
+        // Resolver explicitly returned not_found (or errored) → soft-recover
+        // to /collections/all instead of rendering the 404 template.
+        setPhase("redirecting");
+        navigate(`/collections/all${search}${hash}`, { replace: true });
+        return;
       } catch {
-        // fall through to NotFound
+        // Network/resolver failure — soft-recover instead of NotFound.
+        const search = typeof window !== "undefined" ? window.location.search : "";
+        const hash = typeof window !== "undefined" ? window.location.hash : "";
+        setPhase("redirecting");
+        navigate(`/collections/all${search}${hash}`, { replace: true });
+        return;
       }
-      setPhase("not_found");
     })();
   }, [slug, navigate]);
 

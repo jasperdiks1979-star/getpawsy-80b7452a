@@ -25,6 +25,8 @@ export type ResolverStep =
   | "cj_map"
   | "similar"
   | "category"
+  | "collection_all"
+  | "home"
   | "not_found";
 
 export interface ResolverResult {
@@ -38,6 +40,63 @@ export interface ResolverResult {
 }
 
 const HOST = "https://getpawsy.pet";
+
+/**
+ * Maps `products.category` strings (or kebab-cased forms) to a real, active
+ * collection slug. Anything not listed falls through to `/collections/all`,
+ * which always exists. Keep this in sync with src/lib/category-collection-map.ts.
+ */
+const CATEGORY_TO_COLLECTION: Record<string, string> = {
+  "dogs": "dogs",
+  "cats": "cats",
+  "dog-beds": "dog-beds",
+  "orthopedic-dog-beds": "dog-beds",
+  "memory-foam-dog-beds": "dog-beds",
+  "senior-dog-beds": "dog-beds",
+  "pet-beds": "dog-beds",
+  "cat-beds": "cats",
+  "cat-trees-and-condos": "cat-trees-and-condos",
+  "cat-scratching-posts": "cat-trees-and-condos",
+  "cat-furniture": "cat-trees-and-condos",
+  "cat-litter-boxes": "cat-litter-boxes",
+  "self-cleaning-litter-box": "self-cleaning-litter-box",
+  "dog-toys": "dogs",
+  "dog-training": "dogs",
+  "dog-collars-and-leashes": "dogs",
+  "dog-collars-leashes": "dogs",
+  "dog-carriers": "dogs",
+  "dog-houses": "dogs",
+  "dog-bowls-and-feeders": "dogs",
+  "dog-bowls-feeders": "dogs",
+  "dog-food-and-treats": "dogs",
+  "dog-food-treats": "dogs",
+  "dog-grooming": "dogs",
+  "dog-clothing": "dogs",
+  "dog-travel": "dogs",
+  "cat-toys": "cats",
+  "cat-carriers": "cats",
+  "cat-bowls-and-feeders": "cats",
+  "cat-bowls-feeders": "cats",
+  "cat-houses": "cats",
+  "cat-grooming": "cats",
+  "cat-collars-and-accessories": "cats",
+  "cat-collars-accessories": "cats",
+};
+
+function kebab(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function categoryToCollectionSlug(categoryRaw: string | null | undefined): string {
+  if (!categoryRaw) return "all";
+  const k = kebab(categoryRaw);
+  return CATEGORY_TO_COLLECTION[k] || "all";
+}
 
 const STOPWORDS = new Set([
   "the","a","an","and","or","but","for","with","in","on","at","to","of","is",
@@ -245,27 +304,31 @@ export async function resolveDestination(
 
   // 7) category fallback — only if path was a collection or slug encodes a known category
   {
-    const catFromPath = u.pathname.match(/^\/collections?\/([^\/?#]+)/i)?.[1] ||
+    const candidate =
+      u.pathname.match(/^\/collections?\/([^\/?#]+)/i)?.[1] ||
       inactiveCategory ||
-      slug.split("-").slice(-2).join("-");
-    if (catFromPath) {
-      const { count } = await sb
-        .from("products_public")
-        .select("id", { count: "exact", head: true })
-        .eq("category", catFromPath);
-      if ((count || 0) > 0) {
-        return mk(
-          "category",
-          withQuery(`${HOST}/collections/${catFromPath}`, rawQuery),
-          null,
-          null,
-          catFromPath,
-        );
-      }
+      "";
+    const collectionSlug = categoryToCollectionSlug(candidate);
+    if (collectionSlug && collectionSlug !== "all") {
+      return mk(
+        "category",
+        withQuery(`${HOST}/collections/${collectionSlug}`, rawQuery),
+        null,
+        null,
+        collectionSlug,
+      );
     }
   }
 
-  return mk("not_found", null, null, null, slug, "all_steps_exhausted");
+  // 8) final safe fallback — /collections/all is always live.
+  return mk(
+    "collection_all",
+    withQuery(`${HOST}/collections/all`, rawQuery),
+    null,
+    null,
+    "all",
+    "fallback_collections_all",
+  );
 }
 
 function mk(
