@@ -86,6 +86,23 @@ type VarietySample = {
   category_key: string | null;
 };
 
+type VarietyReport = {
+  ok: boolean;
+  traceId: string;
+  generated_at: string;
+  totals: Record<string, number>;
+  goal: { rule: string; violations_in_90: number; compliant: boolean };
+  overused_overlays_last_90: { value: string; count: number }[];
+  overused_overlays_all_time: { value: string; count: number }[];
+  top_repeated: Record<string, { value: string; count: number }[]>;
+  diversity_by_board: { board: string; total: number; uniques: number; diversity: number }[];
+  diversity_by_category: { category: string; total: number; uniques: number; diversity: number }[];
+  replacement_pools: Record<string, Record<string, string[]>>;
+  replacement_pools_summary: Record<string, Record<string, number>>;
+  publishing_status: string;
+  message: string;
+};
+
 function fmt(n: number) {
   return n.toLocaleString("en-US");
 }
