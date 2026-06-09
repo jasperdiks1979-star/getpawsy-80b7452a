@@ -747,6 +747,17 @@ const ProductDetail = () => {
           });
         }, 'pinterest')
       ).catch(() => {});
+      // Server-side attribution mirror → gi_attribution_events (pin/board/product enrichment in edge fn)
+      import('@/lib/pinterestTracker')
+        .then((m) =>
+          m.trackPinterestEvent('product_view', {
+            product_id: currentProductId,
+            product_slug: product.slug ?? null,
+            value: Number(product.price) || 0,
+            currency: 'USD',
+          })
+        )
+        .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProductId]);

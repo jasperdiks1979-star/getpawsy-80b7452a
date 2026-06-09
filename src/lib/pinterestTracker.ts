@@ -78,8 +78,14 @@ export function bootstrapPinterestSession(): void {
 }
 
 export function trackPinterestEvent(
-  event_name: "page_view" | "add_to_cart" | "begin_checkout" | "purchase",
-  data: { product_slug?: string | null; value?: number | null; currency?: string | null; pin_id?: string | null } = {}
+  event_name: "page_view" | "product_view" | "add_to_cart" | "begin_checkout" | "purchase",
+  data: {
+    product_slug?: string | null;
+    product_id?: string | null;
+    value?: number | null;
+    currency?: string | null;
+    pin_id?: string | null;
+  } = {}
 ): void {
   if (typeof window === "undefined") return;
   post({
@@ -87,6 +93,7 @@ export function trackPinterestEvent(
     sessionKey: getSessionKey(),
     event_name,
     product_slug: data.product_slug ?? null,
+    product_id: data.product_id ?? null,
     value: data.value ?? null,
     currency: data.currency ?? null,
     pin_id: data.pin_id ?? null,
