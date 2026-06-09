@@ -36,15 +36,21 @@ async function fetchPinterestJson(url: string, accessToken: string) {
   return { ok: res.ok, status: res.status, body, text };
 }
 
-function decodeFrontendBaseFromState(state: string | null): string {
-  if (!state || !state.includes("::")) return DEFAULT_FRONTEND_BASE;
-
+function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog: boolean } {
+  const fallback = { base: DEFAULT_FRONTEND_BASE, autoSyncCatalog: false };
+  if (!state || !state.includes("::")) return fallback;
   try {
-    const encodedBase = state.split("::").slice(1).join("::");
-    const decodedBase = atob(encodedBase);
-    return ALLOWED_FRONTEND_BASES.includes(decodedBase) ? decodedBase : DEFAULT_FRONTEND_BASE;
+    const tail = state.split("::").slice(1).join("::");
+    const decoded = atob(tail);
+    // New format: JSON. Legacy format: bare base string.
+    let meta: any = null;
+    try { meta = JSON.parse(decoded); } catch { meta = { base: decoded }; }
+    const base = typeof meta?.base === "string" && ALLOWED_FRONTEND_BASES.includes(meta.base)
+      ? meta.base
+      : DEFAULT_FRONTEND_BASE;
+    return { base, autoSyncCatalog: Boolean(meta?.autoSyncCatalog) };
   } catch {
-    return DEFAULT_FRONTEND_BASE;
+    return fallback;
   }
 }
 
@@ -61,9 +67,12 @@ Deno.serve(async (req) => {
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
-  // Determine the frontend redirect base
-  const frontendBase = decodeFrontendBaseFromState(state);
-  const adminUrl = `${frontendBase}/admin/pinterest-automation`;
+  // Determine the frontend redirect base + post-success action
+  const { base: frontendBase, autoSyncCatalog } = decodeStateMeta(state);
+  // Redirect back to the Health page when the user came in via the catalog reconnect flow.
+  const adminUrl = autoSyncCatalog
+    ? `${frontendBase}/admin/pinterest-health`
+    : `${frontendBase}/admin/pinterest-automation`;
 
   if (error) {
     console.error("[pinterest-oauth-callback] Error from Pinterest:", error);
@@ -301,7 +310,50 @@ Deno.serve(async (req) => {
     }
 
     console.log("[pinterest-oauth-callback] ✅ Pinterest connected successfully!");
-    return Response.redirect(`${adminUrl}?oauth_success=true`, 302);
+
+    // If this reconnect was initiated to grant catalog scopes, automatically
+    // (re)register the Pinterest Product Catalog feed and pull its status.
+    let catalogSyncResult: { register?: any; status?: any; error?: string } | null = null;
+    if (autoSyncCatalog) {
+      const fnBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-catalog-sync`;
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      catalogSyncResult = {};
+      try {
+        const reg = await fetch(fnBase, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({ action: "register" }),
+        });
+        catalogSyncResult.register = { status: reg.status, body: await reg.json().catch(() => null) };
+        const stat = await fetch(fnBase, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({ action: "status" }),
+        });
+        catalogSyncResult.status = { status: stat.status, body: await stat.json().catch(() => null) };
+      } catch (e) {
+        catalogSyncResult.error = e instanceof Error ? e.message : String(e);
+      }
+      await sb.from("pinterest_post_logs").insert({
+        action: "oauth_catalog_autosync",
+        status: catalogSyncResult.error ? "failed" : "success",
+        error_message: catalogSyncResult.error || null,
+        response_data: catalogSyncResult,
+      });
+    }
+
+    const successQs = autoSyncCatalog
+      ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
+      : `oauth_success=true`;
+    return Response.redirect(`${adminUrl}?${successQs}`, 302);
 
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";

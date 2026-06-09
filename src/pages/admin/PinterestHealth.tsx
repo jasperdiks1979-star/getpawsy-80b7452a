@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2, CheckCircle2, AlertTriangle, RefreshCw, Link2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type Kpi = {
@@ -54,6 +54,44 @@ export default function PinterestHealth() {
       setBusy(null);
     }
   }
+
+  async function reconnectWithCatalogScopes() {
+    setBusy("reconnect");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: {
+          extra_scopes: ["catalogs:read", "catalogs:write"],
+          auto_sync_catalog: true,
+        },
+      });
+      if (error) throw error;
+      const authUrl = (data as any)?.auth_url;
+      if (!authUrl) throw new Error("No auth_url returned");
+      window.location.href = authUrl;
+    } catch (e: any) {
+      toast({ title: "Reconnect failed", description: e?.message ?? "Failed", variant: "destructive" });
+      setBusy(null);
+    }
+  }
+
+  // Surface the result of the auto-catalog-sync that runs after OAuth callback.
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    if (qs.get("oauth_success") === "true" && qs.has("catalog_synced")) {
+      const ok = qs.get("catalog_synced") === "1";
+      toast({
+        title: ok ? "Pinterest reconnected · catalog sync started" : "Reconnected, but catalog sync failed",
+        description: ok
+          ? "Catalog scopes granted and feed (re)registered. Status will update shortly."
+          : "Token was saved but the catalog sync call errored — try Check status.",
+        variant: ok ? undefined : "destructive",
+      });
+      loadCatalog();
+      // Clean the URL so the toast doesn't fire again on refresh.
+      const cleaned = window.location.pathname;
+      window.history.replaceState({}, "", cleaned);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +181,16 @@ export default function PinterestHealth() {
             )}
           </CardTitle>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy !== null}
+              onClick={reconnectWithCatalogScopes}
+              title="Reconnect Pinterest and request catalogs:read + catalogs:write, then auto-run feed sync"
+            >
+              {busy === "reconnect" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
+              Reconnect + grant catalog scopes
+            </Button>
             <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => callCatalog("status")}>
               <RefreshCw className={`h-3 w-3 mr-1 ${busy === "status" ? "animate-spin" : ""}`} />Check status
             </Button>
