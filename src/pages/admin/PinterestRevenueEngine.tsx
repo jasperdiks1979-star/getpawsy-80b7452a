@@ -122,6 +122,25 @@ export default function PinterestRevenueEngine() {
   const [cronRuns, setCronRuns] = useState<CronRow[]>([]);
   const [reviewQueue, setReviewQueue] = useState<ReviewRow[]>([]);
   const [varietySamples, setVarietySamples] = useState<VarietySample[]>([]);
+  const [varietyReport, setVarietyReport] = useState<VarietyReport | null>(null);
+  const [auditing, setAuditing] = useState(false);
+
+  async function runVarietyAudit() {
+    setAuditing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-creative-variety-audit", { body: {} });
+      if (error) throw error;
+      setVarietyReport(data as VarietyReport);
+      const v = (data as VarietyReport).goal?.violations_in_90 ?? 0;
+      v === 0
+        ? toast.success("Variety audit clean: no headline repeats >5 in last 90 pins")
+        : toast.warning(`Variety audit: ${v} overused overlay(s) in last 90 pins`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAuditing(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
