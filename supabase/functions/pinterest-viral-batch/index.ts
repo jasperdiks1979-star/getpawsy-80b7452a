@@ -37,6 +37,10 @@ import {
 import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 import {
+  pickCategoryOverlay,
+  validateOverlayForCategory,
+} from "../_shared/pinterest-overlay-fallback.ts";
+import {
   computePhashFromUrl,
   maxSimilarity,
   PHASH_DUPLICATE_SIMILARITY,
