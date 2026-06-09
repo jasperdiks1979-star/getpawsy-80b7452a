@@ -1128,6 +1128,15 @@ Deno.serve(async (req) => {
 
       const drafts: any[] = [];
       const rejected: any[] = [];
+      // Diversity guard — loads last 90/25 published pins + same-category
+      // history + replacement creative pools, then enforces the merchant-safe
+      // headline/cta/angle/benefit caps before every draft insert.
+      const guard = new DiversityGuard();
+      try {
+        await guard.load(supabase);
+      } catch (e) {
+        console.warn("[creative-director] diversity guard load failed", (e as Error).message);
+      }
       const fidelityAudit: Array<{
         product_slug: string;
         product_image_url: string | null;
