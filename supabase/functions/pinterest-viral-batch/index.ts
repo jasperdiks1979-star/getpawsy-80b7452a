@@ -37,6 +37,10 @@ import {
 import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
 import {
+  pickCategoryOverlay,
+  validateOverlayForCategory,
+} from "../_shared/pinterest-overlay-fallback.ts";
+import {
   computePhashFromUrl,
   maxSimilarity,
   PHASH_DUPLICATE_SIMILARITY,
@@ -1414,7 +1418,29 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       const style = HOOK_TO_STYLE[hook.key] || "benefit";
       const seed = (now / 60000 | 0) + i * 7 + hook.key.length;
 
-      const topOverlay = String(p.topOverlay || "Stop scooping every day").slice(0, 50);
+      // Category-aware fallback — replaces the legacy hard-coded
+      // "Stop scooping every day" which leaked litter copy onto every product.
+      const aiTop = (p.topOverlay || "").toString().trim();
+      let topOverlay = (aiTop || pickCategoryOverlay(categoryKey, seed, product.category)).slice(0, 50);
+      // Guardrail: even if AI returned something, refuse foreign-niche copy
+      // (e.g. "Stop scooping…" on a cat tree / carrier / bed). Repair in place.
+      {
+        const v = validateOverlayForCategory(topOverlay, categoryKey, {
+          seed,
+          productCategory: product.category,
+        });
+        if (!v.ok && v.repaired) {
+          console.warn("[viral-batch] overlay creative_mismatch", {
+            slug: product.slug,
+            category_key: categoryKey,
+            bucket: v.bucket,
+            original: topOverlay,
+            repaired: v.repaired,
+            reason: v.reason,
+          });
+          topOverlay = v.repaired.slice(0, 50);
+        }
+      }
       // Soft Pinterest-native CTA — rotated by seed, falls back to AI suggestion.
       const bottomOverlay = String(p.bottomOverlay || pickSoftCta(seed)).slice(0, 30);
       const ctrBadge = pickCtrBadge(seed);
