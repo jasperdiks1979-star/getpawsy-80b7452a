@@ -976,6 +976,67 @@ export default function PinterestRevenueEngine() {
         </CardContent>
       </Card>
 
+      {/* Diversity readiness simulation — replays next 30 drafts through the guard */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PlayCircle className="w-5 h-5" /> Diversity readiness simulation
+            <Badge variant="outline">Publishing paused</Badge>
+            <Button size="sm" className="ml-auto" disabled={simulating} onClick={runDiversitySimulation}>
+              {simulating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
+              {simulation ? "Re-run simulation" : "Run simulation against 30 drafts"}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {!simulation ? (
+            <div className="text-muted-foreground">
+              Pulls the next 30 approval-ready drafts and replays them through the diversity guard
+              (headline ≤5/90, CTA/angle/benefit ≤2/90, no exact overlay duplicate in last 25).
+              No pins are created, modified, or published.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Kpi label="Considered" value={fmt(simulation.input.considered)} />
+                <Kpi label="Would pass" value={fmt(simulation.summary.pass)} />
+                <Kpi label="Would fail" value={fmt(simulation.summary.fail)} />
+                <Kpi label="Replaced from pool" value={fmt(simulation.summary.replaced_from_pool)} />
+                <Kpi
+                  label="Projected global diversity"
+                  value={`${simulation.summary.projected_global_diversity}% (${simulation.summary.delta_global_diversity >= 0 ? "+" : ""}${simulation.summary.delta_global_diversity})`}
+                />
+              </div>
+              <div className="border rounded divide-y max-h-[420px] overflow-auto">
+                {simulation.results.map((r) => (
+                  <div key={r.id} className="p-2 text-xs flex items-start gap-3">
+                    <Badge variant={r.pass ? "secondary" : "destructive"} className="shrink-0">
+                      {r.pass ? "pass" : "fail"}
+                    </Badge>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">
+                        {r.headline} <span className="text-muted-foreground">• {r.cta}</span>
+                      </div>
+                      <div className="text-muted-foreground truncate">
+                        {r.product_slug || "—"} · {r.category || "—"}
+                      </div>
+                      {Object.keys(r.replaced).length > 0 && (
+                        <div className="text-amber-600">
+                          swapped: {Object.entries(r.replaced).map(([k, v]) => `${k}: "${v.from}" → "${v.to}"`).join(" · ")}
+                        </div>
+                      )}
+                      {r.reasons.length > 0 && (
+                        <div className="text-destructive">{r.reasons.join(" · ")}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
