@@ -1277,6 +1277,10 @@ Deno.serve(async (req) => {
               ...inserted, brief, scores: lastScores, attempts: attempt,
               product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
             });
+            guard.register(
+              { headline: brief.headline, cta: brief.cta, hook: brief.hook_category ?? null, product_id: product.id },
+              niche,
+            );
             accepted = true;
             break;
           } catch (e) {
