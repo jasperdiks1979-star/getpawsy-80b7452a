@@ -1307,8 +1307,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       if (!aiRes.ok) {
         const text = await aiRes.text().catch(() => "");
         console.error(`[pinterest-viral-batch] AI gateway ${aiRes.status}: ${text.slice(0, 300)}`);
-        if (aiRes.status === 429) return respond({ ok: false, code: "AI_RATE_LIMITED", message: "AI rate limited — try again in a minute", fallback: true });
-        if (aiRes.status === 402) return respond({ ok: false, code: "AI_CREDITS_EXHAUSTED", message: "AI credits exhausted — top up Lovable AI", fallback: true });
+        // Soft-fail: rate-limit / credits-exhausted should NOT halt the batch.
+        // Use deterministic fallback copy so the queue keeps growing while the
+        // admin tops up. The status code is preserved in logs for visibility.
+        if (aiRes.status === 429) console.warn("[pinterest-viral-batch] AI 429 — using deterministic fallback copy");
+        if (aiRes.status === 402) console.warn("[pinterest-viral-batch] AI 402 (credits exhausted) — using deterministic fallback copy");
         aiFallback = true;
       } else {
         const aiJson = await aiRes.json();
