@@ -813,3 +813,36 @@ function VarietyList({ title, rows }: { title: string; rows: [string, number][] 
     </div>
   );
 }
+
+function ReportList({
+  title,
+  rows,
+  threshold,
+}: {
+  title: string;
+  rows: { value: string; count: number }[];
+  threshold: number;
+}) {
+  return (
+    <div>
+      <h4 className="font-semibold mb-2">{title}</h4>
+      {rows.length === 0 ? (
+        <div className="text-muted-foreground text-xs">No data.</div>
+      ) : (
+        <ul className="divide-y border rounded">
+          {rows.map((r) => (
+            <li key={r.value} className="py-1.5 px-2 flex items-center justify-between gap-3 text-xs">
+              <span className="truncate" title={r.value}>{r.value}</span>
+              <Badge
+                variant={r.count >= threshold ? "destructive" : r.count >= Math.ceil(threshold / 2) ? "outline" : "secondary"}
+                className="text-[10px] shrink-0"
+              >
+                ×{r.count}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
