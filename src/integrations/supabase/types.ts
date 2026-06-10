@@ -12946,6 +12946,77 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_live_pin_repair_queue: {
+        Row: {
+          audit_run_id: string | null
+          board_name: string | null
+          category_key: string | null
+          created_at: string
+          destination_link: string | null
+          details: Json
+          hook_group: string | null
+          id: string
+          overlay_text: string | null
+          pin_queue_id: string | null
+          pin_title: string | null
+          pinterest_pin_id: string | null
+          product_slug: string | null
+          recommended_action: string
+          severity: string
+          status: string
+          updated_at: string
+          violation_types: string[]
+        }
+        Insert: {
+          audit_run_id?: string | null
+          board_name?: string | null
+          category_key?: string | null
+          created_at?: string
+          destination_link?: string | null
+          details?: Json
+          hook_group?: string | null
+          id?: string
+          overlay_text?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          pinterest_pin_id?: string | null
+          product_slug?: string | null
+          recommended_action: string
+          severity?: string
+          status?: string
+          updated_at?: string
+          violation_types?: string[]
+        }
+        Update: {
+          audit_run_id?: string | null
+          board_name?: string | null
+          category_key?: string | null
+          created_at?: string
+          destination_link?: string | null
+          details?: Json
+          hook_group?: string | null
+          id?: string
+          overlay_text?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          pinterest_pin_id?: string | null
+          product_slug?: string | null
+          recommended_action?: string
+          severity?: string
+          status?: string
+          updated_at?: string
+          violation_types?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_live_pin_repair_queue_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_loser_blocklist: {
         Row: {
           asset_id: string | null

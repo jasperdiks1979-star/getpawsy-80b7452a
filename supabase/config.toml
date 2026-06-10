@@ -336,6 +336,9 @@ verify_jwt = false
 [functions.pinterest-variety-engine-audit]
 verify_jwt = false
 
+[functions.pinterest-live-pin-audit]
+verify_jwt = false
+
 [functions.cj-inventory-sync]
 verify_jwt = false
 
