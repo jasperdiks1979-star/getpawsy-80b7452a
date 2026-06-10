@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Loader2, RefreshCcw, Rocket } from "lucide-react";
 
 type RepairRow = {
   id: string;
@@ -39,6 +39,8 @@ export default function PinterestLivePinRepair() {
   const [drafts, setDrafts] = useState<Map<string, DraftRow>>(new Map());
   const [stats, setStats] = useState({ done: 0, pending: 0, total: 0 });
   const [running, setRunning] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [execReport, setExecReport] = useState<any | null>(null);
 
   async function load() {
     setLoading(true);
@@ -84,6 +86,23 @@ export default function PinterestLivePinRepair() {
     }
   }
 
+  async function runExecute() {
+    if (!confirm("Publish 25 replacement pins, verify them, then DELETE the 25 mismatched live pins? This is live Pinterest activity.")) return;
+    setExecuting(true);
+    setExecReport(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-live-pin-repair-execute", { body: { limit: 25 } });
+      if (error) {
+        setExecReport({ ok: false, error: error.message });
+      } else {
+        setExecReport(data);
+      }
+      await load();
+    } finally {
+      setExecuting(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-start justify-between">
@@ -91,11 +110,76 @@ export default function PinterestLivePinRepair() {
           <h1 className="text-3xl font-bold">Live Pin Repair Queue</h1>
           <p className="text-muted-foreground mt-1">Category-correct replacement drafts for category-mismatch live pins. Publishing remains paused.</p>
         </div>
-        <Button onClick={runGenerator} disabled={running}>
-          {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
-          Generate Drafts
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={runGenerator} disabled={running || executing}>
+            {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
+            Generate Drafts
+          </Button>
+          <Button onClick={runExecute} disabled={executing || running}>
+            {executing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
+            Execute First 25 (Publish + Delete)
+          </Button>
+        </div>
       </div>
+
+      {execReport && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Execution Report {execReport.paused ? <Badge className="ml-2">Paused for approval</Badge> : null}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><div className="text-muted-foreground">Processed</div><div className="text-2xl font-bold">{execReport.processed ?? 0}</div></div>
+              <div><div className="text-muted-foreground">Published</div><div className="text-2xl font-bold text-green-600">{execReport.succeeded ?? 0}</div></div>
+              <div><div className="text-muted-foreground">Deleted</div><div className="text-2xl font-bold text-amber-600">{execReport.deleted ?? 0}</div></div>
+              <div><div className="text-muted-foreground">Failed</div><div className="text-2xl font-bold text-destructive">{execReport.failed ?? 0}</div></div>
+              <div><div className="text-muted-foreground">Cap</div><div className="text-2xl font-bold">{execReport.cap ?? 25}</div></div>
+            </div>
+            {execReport.error && <div className="text-destructive text-sm">{execReport.error}</div>}
+            {Array.isArray(execReport.report) && execReport.report.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left border-b">
+                      <th className="p-2">Status</th>
+                      <th className="p-2">Old Pin ID</th>
+                      <th className="p-2">New Pin ID</th>
+                      <th className="p-2">Category</th>
+                      <th className="p-2">Old Headline → New Headline</th>
+                      <th className="p-2">Old Overlay → New Overlay</th>
+                      <th className="p-2">Destination</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {execReport.report.map((r: any, i: number) => (
+                      <tr key={i} className="border-b align-top">
+                        <td className="p-2">
+                          <Badge variant={r.status === "complete" ? "default" : r.status === "published_not_deleted" ? "secondary" : "destructive"}>
+                            {r.status}
+                          </Badge>
+                          {r.error && <div className="text-destructive text-[10px] mt-1">{r.error}</div>}
+                        </td>
+                        <td className="p-2 font-mono">{r.old_pin_id}</td>
+                        <td className="p-2 font-mono">{r.new_pin_id || "—"}</td>
+                        <td className="p-2"><Badge variant="outline">{r.category}</Badge></td>
+                        <td className="p-2 max-w-[260px]">
+                          <div className="line-through text-muted-foreground truncate">{r.old_headline}</div>
+                          <div className="font-medium truncate">{r.new_headline}</div>
+                        </td>
+                        <td className="p-2 max-w-[220px]">
+                          <div className="line-through text-muted-foreground truncate">{r.old_overlay}</div>
+                          <div className="font-medium truncate">{r.new_overlay}</div>
+                        </td>
+                        <td className="p-2 max-w-[200px] truncate"><a href={r.destination_url} target="_blank" rel="noreferrer" className="underline">link</a></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardHeader><CardTitle className="text-sm">Total Replace</CardTitle></CardHeader><CardContent className="text-3xl font-bold">{stats.total}</CardContent></Card>
