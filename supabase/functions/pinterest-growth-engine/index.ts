@@ -349,7 +349,12 @@ async function callCreativeDirector(slug: string, count: number, usHints?: {
   }
 }
 
-async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoardCap: number, scoreThreshold: number) {
+async function autoApproveSafeDrafts(
+  sb: ReturnType<typeof createClient>,
+  perBoardCap: number,
+  scoreThreshold: number,
+  usShares: UsShares,
+) {
   // Pull recent drafts on production boards
   const { data: boards } = await sb
     .from("pinterest_boards")
@@ -363,13 +368,27 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
       .filter((b: { name: string }) => isGenericBoard(b.name))
       .map((b: { id: string }) => b.id),
   );
+  // US filter: boards routing <FLOOR US traffic are demoted to last-resort.
+  // Boards with no signal yet (not in shares map) are treated as neutral.
+  const lowUsBoardIds = new Set<string>(
+    [...prodIds].filter((id) => {
+      const s = usShares.byBoard.get(id);
+      return s !== undefined && s < US_SHARE_FLOOR;
+    }),
+  );
 
-  const { data: drafts } = await sb
+  const { data: draftsRaw } = await sb
     .from("pinterest_pin_queue")
-    .select("id,board_id,board_name,product_id,pin_image_url,destination_link,pin_title,overlay_text,meta")
+    .select("id,board_id,board_name,product_id,product_slug,product_name,pin_image_url,destination_link,pin_title,overlay_text,meta")
     .eq("status", "draft")
     .order("created_at", { ascending: false })
     .limit(200);
+  // Sort drafts so high-US-share boards are approved first within the per-board cap.
+  const drafts = ((draftsRaw ?? []) as Array<{ board_id: string | null }>).slice().sort((a, b) => {
+    const sa = (a.board_id && usShares.byBoard.get(a.board_id)) ?? 0;
+    const sb2 = (b.board_id && usShares.byBoard.get(b.board_id)) ?? 0;
+    return sb2 - sa;
+  });
 
   // Today's per-board count
   const startToday = new Date(`${todayIso()}T00:00:00Z`).toISOString();
@@ -391,11 +410,13 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
   let skippedTitle = 0;
   let skippedOverlay = 0;
   let skippedGeneric = 0;
+  let skippedLowUs = 0;
   const rejectedTitles: string[] = [];
   const rejectedOverlays: string[] = [];
 
-  for (const d of (drafts ?? []) as Array<{
-    id: string; board_id: string | null; board_name: string | null; product_id: string | null;
+  for (const d of drafts as Array<{
+    id: string; board_id: string | null; board_name: string | null;
+    product_id: string | null; product_slug: string | null; product_name: string | null;
     pin_image_url: string | null; destination_link: string | null;
     pin_title: string | null; overlay_text: string | null;
     meta: Record<string, unknown> | null;
@@ -406,6 +427,20 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     if (d.product_id) {
       const { data: prod } = await sb.from("products").select("is_active").eq("id", d.product_id).maybeSingle();
       if (!prod || !(prod as { is_active: boolean }).is_active) { skippedSafety++; continue; }
+    }
+    // V3 US filter: low-US-share boards are last-resort when other boards still have capacity.
+    if (lowUsBoardIds.has(d.board_id)) {
+      const altAvailable = [...prodIds].some(
+        (id) => !lowUsBoardIds.has(id) && !genericBoardIds.has(id) && (byBoardToday.get(id) ?? 0) < perBoardCap,
+      );
+      if (altAvailable) {
+        await sb.from("pinterest_pin_queue").update({
+          status: "archived",
+          rejection_reason: `v3-us: board us_share ${(usShares.byBoard.get(d.board_id) ?? 0).toFixed(2)} < ${US_SHARE_FLOOR}`,
+        }).eq("id", d.id);
+        skippedLowUs++;
+        continue;
+      }
     }
     // V2 Phase 2: demote generic boards — only allow if every non-generic board is at cap.
     if (genericBoardIds.has(d.board_id)) {
@@ -451,11 +486,38 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     // Per-board cap
     const used = byBoardToday.get(d.board_id) ?? 0;
     if (used >= perBoardCap) { skippedCap++; continue; }
-    // Approve
+    // Approve — stamp US targeting metadata so the publisher can attach
+    // US-focused keywords / state hint to the Pinterest API call.
+    const seed = d.product_slug ?? d.product_id ?? d.id;
+    const usKeywords = pickUsKeywords({
+      name: d.product_name, slug: d.product_slug, category: null,
+    });
+    const usState = pickUsState(seed);
+    const niche = detectNicheLite({ name: d.product_name, slug: d.product_slug, category: null });
+    const boardUsShare = usShares.byBoard.get(d.board_id) ?? null;
+    const productUsShare = d.product_id ? (usShares.byProduct.get(d.product_id) ?? null) : null;
+    const usAudienceScore = Math.round(
+      ((boardUsShare ?? usShares.overall) * 60 + (productUsShare ?? usShares.overall) * 40) * 100,
+    );
+    const nextMeta = {
+      ...(d.meta ?? {}),
+      us_focus: true,
+      us_keywords: usKeywords,
+      us_state_focus: usState,
+      us_board_share: boardUsShare,
+      us_product_share: productUsShare,
+      niche_detected: niche,
+    };
     const scheduled = new Date(Date.now() + (approved * 12 + 5) * 60_000).toISOString();
     const { error } = await sb
       .from("pinterest_pin_queue")
-      .update({ status: "ready_to_post", approved_at: new Date().toISOString(), scheduled_at: scheduled })
+      .update({
+        status: "ready_to_post",
+        approved_at: new Date().toISOString(),
+        scheduled_at: scheduled,
+        meta: nextMeta,
+        us_audience_score: usAudienceScore,
+      })
       .eq("id", d.id);
     if (!error) {
       approved++;
@@ -471,6 +533,8 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     skippedTitle,
     skippedOverlay,
     skippedGeneric,
+    skippedLowUs,
+    boardsBelowUsFloor: lowUsBoardIds.size,
     rejectedTitleSamples: rejectedTitles.slice(0, 5),
     rejectedOverlaySamples: rejectedOverlays.slice(0, 5),
   };
