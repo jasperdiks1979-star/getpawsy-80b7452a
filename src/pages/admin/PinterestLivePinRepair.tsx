@@ -124,6 +124,64 @@ export default function PinterestLivePinRepair() {
     }
   }
 
+  function downloadPreviewCsv() {
+    const previewRows = rows
+      .filter((r) => r.status === "pending" && r.details?.replacement_draft_id)
+      .slice(0, 25);
+    const headers = [
+      "old_pin_id",
+      "category",
+      "old_headline",
+      "old_overlay",
+      "new_headline",
+      "new_overlay",
+      "destination_url",
+      "status",
+    ];
+    const data = previewRows.map((r) => {
+      const draftId = r.details?.replacement_draft_id as string | undefined;
+      const draft = draftId ? drafts.get(draftId) : undefined;
+      return [
+        r.pinterest_pin_id ?? "",
+        draft?.category_key || r.details?.replacement_category || r.category_key || "",
+        r.pin_title ?? "",
+        r.overlay_text ?? "",
+        draft?.pin_title ?? "",
+        draft?.overlay_text ?? "",
+        r.destination_link ?? "",
+        "preview",
+      ];
+    });
+    downloadCsv("live-pin-repair-preview.csv", headers, data);
+  }
+
+  function downloadReportCsv() {
+    if (!execReport || !Array.isArray(execReport.report)) return;
+    const headers = [
+      "old_pin_id",
+      "new_pin_id",
+      "category",
+      "old_headline",
+      "new_headline",
+      "old_overlay",
+      "new_overlay",
+      "destination_url",
+      "status",
+    ];
+    const data = execReport.report.map((r: any) => [
+      r.old_pin_id ?? "",
+      r.new_pin_id ?? "",
+      r.category ?? "",
+      r.old_headline ?? "",
+      r.new_headline ?? "",
+      r.old_overlay ?? "",
+      r.new_overlay ?? "",
+      r.destination_url ?? "",
+      r.status ?? "",
+    ]);
+    downloadCsv("live-pin-repair-report.csv", headers, data);
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-start justify-between">
