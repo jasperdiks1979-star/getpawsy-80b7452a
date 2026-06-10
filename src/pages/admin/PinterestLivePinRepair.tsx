@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCcw, Rocket } from "lucide-react";
+import { Loader2, RefreshCcw, Rocket, Download } from "lucide-react";
 
 type RepairRow = {
   id: string;
@@ -32,6 +32,27 @@ type DraftRow = {
   destination_link: string;
   meta: any;
 };
+
+function escapeCsv(value: unknown): string {
+  const str = value == null ? "" : String(value);
+  if (/[",\n\r]/.test(str)) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadCsv(filename: string, headers: string[], rows: string[][]) {
+  const csv = [headers.join(","), ...rows.map((r) => r.map(escapeCsv).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export default function PinterestLivePinRepair() {
   const [loading, setLoading] = useState(true);
@@ -103,6 +124,64 @@ export default function PinterestLivePinRepair() {
     }
   }
 
+  function downloadPreviewCsv() {
+    const previewRows = rows
+      .filter((r) => r.status === "pending" && r.details?.replacement_draft_id)
+      .slice(0, 25);
+    const headers = [
+      "old_pin_id",
+      "category",
+      "old_headline",
+      "old_overlay",
+      "new_headline",
+      "new_overlay",
+      "destination_url",
+      "status",
+    ];
+    const data = previewRows.map((r) => {
+      const draftId = r.details?.replacement_draft_id as string | undefined;
+      const draft = draftId ? drafts.get(draftId) : undefined;
+      return [
+        r.pinterest_pin_id ?? "",
+        draft?.category_key || r.details?.replacement_category || r.category_key || "",
+        r.pin_title ?? "",
+        r.overlay_text ?? "",
+        draft?.pin_title ?? "",
+        draft?.overlay_text ?? "",
+        r.destination_link ?? "",
+        "preview",
+      ];
+    });
+    downloadCsv("live-pin-repair-preview.csv", headers, data);
+  }
+
+  function downloadReportCsv() {
+    if (!execReport || !Array.isArray(execReport.report)) return;
+    const headers = [
+      "old_pin_id",
+      "new_pin_id",
+      "category",
+      "old_headline",
+      "new_headline",
+      "old_overlay",
+      "new_overlay",
+      "destination_url",
+      "status",
+    ];
+    const data = execReport.report.map((r: any) => [
+      r.old_pin_id ?? "",
+      r.new_pin_id ?? "",
+      r.category ?? "",
+      r.old_headline ?? "",
+      r.new_headline ?? "",
+      r.old_overlay ?? "",
+      r.new_overlay ?? "",
+      r.destination_url ?? "",
+      r.status ?? "",
+    ]);
+    downloadCsv("live-pin-repair-report.csv", headers, data);
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-start justify-between">
@@ -119,6 +198,10 @@ export default function PinterestLivePinRepair() {
             {executing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
             Execute First 25 (Publish + Delete)
           </Button>
+          <Button variant="outline" onClick={downloadPreviewCsv} disabled={loading || rows.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Download Preview CSV
+          </Button>
         </div>
       </div>
 
@@ -134,6 +217,12 @@ export default function PinterestLivePinRepair() {
               <div><div className="text-muted-foreground">Deleted</div><div className="text-2xl font-bold text-amber-600">{execReport.deleted ?? 0}</div></div>
               <div><div className="text-muted-foreground">Failed</div><div className="text-2xl font-bold text-destructive">{execReport.failed ?? 0}</div></div>
               <div><div className="text-muted-foreground">Cap</div><div className="text-2xl font-bold">{execReport.cap ?? 25}</div></div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={downloadReportCsv} disabled={!execReport || !Array.isArray(execReport.report) || execReport.report.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Download Report CSV
+              </Button>
             </div>
             {execReport.error && <div className="text-destructive text-sm">{execReport.error}</div>}
             {Array.isArray(execReport.report) && execReport.report.length > 0 && (
