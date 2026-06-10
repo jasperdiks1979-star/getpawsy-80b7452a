@@ -330,7 +330,9 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   };
 }
 
-async function callCreativeDirector(slug: string, count: number): Promise<{ ok: boolean; drafts: number; error?: string }> {
+async function callCreativeDirector(slug: string, count: number, usHints?: {
+  us_focus?: boolean; us_keywords?: string[]; us_state?: string; niche?: string;
+}): Promise<{ ok: boolean; drafts: number; error?: string }> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
       method: "POST",
@@ -338,7 +340,7 @@ async function callCreativeDirector(slug: string, count: number): Promise<{ ok: 
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
-      body: JSON.stringify({ action: "run_full", slug, count }),
+      body: JSON.stringify({ action: "run_full", slug, count, ...(usHints ?? {}) }),
     });
     const j = await res.json().catch(() => ({}));
     return { ok: res.ok && (j.ok ?? true), drafts: j.inserted ?? j.accepted ?? 0, error: j.error };
