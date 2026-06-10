@@ -385,8 +385,8 @@ async function autoApproveSafeDrafts(
     .limit(200);
   // Sort drafts so high-US-share boards are approved first within the per-board cap.
   const drafts = ((draftsRaw ?? []) as Array<{ board_id: string | null }>).slice().sort((a, b) => {
-    const sa = (a.board_id && usShares.byBoard.get(a.board_id)) ?? 0;
-    const sb2 = (b.board_id && usShares.byBoard.get(b.board_id)) ?? 0;
+    const sa: number = a.board_id ? (usShares.byBoard.get(a.board_id) ?? 0) : 0;
+    const sb2: number = b.board_id ? (usShares.byBoard.get(b.board_id) ?? 0) : 0;
     return sb2 - sa;
   });
 
