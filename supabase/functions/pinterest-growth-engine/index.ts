@@ -27,6 +27,11 @@ import {
   US_SHARE_FLOOR,
   US_SHARE_TARGET,
 } from "../_shared/pinterest-us-keywords.ts";
+import {
+  isPriorityCategory,
+  PRIORITY_CATEGORY_FLOOR,
+  countryWeight,
+} from "../_shared/pinterest-priority-categories.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
