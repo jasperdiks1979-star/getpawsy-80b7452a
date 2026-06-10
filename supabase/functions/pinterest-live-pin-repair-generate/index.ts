@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       hook_group: final.hook || null,
       category_key: category,
       overlay_text: overlay,
-      content_type: "static_image",
+      content_type: "product",
       qa_reasons: [],
       replacement_for_pin_id: row.pin_queue_id || null,
       repair_strategy: "live_pin_category_repair",
