@@ -1,6 +1,6 @@
 // Pinterest Revenue AI V5 — unified learn/score/forecast orchestrator.
 // Extends V4 (pinterest-revenue-engine-loop) — does NOT replace it.
-// Actions: learn, score_visitors, rank_opportunities, forecast, dashboard, loop
+// Actions: learn, score_visitors, rank_opportunities, forecast, dashboard, loop, backfill
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -24,15 +24,18 @@ function fail(message: string, status = 500) {
 }
 
 // ---------- Phase 2: score Pinterest visitor sessions ----------
-async function scoreVisitors() {
-  // Pull last 24h of pinterest-attributed visitors with geo data
-  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const { data: visits, error } = await sb
+async function scoreVisitors(opts?: { sinceIso?: string; untilIso?: string; replace?: boolean; limit?: number }) {
+  const sinceIso = opts?.sinceIso ?? new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const untilIso = opts?.untilIso ?? new Date().toISOString();
+  const limit = Math.min(opts?.limit ?? 5000, 20000);
+  let query = sb
     .from("visitor_activity")
     .select("session_id,created_at,country,region,city,utm_source,utm_campaign,utm_content,landing_page,page_path,event_type,product_id,product_slug,revenue_cents,session_duration_seconds")
     .ilike("utm_source", "%pinterest%")
-    .gte("created_at", since)
-    .limit(5000);
+    .gte("created_at", sinceIso)
+    .lt("created_at", untilIso)
+    .limit(limit);
+  const { data: visits, error } = await query;
   if (error) throw error;
 
   const bySession = new Map<string, any>();
@@ -76,12 +79,70 @@ async function scoreVisitors() {
     return { ...s, revenue_score: revenueScore, traffic_quality_score: qualityScore, buyer_intent_score: intentScore };
   });
 
-  if (rows.length === 0) return { scored: 0 };
+  if (rows.length === 0) return { scored: 0, window: { sinceIso, untilIso } };
 
-  // Replace today's snapshot (idempotent for the 6h cadence)
-  const { error: insErr } = await sb.from("pinterest_visitor_revenue_scores").insert(rows);
-  if (insErr) throw insErr;
-  return { scored: rows.length };
+  // For backfills we replace prior rows in the window to stay idempotent.
+  if (opts?.replace) {
+    const { error: delErr } = await sb
+      .from("pinterest_visitor_revenue_scores")
+      .delete()
+      .gte("visited_at", sinceIso)
+      .lt("visited_at", untilIso);
+    if (delErr) throw delErr;
+  }
+
+  // Chunked insert to avoid payload limits on large historical windows.
+  for (let i = 0; i < rows.length; i += 500) {
+    const { error: insErr } = await sb
+      .from("pinterest_visitor_revenue_scores")
+      .insert(rows.slice(i, i + 500));
+    if (insErr) throw insErr;
+  }
+  return { scored: rows.length, window: { sinceIso, untilIso }, replaced: !!opts?.replace };
+}
+
+// ---------- Backfill: walk historical visitor_activity day-by-day ----------
+// Idempotent: deletes existing scored rows per day before re-inserting.
+// After the walk, re-runs ranking + forecasting so dashboards reflect
+// the corrected geo+intent attribution.
+async function backfill(opts?: { days?: number; sinceIso?: string; untilIso?: string }) {
+  const days = Math.min(Math.max(opts?.days ?? 90, 1), 365);
+  const until = opts?.untilIso ? new Date(opts.untilIso) : new Date();
+  const since = opts?.sinceIso ? new Date(opts.sinceIso) : new Date(until.getTime() - days * 86400 * 1000);
+  // Snap to midnight UTC so day windows align.
+  since.setUTCHours(0, 0, 0, 0);
+  until.setUTCHours(0, 0, 0, 0);
+
+  const perDay: Array<{ day: string; scored: number; error?: string }> = [];
+  let totalScored = 0;
+
+  for (let t = since.getTime(); t < until.getTime(); t += 86400 * 1000) {
+    const dayStart = new Date(t).toISOString();
+    const dayEnd = new Date(t + 86400 * 1000).toISOString();
+    try {
+      const r = await scoreVisitors({ sinceIso: dayStart, untilIso: dayEnd, replace: true, limit: 20000 });
+      totalScored += r.scored;
+      perDay.push({ day: dayStart.slice(0, 10), scored: r.scored });
+    } catch (e) {
+      perDay.push({ day: dayStart.slice(0, 10), scored: 0, error: String((e as Error).message || e) });
+    }
+  }
+
+  // Re-rank + re-forecast with the corrected history.
+  let ranked = 0, forecasted = 0;
+  const errors: Record<string, string> = {};
+  try { ranked = (await rankOpportunities()).ranked ?? 0; } catch (e) { errors.rank = String(e); }
+  try { forecasted = (await forecast()).forecasted ?? 0; } catch (e) { errors.forecast = String(e); }
+
+  return {
+    backfilled: true,
+    window: { sinceIso: since.toISOString(), untilIso: until.toISOString(), days: Math.round((until.getTime() - since.getTime()) / 86400000) },
+    totalScored,
+    perDay,
+    ranked,
+    forecasted,
+    errors: Object.keys(errors).length ? errors : undefined,
+  };
 }
 
 // ---------- Phase 3+8: unified opportunity ranking ----------
@@ -263,13 +324,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get("action") || (await req.json().catch(() => ({}))).action || "dashboard";
+    const body = await req.json().catch(() => ({} as Json));
+    const action = url.searchParams.get("action") || (body as Json).action as string || "dashboard";
     switch (action) {
       case "score_visitors": return ok(await scoreVisitors());
       case "rank_opportunities": return ok(await rankOpportunities());
       case "forecast": return ok(await forecast());
       case "dashboard": return ok(await dashboard());
       case "loop": return ok(await loop());
+      case "backfill": return ok(await backfill({
+        days: Number(url.searchParams.get("days") ?? (body as any).days ?? 90),
+        sinceIso: url.searchParams.get("since") ?? (body as any).since,
+        untilIso: url.searchParams.get("until") ?? (body as any).until,
+      }));
       default: return fail(`unknown action: ${action}`, 400);
     }
   } catch (e) {
