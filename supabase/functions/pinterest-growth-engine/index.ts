@@ -187,8 +187,8 @@ interface Product {
   is_duplicate?: boolean | null;
 }
 
-function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): number {
-  // 0–140 composite — biased toward revenue + ATC + margin
+function scoreProduct(p: Product, perfBoost: number, revenueBoost: number, usBoost: number): number {
+  // 0–170 composite — biased toward revenue + ATC + margin + US share
   let s = 0;
   // image (0–20)
   const imgCount = (p.images?.length ?? 0) + (p.image_url ? 1 : 0);
@@ -207,6 +207,8 @@ function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): numb
   s += Math.min(perfBoost, 25);
   // revenue / ATC / purchase signal (0–50) — the dominant lever
   s += Math.min(revenueBoost, 50);
+  // US share boost (0–30): heavily reward products that already convert US visitors.
+  s += Math.min(Math.max(usBoost, 0), 30);
   return s;
 }
 
