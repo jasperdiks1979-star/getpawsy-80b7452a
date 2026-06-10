@@ -46,7 +46,7 @@ import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-in
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
-import { DiversityGuard } from "../_shared/pinterest-diversity-guard.ts";
+import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1234,7 +1234,7 @@ Deno.serve(async (req) => {
                 hook: brief.hook_category ?? null,
                 product_id: product.id,
               },
-              niche,
+              normaliseCategoryKey(niche),
             );
             if (!guardResult.ok) {
               lastReasons = [
@@ -1253,6 +1253,9 @@ Deno.serve(async (req) => {
             if (Object.keys(guardResult.replacedFromPool).length) {
               if (guardResult.replacedFromPool.headline) brief.headline = guardResult.final.headline;
               if (guardResult.replacedFromPool.cta) brief.cta = guardResult.final.cta;
+              if (guardResult.replacedFromPool.hook && guardResult.final.hook) {
+                (brief as any).hook_category = guardResult.final.hook;
+              }
               console.log(
                 "[creative-director] diversity swap",
                 product.slug,
