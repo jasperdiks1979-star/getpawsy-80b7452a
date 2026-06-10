@@ -218,6 +218,12 @@ export default function PinterestLivePinRepair() {
               <div><div className="text-muted-foreground">Failed</div><div className="text-2xl font-bold text-destructive">{execReport.failed ?? 0}</div></div>
               <div><div className="text-muted-foreground">Cap</div><div className="text-2xl font-bold">{execReport.cap ?? 25}</div></div>
             </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={downloadReportCsv} disabled={!execReport || !Array.isArray(execReport.report) || execReport.report.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Download Report CSV
+              </Button>
+            </div>
             {execReport.error && <div className="text-destructive text-sm">{execReport.error}</div>}
             {Array.isArray(execReport.report) && execReport.report.length > 0 && (
               <div className="overflow-x-auto">
