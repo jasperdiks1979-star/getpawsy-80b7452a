@@ -14,6 +14,14 @@ interface Dashboard {
   topProducts: Array<{ slug: string; name: string; clicks: number; saves: number; impressions: number }>;
   revenue30d: { revenue: number; orders: number };
   productionBoards: number;
+  revenue?: {
+    last7d: { revenue_usd: number; purchases: number; checkouts: number; add_to_carts: number; product_views: number; clicks: number; impressions: number; atc_rate: number; conv_rate: number };
+    last30d: { revenue_usd: number; purchases: number; checkouts: number; add_to_carts: number; product_views: number; clicks: number; impressions: number; atc_rate: number; conv_rate: number };
+    roas: { mode: string; revenue_per_1000_impressions_usd: number; revenue_per_click_usd: number; note: string };
+    byBoard: Array<{ board_name: string; revenue_usd: number; purchases: number; clicks: number }>;
+    byPin: Array<{ pin_id: string; product_slug: string | null; board_name: string | null; revenue_usd: number; purchases: number; clicks: number; impressions: number }>;
+    top20Winners: Array<{ product_id: string; product_slug: string | null; revenue_usd: number; purchases: number; atc: number; pv: number; conv_rate: number; atc_rate: number }>;
+  };
 }
 
 function Stat({ icon: Icon, label, value, sub }: { icon: typeof TrendingUp; label: string; value: string; sub?: string }) {
@@ -91,6 +99,71 @@ export default function PinterestGrowthEnginePage() {
               <Stat icon={Layers} label="Production boards" value={String(data.productionBoards)} />
               <Stat icon={Sparkles} label="Engine status" value={data.productionBoards ? "Healthy" : "Halted"} sub={data.productionBoards ? "Safety guardrails active" : "No production boards"} />
             </div>
+
+            {data.revenue ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Stat icon={DollarSign} label="Pinterest revenue (7d)" value={`$${data.revenue.last7d.revenue_usd.toLocaleString()}`} sub={`${data.revenue.last7d.purchases} purchases`} />
+                  <Stat icon={DollarSign} label="Pinterest revenue (30d)" value={`$${data.revenue.last30d.revenue_usd.toLocaleString()}`} sub={`${data.revenue.last30d.purchases} purchases`} />
+                  <Stat icon={ShoppingBag} label="ATC rate (7d)" value={`${(data.revenue.last7d.atc_rate * 100).toFixed(2)}%`} sub={`${data.revenue.last7d.add_to_carts} ATC / ${data.revenue.last7d.product_views} PV`} />
+                  <Stat icon={TrendingUp} label="Conv rate (7d)" value={`${(data.revenue.last7d.conv_rate * 100).toFixed(2)}%`} sub={`Checkout ${data.revenue.last7d.checkouts}`} />
+                  <Stat icon={DollarSign} label="Revenue / 1000 impr." value={`$${data.revenue.roas.revenue_per_1000_impressions_usd.toFixed(2)}`} sub="Organic ROAS proxy" />
+                  <Stat icon={DollarSign} label="Revenue per click" value={`$${data.revenue.roas.revenue_per_click_usd.toFixed(2)}`} sub={data.revenue.roas.mode} />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card className="p-4">
+                    <h2 className="font-semibold mb-3">Revenue by board (30d)</h2>
+                    <div className="space-y-2 text-sm">
+                      {data.revenue.byBoard.length === 0 && <div className="text-muted-foreground">No attributed revenue yet.</div>}
+                      {data.revenue.byBoard.map((b) => (
+                        <div key={b.board_name} className="flex justify-between border-b pb-1">
+                          <span className="truncate">{b.board_name}</span>
+                          <span className="font-mono text-xs">${b.revenue_usd.toLocaleString()} · {b.purchases} ord</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <h2 className="font-semibold mb-3">Revenue by pin (top 20)</h2>
+                    <div className="space-y-2 text-sm max-h-80 overflow-y-auto">
+                      {data.revenue.byPin.length === 0 && <div className="text-muted-foreground">No data yet.</div>}
+                      {data.revenue.byPin.map((p) => (
+                        <div key={p.pin_id} className="flex justify-between border-b pb-1 gap-2">
+                          <span className="truncate text-xs">{p.product_slug || p.pin_id}</span>
+                          <span className="font-mono text-xs">${p.revenue_usd.toLocaleString()} · {p.purchases}p · {p.clicks}c</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+
+                <Card className="p-4">
+                  <h2 className="font-semibold mb-3">Top 20 winning products (30d revenue)</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead><tr className="text-left text-muted-foreground"><th className="py-1">#</th><th>Product</th><th>Revenue</th><th>Purchases</th><th>ATC</th><th>PV</th><th>Conv</th><th>ATC rate</th></tr></thead>
+                      <tbody>
+                        {data.revenue.top20Winners.length === 0 ? (
+                          <tr><td colSpan={8} className="py-4 text-center text-muted-foreground">No attributed revenue yet.</td></tr>
+                        ) : data.revenue.top20Winners.map((p, i) => (
+                          <tr key={p.product_id} className="border-t">
+                            <td className="py-1">{i + 1}</td>
+                            <td className="truncate max-w-[260px]">{p.product_slug || p.product_id}</td>
+                            <td>${p.revenue_usd.toLocaleString()}</td>
+                            <td>{p.purchases}</td>
+                            <td>{p.atc}</td>
+                            <td>{p.pv}</td>
+                            <td>{(p.conv_rate * 100).toFixed(2)}%</td>
+                            <td>{(p.atc_rate * 100).toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </>
+            ) : null}
 
             <div className="grid md:grid-cols-2 gap-4">
               <Card className="p-4">

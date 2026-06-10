@@ -63,28 +63,30 @@ interface Product {
   is_duplicate?: boolean | null;
 }
 
-function scoreProduct(p: Product, perfBoost: number): number {
-  // 0–100 composite — biased to image quality + margin + perf
+function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): number {
+  // 0–140 composite — biased toward revenue + ATC + margin
   let s = 0;
-  // image (0–25)
+  // image (0–20)
   const imgCount = (p.images?.length ?? 0) + (p.image_url ? 1 : 0);
-  s += Math.min(imgCount, 5) * 5;
+  s += Math.min(imgCount, 5) * 4;
   // margin (0–25)
   const cost = p.cost_price ?? 0;
   const margin = cost > 0 ? (p.price - cost) / p.price : 0.4;
   s += Math.min(Math.max(margin, 0), 1) * 25;
-  // price-band fit $25–$120 (0–15)
-  if (p.price >= 25 && p.price <= 120) s += 15;
-  else if (p.price >= 15 && p.price < 25) s += 8;
-  else s += 3;
+  // price-band fit $25–$120 (0–10)
+  if (p.price >= 25 && p.price <= 120) s += 10;
+  else if (p.price >= 15 && p.price < 25) s += 5;
+  else s += 2;
   // category presence (0–10)
   if (p.category) s += 10;
-  // performance signal (0–25)
+  // pinterest engagement (0–25)
   s += Math.min(perfBoost, 25);
+  // revenue / ATC / purchase signal (0–50) — the dominant lever
+  s += Math.min(revenueBoost, 50);
   return s;
 }
 
-async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<Product[]> {
+async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<{ products: Product[]; forcePromoted: string[]; excluded: string[] }> {
   // Pull active products with images and slug
   const { data, error } = await sb
     .from("products")
@@ -122,6 +124,34 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     perfByProduct.set(pid, (perfByProduct.get(pid) ?? 0) + boost);
   }
 
+  // Revenue / ATC / purchase signal (last 14d) from pinterest_revenue_funnel_daily.
+  const { data: rev } = await sb
+    .from("pinterest_revenue_funnel_daily")
+    .select("product_id, product_views, add_to_carts, purchases, revenue_cents")
+    .gte("day", since)
+    .limit(20_000);
+  const revByProduct = new Map<string, number>();
+  for (const r of (rev ?? []) as { product_id: string | null; product_views: number; add_to_carts: number; purchases: number; revenue_cents: number }[]) {
+    if (!r.product_id) continue;
+    // Each $1 of attributed revenue = 0.5pt, each purchase = 5pt, each ATC = 1pt, each PV = 0.05pt.
+    const boost = (r.revenue_cents / 100) * 0.5 + r.purchases * 5 + r.add_to_carts * 1 + r.product_views * 0.05;
+    revByProduct.set(r.product_id, (revByProduct.get(r.product_id) ?? 0) + boost);
+  }
+
+  // Autopilot overrides — paused/exclude => skip, force_promote => bypass recency throttle + bonus.
+  const nowIso = new Date().toISOString();
+  const { data: overrides } = await sb
+    .from("pinterest_autopilot_overrides")
+    .select("product_id, action, expires_at")
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .limit(2000);
+  const excluded = new Set<string>();
+  const forcePromote = new Set<string>();
+  for (const o of (overrides ?? []) as { product_id: string; action: string }[]) {
+    if (o.action === "paused" || o.action === "exclude") excluded.add(o.product_id);
+    else if (o.action === "force_promote") forcePromote.add(o.product_id);
+  }
+
   // Exclude products already drafted/published in the last 5 days to avoid stuffing
   const since5 = new Date(Date.now() - 5 * 86400_000).toISOString();
   const { data: recent } = await sb
@@ -132,13 +162,26 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   const recentlyUsed = new Set<string>((recent ?? []).map((r: { product_id: string }) => r.product_id).filter(Boolean));
 
   const scored = products
-    .filter((p) => !recentlyUsed.has(p.id))
-    .map((p) => ({ p, score: scoreProduct(p, Math.min(perfByProduct.get(p.id) ?? 0, 25)) }))
+    .filter((p) => !excluded.has(p.id))
+    .filter((p) => forcePromote.has(p.id) || !recentlyUsed.has(p.id))
+    .map((p) => ({
+      p,
+      score:
+        scoreProduct(
+          p,
+          Math.min(perfByProduct.get(p.id) ?? 0, 25),
+          Math.min(revByProduct.get(p.id) ?? 0, 50),
+        ) + (forcePromote.has(p.id) ? 40 : 0),
+    }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((x) => x.p);
 
-  return scored;
+  return {
+    products: scored,
+    forcePromoted: scored.filter((p) => forcePromote.has(p.id)).map((p) => p.slug),
+    excluded: [...excluded],
+  };
 }
 
 async function callCreativeDirector(slug: string, count: number): Promise<{ ok: boolean; drafts: number; error?: string }> {
@@ -374,6 +417,67 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     .eq("is_blacklisted", false)
     .eq("production_verified", true);
 
+  // ===== Revenue panels (from pinterest_revenue_funnel_daily) =====
+  const { data: funnel30 } = await sb
+    .from("pinterest_revenue_funnel_daily")
+    .select("day,pin_id,product_id,product_slug,board_name,impressions,outbound_clicks,product_views,add_to_carts,checkouts,purchases,revenue_cents")
+    .gte("day", since30)
+    .limit(20_000);
+  type FRow = {
+    day: string; pin_id: string; product_id: string | null; product_slug: string | null; board_name: string | null;
+    impressions: number; outbound_clicks: number; product_views: number; add_to_carts: number; checkouts: number; purchases: number; revenue_cents: number;
+  };
+  const f = (funnel30 ?? []) as FRow[];
+  const sumRev = (rows: FRow[]) => rows.reduce(
+    (a, r) => ({
+      revenue: a.revenue + (r.revenue_cents || 0),
+      purchases: a.purchases + (r.purchases || 0),
+      checkouts: a.checkouts + (r.checkouts || 0),
+      atc: a.atc + (r.add_to_carts || 0),
+      pv: a.pv + (r.product_views || 0),
+      clicks: a.clicks + (r.outbound_clicks || 0),
+      impressions: a.impressions + (r.impressions || 0),
+    }),
+    { revenue: 0, purchases: 0, checkouts: 0, atc: 0, pv: 0, clicks: 0, impressions: 0 },
+  );
+  const totals30 = sumRev(f);
+  const totals7 = sumRev(f.filter((r) => r.day >= since7));
+
+  const byPin = new Map<string, { pin_id: string; product_slug: string | null; board_name: string | null; revenue: number; purchases: number; clicks: number; impressions: number }>();
+  const byBoardRev = new Map<string, { board_name: string; revenue: number; purchases: number; clicks: number }>();
+  const byProductRev = new Map<string, { product_id: string; product_slug: string | null; revenue: number; purchases: number; atc: number; pv: number; clicks: number; impressions: number }>();
+  for (const r of f) {
+    if (r.pin_id) {
+      const cur = byPin.get(r.pin_id) ?? { pin_id: r.pin_id, product_slug: r.product_slug, board_name: r.board_name, revenue: 0, purchases: 0, clicks: 0, impressions: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.clicks += r.outbound_clicks; cur.impressions += r.impressions;
+      byPin.set(r.pin_id, cur);
+    }
+    if (r.board_name) {
+      const cur = byBoardRev.get(r.board_name) ?? { board_name: r.board_name, revenue: 0, purchases: 0, clicks: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.clicks += r.outbound_clicks;
+      byBoardRev.set(r.board_name, cur);
+    }
+    if (r.product_id) {
+      const cur = byProductRev.get(r.product_id) ?? { product_id: r.product_id, product_slug: r.product_slug, revenue: 0, purchases: 0, atc: 0, pv: 0, clicks: 0, impressions: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.atc += r.add_to_carts; cur.pv += r.product_views; cur.clicks += r.outbound_clicks; cur.impressions += r.impressions;
+      byProductRev.set(r.product_id, cur);
+    }
+  }
+
+  const top20Winners = [...byProductRev.values()]
+    .map((p) => ({
+      ...p,
+      revenue_usd: Math.round(p.revenue) / 100,
+      atc_rate: p.pv > 0 ? p.atc / p.pv : 0,
+      conv_rate: p.pv > 0 ? p.purchases / p.pv : 0,
+    }))
+    .sort((a, b) => b.revenue - a.revenue || b.purchases - a.purchases)
+    .slice(0, 20);
+
+  // ROAS (organic — no ad spend): proxy = revenue per 1000 impressions + revenue per click.
+  const rpm30 = totals30.impressions > 0 ? (totals30.revenue / 100) / (totals30.impressions / 1000) : 0;
+  const rpc30 = totals30.clicks > 0 ? (totals30.revenue / 100) / totals30.clicks : 0;
+
   return {
     today: { published: publishedToday ?? 0 },
     pipeline: { drafts: draftsCount ?? 0, ready: readyCount ?? 0 },
@@ -383,6 +487,39 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     topProducts,
     revenue30d: { revenue: Math.round(revenue30 * 100) / 100, orders: orders30 },
     productionBoards: prodBoards ?? 0,
+    revenue: {
+      last7d: {
+        revenue_usd: Math.round(totals7.revenue) / 100,
+        purchases: totals7.purchases,
+        checkouts: totals7.checkouts,
+        add_to_carts: totals7.atc,
+        product_views: totals7.pv,
+        clicks: totals7.clicks,
+        impressions: totals7.impressions,
+        atc_rate: totals7.pv > 0 ? totals7.atc / totals7.pv : 0,
+        conv_rate: totals7.pv > 0 ? totals7.purchases / totals7.pv : 0,
+      },
+      last30d: {
+        revenue_usd: Math.round(totals30.revenue) / 100,
+        purchases: totals30.purchases,
+        checkouts: totals30.checkouts,
+        add_to_carts: totals30.atc,
+        product_views: totals30.pv,
+        clicks: totals30.clicks,
+        impressions: totals30.impressions,
+        atc_rate: totals30.pv > 0 ? totals30.atc / totals30.pv : 0,
+        conv_rate: totals30.pv > 0 ? totals30.purchases / totals30.pv : 0,
+      },
+      roas: {
+        mode: "organic",
+        revenue_per_1000_impressions_usd: Math.round(rpm30 * 100) / 100,
+        revenue_per_click_usd: Math.round(rpc30 * 100) / 100,
+        note: "Pinterest organic — no paid spend. Treat RPM/RPC as ROAS proxies.",
+      },
+      byBoard: [...byBoardRev.values()].map((b) => ({ ...b, revenue_usd: Math.round(b.revenue) / 100 })).sort((a, b) => b.revenue - a.revenue).slice(0, 20),
+      byPin: [...byPin.values()].map((p) => ({ ...p, revenue_usd: Math.round(p.revenue) / 100 })).sort((a, b) => b.revenue - a.revenue).slice(0, 20),
+      top20Winners,
+    },
   };
 }
 
@@ -425,7 +562,8 @@ Deno.serve(async (req) => {
         return json({ ok: false, traceId, error: "NO_PRODUCTION_BOARDS — safety halt" }, 412);
       }
 
-      const products = await selectProducts(sb, productsPerRun);
+      const selection = await selectProducts(sb, productsPerRun);
+      const products = selection.products;
       const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
       for (const p of products) {
         const r = await callCreativeDirector(p.slug, variantsPerProduct);
@@ -441,6 +579,8 @@ Deno.serve(async (req) => {
         ranAt: new Date().toISOString(),
         productsSelected: products.length,
         productSlugs: products.map((p) => p.slug),
+        forcePromoted: selection.forcePromoted,
+        excludedProductCount: selection.excluded.length,
         generation,
         totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
         approval,
