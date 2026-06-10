@@ -18,6 +18,26 @@ const BANNED_PHRASES = [
 
 const POOL_CATEGORIES = ["cat_trees", "carriers", "dog_beds", "litter", "toys", "cat_essentials"] as const;
 type PoolCategory = typeof POOL_CATEGORIES[number];
+type Species = "cat" | "dog" | "any";
+
+function speciesFromProduct(trueCategory: string | null | undefined, slug: string): Species {
+  const c = (trueCategory || "").toLowerCase();
+  const s = (slug || "").toLowerCase();
+  if (/cat|kitten|litter/.test(c)) return "cat";
+  if (/dog|puppy/.test(c)) return "dog";
+  if (/\bcat\b|kitten|litter|sisal|scratch/.test(s)) return "cat";
+  if (/\bdog\b|puppy|canine/.test(s)) return "dog";
+  return "any";
+}
+
+// Reject copy text that names the WRONG species for the destination product.
+function speciesConflict(text: string, species: Species): boolean {
+  if (species === "any") return false;
+  const t = (text || "").toLowerCase();
+  if (species === "cat" && /\b(dog|dogs|puppy|puppies|canine)\b/.test(t)) return true;
+  if (species === "dog" && /\b(cat|cats|kitten|kittens|feline)\b/.test(t)) return true;
+  return false;
+}
 
 // Map a product's REAL (Shopify-style) category name to a creative-pool bucket.
 // This is destination-product driven — it ignores any audit category_key.
@@ -65,13 +85,23 @@ function containsBanned(text: string): string | null {
   return null;
 }
 
-function pickFresh(guard: DiversityGuard, category: PoolCategory, type: "headline" | "cta" | "hook" | "angle" | "benefit"): string | null {
-  const v = guard.pickFromPool(category, type);
-  if (!v) return null;
-  if (type === "headline" || type === "cta" || type === "hook") {
-    if (containsBanned(v)) return null;
+function pickFresh(
+  guard: DiversityGuard,
+  category: PoolCategory,
+  type: "headline" | "cta" | "hook" | "angle" | "benefit",
+  species: Species,
+): string | null {
+  // Try up to 12 times to land a species-appropriate, non-banned pick.
+  for (let i = 0; i < 12; i++) {
+    const v = guard.pickFromPool(category, type);
+    if (!v) return null;
+    if (type === "headline" || type === "cta" || type === "hook") {
+      if (containsBanned(v)) continue;
+    }
+    if (speciesConflict(v, species)) continue;
+    return v;
   }
-  return v;
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -152,21 +182,29 @@ Deno.serve(async (req) => {
 
     const correctCategory = poolFromTrueCategory(destProduct.category, destProduct.slug);
     const storedCategory = (row.details as any)?.replacement_category as string | undefined;
+    const species = speciesFromProduct(destProduct.category, destProduct.slug);
 
-    // If stored matches correct, leave alone.
-    if (storedCategory && normaliseCategoryKey(storedCategory) === correctCategory) continue;
-
-    // Mismatch detected.
     const draftId = (row.details as any)?.replacement_draft_id;
     const draft = draftId ? draftById.get(draftId) : null;
+
+    const draftText = `${draft?.pin_title || ""} ${draft?.overlay_text || ""}`;
+    const draftSpeciesBad = draft ? speciesConflict(draftText, species) : false;
+    const categoryBad = !storedCategory || normaliseCategoryKey(storedCategory) !== correctCategory;
+
+    // If category AND species both already correct, leave it.
+    if (!categoryBad && !draftSpeciesBad) continue;
 
     mismatches.push({
       queue_id: row.id,
       pinterest_pin_id: row.pinterest_pin_id,
       destination_slug: destSlug,
       destination_true_category: destProduct.category,
+      destination_species: species,
       stored_replacement_category: storedCategory ?? null,
       correct_pool_category: correctCategory,
+      reason: categoryBad ? "category_mismatch" : "species_mismatch",
+      old_headline: draft?.pin_title ?? null,
+      old_overlay: draft?.overlay_text ?? null,
       old_draft_id: draftId ?? null,
     });
 
@@ -178,21 +216,25 @@ Deno.serve(async (req) => {
         .from("pinterest_pin_queue")
         .update({
           status: "rejected",
-          rejection_reason: `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`,
+          rejection_reason: categoryBad
+            ? `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`
+            : `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`,
         })
         .eq("id", draftId);
     }
     rejected++;
 
     // Regenerate using the CORRECT category, with destination-product as ground truth.
-    const headline = pickFresh(guard, correctCategory, "headline");
-    const cta = pickFresh(guard, correctCategory, "cta");
-    const hook = pickFresh(guard, correctCategory, "hook");
-    const angle = pickFresh(guard, correctCategory, "angle");
-    const benefit = pickFresh(guard, correctCategory, "benefit");
+    const headline = pickFresh(guard, correctCategory, "headline", species);
+    const cta = pickFresh(guard, correctCategory, "cta", species);
+    const hook = pickFresh(guard, correctCategory, "hook", species);
+    const angle = pickFresh(guard, correctCategory, "angle", species);
+    const benefit = pickFresh(guard, correctCategory, "benefit", species);
 
     if (!headline || !cta) { skippedPoolExhausted++; continue; }
-    if (containsBanned(`${headline} ${cta} ${hook || ""}`)) { skippedPoolExhausted++; continue; }
+    const combined = `${headline} ${cta} ${hook || ""} ${angle || ""} ${benefit || ""}`;
+    if (containsBanned(combined)) { skippedPoolExhausted++; continue; }
+    if (speciesConflict(combined, species)) { skippedPoolExhausted++; continue; }
 
     const candidate = { headline, cta, hook, angle, benefit };
     const evalRes = guard.evaluate(candidate, correctCategory);
@@ -235,6 +277,7 @@ Deno.serve(async (req) => {
         variety_score: variety.total,
         category: correctCategory,
         revalidated: true,
+        destination_species: species,
         previous_replacement_category: storedCategory,
         creative: { headline: final.headline, cta: final.cta, hook: final.hook, angle: final.angle, benefit: final.benefit },
       },
