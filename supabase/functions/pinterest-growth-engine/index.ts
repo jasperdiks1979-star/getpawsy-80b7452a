@@ -1,0 +1,466 @@
+// Pinterest Growth Engine — autonomous daily orchestrator.
+//
+// Composes existing building blocks:
+//   pinterest-creative-director  → variant generation + render + draft insert
+//   pinterest_boards             → board intelligence (production-only)
+//   pinterest_analytics_daily    → performance signals
+//   pinterest_pin_queue          → publishing pipeline (auto-approve safe drafts)
+//
+// Actions (POST { action }):
+//   "run"        — daily growth cycle (product pick → drafts → auto-approve)
+//   "dashboard"  — KPIs for /admin/pinterest-growth-engine
+//   "status"     — engine health + last run summary
+//
+// Safety guardrails (hard-enforced before any insert/approve):
+//   ✓ Never use sandbox boards (is_sandbox=false AND is_blacklisted=false AND production_verified=true)
+//   ✓ Never publish without pin_image_url
+//   ✓ Never publish without destination_link
+//   ✓ Never publish inactive products
+//   ✓ Never publish visual duplicates (creative-director phash guard)
+//   ✓ Never exceed per-board daily cap (default 3 pins/board/day)
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const DEFAULTS = {
+  productsPerRun: 8,
+  variantsPerProduct: 3,
+  perBoardDailyCap: 3,
+  autoApproveScoreThreshold: 78,
+  minMarginPct: 0.25,
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  category: string | null;
+  price: number;
+  cost_price: number | null;
+  compare_at_price: number | null;
+  image_url: string | null;
+  images: string[] | null;
+  is_active: boolean;
+  is_duplicate?: boolean | null;
+}
+
+function scoreProduct(p: Product, perfBoost: number): number {
+  // 0–100 composite — biased to image quality + margin + perf
+  let s = 0;
+  // image (0–25)
+  const imgCount = (p.images?.length ?? 0) + (p.image_url ? 1 : 0);
+  s += Math.min(imgCount, 5) * 5;
+  // margin (0–25)
+  const cost = p.cost_price ?? 0;
+  const margin = cost > 0 ? (p.price - cost) / p.price : 0.4;
+  s += Math.min(Math.max(margin, 0), 1) * 25;
+  // price-band fit $25–$120 (0–15)
+  if (p.price >= 25 && p.price <= 120) s += 15;
+  else if (p.price >= 15 && p.price < 25) s += 8;
+  else s += 3;
+  // category presence (0–10)
+  if (p.category) s += 10;
+  // performance signal (0–25)
+  s += Math.min(perfBoost, 25);
+  return s;
+}
+
+async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<Product[]> {
+  // Pull active products with images and slug
+  const { data, error } = await sb
+    .from("products")
+    .select("id, slug, name, category, price, cost_price, compare_at_price, image_url, images, is_active, is_duplicate")
+    .eq("is_active", true)
+    .not("slug", "is", null)
+    .not("image_url", "is", null)
+    .gt("price", 0)
+    .limit(500);
+  if (error) throw error;
+
+  const products = ((data ?? []) as unknown as Product[]).filter((p) => !p.is_duplicate);
+
+  // Performance boost — products that already earned saves/clicks in last 14d
+  const since = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
+  const { data: perf } = await sb
+    .from("pinterest_analytics_daily")
+    .select("pin_id,impressions,outbound_clicks,saves")
+    .gte("day", since)
+    .limit(10_000);
+  const { data: dims } = await sb
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id, product_id")
+    .not("pinterest_pin_id", "is", null)
+    .limit(10_000);
+  const pinToProduct = new Map<string, string>();
+  for (const d of (dims ?? []) as { pinterest_pin_id: string; product_id: string }[]) {
+    if (d.pinterest_pin_id && d.product_id) pinToProduct.set(d.pinterest_pin_id, d.product_id);
+  }
+  const perfByProduct = new Map<string, number>();
+  for (const r of (perf ?? []) as { pin_id: string; impressions: number; outbound_clicks: number; saves: number }[]) {
+    const pid = pinToProduct.get(r.pin_id);
+    if (!pid) continue;
+    const boost = Math.min(25, r.outbound_clicks * 2 + r.saves * 1.5 + r.impressions / 500);
+    perfByProduct.set(pid, (perfByProduct.get(pid) ?? 0) + boost);
+  }
+
+  // Exclude products already drafted/published in the last 5 days to avoid stuffing
+  const since5 = new Date(Date.now() - 5 * 86400_000).toISOString();
+  const { data: recent } = await sb
+    .from("pinterest_pin_queue")
+    .select("product_id")
+    .gte("created_at", since5)
+    .limit(5000);
+  const recentlyUsed = new Set<string>((recent ?? []).map((r: { product_id: string }) => r.product_id).filter(Boolean));
+
+  const scored = products
+    .filter((p) => !recentlyUsed.has(p.id))
+    .map((p) => ({ p, score: scoreProduct(p, Math.min(perfByProduct.get(p.id) ?? 0, 25)) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.p);
+
+  return scored;
+}
+
+async function callCreativeDirector(slug: string, count: number): Promise<{ ok: boolean; drafts: number; error?: string }> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ action: "run_full", slug, count }),
+    });
+    const j = await res.json().catch(() => ({}));
+    return { ok: res.ok && (j.ok ?? true), drafts: j.inserted ?? j.accepted ?? 0, error: j.error };
+  } catch (e) {
+    return { ok: false, drafts: 0, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoardCap: number, scoreThreshold: number) {
+  // Pull recent drafts on production boards
+  const { data: boards } = await sb
+    .from("pinterest_boards")
+    .select("id,name,is_sandbox,is_blacklisted,production_verified")
+    .eq("is_sandbox", false)
+    .eq("is_blacklisted", false)
+    .eq("production_verified", true);
+  const prodIds = new Set<string>((boards ?? []).map((b: { id: string }) => b.id));
+
+  const { data: drafts } = await sb
+    .from("pinterest_pin_queue")
+    .select("id,board_id,product_id,pin_image_url,destination_link,meta")
+    .eq("status", "draft")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  // Today's per-board count
+  const startToday = new Date(`${todayIso()}T00:00:00Z`).toISOString();
+  const { data: scheduledToday } = await sb
+    .from("pinterest_pin_queue")
+    .select("board_id")
+    .in("status", ["ready_to_post", "queued", "posting", "posted"])
+    .gte("scheduled_at", startToday);
+  const byBoardToday = new Map<string, number>();
+  for (const r of (scheduledToday ?? []) as { board_id: string }[]) {
+    if (!r.board_id) continue;
+    byBoardToday.set(r.board_id, (byBoardToday.get(r.board_id) ?? 0) + 1);
+  }
+
+  let approved = 0;
+  let skippedSafety = 0;
+  let skippedCap = 0;
+  let skippedScore = 0;
+
+  for (const d of (drafts ?? []) as Array<{
+    id: string; board_id: string | null; product_id: string | null;
+    pin_image_url: string | null; destination_link: string | null;
+    meta: Record<string, unknown> | null;
+  }>) {
+    // Safety: must have image, link, production board, active product
+    if (!d.pin_image_url || !d.destination_link) { skippedSafety++; continue; }
+    if (!d.board_id || !prodIds.has(d.board_id)) { skippedSafety++; continue; }
+    if (d.product_id) {
+      const { data: prod } = await sb.from("products").select("is_active").eq("id", d.product_id).maybeSingle();
+      if (!prod || !(prod as { is_active: boolean }).is_active) { skippedSafety++; continue; }
+    }
+    // Quality score from creative-director intelligence
+    const intel = (d.meta?.intelligence as { scores?: { total?: number } } | undefined) ?? undefined;
+    const total = intel?.scores?.total ?? 80; // default-pass if scorer skipped
+    if (total < scoreThreshold) { skippedScore++; continue; }
+    // Per-board cap
+    const used = byBoardToday.get(d.board_id) ?? 0;
+    if (used >= perBoardCap) { skippedCap++; continue; }
+    // Approve
+    const scheduled = new Date(Date.now() + (approved * 12 + 5) * 60_000).toISOString();
+    const { error } = await sb
+      .from("pinterest_pin_queue")
+      .update({ status: "ready_to_post", approved_at: new Date().toISOString(), scheduled_at: scheduled })
+      .eq("id", d.id);
+    if (!error) {
+      approved++;
+      byBoardToday.set(d.board_id, used + 1);
+    }
+  }
+
+  return { approved, skippedSafety, skippedScore, skippedCap };
+}
+
+async function retirePoorPerformers(sb: ReturnType<typeof createClient>) {
+  // Archive draft variants tied to products whose pins consistently underperform.
+  const since30 = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data: losers } = await sb
+    .from("pinterest_pin_verdicts")
+    .select("pin_id")
+    .eq("verdict", "loser")
+    .gte("scored_at", since30)
+    .limit(500);
+  const loserPinIds = (losers ?? []).map((l: { pin_id: string }) => l.pin_id);
+  if (!loserPinIds.length) return { retired: 0 };
+
+  const { data: rows } = await sb
+    .from("pinterest_pin_queue")
+    .select("product_id")
+    .in("pinterest_pin_id", loserPinIds);
+  const productIds = [...new Set((rows ?? []).map((r: { product_id: string }) => r.product_id).filter(Boolean))];
+  if (!productIds.length) return { retired: 0 };
+
+  const { error, count } = await sb
+    .from("pinterest_pin_queue")
+    .update({ status: "archived", rejection_reason: "auto-retired: underperformer" }, { count: "exact" })
+    .in("product_id", productIds)
+    .eq("status", "draft");
+  if (error) return { retired: 0, error: error.message };
+  return { retired: count ?? 0 };
+}
+
+async function buildDashboard(sb: ReturnType<typeof createClient>) {
+  const today = todayIso();
+  const startToday = new Date(`${today}T00:00:00Z`).toISOString();
+  const since30 = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
+  const since7 = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+
+  // Pins published today
+  const { count: publishedToday } = await sb
+    .from("pinterest_pin_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "posted")
+    .gte("posted_at", startToday);
+
+  // Drafts in pipeline
+  const { count: draftsCount } = await sb
+    .from("pinterest_pin_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "draft");
+  const { count: readyCount } = await sb
+    .from("pinterest_pin_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "ready_to_post");
+
+  // 7-day analytics aggregate
+  const { data: ad7 } = await sb
+    .from("pinterest_analytics_daily")
+    .select("impressions,outbound_clicks,saves,day")
+    .gte("day", since7);
+  const agg7 = (ad7 ?? []).reduce(
+    (a: { i: number; c: number; s: number }, r: { impressions: number; outbound_clicks: number; saves: number }) => ({
+      i: a.i + (r.impressions || 0),
+      c: a.c + (r.outbound_clicks || 0),
+      s: a.s + (r.saves || 0),
+    }),
+    { i: 0, c: 0, s: 0 },
+  );
+  const ctr7 = agg7.i ? agg7.c / agg7.i : 0;
+
+  // 30-day monthly trend (daily series)
+  const { data: ad30 } = await sb
+    .from("pinterest_analytics_daily")
+    .select("day,impressions,outbound_clicks,saves")
+    .gte("day", since30)
+    .order("day", { ascending: true });
+  const trend = new Map<string, { day: string; impressions: number; outbound_clicks: number; saves: number }>();
+  for (const r of (ad30 ?? []) as { day: string; impressions: number; outbound_clicks: number; saves: number }[]) {
+    const cur = trend.get(r.day) ?? { day: r.day, impressions: 0, outbound_clicks: 0, saves: 0 };
+    cur.impressions += r.impressions || 0;
+    cur.outbound_clicks += r.outbound_clicks || 0;
+    cur.saves += r.saves || 0;
+    trend.set(r.day, cur);
+  }
+
+  // Top boards (last 7d, by published pins)
+  const start7 = new Date(Date.now() - 7 * 86400_000).toISOString();
+  const { data: byBoard } = await sb
+    .from("pinterest_pin_queue")
+    .select("board_name")
+    .eq("status", "posted")
+    .gte("posted_at", start7)
+    .limit(2000);
+  const boardCount = new Map<string, number>();
+  for (const r of (byBoard ?? []) as { board_name: string }[]) {
+    if (!r.board_name) continue;
+    boardCount.set(r.board_name, (boardCount.get(r.board_name) ?? 0) + 1);
+  }
+  const topBoards = [...boardCount.entries()]
+    .sort((a, b) => b[1] - a[1]).slice(0, 8)
+    .map(([name, count]) => ({ name, count }));
+
+  // Top products (last 30d by clicks)
+  const { data: dims } = await sb
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id, product_slug, product_name")
+    .not("pinterest_pin_id", "is", null)
+    .limit(10_000);
+  const pinMeta = new Map<string, { slug: string; name: string }>();
+  for (const d of (dims ?? []) as { pinterest_pin_id: string; product_slug: string; product_name: string }[]) {
+    pinMeta.set(d.pinterest_pin_id, { slug: d.product_slug, name: d.product_name });
+  }
+  const prodAgg = new Map<string, { slug: string; name: string; clicks: number; saves: number; impressions: number }>();
+  for (const r of (ad30 ?? []) as { pin_id?: string; impressions: number; outbound_clicks: number; saves: number }[]) {
+    const pin = (r as unknown as { pin_id?: string }).pin_id;
+    if (!pin) continue;
+    const m = pinMeta.get(pin);
+    if (!m) continue;
+    const cur = prodAgg.get(m.slug) ?? { slug: m.slug, name: m.name, clicks: 0, saves: 0, impressions: 0 };
+    cur.clicks += r.outbound_clicks || 0;
+    cur.saves += r.saves || 0;
+    cur.impressions += r.impressions || 0;
+    prodAgg.set(m.slug, cur);
+  }
+  const topProducts = [...prodAgg.values()]
+    .sort((a, b) => b.clicks - a.clicks).slice(0, 10);
+
+  // Revenue attribution (best-effort: orders with utm_source=pinterest in last 30d)
+  const since30Iso = new Date(Date.now() - 30 * 86400_000).toISOString();
+  let revenue30 = 0;
+  let orders30 = 0;
+  const { data: orders } = await sb
+    .from("orders")
+    .select("total, created_at, utm_source")
+    .gte("created_at", since30Iso)
+    .limit(5000);
+  for (const o of (orders ?? []) as { total: number | string; utm_source: string | null }[]) {
+    if ((o.utm_source ?? "").toLowerCase() === "pinterest") {
+      revenue30 += Number(o.total) || 0;
+      orders30++;
+    }
+  }
+
+  // Active production boards
+  const { count: prodBoards } = await sb
+    .from("pinterest_boards")
+    .select("id", { count: "exact", head: true })
+    .eq("is_sandbox", false)
+    .eq("is_blacklisted", false)
+    .eq("production_verified", true);
+
+  return {
+    today: { published: publishedToday ?? 0 },
+    pipeline: { drafts: draftsCount ?? 0, ready: readyCount ?? 0 },
+    last7d: { impressions: agg7.i, clicks: agg7.c, saves: agg7.s, ctr: ctr7 },
+    monthlyTrend: [...trend.values()],
+    topBoards,
+    topProducts,
+    revenue30d: { revenue: Math.round(revenue30 * 100) / 100, orders: orders30 },
+    productionBoards: prodBoards ?? 0,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const traceId = crypto.randomUUID();
+
+  try {
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+    const url = new URL(req.url);
+    let action = url.searchParams.get("action") ?? "dashboard";
+    let opts: Record<string, unknown> = {};
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        action = body.action ?? action;
+        opts = body ?? {};
+      } catch { /* noop */ }
+    }
+
+    if (action === "dashboard" || action === "status") {
+      const data = await buildDashboard(sb);
+      return json({ ok: true, traceId, ...data });
+    }
+
+    if (action === "run") {
+      const productsPerRun = Number(opts.productsPerRun ?? DEFAULTS.productsPerRun);
+      const variantsPerProduct = Number(opts.variantsPerProduct ?? DEFAULTS.variantsPerProduct);
+      const perBoardCap = Number(opts.perBoardDailyCap ?? DEFAULTS.perBoardDailyCap);
+      const scoreThreshold = Number(opts.autoApproveScoreThreshold ?? DEFAULTS.autoApproveScoreThreshold);
+
+      // Verify at least one production board exists — fail fast if not.
+      const { count: prodBoards } = await sb
+        .from("pinterest_boards")
+        .select("id", { count: "exact", head: true })
+        .eq("is_sandbox", false)
+        .eq("is_blacklisted", false)
+        .eq("production_verified", true);
+      if (!prodBoards) {
+        return json({ ok: false, traceId, error: "NO_PRODUCTION_BOARDS — safety halt" }, 412);
+      }
+
+      const products = await selectProducts(sb, productsPerRun);
+      const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
+      for (const p of products) {
+        const r = await callCreativeDirector(p.slug, variantsPerProduct);
+        generation.push({ slug: p.slug, ...r });
+      }
+
+      const approval = await autoApproveSafeDrafts(sb, perBoardCap, scoreThreshold);
+      const retire = await retirePoorPerformers(sb);
+
+      const report = {
+        ok: true,
+        traceId,
+        ranAt: new Date().toISOString(),
+        productsSelected: products.length,
+        productSlugs: products.map((p) => p.slug),
+        generation,
+        totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
+        approval,
+        retire,
+        config: { productsPerRun, variantsPerProduct, perBoardCap, scoreThreshold },
+      };
+
+      // Persist run summary (non-blocking)
+      await sb.from("pinterest_evolution_log").insert({
+        decision_type: "growth_engine_run",
+        niche_key: "engine",
+        rationale: `selected ${products.length} products, generated ${report.totalDraftsGenerated} drafts, approved ${approval.approved}`,
+        metrics: report,
+      }).then(() => null, () => null);
+
+      return json(report);
+    }
+
+    return json({ ok: false, traceId, error: `unknown action: ${action}` }, 400);
+  } catch (e) {
+    return json({ ok: false, traceId, error: e instanceof Error ? e.message : String(e) }, 500);
+  }
+});
