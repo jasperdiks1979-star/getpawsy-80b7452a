@@ -279,6 +279,7 @@ Deno.serve(async (req) => {
     if (!headline || !cta) { skippedPoolExhausted++; continue; }
     const combined = `${headline} ${cta} ${hook || ""} ${angle || ""} ${benefit || ""}`;
     if (containsBanned(combined)) { skippedPoolExhausted++; continue; }
+    if (containsGenericCta(`${headline} • ${cta}`)) { skippedPoolExhausted++; continue; }
     if (speciesConflict(combined, species)) { skippedPoolExhausted++; continue; }
 
     const candidate = { headline, cta, hook, angle, benefit };
