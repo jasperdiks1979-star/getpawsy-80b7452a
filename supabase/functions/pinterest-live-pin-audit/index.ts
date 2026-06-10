@@ -79,23 +79,38 @@ Deno.serve(async (req) => {
   const dryRun = url.searchParams.get("dry") === "1";
   const auditRunId = crypto.randomUUID();
 
-  // Fetch all live (posted) pins
-  const { data: pins, error } = await supabase
-    .from("pinterest_pin_queue")
-    .select(
-      "id, pinterest_pin_id, product_slug, category_key, board_name, overlay_text, pin_title, pin_description, hook_group, destination_link"
-    )
-    .eq("status", "posted")
-    .limit(5000);
-
-  if (error) {
-    return new Response(JSON.stringify({ ok: false, error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  // Fetch all live (posted) pins via pagination (PostgREST caps page size)
+  const PAGE = 1000;
+  let from = 0;
+  const livePins: any[] = [];
+  while (true) {
+    const { data, error } = await supabase
+      .from("pinterest_pin_queue")
+      .select(
+        "id, pinterest_pin_id, product_slug, category_key, board_name, overlay_text, pin_title, pin_description, hook_group, destination_link"
+      )
+      .eq("status", "posted")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) {
+      return new Response(JSON.stringify({ ok: false, error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const batch = data ?? [];
+    livePins.push(...batch);
+    if (batch.length < PAGE) break;
+    from += PAGE;
   }
 
-  const livePins = pins ?? [];
+  // Clear any previous pending rows so the queue stays a single source of truth per run
+  if (!dryRun) {
+    await supabase
+      .from("pinterest_live_pin_repair_queue")
+      .delete()
+      .eq("status", "pending");
+  }
 
   // Duplicate clusters
   const overlayCounts: Record<string, number> = {};
