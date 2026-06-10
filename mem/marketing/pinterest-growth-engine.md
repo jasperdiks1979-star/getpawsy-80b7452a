@@ -17,4 +17,15 @@ type: feature
 
 **Defaults:** productsPerRun=8, variantsPerProduct=3, perBoardDailyCap=3, autoApproveScoreThreshold=78, minMarginPct=0.25. Override via POST body.
 
+## V2 enforcement layer (revenue-first)
+
+Applied inside `pinterest-growth-engine` orchestrator — no new system created.
+
+- **Category cap 25%** (`DEFAULTS.maxCategoryShare = 0.25`): no single category may exceed 25% of a run's slate. Overflow products are listed in `categoryThrottled[]`; chosen mix in `categoryDistribution{}`.
+- **Per-board cap tightened**: `perBoardDailyCap` default now **2** (was 3).
+- **Generic board demotion**: boards whose name matches `Cat Essentials / Pet Essentials / Dog Essentials / Pet Products / Cat Products / Dog Products` are last-resort only. Drafts targeting them are auto-archived if any non-generic production board still has capacity.
+- **Title rule (≤5 words)**: drafts with `pin_title` >5 words are auto-archived with reason `v2: title exceeds 5 words (...)`.
+- **Overlay rule (≤6 words + ban list)**: overlay must be ≤6 words and must not contain `browse now / learn more / stack it / browse litter / shop now / click here / tap to shop / see more`. Violations auto-archived.
+- **Run report fields**: `version:"v2"`, `categoryThrottled[]`, `categoryDistribution{}`, `approval.skippedTitle`, `approval.skippedOverlay`, `approval.skippedGeneric`, `approval.rejectedTitleSamples[]`, `approval.rejectedOverlaySamples[]`, plus `config.maxCategoryShare / maxTitleWords / maxOverlayWords / bannedOverlayPhrases / demotedGenericBoards`.
+
 **Run log:** `pinterest_evolution_log` rows with `decision_type='growth_engine_run'` and full report in `metrics` jsonb. Run report also returns `forcePromoted[]` and `excludedProductCount`.
