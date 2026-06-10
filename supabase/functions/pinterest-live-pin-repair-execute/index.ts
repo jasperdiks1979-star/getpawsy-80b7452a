@@ -72,12 +72,17 @@ Deno.serve(async (req) => {
   const token = conn.access_token as string;
   const apiBase = await getPinterestApiBase(sb);
 
-  // ── Build board_name → board_id map ──
-  const { data: boardRows } = await sb.from("pinterest_boards").select("pinterest_board_id, name");
+  // ── Build board_name → board_id map (production boards only) ──
+  const { data: boardRows } = await sb.from("pinterest_boards")
+    .select("id, name, is_sandbox, is_blacklisted");
   const boardByName = new Map<string, string>();
   for (const b of boardRows ?? []) {
-    if (b?.name && b?.pinterest_board_id) boardByName.set(String(b.name).toLowerCase(), String(b.pinterest_board_id));
+    if (!b?.name || !b?.id) continue;
+    if (b.is_sandbox === true) continue;
+    if (b.is_blacklisted === true) continue;
+    boardByName.set(String(b.name).toLowerCase(), String(b.id));
   }
+  const validBoardIds = new Set<string>(boardByName.values());
 
   // ── Select highest-priority queue rows ──
   // Priority: severity=critical, status=done, has draft id, not yet executed.
@@ -120,12 +125,18 @@ Deno.serve(async (req) => {
     const draft = draftMap.get(row.details.replacement_draft_id);
     const orig = row.pin_queue_id ? origMap.get(row.pin_queue_id) : null;
     const oldPinId = String(row.pinterest_pin_id || orig?.pinterest_pin_id || "");
-    const boardId =
-      orig?.board_id ||
-      draft?.board_id ||
+    // Prefer board_name → live production board id; fall back to stored ids only
+    // if they are present in the production board set.
+    const lookupByName =
       (row.board_name ? boardByName.get(String(row.board_name).toLowerCase()) : null) ||
       (draft?.board_name ? boardByName.get(String(draft.board_name).toLowerCase()) : null) ||
-      settings?.active_board_id || null;
+      null;
+    const storedId = orig?.board_id || draft?.board_id || null;
+    const boardId =
+      lookupByName ||
+      (storedId && validBoardIds.has(String(storedId)) ? storedId : null) ||
+      (settings?.active_board_id && validBoardIds.has(String(settings.active_board_id)) ? settings.active_board_id : null) ||
+      null;
 
     const entry: any = {
       repair_queue_id: row.id,
