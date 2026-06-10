@@ -447,3 +447,65 @@ export class DiversityGuard {
     };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Variety score (0-100)
+//
+// Composite uniqueness across the 5 enforced fields, weighted by cap headroom.
+// A candidate that uses values currently at half their cap scores ~75; a
+// candidate using values not yet seen in the last 90 scores 100.
+// ─────────────────────────────────────────────────────────────────────────────
+export interface VarietyBreakdown {
+  total: number; // 0-100
+  parts: Record<PoolType, number>;
+}
+
+export function scoreVariety(guard: DiversityGuard, candidate: DiversityCandidate): VarietyBreakdown {
+  const snap = guard.snapshot();
+  const cap = {
+    headline: snap.caps.headlinePer90,
+    cta: snap.caps.ctaPer90,
+    angle: snap.caps.anglePer90,
+    benefit: snap.caps.benefitPer90,
+    hook: guard.hookCapPer90,
+  };
+  const countOf = (type: PoolType, value: string | null | undefined): number => {
+    if (!value) return 0;
+    const key = (value || "").trim().toLowerCase();
+    const bucket =
+      type === "headline" ? snap.top_repeated_90.headlines :
+      type === "cta"      ? snap.top_repeated_90.ctas :
+      type === "angle"    ? snap.top_repeated_90.angles :
+      type === "benefit"  ? snap.top_repeated_90.benefits :
+                            snap.top_repeated_90.hooks;
+    return bucket.find((b) => b.value.toLowerCase() === key)?.count ?? 0;
+  };
+  const partFor = (type: PoolType, val: string | null | undefined): number => {
+    const c = cap[type];
+    if (!c) return 100;
+    const used = countOf(type, val);
+    const pct = Math.max(0, Math.min(1, used / c));
+    return Math.round((1 - pct) * 100);
+  };
+  const enriched: DiversityCandidate = {
+    ...candidate,
+    angle: candidate.angle ?? detectAngle(`${candidate.headline} ${candidate.cta} ${candidate.hook ?? ""}`),
+    benefit: candidate.benefit ?? detectBenefit(`${candidate.headline} ${candidate.cta} ${candidate.hook ?? ""}`),
+  };
+  const parts: Record<PoolType, number> = {
+    headline: partFor("headline", enriched.headline),
+    cta: partFor("cta", enriched.cta),
+    hook: partFor("hook", enriched.hook ?? null),
+    angle: partFor("angle", enriched.angle ?? null),
+    benefit: partFor("benefit", enriched.benefit ?? null),
+  };
+  // Weighted average — headline & cta carry most weight.
+  const total = Math.round(
+    parts.headline * 0.35 +
+    parts.cta      * 0.25 +
+    parts.hook     * 0.15 +
+    parts.angle    * 0.15 +
+    parts.benefit  * 0.10
+  );
+  return { total, parts };
+}
