@@ -767,6 +767,55 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // 🎯 Diversity Guard pre-publish gate — REJECT (don't downgrade) anything
+      // below variety score 75 or violating headline/cta/hook/angle/benefit caps.
+      try {
+        const ovText = String(pin.overlay_text || "");
+        const sep = ovText.includes(" • ") ? " • " : ovText.includes(" | ") ? " | " : null;
+        const [hRaw, cRaw] = sep ? ovText.split(sep) : [ovText, ""];
+        const headline = (hRaw || pin.pin_title || "").trim();
+        const cta = (cRaw || "").trim();
+        const candidate = {
+          headline,
+          cta,
+          hook: pin.hook_group || null,
+          product_id: pin.product_id,
+          pin_queue_id: pin.id,
+        };
+        const catKey = normaliseCategoryKey(pin.category_key);
+        const evalRes = diversityGuard.evaluate(candidate as any, catKey);
+        const score = scoreVariety(diversityGuard, candidate as any).total;
+        const violation = !evalRes.ok || score < MIN_VARIETY_SCORE;
+        if (violation) {
+          const reasonStr = `score=${score}; ${(evalRes.reasons || []).join("|") || "below_min_variety_score"}`;
+          console.warn(`[cron] Pin ${pin.id} blocked by DiversityGuard: ${reasonStr}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            error_message: `DiversityGuard: ${reasonStr}`,
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "publish",
+            status: "rejected",
+            error_message: `DiversityGuard: ${reasonStr}`,
+            response_data: { diversity_score: score, reasons: evalRes.reasons },
+          });
+          results.push({ pinId: pin.id, status: "rejected", error: `Diversity: ${reasonStr}` });
+          continue;
+        }
+        // Stash score on the row so the dashboard / audit can read it back.
+        (pin as any).__diversity_score = score;
+        diversityGuard.register?.(candidate as any, catKey);
+      } catch (e) {
+        console.warn(`[cron] DiversityGuard eval failed for pin ${pin.id} (rejecting to be safe):`, e);
+        await sb.from("pinterest_pin_queue").update({
+          status: "rejected",
+          error_message: `DiversityGuard exception: ${String((e as Error)?.message || e)}`,
+        }).eq("id", pin.id);
+        results.push({ pinId: pin.id, status: "rejected", error: "diversity_guard_exception" });
+        continue;
+      }
+
       // Check for duplicate (same product + variant posted in last 7 days)
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const { count: dupeCount } = await sb
