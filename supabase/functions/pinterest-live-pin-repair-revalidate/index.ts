@@ -129,6 +129,7 @@ function pickFresh(
     if (!v) return null;
     if (type === "headline" || type === "cta" || type === "hook") {
       if (containsBanned(v)) continue;
+      if (containsGenericCta(v)) continue;
     }
     if (speciesConflict(v, species)) continue;
     return v;
