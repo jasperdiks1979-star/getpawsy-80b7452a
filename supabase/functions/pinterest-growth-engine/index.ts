@@ -317,13 +317,42 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   const catCounts = new Map<string, number>();
   const picked: Product[] = [];
   const throttled: string[] = [];
-  for (const { p } of scored) {
-    if (picked.length >= limit) break;
-    const key = categoryKey(p.category);
-    const used = catCounts.get(key) ?? 0;
-    if (used >= maxPerCat) { throttled.push(p.slug); continue; }
-    picked.push(p);
-    catCounts.set(key, used + 1);
+  // V4 Phase 6: PRIORITY CATEGORY FLOOR — at least 70% of the slate must come from
+  // priority categories (smart litter / cat trees / cat furniture / luxury beds / smart gadgets).
+  const priorityTarget = Math.ceil(limit * PRIORITY_CATEGORY_FLOOR);
+  // V4 Phase 3: WINNER AMPLIFICATION — pull product tiers and bias slate 70/25/5.
+  const { data: tierRows } = await sb
+    .from("pinterest_product_tiers")
+    .select("product_id, tier")
+    .in("tier", ["winner", "neutral", "loser"]);
+  const tierMap = new Map<string, "winner" | "neutral" | "loser">();
+  for (const r of (tierRows ?? []) as { product_id: string; tier: "winner" | "neutral" | "loser" }[]) {
+    tierMap.set(r.product_id, r.tier);
+  }
+  const winnerTarget = Math.ceil(limit * 0.70);
+  const neutralTarget = Math.ceil(limit * 0.25);
+  // loser gets the remainder (≈5%).
+  const tierCounts = { winner: 0, neutral: 0, loser: 0, untested: 0 };
+
+  // Pass 1: priority categories first, respecting per-cat cap and tier allocation.
+  for (const pass of [1, 2] as const) {
+    for (const { p } of scored) {
+      if (picked.length >= limit) break;
+      if (picked.includes(p)) continue;
+      const key = categoryKey(p.category);
+      const isPrio = isPriorityCategory(key);
+      if (pass === 1 && !isPrio) continue;
+      if (pass === 2 && picked.length < priorityTarget && isPrio === false) continue;
+      const used = catCounts.get(key) ?? 0;
+      if (used >= maxPerCat && pass === 2) { throttled.push(p.slug); continue; }
+      // Winner/neutral/loser quota
+      const tier = tierMap.get(p.id) ?? "untested";
+      if (tier === "loser" && tierCounts.loser >= Math.max(1, Math.floor(limit * 0.05))) continue;
+      if (tier === "neutral" && tierCounts.neutral >= neutralTarget && tierCounts.winner < winnerTarget) continue;
+      picked.push(p);
+      catCounts.set(key, used + 1);
+      tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
+    }
   }
   const finalPicks = picked;
 
