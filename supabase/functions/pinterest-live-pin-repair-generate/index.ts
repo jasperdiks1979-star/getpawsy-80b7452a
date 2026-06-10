@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       board_name: row.board_name || "Smart Pet Gadgets",
       board_id: boardIdByName.get(row.board_name || "") || null,
       priority: "high",
-      status: "ready_for_review",
+      status: "draft",
       hook_group: final.hook || null,
       category_key: category,
       overlay_text: overlay,
