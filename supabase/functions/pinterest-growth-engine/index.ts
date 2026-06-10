@@ -417,6 +417,67 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     .eq("is_blacklisted", false)
     .eq("production_verified", true);
 
+  // ===== Revenue panels (from pinterest_revenue_funnel_daily) =====
+  const { data: funnel30 } = await sb
+    .from("pinterest_revenue_funnel_daily")
+    .select("day,pin_id,product_id,product_slug,board_name,impressions,outbound_clicks,product_views,add_to_carts,checkouts,purchases,revenue_cents")
+    .gte("day", since30)
+    .limit(20_000);
+  type FRow = {
+    day: string; pin_id: string; product_id: string | null; product_slug: string | null; board_name: string | null;
+    impressions: number; outbound_clicks: number; product_views: number; add_to_carts: number; checkouts: number; purchases: number; revenue_cents: number;
+  };
+  const f = (funnel30 ?? []) as FRow[];
+  const sumRev = (rows: FRow[]) => rows.reduce(
+    (a, r) => ({
+      revenue: a.revenue + (r.revenue_cents || 0),
+      purchases: a.purchases + (r.purchases || 0),
+      checkouts: a.checkouts + (r.checkouts || 0),
+      atc: a.atc + (r.add_to_carts || 0),
+      pv: a.pv + (r.product_views || 0),
+      clicks: a.clicks + (r.outbound_clicks || 0),
+      impressions: a.impressions + (r.impressions || 0),
+    }),
+    { revenue: 0, purchases: 0, checkouts: 0, atc: 0, pv: 0, clicks: 0, impressions: 0 },
+  );
+  const totals30 = sumRev(f);
+  const totals7 = sumRev(f.filter((r) => r.day >= since7));
+
+  const byPin = new Map<string, { pin_id: string; product_slug: string | null; board_name: string | null; revenue: number; purchases: number; clicks: number; impressions: number }>();
+  const byBoardRev = new Map<string, { board_name: string; revenue: number; purchases: number; clicks: number }>();
+  const byProductRev = new Map<string, { product_id: string; product_slug: string | null; revenue: number; purchases: number; atc: number; pv: number; clicks: number; impressions: number }>();
+  for (const r of f) {
+    if (r.pin_id) {
+      const cur = byPin.get(r.pin_id) ?? { pin_id: r.pin_id, product_slug: r.product_slug, board_name: r.board_name, revenue: 0, purchases: 0, clicks: 0, impressions: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.clicks += r.outbound_clicks; cur.impressions += r.impressions;
+      byPin.set(r.pin_id, cur);
+    }
+    if (r.board_name) {
+      const cur = byBoardRev.get(r.board_name) ?? { board_name: r.board_name, revenue: 0, purchases: 0, clicks: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.clicks += r.outbound_clicks;
+      byBoardRev.set(r.board_name, cur);
+    }
+    if (r.product_id) {
+      const cur = byProductRev.get(r.product_id) ?? { product_id: r.product_id, product_slug: r.product_slug, revenue: 0, purchases: 0, atc: 0, pv: 0, clicks: 0, impressions: 0 };
+      cur.revenue += r.revenue_cents; cur.purchases += r.purchases; cur.atc += r.add_to_carts; cur.pv += r.product_views; cur.clicks += r.outbound_clicks; cur.impressions += r.impressions;
+      byProductRev.set(r.product_id, cur);
+    }
+  }
+
+  const top20Winners = [...byProductRev.values()]
+    .map((p) => ({
+      ...p,
+      revenue_usd: Math.round(p.revenue) / 100,
+      atc_rate: p.pv > 0 ? p.atc / p.pv : 0,
+      conv_rate: p.pv > 0 ? p.purchases / p.pv : 0,
+    }))
+    .sort((a, b) => b.revenue - a.revenue || b.purchases - a.purchases)
+    .slice(0, 20);
+
+  // ROAS (organic — no ad spend): proxy = revenue per 1000 impressions + revenue per click.
+  const rpm30 = totals30.impressions > 0 ? (totals30.revenue / 100) / (totals30.impressions / 1000) : 0;
+  const rpc30 = totals30.clicks > 0 ? (totals30.revenue / 100) / totals30.clicks : 0;
+
   return {
     today: { published: publishedToday ?? 0 },
     pipeline: { drafts: draftsCount ?? 0, ready: readyCount ?? 0 },
@@ -426,6 +487,39 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     topProducts,
     revenue30d: { revenue: Math.round(revenue30 * 100) / 100, orders: orders30 },
     productionBoards: prodBoards ?? 0,
+    revenue: {
+      last7d: {
+        revenue_usd: Math.round(totals7.revenue) / 100,
+        purchases: totals7.purchases,
+        checkouts: totals7.checkouts,
+        add_to_carts: totals7.atc,
+        product_views: totals7.pv,
+        clicks: totals7.clicks,
+        impressions: totals7.impressions,
+        atc_rate: totals7.pv > 0 ? totals7.atc / totals7.pv : 0,
+        conv_rate: totals7.pv > 0 ? totals7.purchases / totals7.pv : 0,
+      },
+      last30d: {
+        revenue_usd: Math.round(totals30.revenue) / 100,
+        purchases: totals30.purchases,
+        checkouts: totals30.checkouts,
+        add_to_carts: totals30.atc,
+        product_views: totals30.pv,
+        clicks: totals30.clicks,
+        impressions: totals30.impressions,
+        atc_rate: totals30.pv > 0 ? totals30.atc / totals30.pv : 0,
+        conv_rate: totals30.pv > 0 ? totals30.purchases / totals30.pv : 0,
+      },
+      roas: {
+        mode: "organic",
+        revenue_per_1000_impressions_usd: Math.round(rpm30 * 100) / 100,
+        revenue_per_click_usd: Math.round(rpc30 * 100) / 100,
+        note: "Pinterest organic — no paid spend. Treat RPM/RPC as ROAS proxies.",
+      },
+      byBoard: [...byBoardRev.values()].map((b) => ({ ...b, revenue_usd: Math.round(b.revenue) / 100 })).sort((a, b) => b.revenue - a.revenue).slice(0, 20),
+      byPin: [...byPin.values()].map((p) => ({ ...p, revenue_usd: Math.round(p.revenue) / 100 })).sort((a, b) => b.revenue - a.revenue).slice(0, 20),
+      top20Winners,
+    },
   };
 }
 
