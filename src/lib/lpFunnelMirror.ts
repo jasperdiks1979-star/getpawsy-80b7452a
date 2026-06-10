@@ -15,6 +15,38 @@ import { getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
 import { getPersistedUtm } from '@/lib/utmNormalizer';
 import { getStoredUTMParams } from '@/hooks/useUTMTracking';
 import { getLastTouch, classifySource } from '@/lib/attribution';
+import { getBotClassification } from '@/lib/botDetection';
+
+/**
+ * Unified classification for every mirrored row. Matches the values written
+ * by funnelEvents.ts envelope() plus the new traffic-quality tiers used by
+ * the Pinterest Revenue AI V5 dashboards.
+ *
+ *   verified_user  — real human, full signals
+ *   probable_user  — real device, weaker signals
+ *   crawler        — known crawler UA (Googlebot, SemRush, …)
+ *   bot            — generic bot heuristic (timing, webdriver, missing browser)
+ *   pre_render     — Pinterest / Facebook / Twitter / link-preview fetchers
+ *   single_bounce  — reserved (backfilled server-side from session signals)
+ */
+function deriveClassification(): string {
+  try {
+    const cls = getBotClassification();
+    const reason = (cls.bot_reason ?? '').toLowerCase();
+    if (/pinterest|facebookexternalhit|twitterbot|whatsapp|discordbot|telegrambot|linkedinbot|slackbot|embedly|applebot/.test(reason)) {
+      return 'pre_render';
+    }
+    if (cls.is_bot && /bot|crawler|spider|googlebot|bingbot|ahrefs|semrush|yandex|duckduck|baidu|petalbot|mj12|dotbot|gptbot|claudebot|perplexitybot|oai-searchbot/.test(reason)) {
+      return 'crawler';
+    }
+    if (cls.is_bot) return 'bot';
+    const dev = getDeviceClassification();
+    if (cls.traffic_quality_score >= 80 && (dev.device_confidence ?? 0) >= 80) return 'verified_user';
+    return 'probable_user';
+  } catch {
+    return 'probable_user';
+  }
+}
 
 const LANDING_PAGE_KEY = 'gp_landing_page';
 
@@ -210,6 +242,10 @@ export function mirrorLpFunnelEvent(
   }
 
   const dev = getDeviceClassification();
+  const botCls = (() => {
+    try { return getBotClassification(); } catch { return { is_bot: false, bot_reason: null, traffic_quality_score: 75 }; }
+  })();
+  const classification = deriveClassification();
 
   const row = {
     session_id: getSessionId(),
@@ -281,6 +317,13 @@ export function mirrorLpFunnelEvent(
     repeat_index: pickInt(params, 'repeat_index'),
     previous_placement: pickString(params, 'previous_placement'),
     delta_ms: pickInt(params, 'delta_ms'),
+    // Traffic-quality envelope — same shape pdp_view writes via funnelEvents.ts.
+    // Required so view_item rows can be cleanly filtered by Pinterest Revenue
+    // AI V5 dashboards (verified_user + probable_user only, drop crawler/bot/pre_render).
+    classification,
+    is_bot: botCls.is_bot,
+    bot_reason: botCls.bot_reason,
+    traffic_quality_score: botCls.traffic_quality_score,
   };
 
   // Fire-and-forget — analytics must never affect the user experience.
