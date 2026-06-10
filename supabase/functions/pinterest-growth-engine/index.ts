@@ -365,6 +365,10 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     usSharesByPickedProduct: Object.fromEntries(
       finalPicks.map((p) => [p.slug, Number(((usShares.byProduct.get(p.id) ?? 0) * 100).toFixed(1))]),
     ),
+    tierDistribution: tierCounts,
+    priorityCategoryShare: Number(
+      (finalPicks.filter((p) => isPriorityCategory(categoryKey(p.category))).length / Math.max(1, finalPicks.length)).toFixed(2),
+    ),
   };
 }
 
