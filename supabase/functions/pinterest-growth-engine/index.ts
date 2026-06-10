@@ -212,7 +212,7 @@ function scoreProduct(p: Product, perfBoost: number, revenueBoost: number, usBoo
   return s;
 }
 
-async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<{ products: Product[]; forcePromoted: string[]; excluded: string[] }> {
+async function selectProducts(sb: ReturnType<typeof createClient>, limit: number, usShares: UsShares) {
   // Pull active products with images and slug
   const { data, error } = await sb
     .from("products")
@@ -297,6 +297,8 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
           p,
           Math.min(perfByProduct.get(p.id) ?? 0, 25),
           Math.min(revByProduct.get(p.id) ?? 0, 50),
+          // usBoost: scale 0..1 share into 0..30 — products with no signal get 0.
+          (usShares.byProduct.get(p.id) ?? 0) * 30,
         ) + (forcePromote.has(p.id) ? 40 : 0),
     }))
     .sort((a, b) => b.score - a.score);
@@ -322,6 +324,9 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     excluded: [...excluded],
     categoryThrottled: throttled,
     categoryDistribution: Object.fromEntries(catCounts),
+    usSharesByPickedProduct: Object.fromEntries(
+      finalPicks.map((p) => [p.slug, Number(((usShares.byProduct.get(p.id) ?? 0) * 100).toFixed(1))]),
+    ),
   };
 }
 
