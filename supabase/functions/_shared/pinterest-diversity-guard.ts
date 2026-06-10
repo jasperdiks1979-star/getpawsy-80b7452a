@@ -1,15 +1,21 @@
 // Pinterest Creative Diversity Guard
 // ─────────────────────────────────────────────────────────────────────────────
 // Centralised "no boring repeats" rulebook applied BEFORE any pin draft is
-// inserted into pinterest_pin_queue, and also used by
-// pinterest-diversity-simulate to score the existing approval queue.
+// inserted into pinterest_pin_queue, and also used by the variety audit
+// endpoints to score and repair the existing approval queue.
 //
 // Caps (sliding 90-published-pin window unless otherwise noted):
-//   • headline   → max 5 uses
-//   • cta        → max 2 uses
-//   • angle      → max 2 uses
-//   • benefit    → max 2 uses
-//   • last 25    → exact-overlay duplicates always rejected
+//   • headline → max 5 uses
+//   • cta      → max 10 uses
+//   • hook     → max 8 uses
+//   • angle    → max 12 uses
+//   • benefit  → max 12 uses
+//   • last 25  → exact-overlay duplicates always rejected
+//
+// All pool replacements are STRICTLY category-scoped — a litter draft can
+// never pull from cat_trees, etc. The category key is normalised through
+// `normaliseCategoryKey()` so `cat-trees`, `cat_trees`, `CatTrees` all
+// resolve to the same pool bucket.
 //
 // The guard reads the 1,000 most-recent published pins (status='posted'),
 // then exposes:
@@ -113,11 +119,33 @@ export interface DiversityCaps {
 
 export const DEFAULT_CAPS: DiversityCaps = {
   headlinePer90: 5,
-  ctaPer90: 2,
-  anglePer90: 2,
-  benefitPer90: 2,
+  ctaPer90: 10,
+  anglePer90: 12,
+  benefitPer90: 12,
   windowLast25Exact: true,
 };
+
+export const HOOK_CAP_PER_90 = 8;
+
+// Map free-form niche/category labels to the canonical pool category key.
+// Pool buckets live in `pinterest_category_creative_pools.category` and
+// are limited to the 6 merchant-safe categories.
+const CATEGORY_ALIASES: Record<string, string> = {
+  litter: "litter", cat_litter: "litter", "cat-litter": "litter",
+  cat_trees: "cat_trees", "cat-trees": "cat_trees", cat_tree: "cat_trees", cattree: "cat_trees", cattrees: "cat_trees",
+  carriers: "carriers", carrier: "carriers", cat_carrier: "carriers", dog_carrier: "carriers",
+  dog_beds: "dog_beds", "dog-beds": "dog_beds", dog_bed: "dog_beds", calming_bed: "dog_beds",
+  toys: "toys", toy: "toys", interactive_toy: "toys", cat_toy: "toys", dog_toy: "toys",
+  cat_essentials: "cat_essentials", "cat-essentials": "cat_essentials",
+  cat_fountain: "cat_essentials", feeder: "cat_essentials", bowl_station: "cat_essentials",
+  grooming: "cat_essentials",
+};
+
+export function normaliseCategoryKey(input: string | null | undefined): string {
+  const raw = (input || "").trim().toLowerCase().replace(/\s+/g, "_");
+  if (!raw) return "(uncategorised)";
+  return CATEGORY_ALIASES[raw] ?? raw;
+}
 
 type Counts = {
   headline: Map<string, number>;
@@ -182,6 +210,7 @@ export class DiversityGuard {
   private postedTotal = 0;
   private last90Total = 0;
   private last25Total = 0;
+  hookCapPer90 = HOOK_CAP_PER_90;
 
   constructor(caps: Partial<DiversityCaps> = {}) {
     this.caps = { ...DEFAULT_CAPS, ...caps };
@@ -279,13 +308,15 @@ export class DiversityGuard {
 
   /** Pick a value from the pool that doesn't violate the cap for `type`. */
   pickFromPool(category: string, type: PoolType): string | null {
-    const options = this.pool(category, type);
+    const key = normaliseCategoryKey(category);
+    const options = this.pool(key, type);
     if (!options.length) return null;
     const cap =
       type === "headline" ? this.caps.headlinePer90 :
       type === "cta"      ? this.caps.ctaPer90 :
       type === "angle"    ? this.caps.anglePer90 :
       type === "benefit"  ? this.caps.benefitPer90 :
+      type === "hook"     ? this.hookCapPer90 :
       999;
     // sort ascending by current usage (least-used first), then stable.
     const counts = this.c90[type as keyof Counts] as Map<string, number>;
@@ -306,6 +337,7 @@ export class DiversityGuard {
     const reasons: string[] = [];
     const replacedFromPool: EvalResult["replacedFromPool"] = {};
     const final: DiversityCandidate = enrich({ ...candidate });
+    const catKey = normaliseCategoryKey(category);
 
     // 1. Exact-overlay duplicate inside last 25.
     const overlay = norm(`${final.headline} • ${final.cta}`);
@@ -323,7 +355,7 @@ export class DiversityGuard {
       const key = norm(currentValue);
       const used = key ? counts.get(key) || 0 : 0;
       if (used < cap) return; // ok
-      const next = this.pickFromPool(category, type);
+      const next = this.pickFromPool(catKey, type);
       if (next) {
         replacedFromPool[type] = { from: currentValue, to: next };
         apply(next);
@@ -334,6 +366,9 @@ export class DiversityGuard {
 
     tryReplace("headline", final.headline, this.caps.headlinePer90, (v) => { final.headline = v; });
     tryReplace("cta", final.cta, this.caps.ctaPer90, (v) => { final.cta = v; });
+    if (final.hook) {
+      tryReplace("hook", final.hook, this.hookCapPer90, (v) => { final.hook = v; });
+    }
     if (final.angle) {
       tryReplace("angle", final.angle, this.caps.anglePer90, (v) => { final.angle = v; });
     }
