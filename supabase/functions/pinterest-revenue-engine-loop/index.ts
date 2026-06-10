@@ -175,8 +175,8 @@ async function tierProducts(sb: ReturnType<typeof createClient>) {
     const score = (v.r / 100) * 1.0 + v.p * 20 + v.atc * 4 + v.c * 1.5 + v.s * 0.6 + ctr * 500;
     let tier: "winner" | "neutral" | "loser" | "untested";
     let reason: string;
-    if (v.i < 200) { tier = "untested"; reason = `insufficient impressions (${v.i})`; untested++; }
-    else if (v.r >= 500 || v.p >= 1 || (ctr >= 0.015 && v.c >= 20)) { tier = "winner"; reason = `rev=$${(v.r/100).toFixed(2)} ctr=${(ctr*100).toFixed(2)}%`; winners++; }
+    if (v.i < 50) { tier = "untested"; reason = `insufficient impressions (${v.i})`; untested++; }
+    else if (v.r >= 500 || v.p >= 1 || (ctr >= 0.015 && v.c >= 10) || (v.c >= 5 && v.i >= 100)) { tier = "winner"; reason = `rev=$${(v.r/100).toFixed(2)} ctr=${(ctr*100).toFixed(2)}% clicks=${v.c}`; winners++; }
     else if (v.i >= 800 && v.c <= 2) { tier = "loser"; reason = `${v.i} impressions, ${v.c} clicks`; losers++; }
     else { tier = "neutral"; reason = "mid-band"; neutrals++; }
     await sb.from("pinterest_product_tiers").upsert({
@@ -184,6 +184,22 @@ async function tierProducts(sb: ReturnType<typeof createClient>) {
       impressions_30d: v.i, outbound_clicks_30d: v.c, add_to_carts_30d: v.atc,
       purchases_30d: v.p, revenue_cents_30d: v.r, computed_at: new Date().toISOString(),
     }, { onConflict: "product_id" });
+  }
+  // Bootstrap: if zero winners and we have ≥3 ranked products, promote top-5 by score to winner
+  // so the keyword/title engines have something to expand on while real Pinterest data accumulates.
+  if (winners === 0 && agg.size >= 3) {
+    const top = [...agg.entries()]
+      .map(([product_id, v]) => ({ product_id, slug: v.slug, score: v.c * 3 + v.s + v.i / 100 }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+    for (const t of top) {
+      await sb.from("pinterest_product_tiers").upsert({
+        product_id: t.product_id, product_slug: t.slug, tier: "winner",
+        score: Math.round(t.score), reason: "bootstrap: top-5 by Pinterest activity",
+        computed_at: new Date().toISOString(),
+      }, { onConflict: "product_id" });
+      winners++;
+    }
   }
   return { winners, neutrals, losers, untested, total: agg.size };
 }
