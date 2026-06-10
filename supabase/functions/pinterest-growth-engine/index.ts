@@ -33,10 +33,52 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DEFAULTS = {
   productsPerRun: 8,
   variantsPerProduct: 3,
-  perBoardDailyCap: 3,
+  perBoardDailyCap: 2, // V2: tightened from 3 → 2 to prevent board saturation.
   autoApproveScoreThreshold: 78,
   minMarginPct: 0.25,
+  maxCategoryShare: 0.25, // V2: no single category may exceed 25% of a run.
 };
+
+// ===== V2 enforcement constants =====
+// Generic / catch-all boards — demoted to last-resort only.
+const GENERIC_BOARDS = new Set<string>([
+  "cat essentials",
+  "pet essentials",
+  "dog essentials",
+  "pet products",
+  "cat products",
+  "dog products",
+]);
+// Banned overlay/title CTA phrases (V2 phase 5).
+const BANNED_OVERLAY_PHRASES = [
+  "browse now",
+  "learn more",
+  "stack it",
+  "browse litter",
+  "shop now",
+  "click here",
+  "tap to shop",
+  "see more",
+];
+const MAX_TITLE_WORDS = 5; // V2 phase 4
+
+function wordCount(s: string | null | undefined): number {
+  if (!s) return 0;
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+function containsBannedPhrase(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  for (const p of BANNED_OVERLAY_PHRASES) if (lower.includes(p)) return p;
+  return null;
+}
+function isGenericBoard(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return GENERIC_BOARDS.has(name.trim().toLowerCase());
+}
+function categoryKey(c: string | null): string {
+  return (c ?? "uncategorized").toLowerCase().trim();
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -173,14 +215,29 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
           Math.min(revByProduct.get(p.id) ?? 0, 50),
         ) + (forcePromote.has(p.id) ? 40 : 0),
     }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((x) => x.p);
+    .sort((a, b) => b.score - a.score);
+
+  // V2 Phase 1: enforce ≤25% concentration per category in the selected slate.
+  const maxPerCat = Math.max(1, Math.ceil(limit * DEFAULTS.maxCategoryShare));
+  const catCounts = new Map<string, number>();
+  const picked: Product[] = [];
+  const throttled: string[] = [];
+  for (const { p } of scored) {
+    if (picked.length >= limit) break;
+    const key = categoryKey(p.category);
+    const used = catCounts.get(key) ?? 0;
+    if (used >= maxPerCat) { throttled.push(p.slug); continue; }
+    picked.push(p);
+    catCounts.set(key, used + 1);
+  }
+  const finalPicks = picked;
 
   return {
-    products: scored,
-    forcePromoted: scored.filter((p) => forcePromote.has(p.id)).map((p) => p.slug),
+    products: finalPicks,
+    forcePromoted: finalPicks.filter((p) => forcePromote.has(p.id)).map((p) => p.slug),
     excluded: [...excluded],
+    categoryThrottled: throttled,
+    categoryDistribution: Object.fromEntries(catCounts),
   };
 }
 
@@ -210,10 +267,15 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     .eq("is_blacklisted", false)
     .eq("production_verified", true);
   const prodIds = new Set<string>((boards ?? []).map((b: { id: string }) => b.id));
+  const genericBoardIds = new Set<string>(
+    (boards ?? [])
+      .filter((b: { name: string }) => isGenericBoard(b.name))
+      .map((b: { id: string }) => b.id),
+  );
 
   const { data: drafts } = await sb
     .from("pinterest_pin_queue")
-    .select("id,board_id,product_id,pin_image_url,destination_link,meta")
+    .select("id,board_id,board_name,product_id,pin_image_url,destination_link,pin_title,overlay_text,meta")
     .eq("status", "draft")
     .order("created_at", { ascending: false })
     .limit(200);
@@ -235,10 +297,16 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
   let skippedSafety = 0;
   let skippedCap = 0;
   let skippedScore = 0;
+  let skippedTitle = 0;
+  let skippedOverlay = 0;
+  let skippedGeneric = 0;
+  const rejectedTitles: string[] = [];
+  const rejectedOverlays: string[] = [];
 
   for (const d of (drafts ?? []) as Array<{
-    id: string; board_id: string | null; product_id: string | null;
+    id: string; board_id: string | null; board_name: string | null; product_id: string | null;
     pin_image_url: string | null; destination_link: string | null;
+    pin_title: string | null; overlay_text: string | null;
     meta: Record<string, unknown> | null;
   }>) {
     // Safety: must have image, link, production board, active product
@@ -247,6 +315,43 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     if (d.product_id) {
       const { data: prod } = await sb.from("products").select("is_active").eq("id", d.product_id).maybeSingle();
       if (!prod || !(prod as { is_active: boolean }).is_active) { skippedSafety++; continue; }
+    }
+    // V2 Phase 2: demote generic boards — only allow if every non-generic board is at cap.
+    if (genericBoardIds.has(d.board_id)) {
+      const nonGenericAvailable = [...prodIds].some(
+        (id) => !genericBoardIds.has(id) && (byBoardToday.get(id) ?? 0) < perBoardCap,
+      );
+      if (nonGenericAvailable) {
+        await sb.from("pinterest_pin_queue").update({
+          status: "archived",
+          rejection_reason: "v2: generic board demoted (Cat Essentials et al.)",
+        }).eq("id", d.id);
+        skippedGeneric++;
+        continue;
+      }
+    }
+    // V2 Phase 4: title must be ≤5 words and not a SKU/long description.
+    if (d.pin_title && wordCount(d.pin_title) > MAX_TITLE_WORDS) {
+      await sb.from("pinterest_pin_queue").update({
+        status: "archived",
+        rejection_reason: `v2: title exceeds ${MAX_TITLE_WORDS} words (${wordCount(d.pin_title)})`,
+      }).eq("id", d.id);
+      rejectedTitles.push(d.pin_title);
+      skippedTitle++;
+      continue;
+    }
+    // V2 Phase 5: overlay must not contain banned CTA phrases, ≤6 words.
+    const banned = containsBannedPhrase(d.overlay_text) ?? containsBannedPhrase(d.pin_title);
+    if (banned || (d.overlay_text && wordCount(d.overlay_text) > 6)) {
+      await sb.from("pinterest_pin_queue").update({
+        status: "archived",
+        rejection_reason: banned
+          ? `v2: banned overlay phrase "${banned}"`
+          : `v2: overlay exceeds 6 words (${wordCount(d.overlay_text)})`,
+      }).eq("id", d.id);
+      if (d.overlay_text) rejectedOverlays.push(d.overlay_text);
+      skippedOverlay++;
+      continue;
     }
     // Quality score from creative-director intelligence
     const intel = (d.meta?.intelligence as { scores?: { total?: number } } | undefined) ?? undefined;
@@ -267,7 +372,17 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     }
   }
 
-  return { approved, skippedSafety, skippedScore, skippedCap };
+  return {
+    approved,
+    skippedSafety,
+    skippedScore,
+    skippedCap,
+    skippedTitle,
+    skippedOverlay,
+    skippedGeneric,
+    rejectedTitleSamples: rejectedTitles.slice(0, 5),
+    rejectedOverlaySamples: rejectedOverlays.slice(0, 5),
+  };
 }
 
 async function retirePoorPerformers(sb: ReturnType<typeof createClient>) {
@@ -577,15 +692,28 @@ Deno.serve(async (req) => {
         ok: true,
         traceId,
         ranAt: new Date().toISOString(),
+        version: "v2",
         productsSelected: products.length,
         productSlugs: products.map((p) => p.slug),
         forcePromoted: selection.forcePromoted,
         excludedProductCount: selection.excluded.length,
+        categoryThrottled: selection.categoryThrottled,
+        categoryDistribution: selection.categoryDistribution,
         generation,
         totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
         approval,
         retire,
-        config: { productsPerRun, variantsPerProduct, perBoardCap, scoreThreshold },
+        config: {
+          productsPerRun,
+          variantsPerProduct,
+          perBoardCap,
+          scoreThreshold,
+          maxCategoryShare: DEFAULTS.maxCategoryShare,
+          maxTitleWords: MAX_TITLE_WORDS,
+          maxOverlayWords: 6,
+          bannedOverlayPhrases: BANNED_OVERLAY_PHRASES,
+          demotedGenericBoards: [...GENERIC_BOARDS],
+        },
       };
 
       // Persist run summary (non-blocking)
