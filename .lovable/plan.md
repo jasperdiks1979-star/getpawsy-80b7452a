@@ -1,143 +1,119 @@
-# Pinterest Destination Integrity — Permanent Hardening
+## Goal
 
-Goal: **0 Pinterest destinations may ever resolve to 404, soft-404, homepage, collection, or dead PDP** — for past, present, scheduled, queued, draft, future, feed, and campaign pins.
+Extend the existing **Pinterest Revenue AI V5** stack (edge function `pinterest-revenue-ai`, `/admin/revenue-ai`, V4 loop, `pinterest_visitor_revenue_scores`, `pinterest_opportunity_ranks`, `pinterest_forecasts`, `monitoring_alerts`) with traffic-quality filtering, per-visitor quality scoring, PDP conversion intelligence, creative variant generation, dashboard tabs, and additional health checks. **No duplicate engines, no duplicate dashboards, no duplicate cron stacks.**
 
-Builds on existing infra (resolver, slug history, alias map, repair sweep, image-match gate, redirect engine). This pass closes the remaining gaps.
+## What gets reused (no rebuild)
 
----
+- `pinterest-revenue-ai` edge function (V5) — add new actions onto it
+- `/admin/revenue-ai` page — add tabs, do not create a sibling route
+- `pinterest_visitor_revenue_scores` — add classification columns
+- `pinterest_opportunity_ranks` + `pinterest_forecasts` — feed from cleaned data
+- `monitoring_alerts` (alert_key prefix `pinterest_revenue_ai:`) — add new alert keys
+- `lp_funnel_events` + `visitor_activity` — sole event sources
+- `envelope()` in `src/lib/lpFunnelMirror.ts` — single classification path
+- Existing 6h loop + hourly health cron + weekly backfill cron — extend, don't add parallel schedulers
+- `useCtaCopyWinner`, existing creative variant tables (`pinterest_title_variants`, `pinterest_keyword_bank`) — reuse for Phase 4
 
-## Architecture
+## Phase 1 — Traffic quality filtering (client)
+
+- `src/lib/lpFunnelMirror.ts`: route `view_item` mirror through the same `envelope()` used by `pdp_view` (currently bypassed → NULL classification). Single function, no duplication.
+- Extend the existing `classification` enum values written into `lp_funnel_events` to include: `verified_user`, `probable_user`, `crawler`, `bot`, `pre_render`, `single_bounce`. Logic lives in `envelope()` only — fed by existing `botDetection.ts` + a new `pre_render` heuristic (UA `pinterestbot`/`facebookexternalhit`/zero interaction after 5s) and `single_bounce` (post-session backfill, see Phase 2).
+- No new client tracking system — only enrichment of the existing pipeline.
+
+## Phase 2 — Pinterest visitor quality score (server, extends existing scorer)
+
+- Extend the existing `scoreVisitors` function in `pinterest-revenue-ai/index.ts`. Do NOT create a parallel scorer.
+- Add columns to `pinterest_visitor_revenue_scores`:
+  - `visitor_quality_score smallint` (0–100)
+  - `intent_tier text` (`low` | `medium` | `high` | `buyer`)
+  - `classification text` (mirrors lp_funnel_events)
+  - `scroll_depth_max smallint`, `image_interactions smallint`, `variant_selections smallint`, `return_visit boolean`
+- Formula (additive, capped at 100):
+  ```
+  time_on_page (max 25) + scroll_depth (max 20) + second_page (10)
+  + add_to_cart (15) + image_interaction (10) + variant_select (10)
+  + checkout_start (15) + return_visit (10)
+  ```
+  Tier: 0–20 low / 21–50 medium / 51–80 high / 81–100 buyer.
+- Historical: every score row is already append-only by `(session_id, scored_at)`; keep as historical snapshot.
+
+## Phase 3 — Landing-page conversion intelligence (one new table)
+
+- New table `pinterest_pdp_conversion_stats` (one row per product per day):
+  - `product_id`, `day`, `views`, `avg_scroll_pct`, `gallery_opens`, `atc`, `checkout`, `purchases`, `exit_rate`, `pinterest_clicks`, `atc_rate`, `checkout_rate`, `purchase_rate`, `verdict` (`winner` | `viewed_but_no_atc` | `bounce` | `pinterest_winner` | `pinterest_loser` | `neutral`)
+- New action `aggregate_pdp_stats` on `pinterest-revenue-ai`. Reads `lp_funnel_events` filtered to `classification IN ('verified_user','probable_user')` only.
+- Winners/losers are a view on this table — no second table.
+
+## Phase 4 — Creative optimization (extends existing variant tables)
+
+- New action `generate_creative_variants` on `pinterest-revenue-ai`. Inputs: top N products from `pinterest_pdp_conversion_stats.verdict='pinterest_winner'`.
+- Uses Lovable AI Gateway to produce per product: 10 titles, 10 hooks, 10 benefits, 5 CTAs.
+- Writes into existing `pinterest_title_variants` (titles) and one new lightweight table `pinterest_creative_variants` for hooks/benefits/CTAs (`product_id`, `kind`, `text`, `created_at`, `score`, `wins`, `impressions`). Reused by existing creative-director publish path — no new publisher.
+
+## Phase 5 — Dashboard extension (tabs on /admin/revenue-ai)
+
+- Edit `src/pages/admin/RevenueAiPage.tsx`. Add tabs: **Overview** (existing), **Traffic Quality**, **Top Products**, **Top Pins**, **Opportunities** (Phase 7), **Alerts**.
+- New `dashboard` action sub-payloads: `traffic_quality` (crawler/bot/pre_render/human %), `top_products` (joins `pinterest_pdp_conversion_stats`), `top_pins` (from `pinterest_pin_performance`), `opportunities`, `alerts` (from `monitoring_alerts`).
+- No new route, no new page file.
+
+## Phase 6 — Health monitoring (extends existing health check)
+
+- Extend `healthCheck` action already on `pinterest-revenue-ai` with new checks:
+  - Pinterest traffic 24h vs 7d avg → P1 if drop >50%
+  - 404 spikes from `frontend_error_logs` filtered to Pinterest referers → P1
+  - `add_to_cart` 0 over 24h while Pinterest traffic >100 → P2
+  - `begin_checkout` 0 over 24h → P2
+  - `payment_success` 0 over 72h → P1
+  - Pinterest OAuth disconnect (`pinterest_connection.expires_at`) → P1
+  - Merchant feed errors (`merchant_sync_logs.status='error'` in 24h) → P2
+- Writes to existing `monitoring_alerts` with new `alert_key`s under prefix `pinterest_revenue_ai:`. Surfaced in dashboard Alerts tab.
+
+## Phase 7 — Revenue opportunities (derived, no new engine)
+
+- View/action on top of `pinterest_pdp_conversion_stats` + `pinterest_opportunity_ranks`: products with `pinterest_clicks` high + `purchase_rate` low.
+- Recommendation strings generated from rule table (title/CTA/images/price/desc/trust) — no LLM call required at read time.
+- Rendered in the **Opportunities** tab.
+
+## Phase 8 — Auto-learning (reuse existing cron)
+
+- The existing 6h loop already runs `score_visitors → rank_opportunities → forecast → health_check`. Insert two new steps in the same loop:
+  1. `aggregate_pdp_stats`
+  2. `generate_creative_variants` (only when new winners appear)
+- No new cron schedule. Weekly backfill cron also re-runs aggregation for the trailing 30d.
+
+## Database changes (single migration)
 
 ```text
-                ┌─────────────────────────────────────────┐
-                │   pinterest-destination-integrity (new) │
-                │   shared validator: 12-point check      │
-                └──────────────┬──────────────────────────┘
-                               │
-   ┌───────────────────────────┼─────────────────────────────────────┐
-   │                           │                                     │
-   ▼                           ▼                                     ▼
-PHASE 1/6 AUDIT          PHASE 3 PUBLISH GATE              PHASE 5 DAILY MONITOR
-pinterest-integrity-      cron-worker + validator           pg_cron 24h →
-audit (all sources)       blocks any non-200 PDP            integrity-audit
-   │                           │                                     │
-   ▼                           ▼                                     ▼
-PHASE 2 REPAIR           PHASE 4 SLUG TRIGGER              PHASE 7 REPORT
-integrity-repair          products.slug change →             /admin/pinterest-
-(uses resolver +          auto-rewrite queued/scheduled/      integrity (KPIs +
-title/image match)        draft destinations + feed rows     daily history)
+ALTER TABLE pinterest_visitor_revenue_scores
+  ADD COLUMN visitor_quality_score smallint,
+  ADD COLUMN intent_tier text,
+  ADD COLUMN classification text,
+  ADD COLUMN scroll_depth_max smallint,
+  ADD COLUMN image_interactions smallint,
+  ADD COLUMN variant_selections smallint,
+  ADD COLUMN return_visit boolean;
+
+CREATE TABLE pinterest_pdp_conversion_stats (...);  -- + GRANTs + RLS
+CREATE TABLE pinterest_creative_variants (...);      -- + GRANTs + RLS
 ```
 
-No checkout, pricing, theme, or copy changes.
+Both new tables: `GRANT SELECT,INSERT,UPDATE,DELETE ... TO authenticated; GRANT ALL TO service_role;` RLS = admin-only via `has_role(auth.uid(),'admin')`.
 
----
+## Files touched
 
-## Phase 1 — Universal audit
+- `src/lib/lpFunnelMirror.ts` (envelope on view_item + new classifications)
+- `src/lib/botDetection.ts` (add `pre_render` reason)
+- `supabase/functions/pinterest-revenue-ai/index.ts` (new actions: `aggregate_pdp_stats`, `generate_creative_variants`, extended `scoreVisitors`, extended `healthCheck`, extended `dashboard`)
+- `src/pages/admin/RevenueAiPage.tsx` (tabs)
+- `supabase/migrations/<ts>_pinterest_revenue_ai_v5_quality.sql`
+- `mem/marketing/pinterest-revenue-ai-v5.md` (update)
 
-New edge function `pinterest-integrity-audit` walks every source:
+## Out of scope
 
-- `pinterest_pin_queue` (all statuses: draft / scheduled / queued / posted / failed)
-- `pinterest_publish_queue`, `pinterest_video_queue`
-- `pinterest_pins` (historical posted, includes ones not in queue)
-- `pinterest_capi_outbox` (campaign records)
-- Pinterest feed source (`products_public` rows currently exposed)
+- Any new edge function, new cron job, new dashboard route, new tracking SDK, new event sink. All work strictly extends V5.
 
-For each `destination_link` runs the **12-point check** (HTTP 200 + product page + title + image + not 404/soft-404/home/collection/redirect-loop + ≤2 hops + final host is getpawsy.pet + `data-product-slug` matches a live product).
+## Expected impact
 
-Writes results to **existing** `pinterest_pin_audit` (+ a new `source` column) and per-run summary to `pinterest_pin_audit_runs`.
-
-## Phase 2 — Repair
-
-New `pinterest-integrity-repair`. For every audit row with `validation_status='broken'`:
-
-1. Resolver ladder (existing 8-step: exact → slug-history → alias → sku → cj-map → similar → category → 404).
-2. Title-similarity fallback (Jaccard ≥ 0.6 on tokens) against live catalog.
-3. Image-similarity fallback (perceptual hash via existing `pinterest-image-product-match`).
-4. Rewrite `destination_link` on every record type:
-   - `pinterest_pin_queue.destination_link` for `draft|scheduled|queued`
-   - `pinterest_publish_queue`, `pinterest_video_queue`, `pinterest_capi_outbox`
-   - posted-pin records → log into `pinterest_pin_repair_log` (redirect engine handles live click)
-5. Rows where steps 1–3 all fail → `repair_strategy='needs_replacement'` (no auto-pin creation).
-
-## Phase 3 — Permanent publish gate
-
-Edit `supabase/functions/_shared/pinterest-destination-validator.ts` to call the new 12-point check. Reject reasons: `http_non_200, soft_404, homepage_destination, collection_destination, redirect_loop, image_missing, title_missing, slug_mismatch, not_pdp`.
-
-Edit `pinterest-cron-worker/index.ts`: on validation fail → run `integrity-repair` for that row → revalidate once → if still broken, mark `status='blocked_invalid_url'`, never publish.
-
-Also gates `pinterest-publish-queue` worker and `pinterest-video-publisher` the same way.
-
-## Phase 4 — Slug-change auto-sync
-
-DB trigger (additive to existing slug-history trigger): on `UPDATE products SET slug` →
-
-- insert row into `product_slug_history` (existing)
-- `UPDATE pinterest_pin_queue, pinterest_publish_queue, pinterest_video_queue, pinterest_capi_outbox SET destination_link = replace(...)` for any row matching the old slug
-- Posted-pin rows in `pinterest_pins` stay untouched (the `/products/:slug` redirect already handles live clicks via slug-history).
-
-Trigger logs to new lightweight table `pinterest_slug_sync_log` for the admin page.
-
-## Phase 5 — Daily monitor
-
-`pg_cron` job (24h, 04:00 UTC) → `net.http_post` to `pinterest-integrity-audit?mode=daily&autorepair=true`. Writes daily summary into `pinterest_pin_audit_runs`. Surfaced on the admin page.
-
-## Phase 6 — Historical sweep
-
-One-shot invocation of `pinterest-integrity-audit?mode=historical` walks every `pinterest_pins` + every `pinterest_pin_queue.status='posted'`. For each broken historical pin:
-
-- if Pinterest API supports editing the pin's destination → patch it via `pinterest-pin-edit-destination` (new helper using `PATCH /v5/pins/{id}`).
-- otherwise log into `pinterest_pin_repair_log` with `repair_strategy='needs_replacement'` (existing redirect engine still saves the click).
-
-No pin deletions.
-
-## Phase 7 — Report + admin dashboard
-
-Extend existing `/admin/pinterest-url-recovery` (or add a sibling `/admin/pinterest-integrity`) with KPIs:
-
-- total pins scanned · URLs scanned · broken found · repaired · active validated · queued validated · scheduled validated · historical validated
-- % passing validation
-- Last 30 days of daily-monitor runs
-- Slug-sync log (recent auto-rewrites)
-- Manual buttons: Run Audit · Run Repair · Run Historical Sweep · Re-validate Queue
-
-Final response will include the same numbers from the first live run.
-
----
-
-## Files
-
-**Create**
-- `supabase/functions/_shared/pinterest-integrity-check.ts` — 12-point validator
-- `supabase/functions/pinterest-integrity-audit/index.ts`
-- `supabase/functions/pinterest-integrity-repair/index.ts`
-- `supabase/functions/pinterest-pin-edit-destination/index.ts`
-- `supabase/migrations/<ts>_pinterest_integrity.sql` — `pinterest_slug_sync_log` + audit `source` column + slug-sync trigger + pg_cron schedule + GRANTs/RLS
-- `src/pages/admin/PinterestIntegrityPage.tsx`
-
-**Edit**
-- `supabase/functions/_shared/pinterest-destination-validator.ts` — delegate to 12-point check
-- `supabase/functions/pinterest-cron-worker/index.ts` — gate + auto-repair-then-revalidate
-- `supabase/functions/pinterest-publish-queue/index.ts` — same gate
-- `supabase/functions/pinterest-video-publisher/index.ts` — same gate
-- `src/App.tsx` — lazy admin route
-- memory: pinterest-integrity contract
-
-**Out of scope**
-Pin deletions, mass replacement pin generation without approval, checkout/pricing/SEO copy, design changes.
-
----
-
-## Acceptance criteria
-
-- Live run shows ≥99% of Pinterest destinations passing the 12-point check (remaining <1% all have `needs_replacement` with documented reason).
-- Cron worker provably refuses to publish any pin failing validation (test row stays at `blocked_invalid_url`).
-- Slug change on one test product auto-rewrites all matching queued/scheduled/draft rows within one transaction.
-- Daily monitor logs visible on admin page.
-- Final chat report contains every counter listed in Phase 7.
-
----
-
-**Approve to proceed.** I'll ship in two reviewable batches:
-
-- **Batch A (read + gate):** migration, 12-point validator, audit function, publish-gate edits, slug trigger, admin page skeleton, daily cron. Zero pin mutations.
-- **Batch B (repair + historical):** repair function, historical sweep, pin-edit-destination helper, full report. Runs only after Batch A's audit numbers are reviewed.
+- Cleaner conversion rate denominator (crawlers excluded) → realistic 1.5–3× reported CR.
+- Visitor quality score gives the publisher a 0–100 dial for budget/bid steering.
+- PDP conversion table surfaces the 5–10 products that deserve creative re-spend, lifting Pinterest-attributed revenue.
