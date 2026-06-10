@@ -91,12 +91,11 @@ Deno.serve(async (req) => {
   const boards = [...new Set((queue ?? []).map((r) => r.board_name).filter(Boolean))];
   const { data: boardRows } = await supabase
     .from("pinterest_boards")
-    .select("board_id, board_name, name")
-    .or(boards.map((b) => `board_name.eq.${b}`).join(",") || "board_name.eq.__none__");
+    .select("id, name")
+    .in("name", boards.length ? boards : ["__none__"]);
   const boardIdByName = new Map<string, string>();
   for (const b of boardRows ?? []) {
-    const key = b.board_name || b.name;
-    if (key && b.board_id) boardIdByName.set(key, b.board_id);
+    if (b.name && b.id) boardIdByName.set(b.name, b.id);
   }
 
   let drafted = 0;
