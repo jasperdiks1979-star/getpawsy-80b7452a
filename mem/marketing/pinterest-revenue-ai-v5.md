@@ -3,7 +3,7 @@ name: Pinterest Revenue AI V5
 description: Per-visitor geo+intent+revenue scoring, unified opportunity ranking, Pinterest-specific forecasting, and /admin/revenue-ai command center on top of V4
 type: feature
 ---
-**Edge function:** `pinterest-revenue-ai` (service-role). Actions: `loop`, `score_visitors`, `rank_opportunities`, `forecast`, `dashboard`. The `loop` action chains the V4 `pinterest-revenue-engine-loop` first, then runs V5 scoring → ranking → forecasting.
+**Edge function:** `pinterest-revenue-ai` (service-role). Actions: `loop`, `score_visitors`, `rank_opportunities`, `forecast`, `dashboard`, `aggregate_pdp_stats`, `generate_creative_variants`, `opportunities`, `health_check`, `backfill`. The `loop` action chains the V4 `pinterest-revenue-engine-loop` first, then runs V5 scoring → ranking → forecasting → PDP aggregation → creative variant generation → health check. No separate cron or edge function.
 
 **Crons:**
 - `pinterest-revenue-ai-loop-6h` (`45 */6 * * *`, schedule id 124) — forward 6h optimization loop.
@@ -16,10 +16,17 @@ type: feature
 
 **Tables:**
 - `pinterest_visitor_revenue_scores` — per-session geo (country/region/city) + board/pin/product/keyword/creative/hook + revenue_score, traffic_quality_score, buyer_intent_score. Source: `visitor_activity` filtered to `utm_source ilike '%pinterest%'`.
+  Quality extension: `visitor_quality_score` (0–100), `intent_tier` (low/medium/high/buyer), `classification` (verified_user/probable_user/single_bounce), `scroll_depth_max`, `image_interactions`, `variant_selections`, `return_visit`.
 - `pinterest_opportunity_ranks` — unified per-entity (product/board/keyword/creative/hook) opportunity score + rank_tier (winner ≥80th pct, loser ≤20th pct, untested <5 clicks, neutral otherwise) + 30d revenue/clicks/CTR/US share/conversion rate.
 - `pinterest_forecasts` — per-entity 7d/30d expected impressions/clicks/conversions/revenue with confidence + `rising` flag. EWMA over 30d with tier boost (winner ×1.25, loser ×0.6).
+- `pinterest_pdp_conversion_stats` — per-product-per-day landing-page metrics (views, scroll, gallery_opens, atc, checkout, purchases, exit_rate, pinterest_clicks, rates, verdict). Filtered to verified_user + probable_user only.
+- `pinterest_creative_variants` — AI-generated title/hook/benefit/cta variants per product (kind, text, score, wins, impressions). Hooks/benefits/CTAs live here; titles also mirrored into existing `pinterest_title_variants`.
 
-**Dashboard:** `/admin/revenue-ai` — auto-refresh every hour, "Run loop now" button. Shows US share vs 80% target, 30d Pinterest visitors, top products/boards/keywords by opportunity score, revenue by US state + city, and top 30d revenue forecasts.
+**Dashboard:** `/admin/revenue-ai` — tabbed (Overview / Traffic Quality / Top Products / Top Pins / Opportunities / Alerts). Auto-refresh every hour, "Run loop now" button. Conversion rate computed against qualified visitors (verified_user + probable_user) only — crawler/bot/pre_render excluded.
+
+**Classification (lp_funnel_events.classification):** `verified_user`, `probable_user`, `crawler` (known crawler UA), `bot` (timing/webdriver/missing browser), `pre_render` (Pinterest/FB/Twitter/link-preview), `single_bounce`, `legacy_unknown`, `qa`. Set by `src/lib/lpFunnelMirror.ts` (mirror) and `src/lib/funnelEvents.ts` (envelope) — single source of truth.
+
+**Phase 6 health alerts** (extends existing): `pinterest_revenue_ai:traffic_drop` (P1, >50% drop vs 7d avg), `:atc_zero_24h` (P2), `:checkout_zero_24h` (P2), `:purchase_zero_72h` (P1), `:oauth_disconnected` (P1), `:merchant_feed_errors` (P2), `:product_404` (P1, ≥10 404s in 24h).
 
 **Scoring rules (per visitor session):**
 - `revenue_score = (revenue_cents/100)*10 + purchases*50 + checkouts*8 + atc*3`
