@@ -677,6 +677,46 @@ Deno.serve(async (req) => {
       console.warn("[cron] style-mix reorder failed (non-fatal):", e);
     }
 
+    // ── 3d. Per-category daily cap (max 3 pins/category/day). ──
+    const PER_CATEGORY_DAILY_CAP = 3;
+    try {
+      const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+      const { data: postedToday24 } = await sb
+        .from("pinterest_pin_queue")
+        .select("category_key")
+        .eq("status", "posted")
+        .gte("posted_at", oneDayAgo);
+      const catCounts = new Map<string, number>();
+      for (const r of postedToday24 || []) {
+        const k = normaliseCategoryKey((r as any).category_key) || "(uncat)";
+        catCounts.set(k, (catCounts.get(k) || 0) + 1);
+      }
+      const keep: any[] = [];
+      for (const p of pins as any[]) {
+        const k = normaliseCategoryKey(p.category_key) || "(uncat)";
+        const used = catCounts.get(k) || 0;
+        if (used >= PER_CATEGORY_DAILY_CAP) {
+          console.log(`[cron] per-category cap hit for ${k} (${used}/${PER_CATEGORY_DAILY_CAP}), deferring pin ${p.id}`);
+          continue;
+        }
+        catCounts.set(k, used + 1);
+        keep.push(p);
+      }
+      pins.length = 0;
+      pins.push(...keep);
+    } catch (e) {
+      console.warn("[cron] per-category cap filter failed (non-fatal):", e);
+    }
+
+    // ── 3e. Diversity Guard — load once for the whole batch. ──
+    const diversityGuard = new DiversityGuard();
+    try {
+      await diversityGuard.load(sb);
+    } catch (e) {
+      console.warn("[cron] diversity guard load failed (will reject all to be safe):", e);
+    }
+    const MIN_VARIETY_SCORE = 75;
+
     // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
       const pin = pins[i];
