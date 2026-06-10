@@ -198,6 +198,10 @@ export default function PinterestLivePinRepair() {
             {executing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
             Execute First 25 (Publish + Delete)
           </Button>
+          <Button variant="outline" onClick={downloadPreviewCsv} disabled={loading || rows.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Download Preview CSV
+          </Button>
         </div>
       </div>
 
