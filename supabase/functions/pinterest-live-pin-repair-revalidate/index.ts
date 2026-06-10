@@ -182,21 +182,29 @@ Deno.serve(async (req) => {
 
     const correctCategory = poolFromTrueCategory(destProduct.category, destProduct.slug);
     const storedCategory = (row.details as any)?.replacement_category as string | undefined;
+    const species = speciesFromProduct(destProduct.category, destProduct.slug);
 
-    // If stored matches correct, leave alone.
-    if (storedCategory && normaliseCategoryKey(storedCategory) === correctCategory) continue;
-
-    // Mismatch detected.
     const draftId = (row.details as any)?.replacement_draft_id;
     const draft = draftId ? draftById.get(draftId) : null;
+
+    const draftText = `${draft?.pin_title || ""} ${draft?.overlay_text || ""}`;
+    const draftSpeciesBad = draft ? speciesConflict(draftText, species) : false;
+    const categoryBad = !storedCategory || normaliseCategoryKey(storedCategory) !== correctCategory;
+
+    // If category AND species both already correct, leave it.
+    if (!categoryBad && !draftSpeciesBad) continue;
 
     mismatches.push({
       queue_id: row.id,
       pinterest_pin_id: row.pinterest_pin_id,
       destination_slug: destSlug,
       destination_true_category: destProduct.category,
+      destination_species: species,
       stored_replacement_category: storedCategory ?? null,
       correct_pool_category: correctCategory,
+      reason: categoryBad ? "category_mismatch" : "species_mismatch",
+      old_headline: draft?.pin_title ?? null,
+      old_overlay: draft?.overlay_text ?? null,
       old_draft_id: draftId ?? null,
     });
 
@@ -208,21 +216,25 @@ Deno.serve(async (req) => {
         .from("pinterest_pin_queue")
         .update({
           status: "rejected",
-          rejection_reason: `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`,
+          rejection_reason: categoryBad
+            ? `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`
+            : `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`,
         })
         .eq("id", draftId);
     }
     rejected++;
 
     // Regenerate using the CORRECT category, with destination-product as ground truth.
-    const headline = pickFresh(guard, correctCategory, "headline");
-    const cta = pickFresh(guard, correctCategory, "cta");
-    const hook = pickFresh(guard, correctCategory, "hook");
-    const angle = pickFresh(guard, correctCategory, "angle");
-    const benefit = pickFresh(guard, correctCategory, "benefit");
+    const headline = pickFresh(guard, correctCategory, "headline", species);
+    const cta = pickFresh(guard, correctCategory, "cta", species);
+    const hook = pickFresh(guard, correctCategory, "hook", species);
+    const angle = pickFresh(guard, correctCategory, "angle", species);
+    const benefit = pickFresh(guard, correctCategory, "benefit", species);
 
     if (!headline || !cta) { skippedPoolExhausted++; continue; }
-    if (containsBanned(`${headline} ${cta} ${hook || ""}`)) { skippedPoolExhausted++; continue; }
+    const combined = `${headline} ${cta} ${hook || ""} ${angle || ""} ${benefit || ""}`;
+    if (containsBanned(combined)) { skippedPoolExhausted++; continue; }
+    if (speciesConflict(combined, species)) { skippedPoolExhausted++; continue; }
 
     const candidate = { headline, cta, hook, angle, benefit };
     const evalRes = guard.evaluate(candidate, correctCategory);
