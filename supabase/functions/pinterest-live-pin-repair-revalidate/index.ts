@@ -17,33 +17,46 @@ const BANNED_PHRASES = [
 ];
 
 // Generic CTA verbs/openers that read like ad-template filler instead of
-// product-specific benefit copy. Matched at the START of the line (case-insensitive)
-// so "Find your calm" is rejected but "Calm rides, every time" is fine.
+// product-specific benefit copy. Matched ANYWHERE in the overlay (word-boundary,
+// case-insensitive) — including after the "•" bullet — so "...• Shop the bed"
+// and "...• See sizes" are now rejected, not only line-start filler.
 const GENERIC_CTA_PATTERNS: RegExp[] = [
-  /^\s*see the\b/i,
-  /^\s*shop the\b/i,
-  /^\s*shop\b/i,
-  /^\s*compare\b/i,
-  /^\s*take the\b/i,
-  /^\s*claim the\b/i,
-  /^\s*claim\b/i,
-  /^\s*reserve\b/i,
-  /^\s*find\b/i,
-  /^\s*build\b/i,
-  /^\s*tour\b/i,
-  /^\s*pick\b/i,
-  /^\s*get the\b/i,
-  /^\s*grab\b/i,
-  /^\s*explore\b/i,
-  /^\s*discover\b/i,
+  // verbs (any position)
+  /\bsee the\b/i,
+  /\bsee (sizes?|styles?|heights?|colors?|options?|more)\b/i,
+  /\bshop the\b/i,
+  /\bshop (bed|now|today|here)\b/i,
+  /\bshop\b/i,
+  /\bcompare\b/i,
+  /\btake the\b/i,
+  /\bclaim the\b/i,
+  /\bclaim\b/i,
+  /\breserve\b/i,
+  /\bfind\b/i,
+  /\bbuild\b/i,
+  /\btour\b/i,
+  /\bpick\b/i,
+  /\bget the\b/i,
+  /\bgrab\b/i,
+  /\bexplore\b/i,
+  /\bdiscover\b/i,
+  /\blearn more\b/i,
+  /\btrain calmly\b/i,
+  /\bsave the couch\b/i,
 ];
 
 function containsGenericCta(text: string): string | null {
-  const lines = String(text || "").split(/[•\n\r]+/);
-  for (const line of lines) {
+  const full = String(text || "");
+  // 1) scan each bullet/line segment so we still catch start-of-segment fillers
+  const segments = full.split(/[•\n\r]+/);
+  for (const seg of segments) {
     for (const re of GENERIC_CTA_PATTERNS) {
-      if (re.test(line)) return line.trim().slice(0, 80);
+      if (re.test(seg)) return seg.trim().slice(0, 80);
     }
+  }
+  // 2) scan the WHOLE string (covers patterns that straddle a bullet)
+  for (const re of GENERIC_CTA_PATTERNS) {
+    if (re.test(full)) return full.trim().slice(0, 80);
   }
   return null;
 }
