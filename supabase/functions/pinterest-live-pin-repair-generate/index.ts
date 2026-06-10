@@ -176,14 +176,19 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      await supabase
+      const { error: updErr } = await supabase
         .from("pinterest_live_pin_repair_queue")
         .update({
-          status: "replacement_drafted",
-          details: { ...((row as any).details || {}), replacement_draft_id: ins!.id, replacement_category: category, replacement_variety_score: variety.total },
+          status: "done",
+          details: { ...((row as any).details || {}), replacement_draft_id: ins!.id, replacement_category: category, replacement_variety_score: variety.total, drafted_at: new Date().toISOString() },
           updated_at: new Date().toISOString(),
         })
         .eq("id", row.id);
+      if (updErr) {
+        return new Response(JSON.stringify({ ok: false, error: `repair_update: ${updErr.message}`, drafted }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     guard.register(final, category);
