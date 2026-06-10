@@ -20,6 +20,13 @@
 //   ✓ Never exceed per-board daily cap (default 3 pins/board/day)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  pickUsKeywords,
+  pickUsState,
+  detectNicheLite,
+  US_SHARE_FLOOR,
+  US_SHARE_TARGET,
+} from "../_shared/pinterest-us-keywords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,6 +87,81 @@ function categoryKey(c: string | null): string {
   return (c ?? "uncategorized").toLowerCase().trim();
 }
 
+// ===== US traffic intelligence =====
+// Rolls up last-30d Pinterest-attributed visits from `visitor_activity`,
+// excluding internal/dev traffic, returning US share per product and per board.
+interface UsShares {
+  byProduct: Map<string, number>;  // product_id → us share 0..1
+  byBoard: Map<string, number>;    // board_id   → us share 0..1
+  overall: number;                 // overall us share 0..1
+  sampleSize: number;
+}
+
+async function computeUsShares(sb: ReturnType<typeof createClient>): Promise<UsShares> {
+  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data: rows } = await sb
+    .from("visitor_activity")
+    .select("country,product_id,page_path,utm_source,is_internal,created_at")
+    .gte("created_at", since)
+    .ilike("utm_source", "%pinterest%")
+    .eq("is_internal", false)
+    .limit(50_000);
+
+  const productCounts = new Map<string, { us: number; total: number }>();
+  const pagePathCounts = new Map<string, { us: number; total: number }>();
+  let usAll = 0; let totAll = 0;
+
+  for (const r of (rows ?? []) as Array<{ country: string | null; product_id: string | null; page_path: string | null }>) {
+    const isUs = (r.country ?? "").toLowerCase().startsWith("united states") || (r.country ?? "").toUpperCase() === "US";
+    totAll++; if (isUs) usAll++;
+    if (r.product_id) {
+      const cur = productCounts.get(r.product_id) ?? { us: 0, total: 0 };
+      cur.total++; if (isUs) cur.us++;
+      productCounts.set(r.product_id, cur);
+    }
+    if (r.page_path) {
+      const cur = pagePathCounts.get(r.page_path) ?? { us: 0, total: 0 };
+      cur.total++; if (isUs) cur.us++;
+      pagePathCounts.set(r.page_path, cur);
+    }
+  }
+
+  const byProduct = new Map<string, number>();
+  for (const [pid, c] of productCounts) {
+    if (c.total >= 3) byProduct.set(pid, c.us / c.total);
+  }
+
+  // Board-level US share: aggregate via pin_queue rows that hit those products.
+  const productIds = [...productCounts.keys()];
+  const byBoard = new Map<string, number>();
+  if (productIds.length) {
+    const { data: pq } = await sb
+      .from("pinterest_pin_queue")
+      .select("board_id,product_id")
+      .in("product_id", productIds.slice(0, 1000))
+      .not("board_id", "is", null)
+      .limit(20_000);
+    const boardAgg = new Map<string, { us: number; total: number }>();
+    for (const r of (pq ?? []) as Array<{ board_id: string; product_id: string }>) {
+      const pc = productCounts.get(r.product_id);
+      if (!pc) continue;
+      const cur = boardAgg.get(r.board_id) ?? { us: 0, total: 0 };
+      cur.us += pc.us; cur.total += pc.total;
+      boardAgg.set(r.board_id, cur);
+    }
+    for (const [bid, c] of boardAgg) {
+      if (c.total >= 5) byBoard.set(bid, c.us / c.total);
+    }
+  }
+
+  return {
+    byProduct,
+    byBoard,
+    overall: totAll > 0 ? usAll / totAll : 0,
+    sampleSize: totAll,
+  };
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -105,8 +187,8 @@ interface Product {
   is_duplicate?: boolean | null;
 }
 
-function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): number {
-  // 0–140 composite — biased toward revenue + ATC + margin
+function scoreProduct(p: Product, perfBoost: number, revenueBoost: number, usBoost: number): number {
+  // 0–170 composite — biased toward revenue + ATC + margin + US share
   let s = 0;
   // image (0–20)
   const imgCount = (p.images?.length ?? 0) + (p.image_url ? 1 : 0);
@@ -125,10 +207,12 @@ function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): numb
   s += Math.min(perfBoost, 25);
   // revenue / ATC / purchase signal (0–50) — the dominant lever
   s += Math.min(revenueBoost, 50);
+  // US share boost (0–30): heavily reward products that already convert US visitors.
+  s += Math.min(Math.max(usBoost, 0), 30);
   return s;
 }
 
-async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<{ products: Product[]; forcePromoted: string[]; excluded: string[] }> {
+async function selectProducts(sb: ReturnType<typeof createClient>, limit: number, usShares: UsShares) {
   // Pull active products with images and slug
   const { data, error } = await sb
     .from("products")
@@ -213,6 +297,8 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
           p,
           Math.min(perfByProduct.get(p.id) ?? 0, 25),
           Math.min(revByProduct.get(p.id) ?? 0, 50),
+          // usBoost: scale 0..1 share into 0..30 — products with no signal get 0.
+          (usShares.byProduct.get(p.id) ?? 0) * 30,
         ) + (forcePromote.has(p.id) ? 40 : 0),
     }))
     .sort((a, b) => b.score - a.score);
@@ -238,10 +324,15 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     excluded: [...excluded],
     categoryThrottled: throttled,
     categoryDistribution: Object.fromEntries(catCounts),
+    usSharesByPickedProduct: Object.fromEntries(
+      finalPicks.map((p) => [p.slug, Number(((usShares.byProduct.get(p.id) ?? 0) * 100).toFixed(1))]),
+    ),
   };
 }
 
-async function callCreativeDirector(slug: string, count: number): Promise<{ ok: boolean; drafts: number; error?: string }> {
+async function callCreativeDirector(slug: string, count: number, usHints?: {
+  us_focus?: boolean; us_keywords?: string[]; us_state?: string; niche?: string;
+}): Promise<{ ok: boolean; drafts: number; error?: string }> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
       method: "POST",
@@ -249,7 +340,7 @@ async function callCreativeDirector(slug: string, count: number): Promise<{ ok: 
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
-      body: JSON.stringify({ action: "run_full", slug, count }),
+      body: JSON.stringify({ action: "run_full", slug, count, ...(usHints ?? {}) }),
     });
     const j = await res.json().catch(() => ({}));
     return { ok: res.ok && (j.ok ?? true), drafts: j.inserted ?? j.accepted ?? 0, error: j.error };
@@ -258,7 +349,12 @@ async function callCreativeDirector(slug: string, count: number): Promise<{ ok: 
   }
 }
 
-async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoardCap: number, scoreThreshold: number) {
+async function autoApproveSafeDrafts(
+  sb: ReturnType<typeof createClient>,
+  perBoardCap: number,
+  scoreThreshold: number,
+  usShares: UsShares,
+) {
   // Pull recent drafts on production boards
   const { data: boards } = await sb
     .from("pinterest_boards")
@@ -272,13 +368,27 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
       .filter((b: { name: string }) => isGenericBoard(b.name))
       .map((b: { id: string }) => b.id),
   );
+  // US filter: boards routing <FLOOR US traffic are demoted to last-resort.
+  // Boards with no signal yet (not in shares map) are treated as neutral.
+  const lowUsBoardIds = new Set<string>(
+    [...prodIds].filter((id) => {
+      const s = usShares.byBoard.get(id);
+      return s !== undefined && s < US_SHARE_FLOOR;
+    }),
+  );
 
-  const { data: drafts } = await sb
+  const { data: draftsRaw } = await sb
     .from("pinterest_pin_queue")
-    .select("id,board_id,board_name,product_id,pin_image_url,destination_link,pin_title,overlay_text,meta")
+    .select("id,board_id,board_name,product_id,product_slug,product_name,pin_image_url,destination_link,pin_title,overlay_text,meta")
     .eq("status", "draft")
     .order("created_at", { ascending: false })
     .limit(200);
+  // Sort drafts so high-US-share boards are approved first within the per-board cap.
+  const drafts = ((draftsRaw ?? []) as Array<{ board_id: string | null }>).slice().sort((a, b) => {
+    const sa: number = a.board_id ? (usShares.byBoard.get(a.board_id) ?? 0) : 0;
+    const sb2: number = b.board_id ? (usShares.byBoard.get(b.board_id) ?? 0) : 0;
+    return sb2 - sa;
+  });
 
   // Today's per-board count
   const startToday = new Date(`${todayIso()}T00:00:00Z`).toISOString();
@@ -300,11 +410,13 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
   let skippedTitle = 0;
   let skippedOverlay = 0;
   let skippedGeneric = 0;
+  let skippedLowUs = 0;
   const rejectedTitles: string[] = [];
   const rejectedOverlays: string[] = [];
 
-  for (const d of (drafts ?? []) as Array<{
-    id: string; board_id: string | null; board_name: string | null; product_id: string | null;
+  for (const d of drafts as Array<{
+    id: string; board_id: string | null; board_name: string | null;
+    product_id: string | null; product_slug: string | null; product_name: string | null;
     pin_image_url: string | null; destination_link: string | null;
     pin_title: string | null; overlay_text: string | null;
     meta: Record<string, unknown> | null;
@@ -315,6 +427,20 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     if (d.product_id) {
       const { data: prod } = await sb.from("products").select("is_active").eq("id", d.product_id).maybeSingle();
       if (!prod || !(prod as { is_active: boolean }).is_active) { skippedSafety++; continue; }
+    }
+    // V3 US filter: low-US-share boards are last-resort when other boards still have capacity.
+    if (lowUsBoardIds.has(d.board_id)) {
+      const altAvailable = [...prodIds].some(
+        (id) => !lowUsBoardIds.has(id) && !genericBoardIds.has(id) && (byBoardToday.get(id) ?? 0) < perBoardCap,
+      );
+      if (altAvailable) {
+        await sb.from("pinterest_pin_queue").update({
+          status: "archived",
+          rejection_reason: `v3-us: board us_share ${(usShares.byBoard.get(d.board_id) ?? 0).toFixed(2)} < ${US_SHARE_FLOOR}`,
+        }).eq("id", d.id);
+        skippedLowUs++;
+        continue;
+      }
     }
     // V2 Phase 2: demote generic boards — only allow if every non-generic board is at cap.
     if (genericBoardIds.has(d.board_id)) {
@@ -360,11 +486,38 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     // Per-board cap
     const used = byBoardToday.get(d.board_id) ?? 0;
     if (used >= perBoardCap) { skippedCap++; continue; }
-    // Approve
+    // Approve — stamp US targeting metadata so the publisher can attach
+    // US-focused keywords / state hint to the Pinterest API call.
+    const seed = d.product_slug ?? d.product_id ?? d.id;
+    const usKeywords = pickUsKeywords({
+      name: d.product_name, slug: d.product_slug, category: null,
+    });
+    const usState = pickUsState(seed);
+    const niche = detectNicheLite({ name: d.product_name, slug: d.product_slug, category: null });
+    const boardUsShare = usShares.byBoard.get(d.board_id) ?? null;
+    const productUsShare = d.product_id ? (usShares.byProduct.get(d.product_id) ?? null) : null;
+    const usAudienceScore = Math.round(
+      ((boardUsShare ?? usShares.overall) * 60 + (productUsShare ?? usShares.overall) * 40) * 100,
+    );
+    const nextMeta = {
+      ...(d.meta ?? {}),
+      us_focus: true,
+      us_keywords: usKeywords,
+      us_state_focus: usState,
+      us_board_share: boardUsShare,
+      us_product_share: productUsShare,
+      niche_detected: niche,
+    };
     const scheduled = new Date(Date.now() + (approved * 12 + 5) * 60_000).toISOString();
     const { error } = await sb
       .from("pinterest_pin_queue")
-      .update({ status: "ready_to_post", approved_at: new Date().toISOString(), scheduled_at: scheduled })
+      .update({
+        status: "ready_to_post",
+        approved_at: new Date().toISOString(),
+        scheduled_at: scheduled,
+        meta: nextMeta,
+        us_audience_score: usAudienceScore,
+      })
       .eq("id", d.id);
     if (!error) {
       approved++;
@@ -380,6 +533,8 @@ async function autoApproveSafeDrafts(sb: ReturnType<typeof createClient>, perBoa
     skippedTitle,
     skippedOverlay,
     skippedGeneric,
+    skippedLowUs,
+    boardsBelowUsFloor: lowUsBoardIds.size,
     rejectedTitleSamples: rejectedTitles.slice(0, 5),
     rejectedOverlaySamples: rejectedOverlays.slice(0, 5),
   };
@@ -593,6 +748,13 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
   const rpm30 = totals30.impressions > 0 ? (totals30.revenue / 100) / (totals30.impressions / 1000) : 0;
   const rpc30 = totals30.clicks > 0 ? (totals30.revenue / 100) / totals30.clicks : 0;
 
+  // US-share snapshot for the dashboard.
+  const usShares = await computeUsShares(sb);
+  const usByBoardTop = [...usShares.byBoard.entries()]
+    .map(([id, share]) => ({ id, share: Number(share.toFixed(3)) }))
+    .sort((a, b) => b.share - a.share)
+    .slice(0, 20);
+
   return {
     today: { published: publishedToday ?? 0 },
     pipeline: { drafts: draftsCount ?? 0, ready: readyCount ?? 0 },
@@ -602,6 +764,15 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     topProducts,
     revenue30d: { revenue: Math.round(revenue30 * 100) / 100, orders: orders30 },
     productionBoards: prodBoards ?? 0,
+    usTraffic: {
+      overall_share: Number(usShares.overall.toFixed(3)),
+      target: US_SHARE_TARGET,
+      floor: US_SHARE_FLOOR,
+      sample_size: usShares.sampleSize,
+      board_count_tracked: usShares.byBoard.size,
+      product_count_tracked: usShares.byProduct.size,
+      top_us_boards: usByBoardTop,
+    },
     revenue: {
       last7d: {
         revenue_usd: Math.round(totals7.revenue) / 100,
@@ -677,28 +848,43 @@ Deno.serve(async (req) => {
         return json({ ok: false, traceId, error: "NO_PRODUCTION_BOARDS — safety halt" }, 412);
       }
 
-      const selection = await selectProducts(sb, productsPerRun);
+      const usShares = await computeUsShares(sb);
+      const selection = await selectProducts(sb, productsPerRun, usShares);
       const products = selection.products;
       const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
       for (const p of products) {
-        const r = await callCreativeDirector(p.slug, variantsPerProduct);
+        const r = await callCreativeDirector(p.slug, variantsPerProduct, {
+          us_focus: true,
+          us_keywords: pickUsKeywords(p),
+          us_state: pickUsState(p.slug),
+          niche: detectNicheLite(p),
+        });
         generation.push({ slug: p.slug, ...r });
       }
 
-      const approval = await autoApproveSafeDrafts(sb, perBoardCap, scoreThreshold);
+      const approval = await autoApproveSafeDrafts(sb, perBoardCap, scoreThreshold, usShares);
       const retire = await retirePoorPerformers(sb);
 
       const report = {
         ok: true,
         traceId,
         ranAt: new Date().toISOString(),
-        version: "v2",
+        version: "v3-us",
         productsSelected: products.length,
         productSlugs: products.map((p) => p.slug),
         forcePromoted: selection.forcePromoted,
         excludedProductCount: selection.excluded.length,
         categoryThrottled: selection.categoryThrottled,
         categoryDistribution: selection.categoryDistribution,
+        usSharesByPickedProduct: selection.usSharesByPickedProduct,
+        usIntelligence: {
+          overallUsShare: Number(usShares.overall.toFixed(3)),
+          sampleSize: usShares.sampleSize,
+          target: US_SHARE_TARGET,
+          floor: US_SHARE_FLOOR,
+          boardsTracked: usShares.byBoard.size,
+          productsTracked: usShares.byProduct.size,
+        },
         generation,
         totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
         approval,
@@ -713,6 +899,8 @@ Deno.serve(async (req) => {
           maxOverlayWords: 6,
           bannedOverlayPhrases: BANNED_OVERLAY_PHRASES,
           demotedGenericBoards: [...GENERIC_BOARDS],
+          usShareFloor: US_SHARE_FLOOR,
+          usShareTarget: US_SHARE_TARGET,
         },
       };
 
