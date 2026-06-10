@@ -18,6 +18,26 @@ const BANNED_PHRASES = [
 
 const POOL_CATEGORIES = ["cat_trees", "carriers", "dog_beds", "litter", "toys", "cat_essentials"] as const;
 type PoolCategory = typeof POOL_CATEGORIES[number];
+type Species = "cat" | "dog" | "any";
+
+function speciesFromProduct(trueCategory: string | null | undefined, slug: string): Species {
+  const c = (trueCategory || "").toLowerCase();
+  const s = (slug || "").toLowerCase();
+  if (/cat|kitten|litter/.test(c)) return "cat";
+  if (/dog|puppy/.test(c)) return "dog";
+  if (/\bcat\b|kitten|litter|sisal|scratch/.test(s)) return "cat";
+  if (/\bdog\b|puppy|canine/.test(s)) return "dog";
+  return "any";
+}
+
+// Reject copy text that names the WRONG species for the destination product.
+function speciesConflict(text: string, species: Species): boolean {
+  if (species === "any") return false;
+  const t = (text || "").toLowerCase();
+  if (species === "cat" && /\b(dog|dogs|puppy|puppies|canine)\b/.test(t)) return true;
+  if (species === "dog" && /\b(cat|cats|kitten|kittens|feline)\b/.test(t)) return true;
+  return false;
+}
 
 // Map a product's REAL (Shopify-style) category name to a creative-pool bucket.
 // This is destination-product driven — it ignores any audit category_key.
@@ -65,13 +85,23 @@ function containsBanned(text: string): string | null {
   return null;
 }
 
-function pickFresh(guard: DiversityGuard, category: PoolCategory, type: "headline" | "cta" | "hook" | "angle" | "benefit"): string | null {
-  const v = guard.pickFromPool(category, type);
-  if (!v) return null;
-  if (type === "headline" || type === "cta" || type === "hook") {
-    if (containsBanned(v)) return null;
+function pickFresh(
+  guard: DiversityGuard,
+  category: PoolCategory,
+  type: "headline" | "cta" | "hook" | "angle" | "benefit",
+  species: Species,
+): string | null {
+  // Try up to 12 times to land a species-appropriate, non-banned pick.
+  for (let i = 0; i < 12; i++) {
+    const v = guard.pickFromPool(category, type);
+    if (!v) return null;
+    if (type === "headline" || type === "cta" || type === "hook") {
+      if (containsBanned(v)) continue;
+    }
+    if (speciesConflict(v, species)) continue;
+    return v;
   }
-  return v;
+  return null;
 }
 
 Deno.serve(async (req) => {
