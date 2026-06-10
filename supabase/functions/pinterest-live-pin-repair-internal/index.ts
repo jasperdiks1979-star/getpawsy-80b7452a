@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
   const body: any = await req.json().catch(() => ({}));
   const batch = Math.min(Math.max(Number(body?.batch) || 10, 1), 25);
   const maxBatches = Math.min(Math.max(Number(body?.maxBatches) || 1, 1), 20);
+  const targetIds: string[] | null = Array.isArray(body?.ids) && body.ids.length > 0 ? body.ids.map(String) : null;
 
   const { data: conn } = await sb.from("pinterest_connection").select("access_token")
     .eq("status", "connected").order("updated_at", { ascending: false }).limit(1).maybeSingle();
@@ -55,17 +56,24 @@ Deno.serve(async (req) => {
   let processed = 0, succeeded = 0, failed = 0, deleted = 0;
 
   for (let bi = 0; bi < maxBatches; bi++) {
-    const { data: pool } = await sb
+    let query = sb
       .from("pinterest_live_pin_repair_queue")
       .select("id, pin_queue_id, pinterest_pin_id, board_name, overlay_text, pin_title, destination_link, details, violation_types, updated_at")
       .eq("recommended_action", "replace")
       .eq("severity", "critical")
       .eq("status", "done")
-      .not("pinterest_pin_id", "is", null)
-      .order("updated_at", { ascending: true })
-      .limit(200);
+      .not("pinterest_pin_id", "is", null);
+    if (targetIds) query = query.in("id", targetIds);
+    const { data: pool } = await query.order("updated_at", { ascending: true }).limit(200);
     const eligible = (pool ?? [])
-      .filter((r: any) => r.details?.replacement_draft_id && !r.details?.execution)
+      .filter((r: any) => {
+        if (!r.details?.replacement_draft_id) return false;
+        const exec = r.details?.execution;
+        if (!exec) return true;
+        // Allow retry of throttled / publish_failed rows with no new_pin_id
+        if (exec.publish_failed === true && !exec.new_pin_id) return true;
+        return false;
+      })
       .sort((a: any, b: any) => (b.violation_types?.length ?? 0) - (a.violation_types?.length ?? 0))
       .slice(0, batch);
     if (eligible.length === 0) break;
@@ -127,6 +135,7 @@ Deno.serve(async (req) => {
         entry.error = `HTTP ${pub.status}: ${pub.body?.message || JSON.stringify(pub.body).slice(0, 200)}`;
         await stamp({ executed_at: new Date().toISOString(), publish_failed: true, error: entry.error, board_id: boardId });
         failed++; report.push(entry); continue;
+        // (unreachable — kept for clarity)
       }
       const newPinId = String(pub.body.id);
       entry.new_pin_id = newPinId;
@@ -164,7 +173,17 @@ Deno.serve(async (req) => {
         verified: entry.verified, deleted: entry.deleted, board_id: boardId,
       });
       report.push(entry);
-      await new Promise((r) => setTimeout(r, 500));
+      // Generous spacing to avoid Pinterest spam throttle (HTTP 429)
+      await new Promise((r) => setTimeout(r, 4000));
+    }
+    // Hard-stop on any 429 in the batch — do not loop further
+    if (report.some((r) => r.status === "publish_failed" && /HTTP 429/.test(r.error || ""))) {
+      return json({
+        ok: true, halted: "rate_limited_429",
+        processed, succeeded, failed, deleted,
+        pinterest_urls: report.filter(r => r.new_pin_id).map(r => `https://www.pinterest.com/pin/${r.new_pin_id}/`),
+        failures: report.filter(r => r.status === "publish_failed" || r.status === "skipped"),
+      });
     }
   }
 
