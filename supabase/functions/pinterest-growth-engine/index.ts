@@ -448,11 +448,13 @@ Deno.serve(async (req) => {
         config: { productsPerRun, variantsPerProduct, perBoardCap, scoreThreshold },
       };
 
-      // Persist run summary
+      // Persist run summary (non-blocking)
       await sb.from("pinterest_evolution_log").insert({
-        event_type: "growth_engine_run",
-        payload: report,
-      }).select().maybeSingle().catch(() => null);
+        decision_type: "growth_engine_run",
+        niche_key: "engine",
+        rationale: `selected ${products.length} products, generated ${report.totalDraftsGenerated} drafts, approved ${approval.approved}`,
+        metrics: report,
+      }).then(() => null, () => null);
 
       return json(report);
     }
