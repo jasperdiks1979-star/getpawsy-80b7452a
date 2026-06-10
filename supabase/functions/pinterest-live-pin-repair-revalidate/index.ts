@@ -271,12 +271,20 @@ Deno.serve(async (req) => {
 
     // Regenerate using the CORRECT category, with destination-product as ground truth.
     const headline = pickFresh(guard, correctCategory, "headline", species);
-    const cta = pickFresh(guard, correctCategory, "cta", species);
     const hook = pickFresh(guard, correctCategory, "hook", species);
     const angle = pickFresh(guard, correctCategory, "angle", species);
     const benefit = pickFresh(guard, correctCategory, "benefit", species);
+    // CTA pool is heavily contaminated with generic verbs; prefer benefit-driven copy.
+    // Try the CTA pool first, but fall back to a fresh benefit pick if it can't yield a
+    // non-generic line — guarantees product-specific overlay copy.
+    let cta = pickFresh(guard, correctCategory, "cta", species);
+    if (!cta || containsGenericCta(cta)) {
+      const alt = pickFresh(guard, correctCategory, "benefit", species);
+      if (alt && !containsGenericCta(alt)) cta = alt;
+    }
 
     if (!headline || !cta) { skippedPoolExhausted++; continue; }
+    if (containsGenericCta(headline) || containsGenericCta(cta)) { skippedPoolExhausted++; continue; }
     const combined = `${headline} ${cta} ${hook || ""} ${angle || ""} ${benefit || ""}`;
     if (containsBanned(combined)) { skippedPoolExhausted++; continue; }
     if (containsGenericCta(`${headline} • ${cta}`)) { skippedPoolExhausted++; continue; }
