@@ -5,7 +5,11 @@ type: feature
 ---
 **Edge function:** `pinterest-revenue-ai` (service-role). Actions: `loop`, `score_visitors`, `rank_opportunities`, `forecast`, `dashboard`. The `loop` action chains the V4 `pinterest-revenue-engine-loop` first, then runs V5 scoring → ranking → forecasting.
 
-**Cron:** `pinterest-revenue-ai-loop-6h` (`45 */6 * * *`, schedule id 124).
+**Crons:**
+- `pinterest-revenue-ai-loop-6h` (`45 */6 * * *`, schedule id 124) — forward 6h optimization loop.
+- `pinterest-revenue-ai-backfill-weekly` (`20 4 * * 1`, schedule id 125) — Monday 04:20 UTC, re-scores trailing 30d of Pinterest `visitor_activity` for accurate geo+intent attribution drift correction.
+
+**Backfill action:** `POST /functions/v1/pinterest-revenue-ai?action=backfill&days=N` (or `&since=...&until=...`). Walks `visitor_activity` filtered to `utm_source ilike '%pinterest%'` day-by-day; for each day deletes existing `pinterest_visitor_revenue_scores` rows in that window then re-inserts fresh scores (idempotent). After the walk, re-runs `rankOpportunities` + `forecast` so dashboards reflect the corrected history. `days` clamped to 1–365, per-day limit 20k rows.
 
 **Tables:**
 - `pinterest_visitor_revenue_scores` — per-session geo (country/region/city) + board/pin/product/keyword/creative/hook + revenue_score, traffic_quality_score, buyer_intent_score. Source: `visitor_activity` filtered to `utm_source ilike '%pinterest%'`.
