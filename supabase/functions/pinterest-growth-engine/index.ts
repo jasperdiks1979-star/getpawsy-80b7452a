@@ -117,11 +117,15 @@ async function computeUsShares(sb: ReturnType<typeof createClient>): Promise<UsS
   let usAll = 0; let totAll = 0;
 
   for (const r of (rows ?? []) as Array<{ country: string | null; product_id: string | null; page_path: string | null }>) {
+    const w = countryWeight(r.country);
+    totAll += 1;
+    // Tier-1 weighted "US-equivalent" credit: US=1.0, CA=0.6, AU=0.4, other=0.1.
+    usAll += w;
     const isUs = (r.country ?? "").toLowerCase().startsWith("united states") || (r.country ?? "").toUpperCase() === "US";
-    totAll++; if (isUs) usAll++;
     if (r.product_id) {
       const cur = productCounts.get(r.product_id) ?? { us: 0, total: 0 };
-      cur.total++; if (isUs) cur.us++;
+      cur.total += 1;
+      cur.us += w;
       productCounts.set(r.product_id, cur);
     }
     if (r.page_path) {
