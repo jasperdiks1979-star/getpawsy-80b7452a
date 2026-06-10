@@ -832,28 +832,43 @@ Deno.serve(async (req) => {
         return json({ ok: false, traceId, error: "NO_PRODUCTION_BOARDS — safety halt" }, 412);
       }
 
-      const selection = await selectProducts(sb, productsPerRun);
+      const usShares = await computeUsShares(sb);
+      const selection = await selectProducts(sb, productsPerRun, usShares);
       const products = selection.products;
       const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
       for (const p of products) {
-        const r = await callCreativeDirector(p.slug, variantsPerProduct);
+        const r = await callCreativeDirector(p.slug, variantsPerProduct, {
+          us_focus: true,
+          us_keywords: pickUsKeywords(p),
+          us_state: pickUsState(p.slug),
+          niche: detectNicheLite(p),
+        });
         generation.push({ slug: p.slug, ...r });
       }
 
-      const approval = await autoApproveSafeDrafts(sb, perBoardCap, scoreThreshold);
+      const approval = await autoApproveSafeDrafts(sb, perBoardCap, scoreThreshold, usShares);
       const retire = await retirePoorPerformers(sb);
 
       const report = {
         ok: true,
         traceId,
         ranAt: new Date().toISOString(),
-        version: "v2",
+        version: "v3-us",
         productsSelected: products.length,
         productSlugs: products.map((p) => p.slug),
         forcePromoted: selection.forcePromoted,
         excludedProductCount: selection.excluded.length,
         categoryThrottled: selection.categoryThrottled,
         categoryDistribution: selection.categoryDistribution,
+        usSharesByPickedProduct: selection.usSharesByPickedProduct,
+        usIntelligence: {
+          overallUsShare: Number(usShares.overall.toFixed(3)),
+          sampleSize: usShares.sampleSize,
+          target: US_SHARE_TARGET,
+          floor: US_SHARE_FLOOR,
+          boardsTracked: usShares.byBoard.size,
+          productsTracked: usShares.byProduct.size,
+        },
         generation,
         totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
         approval,
@@ -868,6 +883,8 @@ Deno.serve(async (req) => {
           maxOverlayWords: 6,
           bannedOverlayPhrases: BANNED_OVERLAY_PHRASES,
           demotedGenericBoards: [...GENERIC_BOARDS],
+          usShareFloor: US_SHARE_FLOOR,
+          usShareTarget: US_SHARE_TARGET,
         },
       };
 
