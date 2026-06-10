@@ -12623,6 +12623,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_variants: {
+        Row: {
+          created_at: string
+          id: string
+          impressions: number
+          kind: string
+          product_id: string
+          score: number
+          source: string
+          text: string
+          updated_at: string
+          wins: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          impressions?: number
+          kind: string
+          product_id: string
+          score?: number
+          source?: string
+          text: string
+          updated_at?: string
+          wins?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          impressions?: number
+          kind?: string
+          product_id?: string
+          score?: number
+          source?: string
+          text?: string
+          updated_at?: string
+          wins?: number
+        }
+        Relationships: []
+      }
       pinterest_creative_winners: {
         Row: {
           composite_score: number
@@ -13372,6 +13411,69 @@ export type Database = {
           pattern_id?: string
           sample_size?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_pdp_conversion_stats: {
+        Row: {
+          atc: number
+          atc_rate: number
+          avg_scroll_pct: number
+          checkout: number
+          checkout_rate: number
+          created_at: string
+          day: string
+          exit_rate: number
+          gallery_opens: number
+          id: string
+          pinterest_clicks: number
+          product_id: string
+          product_slug: string | null
+          purchase_rate: number
+          purchases: number
+          updated_at: string
+          verdict: string
+          views: number
+        }
+        Insert: {
+          atc?: number
+          atc_rate?: number
+          avg_scroll_pct?: number
+          checkout?: number
+          checkout_rate?: number
+          created_at?: string
+          day: string
+          exit_rate?: number
+          gallery_opens?: number
+          id?: string
+          pinterest_clicks?: number
+          product_id: string
+          product_slug?: string | null
+          purchase_rate?: number
+          purchases?: number
+          updated_at?: string
+          verdict?: string
+          views?: number
+        }
+        Update: {
+          atc?: number
+          atc_rate?: number
+          avg_scroll_pct?: number
+          checkout?: number
+          checkout_rate?: number
+          created_at?: string
+          day?: string
+          exit_rate?: number
+          gallery_opens?: number
+          id?: string
+          pinterest_clicks?: number
+          product_id?: string
+          product_slug?: string | null
+          purchase_rate?: number
+          purchases?: number
+          updated_at?: string
+          verdict?: string
+          views?: number
         }
         Relationships: []
       }
@@ -15363,11 +15465,14 @@ export type Database = {
           buyer_intent_score: number | null
           checkout_count: number | null
           city: string | null
+          classification: string | null
           country: string | null
           created_at: string
           creative_style: string | null
           hook_category: string | null
           id: string
+          image_interactions: number | null
+          intent_tier: string | null
           keyword: string | null
           page_views: number | null
           pin_id: string | null
@@ -15375,12 +15480,16 @@ export type Database = {
           product_slug: string | null
           purchase_count: number | null
           region: string | null
+          return_visit: boolean | null
           revenue_cents: number | null
           revenue_score: number | null
+          scroll_depth_max: number | null
           session_key: string
           session_seconds: number | null
           traffic_quality_score: number | null
+          variant_selections: number | null
           visited_at: string
+          visitor_quality_score: number | null
         }
         Insert: {
           atc_count?: number | null
@@ -15388,11 +15497,14 @@ export type Database = {
           buyer_intent_score?: number | null
           checkout_count?: number | null
           city?: string | null
+          classification?: string | null
           country?: string | null
           created_at?: string
           creative_style?: string | null
           hook_category?: string | null
           id?: string
+          image_interactions?: number | null
+          intent_tier?: string | null
           keyword?: string | null
           page_views?: number | null
           pin_id?: string | null
@@ -15400,12 +15512,16 @@ export type Database = {
           product_slug?: string | null
           purchase_count?: number | null
           region?: string | null
+          return_visit?: boolean | null
           revenue_cents?: number | null
           revenue_score?: number | null
+          scroll_depth_max?: number | null
           session_key: string
           session_seconds?: number | null
           traffic_quality_score?: number | null
+          variant_selections?: number | null
           visited_at?: string
+          visitor_quality_score?: number | null
         }
         Update: {
           atc_count?: number | null
@@ -15413,11 +15529,14 @@ export type Database = {
           buyer_intent_score?: number | null
           checkout_count?: number | null
           city?: string | null
+          classification?: string | null
           country?: string | null
           created_at?: string
           creative_style?: string | null
           hook_category?: string | null
           id?: string
+          image_interactions?: number | null
+          intent_tier?: string | null
           keyword?: string | null
           page_views?: number | null
           pin_id?: string | null
@@ -15425,12 +15544,16 @@ export type Database = {
           product_slug?: string | null
           purchase_count?: number | null
           region?: string | null
+          return_visit?: boolean | null
           revenue_cents?: number | null
           revenue_score?: number | null
+          scroll_depth_max?: number | null
           session_key?: string
           session_seconds?: number | null
           traffic_quality_score?: number | null
+          variant_selections?: number | null
           visited_at?: string
+          visitor_quality_score?: number | null
         }
         Relationships: []
       }

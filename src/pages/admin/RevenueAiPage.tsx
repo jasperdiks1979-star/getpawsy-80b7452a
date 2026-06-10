@@ -3,7 +3,8 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, TrendingUp, MapPin, Target, RefreshCw, Play } from "lucide-react";
+import { Loader2, Sparkles, TrendingUp, MapPin, Target, RefreshCw, Play, AlertTriangle, ShieldCheck, Package, Image as ImageIcon, Lightbulb } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 type Dash = {
@@ -15,6 +16,10 @@ type Dash = {
   usDaily?: any[];
   byState?: any[];
   byCity?: any[];
+  trafficQuality?: { counts: Record<string, number>; pct: Record<string, number>; total: number };
+  topProductsByConversion?: any[];
+  topPins?: any[];
+  alerts?: any[];
 };
 
 function fmtCents(c: number) { return `$${(Number(c || 0) / 100).toFixed(2)}`; }
@@ -25,6 +30,7 @@ export default function RevenueAiPage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
 
   async function load() {
     setLoading(true); setErr(null);
@@ -32,6 +38,10 @@ export default function RevenueAiPage() {
       const { data: res, error } = await supabase.functions.invoke("pinterest-revenue-ai", { body: { action: "dashboard" } });
       if (error) throw error;
       setData(res);
+      // Lazy-load opportunities (Phase 7) — not in dashboard payload
+      supabase.functions.invoke("pinterest-revenue-ai", { body: { action: "opportunities", limit: 25 } })
+        .then(({ data: r }) => setOpportunities((r as any)?.opportunities ?? []))
+        .catch(() => { /* non-fatal */ });
     } catch (e: any) { setErr(e?.message || "Failed to load"); }
     finally { setLoading(false); }
   }
@@ -51,6 +61,9 @@ export default function RevenueAiPage() {
 
   const usShare = data?.summary?.usShare ?? 0;
   const usShareTarget = 0.8;
+  const tq = data?.trafficQuality?.pct ?? {};
+  const tqTotal = data?.trafficQuality?.total ?? 0;
+  const humanPct = (tq.verified_user ?? 0) + (tq.probable_user ?? 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -78,7 +91,19 @@ export default function RevenueAiPage() {
       {loading && !data ? (
         <div className="text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
       ) : (
-        <>
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="traffic">Traffic Quality</TabsTrigger>
+            <TabsTrigger value="products">Top Products</TabsTrigger>
+            <TabsTrigger value="pins">Top Pins</TabsTrigger>
+            <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+            <TabsTrigger value="alerts">
+              Alerts {(data?.alerts?.length ?? 0) > 0 ? <span className="ml-1 rounded-full bg-destructive text-destructive-foreground text-[10px] px-1.5">{data?.alerts?.length}</span> : null}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
           {/* Summary cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
@@ -102,6 +127,15 @@ export default function RevenueAiPage() {
                 <div className="text-xs text-muted-foreground mt-1">{data?.forecasts30d?.length ?? 0} entities forecasted</div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Revenue overview (7d, qualified-only) */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <MiniStat label="Qualified visitors 7d" value={(data?.summary as any)?.qualifiedVisitors7d ?? 0} />
+            <MiniStat label="Add to cart" value={(data?.summary as any)?.atc7d ?? 0} />
+            <MiniStat label="Begin checkout" value={(data?.summary as any)?.checkout7d ?? 0} />
+            <MiniStat label="Purchases" value={(data?.summary as any)?.purchases7d ?? 0} />
+            <MiniStat label="Conv. rate" value={pct((data?.summary as any)?.conversionRate7d ?? 0)} />
           </div>
 
           {/* Top winners */}
@@ -141,10 +175,154 @@ export default function RevenueAiPage() {
               </table>
             </CardContent>
           </Card>
-        </>
+          </TabsContent>
+
+          <TabsContent value="traffic" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Traffic Quality (7d, lp_funnel_events)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-muted-foreground mb-3">{tqTotal.toLocaleString()} sessions classified</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <MiniStat label="Verified human" value={`${tq.verified_user ?? 0}%`} />
+                  <MiniStat label="Probable human" value={`${tq.probable_user ?? 0}%`} />
+                  <MiniStat label="Crawler" value={`${tq.crawler ?? 0}%`} />
+                  <MiniStat label="Bot" value={`${tq.bot ?? 0}%`} />
+                  <MiniStat label="Pre-render (Pinterest/FB)" value={`${tq.pre_render ?? 0}%`} />
+                  <MiniStat label="Single bounce" value={`${tq.single_bounce ?? 0}%`} />
+                </div>
+                <div className="mt-4 text-xs text-muted-foreground">
+                  Human share: <span className="font-semibold">{humanPct.toFixed(1)}%</span> · Conversion rate is computed against qualified visitors only.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Package className="h-4 w-4" /> Top Products (14d, qualified traffic only)</CardTitle></CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left border-b"><th className="p-2">Product</th><th className="p-2 text-right">Views</th><th className="p-2 text-right">ATC</th><th className="p-2 text-right">CO</th><th className="p-2 text-right">Pur</th><th className="p-2 text-right">ATC %</th><th className="p-2 text-right">Pur %</th><th className="p-2 text-right">Pin clicks</th><th className="p-2 text-right">Verdict</th></tr></thead>
+                  <tbody>
+                    {(data?.topProductsByConversion ?? []).map((p, i) => (
+                      <tr key={i} className="border-b">
+                        <td className="p-2 text-xs font-mono truncate max-w-[180px]">{p.product_id}</td>
+                        <td className="p-2 text-right">{p.views}</td>
+                        <td className="p-2 text-right">{p.atc}</td>
+                        <td className="p-2 text-right">{p.checkout}</td>
+                        <td className="p-2 text-right">{p.purchases}</td>
+                        <td className="p-2 text-right">{p.atc_rate}%</td>
+                        <td className="p-2 text-right">{p.purchase_rate}%</td>
+                        <td className="p-2 text-right">{p.pinterest_clicks}</td>
+                        <td className="p-2 text-right"><VerdictBadge v={p.verdict} /></td>
+                      </tr>
+                    ))}
+                    {!data?.topProductsByConversion?.length && <tr><td colSpan={9} className="p-4 text-center text-muted-foreground">No PDP stats yet — run loop or aggregate_pdp_stats.</td></tr>}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pins">
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Top Pins</CardTitle></CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left border-b"><th className="p-2">Pin</th><th className="p-2 text-right">Impressions</th><th className="p-2 text-right">Clicks</th><th className="p-2 text-right">Saves</th><th className="p-2 text-right">Outbound</th><th className="p-2 text-right">Conv. score</th></tr></thead>
+                  <tbody>
+                    {(data?.topPins ?? []).map((p, i) => (
+                      <tr key={i} className="border-b">
+                        <td className="p-2 text-xs font-mono truncate max-w-[160px]">{p.pin_id}</td>
+                        <td className="p-2 text-right">{p.impressions ?? 0}</td>
+                        <td className="p-2 text-right">{p.clicks ?? 0}</td>
+                        <td className="p-2 text-right">{p.saves ?? 0}</td>
+                        <td className="p-2 text-right">{p.outbound_clicks ?? 0}</td>
+                        <td className="p-2 text-right">{Math.round(Number(p.conversion_score ?? 0) * 100) / 100}</td>
+                      </tr>
+                    ))}
+                    {!data?.topPins?.length && <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No pin performance data yet.</td></tr>}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="opportunities">
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Lightbulb className="h-4 w-4" /> Pinterest Revenue Opportunities</CardTitle></CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left border-b"><th className="p-2">Product</th><th className="p-2 text-right">Pin clicks</th><th className="p-2 text-right">Views</th><th className="p-2 text-right">ATC %</th><th className="p-2 text-right">Pur %</th><th className="p-2 text-right">Score</th><th className="p-2">Recommendations</th></tr></thead>
+                  <tbody>
+                    {opportunities.map((o, i) => (
+                      <tr key={i} className="border-b align-top">
+                        <td className="p-2 text-xs font-mono truncate max-w-[180px]">{o.product_id}</td>
+                        <td className="p-2 text-right">{o.pinterest_clicks}</td>
+                        <td className="p-2 text-right">{o.views}</td>
+                        <td className="p-2 text-right">{o.atc_rate}%</td>
+                        <td className="p-2 text-right">{o.purchase_rate}%</td>
+                        <td className="p-2 text-right font-semibold">{o.opportunity_score}</td>
+                        <td className="p-2">
+                          <ul className="text-xs list-disc ml-4 space-y-0.5">
+                            {(o.recommendations ?? []).map((r: string, j: number) => <li key={j}>{r}</li>)}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                    {opportunities.length === 0 && <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No opportunities surfaced yet.</td></tr>}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="alerts">
+            <Card>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Active Alerts</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left border-b"><th className="p-2">Severity</th><th className="p-2">Title</th><th className="p-2">Detected</th></tr></thead>
+                  <tbody>
+                    {(data?.alerts ?? []).map((a, i) => (
+                      <tr key={i} className="border-b align-top">
+                        <td className="p-2"><span className={`px-1.5 py-0.5 rounded text-[10px] ${a.severity === "P1" ? "bg-destructive/15 text-destructive" : "bg-amber-500/15 text-amber-700"}`}>{a.severity}</span></td>
+                        <td className="p-2">
+                          <div className="font-medium">{a.title}</div>
+                          <div className="text-xs text-muted-foreground">{a.description}</div>
+                        </td>
+                        <td className="p-2 text-xs text-muted-foreground">{a.last_detected_at ? new Date(a.last_detected_at).toLocaleString() : "—"}</td>
+                      </tr>
+                    ))}
+                    {!data?.alerts?.length && <tr><td colSpan={3} className="p-4 text-center text-muted-foreground">No active alerts. ✓</td></tr>}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
+}
+
+function MiniStat({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="rounded border bg-card p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+function VerdictBadge({ v }: { v: string }) {
+  const cls = v === "pinterest_winner" || v === "winner" ? "bg-emerald-500/15 text-emerald-700"
+    : v === "pinterest_loser" || v === "bounce" ? "bg-destructive/15 text-destructive"
+    : v === "viewed_but_no_atc" ? "bg-amber-500/15 text-amber-700"
+    : "bg-muted";
+  return <span className={`px-1.5 py-0.5 rounded text-[10px] ${cls}`}>{v}</span>;
 }
 
 function RankCard({ title, rows }: { title: string; rows: any[] }) {
