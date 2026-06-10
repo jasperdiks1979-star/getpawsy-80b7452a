@@ -16,6 +16,38 @@ const BANNED_PHRASES = [
   "this changed everything for pet owners",
 ];
 
+// Generic CTA verbs/openers that read like ad-template filler instead of
+// product-specific benefit copy. Matched at the START of the line (case-insensitive)
+// so "Find your calm" is rejected but "Calm rides, every time" is fine.
+const GENERIC_CTA_PATTERNS: RegExp[] = [
+  /^\s*see the\b/i,
+  /^\s*shop the\b/i,
+  /^\s*shop\b/i,
+  /^\s*compare\b/i,
+  /^\s*take the\b/i,
+  /^\s*claim the\b/i,
+  /^\s*claim\b/i,
+  /^\s*reserve\b/i,
+  /^\s*find\b/i,
+  /^\s*build\b/i,
+  /^\s*tour\b/i,
+  /^\s*pick\b/i,
+  /^\s*get the\b/i,
+  /^\s*grab\b/i,
+  /^\s*explore\b/i,
+  /^\s*discover\b/i,
+];
+
+function containsGenericCta(text: string): string | null {
+  const lines = String(text || "").split(/[•\n\r]+/);
+  for (const line of lines) {
+    for (const re of GENERIC_CTA_PATTERNS) {
+      if (re.test(line)) return line.trim().slice(0, 80);
+    }
+  }
+  return null;
+}
+
 const POOL_CATEGORIES = ["cat_trees", "carriers", "dog_beds", "litter", "toys", "cat_essentials"] as const;
 type PoolCategory = typeof POOL_CATEGORIES[number];
 type Species = "cat" | "dog" | "any";
@@ -91,12 +123,13 @@ function pickFresh(
   type: "headline" | "cta" | "hook" | "angle" | "benefit",
   species: Species,
 ): string | null {
-  // Try up to 12 times to land a species-appropriate, non-banned pick.
-  for (let i = 0; i < 12; i++) {
+  // Try up to 60 times to land a species-appropriate, non-banned, non-generic pick.
+  for (let i = 0; i < 60; i++) {
     const v = guard.pickFromPool(category, type);
     if (!v) return null;
     if (type === "headline" || type === "cta" || type === "hook") {
       if (containsBanned(v)) continue;
+      if (containsGenericCta(v)) continue;
     }
     if (speciesConflict(v, species)) continue;
     return v;
@@ -189,10 +222,12 @@ Deno.serve(async (req) => {
 
     const draftText = `${draft?.pin_title || ""} ${draft?.overlay_text || ""}`;
     const draftSpeciesBad = draft ? speciesConflict(draftText, species) : false;
+    const draftGenericBad = draft ? containsGenericCta(draftText) : null;
+    const draftBannedBad = draft ? containsBanned(draftText) : null;
     const categoryBad = !storedCategory || normaliseCategoryKey(storedCategory) !== correctCategory;
 
-    // If category AND species both already correct, leave it.
-    if (!categoryBad && !draftSpeciesBad) continue;
+    // If category, species, generic-CTA and banned-phrase checks all pass, leave it.
+    if (!categoryBad && !draftSpeciesBad && !draftGenericBad && !draftBannedBad) continue;
 
     mismatches.push({
       queue_id: row.id,
@@ -202,7 +237,13 @@ Deno.serve(async (req) => {
       destination_species: species,
       stored_replacement_category: storedCategory ?? null,
       correct_pool_category: correctCategory,
-      reason: categoryBad ? "category_mismatch" : "species_mismatch",
+      reason: categoryBad
+        ? "category_mismatch"
+        : draftSpeciesBad
+        ? "species_mismatch"
+        : draftGenericBad
+        ? `generic_cta:${draftGenericBad}`
+        : `banned_phrase:${draftBannedBad}`,
       old_headline: draft?.pin_title ?? null,
       old_overlay: draft?.overlay_text ?? null,
       old_draft_id: draftId ?? null,
@@ -218,7 +259,11 @@ Deno.serve(async (req) => {
           status: "rejected",
           rejection_reason: categoryBad
             ? `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`
-            : `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`,
+            : draftSpeciesBad
+            ? `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`
+            : draftGenericBad
+            ? `generic_cta_phrase: "${draftGenericBad}"`
+            : `banned_phrase: "${draftBannedBad}"`,
         })
         .eq("id", draftId);
     }
@@ -226,14 +271,23 @@ Deno.serve(async (req) => {
 
     // Regenerate using the CORRECT category, with destination-product as ground truth.
     const headline = pickFresh(guard, correctCategory, "headline", species);
-    const cta = pickFresh(guard, correctCategory, "cta", species);
     const hook = pickFresh(guard, correctCategory, "hook", species);
     const angle = pickFresh(guard, correctCategory, "angle", species);
     const benefit = pickFresh(guard, correctCategory, "benefit", species);
+    // CTA pool is heavily contaminated with generic verbs; prefer benefit-driven copy.
+    // Try the CTA pool first, but fall back to a fresh benefit pick if it can't yield a
+    // non-generic line — guarantees product-specific overlay copy.
+    let cta = pickFresh(guard, correctCategory, "cta", species);
+    if (!cta || containsGenericCta(cta)) {
+      const alt = pickFresh(guard, correctCategory, "benefit", species);
+      if (alt && !containsGenericCta(alt)) cta = alt;
+    }
 
     if (!headline || !cta) { skippedPoolExhausted++; continue; }
+    if (containsGenericCta(headline) || containsGenericCta(cta)) { skippedPoolExhausted++; continue; }
     const combined = `${headline} ${cta} ${hook || ""} ${angle || ""} ${benefit || ""}`;
     if (containsBanned(combined)) { skippedPoolExhausted++; continue; }
+    if (containsGenericCta(`${headline} • ${cta}`)) { skippedPoolExhausted++; continue; }
     if (speciesConflict(combined, species)) { skippedPoolExhausted++; continue; }
 
     const candidate = { headline, cta, hook, angle, benefit };
@@ -332,6 +386,17 @@ Deno.serve(async (req) => {
 
   const preview = (previewRows ?? []).map((r: any) => {
     const d = pdMap.get(r.details?.replacement_draft_id);
+    const destSlug = extractSlugFromUrl(r.destination_link);
+    const destProduct = destSlug ? productBySlug.get(destSlug) : null;
+    const species = destProduct ? speciesFromProduct(destProduct.category, destProduct.slug) : "any";
+    const correctPool = destProduct ? poolFromTrueCategory(destProduct.category, destProduct.slug) : null;
+    const newText = `${d?.pin_title || ""} ${d?.overlay_text || ""}`;
+    const flags = {
+      category_mismatch: !!(correctPool && d?.category_key && normaliseCategoryKey(d.category_key) !== correctPool),
+      species_mismatch: speciesConflict(newText, species),
+      banned_phrase: containsBanned(newText),
+      generic_cta: containsGenericCta(newText),
+    };
     return {
       old_pin_id: r.pinterest_pin_id,
       destination_link: r.destination_link,
@@ -342,8 +407,17 @@ Deno.serve(async (req) => {
       new_headline: d?.pin_title ?? null,
       new_overlay: d?.overlay_text ?? null,
       draft_status: d?.status ?? "missing",
+      verification: flags,
     };
   });
+
+  const verification = {
+    rows: preview.length,
+    category_mismatches: preview.filter((p: any) => p.verification.category_mismatch).length,
+    species_mismatches: preview.filter((p: any) => p.verification.species_mismatch).length,
+    banned_phrases: preview.filter((p: any) => p.verification.banned_phrase).length,
+    generic_cta_phrases: preview.filter((p: any) => p.verification.generic_cta).length,
+  };
 
   return new Response(JSON.stringify({
     ok: true,
@@ -356,5 +430,6 @@ Deno.serve(async (req) => {
     dryRun,
     mismatches: mismatches.slice(0, 50),
     preview,
+    verification,
   }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
