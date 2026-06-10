@@ -27,6 +27,11 @@ import {
   US_SHARE_FLOOR,
   US_SHARE_TARGET,
 } from "../_shared/pinterest-us-keywords.ts";
+import {
+  isPriorityCategory,
+  PRIORITY_CATEGORY_FLOOR,
+  countryWeight,
+} from "../_shared/pinterest-priority-categories.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,11 +117,15 @@ async function computeUsShares(sb: ReturnType<typeof createClient>): Promise<UsS
   let usAll = 0; let totAll = 0;
 
   for (const r of (rows ?? []) as Array<{ country: string | null; product_id: string | null; page_path: string | null }>) {
+    const w = countryWeight(r.country);
+    totAll += 1;
+    // Tier-1 weighted "US-equivalent" credit: US=1.0, CA=0.6, AU=0.4, other=0.1.
+    usAll += w;
     const isUs = (r.country ?? "").toLowerCase().startsWith("united states") || (r.country ?? "").toUpperCase() === "US";
-    totAll++; if (isUs) usAll++;
     if (r.product_id) {
       const cur = productCounts.get(r.product_id) ?? { us: 0, total: 0 };
-      cur.total++; if (isUs) cur.us++;
+      cur.total += 1;
+      cur.us += w;
       productCounts.set(r.product_id, cur);
     }
     if (r.page_path) {
@@ -308,13 +317,42 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   const catCounts = new Map<string, number>();
   const picked: Product[] = [];
   const throttled: string[] = [];
-  for (const { p } of scored) {
-    if (picked.length >= limit) break;
-    const key = categoryKey(p.category);
-    const used = catCounts.get(key) ?? 0;
-    if (used >= maxPerCat) { throttled.push(p.slug); continue; }
-    picked.push(p);
-    catCounts.set(key, used + 1);
+  // V4 Phase 6: PRIORITY CATEGORY FLOOR — at least 70% of the slate must come from
+  // priority categories (smart litter / cat trees / cat furniture / luxury beds / smart gadgets).
+  const priorityTarget = Math.ceil(limit * PRIORITY_CATEGORY_FLOOR);
+  // V4 Phase 3: WINNER AMPLIFICATION — pull product tiers and bias slate 70/25/5.
+  const { data: tierRows } = await sb
+    .from("pinterest_product_tiers")
+    .select("product_id, tier")
+    .in("tier", ["winner", "neutral", "loser"]);
+  const tierMap = new Map<string, "winner" | "neutral" | "loser">();
+  for (const r of (tierRows ?? []) as { product_id: string; tier: "winner" | "neutral" | "loser" }[]) {
+    tierMap.set(r.product_id, r.tier);
+  }
+  const winnerTarget = Math.ceil(limit * 0.70);
+  const neutralTarget = Math.ceil(limit * 0.25);
+  // loser gets the remainder (≈5%).
+  const tierCounts = { winner: 0, neutral: 0, loser: 0, untested: 0 };
+
+  // Pass 1: priority categories first, respecting per-cat cap and tier allocation.
+  for (const pass of [1, 2] as const) {
+    for (const { p } of scored) {
+      if (picked.length >= limit) break;
+      if (picked.includes(p)) continue;
+      const key = categoryKey(p.category);
+      const isPrio = isPriorityCategory(key);
+      if (pass === 1 && !isPrio) continue;
+      if (pass === 2 && picked.length < priorityTarget && isPrio === false) continue;
+      const used = catCounts.get(key) ?? 0;
+      if (used >= maxPerCat && pass === 2) { throttled.push(p.slug); continue; }
+      // Winner/neutral/loser quota
+      const tier = tierMap.get(p.id) ?? "untested";
+      if (tier === "loser" && tierCounts.loser >= Math.max(1, Math.floor(limit * 0.05))) continue;
+      if (tier === "neutral" && tierCounts.neutral >= neutralTarget && tierCounts.winner < winnerTarget) continue;
+      picked.push(p);
+      catCounts.set(key, used + 1);
+      tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
+    }
   }
   const finalPicks = picked;
 
@@ -326,6 +364,10 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     categoryDistribution: Object.fromEntries(catCounts),
     usSharesByPickedProduct: Object.fromEntries(
       finalPicks.map((p) => [p.slug, Number(((usShares.byProduct.get(p.id) ?? 0) * 100).toFixed(1))]),
+    ),
+    tierDistribution: tierCounts,
+    priorityCategoryShare: Number(
+      (finalPicks.filter((p) => isPriorityCategory(categoryKey(p.category))).length / Math.max(1, finalPicks.length)).toFixed(2),
     ),
   };
 }
