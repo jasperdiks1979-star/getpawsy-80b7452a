@@ -430,7 +430,7 @@ async function healthCheck(loopReport?: Json) {
   } else {
     const { count } = await sb.from("pinterest_opportunity_ranks")
       .select("id", { count: "exact", head: true })
-      .gte("updated_at", new Date(Date.now() - 12 * 3600 * 1000).toISOString());
+      .gte("scored_at", new Date(Date.now() - 12 * 3600 * 1000).toISOString());
     if ((count ?? 0) === 0) {
       alerts.push({
         alert_key: KEYS.rank, severity: "P2", category: "pinterest_revenue_ai",
@@ -454,7 +454,7 @@ async function healthCheck(loopReport?: Json) {
   } else {
     const { count } = await sb.from("pinterest_forecasts")
       .select("id", { count: "exact", head: true })
-      .gte("generated_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
+      .gte("computed_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
     if ((count ?? 0) === 0) {
       alerts.push({
         alert_key: KEYS.forecast, severity: "P2", category: "pinterest_revenue_ai",
@@ -529,10 +529,10 @@ async function healthCheck(loopReport?: Json) {
   if (!loopReport) {
     const { data: lastForecast } = await sb
       .from("pinterest_forecasts")
-      .select("generated_at")
-      .order("generated_at", { ascending: false })
+      .select("computed_at")
+      .order("computed_at", { ascending: false })
       .limit(1);
-    const last = lastForecast?.[0]?.generated_at ? new Date(lastForecast[0].generated_at as string).getTime() : 0;
+    const last = lastForecast?.[0]?.computed_at ? new Date(lastForecast[0].computed_at as string).getTime() : 0;
     if (Date.now() - last > 9 * 3600 * 1000) {
       alerts.push({
         alert_key: KEYS.stale, severity: "P1", category: "pinterest_revenue_ai",
