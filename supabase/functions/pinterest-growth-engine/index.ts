@@ -87,6 +87,81 @@ function categoryKey(c: string | null): string {
   return (c ?? "uncategorized").toLowerCase().trim();
 }
 
+// ===== US traffic intelligence =====
+// Rolls up last-30d Pinterest-attributed visits from `visitor_activity`,
+// excluding internal/dev traffic, returning US share per product and per board.
+interface UsShares {
+  byProduct: Map<string, number>;  // product_id → us share 0..1
+  byBoard: Map<string, number>;    // board_id   → us share 0..1
+  overall: number;                 // overall us share 0..1
+  sampleSize: number;
+}
+
+async function computeUsShares(sb: ReturnType<typeof createClient>): Promise<UsShares> {
+  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data: rows } = await sb
+    .from("visitor_activity")
+    .select("country,product_id,page_path,utm_source,is_internal,created_at")
+    .gte("created_at", since)
+    .ilike("utm_source", "%pinterest%")
+    .eq("is_internal", false)
+    .limit(50_000);
+
+  const productCounts = new Map<string, { us: number; total: number }>();
+  const pagePathCounts = new Map<string, { us: number; total: number }>();
+  let usAll = 0; let totAll = 0;
+
+  for (const r of (rows ?? []) as Array<{ country: string | null; product_id: string | null; page_path: string | null }>) {
+    const isUs = (r.country ?? "").toLowerCase().startsWith("united states") || (r.country ?? "").toUpperCase() === "US";
+    totAll++; if (isUs) usAll++;
+    if (r.product_id) {
+      const cur = productCounts.get(r.product_id) ?? { us: 0, total: 0 };
+      cur.total++; if (isUs) cur.us++;
+      productCounts.set(r.product_id, cur);
+    }
+    if (r.page_path) {
+      const cur = pagePathCounts.get(r.page_path) ?? { us: 0, total: 0 };
+      cur.total++; if (isUs) cur.us++;
+      pagePathCounts.set(r.page_path, cur);
+    }
+  }
+
+  const byProduct = new Map<string, number>();
+  for (const [pid, c] of productCounts) {
+    if (c.total >= 3) byProduct.set(pid, c.us / c.total);
+  }
+
+  // Board-level US share: aggregate via pin_queue rows that hit those products.
+  const productIds = [...productCounts.keys()];
+  const byBoard = new Map<string, number>();
+  if (productIds.length) {
+    const { data: pq } = await sb
+      .from("pinterest_pin_queue")
+      .select("board_id,product_id")
+      .in("product_id", productIds.slice(0, 1000))
+      .not("board_id", "is", null)
+      .limit(20_000);
+    const boardAgg = new Map<string, { us: number; total: number }>();
+    for (const r of (pq ?? []) as Array<{ board_id: string; product_id: string }>) {
+      const pc = productCounts.get(r.product_id);
+      if (!pc) continue;
+      const cur = boardAgg.get(r.board_id) ?? { us: 0, total: 0 };
+      cur.us += pc.us; cur.total += pc.total;
+      boardAgg.set(r.board_id, cur);
+    }
+    for (const [bid, c] of boardAgg) {
+      if (c.total >= 5) byBoard.set(bid, c.us / c.total);
+    }
+  }
+
+  return {
+    byProduct,
+    byBoard,
+    overall: totAll > 0 ? usAll / totAll : 0,
+    sampleSize: totAll,
+  };
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
