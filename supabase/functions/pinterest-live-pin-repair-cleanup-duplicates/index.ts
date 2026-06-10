@@ -73,7 +73,10 @@ Deno.serve(async (req) => {
     byDraft.set(draftId, slot);
   }
 
-  const dupDrafts = [...byDraft.entries()].filter(([, v]) => v.ids.length > 1);
+  // Process every draft with at least one successful publish in the window — we
+  // also need to stamp the repair queue + delete the original mismatched pin
+  // for single-canonical drafts where the previous executor failed silently.
+  const dupDrafts = [...byDraft.entries()];
 
   const report: any[] = [];
   let deleted = 0, deleteFailed = 0;
