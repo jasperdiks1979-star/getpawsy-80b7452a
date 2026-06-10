@@ -12784,6 +12784,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_forecasts: {
+        Row: {
+          basis_days: number | null
+          computed_at: string
+          confidence: number | null
+          entity_key: string
+          entity_type: string
+          expected_clicks: number | null
+          expected_conversions: number | null
+          expected_impressions: number | null
+          expected_revenue_cents: number | null
+          horizon_days: number
+          id: string
+          model: string | null
+          rising: boolean | null
+        }
+        Insert: {
+          basis_days?: number | null
+          computed_at?: string
+          confidence?: number | null
+          entity_key: string
+          entity_type: string
+          expected_clicks?: number | null
+          expected_conversions?: number | null
+          expected_impressions?: number | null
+          expected_revenue_cents?: number | null
+          horizon_days: number
+          id?: string
+          model?: string | null
+          rising?: boolean | null
+        }
+        Update: {
+          basis_days?: number | null
+          computed_at?: string
+          confidence?: number | null
+          entity_key?: string
+          entity_type?: string
+          expected_clicks?: number | null
+          expected_conversions?: number | null
+          expected_impressions?: number | null
+          expected_revenue_cents?: number | null
+          horizon_days?: number
+          id?: string
+          model?: string | null
+          rising?: boolean | null
+        }
+        Relationships: []
+      }
       pinterest_funnel_events: {
         Row: {
           currency: string | null
@@ -13219,6 +13267,54 @@ export type Database = {
         Update: {
           created_at?: string | null
           state?: string
+        }
+        Relationships: []
+      }
+      pinterest_opportunity_ranks: {
+        Row: {
+          clicks_30d: number | null
+          conversion_rate_30d: number | null
+          ctr_30d: number | null
+          entity_key: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+          opportunity_score: number
+          rank_percentile: number | null
+          rank_tier: string
+          revenue_cents_30d: number | null
+          scored_at: string
+          us_share_30d: number | null
+        }
+        Insert: {
+          clicks_30d?: number | null
+          conversion_rate_30d?: number | null
+          ctr_30d?: number | null
+          entity_key: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          opportunity_score?: number
+          rank_percentile?: number | null
+          rank_tier: string
+          revenue_cents_30d?: number | null
+          scored_at?: string
+          us_share_30d?: number | null
+        }
+        Update: {
+          clicks_30d?: number | null
+          conversion_rate_30d?: number | null
+          ctr_30d?: number | null
+          entity_key?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          opportunity_score?: number
+          rank_percentile?: number | null
+          rank_tier?: string
+          revenue_cents_30d?: number | null
+          scored_at?: string
+          us_share_30d?: number | null
         }
         Relationships: []
       }
@@ -15259,6 +15355,84 @@ export type Database = {
             referencedColumns: ["asset_id"]
           },
         ]
+      }
+      pinterest_visitor_revenue_scores: {
+        Row: {
+          atc_count: number | null
+          board_id: string | null
+          buyer_intent_score: number | null
+          checkout_count: number | null
+          city: string | null
+          country: string | null
+          created_at: string
+          creative_style: string | null
+          hook_category: string | null
+          id: string
+          keyword: string | null
+          page_views: number | null
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          purchase_count: number | null
+          region: string | null
+          revenue_cents: number | null
+          revenue_score: number | null
+          session_key: string
+          session_seconds: number | null
+          traffic_quality_score: number | null
+          visited_at: string
+        }
+        Insert: {
+          atc_count?: number | null
+          board_id?: string | null
+          buyer_intent_score?: number | null
+          checkout_count?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          creative_style?: string | null
+          hook_category?: string | null
+          id?: string
+          keyword?: string | null
+          page_views?: number | null
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          purchase_count?: number | null
+          region?: string | null
+          revenue_cents?: number | null
+          revenue_score?: number | null
+          session_key: string
+          session_seconds?: number | null
+          traffic_quality_score?: number | null
+          visited_at?: string
+        }
+        Update: {
+          atc_count?: number | null
+          board_id?: string | null
+          buyer_intent_score?: number | null
+          checkout_count?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          creative_style?: string | null
+          hook_category?: string | null
+          id?: string
+          keyword?: string | null
+          page_views?: number | null
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          purchase_count?: number | null
+          region?: string | null
+          revenue_cents?: number | null
+          revenue_score?: number | null
+          session_key?: string
+          session_seconds?: number | null
+          traffic_quality_score?: number | null
+          visited_at?: string
+        }
+        Relationships: []
       }
       pinterest_winner_actions_log: {
         Row: {
