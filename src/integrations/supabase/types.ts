@@ -11982,11 +11982,14 @@ export type Database = {
         Row: {
           blacklist_reason: string | null
           board_created_at: string | null
+          clicks_30d: number | null
           created_at: string
           follower_count: number | null
+          health_score: number | null
           id: string
           is_blacklisted: boolean
           is_sandbox: boolean
+          last_scored_at: string | null
           last_seen_at: string
           last_validated_at: string | null
           last_validation_error: string | null
@@ -11998,17 +12001,24 @@ export type Database = {
           privacy: string | null
           production_verified: boolean
           production_verified_at: string | null
+          revenue_cents_30d: number | null
+          saves_30d: number | null
           style_affinity: string[]
+          tier: string | null
           updated_at: string
+          us_share_30d: number | null
         }
         Insert: {
           blacklist_reason?: string | null
           board_created_at?: string | null
+          clicks_30d?: number | null
           created_at?: string
           follower_count?: number | null
+          health_score?: number | null
           id: string
           is_blacklisted?: boolean
           is_sandbox?: boolean
+          last_scored_at?: string | null
           last_seen_at?: string
           last_validated_at?: string | null
           last_validation_error?: string | null
@@ -12020,17 +12030,24 @@ export type Database = {
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
+          revenue_cents_30d?: number | null
+          saves_30d?: number | null
           style_affinity?: string[]
+          tier?: string | null
           updated_at?: string
+          us_share_30d?: number | null
         }
         Update: {
           blacklist_reason?: string | null
           board_created_at?: string | null
+          clicks_30d?: number | null
           created_at?: string
           follower_count?: number | null
+          health_score?: number | null
           id?: string
           is_blacklisted?: boolean
           is_sandbox?: boolean
+          last_scored_at?: string | null
           last_seen_at?: string
           last_validated_at?: string | null
           last_validation_error?: string | null
@@ -12042,8 +12059,12 @@ export type Database = {
           privacy?: string | null
           production_verified?: boolean
           production_verified_at?: string | null
+          revenue_cents_30d?: number | null
+          saves_30d?: number | null
           style_affinity?: string[]
+          tier?: string | null
           updated_at?: string
+          us_share_30d?: number | null
         }
         Relationships: []
       }
@@ -12795,6 +12816,73 @@ export type Database = {
           value?: number | null
         }
         Relationships: []
+      }
+      pinterest_keyword_bank: {
+        Row: {
+          created_at: string
+          ctr_observed: number | null
+          id: string
+          keyword: string
+          last_used_at: string | null
+          niche: string | null
+          product_id: string | null
+          product_slug: string | null
+          score: number | null
+          source: string
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          ctr_observed?: number | null
+          id?: string
+          keyword: string
+          last_used_at?: string | null
+          niche?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          score?: number | null
+          source?: string
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          ctr_observed?: number | null
+          id?: string
+          keyword?: string
+          last_used_at?: string | null
+          niche?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          score?: number | null
+          source?: string
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_keyword_performance: {
         Row: {
@@ -13966,6 +14054,70 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_product_tiers: {
+        Row: {
+          add_to_carts_30d: number | null
+          computed_at: string
+          impressions_30d: number | null
+          outbound_clicks_30d: number | null
+          product_id: string
+          product_slug: string | null
+          purchases_30d: number | null
+          reason: string | null
+          revenue_cents_30d: number | null
+          score: number
+          tier: string
+        }
+        Insert: {
+          add_to_carts_30d?: number | null
+          computed_at?: string
+          impressions_30d?: number | null
+          outbound_clicks_30d?: number | null
+          product_id: string
+          product_slug?: string | null
+          purchases_30d?: number | null
+          reason?: string | null
+          revenue_cents_30d?: number | null
+          score?: number
+          tier: string
+        }
+        Update: {
+          add_to_carts_30d?: number | null
+          computed_at?: string
+          impressions_30d?: number | null
+          outbound_clicks_30d?: number | null
+          product_id?: string
+          product_slug?: string | null
+          purchases_30d?: number | null
+          reason?: string | null
+          revenue_cents_30d?: number | null
+          score?: number
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_publish_governor: {
         Row: {
           cooldown_minutes_per_product: number
@@ -14469,6 +14621,70 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_title_variants: {
+        Row: {
+          created_at: string
+          ctr_observed: number | null
+          id: string
+          last_used_at: string | null
+          modifier_type: string | null
+          niche: string | null
+          product_id: string | null
+          product_slug: string | null
+          title: string
+          used_count: number
+          word_count: number
+        }
+        Insert: {
+          created_at?: string
+          ctr_observed?: number | null
+          id?: string
+          last_used_at?: string | null
+          modifier_type?: string | null
+          niche?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          title: string
+          used_count?: number
+          word_count: number
+        }
+        Update: {
+          created_at?: string
+          ctr_observed?: number | null
+          id?: string
+          last_used_at?: string | null
+          modifier_type?: string | null
+          niche?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          title?: string
+          used_count?: number
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_title_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_title_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_title_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_trend_signals: {
         Row: {
           aesthetic_tone: string | null
@@ -14514,6 +14730,51 @@ export type Database = {
           trend_label?: string
           updated_at?: string
           weight?: number
+        }
+        Relationships: []
+      }
+      pinterest_us_share_daily: {
+        Row: {
+          au_clicks: number
+          ca_clicks: number
+          computed_at: string
+          day: string
+          other_clicks: number
+          tier1_share: number | null
+          top_us_boards: Json | null
+          top_us_products: Json | null
+          total_clicks: number
+          us_clicks: number
+          us_share: number | null
+          weighted_score: number | null
+        }
+        Insert: {
+          au_clicks?: number
+          ca_clicks?: number
+          computed_at?: string
+          day: string
+          other_clicks?: number
+          tier1_share?: number | null
+          top_us_boards?: Json | null
+          top_us_products?: Json | null
+          total_clicks?: number
+          us_clicks?: number
+          us_share?: number | null
+          weighted_score?: number | null
+        }
+        Update: {
+          au_clicks?: number
+          ca_clicks?: number
+          computed_at?: string
+          day?: string
+          other_clicks?: number
+          tier1_share?: number | null
+          top_us_boards?: Json | null
+          top_us_products?: Json | null
+          total_clicks?: number
+          us_clicks?: number
+          us_share?: number | null
+          weighted_score?: number | null
         }
         Relationships: []
       }
