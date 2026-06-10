@@ -2739,6 +2739,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-live-pin-repair"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestLivePinRepair />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-products"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
