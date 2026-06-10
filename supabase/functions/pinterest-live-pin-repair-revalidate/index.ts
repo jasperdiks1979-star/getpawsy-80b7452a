@@ -277,6 +277,7 @@ Deno.serve(async (req) => {
         variety_score: variety.total,
         category: correctCategory,
         revalidated: true,
+        destination_species: species,
         previous_replacement_category: storedCategory,
         creative: { headline: final.headline, cta: final.cta, hook: final.hook, angle: final.angle, benefit: final.benefit },
       },
