@@ -123,8 +123,8 @@ function pickFresh(
   type: "headline" | "cta" | "hook" | "angle" | "benefit",
   species: Species,
 ): string | null {
-  // Try up to 12 times to land a species-appropriate, non-banned pick.
-  for (let i = 0; i < 12; i++) {
+  // Try up to 60 times to land a species-appropriate, non-banned, non-generic pick.
+  for (let i = 0; i < 60; i++) {
     const v = guard.pickFromPool(category, type);
     if (!v) return null;
     if (type === "headline" || type === "cta" || type === "hook") {
