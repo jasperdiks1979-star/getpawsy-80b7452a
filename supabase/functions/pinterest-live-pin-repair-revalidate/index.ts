@@ -378,6 +378,17 @@ Deno.serve(async (req) => {
 
   const preview = (previewRows ?? []).map((r: any) => {
     const d = pdMap.get(r.details?.replacement_draft_id);
+    const destSlug = extractSlugFromUrl(r.destination_link);
+    const destProduct = destSlug ? productBySlug.get(destSlug) : null;
+    const species = destProduct ? speciesFromProduct(destProduct.category, destProduct.slug) : "any";
+    const correctPool = destProduct ? poolFromTrueCategory(destProduct.category, destProduct.slug) : null;
+    const newText = `${d?.pin_title || ""} ${d?.overlay_text || ""}`;
+    const flags = {
+      category_mismatch: !!(correctPool && d?.category_key && normaliseCategoryKey(d.category_key) !== correctPool),
+      species_mismatch: speciesConflict(newText, species),
+      banned_phrase: containsBanned(newText),
+      generic_cta: containsGenericCta(newText),
+    };
     return {
       old_pin_id: r.pinterest_pin_id,
       destination_link: r.destination_link,
@@ -388,8 +399,17 @@ Deno.serve(async (req) => {
       new_headline: d?.pin_title ?? null,
       new_overlay: d?.overlay_text ?? null,
       draft_status: d?.status ?? "missing",
+      verification: flags,
     };
   });
+
+  const verification = {
+    rows: preview.length,
+    category_mismatches: preview.filter((p: any) => p.verification.category_mismatch).length,
+    species_mismatches: preview.filter((p: any) => p.verification.species_mismatch).length,
+    banned_phrases: preview.filter((p: any) => p.verification.banned_phrase).length,
+    generic_cta_phrases: preview.filter((p: any) => p.verification.generic_cta).length,
+  };
 
   return new Response(JSON.stringify({
     ok: true,
@@ -402,5 +422,6 @@ Deno.serve(async (req) => {
     dryRun,
     mismatches: mismatches.slice(0, 50),
     preview,
+    verification,
   }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
