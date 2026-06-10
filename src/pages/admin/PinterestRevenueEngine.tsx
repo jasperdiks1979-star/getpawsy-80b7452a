@@ -157,6 +157,22 @@ export default function PinterestRevenueEngine() {
     verified?: Array<{ event_type: string; occurred_at: string; revenue_cents: number }>;
     message?: string;
   } | null>(null);
+  const [recentPublished, setRecentPublished] = useState<Array<{
+    id: string;
+    posted_at: string | null;
+    headline: string;
+    cta: string;
+    hook: string | null;
+    category: string | null;
+    board: string | null;
+    pinterest_pin_id: string | null;
+    external_url: string | null;
+    destination_url: string | null;
+    diversity_score: number | null;
+    impressions: number;
+    clicks: number;
+    saves: number;
+  }>>([]);
 
   async function runAttributionTest() {
     setTestingAttribution(true);
