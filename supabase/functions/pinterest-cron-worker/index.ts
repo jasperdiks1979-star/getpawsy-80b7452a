@@ -4,6 +4,11 @@ import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
+import {
+  DiversityGuard,
+  normaliseCategoryKey,
+  scoreVariety,
+} from "../_shared/pinterest-diversity-guard.ts";
 
 const MAX_RETRIES = 2;
 const BATCH_SIZE = 3; // max concurrency per cron run
@@ -672,6 +677,46 @@ Deno.serve(async (req) => {
       console.warn("[cron] style-mix reorder failed (non-fatal):", e);
     }
 
+    // ── 3d. Per-category daily cap (max 3 pins/category/day). ──
+    const PER_CATEGORY_DAILY_CAP = 3;
+    try {
+      const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+      const { data: postedToday24 } = await sb
+        .from("pinterest_pin_queue")
+        .select("category_key")
+        .eq("status", "posted")
+        .gte("posted_at", oneDayAgo);
+      const catCounts = new Map<string, number>();
+      for (const r of postedToday24 || []) {
+        const k = normaliseCategoryKey((r as any).category_key) || "(uncat)";
+        catCounts.set(k, (catCounts.get(k) || 0) + 1);
+      }
+      const keep: any[] = [];
+      for (const p of pins as any[]) {
+        const k = normaliseCategoryKey(p.category_key) || "(uncat)";
+        const used = catCounts.get(k) || 0;
+        if (used >= PER_CATEGORY_DAILY_CAP) {
+          console.log(`[cron] per-category cap hit for ${k} (${used}/${PER_CATEGORY_DAILY_CAP}), deferring pin ${p.id}`);
+          continue;
+        }
+        catCounts.set(k, used + 1);
+        keep.push(p);
+      }
+      pins.length = 0;
+      pins.push(...keep);
+    } catch (e) {
+      console.warn("[cron] per-category cap filter failed (non-fatal):", e);
+    }
+
+    // ── 3e. Diversity Guard — load once for the whole batch. ──
+    const diversityGuard = new DiversityGuard();
+    try {
+      await diversityGuard.load(sb);
+    } catch (e) {
+      console.warn("[cron] diversity guard load failed (will reject all to be safe):", e);
+    }
+    const MIN_VARIETY_SCORE = 75;
+
     // ── 4. Publish each pin with human-like delay ──
     for (let i = 0; i < pins.length; i++) {
       const pin = pins[i];
@@ -719,6 +764,55 @@ Deno.serve(async (req) => {
           error_message: `QA gate: ${reasonStr}`,
         });
         results.push({ pinId: pin.id, status: "skipped", error: `QA: ${reasonStr}` });
+        continue;
+      }
+
+      // 🎯 Diversity Guard pre-publish gate — REJECT (don't downgrade) anything
+      // below variety score 75 or violating headline/cta/hook/angle/benefit caps.
+      try {
+        const ovText = String(pin.overlay_text || "");
+        const sep = ovText.includes(" • ") ? " • " : ovText.includes(" | ") ? " | " : null;
+        const [hRaw, cRaw] = sep ? ovText.split(sep) : [ovText, ""];
+        const headline = (hRaw || pin.pin_title || "").trim();
+        const cta = (cRaw || "").trim();
+        const candidate = {
+          headline,
+          cta,
+          hook: pin.hook_group || null,
+          product_id: pin.product_id,
+          pin_queue_id: pin.id,
+        };
+        const catKey = normaliseCategoryKey(pin.category_key);
+        const evalRes = diversityGuard.evaluate(candidate as any, catKey);
+        const score = scoreVariety(diversityGuard, candidate as any).total;
+        const violation = !evalRes.ok || score < MIN_VARIETY_SCORE;
+        if (violation) {
+          const reasonStr = `score=${score}; ${(evalRes.reasons || []).join("|") || "below_min_variety_score"}`;
+          console.warn(`[cron] Pin ${pin.id} blocked by DiversityGuard: ${reasonStr}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            error_message: `DiversityGuard: ${reasonStr}`,
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "publish",
+            status: "rejected",
+            error_message: `DiversityGuard: ${reasonStr}`,
+            response_data: { diversity_score: score, reasons: evalRes.reasons },
+          });
+          results.push({ pinId: pin.id, status: "rejected", error: `Diversity: ${reasonStr}` });
+          continue;
+        }
+        // Stash score on the row so the dashboard / audit can read it back.
+        (pin as any).__diversity_score = score;
+        diversityGuard.register?.(candidate as any, catKey);
+      } catch (e) {
+        console.warn(`[cron] DiversityGuard eval failed for pin ${pin.id} (rejecting to be safe):`, e);
+        await sb.from("pinterest_pin_queue").update({
+          status: "rejected",
+          error_message: `DiversityGuard exception: ${String((e as Error)?.message || e)}`,
+        }).eq("id", pin.id);
+        results.push({ pinId: pin.id, status: "rejected", error: "diversity_guard_exception" });
         continue;
       }
 
@@ -1124,6 +1218,13 @@ async function markPosted(
       outbound_click_ready: Boolean(pin.destination_link),
       external_url: externalUrl,
       ctr_ready_score: ctrReadyScore(pin),
+      diversity_score: (pin as any).__diversity_score ?? null,
+      category_key: pin.category_key || null,
+      board_name: pin.board_name || null,
+      headline: ((pin.overlay_text || "").split(/ • | \| /)[0] || pin.pin_title || null),
+      cta: ((pin.overlay_text || "").split(/ • | \| /)[1] || null),
+      hook: pin.hook_group || null,
+      destination_url: pin.destination_link || null,
     },
   });
 }

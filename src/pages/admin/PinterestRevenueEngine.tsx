@@ -157,6 +157,22 @@ export default function PinterestRevenueEngine() {
     verified?: Array<{ event_type: string; occurred_at: string; revenue_cents: number }>;
     message?: string;
   } | null>(null);
+  const [recentPublished, setRecentPublished] = useState<Array<{
+    id: string;
+    posted_at: string | null;
+    headline: string;
+    cta: string;
+    hook: string | null;
+    category: string | null;
+    board: string | null;
+    pinterest_pin_id: string | null;
+    external_url: string | null;
+    destination_url: string | null;
+    diversity_score: number | null;
+    impressions: number;
+    clicks: number;
+    saves: number;
+  }>>([]);
 
   async function runAttributionTest() {
     setTestingAttribution(true);
@@ -299,6 +315,63 @@ export default function PinterestRevenueEngine() {
       views, atcs, checkouts, purchases, revenueCents,
       lastEventAt: rows[0]?.occurred_at ?? null,
     });
+
+    // Recent Published Pins — last 50 posted pins with diversity + perf joins
+    const { data: published } = await supabase
+      .from("pinterest_pin_queue")
+      .select("id,posted_at,overlay_text,pin_title,hook_group,category_key,board_name,pinterest_pin_id,external_url,destination_link,meta")
+      .eq("status", "posted")
+      .order("posted_at", { ascending: false })
+      .limit(50);
+    const pubRows = (published as Array<{
+      id: string; posted_at: string | null; overlay_text: string | null; pin_title: string | null;
+      hook_group: string | null; category_key: string | null; board_name: string | null;
+      pinterest_pin_id: string | null; external_url: string | null; destination_link: string | null;
+      meta: Record<string, unknown> | null;
+    }> | null) ?? [];
+    const externalIds = pubRows.map((r) => r.pinterest_pin_id).filter(Boolean) as string[];
+    let perfMap = new Map<string, { impressions: number; clicks: number; saves: number }>();
+    if (externalIds.length > 0) {
+      const { data: perf } = await supabase
+        .from("pinterest_pin_performance")
+        .select("pin_id,impressions,clicks,saves")
+        .in("pin_id", externalIds);
+      for (const p of (perf as Array<{ pin_id: string; impressions: number | null; clicks: number | null; saves: number | null }> | null) ?? []) {
+        perfMap.set(p.pin_id, {
+          impressions: Number(p.impressions ?? 0),
+          clicks: Number(p.clicks ?? 0),
+          saves: Number(p.saves ?? 0),
+        });
+      }
+    }
+    const splitOv = (s: string | null): [string, string] => {
+      const t = (s || "").trim();
+      const sep = t.includes(" • ") ? " • " : t.includes(" | ") ? " | " : null;
+      if (!sep) return [t, ""];
+      const [h, c] = t.split(sep);
+      return [(h || "").trim(), (c || "").trim()];
+    };
+    setRecentPublished(pubRows.map((r) => {
+      const [headline, cta] = splitOv(r.overlay_text);
+      const perf = r.pinterest_pin_id ? perfMap.get(r.pinterest_pin_id) : undefined;
+      const ds = (r.meta as { diversity_score?: number } | null)?.diversity_score ?? null;
+      return {
+        id: r.id,
+        posted_at: r.posted_at,
+        headline: headline || r.pin_title || "(no overlay)",
+        cta,
+        hook: r.hook_group,
+        category: r.category_key,
+        board: r.board_name,
+        pinterest_pin_id: r.pinterest_pin_id,
+        external_url: r.external_url,
+        destination_url: r.destination_link,
+        diversity_score: ds,
+        impressions: perf?.impressions ?? 0,
+        clicks: perf?.clicks ?? 0,
+        saves: perf?.saves ?? 0,
+      };
+    }));
   }
 
   useEffect(() => {
@@ -526,6 +599,60 @@ export default function PinterestRevenueEngine() {
         <Kpi label="Purchases" value={fmt(totals.purchases)} sub={pct(purchRate)} />
         <Kpi label="Revenue" value={money(totals.revenue_cents)} />
       </div>
+
+      {/* Recent Published Pins — last 50 with diversity score + Pinterest perf */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-600" /> Recent Published Pins
+            <Badge variant="outline">{recentPublished.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentPublished.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pins published yet — waiting for the cron worker.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="text-left text-muted-foreground border-b">
+                  <tr>
+                    <th className="py-2 pr-3">Date</th>
+                    <th className="py-2 pr-3">Headline</th>
+                    <th className="py-2 pr-3">CTA</th>
+                    <th className="py-2 pr-3">Category</th>
+                    <th className="py-2 pr-3">Board</th>
+                    <th className="py-2 pr-3">Div</th>
+                    <th className="py-2 pr-3 text-right">Impr</th>
+                    <th className="py-2 pr-3 text-right">Clicks</th>
+                    <th className="py-2 pr-3 text-right">Saves</th>
+                    <th className="py-2 pr-3">Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPublished.map((p) => (
+                    <tr key={p.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3 whitespace-nowrap">{p.posted_at ? new Date(p.posted_at).toLocaleString() : "—"}</td>
+                      <td className="py-2 pr-3 max-w-[260px] truncate" title={p.headline}>{p.headline}</td>
+                      <td className="py-2 pr-3 max-w-[140px] truncate" title={p.cta}>{p.cta}</td>
+                      <td className="py-2 pr-3">{p.category ?? "—"}</td>
+                      <td className="py-2 pr-3">{p.board ?? "—"}</td>
+                      <td className="py-2 pr-3">{p.diversity_score ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right">{p.impressions}</td>
+                      <td className="py-2 pr-3 text-right">{p.clicks}</td>
+                      <td className="py-2 pr-3 text-right">{p.saves}</td>
+                      <td className="py-2 pr-3">
+                        {p.external_url ? (
+                          <a href={p.external_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">view</a>
+                        ) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Attribution Health (last 24h) — Pinterest-attributed funnel from gi_attribution_events */}
       <Card>
