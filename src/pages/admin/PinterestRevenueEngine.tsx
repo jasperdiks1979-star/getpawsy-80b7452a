@@ -600,6 +600,60 @@ export default function PinterestRevenueEngine() {
         <Kpi label="Revenue" value={money(totals.revenue_cents)} />
       </div>
 
+      {/* Recent Published Pins — last 50 with diversity score + Pinterest perf */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-600" /> Recent Published Pins
+            <Badge variant="outline">{recentPublished.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentPublished.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pins published yet — waiting for the cron worker.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="text-left text-muted-foreground border-b">
+                  <tr>
+                    <th className="py-2 pr-3">Date</th>
+                    <th className="py-2 pr-3">Headline</th>
+                    <th className="py-2 pr-3">CTA</th>
+                    <th className="py-2 pr-3">Category</th>
+                    <th className="py-2 pr-3">Board</th>
+                    <th className="py-2 pr-3">Div</th>
+                    <th className="py-2 pr-3 text-right">Impr</th>
+                    <th className="py-2 pr-3 text-right">Clicks</th>
+                    <th className="py-2 pr-3 text-right">Saves</th>
+                    <th className="py-2 pr-3">Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPublished.map((p) => (
+                    <tr key={p.id} className="border-b last:border-0">
+                      <td className="py-2 pr-3 whitespace-nowrap">{p.posted_at ? new Date(p.posted_at).toLocaleString() : "—"}</td>
+                      <td className="py-2 pr-3 max-w-[260px] truncate" title={p.headline}>{p.headline}</td>
+                      <td className="py-2 pr-3 max-w-[140px] truncate" title={p.cta}>{p.cta}</td>
+                      <td className="py-2 pr-3">{p.category ?? "—"}</td>
+                      <td className="py-2 pr-3">{p.board ?? "—"}</td>
+                      <td className="py-2 pr-3">{p.diversity_score ?? "—"}</td>
+                      <td className="py-2 pr-3 text-right">{p.impressions}</td>
+                      <td className="py-2 pr-3 text-right">{p.clicks}</td>
+                      <td className="py-2 pr-3 text-right">{p.saves}</td>
+                      <td className="py-2 pr-3">
+                        {p.external_url ? (
+                          <a href={p.external_url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">view</a>
+                        ) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Attribution Health (last 24h) — Pinterest-attributed funnel from gi_attribution_events */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
