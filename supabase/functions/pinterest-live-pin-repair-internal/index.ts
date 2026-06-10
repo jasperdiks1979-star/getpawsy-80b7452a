@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
   const body: any = await req.json().catch(() => ({}));
   const batch = Math.min(Math.max(Number(body?.batch) || 10, 1), 25);
   const maxBatches = Math.min(Math.max(Number(body?.maxBatches) || 1, 1), 20);
+  const targetIds: string[] | null = Array.isArray(body?.ids) && body.ids.length > 0 ? body.ids.map(String) : null;
 
   const { data: conn } = await sb.from("pinterest_connection").select("access_token")
     .eq("status", "connected").order("updated_at", { ascending: false }).limit(1).maybeSingle();
@@ -55,15 +56,15 @@ Deno.serve(async (req) => {
   let processed = 0, succeeded = 0, failed = 0, deleted = 0;
 
   for (let bi = 0; bi < maxBatches; bi++) {
-    const { data: pool } = await sb
+    let query = sb
       .from("pinterest_live_pin_repair_queue")
       .select("id, pin_queue_id, pinterest_pin_id, board_name, overlay_text, pin_title, destination_link, details, violation_types, updated_at")
       .eq("recommended_action", "replace")
       .eq("severity", "critical")
       .eq("status", "done")
-      .not("pinterest_pin_id", "is", null)
-      .order("updated_at", { ascending: true })
-      .limit(200);
+      .not("pinterest_pin_id", "is", null);
+    if (targetIds) query = query.in("id", targetIds);
+    const { data: pool } = await query.order("updated_at", { ascending: true }).limit(200);
     const eligible = (pool ?? [])
       .filter((r: any) => {
         if (!r.details?.replacement_draft_id) return false;
