@@ -20,6 +20,13 @@
 //   ✓ Never exceed per-board daily cap (default 3 pins/board/day)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  pickUsKeywords,
+  pickUsState,
+  detectNicheLite,
+  US_SHARE_FLOOR,
+  US_SHARE_TARGET,
+} from "../_shared/pinterest-us-keywords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
