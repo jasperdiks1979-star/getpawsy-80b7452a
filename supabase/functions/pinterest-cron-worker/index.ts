@@ -4,6 +4,11 @@ import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
+import {
+  DiversityGuard,
+  normaliseCategoryKey,
+  scoreVariety,
+} from "../_shared/pinterest-diversity-guard.ts";
 
 const MAX_RETRIES = 2;
 const BATCH_SIZE = 3; // max concurrency per cron run
