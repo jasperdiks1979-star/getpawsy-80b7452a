@@ -345,6 +345,9 @@ verify_jwt = false
 [functions.pinterest-live-pin-repair-execute]
 verify_jwt = false
 
+[functions.pinterest-live-pin-repair-revalidate]
+verify_jwt = false
+
 [functions.cj-inventory-sync]
 verify_jwt = false
 
