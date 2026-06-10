@@ -222,10 +222,12 @@ Deno.serve(async (req) => {
 
     const draftText = `${draft?.pin_title || ""} ${draft?.overlay_text || ""}`;
     const draftSpeciesBad = draft ? speciesConflict(draftText, species) : false;
+    const draftGenericBad = draft ? containsGenericCta(draftText) : null;
+    const draftBannedBad = draft ? containsBanned(draftText) : null;
     const categoryBad = !storedCategory || normaliseCategoryKey(storedCategory) !== correctCategory;
 
-    // If category AND species both already correct, leave it.
-    if (!categoryBad && !draftSpeciesBad) continue;
+    // If category, species, generic-CTA and banned-phrase checks all pass, leave it.
+    if (!categoryBad && !draftSpeciesBad && !draftGenericBad && !draftBannedBad) continue;
 
     mismatches.push({
       queue_id: row.id,
@@ -235,7 +237,13 @@ Deno.serve(async (req) => {
       destination_species: species,
       stored_replacement_category: storedCategory ?? null,
       correct_pool_category: correctCategory,
-      reason: categoryBad ? "category_mismatch" : "species_mismatch",
+      reason: categoryBad
+        ? "category_mismatch"
+        : draftSpeciesBad
+        ? "species_mismatch"
+        : draftGenericBad
+        ? `generic_cta:${draftGenericBad}`
+        : `banned_phrase:${draftBannedBad}`,
       old_headline: draft?.pin_title ?? null,
       old_overlay: draft?.overlay_text ?? null,
       old_draft_id: draftId ?? null,
@@ -251,7 +259,11 @@ Deno.serve(async (req) => {
           status: "rejected",
           rejection_reason: categoryBad
             ? `destination_url_category_mismatch: dest=${destProduct.category} (${correctCategory}) vs stored=${storedCategory}`
-            : `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`,
+            : draftSpeciesBad
+            ? `species_mismatch: dest_species=${species} vs draft="${draftText.trim().slice(0, 120)}"`
+            : draftGenericBad
+            ? `generic_cta_phrase: "${draftGenericBad}"`
+            : `banned_phrase: "${draftBannedBad}"`,
         })
         .eq("id", draftId);
     }
