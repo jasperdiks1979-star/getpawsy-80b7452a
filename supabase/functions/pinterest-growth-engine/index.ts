@@ -63,28 +63,30 @@ interface Product {
   is_duplicate?: boolean | null;
 }
 
-function scoreProduct(p: Product, perfBoost: number): number {
-  // 0–100 composite — biased to image quality + margin + perf
+function scoreProduct(p: Product, perfBoost: number, revenueBoost: number): number {
+  // 0–140 composite — biased toward revenue + ATC + margin
   let s = 0;
-  // image (0–25)
+  // image (0–20)
   const imgCount = (p.images?.length ?? 0) + (p.image_url ? 1 : 0);
-  s += Math.min(imgCount, 5) * 5;
+  s += Math.min(imgCount, 5) * 4;
   // margin (0–25)
   const cost = p.cost_price ?? 0;
   const margin = cost > 0 ? (p.price - cost) / p.price : 0.4;
   s += Math.min(Math.max(margin, 0), 1) * 25;
-  // price-band fit $25–$120 (0–15)
-  if (p.price >= 25 && p.price <= 120) s += 15;
-  else if (p.price >= 15 && p.price < 25) s += 8;
-  else s += 3;
+  // price-band fit $25–$120 (0–10)
+  if (p.price >= 25 && p.price <= 120) s += 10;
+  else if (p.price >= 15 && p.price < 25) s += 5;
+  else s += 2;
   // category presence (0–10)
   if (p.category) s += 10;
-  // performance signal (0–25)
+  // pinterest engagement (0–25)
   s += Math.min(perfBoost, 25);
+  // revenue / ATC / purchase signal (0–50) — the dominant lever
+  s += Math.min(revenueBoost, 50);
   return s;
 }
 
-async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<Product[]> {
+async function selectProducts(sb: ReturnType<typeof createClient>, limit: number): Promise<{ products: Product[]; forcePromoted: string[]; excluded: string[] }> {
   // Pull active products with images and slug
   const { data, error } = await sb
     .from("products")
@@ -122,6 +124,34 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     perfByProduct.set(pid, (perfByProduct.get(pid) ?? 0) + boost);
   }
 
+  // Revenue / ATC / purchase signal (last 14d) from pinterest_revenue_funnel_daily.
+  const { data: rev } = await sb
+    .from("pinterest_revenue_funnel_daily")
+    .select("product_id, product_views, add_to_carts, purchases, revenue_cents")
+    .gte("day", since)
+    .limit(20_000);
+  const revByProduct = new Map<string, number>();
+  for (const r of (rev ?? []) as { product_id: string | null; product_views: number; add_to_carts: number; purchases: number; revenue_cents: number }[]) {
+    if (!r.product_id) continue;
+    // Each $1 of attributed revenue = 0.5pt, each purchase = 5pt, each ATC = 1pt, each PV = 0.05pt.
+    const boost = (r.revenue_cents / 100) * 0.5 + r.purchases * 5 + r.add_to_carts * 1 + r.product_views * 0.05;
+    revByProduct.set(r.product_id, (revByProduct.get(r.product_id) ?? 0) + boost);
+  }
+
+  // Autopilot overrides — paused/exclude => skip, force_promote => bypass recency throttle + bonus.
+  const nowIso = new Date().toISOString();
+  const { data: overrides } = await sb
+    .from("pinterest_autopilot_overrides")
+    .select("product_id, action, expires_at")
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .limit(2000);
+  const excluded = new Set<string>();
+  const forcePromote = new Set<string>();
+  for (const o of (overrides ?? []) as { product_id: string; action: string }[]) {
+    if (o.action === "paused" || o.action === "exclude") excluded.add(o.product_id);
+    else if (o.action === "force_promote") forcePromote.add(o.product_id);
+  }
+
   // Exclude products already drafted/published in the last 5 days to avoid stuffing
   const since5 = new Date(Date.now() - 5 * 86400_000).toISOString();
   const { data: recent } = await sb
@@ -132,13 +162,26 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   const recentlyUsed = new Set<string>((recent ?? []).map((r: { product_id: string }) => r.product_id).filter(Boolean));
 
   const scored = products
-    .filter((p) => !recentlyUsed.has(p.id))
-    .map((p) => ({ p, score: scoreProduct(p, Math.min(perfByProduct.get(p.id) ?? 0, 25)) }))
+    .filter((p) => !excluded.has(p.id))
+    .filter((p) => forcePromote.has(p.id) || !recentlyUsed.has(p.id))
+    .map((p) => ({
+      p,
+      score:
+        scoreProduct(
+          p,
+          Math.min(perfByProduct.get(p.id) ?? 0, 25),
+          Math.min(revByProduct.get(p.id) ?? 0, 50),
+        ) + (forcePromote.has(p.id) ? 40 : 0),
+    }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((x) => x.p);
 
-  return scored;
+  return {
+    products: scored,
+    forcePromoted: scored.filter((p) => forcePromote.has(p.id)).map((p) => p.slug),
+    excluded: [...excluded],
+  };
 }
 
 async function callCreativeDirector(slug: string, count: number): Promise<{ ok: boolean; drafts: number; error?: string }> {
