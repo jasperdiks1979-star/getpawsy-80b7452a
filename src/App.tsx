@@ -489,6 +489,7 @@ const BotTrafficDrilldownPage = lazyWithRetry(() => import("./pages/admin/BotTra
 const PinterestBackdropPreviewPage = lazyWithRetry(() => import("./pages/admin/PinterestBackdropPreviewPage"));
 const PinterestHealth = lazyWithRetry(() => import("./pages/admin/PinterestHealth"));
 const PinterestRevenueEngine = lazyWithRetry(() => import("./pages/admin/PinterestRevenueEngine"));
+const RevenueAiPage = lazyWithRetry(() => import("./pages/admin/RevenueAiPage"));
 const PinterestLivePinRepair = lazyWithRetry(() => import("./pages/admin/PinterestLivePinRepair"));
 const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
 const PinterestSchedulerPage = lazyWithRetry(() => import("./pages/admin/PinterestSchedulerPage"));
