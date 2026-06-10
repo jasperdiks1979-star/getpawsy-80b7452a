@@ -141,9 +141,15 @@ Deno.serve(async (req) => {
       status: "pending",
     };
 
-    if (!draft) { entry.status = "skipped"; entry.error = "draft_missing"; report.push(entry); failed++; continue; }
-    if (!boardId) { entry.status = "skipped"; entry.error = "no_board_id"; report.push(entry); failed++; continue; }
-    if (!draft.pin_image_url || !draft.pin_title) { entry.status = "skipped"; entry.error = "draft_incomplete"; report.push(entry); failed++; continue; }
+    const stampSkip = async (reason: string) => {
+      await sb.from("pinterest_live_pin_repair_queue").update({
+        updated_at: new Date().toISOString(),
+        details: { ...row.details, execution: { executed_at: new Date().toISOString(), skipped: true, reason } },
+      }).eq("id", row.id);
+    };
+    if (!draft) { entry.status = "skipped"; entry.error = "draft_missing"; await stampSkip("draft_missing"); report.push(entry); failed++; continue; }
+    if (!boardId) { entry.status = "skipped"; entry.error = "no_board_id"; await stampSkip("no_board_id"); report.push(entry); failed++; continue; }
+    if (!draft.pin_image_url || !draft.pin_title) { entry.status = "skipped"; entry.error = "draft_incomplete"; await stampSkip("draft_incomplete"); report.push(entry); failed++; continue; }
 
     if (dryRun) { entry.status = "dry_run"; report.push(entry); continue; }
 
@@ -168,6 +174,20 @@ Deno.serve(async (req) => {
         image_url: draft.pin_image_url, pin_title: draft.pin_title, destination_link: entry.destination_url,
         request_payload: publishPayload, response_payload: pub.body, error_message: entry.error,
       });
+      const isSandboxErr = (pub.status === 400 || pub.status === 403) && /sandbox|board/i.test(JSON.stringify(pub.body || ""));
+      await sb.from("pinterest_live_pin_repair_queue").update({
+        updated_at: new Date().toISOString(),
+        details: {
+          ...row.details,
+          execution: {
+            executed_at: new Date().toISOString(),
+            publish_failed: true,
+            sandbox_board: isSandboxErr,
+            error: entry.error,
+            board_id: boardId,
+          },
+        },
+      }).eq("id", row.id);
       report.push(entry); failed++; continue;
     }
     const newPinId = String(pub.body.id);
@@ -222,7 +242,6 @@ Deno.serve(async (req) => {
 
     // ── 5. Stamp queue row ──
     await sb.from("pinterest_live_pin_repair_queue").update({
-      status: "executed",
       updated_at: new Date().toISOString(),
       details: {
         ...row.details,
