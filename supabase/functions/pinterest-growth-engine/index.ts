@@ -748,6 +748,13 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
   const rpm30 = totals30.impressions > 0 ? (totals30.revenue / 100) / (totals30.impressions / 1000) : 0;
   const rpc30 = totals30.clicks > 0 ? (totals30.revenue / 100) / totals30.clicks : 0;
 
+  // US-share snapshot for the dashboard.
+  const usShares = await computeUsShares(sb);
+  const usByBoardTop = [...usShares.byBoard.entries()]
+    .map(([id, share]) => ({ id, share: Number(share.toFixed(3)) }))
+    .sort((a, b) => b.share - a.share)
+    .slice(0, 20);
+
   return {
     today: { published: publishedToday ?? 0 },
     pipeline: { drafts: draftsCount ?? 0, ready: readyCount ?? 0 },
@@ -757,6 +764,15 @@ async function buildDashboard(sb: ReturnType<typeof createClient>) {
     topProducts,
     revenue30d: { revenue: Math.round(revenue30 * 100) / 100, orders: orders30 },
     productionBoards: prodBoards ?? 0,
+    usTraffic: {
+      overall_share: Number(usShares.overall.toFixed(3)),
+      target: US_SHARE_TARGET,
+      floor: US_SHARE_FLOOR,
+      sample_size: usShares.sampleSize,
+      board_count_tracked: usShares.byBoard.size,
+      product_count_tracked: usShares.byProduct.size,
+      top_us_boards: usByBoardTop,
+    },
     revenue: {
       last7d: {
         revenue_usd: Math.round(totals7.revenue) / 100,
