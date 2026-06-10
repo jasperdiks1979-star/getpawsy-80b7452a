@@ -4,8 +4,8 @@ const corsHeaders = { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-He
 Deno.serve(async (req)=>{
   if (req.method==='OPTIONS') return new Response('ok',{headers:corsHeaders});
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const { data: conn } = await sb.from('pinterest_connection').select('access_token,username').limit(1).maybeSingle();
-  const tok = conn?.access_token;
+  const { data: conn } = await sb.from('pinterest_connection').select('access_token,account_name,status').eq('status','connected').limit(1).maybeSingle();
+  const tok = conn?.access_token as string|undefined;
   const H = { Authorization:`Bearer ${tok}` };
 
   async function getAll(url:string, cap=2000){
@@ -24,6 +24,6 @@ Deno.serve(async (req)=>{
   const pinsRes = await getAll('https://api.pinterest.com/v5/pins');
   const boardsRes = await getAll('https://api.pinterest.com/v5/boards');
 
-  return new Response(JSON.stringify({ acct, pinsCount: pinsRes.items?.length, pinsErr: pinsRes.error, boardsCount: boardsRes.items?.length, boardsErr: boardsRes.error, samplePins: pinsRes.items?.slice(0,3) }, null, 2),
+  return new Response(JSON.stringify({ tokenPrefix: tok?.slice(0,12), acct, pinsCount: pinsRes.items?.length, pinsErr: pinsRes.error, boardsCount: boardsRes.items?.length, boardsErr: boardsRes.error, samplePins: pinsRes.items?.slice(0,3) }, null, 2),
     { headers:{...corsHeaders,'Content-Type':'application/json'} });
 });
