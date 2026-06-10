@@ -1218,6 +1218,13 @@ async function markPosted(
       outbound_click_ready: Boolean(pin.destination_link),
       external_url: externalUrl,
       ctr_ready_score: ctrReadyScore(pin),
+      diversity_score: (pin as any).__diversity_score ?? null,
+      category_key: pin.category_key || null,
+      board_name: pin.board_name || null,
+      headline: ((pin.overlay_text || "").split(/ • | \| /)[0] || pin.pin_title || null),
+      cta: ((pin.overlay_text || "").split(/ • | \| /)[1] || null),
+      hook: pin.hook_group || null,
+      destination_url: pin.destination_link || null,
     },
   });
 }
