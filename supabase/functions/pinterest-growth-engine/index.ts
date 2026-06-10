@@ -468,7 +468,8 @@ Deno.serve(async (req) => {
         return json({ ok: false, traceId, error: "NO_PRODUCTION_BOARDS — safety halt" }, 412);
       }
 
-      const products = await selectProducts(sb, productsPerRun);
+      const selection = await selectProducts(sb, productsPerRun);
+      const products = selection.products;
       const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
       for (const p of products) {
         const r = await callCreativeDirector(p.slug, variantsPerProduct);
@@ -484,6 +485,8 @@ Deno.serve(async (req) => {
         ranAt: new Date().toISOString(),
         productsSelected: products.length,
         productSlugs: products.map((p) => p.slug),
+        forcePromoted: selection.forcePromoted,
+        excludedProductCount: selection.excluded.length,
         generation,
         totalDraftsGenerated: generation.reduce((a, g) => a + (g.drafts || 0), 0),
         approval,
