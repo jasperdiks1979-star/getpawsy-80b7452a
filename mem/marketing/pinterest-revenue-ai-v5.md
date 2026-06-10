@@ -8,6 +8,9 @@ type: feature
 **Crons:**
 - `pinterest-revenue-ai-loop-6h` (`45 */6 * * *`, schedule id 124) — forward 6h optimization loop.
 - `pinterest-revenue-ai-backfill-weekly` (`20 4 * * 1`, schedule id 125) — Monday 04:20 UTC, re-scores trailing 30d of Pinterest `visitor_activity` for accurate geo+intent attribution drift correction.
+- `pinterest-revenue-ai-health-hourly` (`25 * * * *`, schedule id 126) — hourly health check, writes to `monitoring_alerts` (alert_key prefix `pinterest_revenue_ai:`).
+
+**Health check action:** `POST /functions/v1/pinterest-revenue-ai?action=health_check`. Also runs automatically at the end of every `loop`. Emits/auto-resolves alerts in `monitoring_alerts` (severity P1/P2, category `pinterest_revenue_ai`) for: V4 sync failure, visitor scoring failure or 0 scored sessions despite Pinterest traffic, ranking failure or stale ranks (>12h), forecasting failure or no forecasts in 24h, 0 pins published in 24h, queued backlog ≥200, rejection rate >60%, US share <40% (sample ≥100), and overall loop staleness (>9h since last forecast). Resolved automatically on the next healthy run.
 
 **Backfill action:** `POST /functions/v1/pinterest-revenue-ai?action=backfill&days=N` (or `&since=...&until=...`). Walks `visitor_activity` filtered to `utm_source ilike '%pinterest%'` day-by-day; for each day deletes existing `pinterest_visitor_revenue_scores` rows in that window then re-inserts fresh scores (idempotent). After the walk, re-runs `rankOpportunities` + `forecast` so dashboards reflect the corrected history. `days` clamped to 1–365, per-day limit 20k rows.
 
