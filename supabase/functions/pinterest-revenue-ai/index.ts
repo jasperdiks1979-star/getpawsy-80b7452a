@@ -1,6 +1,6 @@
 // Pinterest Revenue AI V5 — unified learn/score/forecast orchestrator.
 // Extends V4 (pinterest-revenue-engine-loop) — does NOT replace it.
-// Actions: learn, score_visitors, rank_opportunities, forecast, dashboard, loop, backfill
+// Actions: learn, score_visitors, rank_opportunities, forecast, dashboard, loop, backfill, health_check
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -317,7 +317,235 @@ async function loop() {
   try { report.rank_opportunities = await rankOpportunities(); } catch (e) { report.rank_error = String(e); }
   try { report.forecast = await forecast(); } catch (e) { report.forecast_error = String(e); }
   report.finishedAt = new Date().toISOString();
+  try { report.health_check = await healthCheck(report); } catch (e) { report.health_check_error = String(e); }
   return report;
+}
+
+// ---------- Health checks + alerting ----------
+type StageAlert = {
+  alert_key: string;
+  severity: "P1" | "P2";
+  category: string;
+  title: string;
+  description: string;
+  affected_urls: string[];
+  suggested_fix: string;
+};
+
+async function emitAlerts(alerts: StageAlert[], allKeys: string[]) {
+  const { data: existing } = await sb
+    .from("monitoring_alerts")
+    .select("alert_key")
+    .eq("is_active", true)
+    .like("alert_key", "pinterest_revenue_ai:%");
+  const existingKeys = new Set((existing ?? []).map((r: any) => r.alert_key));
+  const activeKeys = new Set(alerts.map((a) => a.alert_key));
+
+  for (const a of alerts) {
+    await sb.from("monitoring_alerts").upsert({
+      ...a,
+      last_detected_at: new Date().toISOString(),
+      is_active: true,
+      resolved_at: null,
+      notification_sent: existingKeys.has(a.alert_key),
+    }, { onConflict: "alert_key" });
+  }
+
+  // Auto-resolve previously-active alerts that didn't fire this run
+  const toResolve = allKeys.filter((k) => existingKeys.has(k) && !activeKeys.has(k));
+  if (toResolve.length) {
+    await sb.from("monitoring_alerts")
+      .update({ is_active: false, resolved_at: new Date().toISOString() })
+      .in("alert_key", toResolve);
+  }
+
+  return { fired: alerts.map((a) => a.alert_key), resolved: toResolve };
+}
+
+async function healthCheck(loopReport?: Json) {
+  const alerts: StageAlert[] = [];
+  const KEYS = {
+    sync:      "pinterest_revenue_ai:v4_sync",
+    score:     "pinterest_revenue_ai:score_visitors",
+    rank:      "pinterest_revenue_ai:rank_opportunities",
+    forecast:  "pinterest_revenue_ai:forecast",
+    publish:   "pinterest_revenue_ai:publishing",
+    backlog:   "pinterest_revenue_ai:publish_backlog",
+    rejection: "pinterest_revenue_ai:high_rejection_rate",
+    usShare:   "pinterest_revenue_ai:us_share_low",
+    stale:     "pinterest_revenue_ai:loop_stale",
+  };
+  const allKeys = Object.values(KEYS);
+
+  // 1. V4 sync stage
+  const v4 = (loopReport?.v4_loop as any) ?? null;
+  if (loopReport && (loopReport.v4_loop_error || (v4 && v4.ok === false) || (v4 && v4.error))) {
+    alerts.push({
+      alert_key: KEYS.sync, severity: "P1", category: "pinterest_revenue_ai",
+      title: "Revenue AI: V4 sync loop failed",
+      description: String(loopReport.v4_loop_error || v4?.message || v4?.error || "pinterest-revenue-engine-loop returned an error"),
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Inspect pinterest-revenue-engine-loop logs. Re-run via /admin/revenue-ai → Run loop now.",
+    });
+  }
+
+  // 2. score_visitors
+  if (loopReport?.score_visitors_error) {
+    alerts.push({
+      alert_key: KEYS.score, severity: "P1", category: "pinterest_revenue_ai",
+      title: "Revenue AI: visitor scoring failed",
+      description: String(loopReport.score_visitors_error),
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Check pinterest-revenue-ai logs (action=score_visitors). Verify visitor_activity ingest.",
+    });
+  } else {
+    // Detect abnormal: recent Pinterest visitor_activity exists but 0 scored rows in last 24h
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const [{ count: rawCount }, { count: scoredCount }] = await Promise.all([
+      sb.from("visitor_activity").select("session_id", { count: "exact", head: true })
+        .gte("created_at", since).ilike("utm_source", "%pinterest%"),
+      sb.from("pinterest_visitor_revenue_scores").select("id", { count: "exact", head: true })
+        .gte("created_at", since),
+    ]);
+    if ((rawCount ?? 0) >= 25 && (scoredCount ?? 0) === 0) {
+      alerts.push({
+        alert_key: KEYS.score, severity: "P1", category: "pinterest_revenue_ai",
+        title: "Revenue AI: 0 visitor scores in 24h despite Pinterest traffic",
+        description: `visitor_activity has ${rawCount} Pinterest sessions in last 24h but pinterest_visitor_revenue_scores has 0. Scoring pipeline is stalled.`,
+        affected_urls: ["/admin/revenue-ai"],
+        suggested_fix: "Run pinterest-revenue-ai?action=backfill&days=2 and inspect logs.",
+      });
+    }
+  }
+
+  // 3. rank_opportunities
+  if (loopReport?.rank_error) {
+    alerts.push({
+      alert_key: KEYS.rank, severity: "P1", category: "pinterest_revenue_ai",
+      title: "Revenue AI: opportunity ranking failed",
+      description: String(loopReport.rank_error),
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Check pinterest-revenue-ai logs (action=rank_opportunities).",
+    });
+  } else {
+    const { count } = await sb.from("pinterest_opportunity_ranks")
+      .select("id", { count: "exact", head: true })
+      .gte("updated_at", new Date(Date.now() - 12 * 3600 * 1000).toISOString());
+    if ((count ?? 0) === 0) {
+      alerts.push({
+        alert_key: KEYS.rank, severity: "P2", category: "pinterest_revenue_ai",
+        title: "Revenue AI: no opportunity ranks updated in 12h",
+        description: "pinterest_opportunity_ranks has no rows updated in the last 12h. Ranking may be silently no-op'ing.",
+        affected_urls: ["/admin/revenue-ai"],
+        suggested_fix: "Invoke pinterest-revenue-ai?action=rank_opportunities and inspect output.",
+      });
+    }
+  }
+
+  // 4. forecast
+  if (loopReport?.forecast_error) {
+    alerts.push({
+      alert_key: KEYS.forecast, severity: "P2", category: "pinterest_revenue_ai",
+      title: "Revenue AI: forecasting failed",
+      description: String(loopReport.forecast_error),
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Check pinterest-revenue-ai logs (action=forecast).",
+    });
+  } else {
+    const { count } = await sb.from("pinterest_forecasts")
+      .select("id", { count: "exact", head: true })
+      .gte("generated_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
+    if ((count ?? 0) === 0) {
+      alerts.push({
+        alert_key: KEYS.forecast, severity: "P2", category: "pinterest_revenue_ai",
+        title: "Revenue AI: no forecasts generated in 24h",
+        description: "pinterest_forecasts has no rows from the last 24h. Forecasting stage produced no output.",
+        affected_urls: ["/admin/revenue-ai"],
+        suggested_fix: "Invoke pinterest-revenue-ai?action=forecast and inspect output.",
+      });
+    }
+  }
+
+  // 5. Publishing health (last 24h)
+  const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { data: q24 } = await sb
+    .from("pinterest_pin_queue")
+    .select("status")
+    .gte("created_at", since24h);
+  const counts: Record<string, number> = {};
+  for (const r of q24 ?? []) counts[(r as any).status] = (counts[(r as any).status] ?? 0) + 1;
+  const posted = counts.posted ?? 0;
+  const rejected = counts.rejected ?? 0;
+  const queued = counts.queued ?? 0;
+  const total = (q24 ?? []).length;
+
+  if (total >= 20 && posted === 0) {
+    alerts.push({
+      alert_key: KEYS.publish, severity: "P1", category: "pinterest_revenue_ai",
+      title: "Revenue AI: 0 pins published in last 24h",
+      description: `pinterest_pin_queue has ${total} rows in 24h but 0 posted (queued=${queued}, rejected=${rejected}). Publisher is down.`,
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Check pinterest-publish / pinterest-growth-engine logs and OAuth status.",
+    });
+  }
+  if (queued >= 200) {
+    alerts.push({
+      alert_key: KEYS.backlog, severity: "P2", category: "pinterest_revenue_ai",
+      title: `Revenue AI: publish backlog (${queued} queued)`,
+      description: `pinterest_pin_queue has ${queued} pins in 'queued' state created in the last 24h. Throughput is too low.`,
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Increase publisher cadence or inspect rate-limit / API errors.",
+    });
+  }
+  if (total >= 50 && rejected / total > 0.6) {
+    alerts.push({
+      alert_key: KEYS.rejection, severity: "P2", category: "pinterest_revenue_ai",
+      title: `Revenue AI: high rejection rate (${Math.round((rejected / total) * 100)}%)`,
+      description: `${rejected} of ${total} pins rejected in last 24h. Likely creative/compliance issue.`,
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Inspect pinterest_pin_verdicts for top rejection reasons; tune creative director.",
+    });
+  }
+
+  // 6. US share drop
+  const dash = (loopReport as any)?.score_visitors ? null : await dashboard().catch(() => null);
+  const usShare =
+    (loopReport?.score_visitors as any)?.usShare ??
+    dash?.summary?.usShare ?? null;
+  const sample =
+    (loopReport?.score_visitors as any)?.totalClicks ??
+    dash?.summary?.totalPinterestVisitors30d ?? 0;
+  if (usShare !== null && sample >= 100 && usShare < 0.4) {
+    alerts.push({
+      alert_key: KEYS.usShare, severity: "P2", category: "pinterest_revenue_ai",
+      title: `Revenue AI: US share dropped to ${Math.round(usShare * 100)}%`,
+      description: `US share is ${Math.round(usShare * 100)}% of ${sample} Pinterest visitors (target 80%, floor 40%).`,
+      affected_urls: ["/admin/revenue-ai"],
+      suggested_fix: "Re-tune US keyword bank / board allocation; verify priority category floor still active.",
+    });
+  }
+
+  // 7. Loop staleness (no successful loop in >9h while cron runs every 6h)
+  if (!loopReport) {
+    const { data: lastForecast } = await sb
+      .from("pinterest_forecasts")
+      .select("generated_at")
+      .order("generated_at", { ascending: false })
+      .limit(1);
+    const last = lastForecast?.[0]?.generated_at ? new Date(lastForecast[0].generated_at as string).getTime() : 0;
+    if (Date.now() - last > 9 * 3600 * 1000) {
+      alerts.push({
+        alert_key: KEYS.stale, severity: "P1", category: "pinterest_revenue_ai",
+        title: "Revenue AI: loop has not completed in >9h",
+        description: `Last forecast generated_at = ${last ? new Date(last).toISOString() : "never"}. Cron may be failing.`,
+        affected_urls: ["/admin/revenue-ai"],
+        suggested_fix: "Trigger pinterest-revenue-ai?action=loop manually and inspect cron schedule 124.",
+      });
+    }
+  }
+
+  const result = await emitAlerts(alerts, allKeys);
+  return { ...result, counts: { posted, rejected, queued, total }, usShare, sample };
 }
 
 Deno.serve(async (req) => {
@@ -332,6 +560,7 @@ Deno.serve(async (req) => {
       case "forecast": return ok(await forecast());
       case "dashboard": return ok(await dashboard());
       case "loop": return ok(await loop());
+      case "health_check": return ok(await healthCheck());
       case "backfill": return ok(await backfill({
         days: Number(url.searchParams.get("days") ?? (body as any).days ?? 90),
         sinceIso: url.searchParams.get("since") ?? (body as any).since,
