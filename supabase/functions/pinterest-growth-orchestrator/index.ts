@@ -332,7 +332,8 @@ Deno.serve(async (req) => {
           .select("id, product_id, product_slug, board_name");
         if (insErr) {
           stats.errors += 1;
-          log({ action_type: "enqueue_error", reason: insErr.message });
+          console.error("queue_insert_error", insErr.message, "sample", JSON.stringify(inserts[0]).slice(0, 600));
+          log({ action_type: "enqueue_error", reason: insErr.message, payload: { sample: inserts[0] } });
         } else {
           stats.drafts_enqueued = insRows?.length ?? 0;
           for (const r of (insRows ?? [])) {
