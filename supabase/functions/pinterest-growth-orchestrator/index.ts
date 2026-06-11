@@ -47,7 +47,7 @@ const KEYWORD_POOL: Record<string, string[]> = {
 };
 
 function nicheForProduct(p: any): string {
-  const txt = `${p.title ?? ""} ${p.category ?? ""} ${p.product_type ?? ""}`.toLowerCase();
+  const txt = `${p.name ?? ""} ${p.category ?? ""} ${p.product_type ?? ""}`.toLowerCase();
   if (/cat\s*tree|scratch|cat\s*condo|cat\s*shelf|cat\s*tower/.test(txt)) return "cat_furniture";
   if (/dog\s*bed|orthopedic|memory\s*foam/.test(txt))                      return "dog_beds";
   if (/(harness|leash|collar)/.test(txt) && /train/.test(txt))             return "training";
@@ -79,7 +79,7 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
   const kws = KEYWORD_POOL[niche] ?? KEYWORD_POOL.accessories;
   const head = kws[variation % kws.length];
   const tail = pick(kws.filter(k => k !== head), 2);
-  const name = p.title ?? p.name ?? "GetPawsy pick";
+  const name = p.name ?? "GetPawsy pick";
   const angles = [
     `${head} every pet parent loves`,
     `the ${head} we actually keep buying`,
