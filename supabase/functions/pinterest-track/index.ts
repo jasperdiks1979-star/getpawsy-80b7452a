@@ -40,7 +40,10 @@ Deno.serve(async (req) => {
       const utm_id = body.utm_id ?? null;
       const referrer = body.referrer ?? null;
       const landing_page = body.landing_page ?? null;
-      const pin_id = body.pin_id ?? null;
+      // pin_id falls back to utm_content per the canonical Pinterest URL contract
+      // (utm_source=pinterest&utm_content=<pin_id>). Without this fallback, pins
+      // tagged through the publisher never associated their click with a pin row.
+      const pin_id = body.pin_id ?? (typeof utm_content === "string" && /^\d{6,}$/.test(utm_content) ? utm_content : null);
       const is_pinterest = isPinterest(utm_source, referrer, pin_id);
       const source_channel = is_pinterest
         ? "pinterest"
@@ -114,7 +117,7 @@ Deno.serve(async (req) => {
       // Only stamp event when session was Pinterest-attributed
       const { data: attr } = await sb
         .from("pinterest_attribution_sessions")
-        .select("session_key,pin_id")
+        .select("session_key,pin_id,click_counted")
         .eq("session_key", sessionKey)
         .maybeSingle();
       if (!attr) {
@@ -135,6 +138,42 @@ Deno.serve(async (req) => {
         .from("pinterest_attribution_sessions")
         .update({ last_seen: new Date().toISOString() })
         .eq("session_key", sessionKey);
+
+      // ── Pin-level outbound click recording ──
+      // The visitor landed from a Pinterest pin = an outbound click on that pin.
+      // We only count it once per session (click_counted flag), and we wait for
+      // the first real interaction event so prefetcher hits (flagged by the
+      // client with is_prefetch=true) never inflate the click counter.
+      const sessionPinId =
+        (attr as { pin_id?: string | null })?.pin_id ?? body.pin_id ?? null;
+      const alreadyCounted = (attr as { click_counted?: boolean })?.click_counted === true;
+      const isPrefetch = body.is_prefetch === true;
+      if (sessionPinId && !alreadyCounted && !isPrefetch) {
+        // Resolve product_id from slug when not provided.
+        let productIdForPin: string | null = body.product_id ?? null;
+        if (!productIdForPin && body.product_slug) {
+          const { data: prod } = await sb
+            .from("products")
+            .select("id")
+            .eq("slug", body.product_slug)
+            .maybeSingle();
+          if (prod) productIdForPin = (prod as { id?: string | null }).id ?? null;
+        }
+        const productUrl = body.product_slug
+          ? `https://getpawsy.pet/products/${body.product_slug}`
+          : null;
+        const { error: incErr } = await sb.rpc("increment_pinterest_pin_click", {
+          p_pin_id: sessionPinId,
+          p_product_id: productIdForPin ?? "unknown",
+          p_product_url: productUrl,
+        });
+        if (!incErr) {
+          await sb
+            .from("pinterest_attribution_sessions")
+            .update({ click_counted: true })
+            .eq("session_key", sessionKey);
+        }
+      }
 
       // ── Mirror into gi_attribution_events (canonical attribution store) ──
       const eventTypeMap: Record<string, string> = {
