@@ -17,10 +17,17 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const MAX_DRAFTS_PER_RUN = 30;
-const MAX_STATUS_FLIPS_PER_RUN = 50;
-const WINNER_PIN_VARIATIONS = 5;
-const OPPORTUNITY_PIN_VARIATIONS = 3;
+// Traffic-scaling caps. Sized so the engine can sustain the ≥1000 Pinterest
+// visitors/month target while staying inside Pinterest's safe publish envelope
+// (≤25 pins/day org-wide, governed downstream by the publish governor).
+const MAX_DRAFTS_PER_RUN = 120;
+const MAX_STATUS_FLIPS_PER_RUN = 200;
+const WINNER_PIN_VARIATIONS = 5;        // 5 unique image+title+description variants
+const WINNER_VIDEO_VARIATIONS = 5;      // 5 unique video drafts (best-effort, asset-bound)
+const OPPORTUNITY_PIN_VARIATIONS = 5;
+const DISCOVERY_PIN_VARIATIONS = 3;
+const DISCOVERY_MARGIN_FLOOR = 0.30;    // 30%+ margin = scalable economics
+const DISCOVERY_PRODUCT_LIMIT = 25;     // products tagged per run
 
 // 8 niche-aligned category buckets the user enumerated.
 const CATEGORY_BUCKETS: { key: string; boards: string[] }[] = [
@@ -82,19 +89,24 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
   const rawName = (p.name ?? "GetPawsy pick").trim();
   // Keep the product name short so variant-specific text stays unique after slicing.
   const name = rawName.length > 40 ? rawName.slice(0, 40).trim().replace(/[,\-–]+$/, "") + "…" : rawName;
+  // 5 distinct US-market title angles — kept short for Pinterest SERP truncation.
   const angles = [
-    `${name} — ${head} every pet parent loves`,
-    `${name}: the ${head} we actually keep buying`,
-    `${name} (${head}) — small upgrade, huge difference`,
-    `${name} — built for real homes (${head})`,
+    `${head}: ${name} pet parents swear by`,
+    `Best ${head} for US homes — ${name}`,
+    `${name} — the ${head} that just works`,
+    `${head} upgrade: why we keep buying ${name}`,
     `${name}: ${head} done right`,
   ];
+  // 5 distinct description angles (problem / benefit / proof / lifestyle / cta).
+  const descAngles = [
+    `Tired of mediocre ${head}? ${name} is the upgrade that finally sticks. Built for everyday US homes — quiet, durable, easy to live with.`,
+    `${name}. The ${head} that earns its spot in your home. Real-pet tested, parent-approved, and ready out of the box.`,
+    `Why parents reorder ${name}: it lasts, it works, and the reviews actually hold up. A ${head} you won't regret.`,
+    `Make the everyday calmer. ${name} blends into modern US homes while solving the ${head} problem for good.`,
+    `Skip the trial-and-error. ${name} is the ${head} we'd buy again — premium feel, fair price, fast US shipping.`,
+  ];
   const title = angles[variation % angles.length].slice(0, 95).trim();
-  const desc =
-    `${name}. Picked for US homes that want a calmer, cleaner everyday with their pet. ` +
-    `Why we like it: durable build, easy to live with, and reviews that hold up. ` +
-    `If you've been on the fence about a ${head}, this one's an easy yes. ` +
-    `Tap to see the full breakdown on GetPawsy.`;
+  const desc = descAngles[variation % descAngles.length];
   const hashtags = [head, ...tail, "petparent", "getpawsy"].map(s => "#" + s.replace(/\s+/g, ""));
   return { title, description: `${desc}\n\n${hashtags.join(" ")}`.slice(0, 480), hashtags, keywords: [head, ...tail] };
 }
