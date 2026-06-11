@@ -96,32 +96,34 @@ Deno.serve(async (req) => {
   }
 
   // 1. Pull every active queue row whose copy still contains a banned phrase.
-  const orParts = BANNED_PIN_PHRASES.flatMap((p) => [
-    `pin_title.ilike.%${p}%`,
-    `pin_description.ilike.%${p}%`,
-    `overlay_text.ilike.%${p}%`,
-  ]).join(",");
+  // PostgREST .or() can't handle commas inside ilike values, so run one query
+  // per phrase and merge by id.
+  const SELECT_COLS =
+    "id, product_id, product_slug, product_name, board_id, board_name, " +
+    "destination_link, pin_image_url, pin_title, pin_description, " +
+    "overlay_text, category_key, hook_group, status, pinterest_pin_id, " +
+    "pin_variant, hashtags";
 
-  const { data: candidates, error: scanErr } = await admin
-    .from("pinterest_pin_queue")
-    .select(
-      "id, product_id, product_slug, product_name, board_id, board_name, " +
-        "destination_link, pin_image_url, pin_title, pin_description, " +
-        "overlay_text, category_key, hook_group, status, pinterest_pin_id, " +
-        "pin_variant, hashtags",
-    )
-    .not("status", "in", "(archived,failed,rejected,deleted,error)")
-    .or(orParts)
-    .limit(limit * 4); // over-fetch so the perf sort below has room to work
-
-  if (scanErr) {
-    return new Response(
-      JSON.stringify({ ok: false, traceId, message: "scan_failed", error: scanErr.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  const merged = new Map<string, any>();
+  for (const phrase of BANNED_PIN_PHRASES) {
+    const like = `%${phrase}%`;
+    const { data, error } = await admin
+      .from("pinterest_pin_queue")
+      .select(SELECT_COLS)
+      .not("status", "in", "(archived,failed,rejected,deleted,error)")
+      .or(
+        `pin_title.ilike.${like},pin_description.ilike.${like},overlay_text.ilike.${like}`,
+      )
+      .limit(limit * 4);
+    if (error) {
+      return new Response(
+        JSON.stringify({ ok: false, traceId, message: "scan_failed", phrase, error: error.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    for (const row of data ?? []) merged.set(row.id as string, row);
   }
-
-  const pool = candidates ?? [];
+  const pool = Array.from(merged.values());
   if (pool.length === 0) {
     return new Response(
       JSON.stringify({
