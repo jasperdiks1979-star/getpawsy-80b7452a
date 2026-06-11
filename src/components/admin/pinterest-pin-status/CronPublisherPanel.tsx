@@ -274,6 +274,20 @@ export default function CronPublisherPanel() {
               <Metric label="Next allowed" value={w?.next_allowed_publish_at ? new Date(w.next_allowed_publish_at).toLocaleTimeString() : '—'} />
             </div>
 
+            {data.pipeline_report && (
+              <div className="rounded border p-3">
+                <div className="font-medium mb-2 text-sm">Pipeline report</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <Metric label="Drafts" value={data.pipeline_report.draft_count} />
+                  <Metric label="Approved" value={data.pipeline_report.approved_count} ok={data.pipeline_report.approved_count > 0} />
+                  <Metric label="Queued" value={data.pipeline_report.queued_count} ok={data.pipeline_report.queued_count > 0} />
+                  <Metric label="Blocked by QA" value={data.pipeline_report.blocked_by_qa} ok={data.pipeline_report.blocked_by_qa === 0} />
+                  <Metric label="Missing board" value={data.pipeline_report.missing_board} ok={data.pipeline_report.missing_board === 0} />
+                  <Metric label="Missing score" value={data.pipeline_report.missing_score} ok={data.pipeline_report.missing_score === 0} />
+                </div>
+              </div>
+            )}
+
             <div className="rounded border p-3">
               <div className="font-medium mb-1">Next eligible pin</div>
               {data.next_eligible_pin ? (
