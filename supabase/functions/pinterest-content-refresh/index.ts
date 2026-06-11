@@ -320,8 +320,6 @@ Deno.serve(async (req) => {
   );
 });
 
-// Note: every insert/update above flows through the public.enforce_pin_copy_rules
-// trigger, so any regression in copy is rejected by the database as well as by
-// the in-function validatePinCopy() call.
-_ = BANNED_OR;
-let _: unknown;
+// Note: every insert/update above also flows through the database trigger
+// public.enforce_pin_copy_rules, so any regression in copy is rejected by both
+// the in-function validatePinCopy() check and the database itself.
