@@ -33,6 +33,12 @@ export const PINTEREST_ALLOWED_SLUGS: ReadonlySet<string> = new Set([
   // Phase 1 — Controlled Launch (3 premium pins, 24h warm-up)
   "cactus-cat-climbing-tree-all-in-one-condo",
   "hidden-cat-litter-box-furniture-enclosure",
+  // Phase 2 — Cat hero catalogue (litter, cat trees, scratchers)
+  "enclosed-cat-litter-box-extra-large-flip-top",
+  "29-moon-star-cat-tree-with-4-levels-jute-scratching-posts-anti-tipping-device-4cfa",
+  "cat-tree-3-level-cat-tower-with-scratching-posts-bed-condo-badminton-toys-for-multiple-kittens",
+  "mewoo-cat-scratching-post-bed-2-in-1-small-cat-tower-with-sisal-scratcher-and-ball-track-toys-green-",
+  "mewoo-cat-scratching-post-with-bed-small-cat-tower-with-sisal-scratcher-removable-perch-ball-track-t",
 ]);
 
 export interface PinQaInput {
