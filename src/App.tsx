@@ -2639,6 +2639,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-product-conversion"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestProductConversionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-integrity"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
