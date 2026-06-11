@@ -47,6 +47,7 @@ import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
+import { buildPinCopy, sanitizePinText } from "../_shared/pinterest-board-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,7 +166,7 @@ async function loadOrBuildProfile(
 ): Promise<{ niche: NicheKey; dna: StyleDNA; product: any; cached: boolean }> {
   const { data: product, error } = await supabase
     .from("products")
-    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets")
+    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price")
     .eq("id", productId)
     .maybeSingle();
   if (error) throw new Error(`product lookup failed: ${error.message}`);
@@ -453,11 +454,16 @@ async function generateBriefs(
     // Headline lock: the product-truthful hook ALWAYS wins. We do not let the
     // image-brief AI rewrite it (it would drift back to generic copy).
     headline: safeText(
-      productHooks[i]?.headline ||
-        String(b.headline || strategies[i]?.hook_phrase || ""),
+      sanitizePinText(
+        productHooks[i]?.headline ||
+          String(b.headline || strategies[i]?.hook_phrase || ""),
+      ),
       42,
     ),
-    cta: safeText(String(b.cta || strategies[i]?.cta_phrase || ""), 18),
+    cta: safeText(
+      sanitizePinText(String(b.cta || strategies[i]?.cta_phrase || "")),
+      18,
+    ),
     full_prompt: String(b.full_prompt || ""),
     pattern_id: patterns[i]?.id,
     hook_category: strategies[i]?.hook_category,
@@ -476,7 +482,7 @@ async function generateBriefs(
 
 async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-  return await renderSceneWithSource(brief, dna, null);
+  return await renderSceneWithSource(brief, dna, null, null);
 }
 
 /**
@@ -489,6 +495,7 @@ async function renderSceneWithSource(
   brief: SceneBrief,
   dna: StyleDNA,
   productImageUrl: string | null,
+  overlay: { text: string; brand: string } | null = null,
 ): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -514,21 +521,25 @@ async function renderSceneWithSource(
       })
     : "";
 
+  const overlayDirective = overlay
+    ? ` Render EXACTLY ONE short benefit caption in clean modern sans-serif typography ` +
+      `(white text with a soft drop shadow OR a thin translucent bar) reading verbatim: ` +
+      `"${overlay.text}". Also render a small wordmark in the bottom-right corner reading verbatim: ` +
+      `"${overlay.brand}". Do NOT render any other text, captions, prices, CTAs, emojis, hashtags, or graphics.`
+    : ` Do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself.`;
   const styleSuffix =
-    `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+    `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-    `Vertical 9:16 composition for Pinterest, leave clean space at the top third for a single elegant headline ` +
-    `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
-    `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
+    `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
+    `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars, NO price tags.`;
 
   // For collage modes, replace the anti-collage clause with the explicit
   // collage contract so the image model isn't given contradictory directives.
   const styleSuffixForMode = mode?.is_collage
-    ? `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+    ? `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
       `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-      `Vertical 9:16 composition for Pinterest. ` +
-      `Do NOT render any text, captions, watermarks, logos, prices, or graphic overlays in the image itself. ` +
-      `No floating product cutouts, no Canva-template look, no CTA bars.`
+      `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
+      `No floating product cutouts, no Canva-template look, no CTA bars, no price tags.`
     : styleSuffix;
 
   const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
@@ -903,10 +914,11 @@ async function pickLandingSlug(
 
 async function uploadAndInsertDraft(
   supabase: ReturnType<typeof createClient>,
-  product: { id: string; slug: string; name: string },
+  product: { id: string; slug: string; name: string; price?: number | null; benefit?: string | null; category?: string | null },
   niche: NicheKey,
   brief: SceneBrief,
   bytes: Uint8Array,
+  variantIndex = 0,
   intelligence?: {
     scores: Record<string, number>;
     attempt_count: number;
@@ -960,13 +972,25 @@ async function uploadAndInsertDraft(
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
   const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
+  // ── Deterministic board-template copy (no random AI fluff) ──────────────
+  const copy = buildPinCopy(
+    {
+      name: product.name,
+      benefit: product.benefit ?? null,
+      category: product.category ?? null,
+      price: product.price ?? null,
+      niche,
+    },
+    variantIndex,
+  );
+
   const row = {
     product_id: product.id,
     product_slug: product.slug,
     product_name: product.name,
     pin_variant: variant,
-    pin_title: brief.headline,
-    pin_description: `${brief.emotional_hook}. ${brief.environment_summary}`.slice(0, 480),
+    pin_title: copy.title,
+    pin_description: copy.description,
     pin_image_url: imageUrl,
     destination_link: destination,
     priority: "high" as const,
@@ -974,7 +998,7 @@ async function uploadAndInsertDraft(
     scheduled_at: new Date().toISOString(),
     hook_group: brief.pattern_id || niche,
     category_key: niche,
-    overlay_text: `${brief.headline} • ${brief.cta}`,
+    overlay_text: `${copy.overlay} • ${copy.cta}`,
     image_hash: imageHash,
     pin_image_phash: pinPhash,
     meta: intelligence
@@ -1149,6 +1173,23 @@ Deno.serve(async (req) => {
         console.warn("[creative-director] product has no image_url — falling back to text-only render", product.slug);
       }
 
+      // Deterministic board overlay (1 short benefit + GetPawsy wordmark).
+      // Used both for the image renderer and the queue row copy.
+      const boardCopyPreview = buildPinCopy(
+        {
+          name: product.name,
+          benefit: (product as any).benefit_angle ?? null,
+          category: (product as any).category ?? null,
+          price: (product as any).price ?? null,
+          niche,
+        },
+        0,
+      );
+      const inImageOverlay = {
+        text: boardCopyPreview.overlay,
+        brand: boardCopyPreview.brandWordmark,
+      };
+
       // Per-brief retry: render → score → if fail, regen JUST that brief with
       // the failure reasons appended, up to MAX_RETRIES extra attempts.
       for (let i = 0; i < briefs.length; i++) {
@@ -1159,7 +1200,12 @@ Deno.serve(async (req) => {
 
         for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
           try {
-            const bytes = await renderSceneWithSource(brief, dna, productImageUrl);
+            const bytes = await renderSceneWithSource(
+              brief,
+              dna,
+              productImageUrl,
+              inImageOverlay,
+            );
             const qc = await qualityCheck(brief, bytes, dna);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
@@ -1265,10 +1311,18 @@ Deno.serve(async (req) => {
 
             const inserted = await uploadAndInsertDraft(
               supabase,
-              { id: product.id, slug: product.slug, name: product.name },
+              {
+                id: product.id,
+                slug: product.slug,
+                name: product.name,
+                price: (product as any).price ?? null,
+                benefit: (product as any).benefit_angle ?? null,
+                category: (product as any).category ?? null,
+              },
               niche,
               brief,
               bytes,
+              i,
               {
                 scores: lastScores,
                 attempt_count: attempt,
