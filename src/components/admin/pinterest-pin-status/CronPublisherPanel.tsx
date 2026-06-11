@@ -314,6 +314,11 @@ export default function CronPublisherPanel() {
                   <Metric label="Missing board" value={data.pipeline_report.missing_board} ok={data.pipeline_report.missing_board === 0} />
                   <Metric label="Missing score" value={data.pipeline_report.missing_score} ok={data.pipeline_report.missing_score === 0} />
                 </div>
+                {lastBoardAssign && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Last board assign: scanned {lastBoardAssign.scanned}, assigned {lastBoardAssign.assigned}, unresolved {lastBoardAssign.unresolved} (eligible boards: {lastBoardAssign.eligible_boards})
+                  </div>
+                )}
               </div>
             )}
 
