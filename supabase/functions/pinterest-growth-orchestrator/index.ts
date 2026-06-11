@@ -275,8 +275,8 @@ Deno.serve(async (req) => {
     try {
       const { data: candProds } = await sb
         .from("products")
-        .select("id, slug, name, image_url, margin_percent, active")
-        .eq("active", true)
+        .select("id, slug, name, image_url, margin_percent, is_active")
+        .eq("is_active", true)
         .not("image_url", "is", null)
         .gte("margin_percent", DISCOVERY_MARGIN_FLOOR)
         .order("margin_percent", { ascending: false })
@@ -406,11 +406,11 @@ Deno.serve(async (req) => {
     try {
       for (const w of winners) {
         if (stats.video_drafts_planned >= winners.length * WINNER_VIDEO_VARIATIONS) break;
-        const { data: assets } = await sb
+        const { data: assets } = w.product_slug ? await sb
           .from("pinterest_video_assets")
           .select("id, hook_group")
-          .eq("product_id", w.product_id)
-          .limit(WINNER_VIDEO_VARIATIONS);
+          .eq("product_slug", w.product_slug)
+          .limit(WINNER_VIDEO_VARIATIONS) : { data: [] as any[] };
         if (!assets || !assets.length) continue;
         for (const a of assets) {
           log({
