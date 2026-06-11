@@ -12493,39 +12493,231 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_competitor_opportunities: {
+        Row: {
+          competitor_gap_score: number
+          components: Json
+          created_at: string
+          generated_drafts: number
+          id: string
+          last_generated_at: string | null
+          product_id: string
+          product_slug: string | null
+          rank: number | null
+          top_patterns: Json
+          updated_at: string
+        }
+        Insert: {
+          competitor_gap_score?: number
+          components?: Json
+          created_at?: string
+          generated_drafts?: number
+          id?: string
+          last_generated_at?: string | null
+          product_id: string
+          product_slug?: string | null
+          rank?: number | null
+          top_patterns?: Json
+          updated_at?: string
+        }
+        Update: {
+          competitor_gap_score?: number
+          components?: Json
+          created_at?: string
+          generated_drafts?: number
+          id?: string
+          last_generated_at?: string | null
+          product_id?: string
+          product_slug?: string | null
+          rank?: number | null
+          top_patterns?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pinterest_competitor_patterns: {
+        Row: {
+          avg_success: number
+          created_at: string
+          id: string
+          last_seen_at: string
+          niche_key: string | null
+          pattern_type: string
+          pattern_value: string
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_success?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          niche_key?: string | null
+          pattern_type: string
+          pattern_value: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_success?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          niche_key?: string | null
+          pattern_type?: string
+          pattern_value?: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_competitor_pins: {
         Row: {
+          benefit_angle: string | null
+          board_name: string | null
+          competitor_success_score: number | null
+          created_at: string
+          cta_pattern: string | null
           description: string | null
+          description_sample: string | null
+          detected_keywords: string[] | null
+          domain: string | null
           fetched_at: string
+          freshness_score: number | null
+          hook_angle: string | null
           id: string
           pattern_tags: string[] | null
           pin_external_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          query: string | null
+          relevance_score: number | null
           save_rate_est: number | null
           source_account: string | null
+          source_url: string | null
           title: string | null
+          title_hash: string | null
+          title_sample: string | null
+          visible_comments: number | null
+          visible_engagement_score: number | null
+          visible_saves: number | null
           visual_hash: string | null
+          visual_type: string | null
         }
         Insert: {
+          benefit_angle?: string | null
+          board_name?: string | null
+          competitor_success_score?: number | null
+          created_at?: string
+          cta_pattern?: string | null
           description?: string | null
+          description_sample?: string | null
+          detected_keywords?: string[] | null
+          domain?: string | null
           fetched_at?: string
+          freshness_score?: number | null
+          hook_angle?: string | null
           id?: string
           pattern_tags?: string[] | null
           pin_external_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          query?: string | null
+          relevance_score?: number | null
           save_rate_est?: number | null
           source_account?: string | null
+          source_url?: string | null
           title?: string | null
+          title_hash?: string | null
+          title_sample?: string | null
+          visible_comments?: number | null
+          visible_engagement_score?: number | null
+          visible_saves?: number | null
           visual_hash?: string | null
+          visual_type?: string | null
         }
         Update: {
+          benefit_angle?: string | null
+          board_name?: string | null
+          competitor_success_score?: number | null
+          created_at?: string
+          cta_pattern?: string | null
           description?: string | null
+          description_sample?: string | null
+          detected_keywords?: string[] | null
+          domain?: string | null
           fetched_at?: string
+          freshness_score?: number | null
+          hook_angle?: string | null
           id?: string
           pattern_tags?: string[] | null
           pin_external_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          query?: string | null
+          relevance_score?: number | null
           save_rate_est?: number | null
           source_account?: string | null
+          source_url?: string | null
           title?: string | null
+          title_hash?: string | null
+          title_sample?: string | null
+          visible_comments?: number | null
+          visible_engagement_score?: number | null
+          visible_saves?: number | null
           visual_hash?: string | null
+          visual_type?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_competitor_runs: {
+        Row: {
+          competitor_candidates_found: number
+          drafts_generated: number
+          errors: number
+          finished_at: string | null
+          health: Json
+          id: string
+          mode: string
+          notes: string | null
+          opportunities_created: number
+          patterns_extracted: number
+          products_scanned: number
+          queued: number
+          rejected: number
+          started_at: string
+        }
+        Insert: {
+          competitor_candidates_found?: number
+          drafts_generated?: number
+          errors?: number
+          finished_at?: string | null
+          health?: Json
+          id?: string
+          mode?: string
+          notes?: string | null
+          opportunities_created?: number
+          patterns_extracted?: number
+          products_scanned?: number
+          queued?: number
+          rejected?: number
+          started_at?: string
+        }
+        Update: {
+          competitor_candidates_found?: number
+          drafts_generated?: number
+          errors?: number
+          finished_at?: string | null
+          health?: Json
+          id?: string
+          mode?: string
+          notes?: string | null
+          opportunities_created?: number
+          patterns_extracted?: number
+          products_scanned?: number
+          queued?: number
+          rejected?: number
+          started_at?: string
         }
         Relationships: []
       }
