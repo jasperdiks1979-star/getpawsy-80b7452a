@@ -19,8 +19,13 @@
 //                       | null
 // }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
+import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
+import {
+  DiversityGuard,
+  normaliseCategoryKey,
+  scoreVariety,
+} from "../_shared/pinterest-diversity-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +53,7 @@ Deno.serve(async (req) => {
     const { data: rt } = await sb
       .from("pinterest_runtime_settings")
       .select(
-        "scale_unlocked, daily_pin_cap, min_gap_minutes, warmup_until, us_score_threshold, auto_approve_queue, domination_mode, production_publish_verified, production_trial_detected, deploy_verified_at, deploy_verification_window_minutes",
+        "scale_unlocked, daily_pin_cap, min_gap_minutes, warmup_until, us_score_threshold, per_category_daily_cap, auto_approve_queue, domination_mode, production_publish_verified, production_trial_detected, deploy_verified_at, deploy_verification_window_minutes",
       )
       .eq("id", 1)
       .maybeSingle();
@@ -63,6 +68,7 @@ Deno.serve(async (req) => {
       : (scaleUnlocked ? MAX_PINS_PER_HOUR * 24 : HERO_DAILY_CAP);
     const minGapMinutes: number = warmupActive ? Number(rt?.min_gap_minutes ?? 90) : 0;
     const usScoreThreshold: number = Number(rt?.us_score_threshold ?? 0.55);
+    const perCategoryDailyCap: number = Math.max(1, Number(rt?.per_category_daily_cap ?? 8));
     const verifyWindowMin = Number(rt?.deploy_verification_window_minutes ?? 60);
     const verifiedAt = rt?.deploy_verified_at ? new Date(rt.deploy_verified_at as string).getTime() : 0;
     const deployVerifyFresh = verifiedAt > 0 && (now - verifiedAt) <= verifyWindowMin * 60 * 1000;
@@ -142,26 +148,127 @@ Deno.serve(async (req) => {
       .select("*", { count: "exact", head: true })
       .eq("status", "queued");
 
-    const readyToPublish = (candidates || []).filter((p: any) => {
-      const us = Number(p.us_audience_score ?? 0);
-      return (
-        us >= usScoreThreshold &&
-        typeof p.pin_image_url === "string" && p.pin_image_url.startsWith("https://") &&
-        typeof p.destination_link === "string" && p.destination_link.startsWith("https://getpawsy.pet/")
-      );
-    }).length;
+    // Per-category posted counts (rolling 24h)
+    const { data: postedRecent } = await sb
+      .from("pinterest_pin_queue")
+      .select("category_key, product_id, pin_variant")
+      .eq("status", "posted")
+      .gte("posted_at", oneDayAgo);
+    const catCounts = new Map<string, number>();
+    for (const r of postedRecent || []) {
+      const k = normaliseCategoryKey((r as any).category_key) || "(uncat)";
+      catCounts.set(k, (catCounts.get(k) || 0) + 1);
+    }
+
+    // Blacklisted boards (sandbox / invalid)
+    let blacklistedBoardIds = new Set<string>();
+    try {
+      const { data: bl } = await sb
+        .from("pinterest_boards")
+        .select("board_id, is_blacklisted")
+        .eq("is_blacklisted", true);
+      blacklistedBoardIds = new Set((bl || []).map((b: any) => String(b.board_id)));
+    } catch { /* non-fatal */ }
+
+    // Load DiversityGuard once for simulation
+    const diversityGuard = new DiversityGuard();
+    try { await diversityGuard.load(sb); } catch { /* non-fatal */ }
+    const MIN_VARIETY_SCORE = 75;
+
+    // Fetch full pin rows for the candidates so we can run the QA gate and
+    // DiversityGuard scoring exactly like the cron worker does.
+    const candidateIds = (candidates || []).map((c: any) => c.id);
+    let fullPins: any[] = [];
+    if (candidateIds.length > 0) {
+      const { data: full } = await sb
+        .from("pinterest_pin_queue")
+        .select("*")
+        .in("id", candidateIds);
+      fullPins = full || [];
+    }
+    const fullById = new Map(fullPins.map((p: any) => [p.id, p]));
+
+    // Simulated per-category cap counter (decremented as we accept candidates)
+    const simCatCounts = new Map(catCounts);
+    const simulate = (cand: any) => {
+      const reasons: string[] = [];
+      const full = fullById.get(cand.id) || cand;
+      const us = Number(cand.us_audience_score ?? 0);
+      const destOk = typeof cand.destination_link === "string" && cand.destination_link.startsWith("https://getpawsy.pet/");
+      const imgOk = typeof cand.pin_image_url === "string" && cand.pin_image_url.startsWith("https://");
+      if (!destOk) reasons.push("destination_url_invalid");
+      if (!imgOk) reasons.push("image_url_invalid");
+      if (us < usScoreThreshold) reasons.push(`us_score_below_threshold (${us.toFixed(2)}<${usScoreThreshold})`);
+      const catKey = normaliseCategoryKey(full.category_key) || "(uncat)";
+      const used = simCatCounts.get(catKey) || 0;
+      if (used >= perCategoryDailyCap) {
+        reasons.push(`per_category_cap_hit (${catKey}: ${used}/${perCategoryDailyCap})`);
+      }
+      if (cand.board_id && blacklistedBoardIds.has(String(cand.board_id))) {
+        reasons.push("board_blacklisted");
+      }
+      // QA gate
+      try {
+        const qa = runPinQa({ ...full, domination_mode: !!rt?.domination_mode } as any);
+        if (qa.length > 0) reasons.push(`qa_gate:${qa.join("|")}`);
+      } catch (e) {
+        reasons.push(`qa_gate_exception:${(e as Error).message}`);
+      }
+      // Diversity guard
+      try {
+        const ovText = String(full.overlay_text || "");
+        const sep = ovText.includes(" • ") ? " • " : ovText.includes(" | ") ? " | " : null;
+        const [hRaw, cRaw] = sep ? ovText.split(sep) : [ovText, ""];
+        const headline = (hRaw || full.pin_title || "").trim();
+        const cta = (cRaw || "").trim();
+        const candidateD = { headline, cta, hook: full.hook_group || null, product_id: full.product_id, pin_queue_id: full.id };
+        const evalRes = diversityGuard.evaluate(candidateD as any, catKey);
+        const variety = scoreVariety(diversityGuard, candidateD as any).total;
+        if (!evalRes.ok || variety < MIN_VARIETY_SCORE) {
+          reasons.push(`diversity_guard (score=${variety}; ${(evalRes.reasons || []).join("|") || "below_min_variety"})`);
+        }
+      } catch (e) {
+        reasons.push(`diversity_exception:${(e as Error).message}`);
+      }
+      return { reasons, catKey, full };
+    };
+
+    // Duplicate guard (same product+variant posted in last 7 days)
+    const sevenDaysAgo = new Date(now - 7 * 86400000).toISOString();
+    const dupeCheck = async (full: any): Promise<boolean> => {
+      if (!full?.product_id || !full?.pin_variant) return false;
+      const { count } = await sb
+        .from("pinterest_pin_queue")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", full.product_id)
+        .eq("pin_variant", full.pin_variant)
+        .eq("status", "posted")
+        .gte("posted_at", sevenDaysAgo);
+      return (count || 0) > 0;
+    };
+
+    const simResults: any[] = [];
+    let readyToPublish = 0;
+    for (const cand of (candidates || [])) {
+      const r = simulate(cand);
+      const dupe = await dupeCheck(r.full);
+      if (dupe) r.reasons.push("duplicate_within_7d");
+      const eligible = r.reasons.length === 0;
+      if (eligible) {
+        readyToPublish++;
+        simCatCounts.set(r.catKey, (simCatCounts.get(r.catKey) || 0) + 1);
+      }
+      simResults.push({ id: (cand as any).id, eligible, reasons: r.reasons });
+    }
 
     const top: any = (candidates || [])[0] || null;
+    const topSim = simResults[0] || null;
     let nextEligible: Record<string, unknown> | null = null;
     if (top) {
       const usScore = Number(top.us_audience_score ?? 0);
       const destOk = typeof top.destination_link === "string" && top.destination_link.startsWith("https://getpawsy.pet/");
       const imgOk = typeof top.pin_image_url === "string" && top.pin_image_url.startsWith("https://");
-      const usOk = usScore >= usScoreThreshold;
-      const reasons: string[] = [];
-      if (!destOk) reasons.push("destination_url_invalid");
-      if (!imgOk) reasons.push("image_url_invalid");
-      if (!usOk) reasons.push(`us_score_below_threshold (${usScore.toFixed(2)}<${usScoreThreshold})`);
+      const reasons: string[] = [...(topSim?.reasons || [])];
       if (blocked) reasons.push(reason!);
       nextEligible = {
         id: top.id,
@@ -181,12 +288,20 @@ Deno.serve(async (req) => {
       };
     }
 
+    const willPublishNextTick = !blocked && readyToPublish > 0;
+
     return j({
       ok: true,
       now: new Date(now).toISOString(),
       ready_to_publish: readyToPublish,
+      will_publish_next_tick: willPublishNextTick,
       queued_total: queuedTotal || 0,
       candidate_count: (candidates || []).length,
+      candidate_simulation: simResults,
+      per_category: {
+        cap: perCategoryDailyCap,
+        used_24h: Object.fromEntries(catCounts),
+      },
       warmup: {
         active: warmupActive,
         warmup_until: rt?.warmup_until || null,
@@ -198,6 +313,7 @@ Deno.serve(async (req) => {
         minutes_remaining_for_gap: gapRemainingMin,
         next_allowed_publish_at: nextAllowedPublishAt,
         us_score_threshold: usScoreThreshold,
+        per_category_daily_cap: perCategoryDailyCap,
       },
       gating: { blocked, reason },
       flags: {
