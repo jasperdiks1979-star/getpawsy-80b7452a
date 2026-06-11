@@ -408,7 +408,7 @@ Deno.serve(async (req) => {
         if (stats.video_drafts_planned >= winners.length * WINNER_VIDEO_VARIATIONS) break;
         const { data: assets } = w.product_slug ? await sb
           .from("pinterest_video_assets")
-          .select("id, hook_group")
+          .select("id, hook_type")
           .eq("product_slug", w.product_slug)
           .limit(WINNER_VIDEO_VARIATIONS) : { data: [] as any[] };
         if (!assets || !assets.length) continue;
@@ -418,7 +418,7 @@ Deno.serve(async (req) => {
             product_id: w.product_id,
             product_slug: w.product_slug,
             reason: "winner_video_amplification",
-            payload: { asset_id: a.id, hook: a.hook_group ?? null },
+            payload: { asset_id: a.id, hook: a.hook_type ?? null },
           });
           stats.video_drafts_planned += 1;
         }
