@@ -266,11 +266,11 @@ Deno.serve(async (req) => {
       .update({ replacement_for_pin_id: row.id })
       .eq("id", inserted.id);
 
-    // 3c. Archive the outdated row.
+    // 3c. Mark the outdated row as rejected (table CHECK doesn't allow 'archived').
     const { error: archErr } = await admin
       .from("pinterest_pin_queue")
       .update({
-        status: "archived",
+        status: "rejected",
         rejection_reason: "content_refresh_banned_overlay",
       })
       .eq("id", row.id);
