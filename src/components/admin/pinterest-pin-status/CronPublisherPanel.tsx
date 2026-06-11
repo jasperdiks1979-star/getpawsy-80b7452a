@@ -443,6 +443,55 @@ export default function CronPublisherPanel() {
                 )}
               </div>
             )}
+
+            {lastCorrection && (
+              <div className="rounded border p-3 text-xs space-y-1">
+                <div className="font-medium mb-1">Last content correction</div>
+                <Row k="ok" v={String(lastCorrection.ok)} />
+                <Row k="scanned" v={lastCorrection.scanned} />
+                <Row k="repaired" v={lastCorrection.repaired} />
+                <Row k="duplicate image (30d)" v={lastCorrection.duplicates_image} />
+                <Row k="duplicate destination (30d)" v={lastCorrection.duplicates_destination} />
+                <Row k="rejected" v={lastCorrection.rejected} />
+                <Row k="untouched" v={lastCorrection.untouched} />
+                <Row k="active after" v={lastCorrection.active_after ?? '—'} />
+                {lastCorrection.sample_overlays_per_category && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-muted-foreground">Sample overlays per category</summary>
+                    <div className="mt-2 space-y-1">
+                      {Object.entries(lastCorrection.sample_overlays_per_category).map(([bucket, list]: any) => (
+                        <div key={bucket} className="border rounded px-2 py-1">
+                          <div className="font-mono text-[11px]">{bucket}</div>
+                          <ul className="list-disc ml-4">
+                            {(list as string[]).map((s, i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+                {Array.isArray(lastCorrection.report) && lastCorrection.report.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-muted-foreground">Per-pin report ({lastCorrection.report.length})</summary>
+                    <div className="mt-2 max-h-72 overflow-auto space-y-1">
+                      {lastCorrection.report.map((rr: any, i: number) => (
+                        <div key={i} className="border rounded px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={rr.status?.includes('reject') ? 'destructive' : rr.status?.includes('repair') ? 'default' : 'secondary'}>{rr.status}</Badge>
+                            <span className="font-mono">{rr.slug || rr.id?.slice(0,8) || '—'}</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            {rr.reason ? `${rr.reason} · ` : ''}
+                            {(rr.fixes || []).join(',') || (rr.reasons || []).join(',')}
+                            {rr.overlay_text ? ` · → "${rr.overlay_text}"` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
           </>
         )}
       </CardContent>
