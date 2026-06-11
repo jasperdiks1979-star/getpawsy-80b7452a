@@ -15223,6 +15223,7 @@ export type Database = {
           min_gap_minutes: number
           mode: string
           pacing_mode: string
+          per_category_daily_cap: number
           product_cooldown_hours: number
           production_publish_verified: boolean
           production_publish_verified_at: string | null
@@ -15260,6 +15261,7 @@ export type Database = {
           min_gap_minutes?: number
           mode?: string
           pacing_mode?: string
+          per_category_daily_cap?: number
           product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
@@ -15297,6 +15299,7 @@ export type Database = {
           min_gap_minutes?: number
           mode?: string
           pacing_mode?: string
+          per_category_daily_cap?: number
           product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
