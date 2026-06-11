@@ -1381,6 +1381,225 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, rejected: pinIds.length });
     }
 
+    if (action === "repair_blocked_drafts") {
+      // Auto-repair drafts that runPinQa() rejected. Fixes: missing_cta,
+      // weak_hook, wrong_destination_url, supplier_image. Re-runs QA and
+      // queues every draft that now passes.
+      const limit = Math.min(Math.max(Number(body.limit) || 50, 1), 200);
+      const BUCKET = "product-images";
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const APPROVED_HOOKS: Record<string, string[]> = {
+        litter: [
+          "Tired of litter box chores",
+          "Cat litter smell taking over",
+          "Daily scooping gets old fast",
+          "Hate scooping every day",
+          "Save 30 minutes every week",
+          "Clean litter in seconds",
+          "From messy to self-cleaning",
+          "Smart pet parents love this",
+        ],
+        cat_tree: [
+          "Tired of cat tree wobble",
+          "Upgrade your cat setup",
+          "Cluttered apartment cat setup",
+          "From cluttered to calm",
+          "Apartment cat owner upgrade",
+          "Your cat deserves better",
+        ],
+        dog: [
+          "Save 20 minutes daily",
+          "Upgrade your pet setup",
+          "Smart pet parents love this",
+          "Your dog deserves better",
+          "From messy to modern",
+        ],
+        default: [
+          "Smart pet parents love this",
+          "Your cat deserves better",
+          "Upgrade your pet setup",
+        ],
+      };
+      const CTAS = ["Shop Now", "Get Yours", "See Details", "Explore More"];
+      const pickHook = (slug: string): string => {
+        const s = (slug || "").toLowerCase();
+        const bank =
+          /litter/.test(s) ? APPROVED_HOOKS.litter :
+          /cat[-_ ]?tree|scratch|tower|condo/.test(s) ? APPROVED_HOOKS.cat_tree :
+          /\b(dog|puppy|leash|kennel|crate)\b/.test(s) ? APPROVED_HOOKS.dog :
+          APPROVED_HOOKS.default;
+        const idx = Math.abs(hashStr(slug)) % bank.length;
+        return bank[idx];
+      };
+      const pickCta = (slug: string) => CTAS[Math.abs(hashStr(slug + "cta")) % CTAS.length];
+      function hashStr(s: string): number {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+        return h;
+      }
+
+      const isCjUrl = (u: string) => {
+        try {
+          const h = new URL(u).host.toLowerCase();
+          return /(^|\.)cjdropshipping\.com$|aliexpress|alicdn/.test(h);
+        } catch { return false; }
+      };
+      const sha1 = async (s: string) => {
+        const b = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(s));
+        return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join("");
+      };
+      const rehost = async (productSlug: string, srcUrl: string): Promise<string | null> => {
+        try {
+          const r = await fetch(srcUrl, { headers: { "User-Agent": "GetPawsyRepair/1.0" } });
+          if (!r.ok) return null;
+          const ct = r.headers.get("content-type") || "image/jpeg";
+          const bytes = new Uint8Array(await r.arrayBuffer());
+          if (bytes.byteLength < 1024) return null;
+          const ext = ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
+          const hash = (await sha1(srcUrl)).slice(0, 16);
+          const path = `rehosted/${productSlug}/${hash}.${ext}`;
+          const { error } = await sb.storage.from(BUCKET).upload(path, bytes, {
+            contentType: ct, upsert: true, cacheControl: "31536000, immutable",
+          });
+          if (error) return null;
+          return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+        } catch { return null; }
+      };
+
+      // Cloudinary fetch URL has the source URL appended as the LAST path
+      // segment after the transformations. Detect & swap it.
+      const swapCloudinarySource = async (imgUrl: string, slug: string): Promise<{ url: string; rehosted: boolean }> => {
+        try {
+          const marker = "/image/fetch/";
+          const idx = imgUrl.indexOf(marker);
+          if (idx < 0) return { url: imgUrl, rehosted: false };
+          const after = imgUrl.slice(idx + marker.length);
+          // Source URL begins at the first 'http' substring
+          const httpIdx = after.indexOf("http");
+          if (httpIdx < 0) return { url: imgUrl, rehosted: false };
+          const srcUrl = after.slice(httpIdx);
+          if (!isCjUrl(srcUrl)) return { url: imgUrl, rehosted: false };
+          const newSrc = await rehost(slug, srcUrl);
+          if (!newSrc) return { url: imgUrl, rehosted: false };
+          return { url: imgUrl.slice(0, idx + marker.length) + after.slice(0, httpIdx) + newSrc, rehosted: true };
+        } catch { return { url: imgUrl, rehosted: false }; }
+      };
+
+      const { data: drafts } = await sb
+        .from("pinterest_pin_queue")
+        .select("*")
+        .eq("status", "draft")
+        .not("qa_reasons", "is", null)
+        .limit(limit);
+
+      const blocked = (drafts || []).filter((d: any) => Array.isArray(d.qa_reasons) && d.qa_reasons.length > 0);
+
+      let repaired = 0;
+      let approved = 0;
+      let stillFailing = 0;
+      const results: any[] = [];
+
+      for (const pin of blocked) {
+        const fixes: string[] = [];
+        const before = [...(pin.qa_reasons || [])];
+
+        // 1. Overlay → "Hook | CTA"
+        if (before.includes("missing_cta") || before.includes("weak_hook") || before.includes("unreadable_text")) {
+          const hook = pickHook(pin.product_slug || "");
+          const cta = pickCta(pin.product_slug || "");
+          pin.overlay_text = `${hook} | ${cta}`;
+          fixes.push("overlay_rewritten");
+        }
+
+        // 2. Destination → /products/{slug}
+        if (before.includes("wrong_destination_url") || before.includes("malformed_url")) {
+          const slug = pin.product_slug || "";
+          pin.destination_link =
+            `https://getpawsy.pet/products/${slug}` +
+            `?utm_source=pinterest&utm_medium=social&utm_campaign=auto_pin&utm_content=${slug}`;
+          fixes.push("destination_rewritten");
+        }
+
+        // 3. Supplier image → rehost
+        if (before.includes("supplier_image")) {
+          if (pin.pin_image_url) {
+            const swap = await swapCloudinarySource(pin.pin_image_url, pin.product_slug || "unknown");
+            if (swap.rehosted) {
+              pin.pin_image_url = swap.url;
+              fixes.push("image_rehosted");
+            } else if (isCjUrl(pin.pin_image_url)) {
+              const rh = await rehost(pin.product_slug || "unknown", pin.pin_image_url);
+              if (rh) { pin.pin_image_url = rh; fixes.push("image_rehosted"); }
+            }
+          }
+        }
+
+        // 4. Re-run QA
+        const newReasons = runPinQa(pin as any);
+        const passes = newReasons.length === 0;
+
+        if (passes) {
+          const { error } = await sb.from("pinterest_pin_queue").update({
+            overlay_text: pin.overlay_text,
+            destination_link: pin.destination_link,
+            pin_image_url: pin.pin_image_url,
+            status: "queued",
+            approved_at: new Date().toISOString(),
+            scheduled_at: new Date().toISOString(),
+            us_audience_score: pin.us_audience_score ?? 1.0,
+            qa_reasons: [],
+            error_message: null,
+          }).eq("id", pin.id);
+          if (error) {
+            stillFailing++;
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes, before, after: newReasons, queued: false, error: error.message });
+          } else {
+            repaired++;
+            approved++;
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes, before, after: [], queued: true });
+          }
+        } else {
+          // Persist what we changed, but keep as draft.
+          await sb.from("pinterest_pin_queue").update({
+            overlay_text: pin.overlay_text,
+            destination_link: pin.destination_link,
+            pin_image_url: pin.pin_image_url,
+            qa_reasons: newReasons,
+            error_message: `QA gate (post-repair): ${newReasons.join(",")}`,
+          }).eq("id", pin.id);
+          stillFailing++;
+          results.push({ id: pin.id, product_slug: pin.product_slug, fixes, before, after: newReasons, queued: false });
+        }
+      }
+
+      // Compute next eligible pin
+      const { data: next } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, product_slug, scheduled_at, board_id, pin_image_url, destination_link")
+        .eq("status", "queued")
+        .not("approved_at", "is", null)
+        .not("board_id", "is", null)
+        .order("scheduled_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      const { count: queuedCount } = await sb
+        .from("pinterest_pin_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "queued");
+
+      return json(cors, {
+        ok: true,
+        scanned: blocked.length,
+        repaired,
+        approved,
+        queued_total: queuedCount || 0,
+        still_failing: stillFailing,
+        next_eligible_pin: next || null,
+        results,
+      });
+    }
+
     if (action === "regenerate_pin") {
       // Mark the existing draft as skipped, then trigger a fresh viral batch
       // for the same hero product. The cron worker will only ever publish
