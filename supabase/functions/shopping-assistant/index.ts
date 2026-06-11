@@ -6,6 +6,29 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ---- SECURITY: simple in-memory per-IP rate limit + auth gate ------------
+// Prevents unauthenticated abuse of the AI gateway. The limit is per cold
+// start so it's best-effort, but enough to deter scripted abuse.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const b = rateLimitBuckets.get(key);
+  if (!b || b.resetAt < now) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (b.count >= RATE_LIMIT_MAX) return false;
+  b.count += 1;
+  return true;
+}
+function sanitize(s: unknown, max = 200): string {
+  if (typeof s !== "string") return "";
+  // Strip control chars and template-breaking markers, cap length.
+  return s.replace(/[\u0000-\u001F\u007F]/g, " ").replace(/[`{}]/g, " ").slice(0, max);
+}
+
 // Hard-coded shipping & returns info - NEVER generate alternative values
 const SHIPPING_INFO = {
   processing: "0–1 business day",
@@ -91,12 +114,40 @@ serve(async (req) => {
   }
 
   try {
+    // Require a Bearer JWT (anon or authenticated). This blocks raw
+    // unauthenticated callers that don't go through the Supabase client.
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Per-IP rate limit
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
+    if (!checkRateLimit(ip)) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please slow down." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { messages, productContext } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
         JSON.stringify({ error: "Messages array required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (messages.length > 30) {
+      return new Response(
+        JSON.stringify({ error: "Conversation too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -109,8 +160,9 @@ serve(async (req) => {
     let productsContext = "No specific product context provided.";
     if (productContext && Array.isArray(productContext)) {
       productsContext = productContext
+        .slice(0, 20)
         .map((p: { name: string; price: number; category?: string; description?: string }) => 
-          `- ${p.name} ($${p.price.toFixed(2)})${p.category ? ` - Category: ${p.category}` : ""}${p.description ? ` - ${p.description.slice(0, 100)}...` : ""}`
+          `- ${sanitize(p.name, 120)} ($${(typeof p.price === "number" ? p.price : 0).toFixed(2)})${p.category ? ` - Category: ${sanitize(p.category, 60)}` : ""}${p.description ? ` - ${sanitize(p.description, 200)}...` : ""}`
         )
         .join("\n");
     }
