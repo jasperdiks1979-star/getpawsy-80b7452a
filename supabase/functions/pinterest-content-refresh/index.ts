@@ -107,21 +107,21 @@ Deno.serve(async (req) => {
   const merged = new Map<string, any>();
   for (const phrase of BANNED_PIN_PHRASES) {
     const like = `%${phrase}%`;
-    const { data, error } = await admin
-      .from("pinterest_pin_queue")
-      .select(SELECT_COLS)
-      .not("status", "in", "(archived,failed,rejected,deleted,error)")
-      .or(
-        `pin_title.ilike.${like},pin_description.ilike.${like},overlay_text.ilike.${like}`,
-      )
-      .limit(limit * 4);
-    if (error) {
-      return new Response(
-        JSON.stringify({ ok: false, traceId, message: "scan_failed", phrase, error: error.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    for (const col of ["pin_title", "pin_description", "overlay_text"] as const) {
+      const { data, error } = await admin
+        .from("pinterest_pin_queue")
+        .select(SELECT_COLS)
+        .not("status", "in", "(archived,failed,rejected,deleted,error)")
+        .ilike(col, like)
+        .limit(limit * 4);
+      if (error) {
+        return new Response(
+          JSON.stringify({ ok: false, traceId, message: "scan_failed", phrase, col, error: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      for (const row of data ?? []) merged.set(row.id as string, row);
     }
-    for (const row of data ?? []) merged.set(row.id as string, row);
   }
   const pool = Array.from(merged.values());
   if (pool.length === 0) {
