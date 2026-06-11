@@ -2648,6 +2648,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-growth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestGrowthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-integrity"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
