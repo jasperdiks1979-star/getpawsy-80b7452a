@@ -862,6 +862,103 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // 🛡️ Overlay-must-match-category gate (catches creative_mismatch leaks
+      // like "Smart cat parents love it" landing on a Cat Tree board or
+      // "Less mess" landing on a Cat Tree pin).
+      try {
+        const ovCheck = validateOverlayForCategory(String(pin.overlay_text || ""), pin.category_key, {
+          seed: (String(pin.id || "").length * 13) + 7,
+        });
+        if (!ovCheck.ok) {
+          const reason = ovCheck.reason || "creative_mismatch";
+          console.warn(`[cron] Pin ${pin.id} blocked by overlay-category gate: ${reason}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: "creative_mismatch",
+            qa_reasons: ["creative_mismatch"],
+            error_message: reason,
+            publishing_started_at: null,
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "publish",
+            status: "rejected",
+            error_message: reason,
+            response_data: { reason, suggested_overlay: ovCheck.repaired, bucket: ovCheck.bucket },
+          });
+          results.push({ pinId: pin.id, status: "rejected", error: reason });
+          continue;
+        }
+      } catch (e) {
+        console.warn(`[cron] overlay category check threw for pin ${pin.id}:`, e);
+      }
+
+      // 🛡️ Per-board 30-day duplicate image + destination guard.
+      try {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+        const stripUtm = (u: string | null | undefined) => {
+          if (!u) return "";
+          try {
+            const parsed = new URL(u);
+            for (const k of Array.from(parsed.searchParams.keys())) {
+              if (k.toLowerCase().startsWith("utm_") || k === "hook") parsed.searchParams.delete(k);
+            }
+            parsed.hash = "";
+            return `${parsed.origin}${parsed.pathname}${parsed.search}`;
+          } catch { return String(u); }
+        };
+        const destClean = stripUtm(pin.destination_link);
+        if (pin.board_id && pin.pin_image_url) {
+          const { data: imgDups } = await sb
+            .from("pinterest_pin_queue")
+            .select("id")
+            .eq("board_id", pin.board_id)
+            .eq("pin_image_url", pin.pin_image_url)
+            .in("status", ["queued", "approved", "publishing", "published", "posted"])
+            .gte("created_at", thirtyDaysAgo)
+            .neq("id", pin.id)
+            .limit(1);
+          if ((imgDups || []).length > 0) {
+            const reason = `duplicate_image_30d:first=${(imgDups as any)[0].id}`;
+            console.warn(`[cron] Pin ${pin.id} blocked: ${reason}`);
+            await sb.from("pinterest_pin_queue").update({
+              status: "rejected",
+              rejection_reason: "duplicate_image_30d",
+              error_message: reason,
+              publishing_started_at: null,
+            }).eq("id", pin.id);
+            results.push({ pinId: pin.id, status: "rejected", error: "duplicate_image_30d" });
+            continue;
+          }
+        }
+        if (pin.board_id && destClean) {
+          // Match against unprefixed dest by scanning candidates and stripping UTMs in JS.
+          const { data: destCandidates } = await sb
+            .from("pinterest_pin_queue")
+            .select("id, destination_link")
+            .eq("board_id", pin.board_id)
+            .in("status", ["queued", "approved", "publishing", "published", "posted"])
+            .gte("created_at", thirtyDaysAgo)
+            .neq("id", pin.id)
+            .limit(200);
+          const dupDest = (destCandidates || []).find((r: any) => stripUtm(r.destination_link) === destClean);
+          if (dupDest) {
+            const reason = `duplicate_destination_30d:first=${dupDest.id}`;
+            console.warn(`[cron] Pin ${pin.id} blocked: ${reason}`);
+            await sb.from("pinterest_pin_queue").update({
+              status: "rejected",
+              rejection_reason: "duplicate_destination_30d",
+              error_message: reason,
+              publishing_started_at: null,
+            }).eq("id", pin.id);
+            results.push({ pinId: pin.id, status: "rejected", error: "duplicate_destination_30d" });
+            continue;
+          }
+        }
+      } catch (e) {
+        console.warn(`[cron] dup-guard threw for pin ${pin.id}:`, e);
+      }
+
       try {
         let boardId: string;
         if (activeBoardOverride) {
