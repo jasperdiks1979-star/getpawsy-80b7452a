@@ -12907,6 +12907,101 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_growth_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          payload: Json
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          reason: string | null
+          run_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_growth_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_growth_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_growth_runs: {
+        Row: {
+          created_at: string
+          dedupe_skipped: number
+          drafts_enqueued: number
+          dry_run: boolean
+          errors: number
+          finished_at: string | null
+          id: string
+          losers_suppressed: number
+          opportunities_found: number
+          recomputed: boolean
+          started_at: string
+          summary: Json
+          trigger: string
+          winners_amplified: number
+        }
+        Insert: {
+          created_at?: string
+          dedupe_skipped?: number
+          drafts_enqueued?: number
+          dry_run?: boolean
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          losers_suppressed?: number
+          opportunities_found?: number
+          recomputed?: boolean
+          started_at?: string
+          summary?: Json
+          trigger?: string
+          winners_amplified?: number
+        }
+        Update: {
+          created_at?: string
+          dedupe_skipped?: number
+          drafts_enqueued?: number
+          dry_run?: boolean
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          losers_suppressed?: number
+          opportunities_found?: number
+          recomputed?: boolean
+          started_at?: string
+          summary?: Json
+          trigger?: string
+          winners_amplified?: number
+        }
+        Relationships: []
+      }
       pinterest_keyword_bank: {
         Row: {
           created_at: string
@@ -14258,41 +14353,59 @@ export type Database = {
       pinterest_product_tiers: {
         Row: {
           add_to_carts_30d: number | null
+          block_reason: string | null
           computed_at: string
+          hidden_opportunity: boolean
           impressions_30d: number | null
+          last_amplified_at: string | null
           outbound_clicks_30d: number | null
+          priority: string
           product_id: string
           product_slug: string | null
+          publish_multiplier: number
           purchases_30d: number | null
           reason: string | null
           revenue_cents_30d: number | null
           score: number
+          status: string
           tier: string
         }
         Insert: {
           add_to_carts_30d?: number | null
+          block_reason?: string | null
           computed_at?: string
+          hidden_opportunity?: boolean
           impressions_30d?: number | null
+          last_amplified_at?: string | null
           outbound_clicks_30d?: number | null
+          priority?: string
           product_id: string
           product_slug?: string | null
+          publish_multiplier?: number
           purchases_30d?: number | null
           reason?: string | null
           revenue_cents_30d?: number | null
           score?: number
+          status?: string
           tier: string
         }
         Update: {
           add_to_carts_30d?: number | null
+          block_reason?: string | null
           computed_at?: string
+          hidden_opportunity?: boolean
           impressions_30d?: number | null
+          last_amplified_at?: string | null
           outbound_clicks_30d?: number | null
+          priority?: string
           product_id?: string
           product_slug?: string | null
+          publish_multiplier?: number
           purchases_30d?: number | null
           reason?: string | null
           revenue_cents_30d?: number | null
           score?: number
+          status?: string
           tier?: string
         }
         Relationships: [
