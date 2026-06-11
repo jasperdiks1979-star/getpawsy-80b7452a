@@ -27,14 +27,12 @@ async function fetchDiag(): Promise<DiagRow[]> {
     .select('id, board_id, approved_at, rejection_reason, product_slug, pin_image_url, destination_link', { count: 'exact' })
     .eq('status', 'queued');
   const all = queued || [];
-  const slugNotAllowed = all.filter((r: any) => r.rejection_reason === 'slug_not_allowed').length;
   const boardNull = all.filter((r: any) => !r.board_id).length;
   const notApproved = all.filter((r: any) => !r.approved_at).length;
   const ready = all.filter(
     (r: any) =>
       r.board_id &&
       r.approved_at &&
-      r.rejection_reason !== 'slug_not_allowed' &&
       typeof r.pin_image_url === 'string' &&
       r.pin_image_url.startsWith('https://') &&
       typeof r.destination_link === 'string' &&
@@ -44,7 +42,6 @@ async function fetchDiag(): Promise<DiagRow[]> {
 
   rows.push({ label: 'Queued pins', value: all.length, ok: true });
   rows.push({ label: 'Ready to publish', value: ready, ok: ready > 0 });
-  rows.push({ label: 'slug_not_allowed', value: slugNotAllowed, ok: slugNotAllowed === 0 });
   rows.push({ label: 'board_id NULL', value: boardNull, ok: boardNull === 0 });
   rows.push({ label: 'Not approved', value: notApproved, ok: notApproved === 0 });
   rows.push({ label: 'Distinct queued slugs', value: distinctSlugs.size, ok: true });

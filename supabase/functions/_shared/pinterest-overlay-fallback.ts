@@ -3,8 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Used by pinterest-viral-batch (and any other generator) as the LAST RESORT
 // when an AI-generated topOverlay is missing.  Replaces the legacy hard-coded
-// "Stop scooping every day" default which leaked litter-box copy onto cat
-// trees, carriers, beds, fountains, etc. — a known Pinterest quality-score
+// litter-cleaning default which leaked litter-box copy onto cat trees,
+// carriers, beds, fountains, etc. — a known Pinterest quality-score
 // regression (creative_mismatch).
 //
 // Two surfaces:
@@ -85,7 +85,7 @@ export function normalizeCategoryKey(
 // can't accidentally mismatch a niche.
 const OVERLAY_POOLS: Record<OverlayBucket, string[]> = {
   litter: [
-    "Stop scooping every day",
+    "Cleaner litter, less work",
     "End litter box odor",
     "A cleaner litter routine",
     "Less mess, fresher home",
@@ -170,7 +170,7 @@ export interface OverlayValidation {
 /**
  * Guardrail: validate an overlay string against the product's category bucket.
  * Returns ok=false and a `repaired` replacement if the overlay leaks copy
- * that belongs to a different niche (e.g. "Stop scooping…" on a cat tree).
+ * that belongs to a different niche (for example, litter-cleaning copy on a cat tree).
  */
 export function validateOverlayForCategory(
   overlay: string,

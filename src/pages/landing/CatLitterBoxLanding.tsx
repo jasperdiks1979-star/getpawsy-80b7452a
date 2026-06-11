@@ -235,7 +235,7 @@ const CatLitterBoxLanding = () => {
 
         {/* CTA #2 */}
         <section className="bg-gradient-to-br from-primary/5 to-secondary/10 rounded-2xl p-6 md:p-8 text-center mb-12">
-          <h2 className="text-xl font-display font-bold text-foreground mb-2">Ready to Stop Scooping?</h2>
+          <h2 className="text-xl font-display font-bold text-foreground mb-2">Ready for Easier Cleanup?</h2>
           <p className="text-muted-foreground text-sm mb-5 max-w-md mx-auto">
             Join cat owners who reclaimed their time with the smart litter box.
           </p>

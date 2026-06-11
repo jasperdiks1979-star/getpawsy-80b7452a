@@ -5,6 +5,7 @@
 //                                  still respects already-published guard)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
+import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,8 @@ async function validatePin(row: Record<string, unknown>, boardId: string | null,
   if (!link) issues.push({ field: "destination_link", reason: "empty" });
   if (!boardId) issues.push({ field: "board_id", reason: "missing" });
   if (!token) issues.push({ field: "access_token", reason: "missing" });
+  const bannedHits = collectPinterestBannedCopyHits(row);
+  if (bannedHits.length > 0) issues.push({ field: "copy", reason: "banned_phrase_leak", value: bannedHits });
 
   // image reachability — HEAD with short timeout, fall back to GET range probe
   let imageProbe: Record<string, unknown> = {};
@@ -99,6 +102,7 @@ async function validatePin(row: Record<string, unknown>, boardId: string | null,
     ok: issues.length === 0,
     issues,
     image_probe: imageProbe,
+    banned_hits: bannedHits,
     sizes: { title: title.length, description: description.length },
   };
 }
@@ -180,24 +184,29 @@ Deno.serve(async (req) => {
   console.log(`[publish-now] validation pin=${row.id}`, JSON.stringify(validation));
   if (!validation.ok) {
     const errMsg = `pre_publish_validation_failed: ${validation.issues.map((i) => `${i.field}(${i.reason})`).join(", ")}`;
+    const bannedHits = (validation as any).banned_hits || [];
+    const banned = Array.isArray(bannedHits) && bannedHits.length > 0;
+    const finalMsg = banned ? rejectReasonForBannedCopy(bannedHits) : errMsg;
     if (!dryRun) {
       await sb.from("pinterest_pin_queue").update({
-        status: "failed",
-        last_publish_error: errMsg,
-        error_message: errMsg,
+        status: banned ? "rejected" : "failed",
+        rejection_reason: banned ? "banned_phrase_leak" : row.rejection_reason,
+        qa_reasons: banned ? ["banned_phrase_leak"] : row.qa_reasons,
+        last_publish_error: finalMsg,
+        error_message: finalMsg,
         publishing_started_at: null,
       }).eq("id", row.id);
       await sb.from("pinterest_publish_logs").insert({
         pin_queue_id: row.id,
         attempt: (row.publish_attempts || 0) + 1,
-        status: "failed",
+        status: banned ? "rejected" : "failed",
         board_id: boardId,
         image_url: row.pin_image_url,
         pin_title: row.pin_title,
         destination_link: row.destination_link,
         request_payload: { validation_only: true, pin: { title: row.pin_title, board_id: boardId, image_url: row.pin_image_url } },
         response_payload: validation,
-        error_message: errMsg,
+        error_message: finalMsg,
         duration_ms: 0,
       });
     }

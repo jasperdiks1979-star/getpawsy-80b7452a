@@ -491,7 +491,7 @@ export default function BestSelfCleaningLitterBox2026() {
 
         {/* CTA Block 3 */}
         <div className="rounded-xl bg-accent/50 border p-6 mb-12 text-center">
-          <p className="font-semibold mb-2">Ready to Stop Scooping?</p>
+          <p className="font-semibold mb-2">Ready for Easier Cleanup?</p>
           <p className="text-sm text-muted-foreground mb-4">Every self-cleaning litter box we sell is tested for noise, safety, and multi-cat durability.</p>
           <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
             Shop Self-Cleaning Litter Boxes <ArrowRight className="h-4 w-4" />

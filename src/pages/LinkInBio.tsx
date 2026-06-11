@@ -693,7 +693,7 @@ export default function LinkInBio() {
         */}
         <header className="text-center flex flex-col gap-2">
           <h1 className="text-[34px] sm:text-4xl font-display font-extrabold leading-[1.05] tracking-tight text-foreground">
-            Stop Scooping Litter <span className="text-[hsl(25,95%,53%)]">Forever</span>
+            Cleaner Litter, Less Work <span className="text-[hsl(25,95%,53%)]">Every Day</span>
           </h1>
           <p className="text-[15px] font-semibold text-foreground/75 leading-snug">
             Cat owners are switching to this self-cleaning box

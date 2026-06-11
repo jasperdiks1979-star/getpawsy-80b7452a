@@ -17,7 +17,7 @@ import type {
   PinterestPinDraft,
   BackdropMetadata,
 } from "../_shared/pinterest-queue-types.ts";
-import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
+import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { sanitizeUrl, quarantineEvent } from "../_shared/event-sanitizer.ts";
 import {
   hashImageUrl,
@@ -1082,22 +1082,7 @@ serve(async (req) => {
     } catch (_e) { /* fall through — defaults to false */ }
     if (typeof body.dominationMode === "boolean") dominationMode = body.dominationMode;
 
-    // Allowlist gate — bypassed when Domination Mode is on.
-    const blockedSlugs = slugsRaw.filter(
-      (s) => !dominationMode && !PINTEREST_ALLOWED_SLUGS.has(s),
-    );
-    if (blockedSlugs.length === slugsRaw.length) {
-      return respond({
-        ok: false,
-        code: "ALLOWLIST_DISABLED",
-        message: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Enable Domination Mode to publish across the catalog.`,
-        blockedSlugs,
-        dominationMode,
-      });
-    }
-    const slug: string = slugsRaw.find(
-      (s) => dominationMode || PINTEREST_ALLOWED_SLUGS.has(s),
-    ) || slugsRaw[0];
+    const slug: string = slugsRaw[0];
     // Optional: enable Pexels lifestyle backdrop layer.
     // OFF by default — product images stay primary.
     const useLifestyleBackdrop: boolean = !!body.useLifestyleBackdrop;
@@ -1418,12 +1403,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       const style = HOOK_TO_STYLE[hook.key] || "benefit";
       const seed = (now / 60000 | 0) + i * 7 + hook.key.length;
 
-      // Category-aware fallback — replaces the legacy hard-coded
-      // "Stop scooping every day" which leaked litter copy onto every product.
+      // Category-aware fallback prevents litter copy from leaking onto every product.
       const aiTop = (p.topOverlay || "").toString().trim();
       let topOverlay = (aiTop || pickCategoryOverlay(categoryKey, seed, product.category)).slice(0, 50);
       // Guardrail: even if AI returned something, refuse foreign-niche copy
-      // (e.g. "Stop scooping…" on a cat tree / carrier / bed). Repair in place.
+      // Repair foreign-niche copy in place before insertion.
       {
         const v = validateOverlayForCategory(topOverlay, categoryKey, {
           seed,

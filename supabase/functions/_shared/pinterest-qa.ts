@@ -9,6 +9,8 @@
 // verbatim. Empty list = pin passed QA.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { collectPinterestBannedCopyHits } from "./pinterest-banned-copy.ts";
+
 /** Reason codes surfaced to admins. Keep stable — the UI maps them 1:1. */
 export type PinQaReason =
   | "product_mismatch"
@@ -24,21 +26,8 @@ export type PinQaReason =
   | "duplicate_asset"
   | "weak_hook"
   | "supplier_image"
-  | "white_background";
-
-/** During QA stabilization ONLY this product slug may publish to Pinterest. */
-export const PINTEREST_ALLOWED_SLUGS: ReadonlySet<string> = new Set([
-  "automatic-cat-litter-box-self-cleaning-app-control",
-  // Phase 1 — Controlled Launch (3 premium pins, 24h warm-up)
-  "cactus-cat-climbing-tree-all-in-one-condo",
-  "hidden-cat-litter-box-furniture-enclosure",
-  // Phase 2 — Cat hero catalogue (litter, cat trees, scratchers)
-  "enclosed-cat-litter-box-extra-large-flip-top",
-  "29-moon-star-cat-tree-with-4-levels-jute-scratching-posts-anti-tipping-device-4cfa",
-  "cat-tree-3-level-cat-tower-with-scratching-posts-bed-condo-badminton-toys-for-multiple-kittens",
-  "mewoo-cat-scratching-post-bed-2-in-1-small-cat-tower-with-sisal-scratcher-and-ball-track-toys-green-",
-  "mewoo-cat-scratching-post-with-bed-small-cat-tower-with-sisal-scratcher-removable-perch-ball-track-t",
-]);
+  | "white_background"
+  | "banned_phrase_leak";
 
 export interface PinQaInput {
   product_slug?: string | null;
@@ -50,6 +39,10 @@ export interface PinQaInput {
   board_name?: string | null;
   category_key?: string | null;
   overlay_text?: string | null;
+  prompt?: string | null;
+  image_alt?: string | null;
+  cta?: string | null;
+  meta?: Record<string, unknown> | null;
   image_hash?: string | null;
   /** Pre-computed: true if image_hash collides with another posted pin in the last 14 days. */
   duplicate_image?: boolean;
@@ -82,6 +75,10 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   const overlay = (pin.overlay_text || "").toLowerCase();
   const corpus = `${title} ${desc} ${overlay}`;
   const board = (pin.board_name || "").toLowerCase();
+
+  if (collectPinterestBannedCopyHits(pin as Record<string, unknown>).length > 0) {
+    reasons.add("banned_phrase_leak");
+  }
 
   // Lazy-import the hook bank + spam helpers via dynamic require avoidance:
   // We can't `import` here without making the file async, so we inline the
