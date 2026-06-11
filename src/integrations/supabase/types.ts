@@ -14989,6 +14989,141 @@ export type Database = {
           },
         ]
       }
+      pinterest_revenue_brain_runs: {
+        Row: {
+          drafts_promoted: number
+          errors: number
+          finished_at: string | null
+          forecasts_written: number
+          health: Json | null
+          id: string
+          mode: string
+          notes: string | null
+          opportunities_found: number
+          products_scanned: number
+          scores_written: number
+          started_at: string
+          top_products: Json | null
+        }
+        Insert: {
+          drafts_promoted?: number
+          errors?: number
+          finished_at?: string | null
+          forecasts_written?: number
+          health?: Json | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          opportunities_found?: number
+          products_scanned?: number
+          scores_written?: number
+          started_at?: string
+          top_products?: Json | null
+        }
+        Update: {
+          drafts_promoted?: number
+          errors?: number
+          finished_at?: string | null
+          forecasts_written?: number
+          health?: Json | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          opportunities_found?: number
+          products_scanned?: number
+          scores_written?: number
+          started_at?: string
+          top_products?: Json | null
+        }
+        Relationships: []
+      }
+      pinterest_revenue_forecasts: {
+        Row: {
+          atc: number
+          checkouts: number
+          computed_at: string
+          confidence: number
+          created_at: string
+          horizon: number
+          id: string
+          product_id: string
+          purchases: number
+          revenue_cents: number
+          sessions: number
+        }
+        Insert: {
+          atc?: number
+          checkouts?: number
+          computed_at?: string
+          confidence?: number
+          created_at?: string
+          horizon: number
+          id?: string
+          product_id: string
+          purchases?: number
+          revenue_cents?: number
+          sessions?: number
+        }
+        Update: {
+          atc?: number
+          checkouts?: number
+          computed_at?: string
+          confidence?: number
+          created_at?: string
+          horizon?: number
+          id?: string
+          product_id?: string
+          purchases?: number
+          revenue_cents?: number
+          sessions?: number
+        }
+        Relationships: []
+      }
+      pinterest_revenue_opportunity_scores: {
+        Row: {
+          bestseller_p: number | null
+          components: Json
+          computed_at: string
+          created_at: string
+          id: string
+          product_id: string
+          product_slug: string | null
+          repeat_p: number | null
+          score_0_1000: number
+          tier: string
+          updated_at: string
+          viral_p: number | null
+        }
+        Insert: {
+          bestseller_p?: number | null
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          id?: string
+          product_id: string
+          product_slug?: string | null
+          repeat_p?: number | null
+          score_0_1000?: number
+          tier?: string
+          updated_at?: string
+          viral_p?: number | null
+        }
+        Update: {
+          bestseller_p?: number | null
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_slug?: string | null
+          repeat_p?: number | null
+          score_0_1000?: number
+          tier?: string
+          updated_at?: string
+          viral_p?: number | null
+        }
+        Relationships: []
+      }
       pinterest_revenue_scores: {
         Row: {
           add_to_carts: number
@@ -15315,6 +15450,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_trend_intelligence: {
+        Row: {
+          computed_at: string
+          direction: string
+          growth_rate: number | null
+          id: string
+          keyword: string
+          seasonality_score: number | null
+          source: string
+          velocity: number
+        }
+        Insert: {
+          computed_at?: string
+          direction?: string
+          growth_rate?: number | null
+          id?: string
+          keyword: string
+          seasonality_score?: number | null
+          source?: string
+          velocity?: number
+        }
+        Update: {
+          computed_at?: string
+          direction?: string
+          growth_rate?: number | null
+          id?: string
+          keyword?: string
+          seasonality_score?: number | null
+          source?: string
+          velocity?: number
+        }
+        Relationships: []
       }
       pinterest_trend_signals: {
         Row: {
