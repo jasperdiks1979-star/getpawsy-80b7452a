@@ -51,6 +51,11 @@ const NORMALIZE: Record<string, string> = {
   // catch-all
   "cat_essentials": "default",
   "default": "default",
+  // 2026-06-11 — board-name aliases that flow through the queue.
+  "cat-seat-cover": "car_seat",
+  "dog-seat-cover": "car_seat",
+  "car-seat-cover": "car_seat",
+  "car_seat_cover": "car_seat",
 };
 
 export type OverlayBucket =
@@ -61,6 +66,7 @@ export type OverlayBucket =
   | "carrier"
   | "feeding"
   | "grooming"
+  | "car_seat"
   | "default";
 
 export function normalizeCategoryKey(
@@ -77,6 +83,7 @@ export function normalizeCategoryKey(
   if (/carrier|travel|stroller|backpack/.test(blob)) return "carrier";
   if (/bowl|feeder|fountain|water/.test(blob)) return "feeding";
   if (/groom|brush|nail|wipe|bath|shampoo/.test(blob)) return "grooming";
+  if (/seat\s*cover|car\s*seat|back\s*seat|hammock\s*seat/.test(blob)) return "car_seat";
   return "default";
 }
 
@@ -85,16 +92,19 @@ export function normalizeCategoryKey(
 // can't accidentally mismatch a niche.
 const OVERLAY_POOLS: Record<OverlayBucket, string[]> = {
   litter: [
+    "Less mess",
+    "Odor control",
+    "Easy cleaning",
     "Cleaner litter, less work",
-    "End litter box odor",
     "A cleaner litter routine",
-    "Less mess, fresher home",
+    "Less litter on the floor",
   ],
   cat_tree: [
-    "A cat tree they actually use",
-    "Climb, scratch, lounge",
-    "Vertical space for indoor cats",
-    "The cat tree that stays standing",
+    "Built for large cats",
+    "Stable climbing tower",
+    "Multi-level cat playground",
+    "Sturdy scratching post",
+    "Cat tree that stays put",
   ],
   dog_bed: [
     "Deeper sleep, every night",
@@ -126,12 +136,35 @@ const OVERLAY_POOLS: Record<OverlayBucket, string[]> = {
     "Easy at-home grooming",
     "Brush less, enjoy more",
   ],
+  car_seat: [
+    "Protect your car seats",
+    "Easy to clean",
+    "Waterproof protection",
+    "Hair and mud stay off seats",
+    "Tough seat cover for dogs",
+  ],
   default: [
     "A small upgrade they love",
     "Made for everyday pet life",
     "The easy swap we made",
     "A quieter, tidier routine",
   ],
+};
+
+// Positive vocabulary per bucket. The overlay must hit at least one of these
+// tokens (case-insensitive) OR be drawn straight from OVERLAY_POOLS for the
+// same bucket. This catches "Smart cat parents love it" on a cat tree, which
+// passes the FORBIDDEN_TOKENS check but is clearly off-niche.
+const REQUIRED_VOCAB: Record<OverlayBucket, RegExp | null> = {
+  litter: /\b(litter|scoop|odor|mess|smell|clean|fresh|tracking|granule|box)\b/i,
+  cat_tree: /\b(cat|tree|tower|climb|climbing|scratch|scratching|perch|condo|playground|multi[-\s]?level)\b/i,
+  dog_bed: /\b(dog|bed|sleep|orthopedic|joint|cozy|nap|rest|cushion)\b/i,
+  cat_bed: /\b(cat|bed|nap|cozy|sleep|hideaway|nook|sunbeam)\b/i,
+  carrier: /\b(travel|carrier|trip|vet|stroller|backpack|outing|on the go)\b/i,
+  feeding: /\b(feed|feeder|meal|bowl|water|fountain|drink|spill|portion)\b/i,
+  grooming: /\b(groom|brush|shed|coat|nail|bath|fur|wipe)\b/i,
+  car_seat: /\b(car|seat|cover|hammock|back\s*seat|waterproof|protect|hair|mud|leather|upholstery)\b/i,
+  default: null,
 };
 
 /** Deterministic category-safe fallback overlay. */
@@ -151,12 +184,13 @@ export function pickCategoryOverlay(
 const FORBIDDEN_TOKENS: Record<OverlayBucket, RegExp | null> = {
   // Litter copy is the most-overused leak. Allow on litter only.
   litter: null,
-  cat_tree: /\b(scoop|scooping|litter\s*box|litter)\b/i,
+  cat_tree: /\b(scoop|scooping|litter\s*box|litter|car\s*seat|hammock)\b/i,
   dog_bed: /\b(scoop|scooping|litter\s*box|litter|odor[-\s]?free|hydrat)\b/i,
   cat_bed: /\b(scoop|scooping|litter\s*box|litter|odor[-\s]?free|hydrat)\b/i,
   carrier: /\b(scoop|scooping|litter\s*box|litter|odor[-\s]?free)\b/i,
   feeding: /\b(scoop|scooping|litter\s*box|litter)\b/i,
   grooming: /\b(scoop|scooping|litter\s*box|litter)\b/i,
+  car_seat: /\b(scoop|scooping|litter\s*box|litter|cat\s*tree|brush|groom|fountain)\b/i,
   default: /\b(scoop|scooping|litter\s*box)\b/i,
 };
 
@@ -178,14 +212,38 @@ export function validateOverlayForCategory(
   opts: { seed?: number; productCategory?: string | null } = {},
 ): OverlayValidation {
   const bucket = normalizeCategoryKey(categoryKey, opts.productCategory);
-  const re = FORBIDDEN_TOKENS[bucket];
-  if (!re) return { ok: true, bucket };
-  if (!overlay || !re.test(overlay)) return { ok: true, bucket };
-  const seed = typeof opts.seed === "number" ? opts.seed : (overlay.length * 31);
-  return {
-    ok: false,
-    reason: `creative_mismatch:foreign_niche_copy(bucket=${bucket})`,
-    repaired: pickCategoryOverlay(categoryKey, seed, opts.productCategory),
-    bucket,
-  };
+  const seed = typeof opts.seed === "number" ? opts.seed : ((overlay || "").length * 31 || 7);
+  const text = String(overlay || "");
+
+  // 1. Forbidden cross-niche tokens.
+  const forbidden = FORBIDDEN_TOKENS[bucket];
+  if (forbidden && text && forbidden.test(text)) {
+    return {
+      ok: false,
+      reason: `creative_mismatch:foreign_niche_copy(bucket=${bucket})`,
+      repaired: pickCategoryOverlay(categoryKey, seed, opts.productCategory),
+      bucket,
+    };
+  }
+
+  // 2. Empty overlay is repaired but not flagged here — QA handles missing copy.
+  if (!text.trim()) return { ok: true, bucket };
+
+  // 3. Positive-match: overlay must use category vocabulary OR be a safe
+  //    pool entry for this bucket. Otherwise it's category-agnostic copy
+  //    (e.g. "Smart cat parents love it") which we treat as a mismatch.
+  const required = REQUIRED_VOCAB[bucket];
+  const pool = OVERLAY_POOLS[bucket] || [];
+  const normalised = text.toLowerCase().trim();
+  const inPool = pool.some((p) => p.toLowerCase() === normalised);
+  if (required && !required.test(text) && !inPool) {
+    return {
+      ok: false,
+      reason: `creative_mismatch:missing_category_vocab(bucket=${bucket})`,
+      repaired: pickCategoryOverlay(categoryKey, seed, opts.productCategory),
+      bucket,
+    };
+  }
+
+  return { ok: true, bucket };
 }
