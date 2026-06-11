@@ -15,25 +15,39 @@ type PinRow = {
   board_name: string | null;
   impressions: number;
   outbound_clicks: number;
+  ctr: number;
   sessions: number;
   pageviews: number;
   add_to_carts: number;
   purchases: number;
   saves: number;
+  engagement_score: number;
+  revenue_score: number;
+  conversion_score: number;
   score: number;
   rank: number;
   tier: "winner" | "loser" | "neutral";
   status: string | null;
 };
 
-function scoreOf(r: Omit<PinRow, "score" | "rank" | "tier">): number {
-  return (
-    r.outbound_clicks * 8 +
-    r.add_to_carts * 15 +
-    r.purchases * 50 +
-    r.saves * 3 +
-    Math.min(r.impressions, 5000) * 0.01
-  );
+// Sub-scores, each on a roughly 0..100 scale for comparability.
+function engagementScore(r: { impressions: number; outbound_clicks: number; saves: number; ctr: number }): number {
+  // CTR is the dominant signal; saves + raw clicks add depth.
+  return Math.min(100, r.ctr * 2000 + Math.log10(1 + r.outbound_clicks) * 15 + Math.log10(1 + r.saves) * 10);
+}
+function revenueScore(r: { purchases: number; add_to_carts: number; outbound_clicks: number }): number {
+  return Math.min(100, r.purchases * 40 + r.add_to_carts * 8 + r.outbound_clicks * 0.5);
+}
+function conversionScore(r: { sessions: number; outbound_clicks: number; add_to_carts: number; purchases: number }): number {
+  const denom = Math.max(r.sessions, r.outbound_clicks, 1);
+  const atcRate = r.add_to_carts / denom;
+  const buyRate = r.purchases / denom;
+  // Require minimum traffic so 1-session pins don't artificially top the list.
+  const confidence = Math.min(1, denom / 25);
+  return Math.min(100, (atcRate * 60 + buyRate * 200) * confidence * 100);
+}
+function composite(e: number, r: number, c: number): number {
+  return e * 0.25 + r * 0.45 + c * 0.30;
 }
 
 async function buildRows(supabase: ReturnType<typeof createClient>, days: number): Promise<PinRow[]> {
@@ -88,31 +102,49 @@ async function buildRows(supabase: ReturnType<typeof createClient>, days: number
     pin_id: string; product_id: string | null; product_url: string | null;
     impressions: number | null; clicks: number | null; saves: number | null; status: string | null;
   }>) {
-    const base = {
+    const impressions = p.impressions ?? 0;
+    const outbound = p.clicks ?? 0;
+    const ctr = impressions > 0 ? outbound / impressions : 0;
+    const sessions = sessionsByPin.get(p.pin_id)?.size ?? 0;
+    const atc = atcByPin.get(p.pin_id) ?? 0;
+    const buys = buyByPin.get(p.pin_id) ?? 0;
+    const saves = p.saves ?? 0;
+    const eng = engagementScore({ impressions, outbound_clicks: outbound, saves, ctr });
+    const rev = revenueScore({ purchases: buys, add_to_carts: atc, outbound_clicks: outbound });
+    const conv = conversionScore({ sessions, outbound_clicks: outbound, add_to_carts: atc, purchases: buys });
+    rows.push({
       pin_id: p.pin_id,
       product_id: p.product_id,
       product_url: p.product_url,
       board_name: boardByPin.get(p.pin_id) ?? null,
-      impressions: p.impressions ?? 0,
-      outbound_clicks: p.clicks ?? 0,
-      sessions: sessionsByPin.get(p.pin_id)?.size ?? 0,
+      impressions,
+      outbound_clicks: outbound,
+      ctr,
+      sessions,
       pageviews: pvByPin.get(p.pin_id) ?? 0,
-      add_to_carts: atcByPin.get(p.pin_id) ?? 0,
-      purchases: buyByPin.get(p.pin_id) ?? 0,
-      saves: p.saves ?? 0,
+      add_to_carts: atc,
+      purchases: buys,
+      saves,
+      engagement_score: eng,
+      revenue_score: rev,
+      conversion_score: conv,
+      score: composite(eng, rev, conv),
+      rank: 0,
+      tier: "neutral",
       status: p.status ?? null,
-    };
-    rows.push({ ...base, score: scoreOf(base), rank: 0, tier: "neutral" });
+    });
   }
 
   rows.sort((a, b) => b.score - a.score);
   const n = rows.length;
+  // Top 20% winners / middle 60% neutral / bottom 20% losers.
   const topCut = Math.max(1, Math.floor(n * 0.2));
-  const botCut = Math.max(1, Math.floor(n * 0.2));
+  const botStart = n - Math.max(1, Math.floor(n * 0.2));
   rows.forEach((r, i) => {
     r.rank = i + 1;
     if (i < topCut && r.score > 0) r.tier = "winner";
-    else if (i >= n - botCut && r.impressions >= 50 && r.outbound_clicks <= 1) r.tier = "loser";
+    else if (i >= botStart) r.tier = "loser";
+    else r.tier = "neutral";
   });
   return rows;
 }
