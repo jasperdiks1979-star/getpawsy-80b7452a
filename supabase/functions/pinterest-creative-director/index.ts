@@ -1026,6 +1026,32 @@ async function uploadAndInsertDraft(
       : undefined,
   };
 
+  // ── Validate every generated pin BEFORE insert ────────────────────────────
+  // Guarantees exactly one short benefit overlay and zero banned phrases in
+  // any customer-facing copy. Failed drafts are skipped (never persisted).
+  const overlayBlock = `${copy.overlay} • ${copy.cta}`;
+  const validation = validatePinCopy({
+    title: copy.title,
+    description: copy.description,
+    overlay: copy.overlay,
+    overlayBlock,
+    brandWordmark: copy.brandWordmark,
+  });
+  if (!validation.valid) {
+    console.warn(
+      "[creative-director] pin validation failed — draft skipped",
+      {
+        product_slug: product.slug,
+        variant,
+        errors: validation.errors,
+        banned: validation.bannedHits,
+      },
+    );
+    throw new Error(
+      `pin_validation_failed:${validation.errors.join(",")}`,
+    );
+  }
+
   const ins = await supabase
     .from("pinterest_pin_queue")
     .insert(row)
