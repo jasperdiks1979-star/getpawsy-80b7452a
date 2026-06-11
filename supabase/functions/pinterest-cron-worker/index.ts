@@ -392,9 +392,7 @@ Deno.serve(async (req) => {
     if (!autoApproveQueue) {
       q = q.not("approved_at", "is", null);
     }
-    if (!dominationActive) {
-      q = q.in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS));
-    }
+    // Allowlist gating removed — every approved pin is eligible.
     const { data: pins, error } = await q
       .order("priority", { ascending: true })
       .order("scheduled_at", { ascending: true })
@@ -625,7 +623,9 @@ Deno.serve(async (req) => {
     const beforeFilter = pins.length;
     for (const p of pins as any[]) {
       if (p.us_audience_score == null) {
-        p.us_audience_score = computeUsAudienceScore(p);
+        // Prefer computed score; fall back to 1.0 so legacy NULL rows aren't filtered out.
+        const computed = computeUsAudienceScore(p);
+        p.us_audience_score = Number.isFinite(computed) && computed > 0 ? computed : 1.0;
       }
     }
     const filteredPins = (pins as any[]).filter((p) => Number(p.us_audience_score) >= usScoreThreshold);
