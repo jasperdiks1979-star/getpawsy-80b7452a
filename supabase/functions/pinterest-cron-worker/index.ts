@@ -1,8 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
-import { runPinQa, PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
+import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
+import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
 import {
   DiversityGuard,
@@ -742,6 +743,29 @@ Deno.serve(async (req) => {
           error_message: `Validation: ${validationError}`,
         });
         results.push({ pinId: pin.id, status: "failed", error: validationError });
+        continue;
+      }
+
+      const bannedHits = collectPinterestBannedCopyHits(pin as Record<string, unknown>);
+      if (bannedHits.length > 0) {
+        const detail = rejectReasonForBannedCopy(bannedHits);
+        console.warn(`[cron] Pin ${pin.id} blocked for banned copy: ${detail}`);
+        await sb.from("pinterest_pin_queue").update({
+          status: "rejected",
+          rejection_reason: "banned_phrase_leak",
+          qa_reasons: ["banned_phrase_leak"],
+          error_message: detail,
+          last_publish_error: detail,
+          publishing_started_at: null,
+        }).eq("id", pin.id);
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "publish",
+          status: "rejected",
+          error_message: detail,
+          response_data: { reason: "banned_phrase_leak", banned_hits: bannedHits },
+        });
+        results.push({ pinId: pin.id, status: "rejected", error: "banned_phrase_leak" });
         continue;
       }
 

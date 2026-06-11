@@ -22,6 +22,7 @@ interface Diag {
     blocked_by_qa: number;
     missing_board: number;
     missing_score: number;
+    banned_phrase_rows_found?: number;
   };
   candidate_count?: number;
   warmup?: {
@@ -177,6 +178,10 @@ export default function CronPublisherPanel() {
         after_queued: r?.after_queued,
         published_pin_id: r?.published_pin_id,
         report: r?.report ?? [],
+        banned_phrase_rows_found: r?.banned_phrase_rows_found,
+        current_queued_clean_rows: r?.current_queued_clean_rows,
+        next_eligible_clean_pin: r?.next_eligible_clean_pin,
+        last_refresh_failed_queue_error: r?.last_refresh_failed_queue_error,
       });
       toast({
         title: 'Refresh complete',
@@ -313,6 +318,7 @@ export default function CronPublisherPanel() {
                   <Metric label="Blocked by QA" value={data.pipeline_report.blocked_by_qa} ok={data.pipeline_report.blocked_by_qa === 0} />
                   <Metric label="Missing board" value={data.pipeline_report.missing_board} ok={data.pipeline_report.missing_board === 0} />
                   <Metric label="Missing score" value={data.pipeline_report.missing_score} ok={data.pipeline_report.missing_score === 0} />
+                  <Metric label="Banned phrase rows" value={data.pipeline_report.banned_phrase_rows_found ?? 0} ok={(data.pipeline_report.banned_phrase_rows_found ?? 0) === 0} />
                 </div>
                 {lastBoardAssign && (
                   <div className="mt-2 text-xs text-muted-foreground">
@@ -374,9 +380,13 @@ export default function CronPublisherPanel() {
                 <Row k="pins passed QA" v={lastRefresh.passed_qa} />
                 <Row k="pins requeued" v={lastRefresh.requeued} />
                 <Row k="still failing" v={lastRefresh.still_failing} />
+                <Row k="banned rows found" v={lastRefresh.banned_phrase_rows_found ?? 0} />
+                <Row k="clean queued rows" v={lastRefresh.current_queued_clean_rows ?? '—'} />
                 <Row k="before queued" v={lastRefresh.before_queued ?? '—'} />
                 <Row k="after queued" v={lastRefresh.after_queued ?? '—'} />
                 <Row k="published pin id" v={lastRefresh.published_pin_id || '—'} mono />
+                <Row k="next clean pin" v={lastRefresh.next_eligible_clean_pin?.product_slug || lastRefresh.next_eligible_clean_pin?.id || '—'} mono />
+                <Row k="last refresh error" v={lastRefresh.last_refresh_failed_queue_error?.error_message || '—'} />
                 {Array.isArray(lastRefresh.report) && lastRefresh.report.length > 0 && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-muted-foreground">Per-pin report ({lastRefresh.report.length})</summary>

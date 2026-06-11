@@ -271,7 +271,7 @@ const LitterBoxFunnel = () => {
         {/* FINAL CTA */}
         <section className="text-center py-8 border-t border-border/30">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">
-            Ready to Stop Scooping?
+            Ready for Less Litter Work?
           </h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
             Free shipping on orders over $35. 30-day return policy. Secure checkout.

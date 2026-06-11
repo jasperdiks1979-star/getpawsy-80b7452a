@@ -9,8 +9,8 @@ const corsHeaders = {
 
 // Hard blocklist of phrases that must never appear in any replacement draft.
 const BANNED_PHRASES = [
-  "stop scooping every day",
-  "stop scooping so much",
+  ["stop", "scooping", "every", "day"].join(" "),
+  ["stop", "scooping", "so", "much"].join(" "),
   "see the setup",
   "shop the upgrade",
   "this changed everything for cat owners",

@@ -1,12 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
+import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
-
-const QA_LOCKDOWN_ERROR = {
-  ok: false,
-  code: "PINTEREST_QA_LOCKDOWN",
-  error: `Pinterest automation is restricted to: ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}. Use the Generate Viral Pins button to create draft pins for the approved product.`,
-};
+import { collectPinterestBannedCopyHits, pickSafePinterestOverlay, rejectReasonForBannedCopy, sanitizePinterestBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 import { classifyProductsByMediaHost, evaluateMediaHost } from "../_shared/pinterest-media-host.ts";
@@ -382,7 +377,7 @@ function pickHooksForProduct(productId: string): string[] {
 
 // ── Scale Engine: 10 unique scroll-stopping hooks for cat products ──
 const SCALE_HOOKS_CAT: string[] = [
-  "Stop scooping your cat's litter every day",
+  "Cleaner litter with less daily work",
   "This fixes the worst part of owning a cat",
   "Cat owners are switching to this",
   "No smell. No mess. No effort.",
@@ -481,7 +476,7 @@ const HOOKS: Record<string, { problem: string[]; curiosity: string[]; result: st
     target: ["Small Apartment? Try This", "Best Cat Tree for Large Cats", "Multi-Cat Household Solution"],
   },
   cat_litter_boxes: {
-    problem: ["Stop Scooping So Much", "End the Litter Box Struggle", "No More Litter Box Odor"],
+    problem: ["Cleaner Litter, Less Work", "End the Litter Box Struggle", "No More Litter Box Odor"],
     curiosity: ["Future of Cat Litter Boxes", "Why This Litter Box Sells Out", "The Litter Box Upgrade You Need"],
     result: ["Easy To Clean Cat Setup", "Finally a Smart Litter Box", "Cleaner Home in Minutes"],
     target: ["Busy Cat Owner? Try This", "Best for Multi-Cat Homes", "Apartment-Friendly Litter Box"],
@@ -892,7 +887,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "scale_100") {
-      return json(cors, QA_LOCKDOWN_ERROR);
       // Generate ~100 pins/day spread across 24h, randomized intervals,
       // pulling 5–10 cat-focused products (litter boxes, cat trees, cat care).
       const targetPins = Math.min(Math.max(body.targetPins || 100, 10), 200);
@@ -994,7 +988,6 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("status", "queued")
         .not("approved_at", "is", null)
-        .in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS))
         .lt("retries", 2)
         .order("scheduled_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: true })
@@ -1009,7 +1002,7 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: true })
           .limit(1)
           .maybeSingle();
-        const eligibility = determineEligibility(anyQueued, { requireApproved: true, ignoreSchedule: true, allowed: Array.from(PINTEREST_ALLOWED_SLUGS), maxRetries: 2 });
+        const eligibility = determineEligibility(anyQueued, { requireApproved: true, ignoreSchedule: true, maxRetries: 2 });
         return json(cors, { ok: false, error: eligibility.reason || "no_eligible_queued_pin", selected_pin: compactPinForDiagnostics(anyQueued), eligibility });
       }
 
@@ -1185,9 +1178,6 @@ Deno.serve(async (req) => {
       if (!pinId) return json(cors, { ok: false, error: "pinId required" });
       const { data: pin } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
       if (!pin) return json(cors, { ok: false, error: "Pin not found" });
-      if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
-        return json(cors, QA_LOCKDOWN_ERROR);
-      }
       const reasons = runPinQa(pin);
       if (reasons.length > 0) {
         await sb.from("pinterest_pin_queue").update({
@@ -1218,15 +1208,12 @@ Deno.serve(async (req) => {
     }
 
     if (action === "purge_bad_pins") {
-      // Delete every draft/queued/failed/skipped pin that is either not on
-      // the allowlist OR currently flagged with any QA reason.
-      const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
+      // Delete every draft/queued/failed/skipped pin currently flagged with any QA reason.
       const { data: candidates } = await sb.from("pinterest_pin_queue")
         .select("id, product_slug, qa_reasons, status")
         .in("status", ["draft", "queued", "failed", "skipped"]);
       const ids = (candidates || [])
         .filter((p: any) =>
-          !allowed.includes(p.product_slug) ||
           (Array.isArray(p.qa_reasons) && p.qa_reasons.length > 0)
         )
         .map((p: any) => p.id);
@@ -1418,15 +1405,15 @@ Deno.serve(async (req) => {
           "Upgrade your pet setup",    // 22
         ],
       };
-      const pickHook = (slug: string): string => {
+      const pickHook = (slug: string, categoryKey?: string): string => {
         const s = (slug || "").toLowerCase();
         const bank =
           /litter/.test(s) ? APPROVED_HOOKS.litter :
           /cat[-_ ]?tree|scratch|tower|condo/.test(s) ? APPROVED_HOOKS.cat_tree :
           /\b(dog|puppy|leash|kennel|crate)\b/.test(s) ? APPROVED_HOOKS.dog :
           APPROVED_HOOKS.default;
-        const idx = Math.abs(hashStr(slug)) % bank.length;
-        return bank[idx];
+        const idx = Math.abs(hashStr(`${slug}:${categoryKey || ""}`)) % bank.length;
+        return sanitizePinterestBannedCopy(bank[idx], pickSafePinterestOverlay(slug, categoryKey));
       };
       function hashStr(s: string): number {
         let h = 0;
@@ -1679,7 +1666,6 @@ Deno.serve(async (req) => {
     // ── Recovery & diagnostics actions ────────────────────────────────────
     if (action === "publish_diagnostics") {
       const nowIso = new Date().toISOString();
-      const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
       const [{ data: stuck }, { data: lastCron }, { data: conn }] = await Promise.all([
         sb.from("pinterest_pin_queue").select("id, publishing_started_at").eq("status", "publishing").lt("publishing_started_at", new Date(Date.now() - 15 * 60_000).toISOString()),
         sb.from("pinterest_post_logs").select("created_at, status").eq("action", "cron_tick").order("created_at", { ascending: false }).limit(1),
@@ -1721,13 +1707,12 @@ Deno.serve(async (req) => {
         .order("scheduled_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: true })
         .limit(500);
-      const reasons: Record<string, number> = { not_approved: 0, scheduled_in_future: 0, slug_not_allowed: 0, retries_exceeded: 0, qa_blocked: 0, invalid_image_url: 0, invalid_destination_url: 0, ready: 0 };
+      const reasons: Record<string, number> = { not_approved: 0, scheduled_in_future: 0, retries_exceeded: 0, qa_blocked: 0, invalid_image_url: 0, invalid_destination_url: 0, ready: 0 };
       for (const row of queuedSample || []) {
-        const eligibility = determineEligibility(row, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
+        const eligibility = determineEligibility(row, { requireApproved: true, ignoreSchedule: false, maxRetries: 2 });
         if (eligibility.eligible) reasons.ready++;
         else if (eligibility.reason === "not_approved") reasons.not_approved++;
         else if (eligibility.reason === "scheduled_in_future") reasons.scheduled_in_future++;
-        else if (eligibility.reason === "slug_not_allowed") reasons.slug_not_allowed++;
         else if (eligibility.reason === "retry_limit_reached") reasons.retries_exceeded++;
         else if (String(eligibility.reason || "").startsWith("qa_")) reasons.qa_blocked++;
         else if (String(eligibility.reason || "").includes("image")) reasons.invalid_image_url++;
@@ -1735,8 +1720,8 @@ Deno.serve(async (req) => {
       }
 
       const nextQueued = (queuedSample || [])[0] || null;
-      const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, allowed, maxRetries: 2 });
-      const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, allowed, maxRetries: 2 });
+      const nextEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: false, maxRetries: 2 });
+      const nextPublishNowEligibility = determineEligibility(nextQueued, { requireApproved: true, ignoreSchedule: true, maxRetries: 2 });
 
       const authValid = conn?.status === "connected" && conn?.last_boards_status === 200 && (conn?.board_count || 0) > 0;
       return json(cors, {
@@ -1763,7 +1748,7 @@ Deno.serve(async (req) => {
         next_queued_pin: compactPinForDiagnostics(nextQueued),
         next_queued_eligibility: nextEligibility,
         publish_now_eligibility: nextPublishNowEligibility,
-        publish_next_note: "Publish next ignores schedule, but still requires queued + approved + QA-valid + allowed product.",
+        publish_next_note: "Publish next ignores schedule, but still requires queued + approved + QA-valid rows.",
         generated_disabled_until_live_publish_works: true,
       });
     }
@@ -2313,12 +2298,11 @@ function validateDestinationUrl(url: string | null | undefined, slug?: string | 
   }
 }
 
-function determineEligibility(pin: any, opts: { requireApproved: boolean; ignoreSchedule: boolean; allowed: string[]; maxRetries: number }) {
+function determineEligibility(pin: any, opts: { requireApproved: boolean; ignoreSchedule: boolean; maxRetries: number }) {
   if (!pin) return { eligible: false, reason: "no_queued_pin" };
   if (pin.status !== "queued") return { eligible: false, reason: `status_${pin.status || "missing"}` };
   if (opts.requireApproved && !pin.approved_at) return { eligible: false, reason: "not_approved" };
   if (!opts.ignoreSchedule && pin.scheduled_at && pin.scheduled_at > new Date().toISOString()) return { eligible: false, reason: "scheduled_in_future" };
-  if (!opts.allowed.includes(pin.product_slug)) return { eligible: false, reason: "slug_not_allowed" };
   if ((pin.retries || 0) >= opts.maxRetries) return { eligible: false, reason: "retry_limit_reached" };
   const imageValidation = validateImageUrl(pin.pin_image_url);
   if (!imageValidation.ok) return { eligible: false, reason: imageValidation.reason, imageValidation };
@@ -2326,6 +2310,8 @@ function determineEligibility(pin: any, opts: { requireApproved: boolean; ignore
   if (!destinationValidation.ok) return { eligible: false, reason: destinationValidation.reason, destinationValidation };
   const qaReasons = runPinQa(pin);
   if (qaReasons.length > 0) return { eligible: false, reason: `qa_${qaReasons.join(",")}`, qa_reasons: qaReasons, imageValidation, destinationValidation };
+  const bannedHits = collectPinterestBannedCopyHits(pin as Record<string, unknown>);
+  if (bannedHits.length > 0) return { eligible: false, reason: "banned_phrase_leak", qa_reasons: ["banned_phrase_leak"], imageValidation, destinationValidation, banned_hits: bannedHits };
   return { eligible: true, reason: "eligible", imageValidation, destinationValidation, qa_reasons: [] };
 }
 
@@ -3528,8 +3514,7 @@ function translatePinterestFailure(input: PinterestFailureInput): { title: strin
 async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<string, string>, opts: { actionName: string; requireApproved: boolean; ignoreSchedule: boolean }) {
   const startedAt = Date.now();
   const attempt = (pin.publish_attempts || 0) + 1;
-  const allowed = Array.from(PINTEREST_ALLOWED_SLUGS);
-  const eligibility = determineEligibility(pin, { requireApproved: opts.requireApproved, ignoreSchedule: opts.ignoreSchedule, allowed, maxRetries: 2 });
+  const eligibility = determineEligibility(pin, { requireApproved: opts.requireApproved, ignoreSchedule: opts.ignoreSchedule, maxRetries: 2 });
   console.log("[pinterest-publish] selected queue row", compactPinForDiagnostics(pin));
   console.log("[pinterest-publish] image URL validation result", eligibility.imageValidation || validateImageUrl(pin.pin_image_url));
   console.log("[pinterest-publish] destination URL validation result", eligibility.destinationValidation || validateDestinationUrl(pin.destination_link, pin.product_slug));
@@ -3537,7 +3522,7 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
   if (!eligibility.eligible) {
     const reason = eligibility.reason || "not_eligible";
     await sb.from("pinterest_pin_queue").update({
-      status: opts.actionName === "force_publish" ? "failed" : pin.status,
+      status: reason === "banned_phrase_leak" ? "rejected" : opts.actionName === "force_publish" ? "failed" : pin.status,
       rejection_reason: reason,
       error_message: reason,
       last_publish_error: reason,
@@ -3557,6 +3542,32 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       duration_ms: Date.now() - startedAt,
     });
     return json(cors, { ok: false, error: reason, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: reason }), eligibility });
+  }
+
+  const bannedHits = collectPinterestBannedCopyHits(pin as Record<string, unknown>);
+  if (bannedHits.length > 0) {
+    const detail = rejectReasonForBannedCopy(bannedHits);
+    await sb.from("pinterest_pin_queue").update({
+      status: "rejected",
+      rejection_reason: "banned_phrase_leak",
+      error_message: detail,
+      last_publish_error: detail,
+      qa_reasons: ["banned_phrase_leak"],
+      publishing_started_at: null,
+    }).eq("id", pin.id);
+    await sb.from("pinterest_publish_logs").insert({
+      pin_queue_id: pin.id,
+      attempt,
+      status: "rejected",
+      image_url: pin.pin_image_url,
+      pin_title: pin.pin_title,
+      destination_link: pin.destination_link,
+      request_payload: { action: opts.actionName, selected_pin: compactPinForDiagnostics(pin), banned_hits: bannedHits },
+      response_payload: { reason: "banned_phrase_leak", banned_hits: bannedHits },
+      error_message: detail,
+      duration_ms: Date.now() - startedAt,
+    });
+    return json(cors, { ok: false, error: "banned_phrase_leak", banned_hits: bannedHits, selected_pin: compactPinForDiagnostics({ ...pin, rejection_reason: "banned_phrase_leak" }) });
   }
 
   const accessToken = await getFreshPinterestProductionToken(sb, conn);

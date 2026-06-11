@@ -21,7 +21,7 @@ export function TikTokHero({ onCtaClick, inStock }: TikTokHeroProps) {
         As seen on TikTok
       </p>
       <p className="text-2xl md:text-3xl font-display font-extrabold text-foreground leading-[1.15]">
-        Stop Scooping Your Cat&apos;s Litter.
+        Cleaner Litter With Less Daily Work.
       </p>
       <p className="text-sm md:text-base text-muted-foreground mt-2 leading-relaxed">
         This self-cleaning litter box removes waste automatically and helps keep your home odor-free 24/7.

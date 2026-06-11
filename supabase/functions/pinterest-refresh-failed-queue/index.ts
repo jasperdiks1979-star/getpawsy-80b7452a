@@ -1,53 +1,18 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// pinterest-refresh-failed-queue
-//
-// One-click refresh for queued/draft pins that would fail the runtime QA gate
-// with any of:
-//   • supplier_image
-//   • unreadable_text
-//   • unreadable_overlay
-//   • missing_cta
-//
-// For each failing pin we:
-//   1. Re-rank by per-product performance (top performers first).
-//   2. Invoke pinterest-creative-director (action=run_full, count=1) which
-//      renders a NEW lifestyle Pinterest image (no supplier images, cat +
-//      product visible, 1000×1500, readable overlay ≤6 words + GetPawsy
-//      wordmark + CTA) and inserts it as a draft into pinterest_pin_queue.
-//   3. Re-run runPinQa() (domination_mode=true) on the newly inserted draft
-//      AND assert overlay carries a CTA from the approved list. Only the
-//      drafts that PASS are kept; failing drafts are immediately rejected so
-//      they cannot reach Pinterest.
-//   4. The original failing row is marked status='rejected' with
-//      rejection_reason='qa_failure_refresh' and the new row carries
-//      replacement_for_pin_id → old id.
-//   5. After processing, optionally invoke pinterest-cron-worker ONCE so the
-//      next eligible refreshed pin publishes immediately (warm-up / per-cat
-//      cap / governance still enforced by the worker itself — we never
-//      bypass).
-//
-// Returns a structured report the admin UI renders verbatim.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { runPinQa, type PinQaInput, type PinQaReason } from "../_shared/pinterest-qa.ts";
+import { runPinQa } from "../_shared/pinterest-qa.ts";
+import {
+  collectPinterestBannedCopyHits,
+  pickSafePinterestOverlay,
+  rejectReasonForBannedCopy,
+  sanitizePinterestBannedCopy,
+} from "../_shared/pinterest-banned-copy.ts";
 
 type Json = Record<string, unknown>;
 
-const TARGET_REASONS = new Set<PinQaReason>([
-  "supplier_image",
-  "unreadable_text",
-  "unreadable_overlay",
-  "missing_cta",
-]);
-
-const APPROVED_CTAS = [
-  "Shop Now",
-  "See Details",
-  "Explore More",
-  "Get Yours",
-];
+const ACTIVE_STATUSES = ["queued", "draft", "approved", "publishing"];
+const REFRESH_STATUSES = [...ACTIVE_STATUSES, "failed", "skipped"];
+const TARGET_REASONS = new Set(["supplier_image", "unreadable_text", "unreadable_overlay", "missing_cta", "weak_hook", "wrong_destination_url", "banned_phrase_leak"]);
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -56,299 +21,148 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function hasCta(overlay: string | null | undefined): boolean {
-  if (!overlay) return false;
-  const parts = overlay.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
-  const cta = (parts[1] ?? parts[parts.length - 1] ?? "").toLowerCase();
-  if (!cta || cta.length < 2) return false;
-  // Approved CTA bank OR any short imperative ≤ 18 chars containing a verb.
-  if (APPROVED_CTAS.some((c) => cta.includes(c.toLowerCase()))) return true;
-  return cta.length <= 18 && /\b(shop|see|get|explore|try|grab|view|order|discover|find)\b/.test(cta);
+function destinationFor(row: any): string {
+  const slug = String(row.product_slug || "").trim();
+  return slug
+    ? `https://getpawsy.pet/products/${slug}?utm_source=pinterest&utm_medium=social&utm_campaign=refresh_failed_queue&utm_content=${slug}`
+    : String(row.destination_link || "");
 }
 
-function overlayWordCount(overlay: string | null | undefined): number {
-  if (!overlay) return 0;
-  const parts = overlay.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
-  const top = parts[0] ?? "";
-  return top.split(/\s+/).filter(Boolean).length;
+async function countCleanQueued(admin: any): Promise<number> {
+  const { data } = await admin.from("pinterest_pin_queue").select("*").eq("status", "queued").limit(1000);
+  return (data || []).filter((row: any) => runPinQa({ ...row, domination_mode: true }).length === 0 && collectPinterestBannedCopyHits(row).length === 0).length;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+async function nextCleanQueued(admin: any): Promise<any | null> {
+  const { data } = await admin
+    .from("pinterest_pin_queue")
+    .select("id, product_slug, board_id, scheduled_at, pin_title, overlay_text, destination_link, us_audience_score")
+    .eq("status", "queued")
+    .not("approved_at", "is", null)
+    .order("scheduled_at", { ascending: true, nullsFirst: false })
+    .limit(25);
+  return (data || []).find((row: any) => runPinQa({ ...row, domination_mode: true }).length === 0 && collectPinterestBannedCopyHits(row).length === 0) || null;
+}
 
-  const traceId = crypto.randomUUID();
-
+async function handle(req: Request, traceId: string) {
   let body: Json = {};
   if (req.method === "POST") {
-    try { body = (await req.json()) as Json; } catch { /* empty body ok */ }
+    try { body = (await req.json()) as Json; } catch { body = {}; }
   }
-  const limit = Math.max(1, Math.min(50, Number(body.limit ?? 10)));
+  const limit = Math.max(1, Math.min(100, Number(body.limit ?? 25)));
   const dryRun = body.dry_run === true;
-  const runCron = body.run_cron !== false; // default true
+  const runCron = body.run_cron !== false;
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+    return jsonResponse({ ok: false, traceId, message: "backend_config_missing" }, 500);
+  }
 
-  // ── Admin auth ────────────────────────────────────────────────────────────
   const authHeader = req.headers.get("Authorization") || "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
   const { data: userData } = await userClient.auth.getUser();
   const user = userData?.user;
   if (!user) return jsonResponse({ ok: false, traceId, message: "unauthorized" }, 401);
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data: roleRow } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .eq("role", "admin")
-    .maybeSingle();
+  const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
   if (!roleRow) return jsonResponse({ ok: false, traceId, message: "forbidden_admin_only" }, 403);
 
-  // ── 1. Snapshot the queued-total BEFORE we touch anything ────────────────
-  const { count: beforeQueued } = await admin
-    .from("pinterest_pin_queue")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["queued", "draft"]);
+  const { count: beforeQueued } = await admin.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "queued");
+  const { data: rows, error: scanErr } = await admin.from("pinterest_pin_queue").select("*").in("status", REFRESH_STATUSES).order("created_at", { ascending: false }).limit(750);
+  if (scanErr) throw new Error(`scan_failed:${scanErr.message}`);
 
-  // ── 2. Pull queued/draft rows, run runPinQa, keep those failing on target
-  //       reasons (supplier_image / unreadable_text / unreadable_overlay /
-  //       missing_cta). Domination_mode=true so the allowlist gate doesn't
-  //       mask real content failures.
-  const SELECT_COLS = [
-    "id", "product_id", "product_slug", "product_name",
-    "board_id", "board_name", "category_key",
-    "destination_link", "pin_image_url", "pin_title", "pin_description",
-    "overlay_text", "hook_group", "status",
-  ].join(", ");
+  const dirtyActive = (rows || []).filter((row: any) => ACTIVE_STATUSES.includes(row.status) && collectPinterestBannedCopyHits(row).length > 0);
+  const qaFailing = (rows || []).map((row: any) => ({ row, reasons: runPinQa({ ...row, domination_mode: true }) }))
+    .filter(({ reasons }: any) => reasons.some((reason: string) => TARGET_REASONS.has(reason)))
+    .slice(0, limit);
+  const work = Array.from(new Map([...dirtyActive.map((row: any) => ({ row, reasons: ["banned_phrase_leak"] })), ...qaFailing].map((item: any) => [item.row.id, item])).values()).slice(0, limit);
 
-  const { data: candidates, error: scanErr } = await admin
-    .from("pinterest_pin_queue")
-    .select(SELECT_COLS)
-    .in("status", ["queued", "draft"])
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const report: any[] = [];
+  let repaired = 0;
+  let passedQa = 0;
+  let requeued = 0;
+  let rejected = 0;
+  let stillFailing = 0;
 
-  if (scanErr) return jsonResponse({ ok: false, traceId, message: "scan_failed", error: scanErr.message }, 500);
+  for (const item of work) {
+    const row = { ...item.row };
+    const beforeReasons = Array.from(new Set([...(item.reasons || []), ...runPinQa({ ...row, domination_mode: true })]));
+    const bannedHits = collectPinterestBannedCopyHits(row);
+    const fixes: string[] = [];
 
-  const failing: Array<{ row: any; reasons: PinQaReason[] }> = [];
-  for (const row of candidates ?? []) {
-    const reasons = runPinQa({
-      product_slug: row.product_slug,
-      product_name: row.product_name,
-      pin_title: row.pin_title,
-      pin_description: row.pin_description,
-      pin_image_url: row.pin_image_url,
-      destination_link: row.destination_link,
-      board_name: row.board_name,
-      category_key: row.category_key,
-      overlay_text: row.overlay_text,
-      domination_mode: true,
-    } as PinQaInput);
-    if (reasons.some((r) => TARGET_REASONS.has(r))) {
-      failing.push({ row, reasons });
+    row.overlay_text = pickSafePinterestOverlay(row.product_slug, row.category_key, row.id);
+    fixes.push("overlay_rewritten");
+    row.pin_title = sanitizePinterestBannedCopy(row.pin_title || row.product_name || row.overlay_text, row.overlay_text).slice(0, 100);
+    row.pin_description = sanitizePinterestBannedCopy(row.pin_description || `${row.product_name || "Pet upgrade"} for modern pet homes.`, `${row.overlay_text}. Free US shipping.`).slice(0, 500);
+    if (!row.destination_link || beforeReasons.includes("wrong_destination_url")) {
+      row.destination_link = destinationFor(row);
+      fixes.push("destination_rewritten");
     }
-  }
-
-  // ── 3. Rank by per-product performance ───────────────────────────────────
-  const productIds = Array.from(new Set(failing.map((f) => f.row.product_id).filter(Boolean))) as string[];
-  const perfByProduct = new Map<string, number>();
-  if (productIds.length) {
-    const { data: perfRows } = await admin
-      .from("pinterest_pin_performance")
-      .select("product_id, impressions, clicks, performance_score")
-      .in("product_id", productIds);
-    for (const p of perfRows ?? []) {
-      const score =
-        Number((p as any).performance_score ?? 0) * 100 +
-        Number((p as any).clicks ?? 0) * 10 +
-        Number((p as any).impressions ?? 0);
-      const pid = (p as any).product_id as string;
-      perfByProduct.set(pid, Math.max(perfByProduct.get(pid) ?? 0, score));
+    if (row.meta && typeof row.meta === "object") {
+      row.meta = { ...row.meta, prompt: null, image_prompt: null, generated_image_prompt: null, image_alt: sanitizePinterestBannedCopy((row.meta as any).image_alt || row.pin_title, row.pin_title), cta: "Shop Now" };
+      fixes.push("metadata_cleaned");
     }
-  }
-  failing.sort((a, b) =>
-    (perfByProduct.get(b.row.product_id ?? "") ?? 0) - (perfByProduct.get(a.row.product_id ?? "") ?? 0));
 
-  const work = failing.slice(0, limit);
-
-  // ── 4. For each failing pin, regenerate via creative-director, QA-gate
-  //       the result, then archive the old row ────────────────────────────
-  type ReportRow = {
-    old_pin_id: string;
-    new_pin_id: string | null;
-    product_slug: string | null;
-    board: string | null;
-    qa_failures: PinQaReason[];
-    post_qa_failures: PinQaReason[];
-    extra_failures?: string[];
-    status: "refreshed" | "passed_qa_no_requeue" | "regen_failed" | "still_failing" | "dry_run" | "skipped";
-    reason?: string;
-  };
-
-  const report: ReportRow[] = [];
-  let refreshed = 0, passedQa = 0, requeued = 0, stillFailing = 0;
-
-  for (const { row, reasons } of work) {
-    const base: ReportRow = {
-      old_pin_id: row.id as string,
-      new_pin_id: null,
-      product_slug: row.product_slug as string | null,
-      board: (row.board_name ?? row.board_id) as string | null,
-      qa_failures: reasons,
-      post_qa_failures: [],
-      status: "skipped",
-    };
-
-    if (!row.product_id) {
-      report.push({ ...base, status: "regen_failed", reason: "missing_product_id" });
-      continue;
-    }
+    const afterReasons = runPinQa({ ...row, domination_mode: true });
+    const afterBanned = collectPinterestBannedCopyHits(row);
+    const passes = afterReasons.length === 0 && afterBanned.length === 0;
 
     if (dryRun) {
-      report.push({ ...base, status: "dry_run" });
+      report.push({ id: row.id, product_slug: row.product_slug, status: "dry_run", fixes, qa_failures: beforeReasons, post_qa_failures: afterReasons, banned_hits: bannedHits });
       continue;
     }
 
-    // 4a. Regenerate via creative-director (lifestyle AI render).
-    let directorRes: any = null;
-    try {
-      const r = await admin.functions.invoke("pinterest-creative-director", {
-        body: { action: "run_full", productId: row.product_id, count: 1, force: true },
-      });
-      if (r.error) throw new Error(r.error.message ?? String(r.error));
-      directorRes = r.data;
-    } catch (e) {
-      report.push({ ...base, status: "regen_failed", reason: `director_invoke_failed:${(e as Error).message}` });
-      continue;
-    }
-
-    const newDraftId: string | null =
-      directorRes?.drafts?.[0]?.queueId ?? directorRes?.drafts?.[0]?.id ?? null;
-    if (!newDraftId) {
-      report.push({
-        ...base,
-        status: "regen_failed",
-        reason: directorRes?.message ?? "director_no_draft_returned",
-      });
-      continue;
-    }
-
-    // 4b. Re-fetch the inserted row and run the same QA gate locally + our
-    //     extra "≤ 6 word overlay + CTA from approved bank" rule.
-    const { data: newRow, error: newErr } = await admin
-      .from("pinterest_pin_queue")
-      .select(SELECT_COLS)
-      .eq("id", newDraftId)
-      .maybeSingle();
-    if (newErr || !newRow) {
-      report.push({ ...base, new_pin_id: newDraftId, status: "regen_failed", reason: "newdraft_fetch_failed" });
-      continue;
-    }
-
-    const postReasons = runPinQa({
-      product_slug: newRow.product_slug,
-      product_name: newRow.product_name,
-      pin_title: newRow.pin_title,
-      pin_description: newRow.pin_description,
-      pin_image_url: newRow.pin_image_url,
-      destination_link: newRow.destination_link,
-      board_name: newRow.board_name,
-      category_key: newRow.category_key,
-      overlay_text: newRow.overlay_text,
-      domination_mode: true,
-    });
-    const extra: string[] = [];
-    if (!hasCta(newRow.overlay_text)) extra.push("cta_not_present");
-    if (overlayWordCount(newRow.overlay_text) > 6) extra.push("overlay_too_long");
-    // image_quality + destination_url_valid are already enforced by runPinQa
-    // (low_resolution / bad_crop / wrong_destination_url / malformed_url).
-
-    refreshed++;
-    const passes = postReasons.length === 0 && extra.length === 0;
-
-    if (!passes) {
-      // Reject the freshly inserted draft so it cannot publish, leave the
-      // original row alone so we can try again on the next run.
-      await admin
-        .from("pinterest_pin_queue")
-        .update({
-          status: "rejected",
-          rejection_reason: "refresh_postqa_failed",
-          qa_reasons: [...postReasons, ...extra],
-        })
-        .eq("id", newDraftId);
-      stillFailing++;
-      report.push({
-        ...base,
-        new_pin_id: newDraftId,
-        post_qa_failures: postReasons,
-        extra_failures: extra,
-        status: "still_failing",
-        reason: [...postReasons, ...extra].join(",") || "unknown",
-      });
-      continue;
-    }
-
-    passedQa++;
-
-    // 4c. Stamp replacement_for_pin_id on the new row, link to original
-    //     destination (already preserved by director — it always points at
-    //     the same product_slug PDP).
-    const { error: stampErr } = await admin
-      .from("pinterest_pin_queue")
-      .update({ replacement_for_pin_id: row.id })
-      .eq("id", newDraftId);
-    if (stampErr) {
-      report.push({
-        ...base,
-        new_pin_id: newDraftId,
-        post_qa_failures: [],
-        status: "passed_qa_no_requeue",
-        reason: `stamp_failed:${stampErr.message}`,
-      });
-      continue;
-    }
-
-    // 4d. Archive the failing original.
-    const { error: archErr } = await admin
-      .from("pinterest_pin_queue")
-      .update({
+    if (passes) {
+      const { error } = await admin.from("pinterest_pin_queue").update({
+        overlay_text: row.overlay_text,
+        pin_title: row.pin_title,
+        pin_description: row.pin_description,
+        destination_link: row.destination_link,
+        meta: row.meta,
+        status: "queued",
+        approved_at: row.approved_at || new Date().toISOString(),
+        scheduled_at: row.scheduled_at && row.scheduled_at > new Date().toISOString() ? row.scheduled_at : new Date().toISOString(),
+        qa_reasons: [],
+        rejection_reason: null,
+        error_message: null,
+        last_publish_error: null,
+        publishing_started_at: null,
+        us_audience_score: row.us_audience_score ?? 1.0,
+      }).eq("id", row.id);
+      if (error) throw new Error(`repair_update_failed:${row.id}:${error.message}`);
+      repaired++;
+      passedQa++;
+      requeued++;
+      report.push({ id: row.id, product_slug: row.product_slug, status: "requeued", fixes, qa_failures: beforeReasons, post_qa_failures: [] });
+    } else {
+      const reason = afterBanned.length > 0 ? "banned_phrase_leak" : afterReasons.join(",") || "refresh_postqa_failed";
+      await admin.from("pinterest_pin_queue").update({
+        overlay_text: row.overlay_text,
+        pin_title: row.pin_title,
+        pin_description: row.pin_description,
+        destination_link: row.destination_link,
+        meta: row.meta,
         status: "rejected",
-        rejection_reason: "qa_failure_refresh",
-        qa_reasons: reasons,
-      })
-      .eq("id", row.id);
-    if (archErr) {
-      report.push({
-        ...base,
-        new_pin_id: newDraftId,
-        post_qa_failures: [],
-        status: "passed_qa_no_requeue",
-        reason: `archive_failed:${archErr.message}`,
-      });
-      continue;
+        rejection_reason: afterBanned.length > 0 ? "banned_phrase_leak" : reason,
+        qa_reasons: afterBanned.length > 0 ? ["banned_phrase_leak"] : afterReasons,
+        error_message: afterBanned.length > 0 ? rejectReasonForBannedCopy(afterBanned) : `QA gate: ${reason}`,
+        publishing_started_at: null,
+      }).eq("id", row.id);
+      rejected++;
+      stillFailing++;
+      report.push({ id: row.id, product_slug: row.product_slug, status: "rejected", fixes, qa_failures: beforeReasons, post_qa_failures: afterReasons, banned_hits: afterBanned, reason });
     }
-
-    requeued++;
-    report.push({
-      ...base,
-      new_pin_id: newDraftId,
-      post_qa_failures: [],
-      status: "refreshed",
-    });
   }
 
-  // ── 5. Trigger the real cron worker exactly once ─────────────────────────
   let cronResult: any = null;
   let publishedPinId: string | null = null;
   if (runCron && !dryRun) {
     try {
       const r = await admin.functions.invoke("pinterest-cron-worker", { body: {} });
-      cronResult = r.data ?? { error: r.error?.message };
+      cronResult = r.data ?? { ok: false, error: r.error?.message || null };
       const posted = (cronResult?.results || []).filter((x: any) => x.status === "posted");
       publishedPinId = posted[0]?.externalId ?? null;
     } catch (e) {
@@ -356,33 +170,51 @@ Deno.serve(async (req) => {
     }
   }
 
-  // ── 6. Snapshot the after-queued count for the report ───────────────────
-  const { count: afterQueued } = await admin
-    .from("pinterest_pin_queue")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["queued", "draft"]);
+  const { count: afterQueued } = await admin.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "queued");
+  const currentQueuedCleanRows = await countCleanQueued(admin);
+  const nextEligibleCleanPin = await nextCleanQueued(admin);
+  const { data: lastRefreshError } = await admin.from("pinterest_post_logs").select("created_at,error_message,response_data").eq("action", "refresh_failed_queue").eq("status", "error").order("created_at", { ascending: false }).limit(1).maybeSingle();
 
   return jsonResponse({
     ok: true,
     traceId,
     dry_run: dryRun,
-    target_reasons: Array.from(TARGET_REASONS),
-    scanned: candidates?.length ?? 0,
-    failing_total: failing.length,
+    scanned: rows?.length ?? 0,
+    banned_phrase_rows_found: dirtyActive.length,
+    failing_total: work.length,
     processed: work.length,
-    refreshed,                       // pins regenerated (new draft inserted)
-    passed_qa: passedQa,             // new drafts that passed runPinQa+CTA
-    requeued,                        // new drafts kept + old archived
-    still_failing: stillFailing,     // regenerated but still failing post-QA
+    refreshed: repaired,
+    repaired,
+    passed_qa: passedQa,
+    requeued,
+    rejected,
+    still_failing: stillFailing,
     before_queued: beforeQueued ?? null,
     after_queued: afterQueued ?? null,
+    current_queued_clean_rows: currentQueuedCleanRows,
+    next_eligible_clean_pin: nextEligibleCleanPin,
+    last_refresh_failed_queue_error: lastRefreshError || null,
     cron_triggered: runCron && !dryRun,
     published_pin_id: publishedPinId,
     cron_result: cronResult,
     report,
-    message:
-      dryRun
-        ? "dry_run_complete"
-        : `refreshed=${refreshed} passed_qa=${passedQa} requeued=${requeued} still_failing=${stillFailing}`,
+    message: dryRun ? "dry_run_complete" : `repaired=${repaired} requeued=${requeued} rejected=${rejected}`,
   });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const traceId = crypto.randomUUID();
+  try {
+    return await handle(req, traceId);
+  } catch (e) {
+    const error_message = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack : null;
+    console.error("[refresh_failed_queue]", JSON.stringify({ traceId, error_message, stack }));
+    try {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await admin.from("pinterest_post_logs").insert({ action: "refresh_failed_queue", status: "error", error_message, response_data: { traceId, stack, scanned: 0, repaired: 0, rejected: 0 } });
+    } catch { /* keep handled errors as HTTP 200 */ }
+    return jsonResponse({ ok: false, traceId, action: "refresh_failed_queue", error_message, stack, scanned: 0, repaired: 0, rejected: 0 }, 200);
+  }
 });

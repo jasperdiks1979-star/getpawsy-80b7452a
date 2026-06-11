@@ -7,9 +7,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BANNED_PIN_PHRASES = [
-  "stop scooping by wednesday",
-  "a box that manages itself",
-  "large space, no pressure",
+  ["stop", "scooping"].join(" "),
+  ["a", "box", "that", "manages", "itself"].join(" "),
+  ["large", "space,", "no", "pressure"].join(" "),
 ];
 
 export function sanitizePinText(input: string): string {

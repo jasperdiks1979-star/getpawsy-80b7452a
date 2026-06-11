@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { PINTEREST_ALLOWED_SLUGS } from "../_shared/pinterest-qa.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
@@ -132,13 +131,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
-    // 🛡️ Performance Mode lockdown — only the hero allowlist may be auto-pinned.
-    // The legacy multi-product scheduler is disabled until scale_unlocked.
+    // Legacy scheduler is disabled; use the QA-gated viral batch + cron queue.
     return new Response(
       JSON.stringify({
         ok: false,
         code: "PERFORMANCE_MODE_LOCKDOWN",
-        message: `Auto-scheduler is disabled in Performance Mode. Use pinterest-viral-batch for the approved hero slug(s): ${Array.from(PINTEREST_ALLOWED_SLUGS).join(", ")}.`,
+        message: "Auto-scheduler is disabled. Use pinterest-viral-batch; all products are evaluated by the same QA gate.",
       }),
       { status: 200, headers: { ...cors, "Content-Type": "application/json" } },
     );

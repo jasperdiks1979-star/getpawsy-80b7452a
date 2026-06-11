@@ -19,7 +19,8 @@
 //                       | null
 // }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { PINTEREST_ALLOWED_SLUGS, runPinQa } from "../_shared/pinterest-qa.ts";
+import { runPinQa } from "../_shared/pinterest-qa.ts";
+import { collectPinterestBannedCopyHits } from "../_shared/pinterest-banned-copy.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import {
   DiversityGuard,
@@ -129,7 +130,6 @@ Deno.serve(async (req) => {
       .lte("scheduled_at", new Date(now).toISOString())
       .lt("retries", MAX_RETRIES);
     if (!autoApprove) q = q.not("approved_at", "is", null);
-    if (!domination) q = q.in("product_slug", Array.from(PINTEREST_ALLOWED_SLUGS));
     const { data: candidates, error } = await q
       .order("priority", { ascending: true })
       .order("scheduled_at", { ascending: true })
@@ -214,6 +214,8 @@ Deno.serve(async (req) => {
       } catch (e) {
         reasons.push(`qa_gate_exception:${(e as Error).message}`);
       }
+      const bannedHits = collectPinterestBannedCopyHits(full as Record<string, unknown>);
+      if (bannedHits.length > 0) reasons.push(`banned_phrase_leak:${bannedHits.map((h) => h.field).join("|")}`);
       // Diversity guard
       try {
         const ovText = String(full.overlay_text || "");
@@ -310,6 +312,7 @@ Deno.serve(async (req) => {
       blocked_by_qa: draftsAll.filter((r) => Array.isArray(r.qa_reasons) && r.qa_reasons.length > 0).length,
       missing_board: draftsAll.filter((r) => !r.board_id).length,
       missing_score: draftsAll.filter((r) => r.us_audience_score == null).length,
+      banned_phrase_rows_found: fullPins.filter((r: any) => collectPinterestBannedCopyHits(r as Record<string, unknown>).length > 0).length,
     };
 
     return j({
