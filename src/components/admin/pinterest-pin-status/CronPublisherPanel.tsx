@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Play, RefreshCw, AlertTriangle, CheckCircle2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Diag {
   ok: boolean;
   now?: string;
   ready_to_publish?: number;
+  will_publish_next_tick?: boolean;
   queued_total?: number;
   candidate_count?: number;
   warmup?: {
@@ -23,7 +26,9 @@ interface Diag {
     minutes_remaining_for_gap: number;
     next_allowed_publish_at: string;
     us_score_threshold: number;
+    per_category_daily_cap?: number;
   };
+  per_category?: { cap: number; used_24h: Record<string, number> };
   gating?: { blocked: boolean; reason: string | null };
   flags?: Record<string, boolean | string | null>;
   next_eligible_pin?: {
@@ -46,6 +51,10 @@ interface Diag {
 export default function CronPublisherPanel() {
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState<any>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [dailyCap, setDailyCap] = useState<string>('');
+  const [perCatCap, setPerCatCap] = useState<string>('');
+  const [usThreshold, setUsThreshold] = useState<string>('');
 
   const { data, refetch, isFetching } = useQuery({
     queryKey: ['pinterest-cron-diagnostic'],
@@ -56,6 +65,48 @@ export default function CronPublisherPanel() {
     },
     refetchInterval: 30_000,
   });
+
+  // Load current runtime settings to prefill inputs
+  useEffect(() => {
+    (async () => {
+      const { data: rt } = await supabase
+        .from('pinterest_runtime_settings')
+        .select('daily_pin_cap, per_category_daily_cap, us_score_threshold')
+        .eq('id', 1)
+        .maybeSingle();
+      if (rt) {
+        setDailyCap(String((rt as any).daily_pin_cap ?? ''));
+        setPerCatCap(String((rt as any).per_category_daily_cap ?? ''));
+        setUsThreshold(String((rt as any).us_score_threshold ?? ''));
+      }
+    })();
+  }, []);
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const updates: Record<string, number> = {};
+      const d = Number(dailyCap), p = Number(perCatCap), u = Number(usThreshold);
+      if (Number.isFinite(d) && d > 0) updates.daily_pin_cap = Math.floor(d);
+      if (Number.isFinite(p) && p > 0) updates.per_category_daily_cap = Math.floor(p);
+      if (Number.isFinite(u) && u >= 0 && u <= 1) updates.us_score_threshold = u;
+      if (Object.keys(updates).length === 0) {
+        toast({ title: 'Nothing to save', description: 'Provide valid numbers' });
+        return;
+      }
+      const { error } = await supabase
+        .from('pinterest_runtime_settings')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', 1);
+      if (error) throw error;
+      toast({ title: 'Saved', description: 'Runtime settings updated' });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Save failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const runCronNow = async () => {
     setRunning(true);
@@ -93,6 +144,7 @@ export default function CronPublisherPanel() {
 
   const w = data?.warmup;
   const blocked = !!data?.gating?.blocked;
+  const willPublish = !!data?.will_publish_next_tick;
 
   return (
     <Card className="mb-4 border-dashed">
@@ -118,6 +170,46 @@ export default function CronPublisherPanel() {
               {blocked ? <AlertTriangle className="inline h-4 w-4 mr-1" /> : <CheckCircle2 className="inline h-4 w-4 mr-1" />}
               <strong>{blocked ? 'Cron is gated' : 'Cron is open'}:</strong>{' '}
               {data.gating?.reason || 'No active gate — next tick will attempt publish.'}
+            </div>
+
+            <div className={`rounded border px-3 py-2 ${willPublish ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-amber-300 bg-amber-50 text-amber-900'}`}>
+              <strong>Will publish next tick:</strong>{' '}
+              <Badge variant={willPublish ? 'default' : 'destructive'}>{willPublish ? 'yes' : 'no'}</Badge>
+              {!willPublish && data.next_eligible_pin?.ineligibility_reasons?.length ? (
+                <span className="ml-2 text-xs">({data.next_eligible_pin.ineligibility_reasons.join(' · ')})</span>
+              ) : null}
+            </div>
+
+            <div className="rounded border p-3 space-y-2">
+              <div className="font-medium text-sm">Runtime caps & threshold</div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                <div>
+                  <Label className="text-xs">daily_pin_cap</Label>
+                  <Input type="number" min={1} value={dailyCap} onChange={(e) => setDailyCap(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">per_category_daily_cap</Label>
+                  <Input type="number" min={1} value={perCatCap} onChange={(e) => setPerCatCap(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">us_score_threshold (0–1)</Label>
+                  <Input type="number" step="0.05" min={0} max={1} value={usThreshold} onChange={(e) => setUsThreshold(e.target.value)} />
+                </div>
+                <Button onClick={saveSettings} disabled={savingSettings} size="sm">
+                  {savingSettings ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
+                  Save settings
+                </Button>
+              </div>
+              {data.per_category && (
+                <div className="text-xs text-muted-foreground">
+                  Per-category 24h usage (cap {data.per_category.cap}):{' '}
+                  {Object.entries(data.per_category.used_24h).length === 0
+                    ? 'none yet'
+                    : Object.entries(data.per_category.used_24h)
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join(', ')}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
