@@ -114,7 +114,7 @@ function successScore(c: Json): number {
   );
 }
 
-async function runScan(supabase: any, mode: "dry" | "live") {
+async function runScan(supabase: any, mode: "dry" | "live", productLimit = HARD_CAPS.products) {
   const startedAt = new Date().toISOString();
   const counters = {
     products_scanned: 0,
@@ -150,7 +150,7 @@ async function runScan(supabase: any, mode: "dry" | "live") {
     .eq("is_active", true)
     .not("image_url", "is", null)
     .or("margin_percent.gte.0.3,margin_percent.is.null")
-    .limit(HARD_CAPS.products);
+    .limit(productLimit);
 
   if (!products || products.length === 0) {
     return { counters, health, notes: "No eligible products", startedAt };
@@ -163,11 +163,11 @@ async function runScan(supabase: any, mode: "dry" | "live") {
     try {
       const queries = buildQueries(p, trendKeywords);
       const found: Array<Json> = [];
-      for (const q of queries.slice(0, 5)) {
-        const res = await firecrawlSearch(q, Math.ceil(HARD_CAPS.candidatesPerProduct / 5));
-        res.forEach((r: any) => found.push({ ...r, query: q }));
-        if (found.length >= HARD_CAPS.candidatesPerProduct) break;
-      }
+      const qSlice = queries.slice(0, 3);
+      const results = await Promise.all(
+        qSlice.map((q) => firecrawlSearch(q, Math.ceil(HARD_CAPS.candidatesPerProduct / 3)).then((res) => res.map((r: any) => ({ ...r, query: q })))),
+      );
+      results.forEach((arr) => arr.forEach((r) => found.push(r)));
       const trimmed = found.slice(0, HARD_CAPS.candidatesPerProduct);
       counters.competitor_candidates_found += trimmed.length;
 
@@ -413,7 +413,7 @@ Deno.serve(async (req) => {
 
   try {
     if (action === "scan") {
-      const r = await runScan(supabase, mode);
+      const r = await runScan(supabase, mode, Number(body.limit) || HARD_CAPS.products);
       return jsonRes({ ok: true, action, ...r });
     }
     if (action === "generate_drafts") {
@@ -425,7 +425,7 @@ Deno.serve(async (req) => {
       const runIns = await supabase.from("pinterest_competitor_runs").insert({ mode: dry ? "dry" : "live" }).select("id").single();
       const runId = (runIns.data as any)?.id;
 
-      const scan = await runScan(supabase, mode);
+      const scan = await runScan(supabase, mode, Number(body.limit) || HARD_CAPS.products);
       const drafts = await generateDrafts(supabase, mode, 20);
 
       const counters = {
