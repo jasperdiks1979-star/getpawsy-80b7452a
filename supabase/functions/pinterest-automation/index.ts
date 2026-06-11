@@ -1507,6 +1507,15 @@ Deno.serve(async (req) => {
           fixes.push("overlay_rewritten");
         }
 
+        // 1b. Always reconcile overlay with DB trigger constraints
+        // (length ≤32, no `|` / `•`). Otherwise an update of any other
+        // field is rejected.
+        const ov = (pin.overlay_text || "").toString();
+        if (ov.length > 32 || /[|•\r\n]/.test(ov)) {
+          pin.overlay_text = pickHook(pin.product_slug || "");
+          if (!fixes.includes("overlay_rewritten")) fixes.push("overlay_rewritten");
+        }
+
         // 2. Destination → /products/{slug}
         if (before.includes("wrong_destination_url") || before.includes("malformed_url")) {
           const slug = pin.product_slug || "";
