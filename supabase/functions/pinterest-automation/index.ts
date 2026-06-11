@@ -1266,6 +1266,105 @@ Deno.serve(async (req) => {
     }
 
     if (action === "bulk_reject") {
+      // handled below
+    }
+
+    if (action === "assign_missing_boards") {
+      // Auto-assign board_id for drafts that have none, based on (in order):
+      //   1) explicit pin.board_name match against pinterest_boards.name
+      //   2) category_key → pinterest_board_mappings.board_names lookup
+      //   3) destination_link slug inference (litter / cat-tree / dog-* keywords)
+      //   4) fallback mapping
+      // Only "production-safe" boards are eligible: not blacklisted, not sandbox.
+      const limit = Math.min(Math.max(Number(body.limit) || 50, 1), 200);
+
+      const [{ data: drafts }, { data: boards }, { data: mappings }] = await Promise.all([
+        sb.from("pinterest_pin_queue")
+          .select("id, product_slug, destination_link, category_key, board_name")
+          .eq("status", "draft")
+          .is("board_id", null)
+          .limit(limit),
+        sb.from("pinterest_boards")
+          .select("id, name, is_blacklisted, is_sandbox")
+          .eq("is_blacklisted", false)
+          .eq("is_sandbox", false),
+        sb.from("pinterest_board_mappings").select("category_key, board_names, priority").order("priority"),
+      ]);
+
+      const safeBoards = (boards || []) as Array<{ id: string; name: string }>;
+      const byName = new Map<string, string>();
+      for (const b of safeBoards) byName.set(b.name.trim().toLowerCase(), String(b.id));
+
+      const mapByCat: Record<string, string[]> = {};
+      for (const m of mappings || []) mapByCat[m.category_key] = m.board_names || [];
+      const fallbackNames = mapByCat["fallback"] || [];
+
+      const inferCategoryFromSlug = (slug: string): string | null => {
+        const s = (slug || "").toLowerCase();
+        if (/litter/.test(s)) return "cat_litter_boxes";
+        if (/cat[-_ ]?tree|scratch|tower|condo/.test(s)) return "cat_trees";
+        if (/\b(dog|puppy|leash|kennel|crate|car[-_ ]?seat)\b/.test(s)) return "dog_travel";
+        if (/\bcat\b/.test(s)) return "cat_essentials";
+        return null;
+      };
+
+      const resolveBoardId = (pin: any): { id: string; source: string } | null => {
+        // 1) Explicit board_name
+        const explicit = (pin.board_name || "").trim().toLowerCase();
+        if (explicit && byName.has(explicit)) {
+          return { id: byName.get(explicit)!, source: `board_name:${pin.board_name}` };
+        }
+        // 2) Category mapping
+        const catKey = pin.category_key
+          || inferCategoryFromSlug(pin.product_slug || "")
+          || inferCategoryFromSlug(pin.destination_link || "");
+        const candidateNames: string[] = catKey && mapByCat[catKey] ? mapByCat[catKey] : [];
+        for (const name of candidateNames) {
+          const id = byName.get(name.trim().toLowerCase());
+          if (id) return { id, source: `category:${catKey}→${name}` };
+        }
+        // 3) Fallback
+        for (const name of fallbackNames) {
+          const id = byName.get(name.trim().toLowerCase());
+          if (id) return { id, source: `fallback:${name}` };
+        }
+        return null;
+      };
+
+      const results: Array<{ id: string; product_slug: string; assigned_board_id: string | null; board_name: string | null; source: string | null; reason?: string }> = [];
+      let assigned = 0;
+      let unresolved = 0;
+      for (const draft of (drafts || []) as any[]) {
+        const res = resolveBoardId(draft);
+        if (!res) {
+          unresolved++;
+          results.push({ id: draft.id, product_slug: draft.product_slug, assigned_board_id: null, board_name: null, source: null, reason: "no_eligible_board" });
+          continue;
+        }
+        const boardName = safeBoards.find((b) => String(b.id) === res.id)?.name || null;
+        const { error: upErr } = await sb.from("pinterest_pin_queue")
+          .update({ board_id: res.id, board_name: boardName })
+          .eq("id", draft.id);
+        if (upErr) {
+          unresolved++;
+          results.push({ id: draft.id, product_slug: draft.product_slug, assigned_board_id: null, board_name: null, source: res.source, reason: upErr.message });
+          continue;
+        }
+        assigned++;
+        results.push({ id: draft.id, product_slug: draft.product_slug, assigned_board_id: res.id, board_name: boardName, source: res.source });
+      }
+
+      return json(cors, {
+        ok: true,
+        scanned: (drafts || []).length,
+        assigned,
+        unresolved,
+        eligible_boards: safeBoards.length,
+        results,
+      });
+    }
+
+    if (action === "bulk_reject_legacy_marker_") {
       const pinIds: string[] = Array.isArray(body.pinIds) ? body.pinIds.slice(0, 10) : [];
       if (pinIds.length === 0) return json(cors, { ok: false, error: "pinIds required (max 10)" });
       const { error } = await sb.from("pinterest_pin_queue").update({
