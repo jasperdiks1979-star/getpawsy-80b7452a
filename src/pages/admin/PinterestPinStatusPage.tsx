@@ -15,6 +15,7 @@ import { PATTERNS, type PatternId } from '@/lib/pinterest-patterns-client';
 import RunDirectorViaSupabaseButton from '@/components/admin/pinterest-pin-status/RunDirectorViaSupabaseButton';
 import RepairCompletedGitHubRunButton from '@/components/admin/pinterest-pin-status/RepairCompletedGitHubRunButton';
 import RecoverAndRequeueButton from '@/components/admin/pinterest-pin-status/RecoverAndRequeueButton';
+import DeployDiagnosticPanel from '@/components/admin/pinterest-pin-status/DeployDiagnosticPanel';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
