@@ -1,114 +1,127 @@
+# Pinterest Competitor Intelligence Engine
 
-# Pinterest AI Growth Brain (Phase 3)
+Surgical extension of the existing Pinterest stack (Growth Engine, Brain, Creative Director, publisher, queue, board governance). No duplicate systems — every new piece plugs into existing tables, crons and guardrails.
 
-Upgrade the existing `pinterest-growth-orchestrator` + dashboards from a traffic engine to a **revenue-optimizing AI brain**. Reuse — don't replace — what's already live: `pinterest-growth-orchestrator`, `pinterest-growth-engine`, `pinterest-revenue-ai`, `pinterest-creative-director`, `pinterest-intelligence-api`, `pinterest_pin_queue`, `pinterest_analytics_daily`, `pinterest_pin_performance`, `pinterest_visitor_revenue_scores`, `pinterest_opportunity_ranks`, `pinterest_forecasts`, `pinterest_product_tiers`, US optimization rules, queue type contract, board governance.
+---
 
-Most of what the user asked for is **already built** under different names. Phase 3 wires them into one autonomous brain and fills the real gaps.
+## 1. Reuse map (no rebuilds)
 
-## Gap analysis vs. request
+| Concern | Reused asset |
+|---|---|
+| Draft persistence | `pinterest_pin_queue` (status=`draft`) |
+| Creative generation | `pinterest-creative-director` (`generate_briefs` action) |
+| Publisher / warm-up / 25-pin budget | existing publisher, `pinterest_publish_governor`, board whitelist |
+| Loser suppression / amplification | `pinterest-growth-orchestrator`, `pinterest-growth-brain` |
+| Trend keywords | `pinterest_trend_signals` |
+| Board routing | `pinterest_board_mappings` |
+| Tier/opportunity ranking | `pinterest_product_tiers`, `pinterest_opportunity_ranks` |
+| Web scraping | Firecrawl connector (already wired) |
+| AI model gateway | Lovable AI (`google/gemini-3-flash-preview`) |
+| Queue insert contract | `_shared/pinterest-queue-types.ts` |
+| Visual dedupe | existing pHash guard |
+| UTM validator | `utmAttributionValidator` |
 
-| User ask | Already covered by | Status |
-|---|---|---|
-| 1. Impression Intelligence | `pinterest_analytics_daily` hourly sync + `pinterest-intelligence-api` | ✅ keep |
-| 2. Winner Prediction AI | `pinterest_opportunity_ranks` + `growth_forecasts` | ⚠ extend with composite probability scores |
-| 3. Auto Amplification | `pinterest-growth-orchestrator` winner amplifier (5 drafts) | ⚠ scale to 10img + 5vid + 5title + 5desc |
-| 4. Product Discovery Engine | orchestrator opportunity miner + `pinterest-growth-engine` margin scoring | ⚠ add daily catalog scan with image-quality + PDP-strength gates |
-| 5. Pinterest Trends Integration | `pinterest_trend_signals` table + `trend-harvester` cron (US calendar) | ⚠ wire trending keywords into copy generator |
-| 6. Revenue Ranking | `pinterest_revenue_funnel_daily` + `pinterest_opportunity_ranks` rank_tier | ⚠ add 5-tier category bucket |
-| 7. Autonomous Publishing | publisher cron + warm-up + 90-min gap | ✅ keep |
-| 8. AI Executive Dashboard | `/admin/pinterest-growth`, `/admin/revenue-ai`, `/admin/pinterest-intelligence` | ⚠ add unified `/admin/pinterest-brain` |
-| 9. Safety | SHA-256 dedupe + warm-up cap + `pinterest_loser_blocklist` | ✅ keep |
-| 10. Self Learning | nightly orchestrator + `pinterest-revenue-ai loop` 6h | ✅ keep |
+Existing `pinterest_competitor_pins` table is REUSED (already has 9 cols + 2 RLS policies) — only add missing columns rather than re-create.
 
-## What gets built
+---
 
-### 1. Edge function: `pinterest-growth-brain` (the unified nightly meta-orchestrator)
-One function, idempotent, runs nightly at **02:45 UTC** via `pg_cron` — 30 min before `pinterest-growth-orchestrator`. Steps in order:
+## 2. New database (single migration)
 
-1. **Sync analytics** — invoke existing `pinterest-analytics-sync` if last sync > 12h old.
-2. **Winner Prediction AI** — for each pin in `pinterest_pin_performance` last 14d, compute:
-   - `winner_probability = sigmoid(0.25*ctr_z + 0.20*save_z + 0.15*click_z + 0.15*dwell_z + 0.10*atc_z + 0.10*gallery_z + 0.05*variant_z)` (z-score vs category benchmark from `pinterest_category_benchmarks`)
-   - `revenue_probability = sigmoid(0.40*atc_rate + 0.30*purchase_rate + 0.20*checkout_rate + 0.10*click_z)` from `pinterest_pdp_conversion_stats`
-   - `viral_probability = sigmoid(0.50*save_velocity + 0.30*impression_velocity + 0.20*ctr_z)` (velocity = today vs 7d avg)
-   - Persist to new `pinterest_pin_predictions` (pin_id, computed_at, winner_p, revenue_p, viral_p, inputs jsonb).
-3. **Auto-amplify** — for pins with `winner_p > 0.70` OR `revenue_p > 0.70`:
-   - Pull current winner copy + image.
-   - Call `pinterest-creative-director` with `count=10` (images), `seo_mode=true`, and (if `pinterest-video-queue` healthy) enqueue 5 video drafts.
-   - Generate 5 title + 5 description variants via Lovable AI (`google/gemini-3-flash-preview`) seeded with top-3 trending keywords from `pinterest_trend_signals` for the product's niche; persist to `pinterest_title_variants` + `pinterest_creative_variants`.
-   - Distribute drafts across all eligible non-generic production boards (board governance rules already enforce this).
-4. **Product Discovery Engine** — daily catalog scan:
-   - Query `products` where `is_active=true`, `margin_percent>=0.30`, has ≥3 images, has `image_url` matching WebP standards, `pin_count_30d<3`.
-   - Score by `pdp_strength = scroll_depth_avg*0.4 + atc_rate*0.4 + dwell_avg/10000*0.2` from `pinterest_pdp_conversion_stats` (fallback to neutral 0.5 if no data).
-   - Insert top 20 into `pinterest_product_tiers` with `hidden_opportunity=true`, `discovery_source='catalog_scan'`.
-5. **Revenue Ranking** — refresh new view `pinterest_product_revenue_ranks` classifying every active product into one of 5 buckets using `pinterest_opportunity_ranks` + `pinterest_revenue_funnel_daily`:
-   - `viral_winner` (viral_p≥0.7)
-   - `revenue_winner` (revenue_p≥0.7 OR 30d revenue top 10%)
-   - `emerging` (clicks_30d>5 AND winner_p∈[0.4,0.7])
-   - `hidden_opportunity` (hidden_opportunity=true OR dwell>8s+pin_count<3)
-   - `underperformer` (rank_tier='loser')
-6. **Loser suppression** — already handled by `pinterest-growth-orchestrator` — brain only flags them in `pinterest_brain_runs.summary`.
-7. **Log** to new `pinterest_brain_runs` + `pinterest_brain_actions`.
+**Extend `pinterest_competitor_pins`** (additive only — no drops):
+add `product_id uuid`, `product_slug text`, `query text`, `source_url text`, `domain text`, `title_hash text`, `title_sample text`, `description_sample text`, `board_name text`, `visual_type text`, `hook_angle text`, `benefit_angle text`, `cta_pattern text`, `detected_keywords text[]`, `visible_saves int`, `visible_comments int`, `visible_engagement_score numeric`, `freshness_score numeric`, `relevance_score numeric`, `competitor_success_score numeric`.
+Unique index `(product_id, title_hash, source_url)`.
 
-### 2. DB migration
-- `pinterest_pin_predictions` (pin_id, computed_at, winner_p, revenue_p, viral_p, inputs jsonb, model_version).
-- `pinterest_brain_runs` (started_at, finished_at, predictions_computed, winners_amplified, drafts_enqueued, products_discovered, errors, summary jsonb).
-- `pinterest_brain_actions` (run_id, action_type, product_id, pin_id, payload jsonb).
-- Add columns to `pinterest_product_tiers`: `discovery_source text`, `pdp_strength_score numeric`, `revenue_bucket text`.
-- View `pinterest_product_revenue_ranks` (security-invoker).
-- All tables: GRANT to authenticated (admin-read via `has_role`) + service_role-all + RLS.
+**New tables** (all with GRANT to authenticated+service_role, RLS, admin-read via `has_role`):
+- `pinterest_competitor_patterns` — `pattern_type` (title/hook/benefit/cta/visual/keyword/board), `pattern_value`, `sample_count`, `avg_success`, `niche_key`, `last_seen_at`.
+- `pinterest_competitor_opportunities` — `product_id`, `product_slug`, `competitor_gap_score`, `components jsonb` (margin/availability/pin_count/traffic/us_fit/visual), `top_patterns jsonb`, `rank int`, `generated_drafts int default 0`.
+- `pinterest_competitor_runs` — `started_at`, `finished_at`, `mode` (dry/live), `products_scanned`, `competitor_candidates_found`, `patterns_extracted`, `opportunities_created`, `drafts_generated`, `queued`, `rejected`, `errors`, `health jsonb`, `notes`.
 
-### 3. Trends → copy generator
-Extend `pinterest-creative-director`: when `seo_mode=true`, accept `trending_keywords[]` param (top 3 from `pinterest_trend_signals` for product niche, US-only). Inject into title pool ("[keyword] [product]"), description (1 sentence), and 3 hashtags from same pool. No new LLM call — uses existing prompt.
+No deletes anywhere. Service-role writes from edge functions.
 
-### 4. AI Executive Dashboard: `/admin/pinterest-brain`
-New lazy-loaded page `PinterestBrainPage.tsx`. Single-screen executive view:
-- **Forecast cards (30d):** expected visitors, expected revenue, expected ATC, expected purchases — pulled from `pinterest_forecasts` aggregate + brain projection (visitors × avg_conv × aov).
-- **Bucket panels:** Viral Winners / Revenue Winners / Emerging / Hidden Opportunities / Underperformers — top 10 each with thumbnails + key metric.
-- **Top 20 pins** by winner_p (table with thumbnail, CTR, saves, clicks, predictions).
-- **Top 20 products** by revenue_bucket=revenue_winner sorted by 30d revenue.
-- **Bottlenecks panel:** reads `monitoring_alerts` filtered to category `pinterest*`; plus brain-computed: warm-up cap hit, board exhaustion, low US share, OAuth stale.
-- **AI recommendations:** static rules engine (no LLM call) — "scale category X", "pause product Y", "boost board Z".
-- **Run log:** last 14 `pinterest_brain_runs`.
-- "Run brain now" admin-only button.
+---
 
-Route registered in `src/App.tsx` lazy.
+## 3. Edge function `pinterest-competitor-intel`
 
-### 5. Nightly cron
-`pg_cron` at `45 2 * * *` UTC (id new) → POST `pinterest-growth-brain` with `pg_net`. Inserted via `supabase--insert` after migration (anon key not committed).
+Single function, multi-action POST `{action, dry_run}`:
 
-### 6. Safety guarantees
-- Per-run hard caps: max **120 drafts** enqueued (matches phase-2 cap), max 50 status flips.
-- All copy/image dedupe via existing SHA-256 (90d window).
-- Never DELETE pins, products, or queue rows. Only flip `status`/`priority`.
-- Never bypass warm-up — publisher still owns cadence.
-- Pinterest-compliant title (≤5 words) + overlay (≤6 words, ban list) rules from `pinterest-growth-engine` v2 stay authoritative.
+- `scan` — pick ≤25 active products (`margin_percent>=0.30`, image_url present), generate 5–10 commercial queries per product (title + category + benefits + top trend keywords), Firecrawl search (US locale) up to 20 candidates/product, parse metadata only (title/description/board/domain/visible engagement). Classify hook/benefit/cta/visual via cheap Gemini Flash call (batched 10 pins/call). Dedup by `(product_id, title_hash, source_url)`. Insert into `pinterest_competitor_pins`.
+- `score` — compute `competitor_success_score` per row (weighted sum: relevance 25, engagement 20, keyword 15, commercial intent 10, freshness 10, board fit 5, visual 5, US fit 5, niche 5).
+- `extract_patterns` — group winners (score≥80) by niche → upsert into `pinterest_competitor_patterns` with rolling `avg_success`.
+- `rank_opportunities` — per product compute `competitor_gap_score` from documented formula, upsert top 100 into `pinterest_competitor_opportunities`.
+- `generate_drafts` — for top N opportunities call `pinterest-creative-director` with `seo_mode=true`, pattern hints (`top_patterns`), `count` capped so global run cap ≤100 drafts. Drafts land in `pinterest_pin_queue` as `status='draft'` with required UTM (`utm_source=pinterest&utm_medium=social&utm_campaign=competitor_intel&utm_content=${draftId}`). Re-uses board whitelist and pHash guard. No competitor images/videos persisted.
+- `run_full` — orchestrates scan → score → extract → rank → generate, writes a `pinterest_competitor_runs` row with all counters + health flags (`competitor_scan_ok`, `competitor_data_fresh`, `competitor_dedupe_ok`, `drafts_generated`, `queue_insert_ok`, `publisher_accepts_competitor_drafts`, `utm_valid`, `no_copyright_copy_detected`).
 
-## Out of scope
-- No new image generation pipeline (reuses creative director).
-- No live Pinterest Trends API call (gated; uses existing `pinterest_trend_signals` from US seasonal harvester).
-- No publisher cadence change.
-- No data deletion.
+Hard caps per run: 25 products, 20 candidates/product, 100 drafts, 8-min timeout. Idempotent (run_id guard).
 
-## Files
-**New:**
-- `supabase/migrations/<ts>_pinterest_growth_brain.sql`
-- `supabase/functions/pinterest-growth-brain/index.ts`
-- `src/pages/admin/PinterestBrainPage.tsx`
+Copyright/safety: store only title/description text snippets ≤200 chars + structural metadata, never image bytes or video URLs persisted to our storage; AI generator forbidden from quoting >5 contiguous competitor words (system prompt enforced + regex dedupe pass post-generation).
 
-**Edited:**
-- `src/App.tsx` — register `/admin/pinterest-brain` lazy.
-- `supabase/functions/pinterest-creative-director/index.ts` — accept `trending_keywords[]` when `seo_mode=true`.
+---
 
-**Cron:** inserted via `supabase--insert` after migration.
+## 4. Cron
 
-## Verification
-1. Migration applied → `pinterest_pin_predictions`, `pinterest_brain_runs`, `pinterest_brain_actions`, view exist.
-2. `curl_edge_functions` POST brain with `{dry_run:true}` — expect prediction counts + bucket counts, zero writes.
-3. Real run — confirm rows in all three tables + 5-bucket distribution on view.
-4. Visit `/admin/pinterest-brain` — KPIs populate, bucket panels populate, run log shows manual run.
+Reuse `pg_cron` slot — schedule `pinterest-competitor-intel` action `run_full` at `15 3 * * *` UTC (30 min after Brain). Insert via `supabase--insert` (uses anon key + project ref).
 
-## Projections (after first 7 nights)
-- Drafts/day: ~80–120 (winner amplifier 10img+5vid×top winners + discovery 20)
-- Effective publishes/day: 25 (publisher warm-up cap is authoritative)
-- Expected monthly Pinterest visitors at steady state: 4,000–6,500
-- Days to 5,000 sessions/month: ~30–45 nights from baseline
+---
+
+## 5. Admin UI
+
+**New page `/admin/pinterest-spy`** (`PinterestSpyPage.tsx`, lazy-loaded, admin-gated):
+- Run scan / Dry run / Generate drafts / Approve top 25 / Export CSV buttons
+- Last run card (counters + health badges)
+- Top competitor patterns (grouped by type)
+- Top 100 product opportunities table (product, gap score, components, generated drafts count, actions: Generate / Approve / Reject)
+- Per-product drawer: recommended titles, descriptions, overlays, boards, sample competitor snippets (clearly labeled "inspiration only, not copied")
+- Safety banner explaining copyright-safe inspiration policy
+- Mobile-friendly (existing admin layout)
+
+**Widget on `/admin/pinterest-growth`**: "Competitor Intel" card — opportunities found, top 5 products to push, drafts generated, est. monthly traffic potential (`sum(competitor_gap_score) * 0.15` proxy), warning when no fresh data (>48h).
+
+Route registered in `src/App.tsx`.
+
+---
+
+## 6. Validation pass
+
+After deploy:
+1. Dry-run `run_full` → expect ≥10 drafts, log counters.
+2. Verify queue insertion via `pinterest_pin_queue` rows where `meta->>'source'='competitor_intel'`.
+3. Confirm no new image/video files in storage.
+4. Confirm UTM on each draft via `utmAttributionValidator`-compatible params.
+5. Spot-check destination URLs resolve.
+6. Verify dashboard renders at 440px viewport.
+
+---
+
+## 7. Files
+
+**Created**
+- `supabase/functions/pinterest-competitor-intel/index.ts`
+- `supabase/migrations/<ts>_competitor_intel.sql`
+- `src/pages/admin/PinterestSpyPage.tsx`
+- `mem/marketing/pinterest-competitor-intel.md`
+
+**Edited**
+- `src/App.tsx` — add `/admin/pinterest-spy` lazy route
+- `src/pages/admin/PinterestGrowthPage.tsx` — add Competitor Intel widget
+- `.lovable/plan.md` — record phase
+
+**Untouched**: publisher, queue contract, creative director core, growth orchestrator/brain (called as black boxes), board governance, RLS on existing tables.
+
+---
+
+## 8. Out of scope
+
+- No new image generation pipeline (reuses Creative Director).
+- No live Pinterest Trends API (gated).
+- No competitor pin re-publishing or asset storage.
+- No edits to publisher cadence, warm-up, or 25-pin daily cap.
+- No deletes of any existing data.
+
+---
+
+## Projections
+
+- 25 products × ~12 candidates/day = ~300 competitor rows/day
+- ~30–60 high-score patterns/week
+- 60–100 original drafts/day routed through existing approval flow
+- No additional publish rate — fills existing 25-pin/day budget with higher-intent creative
