@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
         const bucket = CATEGORY_BUCKETS.find(b => b.key === niche) ?? CATEGORY_BUCKETS[bucketIdx++ % CATEGORY_BUCKETS.length];
         for (let v = 0; v < target.count; v++) {
           if (stats.drafts_enqueued + inserts.length >= MAX_DRAFTS_PER_RUN) break outer;
-          const copy = buildSeoCopy(p, niche, v + Math.floor(Math.random() * 5));
+          const copy = buildSeoCopy(p, niche, v);
           const titleNorm = normalize(copy.title);
           const descNorm  = normalize(copy.description).slice(0, 200);
           if (seenTitles.has(titleNorm) || seenDescs.has(descNorm)) {
