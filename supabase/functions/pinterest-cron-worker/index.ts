@@ -569,7 +569,7 @@ Deno.serve(async (req) => {
     // ── 3b. Warm-up + Performance Mode daily cap, min-gap, US score threshold ──
     const { data: rtSettings } = await sb
       .from("pinterest_runtime_settings")
-      .select("scale_unlocked, daily_pin_cap, min_gap_minutes, warmup_until, us_score_threshold")
+      .select("scale_unlocked, daily_pin_cap, min_gap_minutes, warmup_until, us_score_threshold, per_category_daily_cap")
       .limit(1)
       .maybeSingle();
     const scaleUnlocked = !!rtSettings?.scale_unlocked;
@@ -581,6 +581,7 @@ Deno.serve(async (req) => {
       : (scaleUnlocked ? MAX_PINS_PER_HOUR * 24 : HERO_DAILY_CAP);
     const minGapMinutes: number = warmupActive ? Number(rtSettings?.min_gap_minutes ?? 90) : 0;
     const usScoreThreshold: number = Number(rtSettings?.us_score_threshold ?? 0.55);
+    const perCategoryDailyCap: number = Math.max(1, Number(rtSettings?.per_category_daily_cap ?? 8));
 
     // Daily cap (warm-up uses configurable cap; otherwise legacy Performance Mode)
     if (warmupActive || !scaleUnlocked) {
@@ -677,8 +678,8 @@ Deno.serve(async (req) => {
       console.warn("[cron] style-mix reorder failed (non-fatal):", e);
     }
 
-    // ── 3d. Per-category daily cap (max 3 pins/category/day). ──
-    const PER_CATEGORY_DAILY_CAP = 3;
+    // ── 3d. Per-category daily cap (configurable via pinterest_runtime_settings.per_category_daily_cap). ──
+    const PER_CATEGORY_DAILY_CAP = perCategoryDailyCap;
     try {
       const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
       const { data: postedToday24 } = await sb
