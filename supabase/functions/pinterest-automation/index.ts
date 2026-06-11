@@ -1485,10 +1485,15 @@ Deno.serve(async (req) => {
         .from("pinterest_pin_queue")
         .select("*")
         .eq("status", "draft")
-        .not("qa_reasons", "is", null)
         .limit(limit);
 
-      const blocked = (drafts || []).filter((d: any) => Array.isArray(d.qa_reasons) && d.qa_reasons.length > 0);
+      // Process every draft. If qa_reasons is empty/null, evaluate it now
+      // so the repair logic below knows what to fix.
+      const blocked = (drafts || []).map((d: any) => {
+        const existing = Array.isArray(d.qa_reasons) ? d.qa_reasons : [];
+        const reasons = existing.length > 0 ? existing : runPinQa(d as any);
+        return { ...d, qa_reasons: reasons };
+      });
 
       let repaired = 0;
       let approved = 0;
@@ -1498,6 +1503,26 @@ Deno.serve(async (req) => {
       for (const pin of blocked) {
         const fixes: string[] = [];
         const before = [...(pin.qa_reasons || [])];
+
+        // Pin already passes QA — fast-path approve + queue.
+        if (before.length === 0) {
+          const { error } = await sb.from("pinterest_pin_queue").update({
+            status: "queued",
+            approved_at: new Date().toISOString(),
+            scheduled_at: new Date().toISOString(),
+            us_audience_score: pin.us_audience_score ?? 1.0,
+            qa_reasons: [],
+            error_message: null,
+          }).eq("id", pin.id);
+          if (error) {
+            stillFailing++;
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes: [], before, after: [], queued: false, error: error.message });
+          } else {
+            approved++;
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes: ["passed_qa"], before, after: [], queued: true });
+          }
+          continue;
+        }
 
         // 1. Overlay → "Hook | CTA"
         if (before.includes("missing_cta") || before.includes("weak_hook") || before.includes("unreadable_text")) {
