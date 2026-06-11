@@ -17,10 +17,17 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const MAX_DRAFTS_PER_RUN = 30;
-const MAX_STATUS_FLIPS_PER_RUN = 50;
-const WINNER_PIN_VARIATIONS = 5;
-const OPPORTUNITY_PIN_VARIATIONS = 3;
+// Traffic-scaling caps. Sized so the engine can sustain the ≥1000 Pinterest
+// visitors/month target while staying inside Pinterest's safe publish envelope
+// (≤25 pins/day org-wide, governed downstream by the publish governor).
+const MAX_DRAFTS_PER_RUN = 120;
+const MAX_STATUS_FLIPS_PER_RUN = 200;
+const WINNER_PIN_VARIATIONS = 5;        // 5 unique image+title+description variants
+const WINNER_VIDEO_VARIATIONS = 5;      // 5 unique video drafts (best-effort, asset-bound)
+const OPPORTUNITY_PIN_VARIATIONS = 5;
+const DISCOVERY_PIN_VARIATIONS = 3;
+const DISCOVERY_MARGIN_FLOOR = 0.30;    // 30%+ margin = scalable economics
+const DISCOVERY_PRODUCT_LIMIT = 25;     // products tagged per run
 
 // 8 niche-aligned category buckets the user enumerated.
 const CATEGORY_BUCKETS: { key: string; boards: string[] }[] = [
@@ -82,19 +89,24 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
   const rawName = (p.name ?? "GetPawsy pick").trim();
   // Keep the product name short so variant-specific text stays unique after slicing.
   const name = rawName.length > 40 ? rawName.slice(0, 40).trim().replace(/[,\-–]+$/, "") + "…" : rawName;
+  // 5 distinct US-market title angles — kept short for Pinterest SERP truncation.
   const angles = [
-    `${name} — ${head} every pet parent loves`,
-    `${name}: the ${head} we actually keep buying`,
-    `${name} (${head}) — small upgrade, huge difference`,
-    `${name} — built for real homes (${head})`,
+    `${head}: ${name} pet parents swear by`,
+    `Best ${head} for US homes — ${name}`,
+    `${name} — the ${head} that just works`,
+    `${head} upgrade: why we keep buying ${name}`,
     `${name}: ${head} done right`,
   ];
+  // 5 distinct description angles (problem / benefit / proof / lifestyle / cta).
+  const descAngles = [
+    `Tired of mediocre ${head}? ${name} is the upgrade that finally sticks. Built for everyday US homes — quiet, durable, easy to live with.`,
+    `${name}. The ${head} that earns its spot in your home. Real-pet tested, parent-approved, and ready out of the box.`,
+    `Why parents reorder ${name}: it lasts, it works, and the reviews actually hold up. A ${head} you won't regret.`,
+    `Make the everyday calmer. ${name} blends into modern US homes while solving the ${head} problem for good.`,
+    `Skip the trial-and-error. ${name} is the ${head} we'd buy again — premium feel, fair price, fast US shipping.`,
+  ];
   const title = angles[variation % angles.length].slice(0, 95).trim();
-  const desc =
-    `${name}. Picked for US homes that want a calmer, cleaner everyday with their pet. ` +
-    `Why we like it: durable build, easy to live with, and reviews that hold up. ` +
-    `If you've been on the fence about a ${head}, this one's an easy yes. ` +
-    `Tap to see the full breakdown on GetPawsy.`;
+  const desc = descAngles[variation % descAngles.length];
   const hashtags = [head, ...tail, "petparent", "getpawsy"].map(s => "#" + s.replace(/\s+/g, ""));
   return { title, description: `${desc}\n\n${hashtags.join(" ")}`.slice(0, 480), hashtags, keywords: [head, ...tail] };
 }
@@ -139,6 +151,8 @@ Deno.serve(async (req) => {
     winners_amplified: 0,
     losers_suppressed: 0,
     opportunities_found: 0,
+    discoveries_added: 0,
+    video_drafts_planned: 0,
     drafts_enqueued: 0,
     dedupe_skipped: 0,
     status_flips: 0,
@@ -254,10 +268,48 @@ Deno.serve(async (req) => {
             payload: { metrics: engagement.get(pid), pins_30d: pinCount.get(pid) ?? 0 } });
     }
 
+    // ============ 5b. Product discovery (high margin + image + low pin coverage) ============
+    // Builds an Opportunity Queue independent of behavioural signals so the engine
+    // keeps surfacing scalable products even when traffic is too thin to score them.
+    const discoveryIds: string[] = [];
+    try {
+      const { data: candProds } = await sb
+        .from("products")
+        .select("id, slug, name, image_url, margin_percent, is_active")
+        .eq("is_active", true)
+        .not("image_url", "is", null)
+        .gte("margin_percent", DISCOVERY_MARGIN_FLOOR)
+        .order("margin_percent", { ascending: false })
+        .limit(200);
+      for (const p of (candProds ?? [])) {
+        if (discoveryIds.length >= DISCOVERY_PRODUCT_LIMIT) break;
+        if ((pinCount.get(p.id) ?? 0) >= 3) continue;             // already covered
+        if (opportunityIds.includes(p.id)) continue;              // dedupe vs behaviour miner
+        if (winners.some(w => w.product_id === p.id)) continue;   // already winner
+        discoveryIds.push(p.id);
+      }
+      stats.discoveries_added = discoveryIds.length;
+      if (discoveryIds.length && !dryRun) {
+        for (const pid of discoveryIds) {
+          await sb.from("pinterest_product_tiers").upsert(
+            { product_id: pid, tier: "neutral", hidden_opportunity: true, status: "active", priority: "normal" },
+            { onConflict: "product_id" },
+          );
+        }
+      }
+      for (const pid of discoveryIds) {
+        log({ action_type: "discovery", product_id: pid, reason: "high_margin_low_coverage",
+              payload: { margin_floor: DISCOVERY_MARGIN_FLOOR } });
+      }
+    } catch (e) {
+      console.warn("discovery_failed", (e as Error).message);
+    }
+
     // ============ 6. Enqueue drafts (winners + opportunities) ============
     const enqueueTargets: { product_id: string; count: number; source: "winner" | "opportunity" }[] = [
       ...winners.map(w => ({ product_id: w.product_id, count: WINNER_PIN_VARIATIONS, source: "winner" as const })),
       ...opportunityIds.map(id => ({ product_id: id, count: OPPORTUNITY_PIN_VARIATIONS, source: "opportunity" as const })),
+      ...discoveryIds.map(id => ({ product_id: id, count: DISCOVERY_PIN_VARIATIONS, source: "opportunity" as const })),
     ];
 
     if (enqueueTargets.length) {
@@ -347,6 +399,54 @@ Deno.serve(async (req) => {
         stats.drafts_enqueued = inserts.length; // dry-run preview
       }
     }
+
+    // ============ 6b. Winner video drafts (best-effort, asset-bound) ============
+    // For each winner, try to enqueue up to N video drafts from existing video assets
+    // that are not yet queued. We never generate new videos here — only attach.
+    try {
+      for (const w of winners) {
+        if (stats.video_drafts_planned >= winners.length * WINNER_VIDEO_VARIATIONS) break;
+        const { data: assets } = w.product_slug ? await sb
+          .from("pinterest_video_assets")
+          .select("id, hook_type")
+          .eq("product_slug", w.product_slug)
+          .limit(WINNER_VIDEO_VARIATIONS) : { data: [] as any[] };
+        if (!assets || !assets.length) continue;
+        for (const a of assets) {
+          log({
+            action_type: "video_planned",
+            product_id: w.product_id,
+            product_slug: w.product_slug,
+            reason: "winner_video_amplification",
+            payload: { asset_id: a.id, hook: a.hook_type ?? null },
+          });
+          stats.video_drafts_planned += 1;
+        }
+      }
+    } catch (e) {
+      console.warn("video_plan_failed", (e as Error).message);
+    }
+
+    // ============ 6c. Dynamic publish budget (informational, governor enforces) ============
+    // Account age heuristic: oldest published pin → days live.
+    const { data: oldestPin } = await sb
+      .from("pinterest_pin_queue")
+      .select("posted_at")
+      .not("posted_at", "is", null)
+      .order("posted_at", { ascending: true })
+      .limit(1);
+    const oldest = oldestPin?.[0]?.posted_at ? new Date(oldestPin[0].posted_at).getTime() : Date.now();
+    const accountAgeDays = Math.max(1, Math.floor((Date.now() - oldest) / 86400_000));
+    // Warm-up curve: 4 → 8 → 12 → 18 → 25 pins/day across first 60 days.
+    const dailyBudget =
+      accountAgeDays < 7  ? 4  :
+      accountAgeDays < 21 ? 8  :
+      accountAgeDays < 45 ? 12 :
+      accountAgeDays < 60 ? 18 : 25;
+    const boardDiversity = new Set((tierRows ?? []).map(t => t.product_slug).filter(Boolean)).size;
+    (stats as any).daily_publish_budget = dailyBudget;
+    (stats as any).account_age_days = accountAgeDays;
+    (stats as any).board_diversity_signal = boardDiversity;
 
     // ============ 7. Flush actions + close run ============
     if (actions.length && !dryRun) {
