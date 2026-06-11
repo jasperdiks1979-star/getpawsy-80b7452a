@@ -79,7 +79,9 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
   const kws = KEYWORD_POOL[niche] ?? KEYWORD_POOL.accessories;
   const head = kws[variation % kws.length];
   const tail = pick(kws.filter(k => k !== head), 2);
-  const name = p.name ?? "GetPawsy pick";
+  const rawName = (p.name ?? "GetPawsy pick").trim();
+  // Keep the product name short so variant-specific text stays unique after slicing.
+  const name = rawName.length > 40 ? rawName.slice(0, 40).trim().replace(/[,\-–]+$/, "") + "…" : rawName;
   const angles = [
     `${name} — ${head} every pet parent loves`,
     `${name}: the ${head} we actually keep buying`,
@@ -87,7 +89,7 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
     `${name} — built for real homes (${head})`,
     `${name}: ${head} done right`,
   ];
-  const title = angles[variation % angles.length].slice(0, 95);
+  const title = angles[variation % angles.length].slice(0, 95).trim();
   const desc =
     `${name}. Picked for US homes that want a calmer, cleaner everyday with their pet. ` +
     `Why we like it: durable build, easy to live with, and reviews that hold up. ` +
