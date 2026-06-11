@@ -124,7 +124,11 @@ Deno.serve(async (req) => {
         .from("lp_funnel_events")
         .select("session_id,event_name,product_id,dwell_ms,scroll_depth_at_click")
         .in("session_id", chunk)
-        .eq("is_bot", false)
+        // Keep rows that are explicitly human OR unclassified (is_bot IS NULL).
+        // The original `.eq("is_bot", false)` silently dropped every legacy
+        // row whose bot flag was never written, which made `products_scored`
+        // collapse to 0 even when valid sessions+events existed.
+        .or("is_bot.is.null,is_bot.eq.false")
         .gte("created_at", since);
       if (error) throw error;
       events.push(...((data ?? []) as EventRow[]));
@@ -202,9 +206,12 @@ Deno.serve(async (req) => {
       a.product_score = composite(a);
     }
 
-    // 5) Tier into winner/neutral/loser (require some traffic confidence).
+    // 5) Tier into winner/neutral/loser. Threshold is intentionally low
+    //    (>=1 pdp_view OR >=1 session) so the dashboard fills as soon as
+    //    real Pinterest humans land on a PDP — the previous >=3 cutoff
+    //    suppressed every product during the early traffic phase.
     const ranked = Array.from(agg.values())
-      .filter((p) => p.pdp_views >= 3 || p.sessions >= 3)
+      .filter((p) => p.pdp_views >= 1 || p.sessions >= 1)
       .sort((a, b) => b.product_score - a.product_score);
     const n = ranked.length;
     const winnerCut = Math.max(1, Math.floor(n * 0.2));
