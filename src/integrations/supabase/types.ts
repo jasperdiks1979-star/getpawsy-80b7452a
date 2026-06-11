@@ -11656,6 +11656,7 @@ export type Database = {
       }
       pinterest_attribution_sessions: {
         Row: {
+          click_counted: boolean
           events_seen: number
           first_seen: string
           hook_category: string | null
@@ -11671,6 +11672,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          click_counted?: boolean
           events_seen?: number
           first_seen?: string
           hook_category?: string | null
@@ -11686,6 +11688,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          click_counted?: boolean
           events_seen?: number
           first_seen?: string
           hook_category?: string | null
@@ -21335,6 +21338,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_pinterest_pin_click: {
+        Args: { p_pin_id: string; p_product_id: string; p_product_url?: string }
+        Returns: undefined
       }
       list_admin_assignees: {
         Args: never
