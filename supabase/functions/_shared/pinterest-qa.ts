@@ -18,7 +18,6 @@ export type PinQaReason =
   | "unreadable_overlay"
   | "missing_cta"
   | "wrong_destination_url"
-  | "allowlist_disabled"
   | "low_resolution"
   | "malformed_url"
   | "spam_payload"
@@ -96,10 +95,7 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
     (s.match(EMOJI) || []).length > 3 ||
     ENCODED_BLOB.test(s);
 
-  // 1. Allowlist (during QA stabilization)
-  if (!pin.domination_mode && !PINTEREST_ALLOWED_SLUGS.has(slug)) {
-    reasons.add("allowlist_disabled");
-  }
+  // 1. Allowlist gating removed — every product is evaluated equally.
 
   // 2. Destination URL must point to the same product slug
   const dest = pin.destination_link || "";

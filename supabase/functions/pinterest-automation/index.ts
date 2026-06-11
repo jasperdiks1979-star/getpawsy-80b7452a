@@ -1243,10 +1243,6 @@ Deno.serve(async (req) => {
       let approved = 0;
       const failures: Array<{ id: string; reasons: string[] }> = [];
       for (const pin of pins || []) {
-        if (!PINTEREST_ALLOWED_SLUGS.has(pin.product_slug)) {
-          failures.push({ id: pin.id, reasons: ["allowlist_disabled"] });
-          continue;
-        }
         const reasons = runPinQa(pin);
         if (reasons.length > 0) {
           await sb.from("pinterest_pin_queue").update({
@@ -1262,6 +1258,7 @@ Deno.serve(async (req) => {
           qa_reasons: [],
           error_message: null,
           scheduled_at: new Date().toISOString(),
+          us_audience_score: pin.us_audience_score ?? 1.0,
         }).eq("id", pin.id);
         approved++;
       }

@@ -290,12 +290,35 @@ Deno.serve(async (req) => {
 
     const willPublishNextTick = !blocked && readyToPublish > 0;
 
+    // Admin pipeline report (counts across the full queue).
+    const [draftRows, approvedRows, queuedRows] = await Promise.all([
+      sb.from("pinterest_pin_queue")
+        .select("id, board_id, us_audience_score, qa_reasons", { count: "exact" })
+        .eq("status", "draft"),
+      sb.from("pinterest_pin_queue")
+        .select("id", { count: "exact", head: true })
+        .not("approved_at", "is", null),
+      sb.from("pinterest_pin_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "queued"),
+    ]);
+    const draftsAll = (draftRows.data as any[]) || [];
+    const pipelineReport = {
+      draft_count: draftRows.count || 0,
+      approved_count: approvedRows.count || 0,
+      queued_count: queuedRows.count || 0,
+      blocked_by_qa: draftsAll.filter((r) => Array.isArray(r.qa_reasons) && r.qa_reasons.length > 0).length,
+      missing_board: draftsAll.filter((r) => !r.board_id).length,
+      missing_score: draftsAll.filter((r) => r.us_audience_score == null).length,
+    };
+
     return j({
       ok: true,
       now: new Date(now).toISOString(),
       ready_to_publish: readyToPublish,
       will_publish_next_tick: willPublishNextTick,
       queued_total: queuedTotal || 0,
+      pipeline_report: pipelineReport,
       candidate_count: (candidates || []).length,
       candidate_simulation: simResults,
       per_category: {
