@@ -3,6 +3,13 @@ const PHRASE_PARTS = [
   ["stop", "scooping"],
   ["large", "space,", "no", "pressure"],
   ["a", "box", "that", "manages", "itself"],
+  // 2026-06-11 expansion — banned because they leak across categories or feel spammy.
+  ["shop", "the", "upgrade"],
+  ["discover", "why"],
+  ["save", "for", "later"],
+  ["tired", "of", "litter"],
+  ["no", "more", "plastic", "bag", "hunts"],
+  ["no", "more", "plastic", "bag"],
 ] as const;
 
 export const PINTEREST_BANNED_COPY = PHRASE_PARTS.map((parts) => parts.join(" "));
@@ -44,6 +51,11 @@ export function collectPinterestBannedCopyHits(pin: Record<string, unknown>): Pi
     prompt: pin.prompt ?? meta.prompt ?? meta.image_prompt ?? meta.generated_image_prompt,
     image_alt: pin.image_alt ?? meta.image_alt ?? meta.imageAlt,
     cta: pin.cta ?? meta.cta ?? meta.call_to_action,
+    // Cloudinary overlays bake the headline text into the image URL itself
+    // (e.g. `l_text:...:Stop%20scooping%0Aevery%20day`). Decode it before
+    // scanning so we catch the leak even when the DB row's overlay_text/title
+    // were already sanitised.
+    image_url: decodePinterestImageOverlay(pin.pin_image_url ?? pin.image_url),
     meta: pin.meta ? JSON.stringify(pin.meta) : "",
   };
   const hits: PinterestBannedCopyHit[] = [];
@@ -52,6 +64,16 @@ export function collectPinterestBannedCopyHits(pin: Record<string, unknown>): Pi
     if (phrase) hits.push({ field, phrase, value: String(value ?? "").slice(0, 300) });
   }
   return hits;
+}
+
+function decodePinterestImageOverlay(url: unknown): string {
+  const str = typeof url === "string" ? url : "";
+  if (!str) return "";
+  try {
+    return decodeURIComponent(str.replace(/%0A/gi, " ").replace(/\+/g, " "));
+  } catch {
+    return str;
+  }
 }
 
 const SAFE_HOOKS: Record<string, string[]> = {
