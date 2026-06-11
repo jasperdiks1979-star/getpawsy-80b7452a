@@ -186,8 +186,18 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
 
   // 6. CTA must exist (overlay split format: "TOP | BOTTOM")
   // Accept "|" (legacy) or " • " / "•" (v2.2 creative-director format).
+  // NOTE: the live DB trigger `enforce_pin_copy_rules` REJECTS overlays
+  // containing `|` or `•` and caps length at 32 chars. So we now ALSO accept
+  // a single-segment hook ≤32 chars as having an implicit CTA (rendered by
+  // the image template, not the overlay string). Without this, missing_cta
+  // and the DB trigger contradict each other and no pin can publish.
   const parts = overlayRaw.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 2 || parts[1].length < 2) {
+  const singleSegmentOk =
+    parts.length === 1 &&
+    overlayRaw.trim().length >= 6 &&
+    overlayRaw.trim().length <= 32 &&
+    /\s/.test(overlayRaw.trim());
+  if (!singleSegmentOk && (parts.length < 2 || parts[1].length < 2)) {
     reasons.add("missing_cta");
   }
 
