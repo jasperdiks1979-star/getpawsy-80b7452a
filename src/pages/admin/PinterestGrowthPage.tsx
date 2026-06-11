@@ -42,58 +42,114 @@ type Kpis = {
   checkouts: number;
   purchases: number;
   ctr: number; // outbound / sessions, simple proxy
+  impressions: number;
+  outboundClicks: number;
+  publishedToday: number;
+  published7d: number;
+};
+
+type Projection = {
+  expectedPinsPerDay: number;
+  expectedMonthlyTraffic: number;
+  daysToStatisticalDataset: number;
+  bottlenecks: string[];
 };
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+const delta = (cur: number, prev: number) => {
+  if (!prev) return cur > 0 ? "+∞" : "0%";
+  const d = ((cur - prev) / prev) * 100;
+  return `${d >= 0 ? "+" : ""}${d.toFixed(0)}%`;
+};
 
 export default function PinterestGrowthPage() {
   const [days, setDays] = useState<Window>(30);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [tiers, setTiers] = useState<TierRow[]>([]);
   const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [prev, setPrev] = useState<Kpis | null>(null);
+  const [projection, setProjection] = useState<Projection | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function loadAll(window: Window) {
-    const since = new Date(Date.now() - window * 86400_000).toISOString();
+    const now = Date.now();
+    const since = new Date(now - window * 86400_000).toISOString();
+    const prevSince = new Date(now - 2 * window * 86400_000).toISOString();
+    const prevUntil = since;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayIso = today.toISOString();
+    const sevenIso = new Date(now - 7 * 86400_000).toISOString();
 
-    const [runRes, tierRes, sessRes, evtRes] = await Promise.all([
+    const buildKpis = async (fromIso: string, toIso?: string): Promise<Kpis> => {
+      const sessQ = supabase.from("pinterest_attribution_sessions")
+        .select("id, click_counted, last_seen").gte("last_seen", fromIso).limit(5000);
+      const evtQ = supabase.from("lp_funnel_events")
+        .select("event_name, utm_source").gte("created_at", fromIso)
+        .or("is_bot.is.null,is_bot.eq.false").eq("utm_source", "pinterest").limit(10000);
+      const sinceDate = fromIso.slice(0,10);
+      const adQ = supabase.from("pinterest_analytics_daily")
+        .select("impressions, outbound_clicks, day").gte("day", sinceDate).limit(5000);
+      const [s, e, a] = await Promise.all([
+        toIso ? sessQ.lt("last_seen", toIso) : sessQ,
+        toIso ? evtQ.lt("created_at", toIso) : evtQ,
+        toIso ? adQ.lt("day", toIso.slice(0,10)) : adQ,
+      ]);
+      const sessions = s.data?.length ?? 0;
+      const outboundClicks = s.data?.filter((x: any) => x.click_counted).length ?? 0;
+      const evt = e.data ?? [];
+      const count = (name: string) => evt.filter((x: any) => (x.event_name ?? "") === name).length;
+      const impressions = (a.data ?? []).reduce((acc: number, r: any) => acc + (r.impressions || 0), 0);
+      const apiClicks   = (a.data ?? []).reduce((acc: number, r: any) => acc + (r.outbound_clicks || 0), 0);
+      return {
+        sessions, pageviews: count("view_item") + count("page_view"),
+        atc: count("add_to_cart"), checkouts: count("begin_checkout"),
+        purchases: count("purchase"),
+        ctr: sessions > 0 ? outboundClicks / sessions : 0,
+        impressions, outboundClicks: Math.max(outboundClicks, apiClicks),
+        publishedToday: 0, published7d: 0,
+      };
+    };
+
+    const [runRes, tierRes, curK, prvK, pubToday, pub7d] = await Promise.all([
       supabase.from("pinterest_growth_runs")
         .select("id, trigger, dry_run, started_at, finished_at, recomputed, winners_amplified, losers_suppressed, opportunities_found, drafts_enqueued, dedupe_skipped, errors")
         .order("started_at", { ascending: false })
         .limit(14),
       supabase.from("pinterest_product_tiers")
         .select("product_id, product_slug, tier, score, status, priority, publish_multiplier, hidden_opportunity, block_reason, last_amplified_at"),
-      supabase.from("pinterest_attribution_sessions")
-        .select("id, click_counted, last_seen", { count: "exact", head: false })
-        .gte("last_seen", since)
-        .limit(5000),
-      supabase.from("lp_funnel_events")
-        .select("event_name, utm_source")
-        .gte("created_at", since)
-        .or("is_bot.is.null,is_bot.eq.false")
-        .eq("utm_source", "pinterest")
-        .limit(10000),
+      buildKpis(since),
+      buildKpis(prevSince, prevUntil),
+      supabase.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).gte("posted_at", todayIso),
+      supabase.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).gte("posted_at", sevenIso),
     ]);
 
     if (runRes.data) setRuns(runRes.data as RunRow[]);
     if (tierRes.data) setTiers(tierRes.data as TierRow[]);
+    curK.publishedToday = pubToday.count ?? 0;
+    curK.published7d = pub7d.count ?? 0;
+    setKpis(curK);
+    setPrev(prvK);
 
-    const sessions = sessRes.data?.length ?? 0;
-    const outboundClicks = sessRes.data?.filter(s => s.click_counted).length ?? 0;
-    const evt = evtRes.data ?? [];
-    const count = (name: string) => evt.filter(e => (e.event_name ?? "") === name).length;
-    const pageviews = count("view_item") + count("page_view");
-    const atc = count("add_to_cart");
-    const checkouts = count("begin_checkout");
-    const purchases = count("purchase");
-    setKpis({
-      sessions,
-      pageviews,
-      atc,
-      checkouts,
-      purchases,
-      ctr: sessions > 0 ? outboundClicks / sessions : 0,
+    // Projection — assumes 4 → 25 pins/day warm-up, ~25 sessions/active-pin/month at maturity.
+    const lastRun = runRes.data?.[0] as any;
+    const dailyBudget = lastRun?.summary?.daily_publish_budget ?? Math.max(4, Math.round(curK.published7d / 7));
+    const expectedMonthly = Math.round(dailyBudget * 30 * 1.2); // 1.2 sessions per published pin baseline
+    const sessionsPerDay = curK.sessions / Math.max(1, window);
+    const daysToDataset = sessionsPerDay > 0 ? Math.ceil(1000 / sessionsPerDay) : 999;
+    const bottlenecks: string[] = [];
+    if (curK.impressions === 0) bottlenecks.push("No Pinterest analytics sync — connect/refresh Pinterest API.");
+    if (curK.publishedToday === 0) bottlenecks.push("No pins published today — check publish governor + warm-up cap.");
+    if (curK.ctr < 0.01 && curK.sessions > 50) bottlenecks.push("CTR < 1% — refresh creative variants or hooks.");
+    if (curK.atc === 0 && curK.sessions > 50) bottlenecks.push("Sessions without ATC — review PDP intent match.");
+    if ((tierRes.data?.filter((t: any) => t.tier === "winner").length ?? 0) === 0) {
+      bottlenecks.push("No winners yet — keep publishing, scoring needs ≥1000 sessions.");
+    }
+    setProjection({
+      expectedPinsPerDay: dailyBudget,
+      expectedMonthlyTraffic: expectedMonthly,
+      daysToStatisticalDataset: daysToDataset,
+      bottlenecks,
     });
   }
 
@@ -143,21 +199,46 @@ export default function PinterestGrowthPage() {
       </header>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {kpis && [
-          ["Sessions", fmt(kpis.sessions)],
-          ["Pageviews", fmt(kpis.pageviews)],
-          ["Add-to-cart", fmt(kpis.atc)],
-          ["Checkouts", fmt(kpis.checkouts)],
-          ["Purchases", fmt(kpis.purchases)],
-          ["CTR", pct(kpis.ctr)],
-        ].map(([k, v]) => (
+          ["Pins today",   fmt(kpis.publishedToday), null],
+          ["Pins last 7d", fmt(kpis.published7d),   null],
+          ["Impressions",  fmt(kpis.impressions),   prev ? delta(kpis.impressions, prev.impressions) : null],
+          ["Outbound clicks", fmt(kpis.outboundClicks), prev ? delta(kpis.outboundClicks, prev.outboundClicks) : null],
+          ["Sessions",     fmt(kpis.sessions),      prev ? delta(kpis.sessions, prev.sessions) : null],
+          ["Pageviews",    fmt(kpis.pageviews),     prev ? delta(kpis.pageviews, prev.pageviews) : null],
+          ["Add-to-cart",  fmt(kpis.atc),           prev ? delta(kpis.atc, prev.atc) : null],
+          ["Checkouts",    fmt(kpis.checkouts),     prev ? delta(kpis.checkouts, prev.checkouts) : null],
+          ["Purchases",    fmt(kpis.purchases),     prev ? delta(kpis.purchases, prev.purchases) : null],
+          ["CTR",          pct(kpis.ctr),           null],
+        ].map(([k, v, d]) => (
           <Card key={k as string}>
             <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">{k}</CardTitle></CardHeader>
-            <CardContent className="text-xl font-semibold">{v}</CardContent>
+            <CardContent className="text-xl font-semibold flex items-baseline gap-2">
+              <span>{v}</span>
+              {d && <span className={`text-xs ${String(d).startsWith("-") ? "text-destructive" : "text-emerald-600"}`}>{d}</span>}
+            </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Projection */}
+      {projection && (
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Growth projection</CardTitle></CardHeader>
+          <CardContent className="grid md:grid-cols-4 gap-4 text-sm">
+            <div><div className="text-muted-foreground text-xs">Expected pins / day</div><div className="text-lg font-semibold">{projection.expectedPinsPerDay}</div></div>
+            <div><div className="text-muted-foreground text-xs">Expected traffic / month</div><div className="text-lg font-semibold">{fmt(projection.expectedMonthlyTraffic)}</div></div>
+            <div><div className="text-muted-foreground text-xs">Days to 1k sessions</div><div className="text-lg font-semibold">{projection.daysToStatisticalDataset >= 999 ? "—" : projection.daysToStatisticalDataset}</div></div>
+            <div>
+              <div className="text-muted-foreground text-xs">Bottlenecks</div>
+              {projection.bottlenecks.length === 0
+                ? <div className="text-emerald-600 text-sm">None detected</div>
+                : <ul className="text-xs list-disc pl-4">{projection.bottlenecks.map((b,i) => <li key={i}>{b}</li>)}</ul>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tier panels */}
       <div className="grid md:grid-cols-3 gap-4">
