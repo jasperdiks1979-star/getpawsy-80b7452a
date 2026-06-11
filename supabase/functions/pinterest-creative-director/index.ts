@@ -1168,6 +1168,23 @@ Deno.serve(async (req) => {
         console.warn("[creative-director] product has no image_url — falling back to text-only render", product.slug);
       }
 
+      // Deterministic board overlay (1 short benefit + GetPawsy wordmark).
+      // Used both for the image renderer and the queue row copy.
+      const boardCopyPreview = buildPinCopy(
+        {
+          name: product.name,
+          benefit: (product as any).benefit_angle ?? null,
+          category: (product as any).category ?? null,
+          price: (product as any).price ?? null,
+          niche,
+        },
+        0,
+      );
+      const inImageOverlay = {
+        text: boardCopyPreview.overlay,
+        brand: boardCopyPreview.brandWordmark,
+      };
+
       // Per-brief retry: render → score → if fail, regen JUST that brief with
       // the failure reasons appended, up to MAX_RETRIES extra attempts.
       for (let i = 0; i < briefs.length; i++) {
@@ -1178,7 +1195,12 @@ Deno.serve(async (req) => {
 
         for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
           try {
-            const bytes = await renderSceneWithSource(brief, dna, productImageUrl);
+            const bytes = await renderSceneWithSource(
+              brief,
+              dna,
+              productImageUrl,
+              inImageOverlay,
+            );
             const qc = await qualityCheck(brief, bytes, dna);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
@@ -1284,10 +1306,18 @@ Deno.serve(async (req) => {
 
             const inserted = await uploadAndInsertDraft(
               supabase,
-              { id: product.id, slug: product.slug, name: product.name },
+              {
+                id: product.id,
+                slug: product.slug,
+                name: product.name,
+                price: (product as any).price ?? null,
+                benefit: (product as any).benefit_angle ?? null,
+                category: (product as any).category ?? null,
+              },
               niche,
               brief,
               bytes,
+              i,
               {
                 scores: lastScores,
                 attempt_count: attempt,
