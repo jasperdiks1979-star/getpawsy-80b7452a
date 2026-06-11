@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Play, RefreshCw, AlertTriangle, CheckCircle2, Save } from 'lucide-react';
+import { Loader2, Play, RefreshCw, AlertTriangle, CheckCircle2, Save, Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Diag {
@@ -55,6 +55,8 @@ export default function CronPublisherPanel() {
   const [dailyCap, setDailyCap] = useState<string>('');
   const [perCatCap, setPerCatCap] = useState<string>('');
   const [usThreshold, setUsThreshold] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<any>(null);
 
   const { data, refetch, isFetching } = useQuery({
     queryKey: ['pinterest-cron-diagnostic'],
@@ -142,6 +144,43 @@ export default function CronPublisherPanel() {
     }
   };
 
+  const refreshFailedQueue = async () => {
+    setRefreshing(true);
+    setLastRefresh(null);
+    try {
+      const beforeQueued = data?.queued_total ?? null;
+      const { data: res, error } = await supabase.functions.invoke('pinterest-refresh-failed-queue', {
+        body: { limit: 10, run_cron: true },
+      });
+      if (error) throw error;
+      const r = res as any;
+      await refetch();
+      setLastRefresh({
+        ok: r?.ok,
+        message: r?.message,
+        scanned: r?.scanned,
+        failing_total: r?.failing_total,
+        processed: r?.processed,
+        refreshed: r?.refreshed,
+        passed_qa: r?.passed_qa,
+        requeued: r?.requeued,
+        still_failing: r?.still_failing,
+        before_queued: beforeQueued ?? r?.before_queued,
+        after_queued: r?.after_queued,
+        published_pin_id: r?.published_pin_id,
+        report: r?.report ?? [],
+      });
+      toast({
+        title: 'Refresh complete',
+        description: `Refreshed ${r?.refreshed ?? 0} · passed QA ${r?.passed_qa ?? 0} · requeued ${r?.requeued ?? 0} · still failing ${r?.still_failing ?? 0}`,
+      });
+    } catch (e) {
+      toast({ title: 'Refresh failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const w = data?.warmup;
   const blocked = !!data?.gating?.blocked;
   const willPublish = !!data?.will_publish_next_tick;
@@ -154,6 +193,10 @@ export default function CronPublisherPanel() {
           <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`h-3 w-3 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+          <Button size="sm" variant="secondary" onClick={refreshFailedQueue} disabled={refreshing}>
+            {refreshing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Refresh Failed Queue
           </Button>
           <Button size="sm" onClick={runCronNow} disabled={running}>
             {running ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Play className="h-3 w-3 mr-1" />}
@@ -260,6 +303,52 @@ export default function CronPublisherPanel() {
                 <Row k="after queued" v={lastRun.after_queued ?? '—'} />
                 <Row k="pinterest_pin_id" v={lastRun.external_id || '—'} mono />
                 {lastRun.error && <Row k="error" v={lastRun.error} />}
+              </div>
+            )}
+
+            {lastRefresh && (
+              <div className="rounded border p-3 text-xs space-y-1">
+                <div className="font-medium mb-1">Last failed-queue refresh</div>
+                <Row k="ok" v={String(lastRefresh.ok)} />
+                <Row k="message" v={lastRefresh.message || '—'} />
+                <Row k="scanned" v={lastRefresh.scanned} />
+                <Row k="failing total" v={lastRefresh.failing_total} />
+                <Row k="processed" v={lastRefresh.processed} />
+                <Row k="pins refreshed" v={lastRefresh.refreshed} />
+                <Row k="pins passed QA" v={lastRefresh.passed_qa} />
+                <Row k="pins requeued" v={lastRefresh.requeued} />
+                <Row k="still failing" v={lastRefresh.still_failing} />
+                <Row k="before queued" v={lastRefresh.before_queued ?? '—'} />
+                <Row k="after queued" v={lastRefresh.after_queued ?? '—'} />
+                <Row k="published pin id" v={lastRefresh.published_pin_id || '—'} mono />
+                {Array.isArray(lastRefresh.report) && lastRefresh.report.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-muted-foreground">Per-pin report ({lastRefresh.report.length})</summary>
+                    <div className="mt-2 max-h-72 overflow-auto space-y-1">
+                      {lastRefresh.report.map((rr: any, i: number) => (
+                        <div key={i} className="border rounded px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={
+                              rr.status === 'refreshed' ? 'default'
+                              : rr.status === 'still_failing' || rr.status === 'regen_failed' ? 'destructive'
+                              : 'secondary'
+                            }>{rr.status}</Badge>
+                            <span className="font-mono">{rr.product_slug || '—'}</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            old <span className="font-mono">{(rr.old_pin_id || '').slice(0, 8)}</span>
+                            {' → '}
+                            new <span className="font-mono">{(rr.new_pin_id || '—').slice(0, 8)}</span>
+                            {' · qa: '}{(rr.qa_failures || []).join(',') || 'none'}
+                            {rr.post_qa_failures?.length ? ` · post: ${rr.post_qa_failures.join(',')}` : ''}
+                            {rr.extra_failures?.length ? ` · extra: ${rr.extra_failures.join(',')}` : ''}
+                            {rr.reason ? ` · ${rr.reason}` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </>
