@@ -1506,7 +1506,15 @@ Deno.serve(async (req) => {
 
         // Pin already passes QA — fast-path approve + queue.
         if (before.length === 0) {
+          // Reconcile overlay with DB trigger constraints (≤32 chars, no |/•)
+          const ov0 = (pin.overlay_text || "").toString();
+          let overlay = ov0;
+          if (ov0.length > 32 || /[|•\r\n]/.test(ov0)) {
+            overlay = pickHook(pin.product_slug || "");
+            fixes.push("overlay_trimmed");
+          }
           const { error } = await sb.from("pinterest_pin_queue").update({
+            overlay_text: overlay,
             status: "queued",
             approved_at: new Date().toISOString(),
             scheduled_at: new Date().toISOString(),
@@ -1516,10 +1524,10 @@ Deno.serve(async (req) => {
           }).eq("id", pin.id);
           if (error) {
             stillFailing++;
-            results.push({ id: pin.id, product_slug: pin.product_slug, fixes: [], before, after: [], queued: false, error: error.message });
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes, before, after: [], queued: false, error: error.message });
           } else {
             approved++;
-            results.push({ id: pin.id, product_slug: pin.product_slug, fixes: ["passed_qa"], before, after: [], queued: true });
+            results.push({ id: pin.id, product_slug: pin.product_slug, fixes: [...fixes, "passed_qa"], before, after: [], queued: true });
           }
           continue;
         }
