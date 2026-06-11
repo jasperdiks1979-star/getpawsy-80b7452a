@@ -1310,19 +1310,28 @@ Deno.serve(async (req) => {
         if (explicit && byName.has(explicit)) {
           return { id: byName.get(explicit)!, source: `board_name:${pin.board_name}` };
         }
-        // 2) Category mapping
-        const catKey = pin.category_key
-          || inferCategoryFromSlug(pin.product_slug || "")
-          || inferCategoryFromSlug(pin.destination_link || "");
-        const candidateNames: string[] = catKey && mapByCat[catKey] ? mapByCat[catKey] : [];
-        for (const name of candidateNames) {
-          const id = byName.get(name.trim().toLowerCase());
-          if (id) return { id, source: `category:${catKey}→${name}` };
+        // 2) Category mapping — try pin.category_key first, then inferred key.
+        const keysToTry = Array.from(new Set([
+          pin.category_key,
+          inferCategoryFromSlug(pin.product_slug || ""),
+          inferCategoryFromSlug(pin.destination_link || ""),
+        ].filter(Boolean) as string[]));
+        for (const k of keysToTry) {
+          const candidateNames: string[] = mapByCat[k] || [];
+          for (const name of candidateNames) {
+            const id = byName.get(name.trim().toLowerCase());
+            if (id) return { id, source: `category:${k}→${name}` };
+          }
         }
         // 3) Fallback
         for (const name of fallbackNames) {
           const id = byName.get(name.trim().toLowerCase());
           if (id) return { id, source: `fallback:${name}` };
+        }
+        // 4) Last-resort: any active board (deterministic — first alphabetically)
+        if (safeBoards.length > 0) {
+          const first = [...safeBoards].sort((a, b) => a.name.localeCompare(b.name))[0];
+          return { id: String(first.id), source: `last_resort:${first.name}` };
         }
         return null;
       };
