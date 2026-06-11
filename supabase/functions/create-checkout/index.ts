@@ -103,6 +103,42 @@ serve(async (req) => {
       throw new Error("No items in cart");
     }
 
+    // ---- SECURITY: never trust client-supplied prices --------------------
+    // Validate shape, then re-fetch the canonical price/name/image from the
+    // products table using the service-role client. The Stripe line items
+    // are built ONLY from DB values; the client `price` field is ignored.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (items.length > 50) {
+      throw new Error("Too many items in cart (max 50)");
+    }
+    for (const it of items) {
+      if (!it || typeof it.id !== "string" || !UUID_RE.test(it.id)) {
+        throw new Error("Invalid item id");
+      }
+      if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 100) {
+        throw new Error("Invalid item quantity");
+      }
+    }
+    const productIds = Array.from(new Set(items.map((i) => i.id)));
+    const { data: dbProducts, error: dbErr } = await supabaseAdmin
+      .from("products")
+      .select("id, name, price, image_url, is_active")
+      .in("id", productIds);
+    if (dbErr) throw new Error(`Product lookup failed: ${dbErr.message}`);
+    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean }>();
+    for (const p of dbProducts || []) productMap.set(p.id, p as any);
+    for (const it of items) {
+      const p = productMap.get(it.id);
+      if (!p) throw new Error(`Product not found: ${it.id}`);
+      if (p.is_active === false) throw new Error(`Product not available: ${it.id}`);
+      if (typeof p.price !== "number" || !(p.price > 0)) throw new Error(`Invalid product price: ${it.id}`);
+      // Overwrite client-supplied values with DB canonical values.
+      it.price = p.price;
+      it.name = p.name;
+      it.image = p.image_url || it.image;
+    }
+    // ----------------------------------------------------------------------
+
     // Try to get authenticated user (optional for guest checkout)
     let userEmail = customerEmail;
     let userId: string | null = null;
