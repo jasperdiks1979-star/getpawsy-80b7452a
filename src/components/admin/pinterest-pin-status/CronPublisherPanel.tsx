@@ -15,6 +15,14 @@ interface Diag {
   ready_to_publish?: number;
   will_publish_next_tick?: boolean;
   queued_total?: number;
+  pipeline_report?: {
+    draft_count: number;
+    approved_count: number;
+    queued_count: number;
+    blocked_by_qa: number;
+    missing_board: number;
+    missing_score: number;
+  };
   candidate_count?: number;
   warmup?: {
     active: boolean;
