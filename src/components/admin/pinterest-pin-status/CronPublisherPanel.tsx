@@ -196,6 +196,28 @@ export default function CronPublisherPanel() {
 
   const [assigningBoards, setAssigningBoards] = useState(false);
   const [lastBoardAssign, setLastBoardAssign] = useState<any>(null);
+  const [correcting, setCorrecting] = useState(false);
+  const [lastCorrection, setLastCorrection] = useState<any>(null);
+
+  const runContentCorrection = async () => {
+    setCorrecting(true);
+    setLastCorrection(null);
+    try {
+      const { data: res, error } = await supabase.functions.invoke('pinterest-content-correction', { body: {} });
+      if (error) throw error;
+      const r = res as any;
+      await refetch();
+      setLastCorrection(r);
+      toast({
+        title: 'Content correction complete',
+        description: `Repaired ${r?.repaired ?? 0} · dup img ${r?.duplicates_image ?? 0} · dup dest ${r?.duplicates_destination ?? 0} · rejected ${r?.rejected ?? 0}`,
+      });
+    } catch (e) {
+      toast({ title: 'Content correction failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setCorrecting(false);
+    }
+  };
 
   const assignMissingBoards = async () => {
     setAssigningBoards(true);
@@ -235,6 +257,10 @@ export default function CronPublisherPanel() {
           <Button size="sm" variant="secondary" onClick={refreshFailedQueue} disabled={refreshing}>
             {refreshing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
             Refresh Failed Queue
+          </Button>
+          <Button size="sm" variant="secondary" onClick={runContentCorrection} disabled={correcting}>
+            {correcting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Run content correction
           </Button>
           <Button size="sm" variant="secondary" onClick={assignMissingBoards} disabled={assigningBoards}>
             {assigningBoards ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
@@ -409,6 +435,55 @@ export default function CronPublisherPanel() {
                             {rr.post_qa_failures?.length ? ` · post: ${rr.post_qa_failures.join(',')}` : ''}
                             {rr.extra_failures?.length ? ` · extra: ${rr.extra_failures.join(',')}` : ''}
                             {rr.reason ? ` · ${rr.reason}` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+
+            {lastCorrection && (
+              <div className="rounded border p-3 text-xs space-y-1">
+                <div className="font-medium mb-1">Last content correction</div>
+                <Row k="ok" v={String(lastCorrection.ok)} />
+                <Row k="scanned" v={lastCorrection.scanned} />
+                <Row k="repaired" v={lastCorrection.repaired} />
+                <Row k="duplicate image (30d)" v={lastCorrection.duplicates_image} />
+                <Row k="duplicate destination (30d)" v={lastCorrection.duplicates_destination} />
+                <Row k="rejected" v={lastCorrection.rejected} />
+                <Row k="untouched" v={lastCorrection.untouched} />
+                <Row k="active after" v={lastCorrection.active_after ?? '—'} />
+                {lastCorrection.sample_overlays_per_category && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-muted-foreground">Sample overlays per category</summary>
+                    <div className="mt-2 space-y-1">
+                      {Object.entries(lastCorrection.sample_overlays_per_category).map(([bucket, list]: any) => (
+                        <div key={bucket} className="border rounded px-2 py-1">
+                          <div className="font-mono text-[11px]">{bucket}</div>
+                          <ul className="list-disc ml-4">
+                            {(list as string[]).map((s, i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+                {Array.isArray(lastCorrection.report) && lastCorrection.report.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-muted-foreground">Per-pin report ({lastCorrection.report.length})</summary>
+                    <div className="mt-2 max-h-72 overflow-auto space-y-1">
+                      {lastCorrection.report.map((rr: any, i: number) => (
+                        <div key={i} className="border rounded px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={rr.status?.includes('reject') ? 'destructive' : rr.status?.includes('repair') ? 'default' : 'secondary'}>{rr.status}</Badge>
+                            <span className="font-mono">{rr.slug || rr.id?.slice(0,8) || '—'}</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            {rr.reason ? `${rr.reason} · ` : ''}
+                            {(rr.fixes || []).join(',') || (rr.reasons || []).join(',')}
+                            {rr.overlay_text ? ` · → "${rr.overlay_text}"` : ''}
                           </div>
                         </div>
                       ))}
