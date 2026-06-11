@@ -81,11 +81,11 @@ function buildSeoCopy(p: any, niche: string, variation: number) {
   const tail = pick(kws.filter(k => k !== head), 2);
   const name = p.name ?? "GetPawsy pick";
   const angles = [
-    `${head} every pet parent loves`,
-    `the ${head} we actually keep buying`,
-    `${head}: small upgrade, huge difference`,
-    `${head} — built for real homes`,
-    `${head} done right`,
+    `${name} — ${head} every pet parent loves`,
+    `${name}: the ${head} we actually keep buying`,
+    `${name} (${head}) — small upgrade, huge difference`,
+    `${name} — built for real homes (${head})`,
+    `${name}: ${head} done right`,
   ];
   const title = angles[variation % angles.length].slice(0, 95);
   const desc =
@@ -348,7 +348,8 @@ Deno.serve(async (req) => {
     if (actions.length && !dryRun) {
       // chunk to keep payload small
       for (let i = 0; i < actions.length; i += 200) {
-        await sb.from("pinterest_growth_actions").insert(actions.slice(i, i + 200));
+        const { error: aErr } = await sb.from("pinterest_growth_actions").insert(actions.slice(i, i + 200));
+        if (aErr) console.error("actions_insert_error", aErr.message, "sample", JSON.stringify(actions[i]).slice(0, 400));
       }
     }
 
