@@ -151,6 +151,8 @@ Deno.serve(async (req) => {
     winners_amplified: 0,
     losers_suppressed: 0,
     opportunities_found: 0,
+    discoveries_added: 0,
+    video_drafts_planned: 0,
     drafts_enqueued: 0,
     dedupe_skipped: 0,
     status_flips: 0,
@@ -266,10 +268,48 @@ Deno.serve(async (req) => {
             payload: { metrics: engagement.get(pid), pins_30d: pinCount.get(pid) ?? 0 } });
     }
 
+    // ============ 5b. Product discovery (high margin + image + low pin coverage) ============
+    // Builds an Opportunity Queue independent of behavioural signals so the engine
+    // keeps surfacing scalable products even when traffic is too thin to score them.
+    const discoveryIds: string[] = [];
+    try {
+      const { data: candProds } = await sb
+        .from("products")
+        .select("id, slug, name, image_url, margin_percent, active")
+        .eq("active", true)
+        .not("image_url", "is", null)
+        .gte("margin_percent", DISCOVERY_MARGIN_FLOOR)
+        .order("margin_percent", { ascending: false })
+        .limit(200);
+      for (const p of (candProds ?? [])) {
+        if (discoveryIds.length >= DISCOVERY_PRODUCT_LIMIT) break;
+        if ((pinCount.get(p.id) ?? 0) >= 3) continue;             // already covered
+        if (opportunityIds.includes(p.id)) continue;              // dedupe vs behaviour miner
+        if (winners.some(w => w.product_id === p.id)) continue;   // already winner
+        discoveryIds.push(p.id);
+      }
+      stats.discoveries_added = discoveryIds.length;
+      if (discoveryIds.length && !dryRun) {
+        for (const pid of discoveryIds) {
+          await sb.from("pinterest_product_tiers").upsert(
+            { product_id: pid, tier: "neutral", hidden_opportunity: true, status: "active", priority: "normal" },
+            { onConflict: "product_id" },
+          );
+        }
+      }
+      for (const pid of discoveryIds) {
+        log({ action_type: "discovery", product_id: pid, reason: "high_margin_low_coverage",
+              payload: { margin_floor: DISCOVERY_MARGIN_FLOOR } });
+      }
+    } catch (e) {
+      console.warn("discovery_failed", (e as Error).message);
+    }
+
     // ============ 6. Enqueue drafts (winners + opportunities) ============
     const enqueueTargets: { product_id: string; count: number; source: "winner" | "opportunity" }[] = [
       ...winners.map(w => ({ product_id: w.product_id, count: WINNER_PIN_VARIATIONS, source: "winner" as const })),
       ...opportunityIds.map(id => ({ product_id: id, count: OPPORTUNITY_PIN_VARIATIONS, source: "opportunity" as const })),
+      ...discoveryIds.map(id => ({ product_id: id, count: DISCOVERY_PIN_VARIATIONS, source: "opportunity" as const })),
     ];
 
     if (enqueueTargets.length) {
@@ -359,6 +399,54 @@ Deno.serve(async (req) => {
         stats.drafts_enqueued = inserts.length; // dry-run preview
       }
     }
+
+    // ============ 6b. Winner video drafts (best-effort, asset-bound) ============
+    // For each winner, try to enqueue up to N video drafts from existing video assets
+    // that are not yet queued. We never generate new videos here — only attach.
+    try {
+      for (const w of winners) {
+        if (stats.video_drafts_planned >= winners.length * WINNER_VIDEO_VARIATIONS) break;
+        const { data: assets } = await sb
+          .from("pinterest_video_assets")
+          .select("id, hook_group")
+          .eq("product_id", w.product_id)
+          .limit(WINNER_VIDEO_VARIATIONS);
+        if (!assets || !assets.length) continue;
+        for (const a of assets) {
+          log({
+            action_type: "video_planned",
+            product_id: w.product_id,
+            product_slug: w.product_slug,
+            reason: "winner_video_amplification",
+            payload: { asset_id: a.id, hook: a.hook_group ?? null },
+          });
+          stats.video_drafts_planned += 1;
+        }
+      }
+    } catch (e) {
+      console.warn("video_plan_failed", (e as Error).message);
+    }
+
+    // ============ 6c. Dynamic publish budget (informational, governor enforces) ============
+    // Account age heuristic: oldest published pin → days live.
+    const { data: oldestPin } = await sb
+      .from("pinterest_pin_queue")
+      .select("posted_at")
+      .not("posted_at", "is", null)
+      .order("posted_at", { ascending: true })
+      .limit(1);
+    const oldest = oldestPin?.[0]?.posted_at ? new Date(oldestPin[0].posted_at).getTime() : Date.now();
+    const accountAgeDays = Math.max(1, Math.floor((Date.now() - oldest) / 86400_000));
+    // Warm-up curve: 4 → 8 → 12 → 18 → 25 pins/day across first 60 days.
+    const dailyBudget =
+      accountAgeDays < 7  ? 4  :
+      accountAgeDays < 21 ? 8  :
+      accountAgeDays < 45 ? 12 :
+      accountAgeDays < 60 ? 18 : 25;
+    const boardDiversity = new Set((tierRows ?? []).map(t => t.product_slug).filter(Boolean)).size;
+    (stats as any).daily_publish_budget = dailyBudget;
+    (stats as any).account_age_days = accountAgeDays;
+    (stats as any).board_diversity_signal = boardDiversity;
 
     // ============ 7. Flush actions + close run ============
     if (actions.length && !dryRun) {
