@@ -181,3 +181,72 @@ export function buildPinCopy(
     brandWordmark: "GetPawsy",
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pin validation — runs on every generated draft before it is inserted into
+// pinterest_pin_queue. Guarantees:
+//   • exactly ONE short benefit overlay (1–32 chars, single line, no banned)
+//   • no banned marketing phrases anywhere in title / description / overlay
+//   • brand wordmark is the literal "GetPawsy"
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PinValidationInput {
+  title: string;
+  description: string;
+  /** Single benefit overlay text only — do NOT include the CTA here. */
+  overlay: string;
+  /** Optional composed overlay block (e.g. "<overlay> • <cta>") to scan. */
+  overlayBlock?: string;
+  brandWordmark?: string;
+}
+
+export interface PinValidationResult {
+  valid: boolean;
+  errors: string[];
+  bannedHits: string[];
+}
+
+const OVERLAY_MAX_CHARS = 32;
+
+function findBanned(text: string): string[] {
+  const hay = (text || "").toLowerCase();
+  return BANNED_PIN_PHRASES.filter((p) => hay.includes(p));
+}
+
+export function validatePinCopy(input: PinValidationInput): PinValidationResult {
+  const errors: string[] = [];
+  const bannedHits = new Set<string>();
+
+  const overlay = (input.overlay || "").trim();
+  if (!overlay) {
+    errors.push("overlay_missing");
+  } else {
+    if (overlay.length > OVERLAY_MAX_CHARS) {
+      errors.push(`overlay_too_long:${overlay.length}`);
+    }
+    // Exactly one short benefit overlay → no line breaks and no second
+    // sentence-style separator like " | " or " • " inside the overlay itself.
+    if (/[\r\n]/.test(overlay)) errors.push("overlay_multiline");
+    if (/[|•]/.test(overlay)) errors.push("overlay_multiple_segments");
+  }
+
+  const scanTargets: Array<[string, string]> = [
+    ["title", input.title || ""],
+    ["description", input.description || ""],
+    ["overlay", overlay],
+  ];
+  if (input.overlayBlock) scanTargets.push(["overlay_block", input.overlayBlock]);
+
+  for (const [field, text] of scanTargets) {
+    const hits = findBanned(text);
+    if (hits.length) {
+      errors.push(`banned_phrase_in_${field}`);
+      hits.forEach((h) => bannedHits.add(h));
+    }
+  }
+
+  const brand = (input.brandWordmark ?? "GetPawsy").trim();
+  if (brand !== "GetPawsy") errors.push("brand_wordmark_invalid");
+
+  return { valid: errors.length === 0, errors, bannedHits: Array.from(bannedHits) };
+}
