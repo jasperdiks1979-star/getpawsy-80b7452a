@@ -1265,10 +1265,6 @@ Deno.serve(async (req) => {
       return json(cors, { ok: true, approved, failures });
     }
 
-    if (action === "bulk_reject") {
-      // handled below
-    }
-
     if (action === "assign_missing_boards") {
       // Auto-assign board_id for drafts that have none, based on (in order):
       //   1) explicit pin.board_name match against pinterest_boards.name
@@ -1364,7 +1360,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (action === "bulk_reject_legacy_marker_") {
+    if (action === "bulk_reject") {
       const pinIds: string[] = Array.isArray(body.pinIds) ? body.pinIds.slice(0, 10) : [];
       if (pinIds.length === 0) return json(cors, { ok: false, error: "pinIds required (max 10)" });
       const { error } = await sb.from("pinterest_pin_queue").update({
