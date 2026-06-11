@@ -2657,6 +2657,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-brain"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestBrainPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-integrity"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
