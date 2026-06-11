@@ -129,7 +129,8 @@ Deno.serve(async (req) => {
   }
   const runId: string = runIns.id;
   const actions: ActionRow[] = [];
-  const log = (a: Omit<ActionRow, "run_id">) => actions.push({ run_id: runId, ...a });
+  const log = (a: Omit<ActionRow, "run_id">) =>
+    actions.push({ run_id: runId, ...a, payload: a.payload ?? {} });
 
   const stats = {
     recomputed: false,
