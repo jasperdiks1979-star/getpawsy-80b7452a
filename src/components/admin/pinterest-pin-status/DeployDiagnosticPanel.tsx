@@ -49,20 +49,20 @@ async function fetchDiag(): Promise<DiagRow[]> {
   rows.push({ label: 'Not approved', value: notApproved, ok: notApproved === 0 });
   rows.push({ label: 'Distinct queued slugs', value: distinctSlugs.size, ok: true });
 
-  // 3. Latest deploy error from edge function logs (best-effort via diagnostic endpoint)
+  // 3. Latest publisher run (best-effort)
   try {
-    const { data: lastRun } = await supabase
-      .from('pinterest_cron_runs')
-      .select('run_at, success, error_message, function_version')
-      .order('run_at', { ascending: false })
+    const { data: lastRun } = await (supabase as any)
+      .from('pinterest_publisher_runs')
+      .select('created_at, status, error')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (lastRun) {
       rows.push({
-        label: 'Last cron run',
-        value: new Date((lastRun as any).run_at).toLocaleString(),
-        ok: (lastRun as any).success !== false,
-        hint: (lastRun as any).error_message || (lastRun as any).function_version || '',
+        label: 'Last publisher run',
+        value: new Date(lastRun.created_at).toLocaleString(),
+        ok: lastRun.status !== 'failed',
+        hint: lastRun.error || lastRun.status || '',
       });
     }
   } catch {
