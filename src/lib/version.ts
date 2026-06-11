@@ -2,7 +2,7 @@
  * Application version - automatically updated by release-please
  * @see https://github.com/googleapis/release-please
  */
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 
 /**
  * Get the current application version
