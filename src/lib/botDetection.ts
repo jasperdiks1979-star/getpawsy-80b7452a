@@ -99,6 +99,27 @@ function classifyOnce(): BotClassification {
   // No touch + no mouse pointer is rare for real visitors on a storefront.
   // (Skipped — too noisy for actual desktop traffic.)
 
+  // Pinterest iOS in-app link-preview / prefetcher fingerprint. Observed
+  // Jun 8-9 audit: 549 sessions, viewport exactly 390×844, referrer
+  // pinterest.com (or empty after redirect), country NULL, dwell <2 s,
+  // zero web_vitals beacons, zero lp_funnel_events rows. These warm PDPs
+  // when pins scroll into an iOS user's feed and never execute interaction
+  // instrumentation — they cannot produce view_item/ATC/purchase and
+  // collapse the Pinterest CR denominator to 0%.
+  try {
+    const ref = (typeof document !== 'undefined' && document.referrer) || '';
+    const isPinterestRef = /(?:^|\.)pinterest\.com\//i.test(ref);
+    const w = typeof screen !== 'undefined' ? screen.width : 0;
+    const h = typeof screen !== 'undefined' ? screen.height : 0;
+    const isIosPrefetchViewport = w === 390 && h === 844;
+    if (isPinterestRef && isIosPrefetchViewport) {
+      reasons.push('pinterest_ios_prefetch');
+      score -= 70;
+    }
+  } catch {
+    /* ignore */
+  }
+
   const is_bot = score < 50;
   return {
     is_bot,
