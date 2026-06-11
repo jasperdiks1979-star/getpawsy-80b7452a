@@ -2676,6 +2676,22 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="revenue-brain"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueBrainPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="revenue-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-integrity"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
