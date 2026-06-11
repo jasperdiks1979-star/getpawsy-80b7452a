@@ -21,11 +21,15 @@ type Row = {
   product_url: string | null;
   impressions: number;
   outbound_clicks: number;
+  ctr: number;
   sessions: number;
   pageviews: number;
   add_to_carts: number;
   purchases: number;
   saves: number;
+  engagement_score: number;
+  revenue_score: number;
+  conversion_score: number;
   score: number;
   rank: number;
   tier: "winner" | "loser" | "neutral";
@@ -184,10 +188,14 @@ export default function PinterestPinAttributionPage() {
                   <TableHead>Board</TableHead>
                   <TableHead className="text-right">Impr</TableHead>
                   <TableHead className="text-right">Outbound</TableHead>
+                  <TableHead className="text-right">CTR</TableHead>
                   <TableHead className="text-right">Sessions</TableHead>
                   <TableHead className="text-right">PV</TableHead>
                   <TableHead className="text-right">ATC</TableHead>
                   <TableHead className="text-right">Buys</TableHead>
+                  <TableHead className="text-right">Eng</TableHead>
+                  <TableHead className="text-right">Rev</TableHead>
+                  <TableHead className="text-right">Conv</TableHead>
                   <TableHead className="text-right">Score</TableHead>
                   <TableHead>Tier</TableHead>
                   <TableHead>Status</TableHead>
@@ -210,10 +218,14 @@ export default function PinterestPinAttributionPage() {
                     <TableCell className="max-w-[200px] truncate">{r.board_name ?? "—"}</TableCell>
                     <TableCell className="text-right">{fmt(r.impressions)}</TableCell>
                     <TableCell className="text-right">{fmt(r.outbound_clicks)}</TableCell>
+                    <TableCell className="text-right">{(r.ctr * 100).toFixed(2)}%</TableCell>
                     <TableCell className="text-right">{fmt(r.sessions)}</TableCell>
                     <TableCell className="text-right">{fmt(r.pageviews)}</TableCell>
                     <TableCell className="text-right">{fmt(r.add_to_carts)}</TableCell>
                     <TableCell className="text-right">{fmt(r.purchases)}</TableCell>
+                    <TableCell className="text-right">{r.engagement_score.toFixed(0)}</TableCell>
+                    <TableCell className="text-right">{r.revenue_score.toFixed(0)}</TableCell>
+                    <TableCell className="text-right">{r.conversion_score.toFixed(0)}</TableCell>
                     <TableCell className="text-right font-medium">{r.score.toFixed(1)}</TableCell>
                     <TableCell>
                       {r.tier === "winner" && (
