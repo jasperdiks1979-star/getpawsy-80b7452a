@@ -909,10 +909,11 @@ async function pickLandingSlug(
 
 async function uploadAndInsertDraft(
   supabase: ReturnType<typeof createClient>,
-  product: { id: string; slug: string; name: string },
+  product: { id: string; slug: string; name: string; price?: number | null; benefit?: string | null; category?: string | null },
   niche: NicheKey,
   brief: SceneBrief,
   bytes: Uint8Array,
+  variantIndex = 0,
   intelligence?: {
     scores: Record<string, number>;
     attempt_count: number;
@@ -966,13 +967,25 @@ async function uploadAndInsertDraft(
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
   const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
+  // ── Deterministic board-template copy (no random AI fluff) ──────────────
+  const copy = buildPinCopy(
+    {
+      name: product.name,
+      benefit: product.benefit ?? null,
+      category: product.category ?? null,
+      price: product.price ?? null,
+      niche,
+    },
+    variantIndex,
+  );
+
   const row = {
     product_id: product.id,
     product_slug: product.slug,
     product_name: product.name,
     pin_variant: variant,
-    pin_title: brief.headline,
-    pin_description: `${brief.emotional_hook}. ${brief.environment_summary}`.slice(0, 480),
+    pin_title: copy.title,
+    pin_description: copy.description,
     pin_image_url: imageUrl,
     destination_link: destination,
     priority: "high" as const,
@@ -980,7 +993,7 @@ async function uploadAndInsertDraft(
     scheduled_at: new Date().toISOString(),
     hook_group: brief.pattern_id || niche,
     category_key: niche,
-    overlay_text: `${brief.headline} • ${brief.cta}`,
+    overlay_text: `${copy.overlay} • ${copy.cta}`,
     image_hash: imageHash,
     pin_image_phash: pinPhash,
     meta: intelligence
