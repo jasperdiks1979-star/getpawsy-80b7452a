@@ -477,7 +477,7 @@ async function generateBriefs(
 
 async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-  return await renderSceneWithSource(brief, dna, null);
+  return await renderSceneWithSource(brief, dna, null, null);
 }
 
 /**
@@ -490,6 +490,7 @@ async function renderSceneWithSource(
   brief: SceneBrief,
   dna: StyleDNA,
   productImageUrl: string | null,
+  overlay: { text: string; brand: string } | null = null,
 ): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -515,21 +516,25 @@ async function renderSceneWithSource(
       })
     : "";
 
+  const overlayDirective = overlay
+    ? ` Render EXACTLY ONE short benefit caption in clean modern sans-serif typography ` +
+      `(white text with a soft drop shadow OR a thin translucent bar) reading verbatim: ` +
+      `"${overlay.text}". Also render a small wordmark in the bottom-right corner reading verbatim: ` +
+      `"${overlay.brand}". Do NOT render any other text, captions, prices, CTAs, emojis, hashtags, or graphics.`
+    : ` Do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself.`;
   const styleSuffix =
-    `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+    `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
     `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-    `Vertical 9:16 composition for Pinterest, leave clean space at the top third for a single elegant headline ` +
-    `(do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself). ` +
-    `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars.`;
+    `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
+    `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars, NO price tags.`;
 
   // For collage modes, replace the anti-collage clause with the explicit
   // collage contract so the image model isn't given contradictory directives.
   const styleSuffixForMode = mode?.is_collage
-    ? `Cinematic editorial photography, ${dna.light}, mood: ${dna.mood}. ` +
+    ? `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
       `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-      `Vertical 9:16 composition for Pinterest. ` +
-      `Do NOT render any text, captions, watermarks, logos, prices, or graphic overlays in the image itself. ` +
-      `No floating product cutouts, no Canva-template look, no CTA bars.`
+      `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
+      `No floating product cutouts, no Canva-template look, no CTA bars, no price tags.`
     : styleSuffix;
 
   const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
