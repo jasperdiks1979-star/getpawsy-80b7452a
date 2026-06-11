@@ -47,6 +47,7 @@ import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
+import { buildPinCopy, sanitizePinText } from "../_shared/pinterest-board-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,7 +166,7 @@ async function loadOrBuildProfile(
 ): Promise<{ niche: NicheKey; dna: StyleDNA; product: any; cached: boolean }> {
   const { data: product, error } = await supabase
     .from("products")
-    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets")
+    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price")
     .eq("id", productId)
     .maybeSingle();
   if (error) throw new Error(`product lookup failed: ${error.message}`);
