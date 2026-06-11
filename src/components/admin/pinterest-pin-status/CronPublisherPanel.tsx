@@ -196,6 +196,28 @@ export default function CronPublisherPanel() {
 
   const [assigningBoards, setAssigningBoards] = useState(false);
   const [lastBoardAssign, setLastBoardAssign] = useState<any>(null);
+  const [correcting, setCorrecting] = useState(false);
+  const [lastCorrection, setLastCorrection] = useState<any>(null);
+
+  const runContentCorrection = async () => {
+    setCorrecting(true);
+    setLastCorrection(null);
+    try {
+      const { data: res, error } = await supabase.functions.invoke('pinterest-content-correction', { body: {} });
+      if (error) throw error;
+      const r = res as any;
+      await refetch();
+      setLastCorrection(r);
+      toast({
+        title: 'Content correction complete',
+        description: `Repaired ${r?.repaired ?? 0} · dup img ${r?.duplicates_image ?? 0} · dup dest ${r?.duplicates_destination ?? 0} · rejected ${r?.rejected ?? 0}`,
+      });
+    } catch (e) {
+      toast({ title: 'Content correction failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setCorrecting(false);
+    }
+  };
 
   const assignMissingBoards = async () => {
     setAssigningBoards(true);
@@ -235,6 +257,10 @@ export default function CronPublisherPanel() {
           <Button size="sm" variant="secondary" onClick={refreshFailedQueue} disabled={refreshing}>
             {refreshing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
             Refresh Failed Queue
+          </Button>
+          <Button size="sm" variant="secondary" onClick={runContentCorrection} disabled={correcting}>
+            {correcting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+            Run content correction
           </Button>
           <Button size="sm" variant="secondary" onClick={assignMissingBoards} disabled={assigningBoards}>
             {assigningBoards ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
