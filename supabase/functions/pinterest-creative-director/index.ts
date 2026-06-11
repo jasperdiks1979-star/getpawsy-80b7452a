@@ -47,7 +47,7 @@ import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
-import { buildPinCopy, sanitizePinText } from "../_shared/pinterest-board-templates.ts";
+import { buildPinCopy, sanitizePinText, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
