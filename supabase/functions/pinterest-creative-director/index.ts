@@ -454,11 +454,16 @@ async function generateBriefs(
     // Headline lock: the product-truthful hook ALWAYS wins. We do not let the
     // image-brief AI rewrite it (it would drift back to generic copy).
     headline: safeText(
-      productHooks[i]?.headline ||
-        String(b.headline || strategies[i]?.hook_phrase || ""),
+      sanitizePinText(
+        productHooks[i]?.headline ||
+          String(b.headline || strategies[i]?.hook_phrase || ""),
+      ),
       42,
     ),
-    cta: safeText(String(b.cta || strategies[i]?.cta_phrase || ""), 18),
+    cta: safeText(
+      sanitizePinText(String(b.cta || strategies[i]?.cta_phrase || "")),
+      18,
+    ),
     full_prompt: String(b.full_prompt || ""),
     pattern_id: patterns[i]?.id,
     hook_category: strategies[i]?.hook_category,
