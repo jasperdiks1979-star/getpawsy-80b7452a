@@ -388,6 +388,8 @@ export default function PinterestPinStatusPage() {
         </div>
       </div>
 
+      <DeployDiagnosticPanel />
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Pipeline controls</CardTitle>
