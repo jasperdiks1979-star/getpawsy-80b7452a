@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
             priority: target.source === "winner" ? "high" : "normal",
             status: "queued",
             category_key: bucket.key,
-            content_type: "image",
+            content_type: "product",
             creative_fingerprint: fingerprint,
             meta: { growth_run_id: runId, source: target.source, keywords: copy.keywords },
           });
