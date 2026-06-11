@@ -1390,37 +1390,34 @@ Deno.serve(async (req) => {
       const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
       const APPROVED_HOOKS: Record<string, string[]> = {
         litter: [
-          "Tired of litter box chores",
-          "Cat litter smell taking over",
-          "Daily scooping gets old fast",
-          "Hate scooping every day",
-          "Save 30 minutes every week",
-          "Clean litter in seconds",
-          "From messy to self-cleaning",
-          "Smart pet parents love this",
+          "Tired of scooping daily", // 23
+          "Clean litter in seconds",  // 23
+          "Save 30 minutes weekly",  // 22
+          "From messy to fresh",     // 19
+          "Smart cat parents love it", // 25
+          "Hate scooping every day",  // 23
+          "Cat smell taking over",    // 21
+          "One tap cleanup",          // 15
         ],
         cat_tree: [
-          "Tired of cat tree wobble",
-          "Upgrade your cat setup",
-          "Cluttered apartment cat setup",
-          "From cluttered to calm",
-          "Apartment cat owner upgrade",
-          "Your cat deserves better",
+          "Tired of wobbly cat trees", // 26
+          "Upgrade your cat setup",   // 22
+          "From cluttered to calm",   // 22
+          "Your cat deserves better", // 24
+          "Apartment cat owner hack", // 24
         ],
         dog: [
-          "Save 20 minutes daily",
-          "Upgrade your pet setup",
-          "Smart pet parents love this",
-          "Your dog deserves better",
-          "From messy to modern",
+          "Save 20 minutes daily",    // 21
+          "Upgrade your pet setup",   // 22
+          "Your dog deserves better", // 24
+          "From messy to modern",     // 20
         ],
         default: [
-          "Smart pet parents love this",
-          "Your cat deserves better",
-          "Upgrade your pet setup",
+          "Smart pet parents love it", // 25
+          "Your pet deserves better",  // 25
+          "Upgrade your pet setup",    // 22
         ],
       };
-      const CTAS = ["Shop Now", "Get Yours", "See Details", "Explore More"];
       const pickHook = (slug: string): string => {
         const s = (slug || "").toLowerCase();
         const bank =
@@ -1431,7 +1428,6 @@ Deno.serve(async (req) => {
         const idx = Math.abs(hashStr(slug)) % bank.length;
         return bank[idx];
       };
-      const pickCta = (slug: string) => CTAS[Math.abs(hashStr(slug + "cta")) % CTAS.length];
       function hashStr(s: string): number {
         let h = 0;
         for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
@@ -1505,9 +1501,9 @@ Deno.serve(async (req) => {
 
         // 1. Overlay → "Hook | CTA"
         if (before.includes("missing_cta") || before.includes("weak_hook") || before.includes("unreadable_text")) {
-          const hook = pickHook(pin.product_slug || "");
-          const cta = pickCta(pin.product_slug || "");
-          pin.overlay_text = `${hook} | ${cta}`;
+          // DB trigger forbids `|` / `•` and caps overlay at 32 chars, so
+          // store the hook only. The image template renders the CTA.
+          pin.overlay_text = pickHook(pin.product_slug || "");
           fixes.push("overlay_rewritten");
         }
 
