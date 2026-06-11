@@ -12071,6 +12071,86 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_brain_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          payload: Json
+          pin_id: string | null
+          product_id: string | null
+          reason: string | null
+          run_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          reason?: string | null
+          run_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          reason?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_brain_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_brain_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_brain_runs: {
+        Row: {
+          drafts_enqueued: number
+          dry_run: boolean
+          errors: number
+          finished_at: string | null
+          id: string
+          predictions_computed: number
+          products_discovered: number
+          started_at: string
+          summary: Json
+          winners_amplified: number
+        }
+        Insert: {
+          drafts_enqueued?: number
+          dry_run?: boolean
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          predictions_computed?: number
+          products_discovered?: number
+          started_at?: string
+          summary?: Json
+          winners_amplified?: number
+        }
+        Update: {
+          drafts_enqueued?: number
+          dry_run?: boolean
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          predictions_computed?: number
+          products_discovered?: number
+          started_at?: string
+          summary?: Json
+          winners_amplified?: number
+        }
+        Relationships: []
+      }
       pinterest_capi_outbox: {
         Row: {
           attempts: number
@@ -13943,6 +14023,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_predictions: {
+        Row: {
+          computed_at: string
+          id: string
+          inputs: Json
+          model_version: string
+          pin_id: string
+          product_id: string | null
+          revenue_p: number
+          viral_p: number
+          winner_p: number
+        }
+        Insert: {
+          computed_at?: string
+          id?: string
+          inputs?: Json
+          model_version?: string
+          pin_id: string
+          product_id?: string | null
+          revenue_p?: number
+          viral_p?: number
+          winner_p?: number
+        }
+        Update: {
+          computed_at?: string
+          id?: string
+          inputs?: Json
+          model_version?: string
+          pin_id?: string
+          product_id?: string | null
+          revenue_p?: number
+          viral_p?: number
+          winner_p?: number
+        }
+        Relationships: []
+      }
       pinterest_pin_queue: {
         Row: {
           approved_at: string | null
@@ -14355,16 +14471,19 @@ export type Database = {
           add_to_carts_30d: number | null
           block_reason: string | null
           computed_at: string
+          discovery_source: string | null
           hidden_opportunity: boolean
           impressions_30d: number | null
           last_amplified_at: string | null
           outbound_clicks_30d: number | null
+          pdp_strength_score: number | null
           priority: string
           product_id: string
           product_slug: string | null
           publish_multiplier: number
           purchases_30d: number | null
           reason: string | null
+          revenue_bucket: string | null
           revenue_cents_30d: number | null
           score: number
           status: string
@@ -14374,16 +14493,19 @@ export type Database = {
           add_to_carts_30d?: number | null
           block_reason?: string | null
           computed_at?: string
+          discovery_source?: string | null
           hidden_opportunity?: boolean
           impressions_30d?: number | null
           last_amplified_at?: string | null
           outbound_clicks_30d?: number | null
+          pdp_strength_score?: number | null
           priority?: string
           product_id: string
           product_slug?: string | null
           publish_multiplier?: number
           purchases_30d?: number | null
           reason?: string | null
+          revenue_bucket?: string | null
           revenue_cents_30d?: number | null
           score?: number
           status?: string
@@ -14393,16 +14515,19 @@ export type Database = {
           add_to_carts_30d?: number | null
           block_reason?: string | null
           computed_at?: string
+          discovery_source?: string | null
           hidden_opportunity?: boolean
           impressions_30d?: number | null
           last_amplified_at?: string | null
           outbound_clicks_30d?: number | null
+          pdp_strength_score?: number | null
           priority?: string
           product_id?: string
           product_slug?: string | null
           publish_multiplier?: number
           purchases_30d?: number | null
           reason?: string | null
+          revenue_bucket?: string | null
           revenue_cents_30d?: number | null
           score?: number
           status?: string
