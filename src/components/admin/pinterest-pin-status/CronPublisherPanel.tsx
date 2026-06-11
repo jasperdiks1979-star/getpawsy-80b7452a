@@ -189,6 +189,31 @@ export default function CronPublisherPanel() {
     }
   };
 
+  const [assigningBoards, setAssigningBoards] = useState(false);
+  const [lastBoardAssign, setLastBoardAssign] = useState<any>(null);
+
+  const assignMissingBoards = async () => {
+    setAssigningBoards(true);
+    setLastBoardAssign(null);
+    try {
+      const { data: res, error } = await supabase.functions.invoke('pinterest-automation', {
+        body: { action: 'assign_missing_boards', limit: 100 },
+      });
+      if (error) throw error;
+      const r = res as any;
+      await refetch();
+      setLastBoardAssign(r);
+      toast({
+        title: 'Board assignment complete',
+        description: `Assigned ${r?.assigned ?? 0} of ${r?.scanned ?? 0} (unresolved ${r?.unresolved ?? 0})`,
+      });
+    } catch (e) {
+      toast({ title: 'Board assignment failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setAssigningBoards(false);
+    }
+  };
+
   const w = data?.warmup;
   const blocked = !!data?.gating?.blocked;
   const willPublish = !!data?.will_publish_next_tick;
@@ -205,6 +230,10 @@ export default function CronPublisherPanel() {
           <Button size="sm" variant="secondary" onClick={refreshFailedQueue} disabled={refreshing}>
             {refreshing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
             Refresh Failed Queue
+          </Button>
+          <Button size="sm" variant="secondary" onClick={assignMissingBoards} disabled={assigningBoards}>
+            {assigningBoards ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+            Assign missing boards
           </Button>
           <Button size="sm" onClick={runCronNow} disabled={running}>
             {running ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Play className="h-3 w-3 mr-1" />}
