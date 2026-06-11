@@ -12,6 +12,8 @@ const BOOT_FLAG = "gp_pin_session_booted";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
+import { getBotClassification } from "@/lib/botDetection";
+
 /**
  * Returns true when this session matches the Pinterest iOS in-app
  * prefetcher fingerprint (see src/lib/botDetection.ts). Used to suppress
@@ -70,6 +72,9 @@ export function bootstrapPinterestSession(): void {
   try {
     if (sessionStorage.getItem(BOOT_FLAG)) return;
     sessionStorage.setItem(BOOT_FLAG, "1");
+    // Prime the bot classification cache so the page_view event below carries
+    // a reliable is_prefetch flag on the very first hit of the session.
+    try { getBotClassification(); } catch { /* ignore */ }
     const u = new URL(window.location.href);
     const q = u.searchParams;
     post({
