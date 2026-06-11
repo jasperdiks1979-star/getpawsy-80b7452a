@@ -2630,6 +2630,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-pin-attribution"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestPinAttributionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-integrity"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
