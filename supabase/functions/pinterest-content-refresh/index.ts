@@ -37,8 +37,6 @@ interface RefreshRow {
   reason?: string;
 }
 
-const BANNED_OR = BANNED_PIN_PHRASES.join("|");
-
 function pickBoardNiche(boardName: string | null, categoryKey: string | null): string {
   const hay = `${boardName || ""} ${categoryKey || ""}`.toLowerCase();
   if (hay.includes("litter")) return "cat_litter";
