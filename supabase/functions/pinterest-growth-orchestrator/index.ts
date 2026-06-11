@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
       const productIds = Array.from(new Set(enqueueTargets.map(t => t.product_id)));
       const { data: prodRows } = await sb
         .from("products")
-        .select("id, slug, title, name, category, product_type, primary_image_url, image_url")
+        .select("id, slug, name, category, product_type, image_url")
         .in("id", productIds)
         .limit(productIds.length);
       const productMap = new Map((prodRows ?? []).map(p => [p.id, p]));
@@ -306,11 +306,11 @@ Deno.serve(async (req) => {
           inserts.push({
             product_id: target.product_id,
             product_slug: p.slug,
-            product_name: p.title ?? p.name ?? null,
+            product_name: p.name ?? null,
             pin_variant: `growth_${target.source}_v${v + 1}`,
             pin_title: copy.title,
             pin_description: copy.description,
-            pin_image_url: p.primary_image_url ?? p.image_url ?? null,
+            pin_image_url: p.image_url ?? null,
             destination_link: p.slug ? `https://getpawsy.pet/products/${p.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=growth_${target.source}` : null,
             board_name: board,
             hashtags: copy.hashtags,
