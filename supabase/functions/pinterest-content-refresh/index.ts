@@ -69,12 +69,14 @@ Deno.serve(async (req) => {
 
   // Caller auth — admin only.
   const authHeader = req.headers.get("Authorization") || "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServiceCall = !!SERVICE_KEY && bearer === SERVICE_KEY;
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: userData } = await userClient.auth.getUser();
+  const { data: userData } = isServiceCall ? { data: { user: null } } as any : await userClient.auth.getUser();
   const user = userData?.user;
-  if (!user) {
+  if (!user && !isServiceCall) {
     return new Response(
       JSON.stringify({ ok: false, traceId, message: "unauthorized" }),
       { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -82,17 +84,19 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data: roleRow } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (!roleRow) {
-    return new Response(
-      JSON.stringify({ ok: false, traceId, message: "forbidden_admin_only" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  if (!isServiceCall) {
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user!.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(
+        JSON.stringify({ ok: false, traceId, message: "forbidden_admin_only" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
   }
 
   // 1. Pull every active queue row whose copy still contains a banned phrase.
