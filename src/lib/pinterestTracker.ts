@@ -9,6 +9,7 @@
 
 const SESSION_KEY = "gp_session_id";
 const BOOT_FLAG = "gp_pin_session_booted";
+const PIN_ID_KEY = "gp_pin_id";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
@@ -77,6 +78,10 @@ export function bootstrapPinterestSession(): void {
     try { getBotClassification(); } catch { /* ignore */ }
     const u = new URL(window.location.href);
     const q = u.searchParams;
+    const pinIdFromUrl = q.get("pin_id") ?? q.get("pinId");
+    if (pinIdFromUrl) {
+      try { sessionStorage.setItem(PIN_ID_KEY, pinIdFromUrl); } catch { /* ignore */ }
+    }
     post({
       kind: "session",
       sessionKey: getSessionKey(),
@@ -86,7 +91,7 @@ export function bootstrapPinterestSession(): void {
       utm_term: q.get("utm_term"),
       utm_content: q.get("utm_content"),
       utm_id: q.get("utm_id"),
-      pin_id: q.get("pin_id") ?? q.get("pinId"),
+      pin_id: pinIdFromUrl,
       pin_mode: q.get("pin_mode"),
       landing_slug: u.pathname.replace(/^\/products\//, ""),
       niche_key: q.get("niche"),
@@ -121,6 +126,8 @@ export function trackPinterestEvent(
   try {
     const u = new URL(window.location.href);
     urlPinId = u.searchParams.get("pin_id") ?? u.searchParams.get("pinId");
+    if (!urlPinId) urlPinId = sessionStorage.getItem(PIN_ID_KEY);
+    else { try { sessionStorage.setItem(PIN_ID_KEY, urlPinId); } catch { /* ignore */ } }
   } catch {
     /* ignore */
   }
