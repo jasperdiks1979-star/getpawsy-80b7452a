@@ -8,10 +8,12 @@ import {
   normalizeCategoryKey,
   pickCategoryOverlay,
   validateOverlayForCategory,
+  validateCopyForCategory,
 } from "../_shared/pinterest-overlay-fallback.ts";
 
 const ACTIVE_STATUSES = ["draft", "approved", "queued", "publishing"];
 const DUP_WINDOW_DAYS = 30;
+const POSTED_CLEANUP_WINDOW_HOURS = 48;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -47,6 +49,7 @@ async function handle(req: Request, traceId: string) {
     try { body = (await req.json()) as Record<string, unknown>; } catch { /* ignore */ }
   }
   const dryRun = body.dry_run === true;
+  const includePosted = body.include_posted !== false; // default ON
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -239,6 +242,100 @@ async function handle(req: Request, traceId: string) {
   // Final live counts after run.
   const { count: activeCount } = await admin.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).in("status", ACTIVE_STATUSES);
 
+  // 4. Posted (already-published) cleanup — scan last 48h, flag dirty pins,
+  //    blocklist their images, and queue clean replacement drafts.
+  const postedReport: any[] = [];
+  let postedFlagged = 0;
+  let blocklisted = 0;
+  let replacementDraftsQueued = 0;
+  if (includePosted) {
+    const since = new Date(Date.now() - POSTED_CLEANUP_WINDOW_HOURS * 3600_000).toISOString();
+    const { data: postedRows } = await admin
+      .from("pinterest_pin_queue")
+      .select("id, status, product_id, product_slug, product_name, category_key, board_id, board_name, pin_title, pin_description, overlay_text, destination_link, pin_image_url, image_hash, external_url, meta, hook_group, posted_at")
+      .eq("status", "posted")
+      .gte("posted_at", since)
+      .limit(500);
+    for (const raw of (postedRows || [])) {
+      const row: any = raw;
+      const reasons: string[] = [];
+      const bannedHits = collectPinterestBannedCopyHits(row);
+      if (bannedHits.length > 0) {
+        reasons.push(...bannedHits.map((h) => `banned:${h.field}:${h.phrase}`));
+      }
+      const ovc = validateOverlayForCategory(row.overlay_text || "", row.category_key, { seed: 7 });
+      if (!ovc.ok) reasons.push(ovc.reason || "overlay_mismatch");
+      const tc = validateCopyForCategory(row.pin_title, row.category_key, "title");
+      if (!tc.ok) reasons.push(tc.reason || "title_mismatch");
+      const dc = validateCopyForCategory(row.pin_description, row.category_key, "description");
+      if (!dc.ok) reasons.push(dc.reason || "description_mismatch");
+      if (reasons.length === 0) continue;
+
+      postedFlagged++;
+      if (!dryRun) {
+        const meta = (row.meta && typeof row.meta === "object") ? { ...row.meta } : {};
+        (meta as any).bad_content = true;
+        (meta as any).bad_content_reasons = reasons.slice(0, 12);
+        (meta as any).bad_content_flagged_at = new Date().toISOString();
+        await admin.from("pinterest_pin_queue")
+          .update({ meta, rejection_reason: row.rejection_reason || "bad_content_posted" })
+          .eq("id", row.id);
+
+        // Blocklist the image so we never reuse it.
+        if (row.pin_image_url) {
+          const { error: blkErr } = await admin.from("pinterest_image_blocklist").insert({
+            image_url: row.pin_image_url,
+            image_hash: row.image_hash || null,
+            reason: reasons[0] || "bad_content_posted",
+            original_pin_id: row.id,
+            external_pin_url: row.external_url || null,
+            notes: reasons.slice(0, 5).join(" | "),
+          });
+          if (!blkErr) blocklisted++;
+        }
+
+        // Queue a clean replacement draft (no image — generator will pick a new one).
+        try {
+          const seed = (String(row.id).length * 17) + 5;
+          const cleanOverlay = pickCategoryOverlay(row.category_key, seed, null);
+          const cleanTitle = (row.product_name ? `${cleanOverlay} — ${row.product_name}` : cleanOverlay).slice(0, 100);
+          const cleanDesc = `${cleanOverlay}. Free US shipping on getpawsy.pet.`.slice(0, 500);
+          const { data: ins, error: insErr } = await admin
+            .from("pinterest_pin_queue")
+            .insert({
+              product_id: row.product_id,
+              product_slug: row.product_slug,
+              product_name: row.product_name,
+              pin_variant: "replacement_v1",
+              pin_title: cleanTitle,
+              pin_description: cleanDesc,
+              overlay_text: cleanOverlay.slice(0, 32),
+              destination_link: row.destination_link,
+              board_id: row.board_id,
+              board_name: row.board_name,
+              category_key: row.category_key,
+              hook_group: row.hook_group,
+              hashtags: [],
+              priority: "high",
+              status: "draft",
+              replacement_for_pin_id: row.id,
+              meta: { replacement_for: row.id, reasons: reasons.slice(0, 6) },
+            })
+            .select("id")
+            .maybeSingle();
+          if (!insErr && ins) replacementDraftsQueued++;
+        } catch (_) { /* non-fatal */ }
+      }
+      postedReport.push({
+        id: row.id,
+        slug: row.product_slug,
+        board: row.board_name,
+        external_url: row.external_url,
+        reasons,
+      });
+    }
+  }
+
   return jsonResponse({
     ok: true,
     traceId,
@@ -252,6 +349,13 @@ async function handle(req: Request, traceId: string) {
     active_after: activeCount ?? null,
     sample_overlays_per_category,
     report: report.slice(0, 200),
+    posted_cleanup: {
+      window_hours: POSTED_CLEANUP_WINDOW_HOURS,
+      flagged: postedFlagged,
+      blocklisted,
+      replacement_drafts_queued: replacementDraftsQueued,
+      sample: postedReport.slice(0, 50),
+    },
   });
 }
 
