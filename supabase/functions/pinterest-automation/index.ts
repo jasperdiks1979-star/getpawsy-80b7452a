@@ -3698,6 +3698,19 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
     console.log("[pinterest-publish] external_url validation", { pin_id: pin.id, ...verification });
     const verifiedAt = new Date().toISOString();
 
+    // Stamp the real Pinterest pin id onto the live destination link. PATCH is
+    // best-effort: if Pinterest's `pin_edit` scope blocks the update the
+    // pre-stamped queue UUID remains attached and `pinterest-track` still
+    // resolves it. Never throws.
+    const realStampedLink = stampUtmsOnLink(preStampedLink, {
+      pinId: pinterestPinId,
+      campaign: _campaign,
+      content: _content,
+    });
+    const _patchRes = await patchPinLink(accessToken, apiBase, pinterestPinId, realStampedLink).catch(() => null);
+    const _readback = await readPinterestPinLink(accessToken, apiBase, pinterestPinId).catch(() => null);
+    const liveDestination = (_readback as any)?.link || (_patchRes as any)?.link || realStampedLink;
+
     await sb.from("pinterest_pin_queue").update({
       status: "posted",
       posted_at: new Date().toISOString(),
@@ -3705,6 +3718,8 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
       pinterest_pin_id: pinterestPinId,
       external_url: externalUrl,
       board_id: boardId,
+      destination_link: liveDestination,
+      final_resolved_url: liveDestination,
       error_message: null,
       last_publish_error: null,
       rejection_reason: null,
