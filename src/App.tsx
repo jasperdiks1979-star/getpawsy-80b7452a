@@ -2845,6 +2845,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-live-cycle"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestLiveCyclePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
