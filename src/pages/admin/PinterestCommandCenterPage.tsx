@@ -227,6 +227,18 @@ export default function PinterestCommandCenterPage() {
         <div className="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm">{err}</div>
       )}
 
+      {/* Attribution mode warning — Pinterest hasn't granted pin_edit access. */}
+      <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div>
+          <span className="font-medium">Attribution mode: hybrid.</span>{" "}
+          Historical pins use <strong>slug-based attribution</strong> (utm_content → most-recent posted pin)
+          because Pinterest has not granted <code>pin_edit</code> access. New pins use the real{" "}
+          <code>pin_id</code> when carried on the destination URL. Board / creative joins resolve via{" "}
+          <code>pinterest_pin_queue</code> in both paths.
+        </div>
+      </div>
+
       {/* Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
