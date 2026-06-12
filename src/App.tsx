@@ -2863,6 +2863,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
