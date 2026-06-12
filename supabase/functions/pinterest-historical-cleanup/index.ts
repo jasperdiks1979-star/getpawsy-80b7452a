@@ -137,6 +137,23 @@ Deno.serve(async (req) => {
     if (postedErr) throw postedErr;
     const pins = posted || [];
 
+    // ── 2a. Load OCR text for image-based overlay detection ──
+    // (populated by pinterest-ocr-cleanup-audit). When present, OCR text wins
+    // over metadata so we detect overlays actually rendered in the image.
+    const ocrMap = new Map<string, string>();
+    const allPinIds = pins.map(p => p.pinterest_pin_id!).filter(Boolean);
+    for (let i = 0; i < allPinIds.length; i += 500) {
+      const slice = allPinIds.slice(i, i + 500);
+      const { data: ocrRows } = await sb.from("pinterest_pin_ocr_cache")
+        .select("pin_id, ocr_text, status").in("pin_id", slice).eq("status", "ok");
+      (ocrRows || []).forEach((r: any) => { if (r.ocr_text) ocrMap.set(r.pin_id, r.ocr_text); });
+    }
+    const overlaySource = (p: any): string => {
+      const ocr = ocrMap.get(p.pinterest_pin_id || "");
+      if (ocr && ocr.trim()) return ocr;
+      return p.overlay_text || p.pin_title || "";
+    };
+
     // ── 2. Performance metrics ──
     const pinIds = pins.map(p => p.pinterest_pin_id!).filter(Boolean);
     const perfMap = new Map<string, { impressions: number; clicks: number; saves: number }>();
@@ -156,12 +173,18 @@ Deno.serve(async (req) => {
     const recent = pins.slice(0, FREQ_WINDOW);
     const freq = new Map<string, { sample: string; count: number }>();
     for (const p of recent) {
-      const raw = p.overlay_text || p.pin_title || "";
-      const norm = normalizeOverlay(raw);
-      if (!norm) continue;
-      const cur = freq.get(norm);
-      if (cur) cur.count += 1;
-      else freq.set(norm, { sample: (raw || "").trim().slice(0, 120), count: 1 });
+      const raw = overlaySource(p);
+      // For OCR text, count each distinct line as a phrase.
+      const lines = raw.split(/[\n\r]+|(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+      const seen = new Set<string>();
+      for (const line of (lines.length ? lines : [raw])) {
+        const norm = normalizeOverlay(line);
+        if (!norm || norm.length < 4 || seen.has(norm)) continue;
+        seen.add(norm);
+        const cur = freq.get(norm);
+        if (cur) cur.count += 1;
+        else freq.set(norm, { sample: line.trim().slice(0, 120), count: 1 });
+      }
     }
     const overusedSet = new Set<string>();
     const freqRows: any[] = [];
@@ -199,8 +222,11 @@ Deno.serve(async (req) => {
 
     // ── 5. Decision tree for OVERUSED pins ──
     for (const p of pins) {
-      const norm = normalizeOverlay(p.overlay_text || p.pin_title || "");
-      if (!norm || !overusedSet.has(norm)) continue;
+      const raw = overlaySource(p);
+      const norms = raw.split(/[\n\r]+|(?<=[.!?])\s+/)
+        .map(s => normalizeOverlay(s)).filter(n => n && n.length >= 4);
+      const matched = norms.find(n => overusedSet.has(n));
+      if (!matched) continue;
 
       const m = perfMap.get(p.pinterest_pin_id!) || { impressions: 0, clicks: 0, saves: 0 };
       let action: "delete" | "archive" | "keep_and_replace" | null = null;
