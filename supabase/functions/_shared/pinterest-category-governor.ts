@@ -323,30 +323,62 @@ export async function selectProducts(
   const recentBucketsRoll: GovernorBucket[] = [...metrics.last_3_buckets];
   const usedProductIds = new Set<string>();
 
-  for (const bucket of buckets) {
-    let need = desired[bucket];
-    if (need <= 0) continue;
-    const pool = candidates
-      .filter((c) => c.bucket === bucket && !usedProductIds.has(c.id))
-      .sort((a, b) =>
-        a.priority_tier - b.priority_tier ||
-        a.publish_count - b.publish_count ||
-        a.slug.localeCompare(b.slug),
-      );
-    for (const c of pool) {
-      if (need <= 0) break;
-      // Block 3-in-a-row category repetition.
-      const last3 = recentBucketsRoll.slice(0, RECENT_CATEGORY_BLOCK);
-      if (last3.length === RECENT_CATEGORY_BLOCK && last3.every((x) => x === bucket)) {
-        reasons.push(`bucket ${bucket} blocked: 3-in-a-row guard`);
-        break;
-      }
+  // Pre-sort each bucket's pool once so subsequent shifts are O(1).
+  const pools: Record<GovernorBucket, CandidateProduct[]> = Object.fromEntries(
+    buckets.map((b) => [
+      b,
+      candidates
+        .filter((c) => c.bucket === b)
+        .sort((a, b) =>
+          a.priority_tier - b.priority_tier ||
+          a.publish_count - b.publish_count ||
+          a.slug.localeCompare(b.slug),
+        ),
+    ]),
+  ) as any;
+  const remaining: Record<GovernorBucket, number> = { ...desired };
+  let totalRemaining = buckets.reduce((s, b) => s + remaining[b], 0);
+
+  while (totalRemaining > 0) {
+    // Pick the bucket with the highest remaining need that is NOT blocked
+    // by the 3-in-a-row guard and has a non-empty pool.
+    const last3 = recentBucketsRoll.slice(0, RECENT_CATEGORY_BLOCK);
+    const blocked3 = (b: GovernorBucket) =>
+      last3.length === RECENT_CATEGORY_BLOCK && last3.every((x) => x === b);
+    const eligible = buckets
+      .filter((b) => remaining[b] > 0 && pools[b].length > 0 && !blocked3(b))
+      .sort((a, b) => remaining[b] - remaining[a]);
+    if (eligible.length === 0) {
+      // Try relaxing the 3-in-a-row guard so we still progress when only
+      // one bucket has stock — we re-check 3-in-a-row using the actual
+      // selected sequence in this case.
+      const fallback = buckets.filter((b) => remaining[b] > 0 && pools[b].length > 0);
+      if (fallback.length === 0) break;
+      // pick a bucket that is not the last one
+      const lastB = recentBucketsRoll[0];
+      const pick = fallback.find((b) => b !== lastB) ?? fallback[0];
+      const c = pools[pick].shift()!;
       selected.push(c);
       usedProductIds.add(c.id);
-      recentBucketsRoll.unshift(bucket);
-      need--;
+      recentBucketsRoll.unshift(pick);
+      remaining[pick]--;
+      totalRemaining--;
+      reasons.push(`relaxed-3-in-a-row to fill ${pick}`);
+      continue;
     }
-    if (need > 0) reasons.push(`bucket ${bucket} short by ${need} (insufficient candidates)`);
+    const pick = eligible[0];
+    const c = pools[pick].shift()!;
+    selected.push(c);
+    usedProductIds.add(c.id);
+    recentBucketsRoll.unshift(pick);
+    remaining[pick]--;
+    totalRemaining--;
+  }
+
+  for (const b of buckets) {
+    if (remaining[b] > 0) {
+      reasons.push(`bucket ${b} short by ${remaining[b]} (no eligible candidates)`);
+    }
   }
 
   return {
