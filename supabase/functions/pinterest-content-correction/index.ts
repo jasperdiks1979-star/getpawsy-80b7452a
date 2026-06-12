@@ -194,22 +194,11 @@ async function handle(req: Request, traceId: string) {
       reasons.push(overlayCheck.reason || "creative_mismatch");
     }
 
-    // 2d. Duplicate destination URL per board (rolling 30d).
+    // 2d. Destination-only duplicates are NOT rejected anymore
+    // (2026-06-12). The variety engine intentionally produces multiple
+    // creative variants per product slug; only visual dupes are blocked
+    // by the image-dup guard below.
     const board = String(row.board_id || "");
-    const dest = stripUtm(row.destination_link);
-    if (board && dest) {
-      const dm = destsByBoard.get(board) || new Map<string, string>();
-      const firstId = dm.get(dest);
-      if (firstId && firstId !== row.id) {
-        mustReject = true;
-        rejectReason = rejectReason || "duplicate_destination_30d";
-        duplicatesDestination++;
-        reasons.push(`duplicate_destination_30d:first=${firstId}`);
-      } else if (!firstId) {
-        dm.set(dest, row.id);
-        destsByBoard.set(board, dm);
-      }
-    }
 
     // 2e. Duplicate image per board (rolling 30d).
     if (board && row.pin_image_url) {
