@@ -3610,12 +3610,27 @@ async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<str
 
     const apiBase = PINTEREST_PRODUCTION_API_BASE;
     const mode = "production";
+    // 🔗 Pre-stamp UTMs + queue-UUID pin_id onto destination_link BEFORE POST
+    // so every outbound Pinterest click carries full attribution.
+    // pinterest-track resolves the queue UUID to the real Pinterest pin id.
+    const _campaign = (pin as any).category_key || (pin as any).board_name || boardId || "pinterest";
+    const _content = (pin as any).hook_angle || (pin as any).hook_group || (pin as any).pin_variant ||
+      ((pin as any)?.meta?.creative_angle ?? null) || (pin as any).product_slug || "creative";
+    const preStampedLink = stampUtmsOnLink(String(pin.destination_link ?? ""), {
+      pinId: pin.id,
+      campaign: _campaign,
+      content: _content,
+    });
+    pin.destination_link = preStampedLink;
+    await sb.from("pinterest_pin_queue")
+      .update({ destination_link: preStampedLink })
+      .eq("id", pin.id);
     const requestPayload = {
       title: pin.pin_title,
       description: pin.pin_description,
       board_id: boardId,
       media_source: { source_type: "image_url", url: pin.pin_image_url },
-      link: pin.destination_link,
+      link: preStampedLink,
     };
     const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-automation", action: opts.actionName, pin_id: pin.id });
     console.log("[pinterest-publish] Pinterest API request payload", safePayload.debugPayload);
