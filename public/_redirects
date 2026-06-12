@@ -5,6 +5,11 @@
 # ── Canonical product URL redirect (singular → plural) ──
 /product/:slug /products/:slug 301
 
+# ── Legacy Pinterest landing pages → canonical PDP (singular slug → /products/:slug) ──
+# All historical /lp/:slug Pinterest destinations resolve to live products that
+# share the same slug. Query strings (UTMs) are preserved by the platform.
+/lp/:slug /products/:slug 301
+
 # ── Pinterest URL Recovery — legacy paths funnel through resolver ──
 # Sends every historical Pinterest destination through the recovery engine,
 # which 308-redirects to the live canonical PDP (or /collections/all as a
