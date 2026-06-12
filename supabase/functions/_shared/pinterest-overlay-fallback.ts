@@ -247,3 +247,37 @@ export function validateOverlayForCategory(
 
   return { ok: true, bucket };
 }
+
+/**
+ * Guardrail for title/description copy. Same forbidden-token logic as the
+ * overlay validator but skips the positive-vocab requirement (titles can be
+ * brand-led or product-name driven). Catches cross-niche leaks like
+ * "Plush, warm, easy to wash" landing on a cat-toy pin, or "Stop scooping"
+ * leaking onto a dog-bed title.
+ */
+export function validateCopyForCategory(
+  text: string | null | undefined,
+  categoryKey: string | null | undefined,
+  field: "title" | "description",
+  opts: { productCategory?: string | null } = {},
+): OverlayValidation {
+  const bucket = normalizeCategoryKey(categoryKey, opts.productCategory);
+  const raw = String(text || "");
+  const forbidden = FORBIDDEN_TOKENS[bucket];
+  if (forbidden && raw && forbidden.test(raw)) {
+    return {
+      ok: false,
+      reason: `creative_mismatch:${field}_foreign_niche(bucket=${bucket})`,
+      bucket,
+    };
+  }
+  // Additional cross-niche pattern: plush/warm/wash copy on cat toys.
+  if (bucket !== "dog_bed" && bucket !== "cat_bed" && /\bplush\b.*\b(warm|wash)\b/i.test(raw)) {
+    return {
+      ok: false,
+      reason: `creative_mismatch:${field}_plush_leak(bucket=${bucket})`,
+      bucket,
+    };
+  }
+  return { ok: true, bucket };
+}
