@@ -959,28 +959,10 @@ Deno.serve(async (req) => {
           }
         }
         if (pin.board_id && destClean) {
-          // Match against unprefixed dest by scanning candidates and stripping UTMs in JS.
-          const { data: destCandidates } = await sb
-            .from("pinterest_pin_queue")
-            .select("id, destination_link")
-            .eq("board_id", pin.board_id)
-            .in("status", ["queued", "approved", "publishing", "published", "posted"])
-            .gte("created_at", thirtyDaysAgo)
-            .neq("id", pin.id)
-            .limit(200);
-          const dupDest = (destCandidates || []).find((r: any) => stripUtm(r.destination_link) === destClean);
-          if (dupDest) {
-            const reason = `duplicate_destination_30d:first=${dupDest.id}`;
-            console.warn(`[cron] Pin ${pin.id} blocked: ${reason}`);
-            await sb.from("pinterest_pin_queue").update({
-              status: "rejected",
-              rejection_reason: "duplicate_destination_30d",
-              error_message: reason,
-              publishing_started_at: null,
-            }).eq("id", pin.id);
-            results.push({ pinId: pin.id, status: "rejected", error: "duplicate_destination_30d" });
-            continue;
-          }
+          // NOTE 2026-06-12: destination-only dedupe disabled. Multiple
+          // creative variants per product slug are valid (and the whole
+          // point of the variety engine). Visual duplication is still
+          // guarded above via `duplicate_image_30d` per-board.
         }
       } catch (e) {
         console.warn(`[cron] dup-guard threw for pin ${pin.id}:`, e);
