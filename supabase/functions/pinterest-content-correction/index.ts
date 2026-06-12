@@ -337,6 +337,22 @@ async function handle(req: Request, traceId: string) {
           const cleanOverlay = pickCategoryOverlay(row.category_key, seed, null);
           const cleanTitle = (row.product_name ? `${cleanOverlay} — ${row.product_name}` : cleanOverlay).slice(0, 100);
           const cleanDesc = `${cleanOverlay}. Free US shipping on getpawsy.pet.`.slice(0, 500);
+          // GUARD: never insert a replacement draft without a valid Pinterest image.
+          // Pull the product's primary image as a safe fallback so the publisher always has media.
+          let replacementImage: string | null = null;
+          try {
+            const { data: prod } = await admin
+              .from("products")
+              .select("image_url")
+              .eq("id", row.product_id)
+              .maybeSingle();
+            const candidate = String((prod as any)?.image_url || "").trim();
+            if (/^https:\/\//i.test(candidate)) replacementImage = candidate;
+          } catch (_) { /* non-fatal */ }
+          if (!replacementImage) {
+            // No usable image — skip the insert entirely instead of queueing a broken draft.
+            continue;
+          }
           const { data: ins, error: insErr } = await admin
             .from("pinterest_pin_queue")
             .insert({
@@ -356,6 +372,8 @@ async function handle(req: Request, traceId: string) {
               priority: "high",
               status: "draft",
               replacement_for_pin_id: row.id,
+              pin_image_url: replacementImage,
+              validation_status: "valid",
               meta: { replacement_for: row.id, reasons: reasons.slice(0, 6) },
             })
             .select("id")
