@@ -1,56 +1,75 @@
-## Pinterest Revenue Brain (Phase 5)
+## Pinterest Recovery Engine (pre-Stage 2)
 
-Surgical extension. Reuses Spy, Growth Engine, Brain, Competitor Intel, Product Tiers, Creative Director, Publisher, Forecasts. No rebuilds.
+Goal: fix duplicate density, board concentration and creative fatigue so Stage 2 becomes smaller/safer. No deletes this phase.
 
-### 1. Reuse map (no changes)
-- `pinterest_competitor_pins/_patterns/_opportunities` → competitor strength signal
-- `pinterest_pin_performance`, `pinterest_pin_predictions`, `pinterest_product_tiers` → engagement + bestseller priors
-- `pinterest_keyword_bank`, `pinterest_trend_signals` → trend momentum + saturation
-- `pinterest_forecasts`, `pinterest_pdp_conversion_stats` → conversion + forecast base
-- `products` → margin_percent, price, review_count, rating, inventory, is_active
-- `pinterest-creative-director`, `pinterest-growth-brain`, publisher queue → auto-promotion path
+Reuses existing infrastructure where possible — `pinterest_creative_pools`, `pinterest_pin_queue`, `pinterest_pin_performance`, `pinterest_boards`, `pinterest_creative_winners`, `pinterest-creative-director`, `pinterest-revenue-brain`. Only adds what's missing.
 
-### 2. New DB (one migration)
-- `pinterest_revenue_opportunity_scores` — `product_id (uniq)`, `slug`, `score_0_1000`, `components jsonb` (12 weighted inputs), `bestseller_p`, `viral_p`, `repeat_p`, `tier` (`high_opp`/`winner`/`neutral`/`watch`/`skip`), `computed_at`. Index on `(score_0_1000 desc)`.
-- `pinterest_revenue_forecasts` — `product_id`, `horizon` (7/30/90), `sessions`, `atc`, `checkouts`, `purchases`, `revenue_cents`, `confidence`, `computed_at`. Unique `(product_id, horizon)`.
-- `pinterest_trend_intelligence` — `keyword`, `source` (`pinterest`/`google`/`internal`), `velocity` (-1..1), `direction` (`rising`/`stable`/`declining`), `seasonality_score`, `growth_rate`, `computed_at`. Unique `(keyword, source)`.
-- `pinterest_revenue_brain_runs` — counters, top_products jsonb, health flags.
-- GRANT + RLS (admin read, service_role full) for all four.
+### 1. Creative Variety Engine (new)
+New edge function `pinterest-creative-variety`. Action `seed_pools` (idempotent, force=true to overwrite).
+- For each category: `cat_trees, cat_litter_boxes, self_cleaning_litter, cat_essentials, dog_travel, pet_furniture`
+- Calls Lovable AI gateway (`google/gemini-3-flash-preview`) to generate 100 headlines (≤42 chars), 100 overlays (≤32), 100 CTAs (≤18), 100 descriptions (≤180) per category — all validated against the banned-phrase list and `pinterest-copy-standards` memory.
+- Stores into existing `pinterest_creative_pools` (kind ∈ headline/overlay/cta/description, category, text, score=0, wins=0, impressions=0, banned=false).
+- 6 cats × 4 kinds × 100 = 2,400 rows.
 
-### 3. New edge function `pinterest-revenue-brain`
-Actions: `score`, `forecast`, `trends`, `mine_opportunities`, `auto_promote`, `run_full`, `report`.
-- **Score (0–1000)** weighted sum:
-  - competitor_success 15%, engagement 12%, margin 12%, price_competitiveness 8%, reviews(count+rating) 8%, demand 10%, trend_momentum 12%, saturation_inverse 6%, current_traffic 5%, inventory 4%, conversion_rate 8%.
-- **Bestseller/viral/repeat probs** — logistic blend of (purchases_30d, viral_p from predictions, repeat_buyer ratio from orders).
-- **Forecast** — `sessions = max(current_daily,1) * horizon * trendBoost(score)` then funnel via `pdp_conversion_stats` rates, fallback global 1.2% CTR / 2.5% CVR / AOV $35.
-- **Trends** — pulls `pinterest_trend_signals` + `pinterest_keyword_bank` deltas (Google/Pinterest Trends are gated → use internal click/impression deltas as proxy, mark source).
-- **Auto-promote** when score>700: set `priority=95` on existing queued pins, call `pinterest-creative-director` with `count=10` + `video_count=3` + `source=revenue_brain`, expand board list via existing routing map. Caps: max 25 promotions/run.
-- **Mine_opportunities** — `competitor_success≥70 AND saturation<0.3 AND trend.velocity>0 AND margin≥0.3` → tag `high_opp`.
-- All work batched, 8-min cap, dry_run supported.
+### 2. Anti-Duplication Governor (new)
+New table `pinterest_governor_rules` (admin-only RLS) + helper function `public.governor_check_pin(p_slug text, p_board_id text, p_headline text, p_overlay text, p_cta text) returns jsonb`. Returns `{allowed, violations[]}`.
 
-### 4. Cron
-Reuse `pg_cron`, `45 3 * * *` UTC (30 min after Competitor Intel).
+Rules enforced:
+- ≤8 active pins per product slug (status in `published`/`queued`)
+- ≤2 active pins per board per slug
+- a given headline/overlay/cta cannot reappear within the last 90 published pins
 
-### 5. Admin UI
-- **New `/admin/revenue-brain`** (`RevenueBrainPage.tsx`) — top 100 table (product, score, margin, trend, comp strength, saturation, traffic potential, revenue potential), filter chips, Run/Dry-run buttons, last-run card.
-- **New `/admin/revenue-report`** (`RevenueReportPage.tsx`) — daily report: top winners, fastest rising, 7/30/90 traffic+revenue forecast totals, recommended actions list, CSV export.
-- Widget on `/admin/pinterest-growth` and `/admin/pinterest-spy`: top 5 revenue opps + link.
-- Register both routes in `src/App.tsx` (lazy).
+Wired in publisher path (`pinterest-creative-director` + `pinterest-viral-batch` insert loops) — on violation: quarantine via `quarantineEvent` + skip insert (same pattern as visual-duplicate guard).
 
-### 6. Safety (unchanged invariants)
-No competitor asset copy. Generator gets only pattern hints. UTM `utm_campaign=revenue_brain`. Honors queue type contract + visual dedupe + warm-up budget + board governance.
+### 3. Banned Phrase Protection (data + governor)
+Seed `pinterest_governor_rules.banned_phrases jsonb`:
+- "Stop Scooping So Much"
+- "Stop Buying Cheap Cat Trees"
+- "Why Cat Owners Are Switching"
+- "Cats Are Obsessed With This"
+- plus any headline/overlay with count >20 in `pinterest_pin_queue` (computed nightly)
 
-### 7. Files
-- create `supabase/functions/pinterest-revenue-brain/index.ts`
-- create `src/pages/admin/RevenueBrainPage.tsx`, `src/pages/admin/RevenueReportPage.tsx`
-- create migration (4 tables + grants + RLS + cron)
-- create `mem/marketing/pinterest-revenue-brain.md`
-- edit `src/App.tsx` (2 lazy routes)
-- edit `.lovable/plan.md`
-- untouched: publisher, creative director core, growth orchestrator/brain, competitor intel, spy page
+Action `retire_phrases` on `pinterest-creative-variety`:
+- Marks matching pool rows `banned=true` so picker excludes them.
+- Flags **queued** (not-yet-published) pins with these phrases as `status=rejected, meta.reason=banned_phrase` — published ones left intact (history).
+- Auto-replaces by re-drafting via creative-director with `excludePhrases` hint.
 
-### 8. Validation
-Run `run_full` (dry) on full catalog → confirm score rows ≥ active products, ≥1 high_opp, forecast rows present for top 100, auto-promote dry returns target ids without writing. Then live run on top 25 only. Final report.
+### 4. Board Diversity Engine (governor + picker)
+New scorer in `pinterest-creative-director` board picker:
+`score = base_relevance − concentration_penalty(board_share_30d)`
+Hard caps the top-3 dominant boards to a combined ≤60% share; targets ≥25% diversity (Gini-like spread across boards with ≥1 pin/30d). Diversity computed once per run from `pinterest_pin_queue` last 30d.
 
-### 9. Out of scope
-No Pinterest Trends API (gated). No new image gen pipeline. No publisher cadence change. No deletes.
+### 5. Product Expansion Engine (new view + queue)
+New view `pinterest_product_pin_coverage` — per active product: active_pin_count, last_published_at, category, tier.
+New action `expand_underrepresented` on `pinterest-creative-variety`:
+- Picks products where `active_pin_count = 0` → priority 100, `<3` → priority 90.
+- Cap 50/run. Calls `pinterest-creative-director` with diversity-aware briefs (pulls from new pools, respects governor).
+
+### 6. Pinterest Revenue Engine (reuse + thin wrapper)
+Already implemented: `pinterest-revenue-brain` + `pinterest-creative-winners` + `pinterest_pattern_weights`.
+Add only: `allocation_policy` row in `pinterest_runtime_settings` → `{winners: 0.8, exploration: 0.2}`. `pinterest-creative-director` `pickStrategy` reads this and biases epsilon accordingly (winners drawn from `pinterest_creative_winners` top-quartile by composite_score; exploration uses fresh pool entries).
+
+---
+
+### Execution order (this turn)
+1. Migration: `pinterest_governor_rules`, `pinterest_product_pin_coverage` view, GRANT + RLS, allocation_policy row.
+2. Edge function `pinterest-creative-variety` (actions: `seed_pools`, `retire_phrases`, `expand_underrepresented`, `recompute_density`, `run_full`).
+3. Patch publisher paths (`pinterest-creative-director/index.ts`, `pinterest-viral-batch/index.ts`) to call governor + diversity scorer.
+4. Run `seed_pools` (2,400 rows) → `retire_phrases` → `expand_underrepresented` dry-run → `recompute_density`.
+5. Output: new duplicate density %, board diversity %, refreshed Stage 2 candidate count + CSV, and explicit Stage 2 recommendation (proceed / shrink / skip).
+
+### Out of scope
+- No deletes, no flips to `removed_by_cleanup`.
+- No Pinterest API publishes — pools + governor only.
+- No new dashboards (data visible via existing `/admin/pinterest-pin-status` and `/admin/revenue-brain`).
+- Pinterest Trends API still gated (uses internal proxy).
+
+### Files
+- create `supabase/functions/pinterest-creative-variety/index.ts`
+- edit `supabase/functions/pinterest-creative-director/index.ts` (governor + board diversity + allocation)
+- edit `supabase/functions/pinterest-viral-batch/index.ts` (governor call)
+- new migration (rules table, coverage view, grants, RLS, settings row)
+- edit `supabase/config.toml` (register new function)
+- update `mem://marketing/pinterest-anti-duplication-governor.md`
+
+Approve to proceed, or tell me to slim (e.g. skip Product Expansion or skip publisher patching this turn).
