@@ -2833,6 +2833,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-conversion-monitor"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestConversionMonitor />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-products"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
