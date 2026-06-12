@@ -360,13 +360,21 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!claimed) return fail("claim", { pin_id: row.id, message: "row already claimed or wrong status (try 'pin' mode)" });
 
-  // ── Publish ──
+  // ── Pre-stamp UTMs onto destination_link BEFORE POST so the very first
+  // Pinterest outbound click already carries utm_source=pinterest +
+  // campaign/content. pin_id is added post-create via PATCH below.
+  const campaignSource = (row as any).category_key || (row as any).board_name || boardId;
+  const contentSource = (row as any).hook_group || (row as any).pin_variant || ((row as any).meta?.creative_angle ?? null);
+  const preStampedLink = stampUtmsOnLink(String(row.destination_link ?? ""), {
+    campaign: campaignSource,
+    content: contentSource,
+  });
   const requestPayload = {
     title: row.pin_title,
     description: row.pin_description,
     board_id: boardId,
     media_source: { source_type: "image_url", url: row.pin_image_url },
-    link: row.destination_link,
+    link: preStampedLink,
   };
   const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-publish-now", pin_id: row.id });
   console.log(`[publish-now] POST /pins pin=${row.id} board=${boardId} img=${row.pin_image_url}`);
