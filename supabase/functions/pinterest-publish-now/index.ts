@@ -409,9 +409,13 @@ Deno.serve(async (req) => {
     const externalUrl = `https://www.pinterest.com/pin/${parsed.id}/`;
     // Stamp real pin_id onto the outbound link so click-side attribution can
     // resolve pin → board → product → revenue on every future visit.
-    let stampedDestination = row.destination_link as string;
+    let stampedDestination = preStampedLink;
     try {
-      const candidate = stampPinIdOnLink(stampedDestination, parsed.id);
+      const candidate = stampUtmsOnLink(stampedDestination, {
+        pinId: parsed.id,
+        campaign: campaignSource,
+        content: contentSource,
+      });
       if (candidate !== stampedDestination) {
         const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, candidate);
         if (patchRes.ok) {
