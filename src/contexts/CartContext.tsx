@@ -270,6 +270,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currency: 'USD',
       }))
       .catch(() => {});
+
+    // Pinterest CAPI server-side mirror — no-op if no Pinterest session cookie.
+    import('@/lib/pinterest-conversion-intel')
+      .then((m) => m.enqueueCapiEvent('add_to_cart', {
+        product_id: newItem.id,
+        value: newItem.price,
+        currency: 'USD',
+        custom_data: { product_slug: newItem.slug ?? null },
+      }))
+      .catch(() => {});
     
     // Google Ads Add to Cart
     trackGoogleAdsAddToCart(newItem.id, newItem.name, newItem.price, 1);

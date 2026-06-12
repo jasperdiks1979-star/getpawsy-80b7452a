@@ -474,6 +474,17 @@ const Checkout = () => {
       import('@/lib/pinterestTracker')
         .then((m) => m.trackPinterestEvent('begin_checkout', { value: totalPrice, currency: 'USD' }))
         .catch(() => {});
+
+      // Pinterest CAPI server-side mirror — no-op if no Pinterest session cookie.
+      import('@/lib/pinterest-conversion-intel')
+        .then((m) => m.enqueueCapiEvent('checkout', {
+          value: totalPrice,
+          currency: 'USD',
+          custom_data: {
+            item_count: items.reduce((s, i) => s + i.quantity, 0),
+          },
+        }))
+        .catch(() => {});
       
       // Pinterest Checkout tracking — deferred, non-blocking
       // Fires as a Pinterest `custom` event (event_name: initiate_checkout)

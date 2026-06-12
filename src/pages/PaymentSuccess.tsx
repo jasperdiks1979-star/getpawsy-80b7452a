@@ -79,6 +79,17 @@ const PaymentSuccess = () => {
           currency: 'USD',
         }))
         .catch(() => {});
+      // Pinterest CAPI server-side mirror — no-op if no Pinterest session cookie.
+      import('@/lib/pinterest-conversion-intel')
+        .then((m) => m.enqueueCapiEvent('purchase', {
+          value: typeof totalPrice === 'number' ? totalPrice : null,
+          currency: 'USD',
+          custom_data: {
+            order_id: sessionId,
+            item_count: items.reduce((s, i) => s + i.quantity, 0),
+          },
+        }))
+        .catch(() => {});
     } catch {
       /* analytics never breaks UX */
     }
