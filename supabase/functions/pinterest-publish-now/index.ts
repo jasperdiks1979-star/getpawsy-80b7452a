@@ -121,17 +121,21 @@ Deno.serve(async (req) => {
   // ── Admin auth ──
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return fail("auth", { message: "unauthorized" });
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-  const uid = claims?.claims?.sub;
-  if (!uid) return fail("auth", { message: "unauthorized" });
-  const { data: roleRow } = await sb.from("user_roles")
-    .select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
-  if (!roleRow) return fail("auth", { message: "admin only" });
+  const bearer = authHeader.replace("Bearer ", "");
+  const isInternalServiceCall = bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!isInternalServiceCall) {
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await userClient.auth.getClaims(bearer);
+    const uid = claims?.claims?.sub;
+    if (!uid) return fail("auth", { message: "unauthorized" });
+    const { data: roleRow } = await sb.from("user_roles")
+      .select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+    if (!roleRow) return fail("auth", { message: "admin only" });
+  }
 
   // ── Parse body ──
   let body: any;
