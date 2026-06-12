@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       // Only stamp event when session was Pinterest-attributed
       const { data: attr } = await sb
         .from("pinterest_attribution_sessions")
-        .select("session_key,pin_id,click_counted")
+        .select("session_key,pin_id,click_counted,utm_content,landing_slug")
         .eq("session_key", sessionKey)
         .maybeSingle();
       if (!attr) {
@@ -149,6 +149,11 @@ Deno.serve(async (req) => {
       // Backfill pin_id on the attribution session row when a later event
       // carries one that the original /session call didn't (e.g. legacy
       // sessions captured before the publisher started stamping pin_id).
+      //
+      // Canonical historical recovery path: if still no pin_id, resolve from
+      // utm_content slug → most-recent posted pin in pinterest_pin_queue.
+      // Pinterest has NOT granted pin_edit access, so this slug fallback is
+      // the only way to reconnect legacy traffic to a pin/board/creative.
       const existingPinId = (attr as { pin_id?: string | null })?.pin_id ?? null;
       const incomingPinId: string | null = typeof body.pin_id === "string" && body.pin_id ? body.pin_id : null;
       if (!existingPinId && incomingPinId) {
@@ -157,6 +162,35 @@ Deno.serve(async (req) => {
           .update({ pin_id: incomingPinId })
           .eq("session_key", sessionKey);
         (attr as { pin_id?: string | null }).pin_id = incomingPinId;
+      }
+      if (!(attr as { pin_id?: string | null }).pin_id) {
+        const slugCandidate: string | null =
+          (typeof body.product_slug === "string" && body.product_slug) ||
+          (typeof (attr as { utm_content?: string | null }).utm_content === "string" &&
+            /[a-z]/i.test((attr as { utm_content?: string }).utm_content ?? "")
+            ? ((attr as { utm_content?: string | null }).utm_content ?? null)
+            : null) ||
+          (attr as { landing_slug?: string | null }).landing_slug ||
+          null;
+        if (slugCandidate) {
+          const { data: slugPin } = await sb
+            .from("pinterest_pin_queue")
+            .select("pinterest_pin_id")
+            .eq("product_slug", slugCandidate)
+            .eq("status", "posted")
+            .not("pinterest_pin_id", "is", null)
+            .order("posted_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const resolved = (slugPin as { pinterest_pin_id?: string | null })?.pinterest_pin_id ?? null;
+          if (resolved) {
+            await sb
+              .from("pinterest_attribution_sessions")
+              .update({ pin_id: resolved })
+              .eq("session_key", sessionKey);
+            (attr as { pin_id?: string | null }).pin_id = resolved;
+          }
+        }
       }
 
       const { error } = await sb.from("pinterest_funnel_events").insert({
