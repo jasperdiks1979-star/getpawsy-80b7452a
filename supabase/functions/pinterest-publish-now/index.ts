@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
-import { stampPinIdOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
+import { stampPinIdOnLink, patchPinLink, stampUtmsOnLink } from "../_shared/pinterest-link-stamp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
