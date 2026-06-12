@@ -7,6 +7,7 @@ import { generateVideoMeta, buildDestinationUrl, validateCategoryMatch, validate
 import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
+import { stampUtmsOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
