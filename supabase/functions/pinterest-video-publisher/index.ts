@@ -278,6 +278,21 @@ async function publishVideoPin(opts: {
   const baseSecond = Number(asset.key_frame_second ?? 1.5);
   const frameLadder = Array.from(new Set([baseSecond, 1.5, 0.8, 2.0, 3.0])).filter((n) => n > 0);
 
+  // 🔗 Pre-stamp UTMs + queue-UUID pin_id onto destination_url BEFORE POST so
+  // every Pinterest video outbound click carries full attribution. pinterest-track
+  // resolves the queue UUID to the real Pinterest pin id.
+  const _vpCampaign = (queueRow as any).category_key || (queueRow as any).board_name || queueRow.board_id || "pinterest";
+  const _vpContent = (queueRow as any).hook_angle || (queueRow as any).hook_group || (queueRow as any).pin_variant || (queueRow as any).product_slug || "video";
+  const preStampedVideoLink = stampUtmsOnLink(String(queueRow.destination_url ?? ""), {
+    pinId: queue_id,
+    campaign: _vpCampaign,
+    content: _vpContent,
+  });
+  try {
+    await sb.from("pinterest_video_queue").update({ destination_url: preStampedVideoLink }).eq("id", queue_id);
+  } catch { /* non-fatal */ }
+  queueRow.destination_url = preStampedVideoLink;
+
   let pinBody: any = null;
   let pinRes: Response | null = null;
   let chosenSecond: number | null = null;
@@ -296,7 +311,7 @@ async function publishVideoPin(opts: {
       title: queueRow.title,
       description: queueRow.description,
       board_id: queueRow.board_id,
-      link: queueRow.destination_url,
+      link: preStampedVideoLink,
       media_source: mediaSource,
     };
     const safePayload = sanitizeAndValidatePinterestPayload(pinPayload);
