@@ -1250,7 +1250,11 @@ Deno.serve(async (req) => {
         // attribution (pinterest-track → gi_attribution_events) can resolve
         // pin → board → product → revenue for every future visit.
         try {
-          const stampedLink = stampPinIdOnLink(destinationLink, pinData.id);
+          const stampedLink = stampUtmsOnLink(destinationLink, {
+            pinId: pinData.id,
+            campaign: cronCampaign,
+            content: cronContent,
+          });
           if (stampedLink !== destinationLink) {
             const patchRes = await patchPinLink(accessToken, apiBase, pinData.id, stampedLink);
             if (patchRes.ok) {
