@@ -40,10 +40,30 @@ Deno.serve(async (req) => {
       const utm_id = body.utm_id ?? null;
       const referrer = body.referrer ?? null;
       const landing_page = body.landing_page ?? null;
-      // pin_id falls back to utm_content per the canonical Pinterest URL contract
-      // (utm_source=pinterest&utm_content=<pin_id>). Without this fallback, pins
-      // tagged through the publisher never associated their click with a pin row.
-      const pin_id = body.pin_id ?? (typeof utm_content === "string" && /^\d{6,}$/.test(utm_content) ? utm_content : null);
+      // Resolution priority for pin_id:
+      //   1. Explicit `pin_id` URL param (canonical — set by publisher PATCH after POST).
+      //   2. `utm_content` when it looks like a real Pinterest numeric id.
+      //   3. Slug-shaped `utm_content` → most-recent posted pin for that slug
+      //      (backward compatibility for pins published before the pin_id stamp
+      //      was wired into the publisher).
+      let pin_id: string | null = body.pin_id ?? null;
+      if (!pin_id && typeof utm_content === "string" && /^\d{6,}$/.test(utm_content)) {
+        pin_id = utm_content;
+      }
+      if (!pin_id && typeof utm_content === "string" && utm_content.length > 0 && /[a-z]/i.test(utm_content)) {
+        const { data: slugPin } = await sb
+          .from("pinterest_pin_queue")
+          .select("pinterest_pin_id")
+          .eq("product_slug", utm_content)
+          .eq("status", "posted")
+          .not("pinterest_pin_id", "is", null)
+          .order("posted_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (slugPin && (slugPin as { pinterest_pin_id?: string | null }).pinterest_pin_id) {
+          pin_id = (slugPin as { pinterest_pin_id?: string | null }).pinterest_pin_id ?? null;
+        }
+      }
       const is_pinterest = isPinterest(utm_source, referrer, pin_id);
       const source_channel = is_pinterest
         ? "pinterest"
@@ -124,6 +144,19 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: true, traceId, skipped: "not_pinterest" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Backfill pin_id on the attribution session row when a later event
+      // carries one that the original /session call didn't (e.g. legacy
+      // sessions captured before the publisher started stamping pin_id).
+      const existingPinId = (attr as { pin_id?: string | null })?.pin_id ?? null;
+      const incomingPinId: string | null = typeof body.pin_id === "string" && body.pin_id ? body.pin_id : null;
+      if (!existingPinId && incomingPinId) {
+        await sb
+          .from("pinterest_attribution_sessions")
+          .update({ pin_id: incomingPinId })
+          .eq("session_key", sessionKey);
+        (attr as { pin_id?: string | null }).pin_id = incomingPinId;
       }
 
       const { error } = await sb.from("pinterest_funnel_events").insert({
