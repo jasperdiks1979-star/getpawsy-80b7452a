@@ -60,7 +60,7 @@ async function handle(req: Request, traceId: string) {
 
   const authHeader = req.headers.get("Authorization") || "";
   const cronSecret = req.headers.get("x-cron-secret") || "";
-  const expectedCronSecret = Deno.env.get("PINTEREST_CRON_SECRET") || "";
+  let expectedCronSecret = Deno.env.get("PINTEREST_CRON_SECRET") || "";
   const bearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
 
   // Decode bearer JWT payload to see if it's a service_role token (covers
@@ -74,6 +74,22 @@ async function handle(req: Request, traceId: string) {
     } catch { return null; }
   }
   const role = bearerToken ? decodeRole(bearerToken) : null;
+
+  // Fallback: load shared cron secret from app_config so pg_cron can call
+  // this function without needing a deploy-time env secret.
+  if (!expectedCronSecret) {
+    try {
+      const tmpAdmin = createClient(SUPABASE_URL, SERVICE_KEY);
+      const { data: cfg } = await tmpAdmin
+        .from("app_config")
+        .select("value")
+        .eq("key", "pinterest_cron_secret")
+        .maybeSingle();
+      const s = (cfg?.value as any)?.secret;
+      if (typeof s === "string" && s.length > 16) expectedCronSecret = s;
+    } catch { /* ignore */ }
+  }
+
   const isServiceCaller =
     (expectedCronSecret && cronSecret && cronSecret === expectedCronSecret) ||
     (bearerToken && bearerToken === SERVICE_KEY) ||
