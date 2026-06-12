@@ -13274,6 +13274,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_image_blocklist: {
+        Row: {
+          created_at: string
+          external_pin_url: string | null
+          id: string
+          image_hash: string | null
+          image_url: string
+          notes: string | null
+          original_pin_id: string | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          external_pin_url?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url: string
+          notes?: string | null
+          original_pin_id?: string | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          external_pin_url?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string
+          notes?: string | null
+          original_pin_id?: string | null
+          reason?: string
+        }
+        Relationships: []
+      }
       pinterest_keyword_bank: {
         Row: {
           created_at: string
