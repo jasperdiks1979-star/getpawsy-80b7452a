@@ -60,6 +60,20 @@ async function invokeDirector(slug: string): Promise<{ ok: boolean; data?: unkno
   }
 }
 
+function fireDirector(slug: string): void {
+  // Fire-and-forget: each invocation runs in its own request, the governor
+  // returns immediately. Results are observable in pinterest_pin_queue.
+  fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      apikey: SERVICE_ROLE,
+    },
+    body: JSON.stringify({ action: "run_full", productSlug: slug, count: 1 }),
+  }).catch((e) => console.warn("[governor] fire director failed", slug, (e as Error).message));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return fail("method not allowed", 405);
@@ -122,31 +136,29 @@ Deno.serve(async (req) => {
 
     if (action === "run_batch") {
       const requested = Math.max(1, Math.min(50, Number(body?.count ?? 10)));
+      const awaitAll = !!body?.await;
       const recent = await loadRecentPins(sb, 100);
       const metrics = computeMetrics(recent);
       const plan = await selectProducts(sb, requested, metrics);
 
       const results: Array<{ slug: string; bucket: GovernorBucket; ok: boolean; error?: string }> = [];
-      // Sequential to respect rate limits on the director / AI gateway.
-      for (const p of plan.selected) {
-        const r = await invokeDirector(p.slug);
-        results.push({
-          slug: p.slug,
-          bucket: p.bucket,
-          ok: r.ok,
-          error: r.error,
-        });
+      if (awaitAll) {
+        for (const p of plan.selected) {
+          const r = await invokeDirector(p.slug);
+          results.push({ slug: p.slug, bucket: p.bucket, ok: r.ok, error: r.error });
+        }
+      } else {
+        // Fire-and-forget: don't block on AI render latency (each can take 30s+).
+        for (const p of plan.selected) fireDirector(p.slug);
       }
 
-      // Snapshot metrics again post-generation for the response.
-      const newRecent = await loadRecentPins(sb, 100);
-      const newMetrics = computeMetrics(newRecent);
       const { data: rt } = await sb.from("pinterest_runtime_settings")
         .select("daily_publish_cap").eq("id", 1).maybeSingle();
       const cap = Number((rt as any)?.daily_publish_cap ?? 20);
       return ok({
         ok: true,
         requested,
+        mode: awaitAll ? "sync" : "async_dispatched",
         selected_count: plan.selected.length,
         first_10: plan.selected.slice(0, 10).map((c) => ({
           slug: c.slug, name: c.name, bucket: c.bucket,
@@ -154,10 +166,9 @@ Deno.serve(async (req) => {
         })),
         bucket_plan: plan.bucket_plan,
         reasons: plan.reasons,
-        results,
-        success_count: results.filter((r) => r.ok).length,
-        post_metrics: newMetrics,
-        forecast_24h: forecastNext24h(newMetrics, cap),
+        results: awaitAll ? results : undefined,
+        success_count: awaitAll ? results.filter((r) => r.ok).length : undefined,
+        forecast_24h: forecastNext24h(metrics, cap),
       });
     }
 
