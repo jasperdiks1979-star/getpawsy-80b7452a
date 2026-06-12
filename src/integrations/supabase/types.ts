@@ -14056,6 +14056,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_ocr_cleanup_runs: {
+        Row: {
+          created_at: string
+          engine_failed: boolean
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          pins_already_cached: number
+          pins_ocr_failed: number
+          pins_ocr_processed: number
+          pins_total: number
+          started_at: string
+          status: string
+          stop_scooping_count: number
+          stop_scooping_pin_ids: Json | null
+          summary: Json | null
+          top_phrases: Json | null
+          trigger: string
+        }
+        Insert: {
+          created_at?: string
+          engine_failed?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          pins_already_cached?: number
+          pins_ocr_failed?: number
+          pins_ocr_processed?: number
+          pins_total?: number
+          started_at?: string
+          status?: string
+          stop_scooping_count?: number
+          stop_scooping_pin_ids?: Json | null
+          summary?: Json | null
+          top_phrases?: Json | null
+          trigger?: string
+        }
+        Update: {
+          created_at?: string
+          engine_failed?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          pins_already_cached?: number
+          pins_ocr_failed?: number
+          pins_ocr_processed?: number
+          pins_total?: number
+          started_at?: string
+          status?: string
+          stop_scooping_count?: number
+          stop_scooping_pin_ids?: Json | null
+          summary?: Json | null
+          top_phrases?: Json | null
+          trigger?: string
+        }
+        Relationships: []
+      }
       pinterest_opportunity_ranks: {
         Row: {
           clicks_30d: number | null
@@ -14593,6 +14650,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_pin_ocr_cache: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          image_hash: string | null
+          image_url: string | null
+          model: string | null
+          ocr_at: string | null
+          ocr_lines: Json | null
+          ocr_text: string | null
+          pin_id: string
+          queue_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          model?: string | null
+          ocr_at?: string | null
+          ocr_lines?: Json | null
+          ocr_text?: string | null
+          pin_id: string
+          queue_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          model?: string | null
+          ocr_at?: string | null
+          ocr_lines?: Json | null
+          ocr_text?: string | null
+          pin_id?: string
+          queue_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       pinterest_pin_performance: {
         Row: {

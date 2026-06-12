@@ -32,12 +32,31 @@ type FreqRow = {
   overused: boolean;
 };
 
+type OcrRun = {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  pins_total: number;
+  pins_already_cached: number;
+  pins_ocr_processed: number;
+  pins_ocr_failed: number;
+  top_phrases: Array<{ phrase: string; normalized: string; count: number }> | null;
+  stop_scooping_count: number;
+  stop_scooping_pin_ids: string[] | null;
+  engine_failed: boolean;
+  error_message: string | null;
+  summary: any;
+};
+
 export default function PinterestCleanup() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [latest, setLatest] = useState<Run | null>(null);
   const [freq, setFreq] = useState<FreqRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [ocrRun, setOcrRun] = useState<OcrRun | null>(null);
+  const [ocrRunning, setOcrRunning] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -59,6 +78,10 @@ export default function PinterestCleanup() {
     } else {
       setFreq([]);
     }
+    const { data: ocr } = await supabase
+      .from("pinterest_ocr_cleanup_runs" as any)
+      .select("*").order("started_at", { ascending: false }).limit(1);
+    setOcrRun(((ocr || [])[0] as any) || null);
     setLoading(false);
   }
 
@@ -82,6 +105,22 @@ export default function PinterestCleanup() {
     }
   }
 
+  async function runOcrAudit() {
+    setOcrRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-ocr-cleanup-audit", { body: {} });
+      if (error) throw error;
+      toast.success("OCR audit complete", {
+        description: `Total ${data?.pins_total ?? 0} • OCR'd ${data?.pins_ocr_processed ?? 0} • "Stop scooping": ${data?.stop_scooping_every_day?.count ?? 0}`,
+      });
+      await load();
+    } catch (e: any) {
+      toast.error("OCR audit failed", { description: e?.message });
+    } finally {
+      setOcrRunning(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Helmet><title>Pinterest Cleanup • Admin</title></Helmet>
@@ -91,6 +130,10 @@ export default function PinterestCleanup() {
           <p className="text-muted-foreground">Removes overused, repetitive or low-performing posted pins. Runs nightly.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={runOcrAudit} disabled={ocrRunning}>
+            {ocrRunning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Run OCR audit
+          </Button>
           <Button variant="outline" onClick={() => runNow(true)} disabled={running}>
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             Dry run
@@ -101,6 +144,56 @@ export default function PinterestCleanup() {
           </Button>
         </div>
       </div>
+
+      {ocrRun && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              OCR-based overlay audit
+              {ocrRun.engine_failed
+                ? <Badge variant="destructive">ENGINE FAILED</Badge>
+                : <Badge variant="default">PASS</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Stat label="Pins total" value={ocrRun.pins_total} />
+              <Stat label="Already cached" value={ocrRun.pins_already_cached} />
+              <Stat label="OCR processed" value={ocrRun.pins_ocr_processed} />
+              <Stat label="OCR failed" value={ocrRun.pins_ocr_failed} />
+              <Stat label='"Stop scooping" pins' value={ocrRun.stop_scooping_count} />
+            </div>
+            {ocrRun.stop_scooping_count > 0 && (
+              <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <div className="font-semibold mb-1">Pins containing "Stop scooping every day":</div>
+                <div className="font-mono text-xs break-all">
+                  {(ocrRun.stop_scooping_pin_ids || []).join(", ")}
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="font-semibold mb-2">Top 50 OCR phrases</div>
+              {(!ocrRun.top_phrases || ocrRun.top_phrases.length === 0) ? (
+                <p className="text-sm text-muted-foreground">No phrases yet — run OCR audit.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="text-left text-muted-foreground">
+                    <tr><th className="py-2">Phrase</th><th>Count</th></tr>
+                  </thead>
+                  <tbody>
+                    {ocrRun.top_phrases.map((p, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="py-1 pr-4 max-w-xl truncate" title={p.phrase}>{p.phrase}</td>
+                        <td className="font-mono">{p.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
