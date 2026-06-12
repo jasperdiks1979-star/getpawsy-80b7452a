@@ -26,8 +26,12 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const OCR_MODEL = "google/gemini-2.5-flash";
-const OCR_BUDGET = 400;     // max NEW images OCR'd per invocation (cost guard)
-const CONCURRENCY = 4;      // parallel OCR calls
+// Per-invocation OCR cap. Edge functions have a 150s wall clock, and each
+// Gemini call is ~1.5-3s. 60 * 3s / 6 concurrency ≈ 30s headroom. Cache is
+// persistent so calling repeatedly drains the backlog deterministically.
+const OCR_BUDGET = 60;
+const CONCURRENCY = 6;
+const SOFT_DEADLINE_MS = 110_000; // stop OCR'ing 110s after start; still write summary
 const PAGE_SIZE = 1000;
 const TARGET_PHRASE = "stop scooping every day";
 
@@ -112,6 +116,7 @@ Deno.serve(async (req) => {
   if (runErr || !run) return json({ ok: false, traceId, message: runErr?.message || "run_insert_failed" }, 500);
 
   const budget = budgetOverride && budgetOverride > 0 ? Math.min(budgetOverride, 2000) : OCR_BUDGET;
+  const startedAt = Date.now();
 
   try {
     // 1. ALL posted pins (paginate, no 500 cap)
@@ -157,6 +162,7 @@ Deno.serve(async (req) => {
     let cursor = 0;
     async function worker() {
       while (cursor < targets.length) {
+        if (Date.now() - startedAt > SOFT_DEADLINE_MS) return;
         const idx = cursor++;
         const p = targets[idx];
         try {
