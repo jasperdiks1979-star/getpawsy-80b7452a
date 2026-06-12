@@ -371,6 +371,10 @@ Deno.serve(async (req) => {
   const contentSource = (row as any).hook_angle || (row as any).hook_group || (row as any).pin_variant ||
     ((row as any).meta?.creative_angle ?? null) || (row as any).product_slug || "creative";
   const preStampedLink = stampUtmsOnLink(String(row.destination_link ?? ""), {
+    // Pinterest currently blocks post-create link edits for this app (`pin_edit`).
+    // Pre-stamp the queue UUID so every future pin still carries a `pin_id`
+    // parameter; pinterest-track resolves this UUID to the returned Pinterest id.
+    pinId: row.id,
     campaign: campaignSource,
     content: contentSource,
   });
@@ -420,12 +424,10 @@ Deno.serve(async (req) => {
       content: contentSource,
     });
     const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, stampedDestination);
-    const readback = patchRes.ok
-      ? await readPinterestPinLink(conn.access_token, PINTEREST_API, parsed.id)
-      : { ok: false, reason: "patch_failed", response: patchRes };
+    const readback = await readPinterestPinLink(conn.access_token, PINTEREST_API, parsed.id);
     const liveDestination = (readback as any)?.link || patchRes.link || stampedDestination;
-    const attributionVerified = linkHasPinterestAttribution(liveDestination, parsed.id);
-    if (!patchRes.ok || !readback.ok || !attributionVerified) {
+    const attributionVerified = linkHasPinterestAttribution(liveDestination, parsed.id) || linkHasPinterestAttribution(liveDestination, row.id);
+    if (!readback.ok || !attributionVerified) {
       const errMsg = `pin_link_patch_verify_failed: pin_id not persisted on Pinterest destination URL`;
       console.error(`[publish-now] ${errMsg}`, { pin_id: parsed.id, patchRes, readback, stampedDestination, liveDestination });
       await sb.from("pinterest_pin_queue").update({
