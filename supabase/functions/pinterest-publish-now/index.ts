@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
-import { stampPinIdOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
+import { stampPinIdOnLink, patchPinLink, stampUtmsOnLink } from "../_shared/pinterest-link-stamp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -360,13 +360,21 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!claimed) return fail("claim", { pin_id: row.id, message: "row already claimed or wrong status (try 'pin' mode)" });
 
-  // ── Publish ──
+  // ── Pre-stamp UTMs onto destination_link BEFORE POST so the very first
+  // Pinterest outbound click already carries utm_source=pinterest +
+  // campaign/content. pin_id is added post-create via PATCH below.
+  const campaignSource = (row as any).category_key || (row as any).board_name || boardId;
+  const contentSource = (row as any).hook_group || (row as any).pin_variant || ((row as any).meta?.creative_angle ?? null);
+  const preStampedLink = stampUtmsOnLink(String(row.destination_link ?? ""), {
+    campaign: campaignSource,
+    content: contentSource,
+  });
   const requestPayload = {
     title: row.pin_title,
     description: row.pin_description,
     board_id: boardId,
     media_source: { source_type: "image_url", url: row.pin_image_url },
-    link: row.destination_link,
+    link: preStampedLink,
   };
   const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-publish-now", pin_id: row.id });
   console.log(`[publish-now] POST /pins pin=${row.id} board=${boardId} img=${row.pin_image_url}`);
@@ -401,9 +409,13 @@ Deno.serve(async (req) => {
     const externalUrl = `https://www.pinterest.com/pin/${parsed.id}/`;
     // Stamp real pin_id onto the outbound link so click-side attribution can
     // resolve pin → board → product → revenue on every future visit.
-    let stampedDestination = row.destination_link as string;
+    let stampedDestination = preStampedLink;
     try {
-      const candidate = stampPinIdOnLink(stampedDestination, parsed.id);
+      const candidate = stampUtmsOnLink(stampedDestination, {
+        pinId: parsed.id,
+        campaign: campaignSource,
+        content: contentSource,
+      });
       if (candidate !== stampedDestination) {
         const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, candidate);
         if (patchRes.ok) {
