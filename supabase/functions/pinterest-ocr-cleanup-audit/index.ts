@@ -83,6 +83,12 @@ Deno.serve(async (req) => {
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
+  // Reap stale 'running' rows older than 5 minutes (edge timeout = 150s).
+  await sb.from("pinterest_ocr_cleanup_runs")
+    .update({ status: "failed", finished_at: new Date().toISOString(), error_message: "stale - reaped" })
+    .eq("status", "running")
+    .lt("started_at", new Date(Date.now() - 5 * 60_000).toISOString());
+
   let trigger: "manual" | "cron" = "manual";
   let cronSecret: string | null = null;
   let budgetOverride: number | null = null;
