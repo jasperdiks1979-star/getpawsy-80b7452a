@@ -81,10 +81,12 @@ Deno.serve(async (req) => {
       const userDataOut: Record<string, unknown> = {
         external_id: [externalIdHash],
         client_user_agent: (rawUser.client_user_agent as string) ?? "Mozilla/5.0",
+        // Pinterest requires at least one of: em, ph, hashed_maids,
+        // OR (client_ip_address + client_user_agent). We always include IP+UA
+        // so the event passes validation even when we have no PII.
+        client_ip_address:
+          (rawUser.client_ip_address as string) ?? "0.0.0.0",
       };
-      if (typeof rawUser.client_ip_address === "string") {
-        userDataOut.client_ip_address = rawUser.client_ip_address;
-      }
       const valueNum =
         row.value === null || row.value === undefined ? undefined : Number(row.value);
       const customOut: Record<string, unknown> = {
