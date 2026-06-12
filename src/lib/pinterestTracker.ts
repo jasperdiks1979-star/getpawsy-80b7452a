@@ -112,6 +112,18 @@ export function trackPinterestEvent(
   } = {}
 ): void {
   if (typeof window === "undefined") return;
+  // Always forward pin_id from the current URL if the caller didn't pass one —
+  // money events (add_to_cart / begin_checkout / purchase) fire on routes that
+  // no longer have the pin_id query param, and the server uses this value to
+  // backfill pinterest_attribution_sessions.pin_id for the chain
+  // pin → board → product → revenue to resolve.
+  let urlPinId: string | null = null;
+  try {
+    const u = new URL(window.location.href);
+    urlPinId = u.searchParams.get("pin_id") ?? u.searchParams.get("pinId");
+  } catch {
+    /* ignore */
+  }
   post({
     kind: "event",
     sessionKey: getSessionKey(),
@@ -120,7 +132,7 @@ export function trackPinterestEvent(
     product_id: data.product_id ?? null,
     value: data.value ?? null,
     currency: data.currency ?? null,
-    pin_id: data.pin_id ?? null,
+    pin_id: data.pin_id ?? urlPinId ?? null,
     // Suppresses pin-click increment when the session is a Pinterest iOS
     // prefetch — keeps pinterest_pin_performance.clicks honest.
     is_prefetch: isPrefetchSession(),
