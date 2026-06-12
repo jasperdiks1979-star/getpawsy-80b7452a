@@ -2854,6 +2854,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-ops"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestOpsDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-trends"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
