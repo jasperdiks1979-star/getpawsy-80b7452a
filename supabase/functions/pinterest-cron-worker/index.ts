@@ -5,7 +5,7 @@ import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
-import { validateOverlayForCategory } from "../_shared/pinterest-overlay-fallback.ts";
+import { validateOverlayForCategory, validateCopyForCategory } from "../_shared/pinterest-overlay-fallback.ts";
 import {
   DiversityGuard,
   normaliseCategoryKey,
