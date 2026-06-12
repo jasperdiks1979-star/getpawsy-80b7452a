@@ -398,3 +398,49 @@ function Stat({ label, value, icon }: { label: string; value: number; icon?: Rea
     </Card>
   );
 }
+
+function ProtectionTable({ title, rows }: { title: string; rows: ProtectionPin[] }) {
+  if (!rows || rows.length === 0) {
+    return (
+      <div>
+        <div className="font-semibold mb-2">{title}</div>
+        <p className="text-sm text-muted-foreground">No pins in this bucket.</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="font-semibold mb-2">{title} <span className="text-xs text-muted-foreground font-normal">({rows.length})</span></div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-left text-muted-foreground">
+            <tr>
+              <th className="py-1 pr-2">Pin</th>
+              <th>Product</th>
+              <th>Board</th>
+              <th className="text-right pr-2">Impr</th>
+              <th className="text-right pr-2">Clicks</th>
+              <th className="text-right pr-2">Saves</th>
+              <th className="text-right pr-2">CTR</th>
+              <th className="text-right">Age (d)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => (
+              <tr key={p.id} className="border-t">
+                <td className="py-1 pr-2 font-mono">{p.pinterest_pin_id?.slice(-8) ?? "—"}</td>
+                <td className="pr-2 max-w-[16ch] truncate" title={p.product_slug ?? ""}>{p.product_slug ?? "—"}</td>
+                <td className="pr-2 max-w-[16ch] truncate" title={p.board_name ?? ""}>{p.board_name ?? "—"}</td>
+                <td className="text-right font-mono pr-2">{p.impressions}</td>
+                <td className="text-right font-mono pr-2">{p.outbound_clicks}</td>
+                <td className="text-right font-mono pr-2">{p.saves}</td>
+                <td className="text-right font-mono pr-2">{p.ctr != null ? (p.ctr * 100).toFixed(2) + "%" : "—"}</td>
+                <td className="text-right font-mono">{p.age_days ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
