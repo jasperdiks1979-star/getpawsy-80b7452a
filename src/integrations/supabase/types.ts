@@ -14341,9 +14341,14 @@ export type Database = {
       }
       pinterest_overlay_replacement_jobs: {
         Row: {
+          archive_eligible_at: string | null
           archived_at: string | null
+          auto_publish: boolean
           board_name: string | null
           created_at: string
+          cta_used: string | null
+          emotional_angle: string | null
+          headline_used: string | null
           id: string
           indexed_replacement_count: number
           last_checked_at: string | null
@@ -14352,16 +14357,25 @@ export type Database = {
           legacy_queue_id: string | null
           notes: Json
           product_slug: string | null
+          published_at: string | null
+          published_pin_id: string | null
+          published_queue_id: string | null
           replacement_count: number
           replacement_draft_ids: string[]
           run_id: string | null
           status: string
           updated_at: string
+          verified_at: string | null
         }
         Insert: {
+          archive_eligible_at?: string | null
           archived_at?: string | null
+          auto_publish?: boolean
           board_name?: string | null
           created_at?: string
+          cta_used?: string | null
+          emotional_angle?: string | null
+          headline_used?: string | null
           id?: string
           indexed_replacement_count?: number
           last_checked_at?: string | null
@@ -14370,16 +14384,25 @@ export type Database = {
           legacy_queue_id?: string | null
           notes?: Json
           product_slug?: string | null
+          published_at?: string | null
+          published_pin_id?: string | null
+          published_queue_id?: string | null
           replacement_count?: number
           replacement_draft_ids?: string[]
           run_id?: string | null
           status?: string
           updated_at?: string
+          verified_at?: string | null
         }
         Update: {
+          archive_eligible_at?: string | null
           archived_at?: string | null
+          auto_publish?: boolean
           board_name?: string | null
           created_at?: string
+          cta_used?: string | null
+          emotional_angle?: string | null
+          headline_used?: string | null
           id?: string
           indexed_replacement_count?: number
           last_checked_at?: string | null
@@ -14388,11 +14411,15 @@ export type Database = {
           legacy_queue_id?: string | null
           notes?: Json
           product_slug?: string | null
+          published_at?: string | null
+          published_pin_id?: string | null
+          published_queue_id?: string | null
           replacement_count?: number
           replacement_draft_ids?: string[]
           run_id?: string | null
           status?: string
           updated_at?: string
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -16451,6 +16478,90 @@ export type Database = {
           us_clicks?: number
           us_share?: number | null
           weighted_score?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_v2_engine_runs: {
+        Row: {
+          action: string
+          created_at: string
+          detail: Json
+          errors: number
+          id: string
+          jobs_processed: number
+          pins_archived: number
+          pins_published: number
+          pins_verified: number
+          status: string
+          templates_seeded: number
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: Json
+          errors?: number
+          id?: string
+          jobs_processed?: number
+          pins_archived?: number
+          pins_published?: number
+          pins_verified?: number
+          status?: string
+          templates_seeded?: number
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: Json
+          errors?: number
+          id?: string
+          jobs_processed?: number
+          pins_archived?: number
+          pins_published?: number
+          pins_verified?: number
+          status?: string
+          templates_seeded?: number
+        }
+        Relationships: []
+      }
+      pinterest_v2_templates: {
+        Row: {
+          category_key: string
+          created_at: string
+          emotional_angle: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          source: string
+          template_type: string
+          text: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          category_key: string
+          created_at?: string
+          emotional_angle: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          source?: string
+          template_type: string
+          text: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          category_key?: string
+          created_at?: string
+          emotional_angle?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          source?: string
+          template_type?: string
+          text?: string
+          updated_at?: string
+          usage_count?: number
         }
         Relationships: []
       }
@@ -21919,6 +22030,14 @@ export type Database = {
           hook_category: string | null
           niche_key: string | null
           rejected_count: number | null
+        }
+        Relationships: []
+      }
+      pinterest_v2_live_usage: {
+        Row: {
+          key: string | null
+          kind: string | null
+          live_count: number | null
         }
         Relationships: []
       }
