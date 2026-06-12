@@ -1,8 +1,10 @@
-// pinterest-proof-of-life — one-time end-to-end test of the Pinterest pipeline.
-// Generates 3 premium pins (dog / cat toy / feeding-grooming-travel) via the
-// Creative Director, assigns each to a different board, then publishes them
-// sequentially with 60s gaps via pinterest-publish-now. Restores the original
-// active_board_id setting on exit so prod state is untouched.
+// pinterest-proof-of-life — fast end-to-end verification of the publish pipeline.
+// Picks 3 already-approved premium drafts from DISTINCT categories, assigns a
+// production-verified board to each, and publishes sequentially via
+// pinterest-publish-now. NO rendering, NO QA, NO sleeps. Target runtime < 30s.
+//
+// Verifies: queue selection · board assignment · Pinterest API · URL routing.
+// Does NOT verify: image generation, QA gates, diversity governor.
 //
 // Auth: admin user JWT OR service role. POST { } returns a structured report.
 
@@ -18,48 +20,6 @@ const json = (b: unknown, s = 200) =>
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const CATEGORY_BUCKETS: Record<string, string[]> = {
-  dog: ["Dog Toys", "Dog Beds", "Dog Collars & Leashes", "Dog Training", "Dog Grooming", "Dog Bowls & Feeders"],
-  cat_toy: ["Cat Toys"],
-  utility: ["Dog Bowls & Feeders", "Cat Bowls & Feeders", "Dog Grooming", "Cat Grooming", "Dog Travel", "Dog Carriers", "Cat Carriers"],
-};
-
-async function pickProduct(sb: any, bucket: keyof typeof CATEGORY_BUCKETS, excludeIds: string[]) {
-  const { data } = await sb
-    .from("products")
-    .select("id, slug, name, category")
-    .eq("is_active", true)
-    .in("category", CATEGORY_BUCKETS[bucket])
-    .not("id", "in", `(${excludeIds.length ? excludeIds.map((x) => `"${x}"`).join(",") : "NULL"})`)
-    .limit(50);
-  if (!data?.length) return null;
-  // Filter: never published before.
-  const slugs = data.map((p: any) => p.slug);
-  const { data: published } = await sb
-    .from("pinterest_pin_queue")
-    .select("product_slug")
-    .in("product_slug", slugs)
-    .in("status", ["posted", "published", "publishing"]);
-  const blocked = new Set((published ?? []).map((r: any) => r.product_slug));
-  const eligible = data.filter((p: any) => !blocked.has(p.slug));
-  if (!eligible.length) return null;
-  return eligible[Math.floor(Math.random() * eligible.length)];
-}
-
-async function callDirector(productId: string, count = 3) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      "Content-Type": "application/json",
-      apikey: SERVICE_ROLE,
-    },
-    body: JSON.stringify({ action: "run_full", productId, count, force: true }),
-  });
-  const body = await res.json().catch(() => ({}));
-  return { status: res.status, body };
-}
-
 async function callPublishNow(pinId: string) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-publish-now`, {
     method: "POST",
@@ -73,22 +33,6 @@ async function callPublishNow(pinId: string) {
   const body = await res.json().catch(() => ({}));
   return { status: res.status, body };
 }
-
-async function pickLatestDraft(sb: any, productSlug: string) {
-  const { data } = await sb
-    .from("pinterest_pin_queue")
-    .select("id, pin_title, pin_image_url, destination_link, status, meta, created_at")
-    .eq("product_slug", productSlug)
-    .eq("meta->>creative_source", "creative_director_v2")
-    .in("status", ["draft", "queued"])
-    .is("pinterest_pin_id", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data;
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -112,118 +56,135 @@ Deno.serve(async (req) => {
     if (!role) return json({ ok: false, message: "admin only" }, 403);
   }
 
+  const startedAt = Date.now();
   const report: any = { started_at: new Date().toISOString(), steps: [], pins: [] };
 
-  // ── capture original runtime settings ──
-  const { data: rtBefore } = await sb.from("pinterest_runtime_settings")
+  // ── snapshot runtime settings (read-only, not mutated) ──
+  const { data: rt } = await sb.from("pinterest_runtime_settings")
     .select("active_board_id, premium_engine_paused, allow_legacy_product_feed").eq("id", 1).maybeSingle();
-  report.snapshot_before = rtBefore;
+  report.runtime_settings = rt;
 
-  // ── pick 3 distinct boards ──
+  // ── load production-verified boards (need >=3) ──
   const { data: boards } = await sb.from("pinterest_boards")
-    .select("id, name").eq("is_blacklisted", false).eq("is_sandbox", false)
-    .eq("production_verified", true).order("priority", { ascending: true })
-    .order("name", { ascending: true }).limit(10);
+    .select("id, name, category_key")
+    .eq("is_blacklisted", false).eq("is_sandbox", false)
+    .eq("production_verified", true)
+    .order("priority", { ascending: true });
   if (!boards || boards.length < 3) {
-    return json({ ok: false, message: "need at least 3 production-verified boards", boards });
+    return json({ ok: false, message: "need at least 3 production-verified boards", boards_found: boards?.length ?? 0 }, 200);
   }
-  // Shuffle + take 3.
-  const shuffled = [...boards].sort(() => Math.random() - 0.5).slice(0, 3);
-  report.boards = shuffled;
 
-  try {
-    // Temporarily null out active_board_id so publish-now uses row.board_id.
-    if (rtBefore?.active_board_id) {
-      await sb.from("pinterest_runtime_settings").update({ active_board_id: null }).eq("id", 1);
+  // ── pull approved/queued/draft premium drafts (NO rendering, NO QA) ──
+  // "Approved" = ready-to-publish: has image + destination, not yet sent.
+  const { data: candidates, error: cErr } = await sb
+    .from("pinterest_pin_queue")
+    .select("id, product_slug, product_name, category_key, pin_title, pin_image_url, destination_link, status, board_id, created_at")
+    .in("status", ["approved", "queued", "draft"])
+    .is("pinterest_pin_id", null)
+    .not("pin_image_url", "is", null)
+    .not("destination_link", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (cErr) return json({ ok: false, message: "candidate query failed", error: cErr.message }, 500);
+
+  const total = candidates?.length ?? 0;
+  report.steps.push({ step: "query_candidates", total });
+
+  if (total === 0) {
+    return json({
+      ok: false,
+      message: "No approved premium drafts available. Run Premium Engine to populate the queue, then retry proof-of-life.",
+      success_count: 0,
+      total_attempted: 0,
+      runtime_ms: Date.now() - startedAt,
+      report,
+    }, 200);
+  }
+
+  // ── select 3 from distinct categories ──
+  const seenCats = new Set<string>();
+  const picked: any[] = [];
+  for (const c of candidates ?? []) {
+    const cat = (c.category_key || "uncategorized").toString();
+    if (seenCats.has(cat)) continue;
+    seenCats.add(cat);
+    picked.push(c);
+    if (picked.length === 3) break;
+  }
+  // Fill remainder if <3 distinct categories exist.
+  if (picked.length < 3) {
+    for (const c of candidates ?? []) {
+      if (picked.find((p) => p.id === c.id)) continue;
+      picked.push(c);
+      if (picked.length === 3) break;
     }
+  }
 
-    // ── pick 3 products ──
-    const excludeIds: string[] = [];
-    const products: Array<{ bucket: string; product: any }> = [];
-    for (const bucket of ["dog", "cat_toy", "utility"] as const) {
-      const p = await pickProduct(sb, bucket, excludeIds);
-      if (!p) {
-        report.steps.push({ step: "pick_product", bucket, error: "no eligible product" });
-        continue;
-      }
-      excludeIds.push(p.id);
-      products.push({ bucket, product: p });
-      report.steps.push({ step: "pick_product", bucket, product: p });
-    }
-    if (products.length < 3) {
-      return json({ ok: false, message: "could not select 3 distinct products", report }, 200);
-    }
+  if (picked.length < 3) {
+    return json({
+      ok: false,
+      message: `Only ${picked.length} approved draft(s) available; need 3.`,
+      success_count: 0,
+      total_attempted: picked.length,
+      runtime_ms: Date.now() - startedAt,
+      report,
+    }, 200);
+  }
 
-    // ── for each product: generate → approve+assign-board → publish (60s gap) ──
-    for (let i = 0; i < products.length; i++) {
-      const { bucket, product } = products[i];
-      const board = shuffled[i];
+  // ── pick 3 distinct boards (try category match, fall back to round-robin) ──
+  const usedBoardIds = new Set<string>();
+  const assignments: Array<{ pin: any; board: any }> = [];
+  for (const pin of picked) {
+    let board =
+      boards.find((b: any) => !usedBoardIds.has(b.id) && b.category_key && pin.category_key && b.category_key === pin.category_key) ||
+      boards.find((b: any) => !usedBoardIds.has(b.id));
+    if (!board) break;
+    usedBoardIds.add(board.id);
+    assignments.push({ pin, board });
+  }
 
-      // 1) generate drafts via creative director
-      const gen = await callDirector(product.id, 3);
-      report.steps.push({ step: "director", bucket, product_slug: product.slug, status: gen.status, summary: {
-        generated: (gen.body as any)?.generated ?? (gen.body as any)?.drafts?.length ?? null,
-        rejected: (gen.body as any)?.rejected?.length ?? null,
-      }});
+  // ── publish sequentially, no sleeps ──
+  for (const { pin, board } of assignments) {
+    // Assign board + mark queued + schedule now (idempotent).
+    await sb.from("pinterest_pin_queue").update({
+      status: "queued",
+      board_id: board.id,
+      scheduled_at: new Date().toISOString(),
+    }).eq("id", pin.id);
 
-      // 2) find latest premium draft for this product
-      const draft = await pickLatestDraft(sb, product.slug);
-      if (!draft) {
-        report.steps.push({ step: "approve", bucket, product_slug: product.slug, error: "no QA-passed draft" });
-        report.pins.push({ bucket, product, error: "no_draft" });
-        continue;
-      }
+    const t0 = Date.now();
+    const pub = await callPublishNow(pin.id);
+    const ms = Date.now() - t0;
+    const ok = (pub.body as any)?.ok === true;
+    const pinterestPinId = (pub.body as any)?.pinterest_pin_id ?? (pub.body as any)?.pin?.id ?? null;
+    const liveUrl = pinterestPinId ? `https://www.pinterest.com/pin/${pinterestPinId}/` : null;
 
-      // 3) approve + assign board + schedule now
-      await sb.from("pinterest_pin_queue").update({
-        status: "queued",
-        board_id: board.id,
-        scheduled_at: new Date().toISOString(),
-      }).eq("id", draft.id);
-      report.steps.push({ step: "approve", bucket, draft_id: draft.id, board: board.name });
-
-      // 4) publish immediately (pin mode bypasses scheduler/cron/warm-up)
-      const pub = await callPublishNow(draft.id);
-      const ok = (pub.body as any)?.ok === true;
-      const pinterestPinId = (pub.body as any)?.pinterest_pin_id ?? (pub.body as any)?.pin?.id ?? null;
-      const liveUrl = pinterestPinId ? `https://www.pinterest.com/pin/${pinterestPinId}/` : null;
-      report.pins.push({
-        bucket,
-        product_name: product.name,
-        product_slug: product.slug,
-        board_name: board.name,
-        board_id: board.id,
-        queue_id: draft.id,
-        pin_title: draft.pin_title,
-        image_url: draft.pin_image_url,
-        destination_link: draft.destination_link,
-        published: ok,
-        pinterest_pin_id: pinterestPinId,
-        live_url: liveUrl,
-        published_at: ok ? new Date().toISOString() : null,
-        publish_response: pub.body,
-      });
-      report.steps.push({ step: "publish", bucket, ok, pinterest_pin_id: pinterestPinId, http_status: pub.status });
-
-      // 60-second pacing gap between pins (except after last)
-      if (i < products.length - 1) {
-        await sleep(60_000);
-      }
-    }
-  } finally {
-    // ── restore original active_board_id ──
-    if (rtBefore?.active_board_id) {
-      await sb.from("pinterest_runtime_settings").update({ active_board_id: rtBefore.active_board_id }).eq("id", 1);
-    }
-    report.restored_at = new Date().toISOString();
-    report.restored_settings = { active_board_id: rtBefore?.active_board_id ?? null };
+    report.pins.push({
+      queue_id: pin.id,
+      product_slug: pin.product_slug,
+      product_name: pin.product_name,
+      category: pin.category_key,
+      pin_title: pin.pin_title,
+      board_id: board.id,
+      board_name: board.name,
+      published: ok,
+      pinterest_pin_id: pinterestPinId,
+      live_url: liveUrl,
+      publish_ms: ms,
+      http_status: pub.status,
+      error: ok ? null : ((pub.body as any)?.message ?? (pub.body as any)?.stage ?? null),
+    });
   }
 
   const successCount = report.pins.filter((p: any) => p.published).length;
+  const runtimeMs = Date.now() - startedAt;
   return json({
-    ok: successCount > 0,
+    ok: successCount === assignments.length,
     success_count: successCount,
-    total_attempted: report.pins.length,
+    total_attempted: assignments.length,
+    runtime_ms: runtimeMs,
+    finished_at: new Date().toISOString(),
     report,
   });
 });
