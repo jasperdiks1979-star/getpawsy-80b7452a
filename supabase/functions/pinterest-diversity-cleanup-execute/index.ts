@@ -49,6 +49,9 @@ function diversityScore(unique: number, total: number): number {
 async function adminAuth(req: Request, sb: any): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.replace("Bearer ", "");
+  // Service-role JWT bypass (server-to-server invocations)
+  if (token === SERVICE_KEY) return "service-role";
   const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: auth } },
   });
