@@ -1949,6 +1949,29 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         });
         continue;
       }
+      // ── Anti-duplication / banned-phrase governor (hard gate) ──────────
+      const rec = r as Record<string, unknown>;
+      const govVerdict = await checkGovernor(sb, {
+        slug: rec.product_slug as string,
+        boardId: (rec.board_id as string | null) ?? null,
+        headline: (rec.pin_title as string | null) ?? null,
+        overlay: (rec.overlay_text as string | null) ?? null,
+        cta: ((meta?.cta as string | undefined) ?? null),
+      });
+      if (govVerdict.enabled && !govVerdict.allowed) {
+        governorBlocked++;
+        const reason = `governor:${govVerdict.reason ?? "violation"}`;
+        console.warn(
+          `[pinterest-viral-batch] governor blocked variant=${rec.pin_variant} ${reason}`,
+          JSON.stringify(govVerdict.violations),
+        );
+        await quarantineEvent(sb, {
+          source: "pinterest_pin_queue",
+          reasons: [reason, ...allReasons],
+          payload: { ...(rec), governor_violations: govVerdict.violations },
+        });
+        continue;
+      }
       if (pinPhash) inBatchPhashes.add(pinPhash);
       annotatedRows.push({
         ...r,
