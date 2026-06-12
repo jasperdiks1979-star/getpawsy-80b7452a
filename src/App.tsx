@@ -499,6 +499,7 @@ const PinterestRevenueEngine = lazyWithRetry(() => import("./pages/admin/Pintere
 const RevenueAiPage = lazyWithRetry(() => import("./pages/admin/RevenueAiPage"));
 const PinterestLivePinRepair = lazyWithRetry(() => import("./pages/admin/PinterestLivePinRepair"));
 const PinterestConversionMonitor = lazyWithRetry(() => import("./pages/admin/PinterestConversionMonitor"));
+const PinterestCleanup = lazyWithRetry(() => import("./pages/admin/PinterestCleanup"));
 const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
 const PinterestSchedulerPage = lazyWithRetry(() => import("./pages/admin/PinterestSchedulerPage"));
 const PinterestLiveCyclePage = lazyWithRetry(() => import("./pages/admin/PinterestLiveCyclePage"));
