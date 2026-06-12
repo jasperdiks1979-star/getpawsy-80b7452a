@@ -1029,18 +1029,16 @@ Deno.serve(async (req) => {
         const mode = "production";
         const apiBase = PINTEREST_PRODUCTION_API_BASE;
         console.log("[pinterest] publish", { mode, api_base: apiBase, pin_id: pin.id });
-        // Inject board-level UTM attribution so analytics can attribute traffic
-        // to the specific Pinterest board (Phase 2 — traffic quality tracking).
-        let destinationLink = pin.destination_link as string;
-        try {
-          const u = new URL(destinationLink);
-          if (!u.searchParams.get("utm_source")) u.searchParams.set("utm_source", "pinterest");
-          if (!u.searchParams.get("utm_medium")) u.searchParams.set("utm_medium", "social");
-          u.searchParams.set("utm_content", `board_${boardId}`);
-          destinationLink = u.toString();
-        } catch {
-          // leave destination as-is if URL parsing fails — QA gate already validates
-        }
+        // Pre-stamp full UTM set onto destination_link BEFORE POST so the very
+        // first Pinterest outbound click already carries pinterest attribution
+        // (utm_source/medium/campaign/content). Real pin_id is patched in
+        // post-create below.
+        const cronCampaign = (pin as any).category_key || (pin as any).board_name || boardId;
+        const cronContent = (pin as any).hook_group || (pin as any).pin_variant || ((pin as any).meta?.creative_angle ?? `board_${boardId}`);
+        let destinationLink = stampUtmsOnLink(String(pin.destination_link ?? ""), {
+          campaign: cronCampaign,
+          content: cronContent,
+        });
 
         // 🛡️ Pre-publish destination validator — refuse any URL that does not
         // return HTTP 200 on a real, in-stock /products/{slug} page.
