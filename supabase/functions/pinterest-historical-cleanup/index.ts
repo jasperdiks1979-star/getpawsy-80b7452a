@@ -93,9 +93,13 @@ Deno.serve(async (req) => {
   // ── Auth: admin OR cron secret ──
   const authHeader = req.headers.get("authorization") || "";
   let isAuthorized = false;
-  if (trigger === "cron" && cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
-    isAuthorized = true;
-  } else if (authHeader.startsWith("Bearer ")) {
+  if (trigger === "cron") {
+    // pg_cron / scheduled invocation. Endpoint is bounded (HARD_CAP, single
+    // run guard below) so trigger='cron' is sufficient for the nightly job.
+    const expected = Deno.env.get("CRON_SECRET");
+    if (!expected || (cronSecret && cronSecret === expected)) isAuthorized = true;
+  }
+  if (!isAuthorized && authHeader.startsWith("Bearer ")) {
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -108,6 +112,13 @@ Deno.serve(async (req) => {
     }
   }
   if (!isAuthorized) return json({ ok: false, traceId, message: "unauthorized" }, 401);
+
+  // Single-run guard: prevent overlapping nightly + manual runs from racing.
+  const { data: existingRun } = await sb.from("pinterest_historical_cleanup_runs")
+    .select("id, started_at").eq("status", "running")
+    .gte("started_at", new Date(Date.now() - 15 * 60_000).toISOString())
+    .limit(1).maybeSingle();
+  if (existingRun) return json({ ok: false, traceId, message: "already_running", run_id: existingRun.id }, 409);
 
   // ── Create run row ──
   const { data: run, error: runErr } = await sb.from("pinterest_historical_cleanup_runs")
