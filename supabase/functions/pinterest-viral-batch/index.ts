@@ -36,6 +36,7 @@ import {
 } from "../_shared/pinterest-templates.ts";
 import { fetchAiBackdrop, loadRecentSceneFamilies, SCENE_FAMILIES } from "../_shared/pinterest-ai-backdrop.ts";
 import { computeCreativeFingerprint } from "../_shared/pinterest-fingerprint.ts";
+import { checkGovernor } from "../_shared/pinterest-governor.ts";
 import {
   pickCategoryOverlay,
   validateOverlayForCategory,
