@@ -112,8 +112,19 @@ Deno.serve(async (req) => {
       .select("queue_id, pinterest_pin_id, bucket, product_slug, board_name, overlay_text, impressions")
       .eq("run_id", lastRun.id)
       .order("impressions", { ascending: true })
-      .limit(5000);
+      .range(0, 4999);
     const all = pins || [];
+    // Always fetch REPLACE_FIRST + REVIEW buckets explicitly (they sit at the tail of the ordered set)
+    const { data: tailBuckets } = await sb
+      .from("pinterest_protection_audit_pins")
+      .select("queue_id, pinterest_pin_id, bucket, product_slug, board_name, overlay_text, impressions")
+      .eq("run_id", lastRun.id)
+      .in("bucket", ["REPLACE_FIRST", "REVIEW", "KEEP", "UNKNOWN_NO_ANALYTICS"])
+      .range(0, 4999);
+    const seenIds = new Set(all.map((r: any) => r.queue_id));
+    for (const r of (tailBuckets || [])) {
+      if (!seenIds.has(r.queue_id)) all.push(r as any);
+    }
     // Skip queue rows already archived by a previous cleanup pass
     const safeAll = all.filter((p) => p.bucket === "SAFE_TO_REMOVE" && p.queue_id);
     const safeIds = safeAll.map((p) => p.queue_id);
