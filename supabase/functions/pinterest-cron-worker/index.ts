@@ -1033,9 +1033,14 @@ Deno.serve(async (req) => {
         // first Pinterest outbound click already carries pinterest attribution
         // (utm_source/medium/campaign/content). Real pin_id is patched in
         // post-create below.
-        const cronCampaign = (pin as any).category_key || (pin as any).board_name || boardId;
-        const cronContent = (pin as any).hook_group || (pin as any).pin_variant || ((pin as any).meta?.creative_angle ?? `board_${boardId}`);
+        const cronCampaign = (pin as any).category_key || (pin as any).board_name || boardId || "pinterest";
+        const cronContent = (pin as any).hook_angle || (pin as any).hook_group || (pin as any).pin_variant ||
+          ((pin as any).meta?.creative_angle ?? null) || (pin as any).product_slug || `board_${boardId}`;
         let destinationLink = stampUtmsOnLink(String(pin.destination_link ?? ""), {
+          // Pre-stamp queue UUID because Pinterest currently rejects PATCH link
+          // edits without `pin_edit`; pinterest-track resolves it to the returned
+          // Pinterest id once the pin is posted.
+          pinId: pin.id,
           campaign: cronCampaign,
           content: cronContent,
         });
@@ -1044,6 +1049,7 @@ Deno.serve(async (req) => {
         // return HTTP 200 on a real, in-stock /products/{slug} page.
         const destVerdict = await validateDestination(sb, destinationLink);
         await sb.from("pinterest_pin_queue").update({
+          destination_link: destinationLink,
           final_resolved_url: destVerdict.final_resolved_url,
           http_status: destVerdict.http_status,
           product_slug_found: destVerdict.product_slug_found,
