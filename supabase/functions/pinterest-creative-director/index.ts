@@ -1053,6 +1053,28 @@ async function uploadAndInsertDraft(
     );
   }
 
+  // ── Anti-duplication / banned-phrase governor (hard gate) ─────────────────
+  // Per memory `pinterest-anti-duplication-governor`: drafts cannot enter the
+  // queue if they would violate the per-slug / per-board / copy-repeat or
+  // banned-phrase rules. We pass board_id=null at draft time (board is picked
+  // at publish), so only slug + copy rules apply here. Publisher paths re-run
+  // the governor with the resolved board_id before POST /pins.
+  const govVerdict = await checkGovernor(supabase, {
+    slug: product.slug,
+    boardId: null,
+    headline: copy.title,
+    overlay: copy.overlay,
+    cta: copy.cta,
+  });
+  if (govVerdict.enabled && !govVerdict.allowed) {
+    console.warn("[creative-director] governor blocked draft", {
+      product_slug: product.slug,
+      variant,
+      violations: govVerdict.violations,
+    });
+    throw new Error(governorRejectReason(govVerdict));
+  }
+
   const ins = await supabase
     .from("pinterest_pin_queue")
     .insert(row)
