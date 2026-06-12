@@ -40,12 +40,12 @@ async function rebuild(sb: ReturnType<typeof createClient>) {
   // Performance (lifetime impressions/clicks/saves)
   const { data: perf } = await sb
     .from("pinterest_pin_performance")
-    .select("pin_id, impressions, clicks, outbound_clicks, saves");
+    .select("pin_id, impressions, clicks, saves");
   const perfMap = new Map<string, { impressions: number; clicks: number; saves: number }>();
   for (const r of perf ?? []) {
     perfMap.set(r.pin_id as string, {
       impressions: Number(r.impressions ?? 0),
-      clicks: Math.max(Number((r as any).outbound_clicks ?? 0), Number((r as any).clicks ?? 0)),
+      clicks: Number((r as any).clicks ?? 0),
       saves: Number(r.saves ?? 0),
     });
   }
