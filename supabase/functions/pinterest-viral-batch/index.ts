@@ -1831,12 +1831,40 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     }
     const inBatchPhashes = new Set<string>();
     let queueDuplicatesBlocked = 0;
+    // Image blocklist — never re-use creatives flagged as banned/mismatched.
+    let blocklistedImageUrls = new Set<string>();
+    let blocklistedImageHashes = new Set<string>();
+    try {
+      const { data: blkRows } = await sb
+        .from("pinterest_image_blocklist")
+        .select("image_url, image_hash")
+        .limit(5000);
+      for (const b of (blkRows || []) as Array<{ image_url?: string; image_hash?: string }>) {
+        if (b.image_url) blocklistedImageUrls.add(b.image_url);
+        if (b.image_hash) blocklistedImageHashes.add(b.image_hash);
+      }
+    } catch (e) {
+      console.warn("[pinterest-viral-batch] image blocklist load failed:", e instanceof Error ? e.message : e);
+    }
+    let blocklistRejected = 0;
     for (const r of sanitizedRows) {
       const destCheck = sanitizeUrl((r as Record<string, unknown>).destination_link as string | undefined);
       const imgCheck = sanitizeUrl((r as Record<string, unknown>).pin_image_url as string | undefined, { allowExternalReferrer: true });
       const urlReasons = [...destCheck.reasons, ...imgCheck.reasons];
       const imgUrl = (r as Record<string, unknown>).pin_image_url as string;
       const imgHash = imgUrl ? hashImageUrl(imgUrl) : null;
+      if (
+        (imgUrl && blocklistedImageUrls.has(imgUrl)) ||
+        (imgHash && blocklistedImageHashes.has(imgHash))
+      ) {
+        blocklistRejected++;
+        await quarantineEvent(sb, {
+          source: "pinterest_pin_queue",
+          reasons: ["blocklisted_image"],
+          payload: r as Record<string, unknown>,
+        });
+        continue;
+      }
       // Pixel-level perceptual hash of the final pin image (post-collage).
       const pinPhash = imgUrl ? await computePhashFromUrl(imgUrl) : null;
       let visualDuplicate = false;
