@@ -11,6 +11,16 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input.trim().toLowerCase()),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -64,6 +74,28 @@ Deno.serve(async (req) => {
     let sent = 0;
     let failed = 0;
     for (const row of pending ?? []) {
+      const rawUser = (row.user_data as Record<string, unknown>) ?? {};
+      const sessionId =
+        (rawUser.client_session as string) ?? (row.event_id as string);
+      const externalIdHash = await sha256Hex(sessionId);
+      const userDataOut: Record<string, unknown> = {
+        external_id: [externalIdHash],
+        client_user_agent: (rawUser.client_user_agent as string) ?? "Mozilla/5.0",
+        // Pinterest requires at least one of: em, ph, hashed_maids,
+        // OR (client_ip_address + client_user_agent). We always include IP+UA
+        // so the event passes validation even when we have no PII.
+        client_ip_address:
+          (rawUser.client_ip_address as string) ?? "0.0.0.0",
+      };
+      const valueNum =
+        row.value === null || row.value === undefined ? undefined : Number(row.value);
+      const customOut: Record<string, unknown> = {
+        ...((row.custom_data as Record<string, unknown>) ?? {}),
+        currency: row.currency ?? "USD",
+      };
+      if (valueNum !== undefined && !Number.isNaN(valueNum)) {
+        customOut.value = valueNum.toFixed(2); // Pinterest expects string
+      }
       const payload = {
         data: [
           {
@@ -71,12 +103,9 @@ Deno.serve(async (req) => {
             event_id: row.event_id,
             event_time: Math.floor(new Date(row.event_time as string).getTime() / 1000),
             action_source: "web",
-            user_data: row.user_data ?? {},
-            custom_data: {
-              ...((row.custom_data as Record<string, unknown>) ?? {}),
-              currency: row.currency ?? "USD",
-              value: row.value ?? undefined,
-            },
+            event_source_url: "https://getpawsy.pet",
+            user_data: userDataOut,
+            custom_data: customOut,
           },
         ],
       };

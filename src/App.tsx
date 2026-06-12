@@ -503,6 +503,7 @@ const PinterestSchedulerPage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestLiveCyclePage = lazyWithRetry(() => import("./pages/admin/PinterestLiveCyclePage"));
 const PinterestOpsDashboardPage = lazyWithRetry(() => import("./pages/admin/PinterestOpsDashboardPage"));
 const PinterestCommandCenterPage = lazyWithRetry(() => import("./pages/admin/PinterestCommandCenterPage"));
+const PinterestCapiHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestCapiHealthPage"));
 const PinterestTrendsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrendsPage"));
 const PinterestRevenuePage = lazyWithRetry(() => import("./pages/admin/PinterestRevenuePage"));
 const RevenueCommandCenter = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenter"));
@@ -2867,6 +2868,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-capi"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCapiHealthPage />
                                 </Suspense>
                               }
                             />
