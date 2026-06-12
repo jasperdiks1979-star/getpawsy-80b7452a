@@ -1,5 +1,7 @@
 // Pinterest Ops Dashboard — aggregates real-time metrics for the live admin view.
 // Also supports ?snapshot=1 to persist a daily snapshot to pinterest_ops_snapshots.
+// Date filtering: ?range=today|7d|30d|custom (+ from=&to= ISO dates for custom).
+// Revenue estimation: outbound_clicks * REVENUE_PER_CLICK_USD (default $0.35).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
@@ -11,6 +13,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const REVENUE_PER_CLICK_USD = Number(Deno.env.get("PINTEREST_REVENUE_PER_CLICK") ?? "0.35");
 
 function classifyRejection(r: string | null): string {
   if (!r) return "other";
@@ -28,8 +31,34 @@ function classifyRejection(r: string | null): string {
   return "other";
 }
 
-async function buildMetrics(sb: ReturnType<typeof createClient>) {
+function resolveRange(url: URL): { rangeKey: string; sinceDate: Date; sinceDay: string; days: number } {
   const now = new Date();
+  const rangeKey = (url.searchParams.get("range") || "7d").toLowerCase();
+  let days = 7;
+  let sinceDate = new Date(now.getTime() - 7 * 86400_000);
+  if (rangeKey === "today") {
+    days = 1;
+    sinceDate = new Date(now); sinceDate.setUTCHours(0, 0, 0, 0);
+  } else if (rangeKey === "30d") {
+    days = 30;
+    sinceDate = new Date(now.getTime() - 30 * 86400_000);
+  } else if (rangeKey === "custom") {
+    const from = url.searchParams.get("from");
+    const to = url.searchParams.get("to");
+    if (from) sinceDate = new Date(from);
+    if (to) {
+      const t = new Date(to);
+      days = Math.max(1, Math.round((t.getTime() - sinceDate.getTime()) / 86400_000));
+    } else {
+      days = Math.max(1, Math.round((now.getTime() - sinceDate.getTime()) / 86400_000));
+    }
+  }
+  return { rangeKey, sinceDate, sinceDay: sinceDate.toISOString().slice(0, 10), days };
+}
+
+async function buildMetrics(sb: ReturnType<typeof createClient>, url: URL) {
+  const now = new Date();
+  const range = resolveRange(url);
   const startOfDay = new Date(now); startOfDay.setUTCHours(0, 0, 0, 0);
   const last7 = new Date(now.getTime() - 7 * 86400_000);
   const last24h = new Date(now.getTime() - 24 * 3600_000);
@@ -118,12 +147,12 @@ async function buildMetrics(sb: ReturnType<typeof createClient>) {
     else buckets.aboveCap++;
   }
 
-  // --- Performance (analytics last 7d) ---
+  // --- Performance (analytics in selected range) ---
   const day7 = new Date(now.getTime() - 7 * 86400_000).toISOString().slice(0, 10);
   const { data: analytics } = await sb
     .from("pinterest_analytics_daily")
     .select("pin_id, impressions, outbound_clicks, saves, ctr")
-    .gte("day", day7)
+    .gte("day", range.sinceDay)
     .limit(50000);
   let impressions = 0, outboundClicks = 0, saves = 0;
   const pinAgg = new Map<string, { impressions: number; clicks: number; saves: number }>();
@@ -141,31 +170,106 @@ async function buildMetrics(sb: ReturnType<typeof createClient>) {
   const ctr = impressions > 0 ? (outboundClicks / impressions) * 100 : 0;
   const saveRate = impressions > 0 ? (saves / impressions) * 100 : 0;
 
-  // --- Top performers (join with dimensions for slug/board) ---
-  const topPinIds = [...pinAgg.entries()]
-    .sort((a, b) => b[1].clicks - a[1].clicks)
-    .slice(0, 50)
-    .map(([k]) => k);
-  const { data: dims } = await sb
-    .from("pinterest_pin_dimensions")
-    .select("pin_id, product_slug, board_id, hook_variant, copy_variant, cta_variant")
-    .in("pin_id", topPinIds.length ? topPinIds : ["__none__"]);
+  // --- Join performance with full dimension catalog (all pins, not just top 50) ---
+  const allPinIds = [...pinAgg.keys()];
   const dimMap = new Map<string, any>();
-  for (const d of dims ?? []) dimMap.set((d as any).pin_id, d);
-
-  const productAgg = new Map<string, number>();
-  const boardAgg = new Map<string, number>();
-  const headlineAgg = new Map<string, number>();
-  const overlayAgg = new Map<string, number>();
-  for (const [pid, m] of pinAgg) {
-    const d = dimMap.get(pid) || {};
-    if (d.product_slug) productAgg.set(d.product_slug, (productAgg.get(d.product_slug) ?? 0) + m.clicks);
-    if (d.board_id) boardAgg.set(d.board_id, (boardAgg.get(d.board_id) ?? 0) + m.clicks);
-    if (d.hook_variant) headlineAgg.set(d.hook_variant, (headlineAgg.get(d.hook_variant) ?? 0) + m.clicks);
-    if (d.copy_variant) overlayAgg.set(d.copy_variant, (overlayAgg.get(d.copy_variant) ?? 0) + m.clicks);
+  // page through dimensions in chunks of 1000 to cover entire performance window
+  for (let i = 0; i < allPinIds.length; i += 1000) {
+    const slice = allPinIds.slice(i, i + 1000);
+    const { data: dims } = await sb
+      .from("pinterest_pin_dimensions")
+      .select("pin_id, product_slug, board_id, category_key, hook_variant, copy_variant, cta_variant")
+      .in("pin_id", slice);
+    for (const d of dims ?? []) dimMap.set((d as any).pin_id, d);
   }
-  const top = (m: Map<string, number>, n = 10) =>
-    [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([key, clicks]) => ({ key, clicks }));
+
+  type Agg = { impressions: number; clicks: number; saves: number; pins: Set<string> };
+  const emptyAgg = (): Agg => ({ impressions: 0, clicks: 0, saves: 0, pins: new Set() });
+  const productAgg = new Map<string, Agg>();
+  const boardAgg = new Map<string, Agg>();
+  const categoryAgg = new Map<string, Agg>();
+  const headlineAgg = new Map<string, Agg>();
+  const overlayAgg = new Map<string, Agg>();
+  const ctaAgg = new Map<string, Agg>();
+  const comboAgg = new Map<string, Agg>(); // hook|overlay|cta winning combos
+
+  const bump = (m: Map<string, Agg>, key: string | undefined | null, pin: string, mt: { impressions: number; clicks: number; saves: number }) => {
+    if (!key) return;
+    const cur = m.get(key) ?? emptyAgg();
+    cur.impressions += mt.impressions; cur.clicks += mt.clicks; cur.saves += mt.saves;
+    cur.pins.add(pin);
+    m.set(key, cur);
+  };
+  for (const [pid, mt] of pinAgg) {
+    const d = dimMap.get(pid) || {};
+    bump(productAgg, d.product_slug, pid, mt);
+    bump(boardAgg, d.board_id, pid, mt);
+    bump(categoryAgg, d.category_key, pid, mt);
+    bump(headlineAgg, d.hook_variant, pid, mt);
+    bump(overlayAgg, d.copy_variant, pid, mt);
+    bump(ctaAgg, d.cta_variant, pid, mt);
+    const combo = [d.hook_variant, d.copy_variant, d.cta_variant].filter(Boolean).join(" | ");
+    if (combo) bump(comboAgg, combo, pid, mt);
+  }
+  const rankAgg = (m: Map<string, Agg>, n = 20) =>
+    [...m.entries()]
+      .map(([key, a]) => ({
+        key,
+        impressions: a.impressions,
+        clicks: a.clicks,
+        saves: a.saves,
+        pins: a.pins.size,
+        ctr: a.impressions > 0 ? (a.clicks / a.impressions) * 100 : 0,
+        saveRate: a.impressions > 0 ? (a.saves / a.impressions) * 100 : 0,
+        revenue: a.clicks * REVENUE_PER_CLICK_USD,
+      }))
+      .sort((a, b) => b.clicks - a.clicks)
+      .slice(0, n);
+
+  const topProductsFull = rankAgg(productAgg, 20);
+  const topBoardsFull = rankAgg(boardAgg, 20);
+  const topCategoriesFull = rankAgg(categoryAgg, 20);
+  const topHeadlinesFull = rankAgg(headlineAgg, 20);
+  const topOverlaysFull = rankAgg(overlayAgg, 20);
+  const topCtasFull = rankAgg(ctaAgg, 20);
+  const topCombos = rankAgg(comboAgg, 20);
+
+  // Backwards-compatible "top" shape used by older dashboards (key + clicks)
+  const top = (rows: { key: string; clicks: number }[], n = 10) => rows.slice(0, n).map((r) => ({ key: r.key, clicks: r.clicks }));
+
+  // --- Opportunity Finder ---
+  // products with high CTR + low pin count, high saves + low impressions, clicks but no expansion, revenue but limited coverage
+  const opportunities = {
+    highCtrLowPins: topProductsFull
+      .filter((p) => p.ctr >= 1.0 && (slugCounts.get(p.key) ?? 0) <= 2)
+      .slice(0, 20),
+    highSavesLowImpressions: topProductsFull
+      .filter((p) => p.saves >= 5 && p.impressions < 1000)
+      .sort((a, b) => b.saves - a.saves)
+      .slice(0, 20),
+    clicksNoExpansion: topProductsFull
+      .filter((p) => p.clicks >= 5 && (slugCounts.get(p.key) ?? 0) < 4)
+      .slice(0, 20),
+    revenueLimitedCoverage: topProductsFull
+      .filter((p) => p.revenue >= 1 && (slugCounts.get(p.key) ?? 0) < 6)
+      .slice(0, 20),
+  };
+
+  // --- Coverage detail: which products have 0, 1-2, >8 pins ---
+  const coverageDetail = {
+    zero: [] as string[],
+    low: [] as string[],
+    aboveCap: [] as string[],
+  };
+  for (const p of products ?? []) {
+    const slug = (p as any).slug as string;
+    const c = slugCounts.get(slug) ?? 0;
+    if (c === 0) coverageDetail.zero.push(slug);
+    else if (c <= 2) coverageDetail.low.push(slug);
+    else if (c > 8) coverageDetail.aboveCap.push(slug);
+  }
+  const productsWithClicks = topProductsFull.filter((p) => p.clicks > 0).length;
+  const productsWithRevenue = topProductsFull.filter((p) => p.revenue > 0).length;
 
   // --- Next-up queue (next 20) ---
   const { data: nextQueue } = await sb
@@ -204,8 +308,13 @@ async function buildMetrics(sb: ReturnType<typeof createClient>) {
 
   return {
     generated_at: now.toISOString(),
+    range: { key: range.rangeKey, since: range.sinceDate.toISOString(), days: range.days, revenuePerClick: REVENUE_PER_CLICK_USD },
     publishing: { queued, publishing, postedToday, posted7d, governorBlocked: rejected24h, failed },
-    performance: { impressions, outboundClicks, saves, ctr, saveRate },
+    performance: {
+      impressions, outboundClicks, saves, ctr, saveRate,
+      estimatedRevenue: outboundClicks * REVENUE_PER_CLICK_USD,
+      revenuePerPin: totalActive > 0 ? (outboundClicks * REVENUE_PER_CLICK_USD) / totalActive : 0,
+    },
     diversity: {
       boardDiversity, topBoardShare, top3BoardShare,
       duplicateDensity, totalActivePins: totalActive, uniqueBoards,
@@ -215,13 +324,25 @@ async function buildMetrics(sb: ReturnType<typeof createClient>) {
     coverage: {
       zero: buckets.zero, low: buckets.low, healthy: buckets.healthy, aboveCap: buckets.aboveCap,
       totalProducts: products?.length ?? 0,
+      productsWithClicks, productsWithRevenue,
+      detail: coverageDetail,
     },
     revenue: {
-      topProducts: top(productAgg),
-      topBoards: top(boardAgg),
-      topHeadlines: top(headlineAgg),
-      topOverlays: top(overlayAgg),
+      topProducts: top(topProductsFull),
+      topBoards: top(topBoardsFull),
+      topHeadlines: top(topHeadlinesFull),
+      topOverlays: top(topOverlaysFull),
     },
+    drilldowns: {
+      products: topProductsFull,
+      boards: topBoardsFull,
+      categories: topCategoriesFull,
+      headlines: topHeadlinesFull,
+      overlays: topOverlaysFull,
+      ctas: topCtasFull,
+      combos: topCombos,
+    },
+    opportunities,
     nextQueue: nextQueue ?? [],
     alerts,
     trend,
@@ -233,7 +354,7 @@ Deno.serve(async (req) => {
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
     const url = new URL(req.url);
-    const metrics = await buildMetrics(sb);
+    const metrics = await buildMetrics(sb, url);
     if (url.searchParams.get("snapshot") === "1") {
       const today = new Date().toISOString().slice(0, 10);
       await sb.from("pinterest_ops_snapshots").upsert(
