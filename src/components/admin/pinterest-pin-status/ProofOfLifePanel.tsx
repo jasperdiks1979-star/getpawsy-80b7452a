@@ -42,16 +42,20 @@ export default function ProofOfLifePanel() {
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <div className="text-xs text-muted-foreground">
-          Generates 3 premium pins (dog / cat toy / feeding-grooming-travel) via Creative Director, assigns each to a different
-          board, publishes sequentially with a 60s gap. Bypasses cron/warm-up only. Restores production settings on exit.
+          Picks 3 already-approved premium drafts from distinct categories, assigns a production-verified
+          board to each, and publishes via the Pinterest API. No rendering, no QA, no sleeps — target &lt; 30s.
+          Verifies queue selection · board assignment · Pinterest API · URL routing.
         </div>
         {result && (
           <>
             <div className="rounded border p-2">
               <div className="text-xs font-medium mb-1">
-                Result: {result.success_count}/{result.total_attempted} published ·
-                started {result.report?.started_at} · restored {result.report?.restored_at}
+                Result: {result.success_count}/{result.total_attempted} published
+                {typeof result.runtime_ms === "number" ? ` · ${(result.runtime_ms / 1000).toFixed(1)}s` : ""}
               </div>
+              {result.message && (
+                <div className="text-xs text-amber-700">{result.message}</div>
+              )}
             </div>
             {pins.length > 0 && (
               <div className="space-y-2">
