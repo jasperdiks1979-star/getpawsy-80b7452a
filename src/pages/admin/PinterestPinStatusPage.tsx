@@ -398,6 +398,7 @@ export default function PinterestPinStatusPage() {
       <CronDebugPanel />
       <PremiumEnginePanel />
       <DiversityGovernorPanel />
+      <ProofOfLifePanel />
 
       <Card>
         <CardHeader className="pb-3">
