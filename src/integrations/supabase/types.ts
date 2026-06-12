@@ -13852,6 +13852,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_ops_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          metrics: Json
+          snapshot_date: string
+          taken_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metrics?: Json
+          snapshot_date?: string
+          taken_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metrics?: Json
+          snapshot_date?: string
+          taken_at?: string
+        }
+        Relationships: []
+      }
       pinterest_pattern_versions: {
         Row: {
           created_at: string
