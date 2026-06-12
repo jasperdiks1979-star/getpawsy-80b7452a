@@ -5,6 +5,7 @@ import { collectPinterestBannedCopyHits, pickSafePinterestOverlay, rejectReasonF
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { getPinterestApiBase, getPinterestMode, markProductionForbidden } from "../_shared/pinterest-config.ts";
 import { classifyProductsByMediaHost, evaluateMediaHost } from "../_shared/pinterest-media-host.ts";
+import { stampUtmsOnLink, patchPinLink, readPinterestPinLink } from "../_shared/pinterest-link-stamp.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
