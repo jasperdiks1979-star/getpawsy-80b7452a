@@ -91,6 +91,8 @@ export default function PinterestCleanup() {
   const [replaceFirstPins, setReplaceFirstPins] = useState<ProtectionPin[]>([]);
   const [keepPins, setKeepPins] = useState<ProtectionPin[]>([]);
   const [protectionRunning, setProtectionRunning] = useState(false);
+  const [diversityRun, setDiversityRun] = useState<any | null>(null);
+  const [diversityRunning, setDiversityRunning] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -121,6 +123,10 @@ export default function PinterestCleanup() {
       .select("*").order("started_at", { ascending: false }).limit(1);
     const protLatest = ((prot || [])[0] as any) || null;
     setProtectionRun(protLatest);
+    const { data: div } = await supabase
+      .from("pinterest_diversity_cleanup_runs" as any)
+      .select("*").order("started_at", { ascending: false }).limit(1);
+    setDiversityRun(((div || [])[0] as any) || null);
     if (protLatest) {
       const { data: rf } = await supabase
         .from("pinterest_protection_audit_pins" as any)
@@ -190,6 +196,24 @@ export default function PinterestCleanup() {
     }
   }
 
+  async function runDiversityCleanup(dryRun: boolean) {
+    setDiversityRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-diversity-cleanup-execute", {
+        body: { dryRun, safeLimit: 200, replaceLimit: 5 },
+      });
+      if (error) throw error;
+      toast.success(`Diversity cleanup ${dryRun ? "dry-run" : "run"} done`, {
+        description: `Archived ${data?.pins_archived ?? 0} • Replaced ${data?.pins_replaced ?? 0} • Drafts ${data?.replacement_drafts ?? 0} • Score ${data?.diversity_score_before ?? "—"} → ${data?.diversity_score_after ?? "—"}`,
+      });
+      await load();
+    } catch (e: any) {
+      toast.error("Diversity cleanup failed", { description: e?.message });
+    } finally {
+      setDiversityRunning(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Helmet><title>Pinterest Cleanup • Admin</title></Helmet>
@@ -215,8 +239,40 @@ export default function PinterestCleanup() {
             {running ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCw className="h-4 w-4 mr-2" />}
             Run cleanup now
           </Button>
+          <Button variant="default" onClick={() => runDiversityCleanup(false)} disabled={diversityRunning}>
+            {diversityRunning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCw className="h-4 w-4 mr-2" />}
+            Run diversity cleanup
+          </Button>
         </div>
       </div>
+
+      {diversityRun && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Creative Diversity Engine</CardTitle>
+            <CardDescription>
+              Last run {new Date(diversityRun.started_at).toLocaleString()} • Status: {diversityRun.status}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+            <div><div className="text-muted-foreground">Scanned</div><div className="text-xl font-semibold">{diversityRun.pins_scanned}</div></div>
+            <div><div className="text-muted-foreground">Archived</div><div className="text-xl font-semibold">{diversityRun.pins_archived}</div></div>
+            <div><div className="text-muted-foreground">Replaced</div><div className="text-xl font-semibold">{diversityRun.pins_replaced}</div></div>
+            <div><div className="text-muted-foreground">Drafts queued</div><div className="text-xl font-semibold">{diversityRun.replacement_drafts}</div></div>
+            <div><div className="text-muted-foreground">Impr. removed</div><div className="text-xl font-semibold">{diversityRun.impressions_removed}</div></div>
+            <div><div className="text-muted-foreground">Impr. preserved</div><div className="text-xl font-semibold">{diversityRun.impressions_preserved}</div></div>
+            <div><div className="text-muted-foreground">Diversity score</div><div className="text-xl font-semibold">{diversityRun.diversity_score_before ?? "—"} → {diversityRun.diversity_score_after ?? "—"}</div></div>
+            <div className="col-span-2 md:col-span-5">
+              <div className="text-muted-foreground">Banned phrase residue</div>
+              <div className="text-sm font-mono">
+                {Object.entries((diversityRun.banned_phrase_hits || {}) as Record<string, number>).map(([k, v]) => (
+                  <span key={k} className={`mr-3 ${v > 0 ? "text-destructive" : "text-emerald-600"}`}>{k}: {v}</span>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {protectionRun && (
         <Card>
