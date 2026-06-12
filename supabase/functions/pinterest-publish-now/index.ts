@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
+import { checkGovernor } from "../_shared/pinterest-governor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -178,6 +179,47 @@ Deno.serve(async (req) => {
     boardId = boardsBody?.items?.[0]?.id || null;
   }
   if (!boardId) return fail("board", { message: "no board available", pin_id: row.id });
+
+  // ── Anti-duplication / banned-phrase governor (hard gate) ────────────────
+  // Final check before we mutate state. Self-row is already counted in the
+  // active queue, so we tolerate a +1 against `max_active_per_slug` (the row
+  // we're about to publish IS the candidate). Copy + banned + per-board rules
+  // apply unconditionally.
+  const govVerdict = await checkGovernor(sb, {
+    slug: row.product_slug ?? null,
+    boardId,
+    headline: row.pin_title ?? null,
+    overlay: row.overlay_text ?? null,
+    cta: (row?.meta?.cta as string | undefined) ?? null,
+  });
+  const govBlocks = govVerdict.enabled && !govVerdict.allowed &&
+    // ignore the self-row contribution to max_active_per_slug
+    govVerdict.violations.some((v) => v.rule !== "max_active_per_slug");
+  if (govBlocks) {
+    const errMsg = `governor_block:${govVerdict.reason}`;
+    if (!dryRun) {
+      await sb.from("pinterest_pin_queue").update({
+        status: "rejected",
+        rejection_reason: errMsg,
+        last_publish_error: errMsg,
+        publishing_started_at: null,
+      }).eq("id", row.id);
+      await sb.from("pinterest_publish_logs").insert({
+        pin_queue_id: row.id,
+        attempt: (row.publish_attempts || 0) + 1,
+        status: "rejected",
+        board_id: boardId,
+        image_url: row.pin_image_url,
+        pin_title: row.pin_title,
+        destination_link: row.destination_link,
+        request_payload: { governor_only: true },
+        response_payload: { governor: govVerdict },
+        error_message: errMsg,
+        duration_ms: 0,
+      });
+    }
+    return fail("governor", { pin_id: row.id, board_id: boardId, message: errMsg, governor: govVerdict });
+  }
 
   // ── Pre-publish validation ──
   const validation = await validatePin(row, boardId, conn.access_token);
