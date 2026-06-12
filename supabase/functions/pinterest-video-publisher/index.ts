@@ -371,6 +371,19 @@ async function publishVideoPin(opts: {
     }).eq("id", asset.id);
   }
 
+  // Best-effort: PATCH the live link with the real Pinterest pin id so future
+  // outbound clicks resolve directly. Failure is non-fatal — the pre-stamped
+  // queue UUID still flows through pinterest-track for attribution.
+  try {
+    const realStamped = stampUtmsOnLink(preStampedVideoLink, {
+      pinId: pinBody.id,
+      campaign: _vpCampaign,
+      content: _vpContent,
+    });
+    await patchPinLink(token, apiBase, pinBody.id, realStamped);
+    await sb.from("pinterest_video_queue").update({ destination_url: realStamped }).eq("id", queue_id);
+  } catch { /* ignore */ }
+
   return { ok: true, pin_id: pinBody.id, external_url: `https://www.pinterest.com/pin/${pinBody.id}/` };
 }
 
