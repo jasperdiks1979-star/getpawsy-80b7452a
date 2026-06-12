@@ -1832,6 +1832,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     }
     const inBatchPhashes = new Set<string>();
     let queueDuplicatesBlocked = 0;
+    let governorBlocked = 0;
     // Image blocklist — never re-use creatives flagged as banned/mismatched.
     let blocklistedImageUrls = new Set<string>();
     let blocklistedImageHashes = new Set<string>();
