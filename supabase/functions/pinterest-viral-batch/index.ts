@@ -1993,6 +1993,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
           history_size: queuePhashHistory.length,
           threshold: PHASH_DUPLICATE_SIMILARITY,
           blocked: queueDuplicatesBlocked,
+          governor_blocked: governorBlocked,
         },
       });
     }
