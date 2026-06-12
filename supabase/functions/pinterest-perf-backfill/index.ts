@@ -12,9 +12,56 @@ function isoDay(d: Date) { return d.toISOString().slice(0, 10); }
 
 type PinRow = { pin_id: string; product_id: string | null; product_slug: string | null };
 
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+// Shared global pacing — when Pinterest signals 429, all workers pause until this timestamp.
+let globalPauseUntil = 0;
+let retry429 = 0, retry5xx = 0, retryNet = 0;
+
+async function fetchWithBackoff(url: string, token: string, maxAttempts = 5): Promise<Response | null> {
+  let attempt = 0;
+  let lastStatus = 0;
+  while (attempt < maxAttempts) {
+    const now = Date.now();
+    if (globalPauseUntil > now) await sleep(globalPauseUntil - now);
+    try {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      lastStatus = r.status;
+      if (r.status === 429) {
+        retry429++;
+        const ra = Number(r.headers.get("retry-after") ?? "0");
+        const waitMs = (ra > 0 ? ra * 1000 : Math.min(2000 * Math.pow(2, attempt), 30000))
+                       + Math.floor(Math.random() * 500);
+        globalPauseUntil = Math.max(globalPauseUntil, Date.now() + waitMs);
+        // Drain body to free the connection
+        try { await r.body?.cancel(); } catch { /* ignore */ }
+        attempt++;
+        continue;
+      }
+      if (r.status >= 500 && r.status <= 599) {
+        retry5xx++;
+        const waitMs = Math.min(1000 * Math.pow(2, attempt), 15000) + Math.floor(Math.random() * 400);
+        try { await r.body?.cancel(); } catch { /* ignore */ }
+        await sleep(waitMs);
+        attempt++;
+        continue;
+      }
+      return r;
+    } catch {
+      retryNet++;
+      const waitMs = Math.min(800 * Math.pow(2, attempt), 10000) + Math.floor(Math.random() * 300);
+      await sleep(waitMs);
+      attempt++;
+    }
+  }
+  // Exhausted — return a synthetic non-ok response so caller treats as error
+  return new Response(null, { status: lastStatus || 599 });
+}
+
 async function fetchAnalytics(base: string, token: string, pinId: string, startDay: string, endDay: string) {
   const url = `${base}/v5/pins/${pinId}/analytics?start_date=${startDay}&end_date=${endDay}&metric_types=IMPRESSION,OUTBOUND_CLICK,SAVE,PIN_CLICK`;
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const r = await fetchWithBackoff(url, token);
+  if (!r) return { gone: false, m: null as null, error: "no_response" };
   if (r.status === 404 || r.status === 410) return { gone: true, m: null as null };
   if (!r.ok) return { gone: false, m: null as null, error: `${r.status}` };
   const json = await r.json() as { all?: { daily_metrics?: Array<{ metrics?: Record<string, number> }>; lifetime_metrics?: Record<string, number> } };
@@ -41,11 +88,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = crypto.randomUUID();
   try {
+    // Reset per-invocation retry counters
+    retry429 = 0; retry5xx = 0; retryNet = 0; globalPauseUntil = 0;
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "400"), 1000);
     const minSlugRepeat = Number(url.searchParams.get("min_slug_repeat") ?? "10");
     const lookbackDays = Number(url.searchParams.get("lookback_days") ?? "90");
     const dryRun = url.searchParams.get("dry_run") === "1";
+    const concurrency = Math.max(1, Math.min(Number(url.searchParams.get("concurrency") ?? "2"), 6));
+    const baseDelay = Math.max(0, Number(url.searchParams.get("delay_ms") ?? "250"));
 
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: conn } = await sb.from("pinterest_connection").select("access_token").limit(1).maybeSingle();
@@ -111,7 +162,6 @@ Deno.serve(async (req) => {
     const endDay = isoDay(new Date());
 
     let synced = 0, zero = 0, gone = 0, errors = 0;
-    const concurrency = 4;
     let idx = 0;
     async function worker() {
       while (idx < target.length) {
@@ -146,7 +196,8 @@ Deno.serve(async (req) => {
         } catch {
           errors++;
         }
-        await new Promise(r => setTimeout(r, 120));
+        // Per-request pacing + small jitter to avoid lock-step
+        await sleep(baseDelay + Math.floor(Math.random() * 120));
       }
     }
     await Promise.all(Array.from({ length: concurrency }, worker));
@@ -159,6 +210,8 @@ Deno.serve(async (req) => {
       missing_before: missing.length,
       processed: target.length,
       synced, zero_engagement: zero, gone_on_pinterest: gone, errors,
+      retries: { rate_limit_429: retry429, server_5xx: retry5xx, network: retryNet },
+      concurrency, delay_ms: baseDelay,
       remaining_missing: Math.max(missing.length - target.length, 0),
       window: { start: startDay, end: endDay, days: lookbackDays },
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
