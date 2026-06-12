@@ -15310,6 +15310,128 @@ export type Database = {
           },
         ]
       }
+      pinterest_protection_audit_pins: {
+        Row: {
+          age_days: number | null
+          board_name: string | null
+          bucket: string
+          created_at: string
+          ctr: number | null
+          destination_link: string | null
+          engagement_rate: number | null
+          has_analytics: boolean
+          id: string
+          impressions: number
+          outbound_clicks: number
+          overlay_text: string | null
+          pinterest_pin_id: string | null
+          product_slug: string | null
+          queue_id: string | null
+          run_id: string
+          saves: number
+        }
+        Insert: {
+          age_days?: number | null
+          board_name?: string | null
+          bucket: string
+          created_at?: string
+          ctr?: number | null
+          destination_link?: string | null
+          engagement_rate?: number | null
+          has_analytics?: boolean
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          overlay_text?: string | null
+          pinterest_pin_id?: string | null
+          product_slug?: string | null
+          queue_id?: string | null
+          run_id: string
+          saves?: number
+        }
+        Update: {
+          age_days?: number | null
+          board_name?: string | null
+          bucket?: string
+          created_at?: string
+          ctr?: number | null
+          destination_link?: string | null
+          engagement_rate?: number | null
+          has_analytics?: boolean
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          overlay_text?: string | null
+          pinterest_pin_id?: string | null
+          product_slug?: string | null
+          queue_id?: string | null
+          run_id?: string
+          saves?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_protection_audit_pins_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_protection_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_protection_audit_runs: {
+        Row: {
+          created_at: string
+          estimated_clicks_at_risk: number
+          estimated_impressions_at_risk: number
+          estimated_saves_at_risk: number
+          finished_at: string | null
+          id: string
+          keep_count: number
+          notes: Json
+          pins_audited: number
+          replace_first_count: number
+          review_count: number
+          safe_to_remove_count: number
+          started_at: string
+          status: string
+          unknown_count: number
+        }
+        Insert: {
+          created_at?: string
+          estimated_clicks_at_risk?: number
+          estimated_impressions_at_risk?: number
+          estimated_saves_at_risk?: number
+          finished_at?: string | null
+          id?: string
+          keep_count?: number
+          notes?: Json
+          pins_audited?: number
+          replace_first_count?: number
+          review_count?: number
+          safe_to_remove_count?: number
+          started_at?: string
+          status?: string
+          unknown_count?: number
+        }
+        Update: {
+          created_at?: string
+          estimated_clicks_at_risk?: number
+          estimated_impressions_at_risk?: number
+          estimated_saves_at_risk?: number
+          finished_at?: string | null
+          id?: string
+          keep_count?: number
+          notes?: Json
+          pins_audited?: number
+          replace_first_count?: number
+          review_count?: number
+          safe_to_remove_count?: number
+          started_at?: string
+          status?: string
+          unknown_count?: number
+        }
+        Relationships: []
+      }
       pinterest_publish_governor: {
         Row: {
           cooldown_minutes_per_product: number

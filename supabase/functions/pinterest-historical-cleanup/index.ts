@@ -206,6 +206,60 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── 3b. PROTECTION GATE — refuse cleanup unless a recent protection audit exists. ──
+    // Never delete a pin that still generates traffic. Bucket from the latest
+    // pinterest_protection_audit run wins over the local impressions/clicks rule.
+    const protectionMap = new Map<string, string>();
+    let protectionRunId: string | null = null;
+    let protectionStartedAt: string | null = null;
+    {
+      const { data: latestRun } = await sb
+        .from("pinterest_protection_audit_runs")
+        .select("id, started_at, status")
+        .eq("status", "completed")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestRun) {
+        protectionRunId = latestRun.id as string;
+        protectionStartedAt = latestRun.started_at as string;
+        const ageHours = (Date.now() - new Date(latestRun.started_at as string).getTime()) / 3600000;
+        if (!dryRun && ageHours > 36) {
+          // Stale — abort cleanup to be safe.
+          await sb.from("pinterest_historical_cleanup_runs").update({
+            status: "aborted",
+            finished_at: new Date().toISOString(),
+            error_message: `Protection audit is stale (${ageHours.toFixed(1)}h). Re-run pinterest-protection-audit before cleanup.`,
+          }).eq("id", run.id);
+          return new Response(JSON.stringify({
+            ok: false, aborted: true,
+            reason: "stale_protection_audit",
+            protection_audit_age_hours: ageHours,
+          }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        for (let i = 0; i < allPinIds.length; i += 500) {
+          const slice = allPinIds.slice(i, i + 500);
+          const { data: rows } = await sb
+            .from("pinterest_protection_audit_pins")
+            .select("pinterest_pin_id, bucket")
+            .eq("run_id", protectionRunId)
+            .in("pinterest_pin_id", slice);
+          (rows || []).forEach((r: any) => {
+            if (r.pinterest_pin_id) protectionMap.set(r.pinterest_pin_id, r.bucket);
+          });
+        }
+      } else if (!dryRun) {
+        await sb.from("pinterest_historical_cleanup_runs").update({
+          status: "aborted",
+          finished_at: new Date().toISOString(),
+          error_message: "No protection audit found. Run pinterest-protection-audit before cleanup.",
+        }).eq("id", run.id);
+        return new Response(JSON.stringify({
+          ok: false, aborted: true, reason: "no_protection_audit",
+        }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── 4. Pinterest token (only needed for live DELETE) ──
     let token: string | null = null;
     let apiBase: string | null = null;
@@ -229,16 +283,46 @@ Deno.serve(async (req) => {
       if (!matched) continue;
 
       const m = perfMap.get(p.pinterest_pin_id!) || { impressions: 0, clicks: 0, saves: 0 };
+
+      // PROTECTION GATE — bucket from the latest protection audit is authoritative.
+      const bucket = protectionMap.get(p.pinterest_pin_id!) || "UNKNOWN_NO_ANALYTICS";
+      if (bucket === "KEEP") {
+        kept++;
+        await sb.from("pinterest_cleanup_actions").insert({
+          pin_id: p.pinterest_pin_id, action: "skip_keep",
+          pre_action_snapshot: { bucket, metrics: m },
+          result: { ok: true, reason: "protected_top_performer" },
+        });
+        continue;
+      }
+      if (bucket === "UNKNOWN_NO_ANALYTICS" || bucket === "REVIEW") {
+        kept++;
+        await sb.from("pinterest_cleanup_actions").insert({
+          pin_id: p.pinterest_pin_id, action: "skip_unknown",
+          pre_action_snapshot: { bucket, metrics: m },
+          result: { ok: true, reason: "no_or_partial_analytics" },
+        });
+        continue;
+      }
       let action: "delete" | "archive" | "keep_and_replace" | null = null;
-      if (m.impressions < 500 && m.clicks === 0) action = "delete";
-      else if (m.clicks > 0) action = "keep_and_replace";
-      else if (m.impressions > 500) action = "archive";
-      else action = "archive"; // edge case: impressions 500 exactly & 0 clicks
+      if (bucket === "REPLACE_FIRST") {
+        // Must publish replacement before archive — existing keep_and_replace handles that.
+        action = "keep_and_replace";
+      } else if (bucket === "SAFE_TO_REMOVE") {
+        action = "delete";
+      } else {
+        // Defensive — should not happen.
+        kept++;
+        continue;
+      }
 
       const snapshot = {
         pin_id: p.pinterest_pin_id, queue_id: p.id, title: p.pin_title,
         description: p.pin_description, overlay: p.overlay_text,
         destination: p.destination_link, board: p.board_name, metrics: m,
+        protection_bucket: bucket,
+        protection_run_id: protectionRunId,
+        protection_started_at: protectionStartedAt,
       };
 
       try {
