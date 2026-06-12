@@ -48,6 +48,7 @@ import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
 import { buildPinCopy, sanitizePinText, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
+import { checkGovernor, governorRejectReason } from "../_shared/pinterest-governor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1050,6 +1051,28 @@ async function uploadAndInsertDraft(
     throw new Error(
       `pin_validation_failed:${validation.errors.join(",")}`,
     );
+  }
+
+  // ── Anti-duplication / banned-phrase governor (hard gate) ─────────────────
+  // Per memory `pinterest-anti-duplication-governor`: drafts cannot enter the
+  // queue if they would violate the per-slug / per-board / copy-repeat or
+  // banned-phrase rules. We pass board_id=null at draft time (board is picked
+  // at publish), so only slug + copy rules apply here. Publisher paths re-run
+  // the governor with the resolved board_id before POST /pins.
+  const govVerdict = await checkGovernor(supabase, {
+    slug: product.slug,
+    boardId: null,
+    headline: copy.title,
+    overlay: copy.overlay,
+    cta: copy.cta,
+  });
+  if (govVerdict.enabled && !govVerdict.allowed) {
+    console.warn("[creative-director] governor blocked draft", {
+      product_slug: product.slug,
+      variant,
+      violations: govVerdict.violations,
+    });
+    throw new Error(governorRejectReason(govVerdict));
   }
 
   const ins = await supabase

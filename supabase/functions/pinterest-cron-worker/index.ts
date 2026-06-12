@@ -5,6 +5,7 @@ import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
+import { checkGovernor } from "../_shared/pinterest-governor.ts";
 import { validateOverlayForCategory, validateCopyForCategory } from "../_shared/pinterest-overlay-fallback.ts";
 import {
   DiversityGuard,
@@ -1060,6 +1061,37 @@ Deno.serve(async (req) => {
           }).eq("id", pin.id);
           console.warn(`[cron] Pin ${pin.id} REJECTED by destination validator: ${destVerdict.last_validation_error}`);
           results.push({ pinId: pin.id, status: "rejected", error: destVerdict.last_validation_error ?? "invalid_destination" });
+          continue;
+        }
+
+        // 🛡️ Anti-duplication / banned-phrase governor — hard gate.
+        // Tolerate the self-row contribution to max_active_per_slug; copy +
+        // per-board + banned-phrase rules apply unconditionally.
+        const govVerdict = await checkGovernor(sb, {
+          slug: pin.product_slug ?? null,
+          boardId,
+          headline: pin.pin_title ?? null,
+          overlay: pin.overlay_text ?? null,
+          cta: (pin?.meta?.cta as string | undefined) ?? null,
+        });
+        const govBlocks = govVerdict.enabled && !govVerdict.allowed &&
+          govVerdict.violations.some((v) => v.rule !== "max_active_per_slug");
+        if (govBlocks) {
+          const reason = `governor:${govVerdict.reason}`;
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: reason,
+            last_publish_error: reason,
+            updated_at: new Date().toISOString(),
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            action: "cron_governor_block",
+            status: "failed",
+            error_message: reason,
+            response_data: { pin_id: pin.id, governor: govVerdict },
+          });
+          console.warn(`[cron] Pin ${pin.id} REJECTED by governor:`, JSON.stringify(govVerdict.violations));
+          results.push({ pinId: pin.id, status: "rejected", error: reason });
           continue;
         }
 
