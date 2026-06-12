@@ -20,6 +20,7 @@ import CronPublisherPanel from '@/components/admin/pinterest-pin-status/CronPubl
 import CronDebugPanel from '@/components/admin/pinterest-pin-status/CronDebugPanel';
 import PremiumEnginePanel from '@/components/admin/pinterest-pin-status/PremiumEnginePanel';
 import DiversityGovernorPanel from '@/components/admin/pinterest-pin-status/DiversityGovernorPanel';
+import ProofOfLifePanel from '@/components/admin/pinterest-pin-status/ProofOfLifePanel';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
