@@ -111,9 +111,22 @@ Deno.serve(async (req) => {
       .from("pinterest_protection_audit_pins")
       .select("queue_id, pinterest_pin_id, bucket, product_slug, board_name, overlay_text, impressions")
       .eq("run_id", lastRun.id)
+      .order("impressions", { ascending: true })
       .limit(5000);
     const all = pins || [];
-    const safe = all.filter((p) => p.bucket === "SAFE_TO_REMOVE").slice(0, safeLimit);
+    // Skip queue rows already archived by a previous cleanup pass
+    const safeAll = all.filter((p) => p.bucket === "SAFE_TO_REMOVE" && p.queue_id);
+    const safeIds = safeAll.map((p) => p.queue_id);
+    const { data: already } = await sb
+      .from("pinterest_pin_queue")
+      .select("id, status, rejection_reason")
+      .in("id", safeIds.slice(0, 1000));
+    const archivedSet = new Set(
+      (already || [])
+        .filter((q: any) => q.status === "rejected" && q.rejection_reason === "diversity_cleanup_safe_remove")
+        .map((q: any) => q.id),
+    );
+    const safe = safeAll.filter((p) => !archivedSet.has(p.queue_id)).slice(0, safeLimit);
     const replace = all.filter((p) => p.bucket === "REPLACE_FIRST").slice(0, replaceLimit);
     const unknown = all.filter((p) => p.bucket === "UNKNOWN_NO_ANALYTICS");
     const review = all.filter((p) => p.bucket === "REVIEW");
