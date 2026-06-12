@@ -13554,6 +13554,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_historical_cleanup_runs: {
+        Row: {
+          created_at: string
+          dry_run: boolean
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          overused_overlays: number
+          pins_archived: number
+          pins_deleted: number
+          pins_errored: number
+          pins_kept: number
+          pins_replaced: number
+          pins_scanned: number
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+        }
+        Insert: {
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          overused_overlays?: number
+          pins_archived?: number
+          pins_deleted?: number
+          pins_errored?: number
+          pins_kept?: number
+          pins_replaced?: number
+          pins_scanned?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Update: {
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          overused_overlays?: number
+          pins_archived?: number
+          pins_deleted?: number
+          pins_errored?: number
+          pins_kept?: number
+          pins_replaced?: number
+          pins_scanned?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
       pinterest_image_blocklist: {
         Row: {
           created_at: string
@@ -14070,6 +14127,47 @@ export type Database = {
           taken_at?: string
         }
         Relationships: []
+      }
+      pinterest_overlay_frequency: {
+        Row: {
+          created_at: string
+          frequency: number
+          id: string
+          overlay_text_norm: string
+          overlay_text_sample: string
+          overused: boolean
+          run_id: string
+          window_size: number
+        }
+        Insert: {
+          created_at?: string
+          frequency?: number
+          id?: string
+          overlay_text_norm: string
+          overlay_text_sample: string
+          overused?: boolean
+          run_id: string
+          window_size?: number
+        }
+        Update: {
+          created_at?: string
+          frequency?: number
+          id?: string
+          overlay_text_norm?: string
+          overlay_text_sample?: string
+          overused?: boolean
+          run_id?: string
+          window_size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_overlay_frequency_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_historical_cleanup_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_pattern_versions: {
         Row: {
