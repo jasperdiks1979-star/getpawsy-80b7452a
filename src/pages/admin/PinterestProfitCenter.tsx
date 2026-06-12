@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, DollarSign, RefreshCw, Sparkles } from "lucide-react";
+import { Loader2, DollarSign, RefreshCw, Sparkles, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,6 +28,8 @@ export default function PinterestProfitCenter() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<1 | 7 | 30>(30);
+  const [diag, setDiag] = useState<any[] | null>(null);
+  const [diagBusy, setDiagBusy] = useState(false);
 
   async function load(w = windowDays) {
     setLoading(true);
@@ -55,6 +57,57 @@ export default function PinterestProfitCenter() {
     finally { setBusy(null); }
   }
 
+  async function loadDiagnostics() {
+    setDiagBusy(true);
+    try {
+      const { data: rows, error } = await supabase
+        .from("pinterest_pin_queue")
+        .select("id, pinterest_pin_id, destination_link, posted_at, board_name, category_key, hook_group, status")
+        .eq("status", "posted")
+        .not("pinterest_pin_id", "is", null)
+        .order("posted_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      const parsed = (rows ?? []).map((r) => {
+        let url: URL | null = null;
+        try { url = new URL(r.destination_link ?? ""); } catch { /* ignore */ }
+        const params = url?.searchParams;
+        const pinId = params?.get("pin_id") ?? null;
+        const utmSource = params?.get("utm_source") ?? null;
+        const utmCampaign = params?.get("utm_campaign") ?? null;
+        const utmContent = params?.get("utm_content") ?? null;
+        const ok = !!pinId && utmSource === "pinterest";
+        return {
+          id: r.id,
+          pinterest_pin_id: r.pinterest_pin_id,
+          url: r.destination_link,
+          pin_id: pinId,
+          utm_source: utmSource,
+          utm_campaign: utmCampaign,
+          utm_content: utmContent,
+          status: ok ? "OK" : "MISSING_ATTR",
+          posted_at: r.posted_at,
+        };
+      });
+      setDiag(parsed);
+    } catch (e: any) { toast.error(e?.message ?? "Diagnostics failed"); }
+    finally { setDiagBusy(false); }
+  }
+
+  useEffect(() => { void loadDiagnostics(); }, []);
+
+  async function publishTestPin() {
+    setBusy("test");
+    try {
+      const { data: res, error } = await supabase.functions.invoke("pinterest-publish-now", { body: { mode: "next" } });
+      if (error) throw error;
+      toast.success(`Test publish: ${JSON.stringify(res).slice(0, 200)}`);
+      console.log("test publish", res);
+      await loadDiagnostics();
+    } catch (e: any) { toast.error(e?.message ?? "Test publish failed"); }
+    finally { setBusy(null); }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <Helmet><title>Pinterest Profit Center — Admin</title></Helmet>
@@ -72,6 +125,9 @@ export default function PinterestProfitCenter() {
           </Button>
           <Button size="sm" onClick={() => trigger("run_full")} disabled={!!busy}>
             {busy === "run_full" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />} Rebuild + Learn
+          </Button>
+          <Button size="sm" variant="secondary" onClick={publishTestPin} disabled={!!busy}>
+            {busy === "test" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Rocket className="h-3 w-3 mr-1" />} Publish test pin
           </Button>
         </div>
       </header>
@@ -132,6 +188,46 @@ export default function PinterestProfitCenter() {
                   ))}
                   {data.top_pins.length === 0 && (
                     <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No attributed pins in this window.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Attribution Diagnostics — last 20 posted pins</CardTitle>
+              <Button size="sm" variant="ghost" onClick={loadDiagnostics} disabled={diagBusy}>
+                {diagBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-left">
+                  <tr>
+                    <th className="p-2">Pin URL</th>
+                    <th className="p-2">Pin ID</th>
+                    <th className="p-2">utm_source</th>
+                    <th className="p-2">utm_campaign</th>
+                    <th className="p-2">utm_content</th>
+                    <th className="p-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(diag ?? []).map((d) => (
+                    <tr key={d.id} className="border-t">
+                      <td className="p-2 max-w-[320px] truncate"><a href={d.url} target="_blank" rel="noreferrer" className="underline">{d.url}</a></td>
+                      <td className="p-2 font-mono">{d.pin_id ?? "—"}</td>
+                      <td className="p-2">{d.utm_source ?? "—"}</td>
+                      <td className="p-2">{d.utm_campaign ?? "—"}</td>
+                      <td className="p-2">{d.utm_content ?? "—"}</td>
+                      <td className="p-2">
+                        <Badge variant={d.status === "OK" ? "secondary" : "destructive"}>{d.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!diag || diag.length === 0) && (
+                    <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No posted pins yet.</td></tr>
                   )}
                 </tbody>
               </table>
