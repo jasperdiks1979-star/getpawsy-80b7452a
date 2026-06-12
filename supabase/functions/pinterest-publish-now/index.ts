@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
-import { stampPinIdOnLink, patchPinLink, stampUtmsOnLink } from "../_shared/pinterest-link-stamp.ts";
+import { linkHasPinterestAttribution, patchPinLink, readPinterestPinLink, stampUtmsOnLink } from "../_shared/pinterest-link-stamp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,17 +121,21 @@ Deno.serve(async (req) => {
   // ── Admin auth ──
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return fail("auth", { message: "unauthorized" });
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-  const uid = claims?.claims?.sub;
-  if (!uid) return fail("auth", { message: "unauthorized" });
-  const { data: roleRow } = await sb.from("user_roles")
-    .select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
-  if (!roleRow) return fail("auth", { message: "admin only" });
+  const bearer = authHeader.replace("Bearer ", "");
+  const isInternalServiceCall = bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!isInternalServiceCall) {
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await userClient.auth.getClaims(bearer);
+    const uid = claims?.claims?.sub;
+    if (!uid) return fail("auth", { message: "unauthorized" });
+    const { data: roleRow } = await sb.from("user_roles")
+      .select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+    if (!roleRow) return fail("auth", { message: "admin only" });
+  }
 
   // ── Parse body ──
   let body: any;
@@ -363,9 +367,14 @@ Deno.serve(async (req) => {
   // ── Pre-stamp UTMs onto destination_link BEFORE POST so the very first
   // Pinterest outbound click already carries utm_source=pinterest +
   // campaign/content. pin_id is added post-create via PATCH below.
-  const campaignSource = (row as any).category_key || (row as any).board_name || boardId;
-  const contentSource = (row as any).hook_group || (row as any).pin_variant || ((row as any).meta?.creative_angle ?? null);
+  const campaignSource = (row as any).category_key || (row as any).board_name || boardId || "pinterest";
+  const contentSource = (row as any).hook_angle || (row as any).hook_group || (row as any).pin_variant ||
+    ((row as any).meta?.creative_angle ?? null) || (row as any).product_slug || "creative";
   const preStampedLink = stampUtmsOnLink(String(row.destination_link ?? ""), {
+    // Pinterest currently blocks post-create link edits for this app (`pin_edit`).
+    // Pre-stamp the queue UUID so every future pin still carries a `pin_id`
+    // parameter; pinterest-track resolves this UUID to the returned Pinterest id.
+    pinId: row.id,
     campaign: campaignSource,
     content: contentSource,
   });
@@ -409,23 +418,54 @@ Deno.serve(async (req) => {
     const externalUrl = `https://www.pinterest.com/pin/${parsed.id}/`;
     // Stamp real pin_id onto the outbound link so click-side attribution can
     // resolve pin → board → product → revenue on every future visit.
-    let stampedDestination = preStampedLink;
-    try {
-      const candidate = stampUtmsOnLink(stampedDestination, {
-        pinId: parsed.id,
-        campaign: campaignSource,
-        content: contentSource,
+    const stampedDestination = stampUtmsOnLink(preStampedLink, {
+      pinId: parsed.id,
+      campaign: campaignSource,
+      content: contentSource,
+    });
+    const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, stampedDestination);
+    const readback = await readPinterestPinLink(conn.access_token, PINTEREST_API, parsed.id);
+    const liveDestination = (readback as any)?.link || patchRes.link || stampedDestination;
+    const attributionVerified = linkHasPinterestAttribution(liveDestination, parsed.id) || linkHasPinterestAttribution(liveDestination, row.id);
+    if (!readback.ok || !attributionVerified) {
+      const errMsg = `pin_link_patch_verify_failed: pin_id not persisted on Pinterest destination URL`;
+      console.error(`[publish-now] ${errMsg}`, { pin_id: parsed.id, patchRes, readback, stampedDestination, liveDestination });
+      await sb.from("pinterest_pin_queue").update({
+        status: "failed",
+        posted_at: new Date().toISOString(),
+        pinterest_pin_id: parsed.id,
+        pin_external_id: parsed.id,
+        external_url: externalUrl,
+        board_id: boardId,
+        destination_link: liveDestination,
+        final_resolved_url: liveDestination,
+        last_publish_error: errMsg,
+        error_message: errMsg,
+        publishing_started_at: null,
+      }).eq("id", row.id);
+      await sb.from("pinterest_publish_logs").insert({
+        pin_queue_id: row.id,
+        attempt: (row.publish_attempts || 0) + 1,
+        status: "failed",
+        board_id: boardId,
+        image_url: row.pin_image_url,
+        pin_title: row.pin_title,
+        destination_link: liveDestination,
+        request_payload: { ...requestPayload, post_create_link: stampedDestination },
+        response_payload: { pin_create: parsed, patch: patchRes, readback },
+        error_message: errMsg,
+        duration_ms: dur,
       });
-      if (candidate !== stampedDestination) {
-        const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, candidate);
-        if (patchRes.ok) {
-          stampedDestination = candidate;
-        } else {
-          console.warn(`[publish-now] pin_id stamp PATCH failed pin=${parsed.id} status=${patchRes.status} reason=${patchRes.reason}`);
-        }
-      }
-    } catch (e) {
-      console.warn(`[publish-now] pin_id stamp error pin=${parsed.id}: ${(e as Error).message}`);
+      return fail("pin_link_patch_verify", {
+        pin_id: row.id,
+        pinterest_pin_id: parsed.id,
+        external_url: externalUrl,
+        final_destination_url: liveDestination,
+        required_destination_url: stampedDestination,
+        patch: patchRes,
+        readback,
+        message: errMsg,
+      });
     }
     await sb.from("pinterest_pin_queue").update({
       status: "posted",
@@ -434,8 +474,8 @@ Deno.serve(async (req) => {
       pin_external_id: parsed.id,
       external_url: externalUrl,
       board_id: boardId,
-      destination_link: stampedDestination,
-      final_resolved_url: stampedDestination,
+      destination_link: liveDestination,
+      final_resolved_url: liveDestination,
       last_publish_error: null,
       publishing_started_at: null,
     }).eq("id", row.id);
@@ -446,12 +486,12 @@ Deno.serve(async (req) => {
       board_id: boardId,
       image_url: row.pin_image_url,
       pin_title: row.pin_title,
-      destination_link: row.destination_link,
-      request_payload: requestPayload,
-      response_payload: parsed,
+      destination_link: liveDestination,
+      request_payload: { ...requestPayload, post_create_link: stampedDestination },
+      response_payload: { pin_create: parsed, patch: patchRes, readback, attribution_verified: true },
       duration_ms: dur,
     });
-    return json({ ok: true, mode, pin_id: row.id, pinterest_pin_id: parsed.id, external_url: externalUrl, duration_ms: dur, response: parsed });
+    return json({ ok: true, mode, pin_id: row.id, pinterest_pin_id: parsed.id, external_url: externalUrl, final_destination_url: liveDestination, attribution_verified: true, duration_ms: dur, response: parsed });
   }
 
   // failure

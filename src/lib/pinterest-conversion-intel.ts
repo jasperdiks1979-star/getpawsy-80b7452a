@@ -13,6 +13,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_COOKIE = "gp_pin_sess";
+const PIN_ID_KEY = "gp_pin_id";
 const SESSION_TTL_DAYS = 30;
 
 function readCookie(name: string): string | null {
@@ -67,9 +68,13 @@ export async function recordPinterestAttribution(
   if (!isPinterestVisit(params)) return null;
 
   const session_key = ensureSessionKey();
+  const urlPinId = ctx.pin_id ?? params.get("pin_id");
+  if (urlPinId) {
+    try { sessionStorage.setItem(PIN_ID_KEY, urlPinId); } catch { /* ignore */ }
+  }
   const row = {
     session_key,
-    pin_id: ctx.pin_id ?? params.get("pin_id"),
+    pin_id: urlPinId,
     pin_mode: ctx.pin_mode ?? params.get("pin_mode"),
     landing_slug: ctx.landing_slug ?? null,
     niche_key: ctx.niche_key ?? null,
