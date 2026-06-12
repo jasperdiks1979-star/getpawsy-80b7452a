@@ -80,6 +80,8 @@ Deno.serve(async (req) => {
   }
 
   const dryRun = !!body?.dryRun;
+  const safeLimit = Number(body?.safeLimit) || 300; // delete budget per invocation
+  const replaceLimit = Number(body?.replaceLimit) || 10;
 
   // 1. Load latest protection audit
   const { data: lastRun } = await sb
@@ -108,10 +110,11 @@ Deno.serve(async (req) => {
     const { data: pins } = await sb
       .from("pinterest_protection_audit_pins")
       .select("queue_id, pinterest_pin_id, bucket, product_slug, board_name, overlay_text, impressions")
-      .eq("run_id", lastRun.id);
+      .eq("run_id", lastRun.id)
+      .limit(5000);
     const all = pins || [];
-    const safe = all.filter((p) => p.bucket === "SAFE_TO_REMOVE");
-    const replace = all.filter((p) => p.bucket === "REPLACE_FIRST");
+    const safe = all.filter((p) => p.bucket === "SAFE_TO_REMOVE").slice(0, safeLimit);
+    const replace = all.filter((p) => p.bucket === "REPLACE_FIRST").slice(0, replaceLimit);
     const unknown = all.filter((p) => p.bucket === "UNKNOWN_NO_ANALYTICS");
     const review = all.filter((p) => p.bucket === "REVIEW");
     const keep = all.filter((p) => p.bucket === "KEEP");
