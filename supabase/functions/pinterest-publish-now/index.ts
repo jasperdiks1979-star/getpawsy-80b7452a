@@ -151,10 +151,20 @@ Deno.serve(async (req) => {
     const { data } = await sb.from("pinterest_pin_queue").select("*").eq("id", pinId).maybeSingle();
     row = data;
   } else {
-    const { data } = await sb.from("pinterest_pin_queue")
+    // Premium gate: only Creative Director v2 pins unless admin enabled bypass.
+    const { data: rtPremium } = await sb.from("pinterest_runtime_settings")
+      .select("premium_engine_paused, allow_legacy_product_feed").eq("id", 1).maybeSingle();
+    if ((rtPremium as any)?.premium_engine_paused) {
+      return fail("paused", { message: "Premium engine paused" });
+    }
+    let q = sb.from("pinterest_pin_queue")
       .select("*")
       .eq("status", "queued")
-      .lte("scheduled_at", new Date().toISOString())
+      .lte("scheduled_at", new Date().toISOString());
+    if (!(rtPremium as any)?.allow_legacy_product_feed) {
+      q = q.eq("meta->>creative_source", "creative_director_v2");
+    }
+    const { data } = await q
       .order("scheduled_at", { ascending: true })
       .limit(1)
       .maybeSingle();

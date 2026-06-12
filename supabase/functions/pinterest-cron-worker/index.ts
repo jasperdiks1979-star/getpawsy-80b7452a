@@ -441,6 +441,52 @@ Deno.serve(async (req) => {
       console.warn("[cron] override filter failed (non-fatal):", e);
     }
 
+    // ── 1c. Premium Creative Engine gate ───────────────────────────────────
+    // Block any queued pin that did not originate from creative-director v2,
+    // unless an admin has explicitly enabled the legacy product-feed bypass.
+    try {
+      const { data: rtPremium } = await sb
+        .from("pinterest_runtime_settings")
+        .select("premium_engine_paused, allow_legacy_product_feed")
+        .eq("id", 1)
+        .maybeSingle();
+      if ((rtPremium as any)?.premium_engine_paused) {
+        return await respond(
+          { ok: true, message: "Premium engine paused — no publishes", results: [] },
+          { logStatus: "skipped", success: true, processed: 0 },
+        );
+      }
+      if (!(rtPremium as any)?.allow_legacy_product_feed) {
+        const before = pins.length;
+        const dropped = (pins as any[]).filter(
+          (p) => ((p as any)?.meta?.creative_source ?? null) !== "creative_director_v2",
+        );
+        const kept = (pins as any[]).filter(
+          (p) => ((p as any)?.meta?.creative_source ?? null) === "creative_director_v2",
+        );
+        for (const d of dropped) {
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            error_message: "rejected_low_quality_supplier_style",
+          }).eq("id", d.id);
+        }
+        pins.length = 0;
+        pins.push(...kept);
+        if (before !== pins.length) {
+          console.log(`[cron] premium gate rejected ${before - pins.length} legacy pins`);
+        }
+      }
+    } catch (e) {
+      console.warn("[cron] premium gate failed (non-fatal):", e);
+    }
+
+    if (!pins.length) {
+      return await respond(
+        { ok: true, message: "No premium pins eligible", results: [] },
+        { logStatus: "completed", success: true, processed: 0 },
+      );
+    }
+
     // ── 2. Resolve access token (with refresh if needed) ──
     const conn = await getLatestPinterestConnection(sb);
 
