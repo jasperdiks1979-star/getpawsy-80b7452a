@@ -200,14 +200,16 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             action: "run_full",
-            slug: p.product_slug,
+            productSlug: p.product_slug,
             count: 5,
-            diversify: true,
-            avoid_overlays: BANNED_PHRASES.concat(p.overlay_text ? [String(p.overlay_text).toLowerCase()] : []),
+            force: true,
           }),
         });
         const j = await resp.json().catch(() => ({}));
-        draftIds = (j?.draft_ids || j?.drafts?.map((d: any) => d.id) || []).filter(Boolean);
+        const arr = j?.data?.drafts || j?.drafts || j?.queueIds || [];
+        draftIds = (Array.isArray(arr) ? arr : [])
+          .map((d: any) => (typeof d === "string" ? d : d?.queueId || d?.id))
+          .filter(Boolean);
       } catch (_e) { /* swallow */ }
       draftsCount += draftIds.length;
       if (draftIds.length > 0) replacedCount++;
