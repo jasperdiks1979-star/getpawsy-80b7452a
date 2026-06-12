@@ -7,6 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
+import { stampPinIdOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -398,6 +399,22 @@ Deno.serve(async (req) => {
 
   if (pinRes.ok && parsed?.id) {
     const externalUrl = `https://www.pinterest.com/pin/${parsed.id}/`;
+    // Stamp real pin_id onto the outbound link so click-side attribution can
+    // resolve pin → board → product → revenue on every future visit.
+    let stampedDestination = row.destination_link as string;
+    try {
+      const candidate = stampPinIdOnLink(stampedDestination, parsed.id);
+      if (candidate !== stampedDestination) {
+        const patchRes = await patchPinLink(conn.access_token, PINTEREST_API, parsed.id, candidate);
+        if (patchRes.ok) {
+          stampedDestination = candidate;
+        } else {
+          console.warn(`[publish-now] pin_id stamp PATCH failed pin=${parsed.id} status=${patchRes.status} reason=${patchRes.reason}`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[publish-now] pin_id stamp error pin=${parsed.id}: ${(e as Error).message}`);
+    }
     await sb.from("pinterest_pin_queue").update({
       status: "posted",
       posted_at: new Date().toISOString(),
@@ -405,6 +422,8 @@ Deno.serve(async (req) => {
       pin_external_id: parsed.id,
       external_url: externalUrl,
       board_id: boardId,
+      destination_link: stampedDestination,
+      final_resolved_url: stampedDestination,
       last_publish_error: null,
       publishing_started_at: null,
     }).eq("id", row.id);
