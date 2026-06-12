@@ -12866,6 +12866,201 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_conversion_alerts: {
+        Row: {
+          alert_type: string
+          auto_closed: boolean
+          closed_at: string | null
+          destination_url: string | null
+          details: Json | null
+          id: string
+          opened_at: string
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          repair_action: string | null
+          repair_log_id: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          alert_type: string
+          auto_closed?: boolean
+          closed_at?: string | null
+          destination_url?: string | null
+          details?: Json | null
+          id?: string
+          opened_at?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          repair_action?: string | null
+          repair_log_id?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          alert_type?: string
+          auto_closed?: boolean
+          closed_at?: string | null
+          destination_url?: string | null
+          details?: Json | null
+          id?: string
+          opened_at?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          repair_action?: string | null
+          repair_log_id?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pinterest_conversion_audit: {
+        Row: {
+          audit_date: string
+          board_id: string | null
+          board_name: string | null
+          cart_screenshot_url: string | null
+          cart_status: string | null
+          conversion_risk_score: number
+          created_at: string
+          destination_url: string | null
+          final_url: string | null
+          http_status: number | null
+          id: string
+          inventory_status: string | null
+          page_screenshot_url: string | null
+          pin_id: string | null
+          pinterest_pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          product_status: string | null
+          redirect_hops: number | null
+          risk_reasons: string[]
+          run_id: string
+          utm_intact: boolean | null
+          utm_lost_keys: string[] | null
+        }
+        Insert: {
+          audit_date?: string
+          board_id?: string | null
+          board_name?: string | null
+          cart_screenshot_url?: string | null
+          cart_status?: string | null
+          conversion_risk_score?: number
+          created_at?: string
+          destination_url?: string | null
+          final_url?: string | null
+          http_status?: number | null
+          id?: string
+          inventory_status?: string | null
+          page_screenshot_url?: string | null
+          pin_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          product_status?: string | null
+          redirect_hops?: number | null
+          risk_reasons?: string[]
+          run_id: string
+          utm_intact?: boolean | null
+          utm_lost_keys?: string[] | null
+        }
+        Update: {
+          audit_date?: string
+          board_id?: string | null
+          board_name?: string | null
+          cart_screenshot_url?: string | null
+          cart_status?: string | null
+          conversion_risk_score?: number
+          created_at?: string
+          destination_url?: string | null
+          final_url?: string | null
+          http_status?: number | null
+          id?: string
+          inventory_status?: string | null
+          page_screenshot_url?: string | null
+          pin_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          product_status?: string | null
+          redirect_hops?: number | null
+          risk_reasons?: string[]
+          run_id?: string
+          utm_intact?: boolean | null
+          utm_lost_keys?: string[] | null
+        }
+        Relationships: []
+      }
+      pinterest_conversion_runs: {
+        Row: {
+          alerts_auto_closed: number | null
+          alerts_opened: number | null
+          broken_urls: number | null
+          cart_failures: number | null
+          finished_at: string | null
+          id: string
+          inventory_failures: number | null
+          notes: Json | null
+          overall_score: number | null
+          pins_failed: number | null
+          pins_ready: number | null
+          pins_repaired: number | null
+          pins_total: number | null
+          products_at_risk: number | null
+          redirect_issues: number | null
+          started_at: string
+          status: string | null
+          trigger_source: string
+          utm_failures: number | null
+        }
+        Insert: {
+          alerts_auto_closed?: number | null
+          alerts_opened?: number | null
+          broken_urls?: number | null
+          cart_failures?: number | null
+          finished_at?: string | null
+          id?: string
+          inventory_failures?: number | null
+          notes?: Json | null
+          overall_score?: number | null
+          pins_failed?: number | null
+          pins_ready?: number | null
+          pins_repaired?: number | null
+          pins_total?: number | null
+          products_at_risk?: number | null
+          redirect_issues?: number | null
+          started_at?: string
+          status?: string | null
+          trigger_source?: string
+          utm_failures?: number | null
+        }
+        Update: {
+          alerts_auto_closed?: number | null
+          alerts_opened?: number | null
+          broken_urls?: number | null
+          cart_failures?: number | null
+          finished_at?: string | null
+          id?: string
+          inventory_failures?: number | null
+          notes?: Json | null
+          overall_score?: number | null
+          pins_failed?: number | null
+          pins_ready?: number | null
+          pins_repaired?: number | null
+          pins_total?: number | null
+          products_at_risk?: number | null
+          redirect_issues?: number | null
+          started_at?: string
+          status?: string | null
+          trigger_source?: string
+          utm_failures?: number | null
+        }
+        Relationships: []
+      }
       pinterest_creative_intents: {
         Row: {
           audience_intent: string | null
