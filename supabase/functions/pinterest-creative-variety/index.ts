@@ -116,12 +116,13 @@ async function generateBatch(
   return parseLines(raw, KIND_LIMITS[kind]).slice(0, count);
 }
 
-async function seedPools(force = false) {
+async function seedPools(force = false, onlyCategory?: string) {
   const banned = await bannedPhrasesFromDb();
   const summary: Record<string, Record<Kind, number>> = {};
   let totalInserted = 0;
 
-  for (const cat of CATEGORIES) {
+  const cats = onlyCategory ? CATEGORIES.filter((c) => c === onlyCategory) : CATEGORIES;
+  for (const cat of cats) {
     summary[cat] = { headline: 0, overlay: 0, cta: 0, description: 0 };
     for (const kind of KINDS) {
       if (!force) {
@@ -136,13 +137,8 @@ async function seedPools(force = false) {
           continue;
         }
       }
-      // Generate in two halves to keep prompt diversity high
-      const halves = await Promise.all([
-        generateBatch(cat, kind, 60, banned),
-        generateBatch(cat, kind, 60, banned),
-      ]);
       const variants = Array.from(
-        new Set(halves.flat().map((v) => v.trim())),
+        new Set((await generateBatch(cat, kind, 110, banned)).map((v) => v.trim())),
       ).slice(0, 100);
       if (variants.length === 0) continue;
       const rows = variants.map((text) => ({
@@ -354,9 +350,10 @@ Deno.serve(async (req) => {
   const action = url.searchParams.get("action") ?? "report";
   const force = url.searchParams.get("force") === "true";
   const dryRun = url.searchParams.get("dry_run") !== "false";
+  const category = url.searchParams.get("category") ?? undefined;
 
   try {
-    if (action === "seed_pools") return ok({ ok: true, action, ...(await seedPools(force)) });
+    if (action === "seed_pools") return ok({ ok: true, action, ...(await seedPools(force, category)) });
     if (action === "retire_phrases") return ok({ ok: true, action, ...(await retirePhrases()) });
     if (action === "expand_underrepresented") return ok({ ok: true, action, ...(await expandUnderrepresented(dryRun) )});
     if (action === "recompute_density") return ok({ ok: true, action, ...(await recomputeDensity()) });
