@@ -62,9 +62,22 @@ async function handle(req: Request, traceId: string) {
   const cronSecret = req.headers.get("x-cron-secret") || "";
   const expectedCronSecret = Deno.env.get("PINTEREST_CRON_SECRET") || "";
   const bearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  // Decode bearer JWT payload to see if it's a service_role token (covers
+  // cron-issued tokens that may differ in string form from SERVICE_KEY).
+  function decodeRole(tok: string): string | null {
+    try {
+      const parts = tok.split(".");
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return typeof payload.role === "string" ? payload.role : null;
+    } catch { return null; }
+  }
+  const role = bearerToken ? decodeRole(bearerToken) : null;
   const isServiceCaller =
     (expectedCronSecret && cronSecret && cronSecret === expectedCronSecret) ||
-    (bearerToken && bearerToken === SERVICE_KEY);
+    (bearerToken && bearerToken === SERVICE_KEY) ||
+    role === "service_role";
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   if (!isServiceCaller) {
