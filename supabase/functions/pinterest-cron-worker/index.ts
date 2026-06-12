@@ -889,6 +889,31 @@ Deno.serve(async (req) => {
           results.push({ pinId: pin.id, status: "rejected", error: reason });
           continue;
         }
+        // Same gate but for title + description — catches "Plush, warm, easy to
+        // wash" on a cat toy and "Stop scooping" leaks into titles.
+        const titleCheck = validateCopyForCategory(pin.pin_title, pin.category_key, "title");
+        const descCheck = validateCopyForCategory(pin.pin_description, pin.category_key, "description");
+        const copyCheck = !titleCheck.ok ? titleCheck : (!descCheck.ok ? descCheck : null);
+        if (copyCheck) {
+          const reason = copyCheck.reason || "creative_mismatch_copy";
+          console.warn(`[cron] Pin ${pin.id} blocked by copy-category gate: ${reason}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: "creative_mismatch",
+            qa_reasons: [reason],
+            error_message: reason,
+            publishing_started_at: null,
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "publish",
+            status: "rejected",
+            error_message: reason,
+            response_data: { reason, bucket: copyCheck.bucket },
+          });
+          results.push({ pinId: pin.id, status: "rejected", error: reason });
+          continue;
+        }
       } catch (e) {
         console.warn(`[cron] overlay category check threw for pin ${pin.id}:`, e);
       }
