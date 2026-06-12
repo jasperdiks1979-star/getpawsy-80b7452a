@@ -83,6 +83,14 @@ export interface PatchResult {
   ok: boolean;
   reason?: string;
   status?: number;
+  link?: string | null;
+  response?: unknown;
+}
+
+function extractPinLink(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+  return typeof b.link === "string" ? b.link : null;
 }
 
 export async function patchPinLink(
@@ -100,12 +108,56 @@ export async function patchPinLink(
       },
       body: JSON.stringify({ link: newLink }),
     });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { ok: false, status: res.status, reason: body.slice(0, 300) };
+    const text = await res.text().catch(() => "");
+    let body: unknown = null;
+    if (text) {
+      try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 500) }; }
     }
-    return { ok: true, status: res.status };
+    if (!res.ok) {
+      return { ok: false, status: res.status, reason: text.slice(0, 300), response: body };
+    }
+    return { ok: true, status: res.status, link: extractPinLink(body), response: body };
   } catch (e) {
     return { ok: false, reason: (e as Error).message };
+  }
+}
+
+export async function readPinterestPinLink(
+  accessToken: string,
+  apiBase: string,
+  pinId: string,
+): Promise<PatchResult> {
+  try {
+    const res = await fetch(`${apiBase}/pins/${pinId}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const text = await res.text().catch(() => "");
+    let body: unknown = null;
+    if (text) {
+      try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 500) }; }
+    }
+    if (!res.ok) return { ok: false, status: res.status, reason: text.slice(0, 300), response: body };
+    return { ok: true, status: res.status, link: extractPinLink(body), response: body };
+  } catch (e) {
+    return { ok: false, reason: (e as Error).message };
+  }
+}
+
+export function linkHasPinterestAttribution(link: string | null | undefined, pinId: string): boolean {
+  if (!link) return false;
+  try {
+    const u = new URL(link);
+    return u.searchParams.get("pin_id") === pinId &&
+      u.searchParams.get("utm_source") === "pinterest" &&
+      !!u.searchParams.get("utm_medium") &&
+      !!u.searchParams.get("utm_campaign") &&
+      !!u.searchParams.get("utm_content");
+  } catch {
+    return link.includes(`pin_id=${encodeURIComponent(pinId)}`) &&
+      /[?&]utm_source=pinterest(&|$)/.test(link) &&
+      /[?&]utm_medium=/.test(link) &&
+      /[?&]utm_campaign=/.test(link) &&
+      /[?&]utm_content=/.test(link);
   }
 }
