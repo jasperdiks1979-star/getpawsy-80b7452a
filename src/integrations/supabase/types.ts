@@ -15877,6 +15877,87 @@ export type Database = {
           },
         ]
       }
+      pinterest_revenue_attribution_v3: {
+        Row: {
+          add_to_carts: number
+          board: string | null
+          category: string | null
+          checkouts: number
+          clicks: number
+          computed_at: string
+          creative_angle: string | null
+          cta: string | null
+          headline: string | null
+          hook: string | null
+          id: string
+          impressions: number
+          orders: number
+          pin_id: string
+          product_id: string | null
+          product_slug: string | null
+          product_views: number
+          purchases: number
+          revenue_cents: number
+          revenue_per_click: number
+          revenue_per_pin: number
+          roas: number
+          saves: number
+          window_days: number
+        }
+        Insert: {
+          add_to_carts?: number
+          board?: string | null
+          category?: string | null
+          checkouts?: number
+          clicks?: number
+          computed_at?: string
+          creative_angle?: string | null
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          impressions?: number
+          orders?: number
+          pin_id: string
+          product_id?: string | null
+          product_slug?: string | null
+          product_views?: number
+          purchases?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          revenue_per_pin?: number
+          roas?: number
+          saves?: number
+          window_days: number
+        }
+        Update: {
+          add_to_carts?: number
+          board?: string | null
+          category?: string | null
+          checkouts?: number
+          clicks?: number
+          computed_at?: string
+          creative_angle?: string | null
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          impressions?: number
+          orders?: number
+          pin_id?: string
+          product_id?: string | null
+          product_slug?: string | null
+          product_views?: number
+          purchases?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          revenue_per_pin?: number
+          roas?: number
+          saves?: number
+          window_days?: number
+        }
+        Relationships: []
+      }
       pinterest_revenue_brain_runs: {
         Row: {
           drafts_promoted: number
@@ -15964,6 +16045,45 @@ export type Database = {
           purchases?: number
           revenue_cents?: number
           sessions?: number
+        }
+        Relationships: []
+      }
+      pinterest_revenue_learning_runs: {
+        Row: {
+          bottom_pins_throttled: number
+          details: Json
+          error: string | null
+          finished_at: string | null
+          id: string
+          pins_scanned: number
+          started_at: string
+          status: string
+          top_pins_cloned: number
+          total_revenue_cents: number
+        }
+        Insert: {
+          bottom_pins_throttled?: number
+          details?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          pins_scanned?: number
+          started_at?: string
+          status?: string
+          top_pins_cloned?: number
+          total_revenue_cents?: number
+        }
+        Update: {
+          bottom_pins_throttled?: number
+          details?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          pins_scanned?: number
+          started_at?: string
+          status?: string
+          top_pins_cloned?: number
+          total_revenue_cents?: number
         }
         Relationships: []
       }
