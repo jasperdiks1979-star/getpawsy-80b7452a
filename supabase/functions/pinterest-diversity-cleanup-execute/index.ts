@@ -68,8 +68,10 @@ Deno.serve(async (req) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const body = await req.json().catch(() => ({}));
-  const isCron = body?.trigger === "cron" && req.headers.get("x-cron-secret") === Deno.env.get("CRON_SECRET");
-  if (!isCron) {
+  const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+  const provided = req.headers.get("x-internal-secret") || req.headers.get("x-cron-secret");
+  const isInternal = body?.trigger === "cron" && internalSecret && provided === internalSecret;
+  if (!isInternal) {
     const uid = await adminAuth(req, sb);
     if (!uid) return json({ ok: false, message: "admin only" }, 403);
   }
