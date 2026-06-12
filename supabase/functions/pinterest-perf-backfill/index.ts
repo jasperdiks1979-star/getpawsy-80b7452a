@@ -61,13 +61,27 @@ Deno.serve(async (req) => {
     // Fallback: do it client-side via two queries (rpc not guaranteed).
     void cErr; void candidates;
 
-    const { data: posted } = await sb
-      .from("pinterest_pin_queue")
-      .select("pin_external_id,product_id,product_slug")
-      .eq("status", "posted")
-      .not("pin_external_id", "is", null)
-      .limit(5000);
-    const rows = (posted ?? []) as Array<{ pin_external_id: string; product_id: string | null; product_slug: string | null }>;
+    // Paginated fetch — PostgREST caps responses at 1000 rows by default.
+    const pageSize = 1000;
+    const maxPages = 20; // safety cap → 20k pins
+    const rows: Array<{ pin_external_id: string; product_id: string | null; product_slug: string | null }> = [];
+    let pages = 0;
+    for (let page = 0; page < maxPages; page++) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data: chunkRows, error: pErr } = await sb
+        .from("pinterest_pin_queue")
+        .select("pin_external_id,product_id,product_slug")
+        .eq("status", "posted")
+        .not("pin_external_id", "is", null)
+        .order("pin_external_id", { ascending: true })
+        .range(from, to);
+      if (pErr) break;
+      const batch = (chunkRows ?? []) as typeof rows;
+      rows.push(...batch);
+      pages++;
+      if (batch.length < pageSize) break;
+    }
     const slugCounts = new Map<string, number>();
     for (const r of rows) if (r.product_slug) slugCounts.set(r.product_slug, (slugCounts.get(r.product_slug) ?? 0) + 1);
 
@@ -139,6 +153,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       ok: true, traceId,
+      pages_scanned: pages,
+      total_posted_scanned: rows.length,
       eligible_dupes: pinIds.length,
       missing_before: missing.length,
       processed: target.length,
