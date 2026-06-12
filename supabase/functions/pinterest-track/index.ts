@@ -16,6 +16,18 @@ function isPinterest(utmSource: string | null, referrer: string | null, pinId: s
   return false;
 }
 
+async function resolveCanonicalPinId(sb: ReturnType<typeof createClient>, rawPinId: string | null): Promise<string | null> {
+  if (!rawPinId) return null;
+  if (/^\d{6,}$/.test(rawPinId)) return rawPinId;
+  const { data } = await sb
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id")
+    .eq("id", rawPinId)
+    .not("pinterest_pin_id", "is", null)
+    .maybeSingle();
+  return (data as { pinterest_pin_id?: string | null } | null)?.pinterest_pin_id ?? rawPinId;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = crypto.randomUUID();
@@ -46,7 +58,7 @@ Deno.serve(async (req) => {
       //   3. Slug-shaped `utm_content` → most-recent posted pin for that slug
       //      (backward compatibility for pins published before the pin_id stamp
       //      was wired into the publisher).
-      let pin_id: string | null = body.pin_id ?? null;
+      let pin_id: string | null = await resolveCanonicalPinId(sb, body.pin_id ?? null);
       if (!pin_id && typeof utm_content === "string" && /^\d{6,}$/.test(utm_content)) {
         pin_id = utm_content;
       }
@@ -155,7 +167,9 @@ Deno.serve(async (req) => {
       // Pinterest has NOT granted pin_edit access, so this slug fallback is
       // the only way to reconnect legacy traffic to a pin/board/creative.
       const existingPinId = (attr as { pin_id?: string | null })?.pin_id ?? null;
-      const incomingPinId: string | null = typeof body.pin_id === "string" && body.pin_id ? body.pin_id : null;
+      const incomingPinId: string | null = typeof body.pin_id === "string" && body.pin_id
+        ? await resolveCanonicalPinId(sb, body.pin_id)
+        : null;
       if (!existingPinId && incomingPinId) {
         await sb
           .from("pinterest_attribution_sessions")
