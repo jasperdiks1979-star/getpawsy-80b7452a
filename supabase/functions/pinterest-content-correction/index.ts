@@ -59,14 +59,51 @@ async function handle(req: Request, traceId: string) {
   }
 
   const authHeader = req.headers.get("Authorization") || "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-  const { data: userData } = await userClient.auth.getUser();
-  const user = userData?.user;
-  if (!user) return jsonResponse({ ok: false, traceId, message: "unauthorized" }, 401);
+  const cronSecret = req.headers.get("x-cron-secret") || "";
+  let expectedCronSecret = Deno.env.get("PINTEREST_CRON_SECRET") || "";
+  const bearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  // Decode bearer JWT payload to see if it's a service_role token (covers
+  // cron-issued tokens that may differ in string form from SERVICE_KEY).
+  function decodeRole(tok: string): string | null {
+    try {
+      const parts = tok.split(".");
+      if (parts.length !== 3) return null;
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return typeof payload.role === "string" ? payload.role : null;
+    } catch { return null; }
+  }
+  const role = bearerToken ? decodeRole(bearerToken) : null;
+
+  // Fallback: load shared cron secret from app_config so pg_cron can call
+  // this function without needing a deploy-time env secret.
+  if (!expectedCronSecret) {
+    try {
+      const tmpAdmin = createClient(SUPABASE_URL, SERVICE_KEY);
+      const { data: cfg } = await tmpAdmin
+        .from("app_config")
+        .select("value")
+        .eq("key", "pinterest_cron_secret")
+        .maybeSingle();
+      const s = (cfg?.value as any)?.secret;
+      if (typeof s === "string" && s.length > 16) expectedCronSecret = s;
+    } catch { /* ignore */ }
+  }
+
+  const isServiceCaller =
+    (expectedCronSecret && cronSecret && cronSecret === expectedCronSecret) ||
+    (bearerToken && bearerToken === SERVICE_KEY) ||
+    role === "service_role";
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-  if (!roleRow) return jsonResponse({ ok: false, traceId, message: "forbidden_admin_only" }, 403);
+  if (!isServiceCaller) {
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData } = await userClient.auth.getUser();
+    const user = userData?.user;
+    if (!user) return jsonResponse({ ok: false, traceId, message: "unauthorized" }, 401);
+    const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return jsonResponse({ ok: false, traceId, message: "forbidden_admin_only" }, 403);
+  }
 
   // 1. Load all active pins.
   const { data: activeRows, error: loadErr } = await admin
