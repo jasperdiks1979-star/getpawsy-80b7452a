@@ -29,7 +29,7 @@ const OCR_MODEL = "google/gemini-2.5-flash";
 // Per-invocation OCR cap. Edge functions have a 150s wall clock, and each
 // Gemini call is ~1.5-3s. 60 * 3s / 6 concurrency ≈ 30s headroom. Cache is
 // persistent so calling repeatedly drains the backlog deterministically.
-const OCR_BUDGET = 60;
+const OCR_BUDGET = 150;
 const CONCURRENCY = 6;
 const SOFT_DEADLINE_MS = 110_000; // stop OCR'ing 110s after start; still write summary
 const PAGE_SIZE = 1000;
@@ -249,6 +249,22 @@ Deno.serve(async (req) => {
       },
     }).eq("id", run.id);
 
+    // Self-chain: keep draining until backlog is zero. Fire-and-forget so this
+    // response returns immediately; the next invocation starts a fresh run.
+    const pendingAfter = Math.max(0, toOcr.length - targets.length);
+    if (pendingAfter > 0) {
+      try {
+        const selfUrl = `${SUPABASE_URL}/functions/v1/pinterest-ocr-cleanup-audit`;
+        const cronSec = Deno.env.get("CRON_SECRET") ?? "";
+        // Fire-and-forget; do NOT await.
+        fetch(selfUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: ANON_KEY },
+          body: JSON.stringify({ trigger: "cron", cron_secret: cronSec, budget: budget, chained: true }),
+        }).catch(() => {});
+      } catch { /* ignore */ }
+    }
+
     return json({
       ok: true, traceId, run_id: run.id,
       pins_total: total, pins_already_cached: alreadyCached,
@@ -258,7 +274,8 @@ Deno.serve(async (req) => {
         count: stopScoopingPins.length, pin_ids: stopScoopingPins,
       },
       engine_failed: engineFailed,
-      pending_after_run: Math.max(0, toOcr.length - targets.length),
+      pending_after_run: pendingAfter,
+      chained_next_run: pendingAfter > 0,
     });
   } catch (e: any) {
     await sb.from("pinterest_ocr_cleanup_runs").update({
