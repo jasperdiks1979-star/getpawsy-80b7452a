@@ -48,6 +48,7 @@ import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
 import { buildPinCopy, sanitizePinText, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
+import { checkGovernor, governorRejectReason } from "../_shared/pinterest-governor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
