@@ -2842,6 +2842,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-cleanup"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCleanup />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-products"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
