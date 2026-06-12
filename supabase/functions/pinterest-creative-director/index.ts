@@ -1004,6 +1004,12 @@ async function uploadAndInsertDraft(
     pin_image_phash: pinPhash,
     meta: intelligence
       ? {
+          creative_source: "creative_director_v2",
+          pin_type:
+            (brief as any).pin_mode === "problem_solution" ? "problem_solution" :
+            (brief as any).pin_mode === "listicle" ? "listicle" :
+            (brief as any).pin_mode === "product_showcase" ? "product_showcase" :
+            "lifestyle",
           intelligence: {
             scores: intelligence.scores,
             attempt_count: intelligence.attempt_count,
@@ -1024,7 +1030,7 @@ async function uploadAndInsertDraft(
           headline: brief.headline,
           cta: brief.cta,
         }
-      : undefined,
+      : { creative_source: "creative_director_v2", pin_type: "lifestyle" },
   };
 
   // ── Validate every generated pin BEFORE insert ────────────────────────────

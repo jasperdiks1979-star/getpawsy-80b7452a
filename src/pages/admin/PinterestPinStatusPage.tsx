@@ -18,6 +18,7 @@ import RecoverAndRequeueButton from '@/components/admin/pinterest-pin-status/Rec
 import DeployDiagnosticPanel from '@/components/admin/pinterest-pin-status/DeployDiagnosticPanel';
 import CronPublisherPanel from '@/components/admin/pinterest-pin-status/CronPublisherPanel';
 import CronDebugPanel from '@/components/admin/pinterest-pin-status/CronDebugPanel';
+import PremiumEnginePanel from '@/components/admin/pinterest-pin-status/PremiumEnginePanel';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
@@ -393,6 +394,7 @@ export default function PinterestPinStatusPage() {
       <DeployDiagnosticPanel />
       <CronPublisherPanel />
       <CronDebugPanel />
+      <PremiumEnginePanel />
 
       <Card>
         <CardHeader className="pb-3">

@@ -13142,6 +13142,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_style_profiles: {
+        Row: {
+          active: boolean
+          allowed_pin_types: string[]
+          category: string
+          created_at: string
+          id: string
+          negative_prompt: string
+          overlay_rules: Json
+          scene_prompt_template: string
+          style_name: string
+          updated_at: string
+          visual_direction: string
+        }
+        Insert: {
+          active?: boolean
+          allowed_pin_types?: string[]
+          category: string
+          created_at?: string
+          id?: string
+          negative_prompt?: string
+          overlay_rules?: Json
+          scene_prompt_template: string
+          style_name: string
+          updated_at?: string
+          visual_direction: string
+        }
+        Update: {
+          active?: boolean
+          allowed_pin_types?: string[]
+          category?: string
+          created_at?: string
+          id?: string
+          negative_prompt?: string
+          overlay_rules?: Json
+          scene_prompt_template?: string
+          style_name?: string
+          updated_at?: string
+          visual_direction?: string
+        }
+        Relationships: []
+      }
       pinterest_creative_variants: {
         Row: {
           created_at: string
@@ -15245,6 +15287,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_pin_type_governor: {
+        Row: {
+          count: number
+          id: string
+          pin_type: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          pin_type: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          pin_type?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       pinterest_pin_verdicts: {
         Row: {
           action_taken: string | null
@@ -15832,6 +15898,9 @@ export type Database = {
           product_slug: string | null
           reasons: string[]
           rejected: boolean
+          score_lifestyle: number | null
+          score_non_dropshipping: number | null
+          score_pinterest_fit: number | null
           scores: Json
           total_score: number | null
         }
@@ -15848,6 +15917,9 @@ export type Database = {
           product_slug?: string | null
           reasons?: string[]
           rejected?: boolean
+          score_lifestyle?: number | null
+          score_non_dropshipping?: number | null
+          score_pinterest_fit?: number | null
           scores?: Json
           total_score?: number | null
         }
@@ -15864,6 +15936,9 @@ export type Database = {
           product_slug?: string | null
           reasons?: string[]
           rejected?: boolean
+          score_lifestyle?: number | null
+          score_non_dropshipping?: number | null
+          score_pinterest_fit?: number | null
           scores?: Json
           total_score?: number | null
         }
@@ -16213,6 +16288,7 @@ export type Database = {
           active_board_name: string | null
           active_pinterest_connection_id: string | null
           allocation_policy_winners_pct: number
+          allow_legacy_product_feed: boolean
           auto_approve_queue: boolean
           creative_pool_governor_enabled: boolean
           daily_pin_cap: number
@@ -16227,13 +16303,19 @@ export type Database = {
           last_pin_publish_error: string | null
           last_pin_published_at: string | null
           last_recovery_pin_at: string | null
+          lifestyle_min: number
           max_category_share_pct: number
           max_pins_per_product_per_day: number
           max_render_retries: number
           min_gap_minutes: number
           mode: string
+          non_dropshipping_min: number
           pacing_mode: string
           per_category_daily_cap: number
+          pin_type_target_ratio: Json
+          pinterest_fit_min: number
+          premium_engine_paused: boolean
+          premium_quality_threshold: number
           product_cooldown_hours: number
           production_publish_verified: boolean
           production_publish_verified_at: string | null
@@ -16253,6 +16335,7 @@ export type Database = {
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           allocation_policy_winners_pct?: number
+          allow_legacy_product_feed?: boolean
           auto_approve_queue?: boolean
           creative_pool_governor_enabled?: boolean
           daily_pin_cap?: number
@@ -16267,13 +16350,19 @@ export type Database = {
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
           last_recovery_pin_at?: string | null
+          lifestyle_min?: number
           max_category_share_pct?: number
           max_pins_per_product_per_day?: number
           max_render_retries?: number
           min_gap_minutes?: number
           mode?: string
+          non_dropshipping_min?: number
           pacing_mode?: string
           per_category_daily_cap?: number
+          pin_type_target_ratio?: Json
+          pinterest_fit_min?: number
+          premium_engine_paused?: boolean
+          premium_quality_threshold?: number
           product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
@@ -16293,6 +16382,7 @@ export type Database = {
           active_board_name?: string | null
           active_pinterest_connection_id?: string | null
           allocation_policy_winners_pct?: number
+          allow_legacy_product_feed?: boolean
           auto_approve_queue?: boolean
           creative_pool_governor_enabled?: boolean
           daily_pin_cap?: number
@@ -16307,13 +16397,19 @@ export type Database = {
           last_pin_publish_error?: string | null
           last_pin_published_at?: string | null
           last_recovery_pin_at?: string | null
+          lifestyle_min?: number
           max_category_share_pct?: number
           max_pins_per_product_per_day?: number
           max_render_retries?: number
           min_gap_minutes?: number
           mode?: string
+          non_dropshipping_min?: number
           pacing_mode?: string
           per_category_daily_cap?: number
+          pin_type_target_ratio?: Json
+          pinterest_fit_min?: number
+          premium_engine_paused?: boolean
+          premium_quality_threshold?: number
           product_cooldown_hours?: number
           production_publish_verified?: boolean
           production_publish_verified_at?: string | null
