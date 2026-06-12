@@ -10,6 +10,10 @@ export const BANNED_PIN_PHRASES = [
   ["stop", "scooping"].join(" "),
   ["a", "box", "that", "manages", "itself"].join(" "),
   ["large", "space,", "no", "pressure"].join(" "),
+  ["tired", "of", "scooping"].join(" "),
+  ["tired", "of"].join(" "),
+  ["read", "reviews"].join(" "),
+  ["see", "how"].join(" "),
 ];
 
 export function sanitizePinText(input: string): string {
