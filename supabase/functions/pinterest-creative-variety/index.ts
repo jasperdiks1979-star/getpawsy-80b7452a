@@ -248,38 +248,59 @@ async function expandUnderrepresented(dryRun: boolean) {
 
 const ACTIVE_STATUSES = ["posted", "draft", "scheduled", "approved", "queued", "published"];
 
+async function fetchAllPaged<T>(
+  builder: (from: number, to: number) => Promise<{ data: T[] | null }>,
+  pageSize = 1000,
+  maxRows = 50000,
+): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  while (from < maxRows) {
+    const to = Math.min(from + pageSize - 1, maxRows - 1);
+    const { data } = await builder(from, to);
+    if (!data || data.length === 0) break;
+    out.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return out;
+}
+
 async function recomputeDensity() {
-  // total slugs with >=10 active pins (slug_repeat >= 10)
-  const { data: slugs } = await supabase
-    .from("pinterest_pin_queue")
-    .select("product_slug")
-    .in("status", ACTIVE_STATUSES)
-    .limit(50000);
+  const slugs = await fetchAllPaged<{ product_slug: string | null }>((from, to) =>
+    supabase
+      .from("pinterest_pin_queue")
+      .select("product_slug")
+      .in("status", ACTIVE_STATUSES)
+      .range(from, to),
+  );
   const counts = new Map<string, number>();
   for (const r of slugs ?? []) {
     const k = (r.product_slug as string) ?? "";
     if (!k) continue;
     counts.set(k, (counts.get(k) ?? 0) + 1);
   }
-  const totalActive = slugs?.length ?? 0;
+  const totalActive = slugs.length;
   const duplicateSlugs = [...counts.entries()].filter(([, n]) => n >= 10);
   const duplicatePins = duplicateSlugs.reduce((s, [, n]) => s + n, 0);
 
   // board diversity from last 30d posted
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
-  const { data: boards } = await supabase
-    .from("pinterest_pin_queue")
-    .select("board_id")
-    .eq("status", "posted")
-    .gte("posted_at", since)
-    .limit(50000);
+  const boards = await fetchAllPaged<{ board_id: string | null }>((from, to) =>
+    supabase
+      .from("pinterest_pin_queue")
+      .select("board_id")
+      .eq("status", "posted")
+      .gte("posted_at", since)
+      .range(from, to),
+  );
   const boardCounts = new Map<string, number>();
   for (const r of boards ?? []) {
     const b = (r.board_id as string) ?? "";
     if (!b) continue;
     boardCounts.set(b, (boardCounts.get(b) ?? 0) + 1);
   }
-  const totalBoardPins = boards?.length ?? 0;
+  const totalBoardPins = boards.length;
   const activeBoards = boardCounts.size;
   // Simple diversity = 1 - (top3 share)
   const top3 = [...boardCounts.values()].sort((a, b) => b - a).slice(0, 3).reduce((s, n) => s + n, 0);
@@ -290,16 +311,29 @@ async function recomputeDensity() {
   const dupSlugSet = new Set(duplicateSlugs.map(([k]) => k));
   let stage2 = 0;
   if (dupSlugSet.size > 0) {
-    const { data: cand } = await supabase
-      .from("pinterest_pin_queue")
-      .select("id, product_slug, pinterest_pin_id, pinterest_pin_performance!inner(impressions,clicks,saves)")
-      .in("product_slug", [...dupSlugSet])
-      .in("status", ACTIVE_STATUSES)
-      .limit(5000);
-    stage2 = (cand ?? []).filter((r: any) => {
-      const p = r.pinterest_pin_performance?.[0] ?? r.pinterest_pin_performance ?? {};
-      return (p.impressions ?? 0) < 50 && (p.clicks ?? 0) === 0 && (p.saves ?? 0) === 0;
-    }).length;
+    // Pull pin ids in dup slugs then check perf separately (avoid PostgREST FK ambiguity)
+    const cand = await fetchAllPaged<{ pinterest_pin_id: string | null }>((from, to) =>
+      supabase
+        .from("pinterest_pin_queue")
+        .select("pinterest_pin_id")
+        .in("product_slug", [...dupSlugSet])
+        .in("status", ACTIVE_STATUSES)
+        .not("pinterest_pin_id", "is", null)
+        .range(from, to),
+    );
+    const pinIds = cand.map((r) => r.pinterest_pin_id!).filter(Boolean);
+    // Batch perf lookup
+    const chunk = 500;
+    for (let i = 0; i < pinIds.length; i += chunk) {
+      const slice = pinIds.slice(i, i + chunk);
+      const { data: perf } = await supabase
+        .from("pinterest_pin_performance")
+        .select("pin_id,impressions,clicks,saves")
+        .in("pin_id", slice);
+      for (const p of perf ?? []) {
+        if ((p.impressions ?? 0) < 50 && (p.clicks ?? 0) === 0 && (p.saves ?? 0) === 0) stage2++;
+      }
+    }
   }
 
   return {
