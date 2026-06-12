@@ -6,6 +6,7 @@ import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payloa
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
+import { stampPinIdOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
 import { validateOverlayForCategory, validateCopyForCategory } from "../_shared/pinterest-overlay-fallback.ts";
 import {
   DiversityGuard,
@@ -1247,6 +1248,25 @@ Deno.serve(async (req) => {
         const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinData.id);
         console.log("[pinterest] verify", { pin_id: pinData.id, ...verification });
         await markPosted(sb, pin, pinData.id, verification);
+        // ── Stamp real pin_id onto the outbound link via PATCH so click-side
+        // attribution (pinterest-track → gi_attribution_events) can resolve
+        // pin → board → product → revenue for every future visit.
+        try {
+          const stampedLink = stampPinIdOnLink(destinationLink, pinData.id);
+          if (stampedLink !== destinationLink) {
+            const patchRes = await patchPinLink(accessToken, apiBase, pinData.id, stampedLink);
+            if (patchRes.ok) {
+              await sb.from("pinterest_pin_queue").update({
+                destination_link: stampedLink,
+                final_resolved_url: stampedLink,
+              }).eq("id", pin.id);
+            } else {
+              console.warn(`[cron] pin_id stamp PATCH failed pin=${pinData.id} status=${patchRes.status} reason=${patchRes.reason}`);
+            }
+          }
+        } catch (e) {
+          console.warn(`[cron] pin_id stamp error pin=${pinData.id}: ${(e as Error).message}`);
+        }
         await sb.from("pinterest_publish_logs").insert({
           pin_queue_id: pin.id,
           attempt: (pin.publish_attempts || 0) + 1,
