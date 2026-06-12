@@ -6,7 +6,7 @@ import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payloa
 import { collectPinterestBannedCopyHits, rejectReasonForBannedCopy } from "../_shared/pinterest-banned-copy.ts";
 import { validateDestination } from "../_shared/pinterest-destination-validator.ts";
 import { checkGovernor } from "../_shared/pinterest-governor.ts";
-import { stampPinIdOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
+import { stampPinIdOnLink, patchPinLink, stampUtmsOnLink } from "../_shared/pinterest-link-stamp.ts";
 import { validateOverlayForCategory, validateCopyForCategory } from "../_shared/pinterest-overlay-fallback.ts";
 import {
   DiversityGuard,
