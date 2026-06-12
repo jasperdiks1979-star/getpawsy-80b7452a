@@ -246,12 +246,14 @@ async function expandUnderrepresented(dryRun: boolean) {
   };
 }
 
+const ACTIVE_STATUSES = ["posted", "draft", "scheduled", "approved", "queued", "published"];
+
 async function recomputeDensity() {
   // total slugs with >=10 active pins (slug_repeat >= 10)
   const { data: slugs } = await supabase
     .from("pinterest_pin_queue")
     .select("product_slug")
-    .in("status", ["published", "queued", "approved", "scheduled"])
+    .in("status", ACTIVE_STATUSES)
     .limit(50000);
   const counts = new Map<string, number>();
   for (const r of slugs ?? []) {
@@ -268,7 +270,7 @@ async function recomputeDensity() {
   const { data: boards } = await supabase
     .from("pinterest_pin_queue")
     .select("board_id")
-    .eq("status", "published")
+    .eq("status", "posted")
     .gte("posted_at", since)
     .limit(50000);
   const boardCounts = new Map<string, number>();
@@ -292,7 +294,7 @@ async function recomputeDensity() {
       .from("pinterest_pin_queue")
       .select("id, product_slug, pinterest_pin_id, pinterest_pin_performance!inner(impressions,clicks,saves)")
       .in("product_slug", [...dupSlugSet])
-      .in("status", ["published", "queued"])
+      .in("status", ACTIVE_STATUSES)
       .limit(5000);
     stage2 = (cand ?? []).filter((r: any) => {
       const p = r.pinterest_pin_performance?.[0] ?? r.pinterest_pin_performance ?? {};
