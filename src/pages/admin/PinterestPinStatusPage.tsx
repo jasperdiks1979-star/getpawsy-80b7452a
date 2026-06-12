@@ -19,6 +19,7 @@ import DeployDiagnosticPanel from '@/components/admin/pinterest-pin-status/Deplo
 import CronPublisherPanel from '@/components/admin/pinterest-pin-status/CronPublisherPanel';
 import CronDebugPanel from '@/components/admin/pinterest-pin-status/CronDebugPanel';
 import PremiumEnginePanel from '@/components/admin/pinterest-pin-status/PremiumEnginePanel';
+import DiversityGovernorPanel from '@/components/admin/pinterest-pin-status/DiversityGovernorPanel';
 
 const PATTERN_LABELS: Record<string, string> = Object.fromEntries(
   PATTERNS.map((p) => [p.id as string, p.label]),
@@ -395,6 +396,7 @@ export default function PinterestPinStatusPage() {
       <CronPublisherPanel />
       <CronDebugPanel />
       <PremiumEnginePanel />
+      <DiversityGovernorPanel />
 
       <Card>
         <CardHeader className="pb-3">
