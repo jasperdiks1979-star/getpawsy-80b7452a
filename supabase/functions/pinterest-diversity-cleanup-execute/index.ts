@@ -192,38 +192,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. REPLACE_FIRST → queue 5 diverse drafts per pin via creative-director
-    let replacedCount = 0;
-    let draftsCount = 0;
+    // 6. REPLACE_FIRST → enqueue replacement job row; worker drains async
+    let queuedReplacements = 0;
     let impressionsPreserved = 0;
     for (const p of replace) {
       impressionsPreserved += p.impressions || 0;
       if (dryRun) continue;
       if (!p.product_slug) continue;
-      let draftIds: string[] = [];
-      try {
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SERVICE_KEY}`,
-            apikey: SERVICE_KEY,
-          },
-          body: JSON.stringify({
-            action: "run_full",
-            productSlug: p.product_slug,
-            count: 5,
-            force: true,
-          }),
-        });
-        const j = await resp.json().catch(() => ({}));
-        const arr = j?.data?.drafts || j?.drafts || j?.queueIds || [];
-        draftIds = (Array.isArray(arr) ? arr : [])
-          .map((d: any) => (typeof d === "string" ? d : d?.queueId || d?.id))
-          .filter(Boolean);
-      } catch (_e) { /* swallow */ }
-      draftsCount += draftIds.length;
-      if (draftIds.length > 0) replacedCount++;
+      // Skip if a pending or completed replacement job already exists for this pin
+      const { count: existing } = await sb
+        .from("pinterest_overlay_replacement_jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("legacy_queue_id", p.queue_id)
+        .in("status", ["pending_creative", "pending_indexing", "archived"]);
+      if ((existing || 0) > 0) continue;
       await sb.from("pinterest_overlay_replacement_jobs").insert({
         run_id: runId,
         legacy_queue_id: p.queue_id,
@@ -231,10 +213,11 @@ Deno.serve(async (req) => {
         legacy_overlay: p.overlay_text,
         product_slug: p.product_slug,
         board_name: p.board_name,
-        replacement_count: draftIds.length,
-        replacement_draft_ids: draftIds,
-        status: draftIds.length > 0 ? "pending_indexing" : "draft_generation_failed",
+        replacement_count: 0,
+        replacement_draft_ids: [],
+        status: "pending_creative",
       });
+      queuedReplacements++;
     }
 
     // 7. UNKNOWN_NO_ANALYTICS → 30-day recheck flag
@@ -277,10 +260,10 @@ Deno.serve(async (req) => {
       finished_at: new Date().toISOString(),
       pins_scanned: all.length,
       pins_archived: archived,
-      pins_replaced: replacedCount,
+      pins_replaced: queuedReplacements,
       pins_kept: keep.length + unknown.length,
       pins_review: review.length,
-      replacement_drafts: draftsCount,
+      replacement_drafts: 0,
       impressions_removed: impressionsRemoved,
       impressions_preserved: impressionsPreserved,
       diversity_score_before: beforeScore.score,
@@ -295,8 +278,8 @@ Deno.serve(async (req) => {
       dryRun,
       pins_scanned: all.length,
       pins_archived: archived,
-      pins_replaced: replacedCount,
-      replacement_drafts: draftsCount,
+      pins_replaced: queuedReplacements,
+      replacement_drafts: 0,
       pins_kept: keep.length + unknown.length,
       pins_review: review.length,
       impressions_removed: impressionsRemoved,
