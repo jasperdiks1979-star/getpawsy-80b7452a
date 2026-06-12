@@ -13273,6 +13273,119 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_diversity_cleanup_runs: {
+        Row: {
+          banned_phrase_hits: Json
+          created_at: string
+          diversity_score_after: number | null
+          diversity_score_before: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          impressions_preserved: number
+          impressions_removed: number
+          overused_overlays: Json
+          pins_archived: number
+          pins_kept: number
+          pins_replaced: number
+          pins_review: number
+          pins_scanned: number
+          protection_run_id: string | null
+          replacement_drafts: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          banned_phrase_hits?: Json
+          created_at?: string
+          diversity_score_after?: number | null
+          diversity_score_before?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          impressions_preserved?: number
+          impressions_removed?: number
+          overused_overlays?: Json
+          pins_archived?: number
+          pins_kept?: number
+          pins_replaced?: number
+          pins_review?: number
+          pins_scanned?: number
+          protection_run_id?: string | null
+          replacement_drafts?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          banned_phrase_hits?: Json
+          created_at?: string
+          diversity_score_after?: number | null
+          diversity_score_before?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          impressions_preserved?: number
+          impressions_removed?: number
+          overused_overlays?: Json
+          pins_archived?: number
+          pins_kept?: number
+          pins_replaced?: number
+          pins_review?: number
+          pins_scanned?: number
+          protection_run_id?: string | null
+          replacement_drafts?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pinterest_diversity_scores: {
+        Row: {
+          created_at: string
+          dimension: string
+          dimension_value: string
+          diversity_score: number
+          id: string
+          pin_count: number
+          run_id: string | null
+          top_overlay: string | null
+          top_overlay_count: number
+          unique_overlay_count: number
+        }
+        Insert: {
+          created_at?: string
+          dimension: string
+          dimension_value: string
+          diversity_score?: number
+          id?: string
+          pin_count?: number
+          run_id?: string | null
+          top_overlay?: string | null
+          top_overlay_count?: number
+          unique_overlay_count?: number
+        }
+        Update: {
+          created_at?: string
+          dimension?: string
+          dimension_value?: string
+          diversity_score?: number
+          id?: string
+          pin_count?: number
+          run_id?: string | null
+          top_overlay?: string | null
+          top_overlay_count?: number
+          unique_overlay_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_diversity_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_diversity_cleanup_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_domain_health: {
         Row: {
           checked_at: string
@@ -14222,6 +14335,71 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "pinterest_historical_cleanup_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_overlay_replacement_jobs: {
+        Row: {
+          archived_at: string | null
+          board_name: string | null
+          created_at: string
+          id: string
+          indexed_replacement_count: number
+          last_checked_at: string | null
+          legacy_overlay: string | null
+          legacy_pinterest_pin_id: string | null
+          legacy_queue_id: string | null
+          notes: Json
+          product_slug: string | null
+          replacement_count: number
+          replacement_draft_ids: string[]
+          run_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          board_name?: string | null
+          created_at?: string
+          id?: string
+          indexed_replacement_count?: number
+          last_checked_at?: string | null
+          legacy_overlay?: string | null
+          legacy_pinterest_pin_id?: string | null
+          legacy_queue_id?: string | null
+          notes?: Json
+          product_slug?: string | null
+          replacement_count?: number
+          replacement_draft_ids?: string[]
+          run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          board_name?: string | null
+          created_at?: string
+          id?: string
+          indexed_replacement_count?: number
+          last_checked_at?: string | null
+          legacy_overlay?: string | null
+          legacy_pinterest_pin_id?: string | null
+          legacy_queue_id?: string | null
+          notes?: Json
+          product_slug?: string | null
+          replacement_count?: number
+          replacement_draft_ids?: string[]
+          run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_overlay_replacement_jobs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_diversity_cleanup_runs"
             referencedColumns: ["id"]
           },
         ]
