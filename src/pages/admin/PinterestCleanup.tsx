@@ -25,6 +25,36 @@ type Run = {
   error_message: string | null;
 };
 
+type ProtectionRun = {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  pins_audited: number;
+  safe_to_remove_count: number;
+  replace_first_count: number;
+  keep_count: number;
+  unknown_count: number;
+  review_count: number;
+  estimated_impressions_at_risk: number;
+  estimated_clicks_at_risk: number;
+  estimated_saves_at_risk: number;
+};
+
+type ProtectionPin = {
+  id: string;
+  bucket: string;
+  product_slug: string | null;
+  board_name: string | null;
+  destination_link: string | null;
+  impressions: number;
+  outbound_clicks: number;
+  saves: number;
+  ctr: number | null;
+  age_days: number | null;
+  pinterest_pin_id: string | null;
+};
+
 type FreqRow = {
   id: string;
   overlay_text_sample: string;
@@ -57,6 +87,10 @@ export default function PinterestCleanup() {
   const [running, setRunning] = useState(false);
   const [ocrRun, setOcrRun] = useState<OcrRun | null>(null);
   const [ocrRunning, setOcrRunning] = useState(false);
+  const [protectionRun, setProtectionRun] = useState<ProtectionRun | null>(null);
+  const [replaceFirstPins, setReplaceFirstPins] = useState<ProtectionPin[]>([]);
+  const [keepPins, setKeepPins] = useState<ProtectionPin[]>([]);
+  const [protectionRunning, setProtectionRunning] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -82,6 +116,25 @@ export default function PinterestCleanup() {
       .from("pinterest_ocr_cleanup_runs" as any)
       .select("*").order("started_at", { ascending: false }).limit(1);
     setOcrRun(((ocr || [])[0] as any) || null);
+    const { data: prot } = await supabase
+      .from("pinterest_protection_audit_runs" as any)
+      .select("*").order("started_at", { ascending: false }).limit(1);
+    const protLatest = ((prot || [])[0] as any) || null;
+    setProtectionRun(protLatest);
+    if (protLatest) {
+      const { data: rf } = await supabase
+        .from("pinterest_protection_audit_pins" as any)
+        .select("id, bucket, product_slug, board_name, destination_link, impressions, outbound_clicks, saves, ctr, age_days, pinterest_pin_id")
+        .eq("run_id", protLatest.id).eq("bucket", "REPLACE_FIRST")
+        .order("impressions", { ascending: false }).limit(50);
+      setReplaceFirstPins((rf || []) as any);
+      const { data: kp } = await supabase
+        .from("pinterest_protection_audit_pins" as any)
+        .select("id, bucket, product_slug, board_name, destination_link, impressions, outbound_clicks, saves, ctr, age_days, pinterest_pin_id")
+        .eq("run_id", protLatest.id).eq("bucket", "KEEP")
+        .order("outbound_clicks", { ascending: false }).limit(50);
+      setKeepPins((kp || []) as any);
+    }
     setLoading(false);
   }
 
@@ -121,6 +174,22 @@ export default function PinterestCleanup() {
     }
   }
 
+  async function runProtectionAudit() {
+    setProtectionRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-protection-audit", { body: {} });
+      if (error) throw error;
+      toast.success("Protection audit complete", {
+        description: `SAFE ${data?.groups?.SAFE_TO_REMOVE ?? 0} • REPLACE ${data?.groups?.REPLACE_FIRST ?? 0} • KEEP ${data?.groups?.KEEP ?? 0} • UNKNOWN ${data?.groups?.UNKNOWN_NO_ANALYTICS ?? 0}`,
+      });
+      await load();
+    } catch (e: any) {
+      toast.error("Protection audit failed", { description: e?.message });
+    } finally {
+      setProtectionRunning(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Helmet><title>Pinterest Cleanup • Admin</title></Helmet>
@@ -130,6 +199,10 @@ export default function PinterestCleanup() {
           <p className="text-muted-foreground">Removes overused, repetitive or low-performing posted pins. Runs nightly.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={runProtectionAudit} disabled={protectionRunning}>
+            {protectionRunning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Run protection audit
+          </Button>
           <Button variant="secondary" onClick={runOcrAudit} disabled={ocrRunning}>
             {ocrRunning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             Run OCR audit
@@ -144,6 +217,44 @@ export default function PinterestCleanup() {
           </Button>
         </div>
       </div>
+
+      {protectionRun && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Performance protection audit
+              <Badge variant={protectionRun.status === "completed" ? "default" : "destructive"}>
+                {protectionRun.status}
+              </Badge>
+              <span className="text-xs text-muted-foreground font-normal">
+                {new Date(protectionRun.started_at).toLocaleString()}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Stat label="Pins audited" value={protectionRun.pins_audited} />
+              <Stat label="SAFE_TO_REMOVE" value={protectionRun.safe_to_remove_count} />
+              <Stat label="REPLACE_FIRST" value={protectionRun.replace_first_count} />
+              <Stat label="KEEP" value={protectionRun.keep_count} />
+              <Stat label="Unknown (no analytics)" value={protectionRun.unknown_count} />
+            </div>
+            <div className="rounded border bg-muted/40 p-3 text-sm">
+              <div className="font-semibold mb-1">Estimated traffic at risk if cleanup ran unprotected</div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Impressions:</span> <span className="font-mono">{protectionRun.estimated_impressions_at_risk.toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground">Outbound clicks:</span> <span className="font-mono">{protectionRun.estimated_clicks_at_risk.toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground">Saves:</span> <span className="font-mono">{protectionRun.estimated_saves_at_risk.toLocaleString()}</span></div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Cleanup engine MUST only delete <code>SAFE_TO_REMOVE</code> pins. REPLACE_FIRST pins require a published + indexed replacement before archive. KEEP pins are never touched.
+              </p>
+            </div>
+            <ProtectionTable title="REPLACE_FIRST (publish replacement before archive)" rows={replaceFirstPins} />
+            <ProtectionTable title="KEEP (top performers — never touch)" rows={keepPins} />
+          </CardContent>
+        </Card>
+      )}
 
       {ocrRun && (
         <Card>
