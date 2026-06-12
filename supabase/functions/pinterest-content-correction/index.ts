@@ -59,14 +59,22 @@ async function handle(req: Request, traceId: string) {
   }
 
   const authHeader = req.headers.get("Authorization") || "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
-  const { data: userData } = await userClient.auth.getUser();
-  const user = userData?.user;
-  if (!user) return jsonResponse({ ok: false, traceId, message: "unauthorized" }, 401);
+  const cronSecret = req.headers.get("x-cron-secret") || "";
+  const expectedCronSecret = Deno.env.get("PINTEREST_CRON_SECRET") || "";
+  const bearerToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServiceCaller =
+    (expectedCronSecret && cronSecret && cronSecret === expectedCronSecret) ||
+    (bearerToken && bearerToken === SERVICE_KEY);
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-  if (!roleRow) return jsonResponse({ ok: false, traceId, message: "forbidden_admin_only" }, 403);
+  if (!isServiceCaller) {
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData } = await userClient.auth.getUser();
+    const user = userData?.user;
+    if (!user) return jsonResponse({ ok: false, traceId, message: "unauthorized" }, 401);
+    const { data: roleRow } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return jsonResponse({ ok: false, traceId, message: "forbidden_admin_only" }, 403);
+  }
 
   // 1. Load all active pins.
   const { data: activeRows, error: loadErr } = await admin
