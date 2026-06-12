@@ -10,6 +10,17 @@ const PHRASE_PARTS = [
   ["tired", "of", "litter"],
   ["no", "more", "plastic", "bag", "hunts"],
   ["no", "more", "plastic", "bag"],
+  // 2026-06-12 — leaked plush/bed copy onto cat toys; generic CTA tails baked into overlay images.
+  ["plush,", "warm,", "easy", "to", "wash"],
+  ["plush", "warm", "easy", "to", "wash"],
+  ["shop", "the", "viral", "find"],
+  ["explore", "the", "trend"],
+  ["see", "it", "in", "action"],
+  ["see", "the", "setup"],
+  ["see", "how"],
+  ["clean", "with", "ease"],
+  ["automate", "it"],
+  ["tired", "of", "litter", "box", "chores"],
 ] as const;
 
 export const PINTEREST_BANNED_COPY = PHRASE_PARTS.map((parts) => parts.join(" "));
