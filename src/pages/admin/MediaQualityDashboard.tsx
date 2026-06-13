@@ -63,6 +63,8 @@ export default function MediaQualityDashboard() {
   const [scanning, setScanning] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [pipelining, setPipelining] = useState(false);
+  const [masterRunning, setMasterRunning] = useState(false);
+  const [masterReport, setMasterReport] = useState<Record<string, any> | null>(null);
 
   async function load() {
     setLoading(true);
@@ -215,6 +217,47 @@ export default function MediaQualityDashboard() {
     }
   }
 
+  async function runMaster() {
+    setMasterRunning(true);
+    setMasterReport(null);
+    try {
+      let exhausted = false;
+      const aggregate: Record<string, number> = {};
+      // Auto-continue: call the orchestrator repeatedly until it reports it
+      // drained the work (over_budget=false). Cap at 6 passes for safety.
+      for (let pass = 0; pass < 6 && !exhausted; pass++) {
+        const { data, error } = await supabase.functions.invoke("media-master-pipeline", {
+          body: { trigger: "ui_master", budget_ms: 300_000 },
+        });
+        if (error) throw error;
+        const d = (data ?? {}) as Record<string, any>;
+        for (const k of [
+          "images_scanned", "clean_count", "review_count", "blocked_count",
+          "products_excluded", "products_video_scanned", "videos_found",
+          "videos_imported", "cj_fetch_failed",
+        ]) aggregate[k] = (aggregate[k] ?? 0) + Number(d[k] ?? 0);
+        aggregate.pinterest_eligible = Number(d.pinterest_eligible ?? aggregate.pinterest_eligible ?? 0);
+        aggregate.pinterest_excluded = Number(d.pinterest_excluded ?? aggregate.pinterest_excluded ?? 0);
+        aggregate.products_with_video = Number(d.products_with_video ?? aggregate.products_with_video ?? 0);
+        aggregate.products_without_video = Number(d.products_without_video ?? aggregate.products_without_video ?? 0);
+        aggregate.cj_linked_active = Number(d.cj_linked_active ?? aggregate.cj_linked_active ?? 0);
+        exhausted = d.over_budget === false &&
+          Number(d.images_scanned ?? 0) === 0 &&
+          Number(d.videos_imported ?? 0) === 0 &&
+          Number(d.products_video_scanned ?? 0) === 0;
+        setMasterReport({ ...aggregate, passes: pass + 1, exhausted });
+        await load();
+      }
+      toast.success(
+        `Master pipeline complete — ${aggregate.images_scanned ?? 0} imgs, ${aggregate.videos_imported ?? 0} videos.`,
+      );
+    } catch (e: any) {
+      toast.error(`Master pipeline failed: ${e.message}`);
+    } finally {
+      setMasterRunning(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -245,6 +288,39 @@ export default function MediaQualityDashboard() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Master Pipeline</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Single-click: scans every unscanned image, classifies CLEAN / REVIEW / BLOCKED,
+            ingests CJ videos for products that don't have one yet, and reconciles
+            <code className="mx-1">pinterest_eligible</code>. Auto-continues across batches until the
+            catalog is drained. BLOCKED and REVIEW images are rejected at pin-insert and
+            publish time by the integrity guard — no override.
+          </p>
+          <Button size="lg" onClick={runMaster} disabled={masterRunning}>
+            {masterRunning ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Film className="h-4 w-4 mr-2" />
+            )}
+            Run Complete Media Pipeline
+          </Button>
+          {masterReport && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              {Object.entries(masterReport).map(([k, v]) => (
+                <div key={k} className="p-2 rounded bg-muted/50">
+                  <div className="text-muted-foreground">{k.replace(/_/g, " ")}</div>
+                  <div className="font-mono font-semibold">{String(v)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <StatCard label="Total scanned" value={counts?.total ?? 0} />
