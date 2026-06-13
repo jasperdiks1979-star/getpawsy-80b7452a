@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, ShieldAlert, ShieldX, RefreshCw } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, ShieldX, RefreshCw, Video, Film } from "lucide-react";
 
 type Counts = {
   total: number;
@@ -13,6 +13,10 @@ type Counts = {
   blocked: number;
   excluded_products: number;
   manual_review_products: number;
+  cj_videos_found: number;
+  cj_videos_imported: number;
+  products_with_video: number;
+  products_without_video: number;
 };
 
 type Run = {
@@ -37,17 +41,40 @@ type FlaggedRow = {
   scanned_at: string;
 };
 
+type CjRun = {
+  id: string;
+  trigger: string;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  products_scanned: number;
+  videos_found: number;
+  videos_imported: number;
+  cj_fetch_failed: number;
+  rejection_reasons: Record<string, number>;
+};
+
 export default function MediaQualityDashboard() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [flagged, setFlagged] = useState<FlaggedRow[]>([]);
+  const [cjRuns, setCjRuns] = useState<CjRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
+  const [pipelining, setPipelining] = useState(false);
 
   async function load() {
     setLoading(true);
-    const [{ data: ma }, { data: r }, { data: f }, { data: excluded }] =
-      await Promise.all([
+    const [
+      { data: ma },
+      { data: r },
+      { data: f },
+      excludedRes,
+      { data: cjr },
+      videoRowsRes,
+      { count: cjLinkedCount },
+    ] = await Promise.all([
         supabase.from("media_audit").select("status"),
         supabase
           .from("media_audit_runs")
@@ -64,6 +91,20 @@ export default function MediaQualityDashboard() {
           .from("products")
           .select("id", { count: "exact", head: true })
           .eq("pinterest_eligible", false),
+        supabase
+          .from("cj_video_ingestion_runs")
+          .select("*")
+          .order("started_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("product_media")
+          .select("product_id")
+          .eq("media_type", "video"),
+        supabase
+          .from("products")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .not("cj_product_id", "is", null),
       ]);
 
     const rows = (ma ?? []) as { status: string }[];
@@ -82,16 +123,29 @@ export default function MediaQualityDashboard() {
       (s) => s.has("REVIEW") || s.has("BLOCKED"),
     ).length;
 
+    const cjRunsList = (cjr ?? []) as CjRun[];
+    const cjFound = cjRunsList.reduce((s, r) => s + (r.videos_found ?? 0), 0);
+    const cjImported = cjRunsList.reduce((s, r) => s + (r.videos_imported ?? 0), 0);
+    const productsWithVideo = new Set(
+      ((videoRowsRes.data as Array<{ product_id: string }> | null) ?? []).map((v) => v.product_id),
+    ).size;
+    const productsWithoutVideo = Math.max(0, (cjLinkedCount ?? 0) - productsWithVideo);
+
     setCounts({
       total: rows.length,
       clean,
       review,
       blocked,
-      excluded_products: (excluded as any)?.length ?? 0,
+      excluded_products: (excludedRes as any)?.count ?? 0,
       manual_review_products: manualReview,
+      cj_videos_found: cjFound,
+      cj_videos_imported: cjImported,
+      products_with_video: productsWithVideo,
+      products_without_video: productsWithoutVideo,
     });
     setRuns((r ?? []) as Run[]);
     setFlagged((f ?? []) as FlaggedRow[]);
+    setCjRuns(cjRunsList);
     setLoading(false);
   }
 
@@ -116,6 +170,51 @@ export default function MediaQualityDashboard() {
     }
   }
 
+  async function runIngest() {
+    setIngesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "cj-video-ingest-worker",
+        { body: { trigger: "manual", batch_size: 25, max_batches: 4, only_missing: true } },
+      );
+      if (error) throw error;
+      toast.success(
+        `CJ ingest: ${(data as any)?.videos_imported ?? 0} videos imported, ${
+          (data as any)?.products_scanned ?? 0
+        } products scanned`,
+      );
+      await load();
+    } catch (e: any) {
+      toast.error(`Ingest failed: ${e.message}`);
+    } finally {
+      setIngesting(false);
+    }
+  }
+
+  async function runPipeline() {
+    setPipelining(true);
+    try {
+      const scan = await supabase.functions.invoke("media-integrity-scan", {
+        body: { trigger: "pipeline", limit: 100 },
+      });
+      if (scan.error) throw scan.error;
+      const ing = await supabase.functions.invoke("cj-video-ingest-worker", {
+        body: { trigger: "pipeline", batch_size: 25, max_batches: 4, only_missing: true },
+      });
+      if (ing.error) throw ing.error;
+      toast.success(
+        `Pipeline: ${(scan.data as any)?.images_scanned ?? 0} imgs, ${
+          (ing.data as any)?.videos_imported ?? 0
+        } videos`,
+      );
+      await load();
+    } catch (e: any) {
+      toast.error(`Pipeline failed: ${e.message}`);
+    } finally {
+      setPipelining(false);
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -130,11 +229,19 @@ export default function MediaQualityDashboard() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button onClick={runScan} disabled={scanning}>
+          <Button onClick={runScan} disabled={scanning} variant="secondary">
             {scanning ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : null}
-            Run scan (50)
+            Run media audit
+          </Button>
+          <Button onClick={runIngest} disabled={ingesting} variant="secondary">
+            {ingesting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Video className="h-4 w-4 mr-2" />}
+            Run CJ video ingestion
+          </Button>
+          <Button onClick={runPipeline} disabled={pipelining}>
+            {pipelining ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Film className="h-4 w-4 mr-2" />}
+            Run full media pipeline
           </Button>
         </div>
       </div>
@@ -166,9 +273,24 @@ export default function MediaQualityDashboard() {
         />
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="CJ videos found"
+          value={counts?.cj_videos_found ?? 0}
+          icon={<Video className="h-4 w-4 text-blue-500" />}
+        />
+        <StatCard
+          label="CJ videos imported"
+          value={counts?.cj_videos_imported ?? 0}
+          icon={<Film className="h-4 w-4 text-blue-500" />}
+        />
+        <StatCard label="Products with video" value={counts?.products_with_video ?? 0} />
+        <StatCard label="Products without video" value={counts?.products_without_video ?? 0} />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Recent runs</CardTitle>
+          <CardTitle>Recent media audit runs</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -192,6 +314,39 @@ export default function MediaQualityDashboard() {
             ))}
             {!runs.length && (
               <p className="text-sm text-muted-foreground">No runs yet.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent CJ video ingestion runs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {cjRuns.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between text-sm p-2 rounded bg-muted/50"
+              >
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline">{r.trigger}</Badge>
+                  <Badge variant={r.status === "completed" ? "secondary" : r.status === "failed" ? "destructive" : "default"}>
+                    {r.status}
+                  </Badge>
+                  <span>{new Date(r.started_at).toLocaleString()}</span>
+                </div>
+                <div className="flex gap-3 text-xs">
+                  <span>{r.products_scanned} scanned</span>
+                  <span className="text-blue-500">{r.videos_found} found</span>
+                  <span className="text-green-500">{r.videos_imported} imported</span>
+                  <span className="text-red-500">{r.cj_fetch_failed} failed</span>
+                </div>
+              </div>
+            ))}
+            {!cjRuns.length && (
+              <p className="text-sm text-muted-foreground">No CJ ingest runs yet.</p>
             )}
           </div>
         </CardContent>
