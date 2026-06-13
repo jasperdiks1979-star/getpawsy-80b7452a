@@ -1133,6 +1133,7 @@ Deno.serve(async (req) => {
   const productSlug = body?.productSlug ? String(body.productSlug) : null;
   const count = Math.max(1, Math.min(8, Number(body?.count ?? 5)));
   const force = !!body?.force;
+  const emergency = body?.emergency === true;
 
   const trace = traceId();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
