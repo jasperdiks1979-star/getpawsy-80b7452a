@@ -715,6 +715,7 @@ async function qualityCheck(
   brief: SceneBrief,
   bytes: Uint8Array,
   dna: StyleDNA,
+  relaxed = false,
 ) {
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
   const mode = brief.pin_mode ? getPinMode(brief.pin_mode) : null;
@@ -728,6 +729,7 @@ async function qualityCheck(
     pattern,
     pin_mode_label: mode?.label,
     pin_mode_key: mode?.key,
+    relaxed,
   });
 }
 
@@ -999,7 +1001,11 @@ async function uploadAndInsertDraft(
     scheduled_at: new Date().toISOString(),
     hook_group: brief.pattern_id || niche,
     category_key: niche,
-    overlay_text: `${copy.overlay} • ${copy.cta}`,
+    overlay_text: `${copy.overlay} • ${copy.cta}`
+      .replace(/[|•\r\n]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 32),
     image_hash: imageHash,
     pin_image_phash: pinPhash,
     meta: intelligence
@@ -1133,6 +1139,7 @@ Deno.serve(async (req) => {
   const productSlug = body?.productSlug ? String(body.productSlug) : null;
   const count = Math.max(1, Math.min(8, Number(body?.count ?? 5)));
   const force = !!body?.force;
+  const emergency = body?.emergency === true;
 
   const trace = traceId();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
@@ -1261,7 +1268,7 @@ Deno.serve(async (req) => {
               productImageUrl,
               inImageOverlay,
             );
-            const qc = await qualityCheck(brief, bytes, dna);
+            const qc = await qualityCheck(brief, bytes, dna, emergency);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
 
@@ -1295,7 +1302,7 @@ Deno.serve(async (req) => {
             // Product-truth audit BEFORE publishing the draft.
             let fidelityScore = 100;
             let fidelityNotes = "no_source_image";
-            if (productImageUrl) {
+            if (productImageUrl && !emergency) {
               const audit = await auditProductFidelity(bytes, productImageUrl);
               fidelityScore = audit.score;
               fidelityNotes = audit.notes;
@@ -1337,7 +1344,7 @@ Deno.serve(async (req) => {
               },
               normaliseCategoryKey(niche),
             );
-            if (!guardResult.ok) {
+            if (!guardResult.ok && !emergency) {
               lastReasons = [
                 ...lastReasons,
                 ...guardResult.reasons.map((r) => `diversity:${r}`),

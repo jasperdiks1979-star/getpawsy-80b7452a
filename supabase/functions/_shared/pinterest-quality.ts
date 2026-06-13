@@ -324,6 +324,9 @@ export async function scorePin(args: {
   pin_mode_key?: PinModeKey;
   /** Optional runtime override (defaults to QUALITY_THRESHOLD = 70). */
   threshold?: number;
+  /** Emergency proof-of-life: skip per-axis "looks templated/cheap" rejections
+   *  and only gate on the total score + deterministic safety checks. */
+  relaxed?: boolean;
 }): Promise<QualityResult> {
   const det = deterministicChecks(args);
   const vis = await visualScore({
@@ -386,18 +389,22 @@ export async function scorePin(args: {
   );
 
   const reasons = [...det.reasons];
-  if (vis.pinterest_native < 60) reasons.push(`pinterest_native low (${vis.pinterest_native}) — looks templated`);
-  if (vis.visual_balance < 55) reasons.push(`visual_balance low (${vis.visual_balance})`);
-  if (vis.readability < 55) reasons.push(`readability low (${vis.readability}) — top third too busy`);
-  if (vis.emotional_resonance < 55) reasons.push(`emotional_resonance low (${vis.emotional_resonance})`);
-  if (vis.conversion_potential < 55) reasons.push(`conversion_potential low (${vis.conversion_potential})`);
-  if (vis.luxury_aesthetic < 50) reasons.push(`luxury_aesthetic low (${vis.luxury_aesthetic}) — feels cheap/spam`);
-  if (vis.mobile_safe_zone < 55) reasons.push(`mobile_safe_zone low (${vis.mobile_safe_zone}) — focal subject or text risks iPhone crop`);
-  if (mobile_safety_score < 55) reasons.push(`mobile_safety_score low (${mobile_safety_score})`);
+  if (!args.relaxed) {
+    if (vis.pinterest_native < 60) reasons.push(`pinterest_native low (${vis.pinterest_native}) — looks templated`);
+    if (vis.visual_balance < 55) reasons.push(`visual_balance low (${vis.visual_balance})`);
+    if (vis.readability < 55) reasons.push(`readability low (${vis.readability}) — top third too busy`);
+    if (vis.emotional_resonance < 55) reasons.push(`emotional_resonance low (${vis.emotional_resonance})`);
+    if (vis.conversion_potential < 55) reasons.push(`conversion_potential low (${vis.conversion_potential})`);
+    if (vis.luxury_aesthetic < 50) reasons.push(`luxury_aesthetic low (${vis.luxury_aesthetic}) — feels cheap/spam`);
+    if (vis.mobile_safe_zone < 55) reasons.push(`mobile_safe_zone low (${vis.mobile_safe_zone}) — focal subject or text risks iPhone crop`);
+    if (mobile_safety_score < 55) reasons.push(`mobile_safety_score low (${mobile_safety_score})`);
+  }
 
   const totalRounded = Math.round(total * 100) / 100;
   const quality_band = bandForScore(totalRounded);
-  const threshold = typeof args.threshold === "number" ? args.threshold : QUALITY_THRESHOLD;
+  const threshold = typeof args.threshold === "number"
+    ? args.threshold
+    : (args.relaxed ? 55 : QUALITY_THRESHOLD);
 
   return {
     ok: totalRounded >= threshold && reasons.length === 0,
