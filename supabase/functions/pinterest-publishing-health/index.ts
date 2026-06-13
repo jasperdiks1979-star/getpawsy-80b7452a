@@ -75,17 +75,20 @@ Deno.serve(async (req) => {
       .in("id", priorityIds.length ? priorityIds : ["00000000-0000-0000-0000-000000000000"])
       .limit(15);
 
-    actions.push(`creative_director.run_full x${(prods ?? []).length}`);
+    actions.push(`creative_director.run_full x${(prods ?? []).length} (background)`);
 
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-creative-director`;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     for (const p of prods ?? []) {
-      try {
-        const r = await supabase.functions.invoke("pinterest-creative-director", {
-          body: { action: "run_full", productSlug: (p as any).slug, count: 2 },
-        });
-        rebuildResults.push({ slug: (p as any).slug, ok: !r.error, error: r.error?.message });
-      } catch (e) {
-        rebuildResults.push({ slug: (p as any).slug, ok: false, error: String(e) });
-      }
+      // Fire-and-forget — Creative Director is slow (AI render).
+      const fp = fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anon}`, "apikey": anon },
+        body: JSON.stringify({ action: "run_full", productSlug: (p as any).slug, count: 2 }),
+      }).catch(() => null);
+      // @ts-ignore EdgeRuntime is provided by supabase edge runtime
+      try { (globalThis as any).EdgeRuntime?.waitUntil?.(fp); } catch (_) {}
+      rebuildResults.push({ slug: (p as any).slug, ok: true, dispatched: true });
     }
   }
 
