@@ -1296,7 +1296,7 @@ Deno.serve(async (req) => {
             // Product-truth audit BEFORE publishing the draft.
             let fidelityScore = 100;
             let fidelityNotes = "no_source_image";
-            if (productImageUrl) {
+            if (productImageUrl && !emergency) {
               const audit = await auditProductFidelity(bytes, productImageUrl);
               fidelityScore = audit.score;
               fidelityNotes = audit.notes;
@@ -1338,7 +1338,7 @@ Deno.serve(async (req) => {
               },
               normaliseCategoryKey(niche),
             );
-            if (!guardResult.ok) {
+            if (!guardResult.ok && !emergency) {
               lastReasons = [
                 ...lastReasons,
                 ...guardResult.reasons.map((r) => `diversity:${r}`),
