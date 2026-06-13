@@ -9126,6 +9126,128 @@ export type Database = {
         }
         Relationships: []
       }
+      media_audit: {
+        Row: {
+          confidence: number
+          created_at: string
+          detected_languages: string[]
+          id: string
+          image_url: string
+          issue_type: string
+          issues: Json
+          product_id: string
+          scan_model: string | null
+          scan_notes: string | null
+          scanned_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          detected_languages?: string[]
+          id?: string
+          image_url: string
+          issue_type?: string
+          issues?: Json
+          product_id: string
+          scan_model?: string | null
+          scan_notes?: string | null
+          scanned_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          detected_languages?: string[]
+          id?: string
+          image_url?: string
+          issue_type?: string
+          issues?: Json
+          product_id?: string
+          scan_model?: string | null
+          scan_notes?: string | null
+          scanned_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_audit_runs: {
+        Row: {
+          blocked_count: number
+          clean_count: number
+          created_at: string
+          errors: number
+          finished_at: string | null
+          id: string
+          images_scanned: number
+          notes: string | null
+          products_excluded: number
+          review_count: number
+          started_at: string
+          trigger: string
+        }
+        Insert: {
+          blocked_count?: number
+          clean_count?: number
+          created_at?: string
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          images_scanned?: number
+          notes?: string | null
+          products_excluded?: number
+          review_count?: number
+          started_at?: string
+          trigger?: string
+        }
+        Update: {
+          blocked_count?: number
+          clean_count?: number
+          created_at?: string
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          images_scanned?: number
+          notes?: string | null
+          products_excluded?: number
+          review_count?: number
+          started_at?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
       merchant_oauth_state: {
         Row: {
           code_verifier: string
@@ -18422,6 +18544,7 @@ export type Database = {
           pinterest_board_override: string | null
           pinterest_category: string | null
           pinterest_disabled: boolean
+          pinterest_eligible: boolean
           pinterest_error: string | null
           pinterest_last_generated_at: string | null
           pinterest_last_posted_at: string | null
@@ -18546,6 +18669,7 @@ export type Database = {
           pinterest_board_override?: string | null
           pinterest_category?: string | null
           pinterest_disabled?: boolean
+          pinterest_eligible?: boolean
           pinterest_error?: string | null
           pinterest_last_generated_at?: string | null
           pinterest_last_posted_at?: string | null
@@ -18670,6 +18794,7 @@ export type Database = {
           pinterest_board_override?: string | null
           pinterest_category?: string | null
           pinterest_disabled?: boolean
+          pinterest_eligible?: boolean
           pinterest_error?: string | null
           pinterest_last_generated_at?: string | null
           pinterest_last_posted_at?: string | null

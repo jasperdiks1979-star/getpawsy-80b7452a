@@ -471,6 +471,7 @@ const PinterestCommerceIntelPage = lazyWithRetry(() => import("./pages/admin/Pin
 const PinterestAutoPilotPage = lazyWithRetry(() => import("./pages/admin/PinterestAutoPilotPage"));
 const PinterestAutopilotDailyPage = lazyWithRetry(() => import("./pages/admin/PinterestAutopilotDailyPage"));
 const PinterestPinStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestPinStatusPage"));
+const MediaQualityDashboard = lazyWithRetry(() => import("./pages/admin/MediaQualityDashboard"));
 const PinterestUrlRecoveryPage = lazyWithRetry(() => import("./pages/admin/PinterestUrlRecoveryPage"));
 const PinterestRedirectMapPage = lazyWithRetry(() => import("./pages/admin/PinterestRedirectMapPage"));
 const PinterestPinPerformancePage = lazyWithRetry(() => import("./pages/admin/PinterestPinPerformancePage"));
@@ -2616,6 +2617,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestPinStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="media-quality"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MediaQualityDashboard />
                                 </Suspense>
                               }
                             />

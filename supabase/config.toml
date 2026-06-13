@@ -362,3 +362,6 @@ verify_jwt = false
 
 [functions.pinterest-creative-variety]
 verify_jwt = false
+
+[functions.media-integrity-scan]
+verify_jwt = false
