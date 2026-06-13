@@ -715,6 +715,7 @@ async function qualityCheck(
   brief: SceneBrief,
   bytes: Uint8Array,
   dna: StyleDNA,
+  relaxed = false,
 ) {
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
   const mode = brief.pin_mode ? getPinMode(brief.pin_mode) : null;
@@ -728,6 +729,7 @@ async function qualityCheck(
     pattern,
     pin_mode_label: mode?.label,
     pin_mode_key: mode?.key,
+    relaxed,
   });
 }
 
@@ -1262,7 +1264,7 @@ Deno.serve(async (req) => {
               productImageUrl,
               inImageOverlay,
             );
-            const qc = await qualityCheck(brief, bytes, dna);
+            const qc = await qualityCheck(brief, bytes, dna, emergency);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
 
