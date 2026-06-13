@@ -365,3 +365,6 @@ verify_jwt = false
 
 [functions.media-integrity-scan]
 verify_jwt = false
+
+[functions.cj-video-ingest-worker]
+verify_jwt = false
