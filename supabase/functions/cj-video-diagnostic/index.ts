@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   const { count: dbVideos } = await admin.from("product_media").select("id", { count: "exact", head: true }).eq("media_type", "video");
   const { count: dbImages } = await admin.from("product_media").select("id", { count: "exact", head: true }).eq("media_type", "image");
 
-  const { data: zeroVar } = await admin.from("products").select("id, name, slug, cj_product_id, stock").not("cj_product_id", "is", null).limit(2000);
+  const { data: zeroVar } = await admin.from("products").select("id, name, slug, cj_product_id, stock, variants").not("cj_product_id", "is", null).limit(2000);
   const zeroVariants = (zeroVar ?? []).filter((r: { variants?: unknown[] }) => !Array.isArray(r.variants) || r.variants.length === 0);
 
   // Products with cj_product_id but NO product_media video rows

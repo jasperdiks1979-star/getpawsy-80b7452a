@@ -120,10 +120,13 @@ Deno.serve(async (req) => {
     if (provided) {
       const { data: cfg } = await admin
         .from("app_config").select("value").eq("key", "cj_video_resolve_token").maybeSingle();
-      const stored = (cfg?.value as { token?: string } | null)?.token;
-      if (stored && stored === provided) {
+      const storedVal = (cfg?.value as { token?: string; expires_at?: string } | null) ?? null;
+      const stored = storedVal?.token;
+      const exp = storedVal?.expires_at ? new Date(storedVal.expires_at).getTime() : 0;
+      const notExpired = exp === 0 || Date.now() < exp;
+      if (stored && stored === provided && notExpired) {
         isAuthorized = true;
-        await admin.from("app_config").delete().eq("key", "cj_video_resolve_token");
+        // Token is reusable until expires_at; do not delete here.
       }
     }
   }
