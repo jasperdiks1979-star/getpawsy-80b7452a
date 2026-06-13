@@ -17902,6 +17902,140 @@ export type Database = {
           },
         ]
       }
+      product_media_audit: {
+        Row: {
+          audit_run_id: string | null
+          confidence: number | null
+          created_at: string
+          detected_species: string | null
+          detected_subject: string | null
+          expected_subject: string | null
+          id: string
+          image_position: number
+          image_url: string
+          matches_title: boolean | null
+          mismatch_reason: string | null
+          model: string | null
+          product_category: string | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          raw_response: Json | null
+          severity: string | null
+        }
+        Insert: {
+          audit_run_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_species?: string | null
+          detected_subject?: string | null
+          expected_subject?: string | null
+          id?: string
+          image_position?: number
+          image_url: string
+          matches_title?: boolean | null
+          mismatch_reason?: string | null
+          model?: string | null
+          product_category?: string | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          raw_response?: Json | null
+          severity?: string | null
+        }
+        Update: {
+          audit_run_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_species?: string | null
+          detected_subject?: string | null
+          expected_subject?: string | null
+          id?: string
+          image_position?: number
+          image_url?: string
+          matches_title?: boolean | null
+          mismatch_reason?: string | null
+          model?: string | null
+          product_category?: string | null
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          raw_response?: Json | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_media_audit_runs: {
+        Row: {
+          critical_count: number
+          finished_at: string | null
+          high_count: number
+          id: string
+          medium_count: number
+          mismatches: number
+          notes: string | null
+          processed_products: number
+          started_at: string
+          status: string
+          total_products: number
+        }
+        Insert: {
+          critical_count?: number
+          finished_at?: string | null
+          high_count?: number
+          id?: string
+          medium_count?: number
+          mismatches?: number
+          notes?: string | null
+          processed_products?: number
+          started_at?: string
+          status?: string
+          total_products?: number
+        }
+        Update: {
+          critical_count?: number
+          finished_at?: string | null
+          high_count?: number
+          id?: string
+          medium_count?: number
+          mismatches?: number
+          notes?: string | null
+          processed_products?: number
+          started_at?: string
+          status?: string
+          total_products?: number
+        }
+        Relationships: []
+      }
       product_priority: {
         Row: {
           created_at: string
