@@ -121,7 +121,7 @@ async function runChain() {
     const board = boards.find((b: any) => !used.has(b.id))!;
     used.add(board.id);
 
-    const draftId = w.draft.id || w.draft.queue_id || w.draft.pin_queue_id;
+    const draftId = w.draft.queueId || w.draft.queue_id || w.draft.id || w.draft.pin_queue_id;
     if (!draftId) { pins.push({ bucket: w.bucket, slug: w.product.slug, published: false, error: "no_draft_id" }); continue; }
 
     const { data: row } = await sb.from("pinterest_pin_queue")
