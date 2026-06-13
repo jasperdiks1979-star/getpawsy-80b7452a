@@ -936,8 +936,20 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user - require admin role
+    // Internal-secret bypass for server-to-server orchestration (admin still required for browser).
+    const INTERNAL_SECRET = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '';
+    const internalHeader = req.headers.get('x-internal-secret') ?? '';
+    const isInternal = !!INTERNAL_SECRET && internalHeader === INTERNAL_SECRET;
+    let userId: string = 'internal';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Authenticate user - require admin role (skipped when internal secret matches)
     const authHeader = req.headers.get('Authorization');
+    if (isInternal) {
+      console.log('cj-dropshipping: authenticated via INTERNAL_FUNCTION_SECRET');
+    } else {
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('No authorization header provided');
       return new Response(
@@ -946,7 +958,6 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const authSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
@@ -955,8 +966,6 @@ serve(async (req) => {
     // Extract the token and validate it using getClaims for reliable JWT validation
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
-    
-    let userId: string;
     
     if (claimsError || !claimsData?.claims?.sub) {
       console.error('Token validation via getClaims failed:', claimsError || 'Missing sub claim');
@@ -981,9 +990,6 @@ serve(async (req) => {
     console.log(`Authenticated user: ${userId}`);
 
     // Check if user is admin
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
-    
     const { data: roleData, error: roleError } = await adminSupabase
       .from('user_roles')
       .select('role')
@@ -1000,8 +1006,10 @@ serve(async (req) => {
     }
 
     console.log(`Admin verified for user: ${userId}`);
+    } // end !isInternal auth block
 
-    // Check rate limit (100 requests per hour for CJ API)
+    // Check rate limit (100 requests per hour for CJ API) — skipped for internal calls
+    if (!isInternal) {
     const { data: rateLimitData, error: rateLimitError } = await adminSupabase
       .rpc('check_rate_limit', {
         p_user_id: userId,
@@ -1029,6 +1037,7 @@ serve(async (req) => {
           } 
         }
       );
+    }
     }
 
     const { action, ...params } = await req.json();

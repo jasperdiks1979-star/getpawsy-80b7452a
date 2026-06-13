@@ -298,6 +298,7 @@ async function fetchCjDetails(cjProductId: string): Promise<Record<string, unkno
         "apikey": SERVICE_KEY,
         "Authorization": `Bearer ${SERVICE_KEY}`,
         "Content-Type": "application/json",
+        "x-internal-secret": INTERNAL_SECRET,
       },
       body: JSON.stringify({ action: "get-product-details", productId: cjProductId, countryCode: "US" }),
     });
