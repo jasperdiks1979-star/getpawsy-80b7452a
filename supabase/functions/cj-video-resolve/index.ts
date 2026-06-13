@@ -189,11 +189,15 @@ Deno.serve(async (req) => {
   for (const p of targets) {
     productsScanned++;
     try {
-      const res = await resolveVideosForCjProduct(token, p.cj_product_id);
+      let res = await resolveVideosForCjProduct(token, p.cj_product_id);
+      // Single retry on CJ QPS rate-limit (code 1600200) after a longer wait
+      if (!res.ok && res.code === 1600200) {
+        await new Promise((r) => setTimeout(r, 2500));
+        res = await resolveVideosForCjProduct(token, p.cj_product_id);
+      }
       if (!res.ok) {
         errors.push({ cj_product_id: p.cj_product_id, code: res.code, message: res.message });
-        // gentle pacing on errors
-        await new Promise((r) => setTimeout(r, 350));
+        await new Promise((r) => setTimeout(r, 800));
         continue;
       }
       // Keep only listed videos with a usable URL
@@ -273,7 +277,7 @@ Deno.serve(async (req) => {
       errors.push({ cj_product_id: p.cj_product_id, message: (e as Error).message });
     }
     // CJ rate limit: ~1 req/s safe window
-    await new Promise((r) => setTimeout(r, 1100));
+    await new Promise((r) => setTimeout(r, 1500));
   }
 
   return json({
