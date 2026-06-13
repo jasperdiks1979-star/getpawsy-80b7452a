@@ -246,9 +246,22 @@ Deno.serve(async (req) => {
             referer_required: true,
           },
         }));
+        // The unique index on (product_id, supplier_url) is partial
+        // (WHERE supplier_url IS NOT NULL), which PostgREST cannot use
+        // for ON CONFLICT. Idempotent path: delete existing rows for
+        // these supplier_urls under this product, then insert fresh.
+        const supplierUrls = rows.map((r) => r.supplier_url).filter(Boolean) as string[];
+        if (supplierUrls.length) {
+          await admin
+            .from("product_media")
+            .delete()
+            .eq("product_id", p.id)
+            .eq("media_type", "video")
+            .in("supplier_url", supplierUrls);
+        }
         const { data: ins, error: insErr } = await admin
           .from("product_media")
-          .upsert(rows, { onConflict: "product_id,supplier_url", ignoreDuplicates: false })
+          .insert(rows)
           .select("id");
         if (insErr) {
           errors.push({ cj_product_id: p.cj_product_id, message: `insert_failed: ${insErr.message}` });
