@@ -1001,7 +1001,11 @@ async function uploadAndInsertDraft(
     scheduled_at: new Date().toISOString(),
     hook_group: brief.pattern_id || niche,
     category_key: niche,
-    overlay_text: `${copy.overlay} • ${copy.cta}`,
+    overlay_text: `${copy.overlay} • ${copy.cta}`
+      .replace(/[|•\r\n]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 32),
     image_hash: imageHash,
     pin_image_phash: pinPhash,
     meta: intelligence
