@@ -94,13 +94,36 @@ function severityFor(titleSpecies: string, detectedSpecies: string, confidence: 
   return { severity: "medium", matches: false, reason: `title_${titleSpecies}_image_${detectedSpecies}_low_conf` };
 }
 
-async function runAudit(runId: string) {
+async function runAudit(runId: string, retryRunId?: string) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: products, error } = await admin
-    .from("products")
-    .select("id, slug, name, category, image_url, images, primary_species")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false });
+  let products: ProductRow[] | null = null;
+  let error: any = null;
+  if (retryRunId) {
+    const { data: failed } = await admin
+      .from("product_media_audit")
+      .select("product_id")
+      .eq("audit_run_id", retryRunId)
+      .eq("mismatch_reason", "vision_failed_or_no_image");
+    const ids = (failed ?? []).map((r: any) => r.product_id);
+    if (ids.length) {
+      const resp = await admin
+        .from("products")
+        .select("id, slug, name, category, image_url, images, primary_species")
+        .in("id", ids);
+      products = resp.data as any;
+      error = resp.error;
+    } else {
+      products = [];
+    }
+  } else {
+    const resp = await admin
+      .from("products")
+      .select("id, slug, name, category, image_url, images, primary_species")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false });
+    products = resp.data as any;
+    error = resp.error;
+  }
   if (error || !products) {
     await admin.from("product_media_audit_runs").update({ status: "failed", notes: error?.message ?? "no products", finished_at: new Date().toISOString() }).eq("id", runId);
     return;
@@ -150,6 +173,8 @@ async function runAudit(runId: string) {
         else if (sev.severity === "medium") med++;
       }
     }));
+    // Gentle pacing to avoid 429s
+    await new Promise((r) => setTimeout(r, 400));
     if (processed % 20 < CONCURRENCY) {
       await admin.from("product_media_audit_runs").update({
         processed_products: processed, mismatches, critical_count: crit, high_count: high, medium_count: med,
@@ -171,12 +196,13 @@ Deno.serve(async (req) => {
     const { data } = await admin.from("product_media_audit_runs").select("*").eq("id", id).single();
     return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+  const retryOf = url.searchParams.get("retry");
   const { data: run, error } = await admin.from("product_media_audit_runs").insert({}).select().single();
   if (error || !run) {
     return new Response(JSON.stringify({ ok: false, error: error?.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   // @ts-ignore EdgeRuntime is provided by Deno deploy
-  EdgeRuntime.waitUntil(runAudit(run.id));
+  EdgeRuntime.waitUntil(runAudit(run.id, retryOf ?? undefined));
   return new Response(JSON.stringify({ ok: true, run_id: run.id, status_url: `${url.origin}${url.pathname}?status=${run.id}` }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
