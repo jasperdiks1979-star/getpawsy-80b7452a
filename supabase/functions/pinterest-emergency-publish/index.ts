@@ -37,7 +37,7 @@ function categoryBucket(cat?: string | null): "dog" | "cat" | "feed_groom_travel
   return "other";
 }
 
-async function runChain() {
+async function runChain(opts: { publishOnly?: boolean } = {}) {
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
   const startedAt = Date.now();
   const log: any[] = [];
@@ -83,6 +83,36 @@ async function runChain() {
   const seenBuckets = new Set<string>();
   let attempts = 0;
 
+  if (opts.publishOnly) {
+    // Pull the most recent draft rows that have an image + destination and
+    // assemble winners from distinct buckets.
+    const { data: drafts } = await sb
+      .from("pinterest_pin_queue")
+      .select("id, product_slug, product_name, category_key, pin_image_url, destination_link, status, created_at")
+      .in("status", ["draft", "approved", "queued"])
+      .is("pinterest_pin_id", null)
+      .not("pin_image_url", "is", null)
+      .not("destination_link", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const usedSlugs = new Set<string>();
+    for (const d of drafts ?? []) {
+      const slug = d.product_slug as string;
+      if (usedSlugs.has(slug)) continue;
+      const bucket = categoryBucket(d.category_key) ?? "other";
+      if (winners.length < 3 && (!seenBuckets.has(bucket) || winners.length + (3 - winners.length) > (drafts.length - winners.length))) {
+        winners.push({
+          product: { slug, name: d.product_name, category: d.category_key },
+          bucket,
+          draft: { queueId: d.id },
+        });
+        seenBuckets.add(bucket);
+        usedSlugs.add(slug);
+      }
+      if (winners.length >= 3) break;
+    }
+  } else {
+
   for (const p of ordered) {
     if (winners.length >= 3) break;
     if (attempts >= 20) break;
@@ -107,6 +137,7 @@ async function runChain() {
       winners.push({ product: p, bucket, draft: drafts[0] });
       seenBuckets.add(bucket);
     }
+  }
   }
 
   if (winners.length < 3) {
@@ -195,7 +226,8 @@ Deno.serve(async (req) => {
     return json({ ok: true, mode: "status", run_tag: RUN_TAG, pins: rows ?? [] });
   }
 
+  const publishOnly = bodyJson?.mode === "publish_only";
   // @ts-ignore — Supabase Edge Runtime
-  EdgeRuntime.waitUntil(runChain().catch((e) => console.error("[pol] runChain crash", e)));
+  EdgeRuntime.waitUntil(runChain({ publishOnly }).catch((e) => console.error("[pol] runChain crash", e)));
   return json({ ok: true, started: true, run_tag: RUN_TAG, message: "Background chain started." }, 202);
 });
