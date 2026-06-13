@@ -627,6 +627,21 @@ Deno.serve(async (req) => {
     ...(isDone ? { finished_at: new Date().toISOString() } : {}),
   }).eq("id", runId);
 
+  // Auto-trigger Media Integrity Guard on completion (fire-and-forget).
+  if (isDone) {
+    try {
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/media-integrity-scan`;
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        },
+        body: JSON.stringify({ trigger: "cj_import", limit: 500 }),
+      }).catch(() => {});
+    } catch { /* noop */ }
+  }
+
   return json({
     ok: true,
     traceId,
