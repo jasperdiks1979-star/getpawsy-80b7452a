@@ -936,8 +936,16 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user - require admin role
+    // Internal-secret bypass for server-to-server orchestration (admin still required for browser).
+    const INTERNAL_SECRET = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '';
+    const internalHeader = req.headers.get('x-internal-secret') ?? '';
+    const isInternal = !!INTERNAL_SECRET && internalHeader === INTERNAL_SECRET;
+
+    // Authenticate user - require admin role (skipped when internal secret matches)
     const authHeader = req.headers.get('Authorization');
+    if (isInternal) {
+      console.log('cj-dropshipping: authenticated via INTERNAL_FUNCTION_SECRET');
+    } else {
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('No authorization header provided');
       return new Response(
