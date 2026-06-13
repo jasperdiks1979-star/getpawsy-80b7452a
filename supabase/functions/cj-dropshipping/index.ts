@@ -1008,7 +1008,8 @@ serve(async (req) => {
     console.log(`Admin verified for user: ${userId}`);
     } // end !isInternal auth block
 
-    // Check rate limit (100 requests per hour for CJ API)
+    // Check rate limit (100 requests per hour for CJ API) — skipped for internal calls
+    if (!isInternal) {
     const { data: rateLimitData, error: rateLimitError } = await adminSupabase
       .rpc('check_rate_limit', {
         p_user_id: userId,
@@ -1036,6 +1037,7 @@ serve(async (req) => {
           } 
         }
       );
+    }
     }
 
     const { action, ...params } = await req.json();
