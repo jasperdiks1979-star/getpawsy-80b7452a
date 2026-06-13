@@ -158,8 +158,8 @@ export async function verifyPinIntegrity(
     checks.media_audit = { ok: true };
   }
 
-  // 6. Media Integrity Guard — block if pin_image_url is BLOCKED or REVIEW
-  //    in media_audit (supplier text / watermark / QR / etc).
+  // 6. Media Integrity Guard — block ONLY if pin_image_url is BLOCKED.
+  //    REVIEW is allowed (CLEAN > REVIEW priority enforced upstream).
   if (imgOk && input.pin_image_url) {
     const { data: mi } = await supabase
       .from("media_audit")
@@ -167,7 +167,7 @@ export async function verifyPinIntegrity(
       .eq("product_id", input.product_id)
       .eq("image_url", input.pin_image_url)
       .maybeSingle();
-    if (mi && (mi.status === "BLOCKED" || mi.status === "REVIEW")) {
+    if (mi && mi.status === "BLOCKED") {
       checks.media_integrity = {
         ok: false,
         reason: `image ${mi.status}: ${mi.issue_type} (${mi.confidence})`,
