@@ -822,6 +822,52 @@ Deno.serve(async (req) => {
       // Propagate runtime Domination Mode flag onto the pin so the QA gate's
       // allowlist + hook-bank relaxations apply to catalog-wide v2.2 rollout.
       (pin as any).domination_mode = dominationActive;
+
+      // 🛡️ Permanent Integrity Guard — image-vs-title, species, destination URL.
+      // Confidence < 95% → reject. No emergency override path.
+      try {
+        const { verifyPinIntegrity } = await import("../_shared/pinterest-integrity-guard.ts");
+        const integrity = await verifyPinIntegrity(sb as any, {
+          product_id: pin.product_id,
+          product_slug: pin.product_slug,
+          product_name: pin.product_name,
+          pin_title: pin.pin_title,
+          pin_description: pin.pin_description,
+          pin_image_url: pin.pin_image_url,
+          destination_link: pin.destination_link,
+          niche_or_category: pin.category_key,
+        });
+        if (!integrity.passed) {
+          const reason = `integrity_guard:conf=${integrity.confidence.toFixed(2)}:${integrity.blocking_reasons.join(",")}`;
+          console.warn(`[cron] Pin ${pin.id} blocked by IntegrityGuard: ${reason}`);
+          await sb.from("pinterest_pin_queue").update({
+            status: "rejected",
+            rejection_reason: "integrity_guard_blocked",
+            qa_reasons: integrity.blocking_reasons,
+            error_message: reason,
+            publishing_started_at: null,
+          }).eq("id", pin.id);
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "publish",
+            status: "rejected",
+            error_message: reason,
+            response_data: { confidence: integrity.confidence, checks: integrity.checks },
+          });
+          results.push({ pinId: pin.id, status: "rejected", error: reason });
+          continue;
+        }
+      } catch (e) {
+        console.error(`[cron] IntegrityGuard threw for pin ${pin.id} — fail closed`, e);
+        await sb.from("pinterest_pin_queue").update({
+          status: "rejected",
+          rejection_reason: "integrity_guard_exception",
+          error_message: String((e as Error)?.message || e),
+        }).eq("id", pin.id);
+        results.push({ pinId: pin.id, status: "rejected", error: "integrity_guard_exception" });
+        continue;
+      }
+
       const qaReasons = runPinQa(pin as any);
       if (qaReasons.length > 0) {
         const reasonStr = qaReasons.join(",");

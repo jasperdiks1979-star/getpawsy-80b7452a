@@ -1087,6 +1087,33 @@ async function uploadAndInsertDraft(
     throw new Error(governorRejectReason(govVerdict));
   }
 
+  // ── PERMANENT INTEGRITY GUARD ─────────────────────────────────────────────
+  // Image-vs-title, species, and destination URL checks. Confidence < 95%
+  // blocks publication automatically. No opt-out, no emergency override.
+  const { verifyPinIntegrity } = await import("../_shared/pinterest-integrity-guard.ts");
+  const integrity = await verifyPinIntegrity(supabase, {
+    product_id: product.id,
+    product_slug: product.slug,
+    product_name: product.name,
+    pin_title: copy.title,
+    pin_description: copy.description,
+    pin_image_url: imageUrl,
+    destination_link: destination,
+    niche_or_category: niche,
+  });
+  if (!integrity.passed) {
+    console.warn("[creative-director] integrity guard blocked draft", {
+      product_slug: product.slug,
+      variant,
+      confidence: integrity.confidence,
+      reasons: integrity.blocking_reasons,
+      checks: integrity.checks,
+    });
+    throw new Error(
+      `integrity_guard_blocked:conf=${integrity.confidence.toFixed(2)}:${integrity.blocking_reasons.join(",")}`,
+    );
+  }
+
   const ins = await supabase
     .from("pinterest_pin_queue")
     .insert(row)
