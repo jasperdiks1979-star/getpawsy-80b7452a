@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     for (const p of prods ?? []) {
       try {
         const r = await supabase.functions.invoke("pinterest-creative-director", {
-          body: { action: "run_full", slug: (p as any).slug, count: 2 },
+          body: { action: "run_full", productSlug: (p as any).slug, count: 2 },
         });
         rebuildResults.push({ slug: (p as any).slug, ok: !r.error, error: r.error?.message });
       } catch (e) {
