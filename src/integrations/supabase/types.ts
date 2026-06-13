@@ -4241,6 +4241,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_video_ingestion_runs: {
+        Row: {
+          cj_fetch_failed: number
+          cj_fetch_success: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          products_scanned: number
+          rejection_reasons: Json
+          started_at: string
+          status: string
+          trigger: string
+          videos_found: number
+          videos_imported: number
+          videos_rejected: number
+          videos_resolved: number
+        }
+        Insert: {
+          cj_fetch_failed?: number
+          cj_fetch_success?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scanned?: number
+          rejection_reasons?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+          videos_found?: number
+          videos_imported?: number
+          videos_rejected?: number
+          videos_resolved?: number
+        }
+        Update: {
+          cj_fetch_failed?: number
+          cj_fetch_success?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scanned?: number
+          rejection_reasons?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+          videos_found?: number
+          videos_imported?: number
+          videos_rejected?: number
+          videos_resolved?: number
+        }
+        Relationships: []
+      }
       cj_webhook_logs: {
         Row: {
           created_at: string
