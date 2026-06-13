@@ -386,6 +386,37 @@ Deno.serve(async (req) => {
     }
 
     // ── 1. Fetch due pins ──
+    // Pre-publish board_id repair: never let NULL board_id stall the queue.
+    try {
+      const { error: repairErr } = await sb.rpc("noop_placeholder").catch(() => ({ error: null } as any));
+      void repairErr;
+      // Use plain update via PostgREST: any publishable row missing board_id
+      // gets a safe fallback (cat→Best Cat Trees, dog→Dog Walking, other→Pet Parent Hacks).
+      const { data: nullRows } = await sb
+        .from("pinterest_pin_queue")
+        .select("id, product_slug, product_name, category_key")
+        .is("board_id", null)
+        .is("pinterest_pin_id", null)
+        .in("status", ["queued", "approved", "draft"]);
+      for (const row of (nullRows ?? []) as any[]) {
+        const blob = `${row.product_slug ?? ""} ${row.product_name ?? ""} ${row.category_key ?? ""}`.toLowerCase();
+        const board = /cat/.test(blob)
+          ? { id: "1117103951261719219", name: "Best Cat Trees 2026" }
+          : /dog/.test(blob)
+          ? { id: "1117103951261719227", name: "Dog Walking Essentials" }
+          : { id: "1117103951261719232", name: "Pet Parent Hacks" };
+        await sb
+          .from("pinterest_pin_queue")
+          .update({ board_id: board.id, board_name: board.name, updated_at: new Date().toISOString() })
+          .eq("id", row.id);
+      }
+      if ((nullRows ?? []).length > 0) {
+        console.log(`[cron] repaired ${nullRows!.length} pins with NULL board_id`);
+      }
+    } catch (e) {
+      console.warn("[cron] board_id repair step failed (non-fatal):", e);
+    }
+
     let q = sb
       .from("pinterest_pin_queue")
       .select("*")
