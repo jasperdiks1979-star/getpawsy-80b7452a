@@ -368,3 +368,6 @@ verify_jwt = false
 
 [functions.cj-video-ingest-worker]
 verify_jwt = false
+
+[functions.media-master-pipeline]
+verify_jwt = false
