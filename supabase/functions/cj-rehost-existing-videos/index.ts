@@ -94,7 +94,17 @@ async function rehostVideo(
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 45_000);
-      const res = await fetch(sourceUrl, { signal: ctrl.signal });
+      // CJ's `download-only-api` host rejects requests without the
+      // developers.cjdropshipping.com Referer (returns 403 text/html).
+      // Setting it here makes the URLs fetchable server-side; the bytes
+      // are then uploaded to Supabase Storage and served from there.
+      const res = await fetch(sourceUrl, {
+        signal: ctrl.signal,
+        headers: {
+          Referer: "https://developers.cjdropshipping.com",
+          "User-Agent": "Mozilla/5.0 (compatible; GetPawsy-Rehoster/1.0)",
+        },
+      });
       clearTimeout(timer);
       lastStatus = res.status;
       if (!res.ok) {
