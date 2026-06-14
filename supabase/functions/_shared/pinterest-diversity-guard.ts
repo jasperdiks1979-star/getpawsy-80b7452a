@@ -155,6 +155,7 @@ type Counts = {
   angle: Map<string, number>;
   benefit: Map<string, number>;
   hook: Map<string, number>;
+  overlay: Map<string, number>;
 };
 
 function emptyCounts(): Counts {
@@ -164,6 +165,7 @@ function emptyCounts(): Counts {
     angle: new Map(),
     benefit: new Map(),
     hook: new Map(),
+    overlay: new Map(),
   };
 }
 
@@ -213,6 +215,7 @@ export class DiversityGuard {
   private last90Total = 0;
   private last25Total = 0;
   hookCapPer90 = HOOK_CAP_PER_90;
+  overlayCapPer90 = OVERLAY_CAP_PER_90;
 
   constructor(caps: Partial<DiversityCaps> = {}) {
     this.caps = { ...DEFAULT_CAPS, ...caps };
@@ -262,6 +265,8 @@ export class DiversityGuard {
       if (angle) bump(this.c90.angle, angle);
       if (benefit) bump(this.c90.benefit, benefit);
       if (hook) bump(this.c90.hook, hook);
+      const overlayKey = norm(p.overlay_text);
+      if (overlayKey) bump(this.c90.overlay, overlayKey);
 
       const cat = p.category_key || "(uncategorised)";
       if (!this.byCategory.has(cat)) this.byCategory.set(cat, emptyCounts());
@@ -345,6 +350,14 @@ export class DiversityGuard {
     const overlay = norm(`${final.headline} • ${final.cta}`);
     if (this.caps.windowLast25Exact && this.c25Exact.has(overlay)) {
       reasons.push(`exact_overlay_in_last_25:${overlay.slice(0, 60)}`);
+    }
+
+    // 1b. Overlay rolling-90 cap (operator request 2026-06).
+    if (overlay) {
+      const used = this.c90.overlay.get(overlay) || 0;
+      if (used >= this.overlayCapPer90) {
+        reasons.push(`overlay_cap_exceeded:${used}>=${this.overlayCapPer90}:${overlay.slice(0, 48)}`);
+      }
     }
 
     const tryReplace = (
