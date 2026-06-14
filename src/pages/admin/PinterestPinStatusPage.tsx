@@ -443,6 +443,16 @@ export default function PinterestPinStatusPage() {
             </Button>
             <Button
               size="sm"
+              variant="destructive"
+              onClick={handlePurgeBannedCta}
+              disabled={!!maintLoading}
+              title="Delete rejected pins with banned overlay/CTA copy and flag their product/board pairs for AI regen"
+            >
+              {maintLoading === 'purge_banned_cta' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Purge banned-CTA & flag regen
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setCdOpen((v) => !v)}
               disabled={!!maintLoading}
               className="bg-muted text-muted-foreground hover:bg-muted/80 line-through"
