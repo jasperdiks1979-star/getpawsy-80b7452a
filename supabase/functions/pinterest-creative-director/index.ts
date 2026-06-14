@@ -42,6 +42,7 @@ import {
   type HookArchetype,
 } from "../_shared/pinterest-product-hooks.ts";
 import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
+import { scoreCtrIntent, scoreOutboundIntent } from "../_shared/pinterest-diversity-guard.ts";
 import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
@@ -1030,7 +1031,17 @@ async function uploadAndInsertDraft(
             predicted_ctr: predictCtr(brief, intelligence.scores),
             product_benefits: brief.product_benefits ?? null,
             product_features: brief.product_features ?? null,
-            engine_version: "v2.1",
+            engine_version: "v2.2",
+            ctr_intent: scoreCtrIntent({
+              headline: copy.overlay,
+              cta: copy.cta,
+              hook: brief.emotional_hook ?? null,
+            }),
+            outbound_intent: scoreOutboundIntent(null, {
+              headline: copy.overlay,
+              cta: copy.cta,
+              hook: brief.emotional_hook ?? null,
+            }),
           },
           emotional_hook: brief.emotional_hook,
           headline: brief.headline,

@@ -6,10 +6,11 @@
 //
 // Caps (sliding 90-published-pin window unless otherwise noted):
 //   • headline → max 5 uses
-//   • cta      → max 10 uses
-//   • hook     → max 8 uses
-//   • angle    → max 12 uses
-//   • benefit  → max 12 uses
+//   • cta      → max 5 uses   (tightened 2026-06 — operator request)
+//   • hook     → max 5 uses   (tightened 2026-06 — operator request)
+//   • angle    → max 5 uses   (tightened 2026-06 — operator request)
+//   • benefit  → max 5 uses
+//   • overlay  → max 5 uses   (rolling 90 — new)
 //   • last 25  → exact-overlay duplicates always rejected
 //
 // All pool replacements are STRICTLY category-scoped — a litter draft can
@@ -119,13 +120,14 @@ export interface DiversityCaps {
 
 export const DEFAULT_CAPS: DiversityCaps = {
   headlinePer90: 5,
-  ctaPer90: 10,
-  anglePer90: 12,
-  benefitPer90: 12,
+  ctaPer90: 5,
+  anglePer90: 5,
+  benefitPer90: 5,
   windowLast25Exact: true,
 };
 
-export const HOOK_CAP_PER_90 = 8;
+export const HOOK_CAP_PER_90 = 5;
+export const OVERLAY_CAP_PER_90 = 5;
 
 // Map free-form niche/category labels to the canonical pool category key.
 // Pool buckets live in `pinterest_category_creative_pools.category` and
@@ -153,6 +155,7 @@ type Counts = {
   angle: Map<string, number>;
   benefit: Map<string, number>;
   hook: Map<string, number>;
+  overlay: Map<string, number>;
 };
 
 function emptyCounts(): Counts {
@@ -162,6 +165,7 @@ function emptyCounts(): Counts {
     angle: new Map(),
     benefit: new Map(),
     hook: new Map(),
+    overlay: new Map(),
   };
 }
 
@@ -211,6 +215,7 @@ export class DiversityGuard {
   private last90Total = 0;
   private last25Total = 0;
   hookCapPer90 = HOOK_CAP_PER_90;
+  overlayCapPer90 = OVERLAY_CAP_PER_90;
 
   constructor(caps: Partial<DiversityCaps> = {}) {
     this.caps = { ...DEFAULT_CAPS, ...caps };
@@ -260,6 +265,8 @@ export class DiversityGuard {
       if (angle) bump(this.c90.angle, angle);
       if (benefit) bump(this.c90.benefit, benefit);
       if (hook) bump(this.c90.hook, hook);
+      const overlayKey = norm(p.overlay_text);
+      if (overlayKey) bump(this.c90.overlay, overlayKey);
 
       const cat = p.category_key || "(uncategorised)";
       if (!this.byCategory.has(cat)) this.byCategory.set(cat, emptyCounts());
@@ -345,6 +352,14 @@ export class DiversityGuard {
       reasons.push(`exact_overlay_in_last_25:${overlay.slice(0, 60)}`);
     }
 
+    // 1b. Overlay rolling-90 cap (operator request 2026-06).
+    if (overlay) {
+      const used = this.c90.overlay.get(overlay) || 0;
+      if (used >= this.overlayCapPer90) {
+        reasons.push(`overlay_cap_exceeded:${used}>=${this.overlayCapPer90}:${overlay.slice(0, 48)}`);
+      }
+    }
+
     const tryReplace = (
       type: PoolType,
       currentValue: string,
@@ -386,7 +401,11 @@ export class DiversityGuard {
     if (candidate.angle) bump(this.c90.angle, candidate.angle);
     if (candidate.benefit) bump(this.c90.benefit, candidate.benefit);
     if (candidate.hook) bump(this.c90.hook, candidate.hook);
-    this.c25Exact.add(norm(`${candidate.headline} • ${candidate.cta}`));
+    const overlay = norm(`${candidate.headline} • ${candidate.cta}`);
+    if (overlay) {
+      bump(this.c90.overlay, overlay);
+      this.c25Exact.add(overlay);
+    }
     this.last90Total += 1;
     this.last25Total += 1;
   }
@@ -508,4 +527,109 @@ export function scoreVariety(guard: DiversityGuard, candidate: DiversityCandidat
     parts.benefit  * 0.10
   );
   return { total, parts };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 — CTR-intent scorer (deterministic, 0-100)
+//
+// Rewards: curiosity, transformation, before/after, emotional outcomes,
+// problem/solution framing, social proof, specific numbers.
+// Penalises: generic openers, weak CTAs, hyper-repetitive boilerplate.
+//
+// Pure function — no DB access — so it can run inside the slate picker
+// without extra cost. Combine with `scoreVariety` and `scoreOutboundIntent`
+// for a composite future-CTR estimate.
+// ─────────────────────────────────────────────────────────────────────────────
+export interface CtrScoreBreakdown {
+  total: number;          // 0-100
+  curiosity: number;
+  transformation: number;
+  social_proof: number;
+  problem_solution: number;
+  emotion: number;
+  specificity: number;
+  generic_penalty: number;
+  weak_cta_penalty: number;
+}
+
+const CURIOSITY_RX = /\b(why|how|secret|nobody|finally|surprising|never|trick|hidden|what happens|the reason)\b/i;
+const TRANSFORMATION_RX = /\b(before|after|now|in (?:days?|weeks?|minutes?|seconds?)|transform|went from|turned into|days?\s+later)\b/i;
+const BEFORE_AFTER_RX = /\b(before\s*[\/&]\s*after|day\s*0|day\s*\d+|then\s*vs\s*now)\b/i;
+const EMOTION_RX = /\b(love|obsessed|finally|relief|peace|joy|calm|stress|anxiety|guilt|safer|happier)\b/i;
+const PROBLEM_SOLUTION_RX = /\b(stop|no more|fix|solves?|end the|tired of|hate|annoying|smell|mess|chaos|scratch(?:ed|ing))\b/i;
+const SOCIAL_PROOF_RX = /\b(\d+[k,]?\s*(?:pet parents?|cats?|dogs?|reviews?|families)|trusted|loved by|us pet parents|customers|rated)\b/i;
+const NUMBER_RX = /\b(\d+(?:[.,]\d+)?\s*(?:%|x|hours?|mins?|minutes?|seconds?|lbs?|kg|inches|inch|in\b|ft|days?|weeks?))\b/i;
+const GENERIC_RX = /^(buy|shop|click|see|view|check)\b/i;
+const WEAK_CTA_RX = /^(learn more|click here|read more|find out|tap to learn)$/i;
+
+function bonus(rx: RegExp, text: string, points: number): number {
+  return rx.test(text) ? points : 0;
+}
+
+export function scoreCtrIntent(candidate: DiversityCandidate): CtrScoreBreakdown {
+  const headline = (candidate.headline || "").trim();
+  const cta = (candidate.cta || "").trim();
+  const hook = (candidate.hook || "").trim();
+  const blobText = `${headline} ${cta} ${hook}`;
+
+  const curiosity = bonus(CURIOSITY_RX, blobText, 18);
+  const transformation = bonus(TRANSFORMATION_RX, blobText, 15) + bonus(BEFORE_AFTER_RX, blobText, 10);
+  const emotion = bonus(EMOTION_RX, blobText, 12);
+  const problem_solution = bonus(PROBLEM_SOLUTION_RX, blobText, 14);
+  const social_proof = bonus(SOCIAL_PROOF_RX, blobText, 15);
+  const specificity = bonus(NUMBER_RX, blobText, 10);
+
+  const generic_penalty = GENERIC_RX.test(headline) ? -18 : 0;
+  const weak_cta_penalty = WEAK_CTA_RX.test(cta) ? -15 : 0;
+
+  const raw = 35 + curiosity + transformation + emotion + problem_solution +
+              social_proof + specificity + generic_penalty + weak_cta_penalty;
+  const total = Math.max(0, Math.min(100, Math.round(raw)));
+  return {
+    total,
+    curiosity,
+    transformation,
+    social_proof,
+    problem_solution,
+    emotion,
+    specificity,
+    generic_penalty,
+    weak_cta_penalty,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 5 — Outbound-click scorer (0-100)
+//
+// Estimates how likely a pin is to drive a click to the product page
+// (not just a save/like). Combines:
+//   • CTR-intent signal (50%)
+//   • presence of a strong action verb in the CTA (25%)
+//   • product-page intent cues in headline (price/free/today/now/limited) (15%)
+//   • diversity headroom (10%) — duplicates rarely beat fresh creatives
+// ─────────────────────────────────────────────────────────────────────────────
+const STRONG_CTA_RX = /\b(shop now|see it|see the|grab yours|get yours|try it|build the|fix it|upgrade now|save now|pick yours)\b/i;
+const COMMERCE_INTENT_RX = /\b(under \$?\d+|free shipping|today|now|limited|new in|in stock|ships fast|same.?day)\b/i;
+
+export function scoreOutboundIntent(
+  guard: DiversityGuard | null,
+  candidate: DiversityCandidate,
+): { total: number; ctr: number; cta_strength: number; commerce_intent: number; variety: number } {
+  const ctrPart = scoreCtrIntent(candidate).total;
+  const ctaPart = STRONG_CTA_RX.test(candidate.cta || "") ? 100 : 40;
+  const commercePart = COMMERCE_INTENT_RX.test(candidate.headline || "") ? 100 : 50;
+  const varietyPart = guard ? scoreVariety(guard, candidate).total : 70;
+  const total = Math.round(
+    ctrPart * 0.50 +
+    ctaPart * 0.25 +
+    commercePart * 0.15 +
+    varietyPart * 0.10,
+  );
+  return {
+    total: Math.max(0, Math.min(100, total)),
+    ctr: ctrPart,
+    cta_strength: ctaPart,
+    commerce_intent: commercePart,
+    variety: varietyPart,
+  };
 }
