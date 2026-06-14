@@ -320,6 +320,26 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  const handlePurgeBannedCta = async () => {
+    if (!confirm('Delete all rejected pins with banned overlay/CTA and flag their product/board pairs for AI regen?')) return;
+    setMaintLoading('purge_banned_cta');
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-purge-banned-cta', { body: {} });
+      if (error) throw error;
+      const r = data as any;
+      if (!r?.ok) throw new Error(r?.message || 'Purge failed');
+      toast({
+        title: 'Banned-CTA pins purged',
+        description: `Deleted ${r.deleted} · flagged ${r.flagged} regen tasks (${r.unique_pairs} unique pairs)`,
+      });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Purge failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
   const [verifyReport, setVerifyReport] = useState<any | null>(null);
   const handleVerifyDrafts = async () => {
     setVerifyReport(null);
@@ -440,6 +460,16 @@ export default function PinterestPinStatusPage() {
             <Button size="sm" variant="destructive" onClick={handleDeleteInvalidDrafts} disabled={!!maintLoading}>
               {maintLoading === 'delete_invalid_drafts' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
               Delete invalid drafts
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handlePurgeBannedCta}
+              disabled={!!maintLoading}
+              title="Delete rejected pins with banned overlay/CTA copy and flag their product/board pairs for AI regen"
+            >
+              {maintLoading === 'purge_banned_cta' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Purge banned-CTA & flag regen
             </Button>
             <Button
               size="sm"
