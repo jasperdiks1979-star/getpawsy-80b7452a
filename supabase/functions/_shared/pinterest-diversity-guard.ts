@@ -6,10 +6,11 @@
 //
 // Caps (sliding 90-published-pin window unless otherwise noted):
 //   • headline → max 5 uses
-//   • cta      → max 10 uses
-//   • hook     → max 8 uses
-//   • angle    → max 12 uses
-//   • benefit  → max 12 uses
+//   • cta      → max 5 uses   (tightened 2026-06 — operator request)
+//   • hook     → max 5 uses   (tightened 2026-06 — operator request)
+//   • angle    → max 5 uses   (tightened 2026-06 — operator request)
+//   • benefit  → max 5 uses
+//   • overlay  → max 5 uses   (rolling 90 — new)
 //   • last 25  → exact-overlay duplicates always rejected
 //
 // All pool replacements are STRICTLY category-scoped — a litter draft can
@@ -119,13 +120,14 @@ export interface DiversityCaps {
 
 export const DEFAULT_CAPS: DiversityCaps = {
   headlinePer90: 5,
-  ctaPer90: 10,
-  anglePer90: 12,
-  benefitPer90: 12,
+  ctaPer90: 5,
+  anglePer90: 5,
+  benefitPer90: 5,
   windowLast25Exact: true,
 };
 
-export const HOOK_CAP_PER_90 = 8;
+export const HOOK_CAP_PER_90 = 5;
+export const OVERLAY_CAP_PER_90 = 5;
 
 // Map free-form niche/category labels to the canonical pool category key.
 // Pool buckets live in `pinterest_category_creative_pools.category` and
