@@ -320,6 +320,26 @@ export default function PinterestPinStatusPage() {
     }
   };
 
+  const handlePurgeBannedCta = async () => {
+    if (!confirm('Delete all rejected pins with banned overlay/CTA and flag their product/board pairs for AI regen?')) return;
+    setMaintLoading('purge_banned_cta');
+    try {
+      const { data, error } = await supabase.functions.invoke('pinterest-purge-banned-cta', { body: {} });
+      if (error) throw error;
+      const r = data as any;
+      if (!r?.ok) throw new Error(r?.message || 'Purge failed');
+      toast({
+        title: 'Banned-CTA pins purged',
+        description: `Deleted ${r.deleted} · flagged ${r.flagged} regen tasks (${r.unique_pairs} unique pairs)`,
+      });
+      await refetch();
+    } catch (e) {
+      toast({ title: 'Purge failed', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setMaintLoading(null);
+    }
+  };
+
   const [verifyReport, setVerifyReport] = useState<any | null>(null);
   const handleVerifyDrafts = async () => {
     setVerifyReport(null);
