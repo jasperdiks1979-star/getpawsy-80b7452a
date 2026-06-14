@@ -29,7 +29,7 @@ import {
 } from "../_shared/pinterest-us-keywords.ts";
 import {
   isPriorityCategory,
-  PRIORITY_CATEGORY_FLOOR,
+  PRIORITY_CATEGORY_CAP,
   countryWeight,
 } from "../_shared/pinterest-priority-categories.ts";
 
@@ -317,9 +317,10 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   const catCounts = new Map<string, number>();
   const picked: Product[] = [];
   const throttled: string[] = [];
-  // V4 Phase 6: PRIORITY CATEGORY FLOOR — at least 70% of the slate must come from
-  // priority categories (smart litter / cat trees / cat furniture / luxury beds / smart gadgets).
-  const priorityTarget = Math.ceil(limit * PRIORITY_CATEGORY_FLOOR);
+  // HYBRID CAP — priority categories (smart litter / cat trees / cat furniture /
+  // luxury beds / smart gadgets) may take AT MOST 40% of the slate combined.
+  // Non-priority categories fill the remaining ≥60% to maintain creative breadth.
+  const priorityMax = Math.max(1, Math.floor(limit * PRIORITY_CATEGORY_CAP));
   // V4 Phase 3: WINNER AMPLIFICATION — pull product tiers and bias slate 70/25/5.
   const { data: tierRows } = await sb
     .from("pinterest_product_tiers")
@@ -334,23 +335,27 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
   // loser gets the remainder (≈5%).
   const tierCounts = { winner: 0, neutral: 0, loser: 0, untested: 0 };
 
-  // Pass 1: priority categories first, respecting per-cat cap and tier allocation.
-  for (const pass of [1, 2] as const) {
+  // Pass 1: priority picks (highest-scoring first) until cap (40%) reached.
+  // Pass 2: non-priority picks fill the slate.
+  // Pass 3: if non-priority pool exhausted, allow priority overflow.
+  let priorityCount = 0;
+  for (const pass of [1, 2, 3] as const) {
     for (const { p } of scored) {
       if (picked.length >= limit) break;
       if (picked.includes(p)) continue;
       const key = categoryKey(p.category);
       const isPrio = isPriorityCategory(key);
-      if (pass === 1 && !isPrio) continue;
-      if (pass === 2 && picked.length < priorityTarget && isPrio === false) continue;
+      if (pass === 1 && (!isPrio || priorityCount >= priorityMax)) continue;
+      if (pass === 2 && isPrio) continue;
+      if (pass === 3 && !isPrio) continue;
       const used = catCounts.get(key) ?? 0;
-      if (used >= maxPerCat && pass === 2) { throttled.push(p.slug); continue; }
-      // Winner/neutral/loser quota
+      if (used >= maxPerCat) { if (pass !== 1) throttled.push(p.slug); continue; }
       const tier = tierMap.get(p.id) ?? "untested";
       if (tier === "loser" && tierCounts.loser >= Math.max(1, Math.floor(limit * 0.05))) continue;
       if (tier === "neutral" && tierCounts.neutral >= neutralTarget && tierCounts.winner < winnerTarget) continue;
       picked.push(p);
       catCounts.set(key, used + 1);
+      if (isPrio) priorityCount += 1;
       tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
     }
   }
