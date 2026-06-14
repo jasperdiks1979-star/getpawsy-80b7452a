@@ -96,7 +96,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "low-angle lifestyle shot, cat walking past with morning light",
       "over-the-shoulder of owner enjoying coffee while the unit sits in soft focus",
     ],
-    cta_bank: ["See it work", "Shop now", "Why owners switch", "Learn more"],
+    cta_bank: ["She uses it daily", "Zero scoop mornings", "Litter, solved", "Hands-off clean"],
   },
 
   dog_car: {
@@ -123,7 +123,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "open tailgate at sunset with dog sitting on covered seat",
       "muddy paws moment captured cleanly on the cover, soft focus",
     ],
-    cta_bank: ["Shop the cover", "Protect your seats", "See the fit"],
+    cta_bank: ["Mud stays here", "Spotless rides", "Road-trip ready", "Zero seat damage"],
   },
 
   cat_tree: {
@@ -148,7 +148,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "wide interiors-magazine framing with the tree as a focal element",
       "cat-eye-level shot looking up the tree against soft window light",
     ],
-    cta_bank: ["Shop the tree", "See heights", "Build your cat's space"],
+    cta_bank: ["11ft of cat heaven", "Her new HQ", "Where she belongs", "Window-view loft"],
   },
 
   dog_harness: {
@@ -174,7 +174,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "wide landscape with hiker + dog as small silhouettes",
       "close detail of the harness on the dog with trail blurred behind",
     ],
-    cta_bank: ["Shop the harness", "Gear up", "Hit the trail"],
+    cta_bank: ["Zero pull, all day", "No-choke comfort", "All-trail tested", "Pulls? Gone."],
   },
 
   calming_bed: {
@@ -200,7 +200,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "tight intimate framing of the pet sinking into the bed",
       "wide cozy-corner shot with bed as the warm anchor of the scene",
     ],
-    cta_bank: ["Shop the bed", "See sizes", "Help her sleep"],
+    cta_bank: ["Her deepest sleep", "Anxiety, melted", "Safe-place feeling", "Sleeps full night"],
   },
 
   dog_bed: {
@@ -222,7 +222,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "wide living-room editorial with bed in natural placement",
       "eye-level intimate shot of the dog on the bed",
     ],
-    cta_bank: ["Shop the bed", "See sizes", "Better sleep"],
+    cta_bank: ["Joint pain, eased", "His forever spot", "All-day support", "Better mornings"],
   },
 
   cat_fountain: {
@@ -244,7 +244,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "side profile of cat drinking with water motion frozen mid-stream",
       "wide kitchen-corner shot with fountain as feature",
     ],
-    cta_bank: ["Shop the fountain", "See it flow", "Keep them drinking"],
+    cta_bank: ["She finally drinks", "Fresher every sip", "On-tap hydration", "Less UTI risk"],
   },
 
   interactive_toy: {
@@ -262,7 +262,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["pet mid-play, paws in motion, eyes locked on the toy"],
     compositions: ["mid-action freeze frame", "wide playful-room scene"],
-    cta_bank: ["Shop the toy", "See it move", "Play more"],
+    cta_bank: ["Boredom, gone", "Tires her out", "Hours of solo fun", "Solo fun, all day"],
   },
 
   grooming: {
@@ -280,7 +280,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["calm pet being gently groomed by owner's hands (hands only, in frame)"],
     compositions: ["close hands-and-pet detail", "wide bathroom scene"],
-    cta_bank: ["Shop the brush", "See results", "Less shedding"],
+    cta_bank: ["Less hair on floor", "Salon at home", "No shed clumps", "Smoother coat"],
   },
 
   feeder: {
@@ -298,7 +298,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["pet waiting calmly near a modern automatic feeder"],
     compositions: ["styled kitchen feeding-station scene", "pet eye-level with feeder"],
-    cta_bank: ["Shop the feeder", "See schedule", "Feed smarter"],
+    cta_bank: ["Auto-fed mornings", "Perfect portions", "Late nights, easy", "Schedule + done"],
   },
 
   cat_carrier: {
@@ -317,7 +317,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["calm cat sitting inside a modern soft-sided carrier, curious gaze"],
     compositions: ["entryway editorial with carrier on bench", "passenger-seat shot, soft window light"],
-    cta_bank: ["Shop the carrier", "See sizes", "Travel ready"],
+    cta_bank: ["Vet stress, gone", "Walks right in", "Calm-trip carrier", "She loves inside"],
   },
 
   dog_carrier: {
@@ -336,7 +336,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["happy small dog sitting up in a stroller or bike trailer on a park path"],
     compositions: ["wide park-path shot, owner pushing stroller", "low-angle action with motion blur on the path"],
-    cta_bank: ["Shop the stroller", "See it roll", "Take them along"],
+    cta_bank: ["Smooth park rides", "Senior dog joy", "Park-day favorite", "Tiny dog joy"],
   },
 
   dog_collar: {
@@ -355,7 +355,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["mid-size dog walking on leash, collar clearly visible at neckline"],
     compositions: ["close detail of collar with dog blurred behind", "wide walking shot at golden hour"],
-    cta_bank: ["Shop the collar", "See colors", "Walk smarter"],
+    cta_bank: ["Tracked every walk", "All-mile comfort", "GPS peace of mind", "He stays close"],
   },
 
   dog_training: {
@@ -373,7 +373,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["focused dog responding to a calm owner in a backyard scene"],
     compositions: ["wide backyard editorial", "intimate eye-contact moment between owner and dog"],
-    cta_bank: ["Shop training", "See how", "Train calmly"],
+    cta_bank: ["Calm dog, finally", "Routine that works", "Calmer walks daily", "Behavior, fixed"],
   },
 
   outdoor_house: {
@@ -391,7 +391,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["dog or cat resting inside a wooden outdoor house in a styled backyard"],
     compositions: ["wide backyard editorial with house as anchor", "intimate doorway shot of pet looking out"],
-    cta_bank: ["Shop the house", "See sizes", "Build outside"],
+    cta_bank: ["Year-round shelter", "Weatherproof haven", "His outdoor spot", "Backyard upgrade"],
   },
 
   bowl_station: {
@@ -409,7 +409,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["pet eating from an elevated bowl in a styled kitchen corner"],
     compositions: ["styled kitchen-corner editorial", "top-down on bowls with neutral floor"],
-    cta_bank: ["Shop the bowls", "See sizes", "Feed in style"],
+    cta_bank: ["Tidy meals daily", "No spill mornings", "Tidy kitchen bowls", "Stable & elevated"],
   },
 
   dog_clothing: {
@@ -427,7 +427,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["small or mid dog wearing a fitted jacket or raincoat on a wet sidewalk"],
     compositions: ["wide rainy-street editorial", "low-angle of dog mid-walk in coat"],
-    cta_bank: ["Shop the coat", "See sizes", "Stay dry"],
+    cta_bank: ["Dry on rainy walks", "Warm in cold snaps", "Coat he'll wear", "Storm-ready dog"],
   },
 
   treats: {
@@ -445,7 +445,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["pet eagerly waiting for a treat from owner's hand (hands only)"],
     compositions: ["styled flatlay with treats and bowl", "intimate hand-and-pet treat moment"],
-    cta_bank: ["Shop treats", "See flavors", "Treat them"],
+    cta_bank: ["Wags for days", "Treats she earns", "Big tail wags", "Reward-time joy"],
   },
 
   cat_scratcher: {
@@ -463,7 +463,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["cat mid-stretch on a sisal scratching post in a styled living-room corner"],
     compositions: ["wide interiors-magazine framing", "side-profile of cat scratching with motion in claws"],
-    cta_bank: ["Shop the scratcher", "See styles", "Save the couch"],
+    cta_bank: ["Couch is safe now", "Nail-care decor", "She chooses this", "Sofa, saved"],
   },
 
   cat_bed: {
@@ -481,7 +481,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["cat curled in a soft round bed in a sunlit window nook"],
     compositions: ["wide window-nook editorial", "tight intimate framing of cat in bed"],
-    cta_bank: ["Shop the bed", "See sizes", "Nap upgrade"],
+    cta_bank: ["Sunbeam upgrade", "Her naptime fort", "Cozy every day", "Window-spot heaven"],
   },
 
   potty_training: {
@@ -499,7 +499,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["small dog standing on a tidy artificial-grass pad in a clean entryway or balcony"],
     compositions: ["wide entryway editorial", "top-down on the pad with the dog walking onto it"],
-    cta_bank: ["Shop the pad", "See it", "Train indoors"],
+    cta_bank: ["Indoor potty fixed", "Apartment-dog win", "Mess-free mornings", "Balcony-ready"],
   },
 
   pet_camera: {
@@ -517,7 +517,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["pet napping in soft focus while a small modern camera sits sharply in foreground"],
     compositions: ["styled shelf with camera in foreground, pet behind", "phone-in-hand mockup viewing the camera feed"],
-    cta_bank: ["Shop the cam", "See features", "Watch live"],
+    cta_bank: ["Always-on view", "Watch her anywhere", "Home, in pocket", "Live feed always"],
   },
 
   dental_care: {
@@ -535,7 +535,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["calm dog or cat being gently brushed by owner's hands (hands only)"],
     compositions: ["close hands-and-pet detail", "styled bathroom-counter scene with the brush"],
-    cta_bank: ["Shop dental", "See it work", "Brush easy"],
+    cta_bank: ["Fresh breath daily", "Fewer vet bills", "Tolerated brushing", "Healthy mouth"],
   },
 
   generic_pet: {
@@ -553,7 +553,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
     banned_terms: BANNED_BASE,
     subjects: ["happy, well-cared-for pet in a styled home setting"],
     compositions: ["editorial wide shot", "intimate eye-level lifestyle"],
-    cta_bank: ["Shop now", "See it", "Learn more"],
+    cta_bank: ["Happy pet upgrade", "Everyday upgrade", "Daily pet win", "Premium pet life"],
   },
 
   supplement: {
@@ -579,7 +579,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "styled kitchen flatlay with chews, dish, and label-free packaging shape",
       "intimate hand-and-pet moment with one chew being offered",
     ],
-    cta_bank: ["See the chew", "Shop wellness", "Daily support"],
+    cta_bank: ["Daily wellness", "Calmer digestion", "Tail-wag energy", "Routine she loves"],
   },
 
   cat_enclosure: {
@@ -604,7 +604,7 @@ export const STYLE_DNA: Record<NicheKey, StyleDNA> = {
       "wide editorial of enclosure with cat inside",
       "intimate eye-level shot through the mesh panel",
     ],
-    cta_bank: ["Shop the enclosure", "See sizes", "Build her space"],
+    cta_bank: ["Safe outdoor time", "Her private patio", "Catio joy", "Safe outdoor zone"],
   },
 };
 
