@@ -46,6 +46,36 @@ async function fetchDiag(): Promise<DiagRow[]> {
   rows.push({ label: 'Not approved', value: notApproved, ok: notApproved === 0 });
   rows.push({ label: 'Distinct queued slugs', value: distinctSlugs.size, ok: true });
 
+  // weak_hook is now a SOFT warning (not a blocker). Surface counts so admins
+  // can still see how often it's flagged + how many pins were auto-recovered.
+  try {
+    const { count: warnCount } = await supabase
+      .from('pinterest_pin_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'queued')
+      .contains('qa_reasons', ['weak_hook']);
+    rows.push({
+      label: 'qa_weak_hook (warning only)',
+      value: warnCount ?? 0,
+      ok: true,
+      hint: 'Weak hook is a soft warning — pins still publish',
+    });
+
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { count: recoveredCount } = await supabase
+      .from('pinterest_pin_queue')
+      .select('id', { count: 'exact', head: true })
+      .gte('updated_at', since)
+      .filter('meta->>qa_warning', 'eq', 'weak_hook');
+    rows.push({
+      label: 'Weak-hook recovered (24h)',
+      value: recoveredCount ?? 0,
+      ok: true,
+    });
+  } catch {
+    // non-fatal
+  }
+
   // 3. Latest publisher run (best-effort)
   try {
     const { data: lastRun } = await (supabase as any)
