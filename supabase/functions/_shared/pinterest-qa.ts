@@ -260,9 +260,11 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
   // pre-validated by the creative-director relevance score, so we relax the
   // legacy keyword bank gate and only require a reasonable-length hook.
   const dominationRelax = !!pin.domination_mode && looksReasonable;
-  if (top && !matchesApproved && !(hasViralKeyword && looksReasonable) && !dominationRelax) {
-    reasons.add("weak_hook");
-  }
+  // weak_hook is now a SOFT warning, NOT a blocking QA failure. Surface it via
+  // runPinQaWarnings() so the admin UI can show it, but do not block publishing.
+  // Truly broken pins (missing image / wrong dest / banned phrase / supplier
+  // image / duplicate asset etc.) are still hard-blocked above.
+  void matchesApproved; void hasViralKeyword; void looksReasonable; void dominationRelax;
 
   return Array.from(reasons);
 }
@@ -270,4 +272,22 @@ export function runPinQa(pin: PinQaInput): PinQaReason[] {
 /** Convenience: true if pin passed every QA check. */
 export function isPinPublishable(pin: PinQaInput): boolean {
   return runPinQa(pin).length === 0;
+}
+
+/** Soft QA reasons — surfaced as warnings only, never block publishing. */
+export const SOFT_QA_REASONS: ReadonlySet<PinQaReason> = new Set(["weak_hook"]);
+
+/**
+ * Returns soft QA warnings for a pin (currently: weak_hook only).
+ * Callers may persist these alongside hard reasons for visibility but MUST
+ * NOT use them to block status='queued' → publish.
+ */
+export function runPinQaWarnings(pin: PinQaInput): PinQaReason[] {
+  const warnings: PinQaReason[] = [];
+  const overlayRaw = pin.overlay_text || "";
+  const parts = overlayRaw.split(/\s*[|•]\s*/u).map((p) => p.trim()).filter(Boolean);
+  const top = (parts[0] || overlayRaw).toLowerCase().replace(/[^\w\s]/g, "").trim();
+  const looksReasonable = top.length >= 8 && top.length <= 60 && /\s/.test(top);
+  if (!looksReasonable) warnings.push("weak_hook");
+  return warnings;
 }
