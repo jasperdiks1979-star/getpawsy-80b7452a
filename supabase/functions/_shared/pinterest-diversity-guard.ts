@@ -401,7 +401,11 @@ export class DiversityGuard {
     if (candidate.angle) bump(this.c90.angle, candidate.angle);
     if (candidate.benefit) bump(this.c90.benefit, candidate.benefit);
     if (candidate.hook) bump(this.c90.hook, candidate.hook);
-    this.c25Exact.add(norm(`${candidate.headline} • ${candidate.cta}`));
+    const overlay = norm(`${candidate.headline} • ${candidate.cta}`);
+    if (overlay) {
+      bump(this.c90.overlay, overlay);
+      this.c25Exact.add(overlay);
+    }
     this.last90Total += 1;
     this.last25Total += 1;
   }
