@@ -60,10 +60,14 @@ Deno.serve(async (req) => {
 
     let flagged = 0;
     if (flagRows.length) {
-      const { error: upErr, count } = await sb
+      // No unique constraint on dedupe_key — emulate upsert by deleting
+      // existing flag rows for the same dedupe_keys, then plain insert.
+      const keys = flagRows.map((r) => r.dedupe_key);
+      await sb.from("ai_priority_queue").delete().in("dedupe_key", keys);
+      const { error: insErr, count } = await sb
         .from("ai_priority_queue")
-        .upsert(flagRows, { onConflict: "dedupe_key", count: "exact" });
-      if (upErr) throw upErr;
+        .insert(flagRows, { count: "exact" });
+      if (insErr) throw insErr;
       flagged = count ?? flagRows.length;
     }
 
