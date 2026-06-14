@@ -13,7 +13,14 @@ export const PRIORITY_CATEGORIES = [
   "smart-pet-gadgets",
 ] as const;
 
-export const PRIORITY_CATEGORY_FLOOR = 0.7; // 70%
+/**
+ * Hybrid cap (replaces the old 70% floor).
+ * Priority categories combined may not exceed 40% of any picked slate.
+ * The old constant name is kept as an alias for back-compat with engines
+ * that import it, but it now carries the cap value.
+ */
+export const PRIORITY_CATEGORY_CAP = 0.4; // 40% combined ceiling
+export const PRIORITY_CATEGORY_FLOOR = PRIORITY_CATEGORY_CAP; // alias, deprecated
 
 // Match by slug substring (categories slug vary in DB).
 export function isPriorityCategory(catKey: string | null | undefined): boolean {
