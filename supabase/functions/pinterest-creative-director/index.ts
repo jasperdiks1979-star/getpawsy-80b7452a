@@ -929,6 +929,7 @@ async function uploadAndInsertDraft(
     hook_category?: string;
     rationale?: string;
   },
+  boardName?: string | null,
 ): Promise<{ queueId: string; imageUrl: string }> {
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
   const path = `creative-director/${product.slug}/${stamp}_${brief.id}.png`;
@@ -1002,6 +1003,10 @@ async function uploadAndInsertDraft(
     scheduled_at: new Date().toISOString(),
     hook_group: brief.pattern_id || niche,
     category_key: niche,
+    // Preserve the flagged board from the requesting job. Without this the
+    // pin_queue column default ('Smart Pet Gadgets') silently overwrites the
+    // intended board, breaking 100% board consistency.
+    ...(boardName ? { board_name: boardName } : {}),
     overlay_text: `${copy.overlay} • ${copy.cta}`
       .replace(/[|•\r\n]/g, " ")
       .replace(/\s+/g, " ")
@@ -1178,6 +1183,10 @@ Deno.serve(async (req) => {
   const count = Math.max(1, Math.min(8, Number(body?.count ?? 5)));
   const force = !!body?.force;
   const emergency = body?.emergency === true;
+  const boardName: string | null =
+    typeof body?.boardName === "string" && body.boardName.trim()
+      ? String(body.boardName).trim()
+      : null;
 
   const trace = traceId();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
@@ -1429,6 +1438,7 @@ Deno.serve(async (req) => {
                 hook_category: brief.hook_category,
                 rationale: brief.strategy_rationale,
               },
+              boardName,
             );
             drafts.push({
               ...inserted, brief, scores: lastScores, attempts: attempt,

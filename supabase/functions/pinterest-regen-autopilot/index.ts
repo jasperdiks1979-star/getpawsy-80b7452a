@@ -89,44 +89,62 @@ Deno.serve(async (req) => {
     slugMap.set(slug, arr);
   }
 
-  const slugs = [...slugMap.keys()].slice(0, maxSlugs);
+  // Flatten into (slug, board) pairs so each flagged board gets its own
+  // director call — preserves the requested board on the pin_queue row.
+  const pairs: Array<{ slug: string; board: string | null; ids: string[] }> = [];
+  for (const [slug, items] of slugMap) {
+    const byBoard = new Map<string, string[]>();
+    for (const it of items) {
+      const key = it.board ?? "(none)";
+      const arr = byBoard.get(key) ?? [];
+      arr.push(it.id);
+      byBoard.set(key, arr);
+    }
+    for (const [board, ids] of byBoard) {
+      pairs.push({ slug, board: board === "(none)" ? null : board, ids });
+    }
+  }
+  const work = pairs.slice(0, maxSlugs);
   const results: Array<{
     slug: string;
+    board: string | null;
     status: number;
     ok: boolean;
     reason?: string;
     marked_done?: number;
-    left_open_no_pin?: string[];
+    left_open_no_pin?: boolean;
   }> = [];
   let processed = 0;
   let creditsExhausted = false;
 
   // Process in parallel batches to fit within edge function CPU budget.
-  for (let i = 0; i < slugs.length; i += concurrency) {
+  for (let i = 0; i < work.length; i += concurrency) {
     if (creditsExhausted) break;
-    const batch = slugs.slice(i, i + concurrency);
+    const batch = work.slice(i, i + concurrency);
     const batchResults = await Promise.all(
-      batch.map(async (slug) => {
+      batch.map(async (pair) => {
         const startedAt = new Date().toISOString();
         const { status, json } = await callFn("pinterest-creative-director", {
           action: "run_full",
-          productSlug: slug,
+          productSlug: pair.slug,
+          boardName: pair.board,
           count,
           force,
         });
-        return { slug, status, json, startedAt };
+        return { pair, status, json, startedAt };
       }),
     );
-    for (const { slug, status, json, startedAt } of batchResults) {
+    for (const { pair, status, json, startedAt } of batchResults) {
+      const { slug, board, ids } = pair;
       if (status === 402 || json?.error === "payment_required" || /payment_required/i.test(json?.message ?? "")) {
         creditsExhausted = true;
-        results.push({ slug, status, ok: false, reason: "payment_required" });
+        results.push({ slug, board, status, ok: false, reason: "payment_required" });
         continue;
       }
       const success = status >= 200 && status < 300 && json?.ok !== false;
       if (!success) {
         results.push({
-          slug,
+          slug, board,
           status,
           ok: false,
           reason: json?.message ?? `http_${status}`,
@@ -134,49 +152,36 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Board-match guard: only mark a row `done` if a pinterest_pin_queue
-      // record was created for its (product_slug, board_name) AFTER the
-      // director call started. Rows whose board has no fresh pin_queue row
-      // stay `open` for retry.
+      // Board-match guard: only mark this pair `done` if a fresh
+      // pinterest_pin_queue row exists for (slug, board) created after the
+      // director call started AND has status draft or queued. Otherwise
+      // leave open for retry.
+      const wantBoard = (board ?? "").toLowerCase().trim();
       const { data: freshPins } = await supabase
         .from("pinterest_pin_queue")
-        .select("board_name")
+        .select("id, board_name, status")
         .eq("product_slug", slug)
         .gte("created_at", startedAt);
+      const matched = (freshPins ?? []).some((p: any) => {
+        const b = (p.board_name ?? "").toLowerCase().trim();
+        const okStatus = p.status === "draft" || p.status === "queued";
+        return b === wantBoard && okStatus;
+      });
 
-      const freshBoards = new Set(
-        (freshPins ?? [])
-          .map((p: any) => (p.board_name ?? "").toLowerCase().trim())
-          .filter(Boolean),
-      );
-
-      const rowsForSlug = slugMap.get(slug) ?? [];
-      const doneIds: string[] = [];
-      const leftOpen: string[] = [];
-      for (const r of rowsForSlug) {
-        const key = (r.board ?? "").toLowerCase().trim();
-        if (key && freshBoards.has(key)) doneIds.push(r.id);
-        else leftOpen.push(r.board ?? "(no board)");
-      }
-
-      if (doneIds.length > 0) {
+      if (matched) {
         await supabase
           .from("ai_priority_queue")
           .update({ status: "done", updated_at: new Date().toISOString() })
-          .in("id", doneIds);
+          .in("id", ids);
         processed += 1;
+        results.push({ slug, board, status, ok: true, marked_done: ids.length });
+      } else {
+        results.push({
+          slug, board, status, ok: false,
+          reason: `no_board_matching_pin_queue_record (wanted "${board}")`,
+          left_open_no_pin: true,
+        });
       }
-
-      results.push({
-        slug,
-        status,
-        ok: doneIds.length > 0,
-        reason: doneIds.length === 0
-          ? `no_board_matching_pin_queue_record (flagged boards: ${leftOpen.join(", ")})`
-          : undefined,
-        marked_done: doneIds.length,
-        left_open_no_pin: leftOpen.length > 0 ? leftOpen : undefined,
-      });
     }
   }
 
