@@ -66,7 +66,10 @@ Deno.serve(async (req) => {
   const succ = state.recent_success_count_1h ?? 0;
   const fail = state.recent_402_count_1h ?? 0;
   let estimatedCreditsPct: number;
-  if (state.paused) estimatedCreditsPct = 0;
+  const aiGenerationPaused =
+    (state.ai_generation_paused ?? state.paused ?? false) || (state.manual_pause ?? false);
+  const publishingPaused = state.publishing_paused === true;
+  if (aiGenerationPaused) estimatedCreditsPct = 0;
   else if (fail === 0) estimatedCreditsPct = 100;
   else estimatedCreditsPct = Math.max(5, Math.round((succ / Math.max(1, succ + fail)) * 100));
 
@@ -74,11 +77,29 @@ Deno.serve(async (req) => {
   // creative ≈ 1 brief + 1 image + 1 fidelity call, so 3 gateway calls).
   // Without a live balance, surface the pct only.
 
+  // Derive publishing-lane status, independent of AI credits.
+  const queuedNow = queueCount.count ?? 0;
+  const publishedLast1h = publishedLastHour.count ?? 0;
+  const publishing_status: "RUNNING" | "IDLE" | "BLOCKED" =
+    publishingPaused ? "BLOCKED" : (publishedLast1h > 0 || queuedNow > 0 ? "RUNNING" : "IDLE");
+  const publishing_message =
+    aiGenerationPaused && queuedNow > 0
+      ? "AI generation paused, publishing continues from existing queue."
+      : aiGenerationPaused
+        ? "AI generation paused. Publishing lane is healthy; no queued pins right now."
+        : publishingPaused
+          ? "Publishing manually halted by operator."
+          : "Publishing lane running normally.";
+
   return new Response(
     JSON.stringify({
       ok: true,
       credit_state: state.forecast_state ?? state.state,
-      paused: state.paused || state.manual_pause,
+      paused: aiGenerationPaused,
+      ai_generation_paused: aiGenerationPaused,
+      publishing_paused: publishingPaused,
+      publishing_status,
+      publishing_message,
       manual_pause: state.manual_pause ?? false,
       emergency_mode: state.emergency_mode ?? false,
       estimated_credits_pct: estimatedCreditsPct,

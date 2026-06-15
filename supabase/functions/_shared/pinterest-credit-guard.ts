@@ -3,6 +3,14 @@
 // All Pinterest functions that hit ai.gateway.lovable.dev MUST funnel through
 // these helpers so credit-exhaustion (HTTP 402) and recovery are tracked
 // centrally.
+//
+// LANE SPLIT (critical):
+//   - AI Generation Lane  → may pause when credits are exhausted.
+//   - Publishing Lane     → MUST keep running even at 0 credits.
+//
+// `isCreditPaused()` / `isAiGenerationPaused()` ONLY blocks AI Gateway work.
+// `isPublishingPaused()` is independent and is only set by an explicit
+// operator action (`publishing_paused` column). Credit guard NEVER toggles it.
 
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { recomputeForecast, maybeFire24hAlert } from "./pinterest-credit-forecast.ts";
@@ -26,17 +34,38 @@ export async function isCreditPaused(supabase: SupabaseClient): Promise<{
 }> {
   const { data } = await supabase
     .from("pinterest_credit_state")
-    .select("paused, state, last_402_at, last_success_at, manual_pause, emergency_mode, forecast_state")
+    .select("paused, ai_generation_paused, state, last_402_at, last_success_at, manual_pause, emergency_mode, forecast_state")
     .eq("id", 1)
     .maybeSingle();
+  const aiPaused =
+    (data?.ai_generation_paused ?? data?.paused ?? false) || (data?.manual_pause ?? false);
   return {
-    paused: (data?.paused ?? false) || (data?.manual_pause ?? false),
+    // `paused` here refers strictly to the AI generation lane.
+    paused: aiPaused,
     state: (data?.forecast_state ?? data?.state ?? "green") as "green" | "orange" | "red",
     last_402_at: data?.last_402_at ?? null,
     last_success_at: data?.last_success_at ?? null,
     manual_pause: data?.manual_pause ?? false,
     emergency_mode: data?.emergency_mode ?? false,
   };
+}
+
+/** Explicit name — same semantics as `isCreditPaused`. Only blocks AI work. */
+export const isAiGenerationPaused = isCreditPaused;
+
+/**
+ * Publishing-lane gate. Independent from credits. Only true when an operator
+ * has explicitly halted publishing. Credit exhaustion never sets this.
+ */
+export async function isPublishingPaused(
+  supabase: SupabaseClient,
+): Promise<{ paused: boolean; reason: string | null }> {
+  const { data } = await supabase
+    .from("pinterest_credit_state")
+    .select("publishing_paused")
+    .eq("id", 1)
+    .maybeSingle();
+  return { paused: data?.publishing_paused === true, reason: null };
 }
 
 export interface CreditEventInput {
@@ -109,12 +138,15 @@ export async function recordCreditEvent(
 
   if (evt.event_type === "payment_required") {
     patch.last_402_at = new Date().toISOString();
-    patch.paused = true;
+    // AI-generation lane only. Publishing lane is intentionally NOT touched.
+    patch.paused = true; // legacy alias
+    patch.ai_generation_paused = true;
     patch.state = "red";
     patch.consecutive_402_count = (current?.consecutive_402_count ?? 0) + 1;
   } else if (evt.event_type === "success" || evt.event_type === "probe_success") {
     patch.last_success_at = new Date().toISOString();
     patch.paused = false;
+    patch.ai_generation_paused = false;
     patch.consecutive_402_count = 0;
     // Green if no 402 in last hour; orange if 402 within window but back to success
     patch.state = (fail1h ?? 0) >= ORANGE_THRESHOLD_402 ? "orange" : "green";
@@ -122,9 +154,11 @@ export async function recordCreditEvent(
     patch.last_probe_at = new Date().toISOString();
   } else if (evt.event_type === "resumed") {
     patch.paused = false;
+    patch.ai_generation_paused = false;
     patch.state = "green";
   } else if (evt.event_type === "paused") {
     patch.paused = true;
+    patch.ai_generation_paused = true;
     patch.state = "red";
   }
 
