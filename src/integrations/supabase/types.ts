@@ -12206,6 +12206,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_board_performance: {
+        Row: {
+          board_id: string | null
+          board_name: string
+          classification: string
+          clicks_30d: number
+          computed_at: string
+          ctr: number
+          impressions_30d: number
+          publish_weight: number
+          purchase_rate: number
+          purchases_30d: number
+          rank: number
+          revenue_cents_30d: number
+          saves_30d: number
+        }
+        Insert: {
+          board_id?: string | null
+          board_name: string
+          classification?: string
+          clicks_30d?: number
+          computed_at?: string
+          ctr?: number
+          impressions_30d?: number
+          publish_weight?: number
+          purchase_rate?: number
+          purchases_30d?: number
+          rank?: number
+          revenue_cents_30d?: number
+          saves_30d?: number
+        }
+        Update: {
+          board_id?: string | null
+          board_name?: string
+          classification?: string
+          clicks_30d?: number
+          computed_at?: string
+          ctr?: number
+          impressions_30d?: number
+          publish_weight?: number
+          purchase_rate?: number
+          purchases_30d?: number
+          rank?: number
+          revenue_cents_30d?: number
+          saves_30d?: number
+        }
+        Relationships: []
+      }
       pinterest_boards: {
         Row: {
           blacklist_reason: string | null
@@ -16416,6 +16464,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_revenue_daily_reports: {
+        Row: {
+          add_to_carts: number
+          allocation: Json
+          average_count: number
+          biggest_losers: Json
+          checkouts: number
+          created_at: string
+          dead_count: number
+          id: string
+          pins_published: number
+          pinterest_visitors: number
+          product_views: number
+          purchases: number
+          report_date: string
+          revenue_cents: number
+          superstar_count: number
+          top_boards: Json
+          top_products: Json
+          weak_count: number
+          winner_count: number
+        }
+        Insert: {
+          add_to_carts?: number
+          allocation?: Json
+          average_count?: number
+          biggest_losers?: Json
+          checkouts?: number
+          created_at?: string
+          dead_count?: number
+          id?: string
+          pins_published?: number
+          pinterest_visitors?: number
+          product_views?: number
+          purchases?: number
+          report_date: string
+          revenue_cents?: number
+          superstar_count?: number
+          top_boards?: Json
+          top_products?: Json
+          weak_count?: number
+          winner_count?: number
+        }
+        Update: {
+          add_to_carts?: number
+          allocation?: Json
+          average_count?: number
+          biggest_losers?: Json
+          checkouts?: number
+          created_at?: string
+          dead_count?: number
+          id?: string
+          pins_published?: number
+          pinterest_visitors?: number
+          product_views?: number
+          purchases?: number
+          report_date?: string
+          revenue_cents?: number
+          superstar_count?: number
+          top_boards?: Json
+          top_products?: Json
+          weak_count?: number
+          winner_count?: number
+        }
+        Relationships: []
+      }
       pinterest_revenue_forecasts: {
         Row: {
           atc: number
@@ -16541,6 +16655,86 @@ export type Database = {
           viral_p?: number | null
         }
         Relationships: []
+      }
+      pinterest_revenue_product_tiers: {
+        Row: {
+          add_to_carts_30d: number
+          category_key: string | null
+          clicks_30d: number
+          computed_at: string
+          impressions_30d: number
+          product_id: string
+          product_slug: string | null
+          product_views_30d: number
+          publish_weight: number
+          purchases_30d: number
+          revenue_cents_30d: number
+          saves_30d: number
+          score: number
+          tier: string
+        }
+        Insert: {
+          add_to_carts_30d?: number
+          category_key?: string | null
+          clicks_30d?: number
+          computed_at?: string
+          impressions_30d?: number
+          product_id: string
+          product_slug?: string | null
+          product_views_30d?: number
+          publish_weight?: number
+          purchases_30d?: number
+          revenue_cents_30d?: number
+          saves_30d?: number
+          score?: number
+          tier: string
+        }
+        Update: {
+          add_to_carts_30d?: number
+          category_key?: string | null
+          clicks_30d?: number
+          computed_at?: string
+          impressions_30d?: number
+          product_id?: string
+          product_slug?: string | null
+          product_views_30d?: number
+          publish_weight?: number
+          purchases_30d?: number
+          revenue_cents_30d?: number
+          saves_30d?: number
+          score?: number
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_revenue_scores: {
         Row: {
