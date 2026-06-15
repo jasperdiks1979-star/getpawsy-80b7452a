@@ -13455,6 +13455,84 @@ export type Database = {
           },
         ]
       }
+      pinterest_credit_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          function_name: string | null
+          id: string
+          message: string | null
+          raw: Json | null
+          status_code: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          function_name?: string | null
+          id?: string
+          message?: string | null
+          raw?: Json | null
+          status_code?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          function_name?: string | null
+          id?: string
+          message?: string | null
+          raw?: Json | null
+          status_code?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_credit_state: {
+        Row: {
+          consecutive_402_count: number
+          estimated_credits_pct: number | null
+          id: number
+          last_402_at: string | null
+          last_probe_at: string | null
+          last_success_at: string | null
+          last_warning_sent_at: string | null
+          notes: string | null
+          paused: boolean
+          recent_402_count_1h: number
+          recent_success_count_1h: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_402_count?: number
+          estimated_credits_pct?: number | null
+          id?: number
+          last_402_at?: string | null
+          last_probe_at?: string | null
+          last_success_at?: string | null
+          last_warning_sent_at?: string | null
+          notes?: string | null
+          paused?: boolean
+          recent_402_count_1h?: number
+          recent_success_count_1h?: number
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_402_count?: number
+          estimated_credits_pct?: number | null
+          id?: number
+          last_402_at?: string | null
+          last_probe_at?: string | null
+          last_success_at?: string | null
+          last_warning_sent_at?: string | null
+          notes?: string | null
+          paused?: boolean
+          recent_402_count_1h?: number
+          recent_success_count_1h?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_debug_tokens: {
         Row: {
           created_at: string
