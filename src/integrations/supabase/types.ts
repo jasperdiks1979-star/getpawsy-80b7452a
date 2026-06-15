@@ -13457,43 +13457,80 @@ export type Database = {
       }
       pinterest_credit_events: {
         Row: {
+          category_slug: string | null
           created_at: string
+          credits_used: number | null
           event_type: string
           function_name: string | null
           id: string
           message: string | null
+          model: string | null
+          pin_queue_id: string | null
+          product_slug: string | null
           raw: Json | null
           status_code: number | null
+          tokens_used: number | null
         }
         Insert: {
+          category_slug?: string | null
           created_at?: string
+          credits_used?: number | null
           event_type: string
           function_name?: string | null
           id?: string
           message?: string | null
+          model?: string | null
+          pin_queue_id?: string | null
+          product_slug?: string | null
           raw?: Json | null
           status_code?: number | null
+          tokens_used?: number | null
         }
         Update: {
+          category_slug?: string | null
           created_at?: string
+          credits_used?: number | null
           event_type?: string
           function_name?: string | null
           id?: string
           message?: string | null
+          model?: string | null
+          pin_queue_id?: string | null
+          product_slug?: string | null
           raw?: Json | null
           status_code?: number | null
+          tokens_used?: number | null
         }
         Relationships: []
       }
       pinterest_credit_state: {
         Row: {
+          alert_recipient_email: string | null
+          avg_credits_per_creative: number | null
           consecutive_402_count: number
+          credits_balance_initial: number | null
+          credits_balance_set_at: string | null
+          credits_remaining: number | null
+          credits_used_since_set: number
+          daily_burn_rate: number | null
+          emergency_creative_threshold: number
+          emergency_mode: boolean
+          estimated_creatives_remaining: number | null
           estimated_credits_pct: number | null
+          estimated_days_remaining: number | null
+          estimated_depletion_at: string | null
+          estimated_hours_remaining: number | null
+          forecast_state: string | null
+          forecast_updated_at: string | null
           id: number
+          last_24h_alert_sent_at: string | null
           last_402_at: string | null
           last_probe_at: string | null
           last_success_at: string | null
           last_warning_sent_at: string | null
+          manual_pause: boolean
+          manual_pause_at: string | null
+          manual_pause_reason: string | null
           notes: string | null
           paused: boolean
           recent_402_count_1h: number
@@ -13502,13 +13539,32 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_recipient_email?: string | null
+          avg_credits_per_creative?: number | null
           consecutive_402_count?: number
+          credits_balance_initial?: number | null
+          credits_balance_set_at?: string | null
+          credits_remaining?: number | null
+          credits_used_since_set?: number
+          daily_burn_rate?: number | null
+          emergency_creative_threshold?: number
+          emergency_mode?: boolean
+          estimated_creatives_remaining?: number | null
           estimated_credits_pct?: number | null
+          estimated_days_remaining?: number | null
+          estimated_depletion_at?: string | null
+          estimated_hours_remaining?: number | null
+          forecast_state?: string | null
+          forecast_updated_at?: string | null
           id?: number
+          last_24h_alert_sent_at?: string | null
           last_402_at?: string | null
           last_probe_at?: string | null
           last_success_at?: string | null
           last_warning_sent_at?: string | null
+          manual_pause?: boolean
+          manual_pause_at?: string | null
+          manual_pause_reason?: string | null
           notes?: string | null
           paused?: boolean
           recent_402_count_1h?: number
@@ -13517,13 +13573,32 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_recipient_email?: string | null
+          avg_credits_per_creative?: number | null
           consecutive_402_count?: number
+          credits_balance_initial?: number | null
+          credits_balance_set_at?: string | null
+          credits_remaining?: number | null
+          credits_used_since_set?: number
+          daily_burn_rate?: number | null
+          emergency_creative_threshold?: number
+          emergency_mode?: boolean
+          estimated_creatives_remaining?: number | null
           estimated_credits_pct?: number | null
+          estimated_days_remaining?: number | null
+          estimated_depletion_at?: string | null
+          estimated_hours_remaining?: number | null
+          forecast_state?: string | null
+          forecast_updated_at?: string | null
           id?: number
+          last_24h_alert_sent_at?: string | null
           last_402_at?: string | null
           last_probe_at?: string | null
           last_success_at?: string | null
           last_warning_sent_at?: string | null
+          manual_pause?: boolean
+          manual_pause_at?: string | null
+          manual_pause_reason?: string | null
           notes?: string | null
           paused?: boolean
           recent_402_count_1h?: number
