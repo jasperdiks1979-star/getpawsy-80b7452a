@@ -40,6 +40,8 @@ interface CreditStatus {
   queue_count: number;
   pins_published_last_hour: number;
   pins_published_last_24h: number;
+  ai_free_queue_capacity?: number;
+  ai_free_target_depth?: number;
   last_published: { updated_at: string; pinterest_pin_id: string; board_name: string; product_slug: string } | null;
   recent_events: Array<{
     id: string;
@@ -160,6 +162,45 @@ export default function PinterestCreditProtectionPage() {
           </Button>
         </div>
       </header>
+
+      {/* Zero-Credit (AI-Free) refill */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Zap className="h-4 w-4 text-emerald-600" />
+            AI-Free Queue Capacity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-4">
+          <div className="text-2xl font-semibold">
+            {status.ai_free_queue_capacity ?? status.queue_count}
+            <span className="text-sm font-normal text-muted-foreground"> / {status.ai_free_target_depth ?? 50} target</span>
+          </div>
+          <span className="text-xs text-muted-foreground max-w-md">
+            Pins generated from existing product assets + predefined templates. Runs even when AI credits are 0.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy === "noai-refill"}
+            onClick={async () => {
+              setBusy("noai-refill");
+              const { data, error } = await supabase.functions.invoke("pinterest-noai-refill", { body: {} });
+              setBusy(null);
+              if (error || !(data as any)?.ok) {
+                toast.error(`Refill failed: ${(data as any)?.error ?? error?.message ?? "unknown"}`);
+              } else {
+                const r: any = data;
+                toast.success(`Queued ${r.queued_created ?? 0} pins (${r.queued_before ?? 0}→${r.queued_after ?? 0})`);
+              }
+              await fetchStatus();
+            }}
+          >
+            {busy === "noai-refill" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+            Run AI-free refill
+          </Button>
+        </CardContent>
+      </Card>
 
       {status.emergency_mode && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex items-start gap-2">
