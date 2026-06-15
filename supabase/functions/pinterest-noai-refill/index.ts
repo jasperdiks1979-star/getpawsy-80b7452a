@@ -533,7 +533,13 @@ Deno.serve(async (req) => {
       creative_fingerprint: fp,
       idempotency_key: `noai_${p.id}_${fp}`,
       scheduled_at: new Date(Date.now() + rowsToInsert.length * 60_000).toISOString(),
-      meta: { generator: "noai_refill_v1", category_key: key, ai_free: true },
+      meta: {
+        generator: "noai_refill_v1",
+        category_key: key,
+        ai_free: true,
+        tier: tierByProduct.get(p.id) ?? "discovery",
+        publish_weight: weightByProduct.get(p.id) ?? 1,
+      },
     });
   }
 
