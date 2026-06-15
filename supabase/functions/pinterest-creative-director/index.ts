@@ -1197,6 +1197,22 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  // Credit protection: short-circuit if AI gateway is paused due to exhausted credits.
+  const guard = await isCreditPaused(supabase);
+  if (guard.paused) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        traceId: trace,
+        error: "payment_required",
+        message: "credits_paused",
+        credit_state: guard.state,
+        last_402_at: guard.last_402_at,
+      }),
+      { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   // Resolve product id from slug if needed.
   let resolvedId = productId;
   if (!resolvedId && productSlug) {
