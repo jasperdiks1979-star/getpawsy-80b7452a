@@ -476,6 +476,7 @@ async function generateBriefs(
     }),
   });
 
+  await tagGatewayResp(resp, "creative-director:briefs");
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`AI gateway ${resp.status}: ${t.slice(0, 200)}`);
