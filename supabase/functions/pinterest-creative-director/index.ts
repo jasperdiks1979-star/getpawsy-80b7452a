@@ -634,6 +634,7 @@ async function renderSceneWithSource(
     }),
   });
 
+  await tagGatewayResp(resp, "creative-director:image");
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`image model ${resp.status}: ${t.slice(0, 200)}`);
@@ -736,6 +737,7 @@ async function auditProductFidelity(
         tool_choice: { type: "function", function: { name: "rate_fidelity" } },
       }),
     });
+    await tagGatewayResp(resp, "creative-director:fidelity");
     if (!resp.ok) {
       const t = await resp.text();
       return { score: 0, notes: `auditor_${resp.status}:${t.slice(0, 120)}`, sourceUsed: productImageUrl };
