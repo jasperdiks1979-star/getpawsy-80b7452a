@@ -11,6 +11,10 @@ interface CreditStatus {
   ok: boolean;
   credit_state: "green" | "orange" | "red";
   paused: boolean;
+  ai_generation_paused?: boolean;
+  publishing_paused?: boolean;
+  publishing_status?: "RUNNING" | "IDLE" | "BLOCKED";
+  publishing_message?: string;
   manual_pause: boolean;
   emergency_mode: boolean;
   estimated_credits_pct: number;
