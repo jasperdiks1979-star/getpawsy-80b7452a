@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
 
   const maxSlugs = Math.max(1, Math.min(50, Number(body?.maxSlugs ?? 25)));
   const count = Math.max(1, Math.min(8, Number(body?.count ?? 3)));
+  const concurrency = Math.max(1, Math.min(8, Number(body?.concurrency ?? 4)));
   const force = body?.force !== false;
   const runAudit = body?.runAudit !== false;
 
@@ -88,34 +89,41 @@ Deno.serve(async (req) => {
   let processed = 0;
   let creditsExhausted = false;
 
-  for (const slug of slugs) {
-    const { status, json } = await callFn("pinterest-creative-director", {
-      action: "run_full",
-      productSlug: slug,
-      count,
-      force,
-    });
-
-    if (status === 402 || json?.error === "payment_required" || /payment_required/i.test(json?.message ?? "")) {
-      creditsExhausted = true;
-      results.push({ slug, status, ok: false, reason: "payment_required" });
-      break; // stop run; remaining stay open for next tick
-    }
-
-    const success = status >= 200 && status < 300 && json?.ok !== false;
-    results.push({
-      slug,
-      status,
-      ok: success,
-      reason: success ? undefined : (json?.message ?? `http_${status}`),
-    });
-
-    if (success) {
-      processed += 1;
-      await supabase
-        .from("ai_priority_queue")
-        .update({ status: "done", updated_at: new Date().toISOString() })
-        .in("id", slugMap.get(slug)!);
+  // Process in parallel batches to fit within edge function CPU budget.
+  for (let i = 0; i < slugs.length; i += concurrency) {
+    if (creditsExhausted) break;
+    const batch = slugs.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map(async (slug) => {
+        const { status, json } = await callFn("pinterest-creative-director", {
+          action: "run_full",
+          productSlug: slug,
+          count,
+          force,
+        });
+        return { slug, status, json };
+      }),
+    );
+    for (const { slug, status, json } of batchResults) {
+      if (status === 402 || json?.error === "payment_required" || /payment_required/i.test(json?.message ?? "")) {
+        creditsExhausted = true;
+        results.push({ slug, status, ok: false, reason: "payment_required" });
+        continue;
+      }
+      const success = status >= 200 && status < 300 && json?.ok !== false;
+      results.push({
+        slug,
+        status,
+        ok: success,
+        reason: success ? undefined : (json?.message ?? `http_${status}`),
+      });
+      if (success) {
+        processed += 1;
+        await supabase
+          .from("ai_priority_queue")
+          .update({ status: "done", updated_at: new Date().toISOString() })
+          .in("id", slugMap.get(slug)!);
+      }
     }
   }
 
