@@ -50,6 +50,10 @@ import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
 import { buildPinCopy, sanitizePinText, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
 import { checkGovernor, governorRejectReason } from "../_shared/pinterest-governor.ts";
+import {
+  isCreditPaused,
+  recordCreditEvent,
+} from "../_shared/pinterest-credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +67,42 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const BASE_URL = "https://getpawsy.pet";
 const BUCKET = "pinterest-ads";
+
+// Lazy service client for credit-guard event recording from helper functions
+// that don't receive a supabase client through their signature.
+let _creditClient: ReturnType<typeof createClient> | null = null;
+function creditClient() {
+  if (!_creditClient) {
+    _creditClient = createClient(SUPABASE_URL, SERVICE_ROLE, {
+      auth: { persistSession: false },
+    });
+  }
+  return _creditClient;
+}
+async function tagGatewayResp(resp: Response, fnTag: string): Promise<void> {
+  try {
+    if (resp.status === 402) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "payment_required",
+        status_code: 402,
+        function_name: fnTag,
+        message: "ai_gateway_402",
+      });
+    } else if (resp.status === 429) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "rate_limited",
+        status_code: 429,
+        function_name: fnTag,
+      });
+    } else if (resp.ok) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "success",
+        status_code: resp.status,
+        function_name: fnTag,
+      });
+    }
+  } catch (_) { /* best effort */ }
+}
 const IMAGE_MODEL =
   Deno.env.get("PINTEREST_CD_IMAGE_MODEL") ||
   "google/gemini-3-pro-image-preview";
@@ -436,6 +476,7 @@ async function generateBriefs(
     }),
   });
 
+  await tagGatewayResp(resp, "creative-director:briefs");
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`AI gateway ${resp.status}: ${t.slice(0, 200)}`);
@@ -593,6 +634,7 @@ async function renderSceneWithSource(
     }),
   });
 
+  await tagGatewayResp(resp, "creative-director:image");
   if (!resp.ok) {
     const t = await resp.text();
     throw new Error(`image model ${resp.status}: ${t.slice(0, 200)}`);
@@ -695,6 +737,7 @@ async function auditProductFidelity(
         tool_choice: { type: "function", function: { name: "rate_fidelity" } },
       }),
     });
+    await tagGatewayResp(resp, "creative-director:fidelity");
     if (!resp.ok) {
       const t = await resp.text();
       return { score: 0, notes: `auditor_${resp.status}:${t.slice(0, 120)}`, sourceUsed: productImageUrl };
@@ -1192,6 +1235,22 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });
+
+  // Credit protection: short-circuit if AI gateway is paused due to exhausted credits.
+  const guard = await isCreditPaused(supabase);
+  if (guard.paused) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        traceId: trace,
+        error: "payment_required",
+        message: "credits_paused",
+        credit_state: guard.state,
+        last_402_at: guard.last_402_at,
+      }),
+      { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   // Resolve product id from slug if needed.
   let resolvedId = productId;

@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,34 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });
+
+  // Credit protection: if AI gateway is paused due to exhausted credits,
+  // skip generation entirely and trigger a probe to detect recovery.
+  // The publish pipeline (drain) is intentionally untouched so already-created
+  // drafts/queued pins keep flowing.
+  const credit = await isCreditPaused(supabase);
+  if (credit.paused) {
+    // Fire-and-forget probe to test for recovery.
+    callFn("pinterest-credit-probe", {}).catch(() => {});
+    const { count: openCount } = await supabase
+      .from("ai_priority_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open")
+      .eq("source_kind", "pinterest_creative_regen");
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        traceId: trace,
+        paused: true,
+        credit_state: credit.state,
+        last_402_at: credit.last_402_at,
+        last_success_at: credit.last_success_at,
+        remaining_open: openCount ?? null,
+        message: "Credit-exhausted: generation paused. Probe triggered. Publish pipeline unaffected.",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   // Fetch open creative-regen tasks. Group by source_ref (product slug).
   const { data: rows, error } = await supabase

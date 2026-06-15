@@ -431,6 +431,7 @@ const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/Cinemat
 const CinematicOneJobVerifyPage = lazyWithRetry(() => import("./pages/admin/CinematicOneJobVerifyPage"));
 const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/CinematicQueueHealthPage"));
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
+const PinterestCreditProtectionPage = lazyWithRetry(() => import("./pages/admin/PinterestCreditProtectionPage"));
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
@@ -2265,6 +2266,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestRecoveryStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-credit-protection"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCreditProtectionPage />
                                 </Suspense>
                               }
                             />
