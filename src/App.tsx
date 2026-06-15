@@ -512,6 +512,7 @@ const PinterestCommandCenterPage = lazyWithRetry(() => import("./pages/admin/Pin
 const PinterestCapiHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestCapiHealthPage"));
 const PinterestTrendsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrendsPage"));
 const PinterestRevenuePage = lazyWithRetry(() => import("./pages/admin/PinterestRevenuePage"));
+const PinterestAttributionHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestAttributionHealthPage"));
 const RevenueCommandCenter = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenter"));
 const RenderForensicsPage = lazyWithRetry(() => import("./pages/admin/RenderForensicsPage"));
 const WorkerRecoveryPage = lazyWithRetry(() => import("./pages/admin/WorkerRecoveryPage"));
@@ -2946,6 +2947,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestRevenuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-attribution-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAttributionHealthPage />
                                 </Suspense>
                               }
                             />
