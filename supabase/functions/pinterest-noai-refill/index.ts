@@ -418,9 +418,62 @@ Deno.serve(async (req) => {
     .select("id, name").eq("is_blacklisted", false).eq("is_sandbox", false);
   const boardIdByName = new Map<string, string>((boardRows ?? []).map(b => [b.name as string, b.id as string]));
 
+  // 5b) Revenue Autopilot weights — Phase 3 (tier-weighted) + Phase 5 (20% discovery)
+  // If autopilot has not run yet, weightByProduct is empty and the legacy
+  // uniform random shuffle still works.
+  const { data: tierRows } = await supabase
+    .from("pinterest_revenue_product_tiers")
+    .select("product_id, tier, publish_weight");
+  const weightByProduct = new Map<string, number>();
+  const tierByProduct = new Map<string, string>();
+  for (const t of tierRows ?? []) {
+    weightByProduct.set(t.product_id as string, Number(t.publish_weight ?? 1));
+    tierByProduct.set(t.product_id as string, t.tier as string);
+  }
+  // Eligible products with no tier row are "discovery" candidates (new/untested)
+  const discoveryPool = eligible.filter((p) => !tierByProduct.has(p.id));
+  const tieredPool = eligible.filter((p) => tierByProduct.has(p.id));
+
+  // Discovery reserve: 20% of slots go to untested products if any exist
+  const discoverySlots = discoveryPool.length > 0
+    ? Math.min(discoveryPool.length, Math.max(1, Math.round(topUp * 0.20)))
+    : 0;
+  const tieredSlots = Math.max(0, topUp - discoverySlots);
+
+  function weightedDraw<T extends { id: string }>(pool: T[], n: number, rng: () => number): T[] {
+    const out: T[] = [];
+    const remaining = [...pool];
+    while (out.length < n && remaining.length > 0) {
+      const weights = remaining.map((p) => Math.max(0.05, weightByProduct.get(p.id) ?? 1));
+      const total = weights.reduce((a, b) => a + b, 0);
+      let r = rng() * total;
+      let idx = 0;
+      for (; idx < weights.length; idx++) {
+        r -= weights[idx];
+        if (r <= 0) break;
+      }
+      if (idx >= remaining.length) idx = remaining.length - 1;
+      out.push(remaining[idx]);
+      remaining.splice(idx, 1);
+    }
+    return out;
+  }
+
   // 6) Build pins, randomized
   const rng = mulberry32(Date.now() & 0xffffffff);
-  const shuffled = [...eligible].sort(() => rng() - 0.5);
+  const drawnTiered = weightedDraw(tieredPool, tieredSlots, rng);
+  const drawnDiscovery = discoveryPool.sort(() => rng() - 0.5).slice(0, discoverySlots);
+  // Interleave so discovery pins don't all schedule at the end
+  const shuffled: typeof eligible = [];
+  const a = drawnTiered, b = drawnDiscovery;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) shuffled.push(a[i]);
+    if (i < b.length) shuffled.push(b[i]);
+  }
+  // Fallback when autopilot hasn't seeded tiers yet
+  if (shuffled.length === 0) {
+    shuffled.push(...[...eligible].sort(() => rng() - 0.5));
+  }
 
   const rowsToInsert: any[] = [];
   const usedFingerprints = new Set<string>();
@@ -480,7 +533,13 @@ Deno.serve(async (req) => {
       creative_fingerprint: fp,
       idempotency_key: `noai_${p.id}_${fp}`,
       scheduled_at: new Date(Date.now() + rowsToInsert.length * 60_000).toISOString(),
-      meta: { generator: "noai_refill_v1", category_key: key, ai_free: true },
+      meta: {
+        generator: "noai_refill_v1",
+        category_key: key,
+        ai_free: true,
+        tier: tierByProduct.get(p.id) ?? "discovery",
+        publish_weight: weightByProduct.get(p.id) ?? 1,
+      },
     });
   }
 
