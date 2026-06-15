@@ -2270,6 +2270,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-credit-protection"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCreditProtectionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-performance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
