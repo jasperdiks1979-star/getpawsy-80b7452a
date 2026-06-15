@@ -1183,6 +1183,10 @@ Deno.serve(async (req) => {
   const count = Math.max(1, Math.min(8, Number(body?.count ?? 5)));
   const force = !!body?.force;
   const emergency = body?.emergency === true;
+  const boardName: string | null =
+    typeof body?.boardName === "string" && body.boardName.trim()
+      ? String(body.boardName).trim()
+      : null;
 
   const trace = traceId();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
@@ -1434,6 +1438,7 @@ Deno.serve(async (req) => {
                 hook_category: brief.hook_category,
                 rationale: brief.strategy_rationale,
               },
+              boardName,
             );
             drafts.push({
               ...inserted, brief, scores: lastScores, attempts: attempt,
