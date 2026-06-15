@@ -11879,6 +11879,72 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_attribution_health: {
+        Row: {
+          add_to_carts: number
+          alert_level: string
+          attributed_add_to_carts: number
+          attributed_clicks: number
+          attributed_product_views: number
+          attributed_purchases: number
+          attributed_sessions: number
+          broken_chains: number
+          coverage_pct: number
+          created_at: string
+          details: Json
+          id: string
+          pinterest_clicks: number
+          pinterest_sessions: number
+          product_views: number
+          purchases: number
+          repaired: number
+          report_at: string
+          window_hours: number
+        }
+        Insert: {
+          add_to_carts?: number
+          alert_level?: string
+          attributed_add_to_carts?: number
+          attributed_clicks?: number
+          attributed_product_views?: number
+          attributed_purchases?: number
+          attributed_sessions?: number
+          broken_chains?: number
+          coverage_pct?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          pinterest_clicks?: number
+          pinterest_sessions?: number
+          product_views?: number
+          purchases?: number
+          repaired?: number
+          report_at?: string
+          window_hours?: number
+        }
+        Update: {
+          add_to_carts?: number
+          alert_level?: string
+          attributed_add_to_carts?: number
+          attributed_clicks?: number
+          attributed_product_views?: number
+          attributed_purchases?: number
+          attributed_sessions?: number
+          broken_chains?: number
+          coverage_pct?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          pinterest_clicks?: number
+          pinterest_sessions?: number
+          product_views?: number
+          purchases?: number
+          repaired?: number
+          report_at?: string
+          window_hours?: number
+        }
+        Relationships: []
+      }
       pinterest_attribution_sessions: {
         Row: {
           click_counted: boolean
