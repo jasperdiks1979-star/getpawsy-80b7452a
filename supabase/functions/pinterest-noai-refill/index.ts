@@ -471,7 +471,7 @@ Deno.serve(async (req) => {
       board_name: boardName,
       board_id: boardId,
       hashtags: tags,
-      priority: "normal",
+      priority: "medium",
       status: "queued",
       hook_group: pool.hookGroup,
       category_key: key,
