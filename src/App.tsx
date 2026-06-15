@@ -2951,6 +2951,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-attribution-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestAttributionHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
