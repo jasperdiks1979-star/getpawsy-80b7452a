@@ -3,13 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, PauseCircle } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, PauseCircle, Play, Pause, Save, Mail, Zap } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface CreditStatus {
   ok: boolean;
   credit_state: "green" | "orange" | "red";
   paused: boolean;
+  manual_pause: boolean;
+  emergency_mode: boolean;
   estimated_credits_pct: number;
+  credits_balance_initial: number | null;
+  credits_remaining: number | null;
+  credits_used_since_set: number;
+  avg_credits_per_creative: number | null;
+  daily_burn_rate: number | null;
+  estimated_creatives_remaining: number | null;
+  estimated_hours_remaining: number | null;
+  estimated_days_remaining: number | null;
+  estimated_depletion_at: string | null;
+  emergency_creative_threshold: number;
+  alert_recipient_email: string | null;
+  forecast_updated_at: string | null;
   last_success_at: string | null;
   last_402_at: string | null;
   consecutive_402_count: number;
@@ -57,6 +73,9 @@ export default function PinterestCreditProtectionPage() {
   const [status, setStatus] = useState<CreditStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [probing, setProbing] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [balanceInput, setBalanceInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
 
   const fetchStatus = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("pinterest-credit-status", {});
@@ -69,6 +88,20 @@ export default function PinterestCreditProtectionPage() {
     await supabase.functions.invoke("pinterest-credit-probe", {});
     await fetchStatus();
     setProbing(false);
+  }, [fetchStatus]);
+
+  const control = useCallback(async (action: string, payload: Record<string, unknown> = {}) => {
+    setBusy(action);
+    const { data, error } = await supabase.functions.invoke("pinterest-credit-control", {
+      body: { action, ...payload },
+    });
+    setBusy(null);
+    if (error || !(data as any)?.ok) {
+      toast.error(`${action} failed: ${(data as any)?.message ?? error?.message ?? "unknown"}`);
+    } else {
+      toast.success(`${action} ok`);
+    }
+    await fetchStatus();
   }, [fetchStatus]);
 
   useEffect(() => {
@@ -90,6 +123,10 @@ export default function PinterestCreditProtectionPage() {
 
   const stateColor = STATE_COLOR[status.credit_state];
   const stateLabel = STATE_LABEL[status.credit_state];
+  const fmtNum = (n: number | null | undefined, d = 0) =>
+    n == null ? "—" : Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+  const fmtDate = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString() : "—";
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
@@ -101,11 +138,35 @@ export default function PinterestCreditProtectionPage() {
             Publish pipeline (drafts → queued → posted) is never paused.
           </p>
         </div>
-        <Button onClick={runProbe} variant="outline" size="sm" disabled={probing}>
-          {probing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-          Run probe
-        </Button>
+        <div className="flex gap-2">
+          {status.manual_pause || status.paused ? (
+            <Button onClick={() => control("resume")} size="sm" disabled={busy !== null}>
+              {busy === "resume" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+              Resume generation
+            </Button>
+          ) : (
+            <Button onClick={() => control("pause", { reason: "operator" })} variant="destructive" size="sm" disabled={busy !== null}>
+              {busy === "pause" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Pause className="h-4 w-4 mr-2" />}
+              Pause generation
+            </Button>
+          )}
+          <Button onClick={runProbe} variant="outline" size="sm" disabled={probing}>
+            {probing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Run probe
+          </Button>
+        </div>
       </header>
+
+      {status.emergency_mode && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex items-start gap-2">
+          <Zap className="h-4 w-4 mt-0.5 shrink-0" />
+          <div>
+            <strong>Emergency mode active.</strong> Estimated &lt; {status.emergency_creative_threshold} creatives remaining.
+            Generation throttled to high-priority categories only
+            (Smart Litter, Cat Trees, Interactive Cat Toys, Dog Puzzle Toys, Cat Furniture).
+          </div>
+        </div>
+      )}
 
       {/* Hero status card */}
       <Card className="overflow-hidden">
@@ -117,16 +178,33 @@ export default function PinterestCreditProtectionPage() {
               {status.credit_state === "orange" && <AlertTriangle className="h-6 w-6 text-amber-600" />}
               {status.credit_state === "red" && <PauseCircle className="h-6 w-6 text-rose-600" />}
               <CardTitle>{stateLabel}</CardTitle>
+              {status.estimated_days_remaining != null && (
+                <Badge variant="outline">
+                  ~{status.estimated_days_remaining.toFixed(1)}d remaining
+                </Badge>
+              )}
             </div>
-            {status.paused && <Badge variant="destructive">Generation paused</Badge>}
+            <div className="flex gap-2">
+              {status.manual_pause && <Badge variant="destructive">Manual pause</Badge>}
+              {status.paused && !status.manual_pause && <Badge variant="destructive">Auto-paused</Badge>}
+              {status.emergency_mode && <Badge variant="outline" className="border-amber-500 text-amber-700">Emergency</Badge>}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Metric label="Estimated capacity" value={`${status.estimated_credits_pct}%`} />
+            <Metric label="Credits remaining" value={fmtNum(status.credits_remaining)} />
+            <Metric label="Creatives remaining" value={fmtNum(status.estimated_creatives_remaining)} accent={status.emergency_mode ? "warn" : undefined} />
+            <Metric label="Daily burn" value={fmtNum(status.daily_burn_rate, 1)} />
+            <Metric label="Avg / creative" value={fmtNum(status.avg_credits_per_creative, 2)} />
+            <Metric label="Hours left" value={status.estimated_hours_remaining == null ? "—" : `${status.estimated_hours_remaining.toFixed(1)}h`} />
+            <Metric label="Days left" value={status.estimated_days_remaining == null ? "—" : `${status.estimated_days_remaining.toFixed(1)}d`} />
+            <Metric label="Depletes" value={fmtDate(status.estimated_depletion_at)} />
+            <Metric label="Open regen jobs" value={status.open_regen_jobs} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
             <Metric label="Successes (1h)" value={status.recent_success_count_1h} />
             <Metric label="402s (1h)" value={status.recent_402_count_1h} accent={status.recent_402_count_1h > 0 ? "warn" : undefined} />
-            <Metric label="Consecutive 402s" value={status.consecutive_402_count} accent={status.consecutive_402_count > 0 ? "warn" : undefined} />
             <Metric label="Last success" value={timeAgo(status.last_success_at)} />
             <Metric label="Last 402" value={timeAgo(status.last_402_at)} />
           </div>
@@ -138,10 +216,61 @@ export default function PinterestCreditProtectionPage() {
           )}
           {status.credit_state === "orange" && (
             <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <strong>Capacity degraded.</strong> Recent 402 detected but generation is currently flowing.
-              Consider topping up credits soon.
+              <strong>1–7 days of credits remaining.</strong> Consider topping up before depletion.
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Configuration card */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Forecast configuration</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-end gap-2 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Set credit balance</label>
+              <Input
+                type="number"
+                placeholder={status.credits_balance_initial ? String(status.credits_balance_initial) : "e.g. 5000"}
+                value={balanceInput}
+                onChange={(e) => setBalanceInput(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={() => { void control("set_balance", { amount: Number(balanceInput) }); setBalanceInput(""); }}
+              disabled={busy !== null || !balanceInput}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-2" /> Save balance
+            </Button>
+          </div>
+          <div className="flex items-end gap-2 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Alert recipient email</label>
+              <Input
+                type="email"
+                placeholder={status.alert_recipient_email ?? "ops@example.com"}
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={() => { void control("set_recipient", { email: emailInput }); setEmailInput(""); }}
+              disabled={busy !== null || !emailInput}
+              size="sm"
+              variant="outline"
+            >
+              <Mail className="h-4 w-4 mr-2" /> Save recipient
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Last forecast: {fmtDate(status.forecast_updated_at)} · Emergency threshold: &lt; {status.emergency_creative_threshold} creatives
+            {status.credits_balance_initial == null && (
+              <span className="block mt-1 text-amber-700">
+                Set a credit balance to enable depletion forecasting.
+              </span>
+            )}
+          </div>
         </CardContent>
       </Card>
 

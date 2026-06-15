@@ -5,6 +5,7 @@
 // centrally.
 
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { recomputeForecast, maybeFire24hAlert } from "./pinterest-credit-forecast.ts";
 
 const ORANGE_THRESHOLD_402 = 1; // any 402 in last hour → orange minimum
 const WARNING_COOLDOWN_HOURS = 6;
@@ -20,17 +21,21 @@ export async function isCreditPaused(supabase: SupabaseClient): Promise<{
   state: "green" | "orange" | "red";
   last_402_at: string | null;
   last_success_at: string | null;
+  manual_pause?: boolean;
+  emergency_mode?: boolean;
 }> {
   const { data } = await supabase
     .from("pinterest_credit_state")
-    .select("paused, state, last_402_at, last_success_at")
+    .select("paused, state, last_402_at, last_success_at, manual_pause, emergency_mode, forecast_state")
     .eq("id", 1)
     .maybeSingle();
   return {
-    paused: data?.paused ?? false,
-    state: (data?.state ?? "green") as "green" | "orange" | "red",
+    paused: (data?.paused ?? false) || (data?.manual_pause ?? false),
+    state: (data?.forecast_state ?? data?.state ?? "green") as "green" | "orange" | "red",
     last_402_at: data?.last_402_at ?? null,
     last_success_at: data?.last_success_at ?? null,
+    manual_pause: data?.manual_pause ?? false,
+    emergency_mode: data?.emergency_mode ?? false,
   };
 }
 
@@ -49,6 +54,12 @@ export interface CreditEventInput {
   function_name?: string;
   message?: string;
   raw?: unknown;
+  credits_used?: number;
+  tokens_used?: number;
+  model?: string;
+  pin_queue_id?: string | null;
+  product_slug?: string | null;
+  category_slug?: string | null;
 }
 
 export async function recordCreditEvent(
@@ -62,6 +73,12 @@ export async function recordCreditEvent(
     function_name: evt.function_name ?? null,
     message: evt.message ?? null,
     raw: evt.raw ?? null,
+    credits_used: evt.credits_used ?? null,
+    tokens_used: evt.tokens_used ?? null,
+    model: evt.model ?? null,
+    pin_queue_id: evt.pin_queue_id ?? null,
+    product_slug: evt.product_slug ?? null,
+    category_slug: evt.category_slug ?? null,
   });
 
   // 2. Recompute rolling 1h counters.
@@ -115,6 +132,14 @@ export async function recordCreditEvent(
     .from("pinterest_credit_state")
     .update(patch)
     .eq("id", 1);
+
+  // Recompute forecast (cheap) + fire 24h alert if needed. Failure-tolerant.
+  if (evt.event_type === "success" || evt.event_type === "payment_required") {
+    try {
+      const snap = await recomputeForecast(supabase);
+      await maybeFire24hAlert(supabase, snap);
+    } catch (_) { /* never block on forecast errors */ }
+  }
 
   // 4. File system alert + warning when state turns red and cooldown expired.
   if (evt.event_type === "payment_required") {
@@ -193,10 +218,19 @@ export async function aiGatewayFetch(
     });
     return { ok: false, status: resp.status, json };
   }
+  // Estimate credit cost: prefer reported usage.total_tokens, fallback to 1 unit.
+  const tokens = Number(json?.usage?.total_tokens ?? 0);
+  const credits = tokens > 0 ? tokens / 1000 : 1; // ~1 credit per 1k tokens, else 1
+  const model = (init.body && typeof init.body === "string"
+    ? (() => { try { return JSON.parse(init.body as string)?.model; } catch { return undefined; } })()
+    : undefined) as string | undefined;
   await recordCreditEvent(supabase, {
     event_type: "success",
     status_code: resp.status,
     function_name: functionName,
+    credits_used: credits,
+    tokens_used: tokens || undefined,
+    model,
   });
   return { ok: true, status: resp.status, json };
 }
