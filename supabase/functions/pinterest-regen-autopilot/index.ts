@@ -151,11 +151,11 @@ Deno.serve(async (req) => {
     const slugs = Array.from(new Set(pairs.map((p) => p.slug)));
     const { data: prodRows } = await supabase
       .from("products")
-      .select("slug, category, primary_category")
+      .select("slug, category")
       .in("slug", slugs);
     const catBySlug = new Map<string, string>();
     for (const r of (prodRows ?? []) as any[]) {
-      catBySlug.set(r.slug, String(r.primary_category ?? r.category ?? ""));
+      catBySlug.set(r.slug, String(r.category ?? ""));
     }
     ordered = pairs
       .map((p) => ({ p, score: categoryPriorityScore(catBySlug.get(p.slug) ?? p.board) }))
