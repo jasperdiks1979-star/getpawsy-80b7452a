@@ -123,6 +123,8 @@ Deno.serve(async (req) => {
       open_regen_jobs: openRegen.count ?? 0,
       draft_count: draftCount.count ?? 0,
       queue_count: queueCount.count ?? 0,
+      ai_free_queue_capacity: queueCount.count ?? 0,
+      ai_free_target_depth: 50,
       pins_published_last_hour: publishedLastHour.count ?? 0,
       pins_published_last_24h: publishedToday.count ?? 0,
       last_published: lastPublishedRow.data ?? null,
