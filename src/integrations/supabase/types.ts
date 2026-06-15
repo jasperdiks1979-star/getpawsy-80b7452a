@@ -13505,6 +13505,7 @@ export type Database = {
       }
       pinterest_credit_state: {
         Row: {
+          ai_generation_paused: boolean
           alert_recipient_email: string | null
           avg_credits_per_creative: number | null
           consecutive_402_count: number
@@ -13533,12 +13534,14 @@ export type Database = {
           manual_pause_reason: string | null
           notes: string | null
           paused: boolean
+          publishing_paused: boolean
           recent_402_count_1h: number
           recent_success_count_1h: number
           state: string
           updated_at: string
         }
         Insert: {
+          ai_generation_paused?: boolean
           alert_recipient_email?: string | null
           avg_credits_per_creative?: number | null
           consecutive_402_count?: number
@@ -13567,12 +13570,14 @@ export type Database = {
           manual_pause_reason?: string | null
           notes?: string | null
           paused?: boolean
+          publishing_paused?: boolean
           recent_402_count_1h?: number
           recent_success_count_1h?: number
           state?: string
           updated_at?: string
         }
         Update: {
+          ai_generation_paused?: boolean
           alert_recipient_email?: string | null
           avg_credits_per_creative?: number | null
           consecutive_402_count?: number
@@ -13601,6 +13606,7 @@ export type Database = {
           manual_pause_reason?: string | null
           notes?: string | null
           paused?: boolean
+          publishing_paused?: boolean
           recent_402_count_1h?: number
           recent_success_count_1h?: number
           state?: string
