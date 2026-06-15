@@ -476,7 +476,7 @@ Deno.serve(async (req) => {
       hook_group: pool.hookGroup,
       category_key: key,
       overlay_text: overlay,
-      content_type: "image",
+      content_type: "product",
       creative_fingerprint: fp,
       idempotency_key: `noai_${p.id}_${fp}`,
       scheduled_at: new Date(Date.now() + rowsToInsert.length * 60_000).toISOString(),
