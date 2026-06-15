@@ -3,6 +3,7 @@
 // last successful publish time, pins published today/last hour, recent events.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { recomputeForecast } from "../_shared/pinterest-credit-forecast.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+
+  // Always recompute on read so the dashboard reflects the latest signals.
+  try { await recomputeForecast(supabase); } catch { /* tolerate */ }
 
   const [
     stateRes,
@@ -54,7 +58,7 @@ Deno.serve(async (req) => {
     recent_success_count_1h: 0,
     recent_402_count_1h: 0,
     consecutive_402_count: 0,
-  };
+  } as any;
 
   // Heuristic estimate: without a live balance API, we infer "capacity" from
   // recent success/failure ratio. 100% when nothing has failed in last hour,
@@ -73,9 +77,23 @@ Deno.serve(async (req) => {
   return new Response(
     JSON.stringify({
       ok: true,
-      credit_state: state.state,
-      paused: state.paused,
+      credit_state: state.forecast_state ?? state.state,
+      paused: state.paused || state.manual_pause,
+      manual_pause: state.manual_pause ?? false,
+      emergency_mode: state.emergency_mode ?? false,
       estimated_credits_pct: estimatedCreditsPct,
+      credits_balance_initial: state.credits_balance_initial ?? null,
+      credits_remaining: state.credits_remaining ?? null,
+      credits_used_since_set: state.credits_used_since_set ?? 0,
+      avg_credits_per_creative: state.avg_credits_per_creative ?? null,
+      daily_burn_rate: state.daily_burn_rate ?? null,
+      estimated_creatives_remaining: state.estimated_creatives_remaining ?? null,
+      estimated_hours_remaining: state.estimated_hours_remaining ?? null,
+      estimated_days_remaining: state.estimated_days_remaining ?? null,
+      estimated_depletion_at: state.estimated_depletion_at ?? null,
+      emergency_creative_threshold: state.emergency_creative_threshold ?? 20,
+      alert_recipient_email: state.alert_recipient_email ?? null,
+      forecast_updated_at: state.forecast_updated_at ?? null,
       last_success_at: state.last_success_at,
       last_402_at: state.last_402_at,
       consecutive_402_count: state.consecutive_402_count ?? 0,
