@@ -16,6 +16,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
+import { isHighPriorityCategory, categoryPriorityScore } from "../_shared/pinterest-credit-forecast.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,6 +93,15 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Emergency mode: when <20 creatives projected remaining, throttle hard.
+  // - reduce parallelism + slug cap
+  // - only process high-priority categories (litter, cat trees, interactive,
+  //   dog puzzle toys, cat furniture)
+  const emergency = credit.emergency_mode === true;
+  const effMaxSlugs = emergency ? Math.min(5, maxSlugs) : maxSlugs;
+  const effConcurrency = emergency ? 1 : concurrency;
+  const effCount = emergency ? Math.min(2, count) : count;
+
   // Fetch open creative-regen tasks. Group by source_ref (product slug).
   const { data: rows, error } = await supabase
     .from("ai_priority_queue")
@@ -133,7 +143,27 @@ Deno.serve(async (req) => {
       pairs.push({ slug, board: board === "(none)" ? null : board, ids });
     }
   }
-  const work = pairs.slice(0, maxSlugs);
+  // Sort by category priority when in emergency mode; otherwise preserve the
+  // priority_score order coming from ai_priority_queue.
+  let ordered = pairs;
+  if (emergency) {
+    // Pull category for each pair using a quick lookup against products.
+    const slugs = Array.from(new Set(pairs.map((p) => p.slug)));
+    const { data: prodRows } = await supabase
+      .from("products")
+      .select("slug, category, primary_category")
+      .in("slug", slugs);
+    const catBySlug = new Map<string, string>();
+    for (const r of (prodRows ?? []) as any[]) {
+      catBySlug.set(r.slug, String(r.primary_category ?? r.category ?? ""));
+    }
+    ordered = pairs
+      .map((p) => ({ p, score: categoryPriorityScore(catBySlug.get(p.slug) ?? p.board) }))
+      .filter((x) => isHighPriorityCategory(catBySlug.get(x.p.slug) ?? x.p.board))
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.p);
+  }
+  const work = ordered.slice(0, effMaxSlugs);
   const results: Array<{
     slug: string;
     board: string | null;
@@ -147,9 +177,9 @@ Deno.serve(async (req) => {
   let creditsExhausted = false;
 
   // Process in parallel batches to fit within edge function CPU budget.
-  for (let i = 0; i < work.length; i += concurrency) {
+  for (let i = 0; i < work.length; i += effConcurrency) {
     if (creditsExhausted) break;
-    const batch = work.slice(i, i + concurrency);
+    const batch = work.slice(i, i + effConcurrency);
     const batchResults = await Promise.all(
       batch.map(async (pair) => {
         const startedAt = new Date().toISOString();
@@ -157,7 +187,7 @@ Deno.serve(async (req) => {
           action: "run_full",
           productSlug: pair.slug,
           boardName: pair.board,
-          count,
+          count: effCount,
           force,
         });
         return { pair, status, json, startedAt };
