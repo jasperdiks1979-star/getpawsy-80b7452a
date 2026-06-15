@@ -67,6 +67,42 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const BASE_URL = "https://getpawsy.pet";
 const BUCKET = "pinterest-ads";
+
+// Lazy service client for credit-guard event recording from helper functions
+// that don't receive a supabase client through their signature.
+let _creditClient: ReturnType<typeof createClient> | null = null;
+function creditClient() {
+  if (!_creditClient) {
+    _creditClient = createClient(SUPABASE_URL, SERVICE_ROLE, {
+      auth: { persistSession: false },
+    });
+  }
+  return _creditClient;
+}
+async function tagGatewayResp(resp: Response, fnTag: string): Promise<void> {
+  try {
+    if (resp.status === 402) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "payment_required",
+        status_code: 402,
+        function_name: fnTag,
+        message: "ai_gateway_402",
+      });
+    } else if (resp.status === 429) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "rate_limited",
+        status_code: 429,
+        function_name: fnTag,
+      });
+    } else if (resp.ok) {
+      await recordCreditEvent(creditClient(), {
+        event_type: "success",
+        status_code: resp.status,
+        function_name: fnTag,
+      });
+    }
+  } catch (_) { /* best effort */ }
+}
 const IMAGE_MODEL =
   Deno.env.get("PINTEREST_CD_IMAGE_MODEL") ||
   "google/gemini-3-pro-image-preview";
