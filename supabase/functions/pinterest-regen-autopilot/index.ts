@@ -4,7 +4,10 @@
 // Processes open ai_priority_queue rows of kind `pinterest_creative_regen`.
 // For each unique product slug:
 //   1. Invokes pinterest-creative-director (action: run_full)
-//   2. On success → marks all matching queue rows as `done`
+//   2. On success → marks queue rows `done` ONLY when a board-matching
+//      pinterest_pin_queue record was inserted after the director call
+//      started. Rows whose flagged board did not receive a pin_queue row
+//      stay `open` so the next tick retries them.
 //   3. On 402 payment_required → stops the run (credits exhausted); rows stay open
 //      so the next cron tick automatically resumes once credits are added.
 // When the open queue is empty, it runs pinterest-creative-variety-audit and
@@ -75,17 +78,26 @@ Deno.serve(async (req) => {
     );
   }
 
-  const slugMap = new Map<string, string[]>(); // slug → row ids
+  // slug → [{ id, board }]
+  const slugMap = new Map<string, Array<{ id: string; board: string | null }>>();
   for (const r of rows ?? []) {
     const slug = (r as any).source_ref as string | null;
     if (!slug) continue;
+    const board = ((r as any).evidence?.board_name as string | null) ?? null;
     const arr = slugMap.get(slug) ?? [];
-    arr.push((r as any).id);
+    arr.push({ id: (r as any).id, board });
     slugMap.set(slug, arr);
   }
 
   const slugs = [...slugMap.keys()].slice(0, maxSlugs);
-  const results: Array<{ slug: string; status: number; ok: boolean; reason?: string }> = [];
+  const results: Array<{
+    slug: string;
+    status: number;
+    ok: boolean;
+    reason?: string;
+    marked_done?: number;
+    left_open_no_pin?: string[];
+  }> = [];
   let processed = 0;
   let creditsExhausted = false;
 
@@ -95,35 +107,76 @@ Deno.serve(async (req) => {
     const batch = slugs.slice(i, i + concurrency);
     const batchResults = await Promise.all(
       batch.map(async (slug) => {
+        const startedAt = new Date().toISOString();
         const { status, json } = await callFn("pinterest-creative-director", {
           action: "run_full",
           productSlug: slug,
           count,
           force,
         });
-        return { slug, status, json };
+        return { slug, status, json, startedAt };
       }),
     );
-    for (const { slug, status, json } of batchResults) {
+    for (const { slug, status, json, startedAt } of batchResults) {
       if (status === 402 || json?.error === "payment_required" || /payment_required/i.test(json?.message ?? "")) {
         creditsExhausted = true;
         results.push({ slug, status, ok: false, reason: "payment_required" });
         continue;
       }
       const success = status >= 200 && status < 300 && json?.ok !== false;
-      results.push({
-        slug,
-        status,
-        ok: success,
-        reason: success ? undefined : (json?.message ?? `http_${status}`),
-      });
-      if (success) {
-        processed += 1;
+      if (!success) {
+        results.push({
+          slug,
+          status,
+          ok: false,
+          reason: json?.message ?? `http_${status}`,
+        });
+        continue;
+      }
+
+      // Board-match guard: only mark a row `done` if a pinterest_pin_queue
+      // record was created for its (product_slug, board_name) AFTER the
+      // director call started. Rows whose board has no fresh pin_queue row
+      // stay `open` for retry.
+      const { data: freshPins } = await supabase
+        .from("pinterest_pin_queue")
+        .select("board_name")
+        .eq("product_slug", slug)
+        .gte("created_at", startedAt);
+
+      const freshBoards = new Set(
+        (freshPins ?? [])
+          .map((p: any) => (p.board_name ?? "").toLowerCase().trim())
+          .filter(Boolean),
+      );
+
+      const rowsForSlug = slugMap.get(slug) ?? [];
+      const doneIds: string[] = [];
+      const leftOpen: string[] = [];
+      for (const r of rowsForSlug) {
+        const key = (r.board ?? "").toLowerCase().trim();
+        if (key && freshBoards.has(key)) doneIds.push(r.id);
+        else leftOpen.push(r.board ?? "(no board)");
+      }
+
+      if (doneIds.length > 0) {
         await supabase
           .from("ai_priority_queue")
           .update({ status: "done", updated_at: new Date().toISOString() })
-          .in("id", slugMap.get(slug)!);
+          .in("id", doneIds);
+        processed += 1;
       }
+
+      results.push({
+        slug,
+        status,
+        ok: doneIds.length > 0,
+        reason: doneIds.length === 0
+          ? `no_board_matching_pin_queue_record (flagged boards: ${leftOpen.join(", ")})`
+          : undefined,
+        marked_done: doneIds.length,
+        left_open_no_pin: leftOpen.length > 0 ? leftOpen : undefined,
+      });
     }
   }
 
