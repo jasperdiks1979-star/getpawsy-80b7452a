@@ -63,6 +63,12 @@ Deno.serve(async (req) => {
 
   if (status === 402) {
     await recordCreditEvent(supabase, {
+      event_type: "payment_required",
+      status_code: 402,
+      function_name: "credit-probe",
+      message: "probe_402_still_exhausted",
+    });
+    await recordCreditEvent(supabase, {
       event_type: "probe_failed",
       status_code: 402,
       function_name: "credit-probe",
