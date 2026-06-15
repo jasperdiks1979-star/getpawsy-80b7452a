@@ -172,6 +172,50 @@ export default function PinterestCreditProtectionPage() {
         </div>
       )}
 
+      {/* Lane split: AI generation vs publishing */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">AI Generation Lane</CardTitle></CardHeader>
+          <CardContent className="flex items-center gap-2">
+            <Badge
+              variant={status.credit_state === "green" ? "secondary" : "destructive"}
+              className={
+                status.credit_state === "green" ? "bg-emerald-100 text-emerald-900" :
+                status.credit_state === "orange" ? "bg-amber-100 text-amber-900" :
+                "bg-rose-100 text-rose-900"
+              }
+            >
+              {status.credit_state.toUpperCase()}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {status.ai_generation_paused ?? status.paused ? "Paused — creative/regen calls skipped" : "Creative generation active"}
+            </span>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Pinterest Publishing Lane</CardTitle></CardHeader>
+          <CardContent className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Badge
+                className={
+                  status.publishing_status === "RUNNING" ? "bg-emerald-100 text-emerald-900" :
+                  status.publishing_status === "IDLE" ? "bg-slate-100 text-slate-900" :
+                  "bg-rose-100 text-rose-900"
+                }
+              >
+                {status.publishing_status ?? "RUNNING"}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {status.pins_published_last_hour} pins / last hour · {status.queue_count} queued
+              </span>
+            </div>
+            {status.publishing_message && (
+              <p className="text-xs text-muted-foreground">{status.publishing_message}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Hero status card */}
       <Card className="overflow-hidden">
         <div className={`h-2 ${stateColor}`} />
