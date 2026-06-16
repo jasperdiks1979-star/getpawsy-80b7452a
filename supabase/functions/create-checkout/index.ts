@@ -380,11 +380,15 @@ serve(async (req) => {
       // Stripe dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
       // Cash App Pay, …) when `payment_method_types` is omitted.
       shipping_address_collection: {
-        // US-first storefront, but accept shipping to a curated list of
-        // supported destinations. Sanctioned/high-risk countries (Iran,
-        // North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk/Luhansk,
-        // Venezuela, Myanmar, etc.) are intentionally excluded.
-        allowed_countries: [
+        // When the frontend pre-check selected a single destination, lock
+        // Stripe to just that country so the shopper can't pick an
+        // unfulfillable address on the hosted page. Otherwise fall back to
+        // the curated CJ-supported list. Sanctioned/high-risk countries
+        // (Iran, North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk
+        // /Luhansk, Venezuela, Myanmar, etc.) are excluded.
+        allowed_countries: destinationCountry
+          ? [destinationCountry as any]
+          : [
           // North America
           "US", "CA", "MX",
           // United Kingdom & Ireland
