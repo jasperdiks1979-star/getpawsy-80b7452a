@@ -658,6 +658,25 @@ serve(async (req) => {
           console.error("[STRIPE-WEBHOOK] tiktok server event failed:", e);
         }
 
+        // ── Canonical purchase-tracking mirrors (idempotent per session) ──
+        // Fills the previously-empty lp_funnel_events.purchase payload,
+        // creates the visitor_activity purchase row, enqueues the Pinterest
+        // CAPI checkout event, and triggers the owner SMS. Each helper
+        // swallows its own errors — order processing is never blocked.
+        try {
+          await runPostPaymentTracking(supabaseAdmin, {
+            orderId,
+            stripeSessionId: session.id,
+            stripePaymentIntentId: (session.payment_intent as string) ?? null,
+            totalValue,
+            currency: session.currency || "usd",
+            items,
+            customerEmail: customerEmail ?? null,
+          });
+        } catch (e) {
+          console.error("[STRIPE-WEBHOOK] post-payment tracking failed:", e);
+        }
+
         break;
       }
 
