@@ -990,6 +990,7 @@ const Checkout = () => {
               <div className="mb-4">
                 <ShippingPrecheck
                   items={items.map((i) => ({ id: i.id, name: i.name }))}
+                  initialCountry={visitorCountry ?? undefined}
                   onChange={({ country, check, loading }) => {
                     setShippingCountry(country);
                     setShippingCheck(check);
