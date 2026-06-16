@@ -67,30 +67,27 @@ serve(async (req) => {
   }
 
   try {
-    // PROD: prefer STRIPE_SECRET_KEY_LIVE. Fall back to STRIPE_SECRET_KEY (test).
-    // NODE_ENV=production forces LIVE and errors if the live key is missing.
-    const nodeEnv = (Deno.env.get("NODE_ENV") || "").toLowerCase();
+    // DETERMINISTIC KEY SELECTION:
+    //   If STRIPE_SECRET_KEY_LIVE exists → ALWAYS use it (live).
+    //   Else fall back to STRIPE_SECRET_KEY (test).
+    // STRIPE_MODE env var ("live"/"test") can force a mode for emergency rollback.
     const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
     const testKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const forceLive = nodeEnv === "production";
-    const stripeKey = forceLive ? liveKey : (liveKey || testKey);
+    const modeOverride = (Deno.env.get("STRIPE_MODE") || "").toLowerCase();
+    let stripeKey: string | undefined;
+    if (modeOverride === "test") stripeKey = testKey;
+    else if (modeOverride === "live") stripeKey = liveKey;
+    else stripeKey = liveKey || testKey;
     if (!stripeKey) {
-      throw new Error(
-        forceLive
-          ? "STRIPE_SECRET_KEY_LIVE is not configured (NODE_ENV=production requires the live key)"
-          : "Neither STRIPE_SECRET_KEY_LIVE nor STRIPE_SECRET_KEY is configured",
-      );
+      throw new Error("No Stripe key configured (STRIPE_SECRET_KEY_LIVE or STRIPE_SECRET_KEY)");
     }
     const stripeMode: "test" | "live" | "unknown" = stripeKey.startsWith("sk_live_")
       ? "live"
       : stripeKey.startsWith("sk_test_")
         ? "test"
         : "unknown";
-    if (forceLive && stripeMode !== "live") {
-      throw new Error(`NODE_ENV=production requires sk_live_ key, got prefix: ${stripeKey.substring(0, 8)}`);
-    }
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode, "source:", stripeKey === liveKey ? "LIVE" : "TEST");
+    console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode, "override:", modeOverride || "(none)");
 
     // Create Supabase clients
     const supabaseClient = createClient(
