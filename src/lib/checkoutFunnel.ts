@@ -18,7 +18,8 @@ export type FunnelStep =
   | 'stripe_redirect'
   | 'complete_payment'
   | 'klarna_purchase'
-  | 'checkout_abandoned';
+  | 'checkout_abandoned'
+  | 'shipping_country_blocked';
 
 export interface FunnelEvent {
   step: FunnelStep;
