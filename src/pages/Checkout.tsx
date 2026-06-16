@@ -29,6 +29,8 @@ import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
 import { splitKlarnaInstallments, formatKlarnaInstallment } from '@/lib/klarna';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { ShippingPrecheck } from '@/components/checkout/ShippingPrecheck';
+import type { CartShippingCheck, CountryCode } from '@/lib/cj-shipping-matrix';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -193,6 +195,13 @@ const Checkout = () => {
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [discountOpen, setDiscountOpen] = useState(false);
+
+  // CJ shipping pre-check — blocks Pay when any cart item can't ship to the
+  // selected destination country. Default US to keep US-first conversion.
+  const [shippingCountry, setShippingCountry] = useState<CountryCode>('US');
+  const [shippingCheck, setShippingCheck] = useState<CartShippingCheck | null>(null);
+  const [shippingChecking, setShippingChecking] = useState(true);
+  const shippingBlocked = !shippingChecking && shippingCheck !== null && !shippingCheck.ok;
 
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
