@@ -1087,6 +1087,32 @@ Deno.serve(async (req) => {
             continue;
           }
         }
+        // 🛡️ Global 3× reuse cap: across ALL boards, the same pin_image_url
+        // can post at most 3 times in any rolling 30-day window. Beyond that
+        // the creative is considered exhausted and we force the director to
+        // regenerate with a fresh crop/composition/typography combination on
+        // the next publishing cycle.
+        if (pin.pin_image_url) {
+          const { count: reuseCount } = await sb
+            .from("pinterest_pin_queue")
+            .select("id", { count: "exact", head: true })
+            .eq("pin_image_url", pin.pin_image_url)
+            .in("status", ["published", "posted"])
+            .gte("created_at", thirtyDaysAgo)
+            .neq("id", pin.id);
+          if ((reuseCount ?? 0) >= 3) {
+            const reason = `creative_reuse_cap_exceeded:${reuseCount}/3`;
+            console.warn(`[cron] Pin ${pin.id} blocked by 3x reuse cap: ${reason}`);
+            await sb.from("pinterest_pin_queue").update({
+              status: "rejected",
+              rejection_reason: "creative_reuse_cap_exceeded",
+              error_message: reason,
+              publishing_started_at: null,
+            }).eq("id", pin.id);
+            results.push({ pinId: pin.id, status: "rejected", error: "creative_reuse_cap_exceeded" });
+            continue;
+          }
+        }
         if (pin.board_id && destClean) {
           // NOTE 2026-06-12: destination-only dedupe disabled. Multiple
           // creative variants per product slug are valid (and the whole
