@@ -20039,6 +20039,57 @@ export type Database = {
         }
         Relationships: []
       }
+      render_worker_deploys: {
+        Row: {
+          actor: string | null
+          commit_message: string | null
+          commit_sha: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          http_status: number | null
+          id: string
+          metadata: Json
+          ok: boolean
+          response_body: string | null
+          target: string
+          trigger_source: string
+          triggered_at: string
+        }
+        Insert: {
+          actor?: string | null
+          commit_message?: string | null
+          commit_sha?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          ok?: boolean
+          response_body?: string | null
+          target?: string
+          trigger_source: string
+          triggered_at?: string
+        }
+        Update: {
+          actor?: string | null
+          commit_message?: string | null
+          commit_sha?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          ok?: boolean
+          response_body?: string | null
+          target?: string
+          trigger_source?: string
+          triggered_at?: string
+        }
+        Relationships: []
+      }
       render_worker_heartbeats: {
         Row: {
           last_seen_at: string
