@@ -1085,6 +1085,11 @@ async function uploadAndInsertDraft(
     meta: intelligence
       ? {
           creative_source: "creative_director_v2",
+          ai_generated: true,
+          generator: "pinterest-creative-director",
+          quality_tier: "premium",
+          legacy_feed: false,
+          publish_allowed: true,
           pin_type:
             (brief as any).pin_mode === "problem_solution" ? "problem_solution" :
             (brief as any).pin_mode === "listicle" ? "listicle" :
@@ -1120,7 +1125,15 @@ async function uploadAndInsertDraft(
           headline: brief.headline,
           cta: brief.cta,
         }
-      : { creative_source: "creative_director_v2", pin_type: "lifestyle" },
+      : {
+          creative_source: "creative_director_v2",
+          ai_generated: true,
+          generator: "pinterest-creative-director",
+          quality_tier: "premium",
+          legacy_feed: false,
+          publish_allowed: true,
+          pin_type: "lifestyle",
+        },
   };
 
   // ── Validate every generated pin BEFORE insert ────────────────────────────
