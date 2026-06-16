@@ -538,6 +538,10 @@ export default function PinterestRevenueEngine() {
             {running === "score" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
             Run scoring now
           </Button>
+          <Button onClick={runRevenueOptimisation} disabled={optimizing} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {optimizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
+            Run Revenue Optimisation Now
+          </Button>
         </div>
       </header>
 
