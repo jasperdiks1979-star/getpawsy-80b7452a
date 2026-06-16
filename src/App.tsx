@@ -2305,6 +2305,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-stock-status"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestStockStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="github-sync"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
