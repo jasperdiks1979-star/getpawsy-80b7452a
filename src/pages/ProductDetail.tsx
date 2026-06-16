@@ -830,6 +830,46 @@ const ProductDetail = () => {
     return () => observer.disconnect();
   }, [product]);
 
+  // ── Geo shipping gate (HOOKS — must run unconditionally before any early
+  //    return below, otherwise React #310 fires when product transitions
+  //    from loading → loaded). DO NOT move these below the if-returns.
+  const [visitorCountry, setVisitorCountry] = useState<string | null>(null);
+  useEffect(() => {
+    ensureGeoClassified();
+    const read = () => {
+      const c = (getCachedGeoCountry() || '').toUpperCase();
+      if (c) { setVisitorCountry(c); return true; }
+      return false;
+    };
+    if (read()) return;
+    const iv = window.setInterval(() => { if (read()) window.clearInterval(iv); }, 400);
+    const to = window.setTimeout(() => window.clearInterval(iv), 5000);
+    return () => { window.clearInterval(iv); window.clearTimeout(to); };
+  }, []);
+  const productWarehouse = ((product as any)?.supplier_warehouse || '').toUpperCase();
+  const geoBlocked =
+    productWarehouse === 'US' &&
+    !!visitorCountry &&
+    visitorCountry !== 'US' &&
+    visitorCountry !== 'CA';
+  useEffect(() => {
+    if (!geoBlocked || !product?.id) return;
+    const key = `gp_geo_blocked_${product.id}_${visitorCountry}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch { /* ignore */ }
+    trackCheckoutFunnel({
+      step: 'shipping_country_blocked',
+      placement: 'pdp',
+      metadata: {
+        destination_country: visitorCountry,
+        product_id: product.id,
+        warehouse: productWarehouse,
+      },
+    });
+  }, [geoBlocked, product?.id, visitorCountry, productWarehouse]);
+
   // SEO-safe loading state: emit proper head tags so crawlers never see
   // noindex or 404 signals while product data is still resolving.
   if (isLoading) {
