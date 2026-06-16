@@ -74,6 +74,7 @@ export async function logUtmSession(): Promise<void> {
     p_referrer: cleanReferrer((document.referrer || "").slice(0, 500) || null),
     p_landing_page: cleanString((window.location.pathname + window.location.search).slice(0, 500), 500),
     p_is_internal: isInternalTraffic(),
+    p_pin_id: cleanString(get("pin_id"), 64),
   };
 
   try {
