@@ -162,7 +162,7 @@ const TEMPLATES: Record<string, TemplatePool> = {
     ],
     descriptions: [
       "{name} keeps odor in and the floor cleaner. A smarter litter box for indoor cats.",
-      "Tired of scooping? {name} handles the mess so you don't have to.",
+      "Less scooping, more cuddles — {name} keeps the box fresh for you.",
       "An enclosed litter box that respects your cat's privacy — and your nose. Shop at GetPawsy.",
     ],
     ctas: SHARED_CTAS,
