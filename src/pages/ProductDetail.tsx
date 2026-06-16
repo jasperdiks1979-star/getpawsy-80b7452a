@@ -1792,6 +1792,14 @@ const ProductDetail = () => {
                 <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
               </Button>
             </motion.div>
+            {geoBlocked && (
+              <div
+                role="alert"
+                className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                This product is currently only available in the United States and Canada.
+              </div>
+            )}
 
             {/* Trust Badges — single consolidated trust block */}
             {/*
