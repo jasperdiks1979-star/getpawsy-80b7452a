@@ -118,6 +118,8 @@ export default function PinterestRevenueEngine() {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [actions, setActions] = useState<ActionRow[]>([]);
   const [running, setRunning] = useState<"score" | "validate" | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optReport, setOptReport] = useState<any>(null);
   const [connection, setConnection] = useState<ConnectionRow | null>(null);
   const [cronRuns, setCronRuns] = useState<CronRow[]>([]);
   const [reviewQueue, setReviewQueue] = useState<ReviewRow[]>([]);
@@ -492,6 +494,25 @@ export default function PinterestRevenueEngine() {
     if (error) return toast.error(error.message);
     toast.success(`Validated: ${data?.passed ?? 0} pass / ${data?.failed ?? 0} fail`);
     load();
+  }
+
+  async function runRevenueOptimisation() {
+    setOptimizing(true);
+    setOptReport(null);
+    try {
+      toast.info("Chaining growth orchestrator → auto-evolve → learning loop → revenue brain → optimiser. This may take 30–90s.");
+      const { data, error } = await supabase.functions.invoke("pinterest-revenue-optimize", { body: { chain: true } });
+      if (error) throw error;
+      if (!(data as { ok?: boolean })?.ok) throw new Error((data as { message?: string })?.message ?? "optimisation failed");
+      setOptReport((data as { report: unknown }).report);
+      const r = (data as any).report;
+      toast.success(`Optimisation done — ${r.losers_blocked} losers blocked, ${r.patterns_upserted} patterns learned, 30d forecast ${money(r.revenue_forecast.forecast_30d_cents)}`);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setOptimizing(false);
+    }
   }
 
   return (
