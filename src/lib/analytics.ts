@@ -48,6 +48,55 @@ const isGtagAvailable = (): boolean => {
   return typeof window !== 'undefined' && typeof window.gtag === 'function';
 };
 
+// ----------------------------------------------------------------------------
+// Pending-event queue.
+//
+// gtag.js is loaded via deferred-analytics AFTER React mounts. PDP effects
+// (view_item, scroll, etc.) can fire BEFORE gtag is available, in which case
+// the hit was previously dropped on the floor — only the Postgres mirror
+// survived. We now buffer those events and flush them as soon as the real
+// gtag function is installed by gtag.js.
+// ----------------------------------------------------------------------------
+type PendingEvent = { name: string; params: Record<string, unknown> };
+const pendingEvents: PendingEvent[] = [];
+let pendingPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const flushPendingEvents = (): void => {
+  if (!isGtagAvailable()) return;
+  while (pendingEvents.length) {
+    const ev = pendingEvents.shift()!;
+    try {
+      window.gtag('event', ev.name, ev.params);
+      console.debug('[Analytics] Flushed pending event:', ev.name);
+    } catch (err) {
+      console.debug('[Analytics] Flush failed:', err);
+    }
+  }
+  if (pendingPollTimer) {
+    clearInterval(pendingPollTimer);
+    pendingPollTimer = null;
+  }
+};
+
+const queuePendingEvent = (name: string, params: Record<string, unknown>): void => {
+  pendingEvents.push({ name, params });
+  // Cap queue size to avoid unbounded growth if gtag never loads.
+  if (pendingEvents.length > 100) pendingEvents.splice(0, pendingEvents.length - 100);
+  if (pendingPollTimer || typeof window === 'undefined') return;
+  // Poll briefly for gtag readiness, then drain.
+  let ticks = 0;
+  pendingPollTimer = setInterval(() => {
+    ticks += 1;
+    if (isGtagAvailable()) {
+      flushPendingEvents();
+    } else if (ticks > 75) {
+      // ~15s ceiling — give up; events stay in postgres mirror only.
+      if (pendingPollTimer) clearInterval(pendingPollTimer);
+      pendingPollTimer = null;
+    }
+  }, 200);
+};
+
 // Initialize founder user properties on gtag (call once on app init)
 export const initAnalyticsUserProperties = (): void => {
   if (!isGtagAvailable()) return;
@@ -97,7 +146,10 @@ export const trackEvent = (
     window.gtag('event', eventName, enrichedParams);
     console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
   } else {
-    console.debug('[Analytics] gtag not ready — mirroring only:', eventName);
+    // Buffer until gtag.js finishes loading, then flush. Prevents loss of
+    // early-firing events like view_item on PDP cold loads.
+    queuePendingEvent(eventName, enrichedParams);
+    console.debug('[Analytics] gtag not ready — queued for flush:', eventName);
   }
 
   // Mirror funnel + downstream events to Postgres for the admin
