@@ -131,7 +131,10 @@ serve(async (req) => {
     );
 
     // Parse request body
-    const { items, customerEmail, discountCode, shippingAddress }: CheckoutRequest = await req.json();
+    const { items, customerEmail, discountCode, shippingAddress, shippingCountry }: CheckoutRequest = await req.json();
+    const destinationCountry = (shippingCountry || shippingAddress?.country || "")
+      .toUpperCase()
+      .trim();
 
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
@@ -169,10 +172,10 @@ serve(async (req) => {
     const productIds = Array.from(new Set(items.map((i) => i.id)));
     const { data: dbProducts, error: dbErr } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, image_url, is_active")
+      .select("id, name, price, image_url, is_active, supplier_warehouse")
       .in("id", productIds);
     if (dbErr) throw new Error(`Product lookup failed: ${dbErr.message}`);
-    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean }>();
+    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean; supplier_warehouse: string | null }>();
     for (const p of dbProducts || []) productMap.set(p.id, p as any);
     for (const it of items) {
       const p = productMap.get(it.id);
@@ -183,6 +186,38 @@ serve(async (req) => {
       it.price = p.price;
       it.name = p.name;
       it.image = p.image_url || it.image;
+    }
+    // ---- CJ shipping pre-check ------------------------------------------
+    // If the caller declared a destination, every cart product must be
+    // fulfillable from its CJ warehouse to that country.
+    if (destinationCountry) {
+      if (!CJ_SHIP_SUPPORTED_COUNTRIES.has(destinationCountry)) {
+        return new Response(
+          JSON.stringify({
+            error: `We don't ship to ${destinationCountry} yet.`,
+            code: "country_not_supported",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
+      const blocked: { id: string; name: string; warehouse: string | null }[] = [];
+      for (const it of items) {
+        const p = productMap.get(it.id)!;
+        if (!cjCanShip(p.supplier_warehouse, destinationCountry)) {
+          blocked.push({ id: p.id, name: p.name, warehouse: p.supplier_warehouse });
+        }
+      }
+      if (blocked.length > 0) {
+        console.warn("[CREATE-CHECKOUT] CJ shipping blocked", { destinationCountry, blocked });
+        return new Response(
+          JSON.stringify({
+            error: `Some items can't ship to ${destinationCountry}.`,
+            code: "cj_shipping_unavailable",
+            blocked,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
     }
     // ----------------------------------------------------------------------
 
