@@ -81,6 +81,17 @@ function creditClient() {
 }
 async function tagGatewayResp(resp: Response, fnTag: string): Promise<void> {
   try {
+    // Per-call credit estimate (used until upstream returns usage metadata).
+    // Image generation costs ~8 credits, brief/fidelity text calls ~1.
+    const creditsByTag = (tag: string): number => {
+      if (tag.endsWith(":image")) return 8;
+      if (tag.endsWith(":fidelity")) return 2;
+      return 1;
+    };
+    const modelByTag = (tag: string): string | undefined => {
+      if (tag.endsWith(":image")) return IMAGE_MODEL;
+      return TEXT_MODEL;
+    };
     if (resp.status === 402) {
       await recordCreditEvent(creditClient(), {
         event_type: "payment_required",
@@ -99,6 +110,8 @@ async function tagGatewayResp(resp: Response, fnTag: string): Promise<void> {
         event_type: "success",
         status_code: resp.status,
         function_name: fnTag,
+        credits_used: creditsByTag(fnTag),
+        model: modelByTag(fnTag),
       });
     }
   } catch (_) { /* best effort */ }
