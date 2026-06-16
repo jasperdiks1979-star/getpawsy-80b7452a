@@ -19042,6 +19042,7 @@ export type Database = {
           shipping_days_min: number | null
           shipping_estimate_confidence: string | null
           shipping_method: string | null
+          shipping_region: string | null
           shipping_score: number | null
           shipping_sync_status: string | null
           shipping_time: string | null
@@ -19167,6 +19168,7 @@ export type Database = {
           shipping_days_min?: number | null
           shipping_estimate_confidence?: string | null
           shipping_method?: string | null
+          shipping_region?: string | null
           shipping_score?: number | null
           shipping_sync_status?: string | null
           shipping_time?: string | null
@@ -19292,6 +19294,7 @@ export type Database = {
           shipping_days_min?: number | null
           shipping_estimate_confidence?: string | null
           shipping_method?: string | null
+          shipping_region?: string | null
           shipping_score?: number | null
           shipping_sync_status?: string | null
           shipping_time?: string | null
