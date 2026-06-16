@@ -625,6 +625,141 @@ export default function PinterestRevenueEngine() {
         <Kpi label="Revenue" value={money(totals.revenue_cents)} />
       </div>
 
+      {/* Revenue Optimisation Report — populated by the one-click orchestrator */}
+      {optReport && (
+        <Card className="border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-emerald-600" /> Revenue Optimisation Report
+              <Badge variant="outline">{optReport.window_days}d window</Badge>
+              <Badge variant="secondary">{optReport.counts?.pins_analyzed ?? 0} pins · {optReport.counts?.products_ranked ?? 0} products</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Forecast + persistence */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <Kpi label="7d forecast" value={money(optReport.revenue_forecast?.forecast_7d_cents ?? 0)} />
+              <Kpi label="30d forecast" value={money(optReport.revenue_forecast?.forecast_30d_cents ?? 0)} />
+              <Kpi label="90d forecast" value={money(optReport.revenue_forecast?.forecast_90d_cents ?? 0)} />
+              <Kpi label="Momentum" value={`${((optReport.revenue_forecast?.momentum ?? 1) * 100).toFixed(0)}%`} sub="7d vs 30d" />
+              <Kpi label="Losers blocked" value={fmt(optReport.losers_blocked ?? 0)} sub="21d cooldown" />
+              <Kpi label="Patterns learned" value={fmt(optReport.patterns_upserted ?? 0)} sub="headline n-grams" />
+            </div>
+
+            {/* Chain status */}
+            {Array.isArray(optReport.chain) && optReport.chain.length > 0 && (
+              <div className="text-xs flex flex-wrap gap-2">
+                {optReport.chain.map((s: any) => (
+                  <Badge key={s.step} variant={s.ok ? "secondary" : "destructive"}>
+                    {s.ok ? "✓" : "✗"} {s.step} · {s.ms}ms
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Two-column: Top 20 / Bottom 20 pins */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2"><TrendingUp className="w-4 h-4 text-emerald-600" /><span className="font-semibold text-sm">Top 20 winning pins</span></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-left text-muted-foreground border-b"><tr><th className="py-1 pr-2">Pin</th><th className="py-1 pr-2 text-right">Impr</th><th className="py-1 pr-2 text-right">CTR</th><th className="py-1 pr-2 text-right">Save%</th><th className="py-1 pr-2 text-right">Eng%</th></tr></thead>
+                    <tbody>
+                      {(optReport.top_20_pins ?? []).map((p: any) => (
+                        <tr key={p.id} className="border-b last:border-0">
+                          <td className="py-1 pr-2 max-w-[260px] truncate" title={p.pin_title}>{p.pin_title ?? p.pin_id}</td>
+                          <td className="py-1 pr-2 text-right">{fmt(p.impressions)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.ctr)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.saveRate)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.engagement)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-2"><TrendingDown className="w-4 h-4 text-rose-600" /><span className="font-semibold text-sm">Bottom 20 losing pins</span></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-left text-muted-foreground border-b"><tr><th className="py-1 pr-2">Pin</th><th className="py-1 pr-2 text-right">Impr</th><th className="py-1 pr-2 text-right">CTR</th><th className="py-1 pr-2 text-right">Save%</th><th className="py-1 pr-2 text-right">Eng%</th></tr></thead>
+                    <tbody>
+                      {(optReport.bottom_20_pins ?? []).map((p: any) => (
+                        <tr key={p.id} className="border-b last:border-0">
+                          <td className="py-1 pr-2 max-w-[260px] truncate" title={p.pin_title}>{p.pin_title ?? p.pin_id}</td>
+                          <td className="py-1 pr-2 text-right">{fmt(p.impressions)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.ctr)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.saveRate)}</td>
+                          <td className="py-1 pr-2 text-right">{pct(p.engagement)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Product leaderboard */}
+            <div>
+              <div className="flex items-center gap-2 mb-2"><Sparkles className="w-4 h-4 text-indigo-600" /><span className="font-semibold text-sm">Product leaderboard (revenue-ranked)</span></div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="text-left text-muted-foreground border-b"><tr>
+                    <th className="py-1 pr-2">Product</th>
+                    <th className="py-1 pr-2 text-right">Impr</th>
+                    <th className="py-1 pr-2 text-right">Saves</th>
+                    <th className="py-1 pr-2 text-right">Clicks</th>
+                    <th className="py-1 pr-2 text-right">Views</th>
+                    <th className="py-1 pr-2 text-right">ATC</th>
+                    <th className="py-1 pr-2 text-right">Purch</th>
+                    <th className="py-1 pr-2 text-right">Revenue</th>
+                  </tr></thead>
+                  <tbody>
+                    {(optReport.product_leaderboard ?? []).slice(0, 30).map((p: any, i: number) => (
+                      <tr key={`${p.product_slug ?? p.product_id}-${i}`} className="border-b last:border-0">
+                        <td className="py-1 pr-2 max-w-[280px] truncate" title={p.product_slug ?? p.product_id}>{p.product_slug ?? p.product_id}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.impressions)}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.saves)}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.outbound_clicks)}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.product_views)}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.add_to_carts)}</td>
+                        <td className="py-1 pr-2 text-right">{fmt(p.purchases)}</td>
+                        <td className="py-1 pr-2 text-right">{money(p.revenue_cents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Opportunity engine */}
+            <div className="grid md:grid-cols-3 gap-4">
+              {([
+                ["High impressions · low clicks", optReport.opportunities?.high_impressions_low_clicks ?? [], "amber"],
+                ["High clicks · low conversion", optReport.opportunities?.high_clicks_low_conversion ?? [], "rose"],
+                ["Scalable winners", optReport.opportunities?.scalable_winners ?? [], "emerald"],
+              ] as Array<[string, any[], string]>).map(([title, rows, tone]) => (
+                <div key={title} className="rounded-md border p-3">
+                  <div className={`text-xs font-semibold mb-2 text-${tone}-600`}>{title}</div>
+                  {rows.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">No matches in last {optReport.window_days}d</div>
+                  ) : (
+                    <ul className="space-y-1 text-xs">
+                      {rows.slice(0, 8).map((r: any, i: number) => (
+                        <li key={i} className="border-b last:border-0 pb-1">
+                          <div className="font-mono truncate" title={r.product_slug}>{r.product_slug}</div>
+                          <div className="text-muted-foreground">{r.hint}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Published Pins — last 50 with diversity score + Pinterest perf */}
       <Card>
         <CardHeader>
