@@ -186,12 +186,17 @@ export async function initDeferredAnalytics(): Promise<void> {
   initialized = true;
 
   try {
-    // Set default consent BEFORE loading scripts (GDPR)
+    // Set default consent BEFORE loading scripts.
+    // Geo-aware: EU/GDPR visitors → denied until banner grants. Non-EU
+    // (US/CCPA opt-out regime) → granted on first hit so attribution is
+    // not lost. Resolved SYNCHRONOUSLY via timezone (no network race).
+    const autoGrantConsent = canAutoGrantConsent();
+    const defaultState = autoGrantConsent ? 'granted' : 'denied';
     gtag('consent', 'default', {
-      'analytics_storage': 'denied',
-      'ad_storage': 'denied',
-      'ad_user_data': 'denied',
-      'ad_personalization': 'denied',
+      'analytics_storage': defaultState,
+      'ad_storage': defaultState,
+      'ad_user_data': defaultState,
+      'ad_personalization': defaultState,
       'wait_for_update': 500,
     });
 
@@ -206,8 +211,12 @@ export async function initDeferredAnalytics(): Promise<void> {
     // Google Ads (AW-381705659) is configured directly below — the GT
     // container is not required for Ads conversions.
     gtag('js', new Date());
-    gtag('config', 'G-5WYL8RJDZF');
-    gtag('config', 'AW-381705659');
+    // IMPORTANT: send_page_view:false — SafeGlobalVisitorTracker fires the
+    // canonical SPA page_view on mount AND every route change. Without this,
+    // the first hit produces TWO page_view events (one from config, one from
+    // the tracker) corrupting engagement + bounce metrics.
+    gtag('config', 'G-5WYL8RJDZF', { send_page_view: false });
+    gtag('config', 'AW-381705659', { send_page_view: false });
 
     // Load TikTok Pixel alongside Google scripts
     initTikTokPixel();
