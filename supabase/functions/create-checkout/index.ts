@@ -19,6 +19,13 @@ interface CheckoutRequest {
   items: CartItem[];
   customerEmail?: string;
   discountCode?: string;
+  /**
+   * ISO-3166 alpha-2 of the destination. When present, the request is
+   * validated against the CJ shipping matrix and Stripe's allowed_countries
+   * is locked to this single code so the shopper can't change it on the
+   * hosted page.
+   */
+  shippingCountry?: string;
   shippingAddress?: {
     firstName: string;
     lastName: string;
@@ -42,6 +49,29 @@ const COUPON_CODE_PERCENT: Record<string, number> = {
   BUNDLE20: 20,
   SLOWFEEDER25: 25,
 };
+
+// ---- CJ shipping matrix (mirror of src/lib/cj-shipping-matrix.ts) -------
+// Keep in sync. Edge functions can't import from `src/`.
+type WarehouseCode = "US" | "CN" | "DE" | "UNKNOWN";
+const CJ_SHIP_SUPPORTED_COUNTRIES = new Set<string>([
+  "US", "CA", "GB", "NL", "BE", "DE", "FR", "AU",
+]);
+const CJ_MATRIX: Record<WarehouseCode, Record<string, boolean>> = {
+  US:      { US: true, CA: true },
+  DE:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true },
+  CN:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
+  UNKNOWN: { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
+};
+function normWarehouse(raw: string | null | undefined): WarehouseCode {
+  const v = (raw || "").trim().toUpperCase();
+  if (v === "US") return "US";
+  if (v === "CN") return "CN";
+  if (v === "DE") return "DE";
+  return "UNKNOWN";
+}
+function cjCanShip(warehouse: string | null | undefined, country: string): boolean {
+  return CJ_MATRIX[normWarehouse(warehouse)][country] === true;
+}
 
 // Shipping mirrors src/lib/shipping-constants.ts. Kept inline because edge
 // functions cannot import from `src/`.
@@ -101,7 +131,10 @@ serve(async (req) => {
     );
 
     // Parse request body
-    const { items, customerEmail, discountCode, shippingAddress }: CheckoutRequest = await req.json();
+    const { items, customerEmail, discountCode, shippingAddress, shippingCountry }: CheckoutRequest = await req.json();
+    const destinationCountry = (shippingCountry || shippingAddress?.country || "")
+      .toUpperCase()
+      .trim();
 
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
@@ -139,10 +172,10 @@ serve(async (req) => {
     const productIds = Array.from(new Set(items.map((i) => i.id)));
     const { data: dbProducts, error: dbErr } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, image_url, is_active")
+      .select("id, name, price, image_url, is_active, supplier_warehouse")
       .in("id", productIds);
     if (dbErr) throw new Error(`Product lookup failed: ${dbErr.message}`);
-    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean }>();
+    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean; supplier_warehouse: string | null }>();
     for (const p of dbProducts || []) productMap.set(p.id, p as any);
     for (const it of items) {
       const p = productMap.get(it.id);
@@ -153,6 +186,38 @@ serve(async (req) => {
       it.price = p.price;
       it.name = p.name;
       it.image = p.image_url || it.image;
+    }
+    // ---- CJ shipping pre-check ------------------------------------------
+    // If the caller declared a destination, every cart product must be
+    // fulfillable from its CJ warehouse to that country.
+    if (destinationCountry) {
+      if (!CJ_SHIP_SUPPORTED_COUNTRIES.has(destinationCountry)) {
+        return new Response(
+          JSON.stringify({
+            error: `We don't ship to ${destinationCountry} yet.`,
+            code: "country_not_supported",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
+      const blocked: { id: string; name: string; warehouse: string | null }[] = [];
+      for (const it of items) {
+        const p = productMap.get(it.id)!;
+        if (!cjCanShip(p.supplier_warehouse, destinationCountry)) {
+          blocked.push({ id: p.id, name: p.name, warehouse: p.supplier_warehouse });
+        }
+      }
+      if (blocked.length > 0) {
+        console.warn("[CREATE-CHECKOUT] CJ shipping blocked", { destinationCountry, blocked });
+        return new Response(
+          JSON.stringify({
+            error: `Some items can't ship to ${destinationCountry}.`,
+            code: "cj_shipping_unavailable",
+            blocked,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
     }
     // ----------------------------------------------------------------------
 
@@ -315,11 +380,15 @@ serve(async (req) => {
       // Stripe dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
       // Cash App Pay, …) when `payment_method_types` is omitted.
       shipping_address_collection: {
-        // US-first storefront, but accept shipping to a curated list of
-        // supported destinations. Sanctioned/high-risk countries (Iran,
-        // North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk/Luhansk,
-        // Venezuela, Myanmar, etc.) are intentionally excluded.
-        allowed_countries: [
+        // When the frontend pre-check selected a single destination, lock
+        // Stripe to just that country so the shopper can't pick an
+        // unfulfillable address on the hosted page. Otherwise fall back to
+        // the curated CJ-supported list. Sanctioned/high-risk countries
+        // (Iran, North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk
+        // /Luhansk, Venezuela, Myanmar, etc.) are excluded.
+        allowed_countries: destinationCountry
+          ? [destinationCountry as any]
+          : [
           // North America
           "US", "CA", "MX",
           // United Kingdom & Ireland
@@ -368,15 +437,16 @@ serve(async (req) => {
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout`,
       metadata: orderMetadata,
-      // Never allow promotion codes — discount is already applied as a
-      // one-off coupon for the exact UI-displayed amount. Allowing manual
-      // codes would stack and undercharge.
-      allow_promotion_codes: false,
     };
 
-    // Only add discounts if we have a valid code
+    // Only add discounts if we have a valid code.
+    // Stripe rejects sessions that set BOTH `discounts` and
+    // `allow_promotion_codes` — so we set `allow_promotion_codes:false`
+    // ONLY when no server-applied discount is attached.
     if (discounts.length > 0) {
       sessionConfig.discounts = discounts;
+    } else {
+      sessionConfig.allow_promotion_codes = false;
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);

@@ -29,6 +29,8 @@ import { useKlarnaEligibility } from '@/hooks/useKlarnaEligibility';
 import { splitKlarnaInstallments, formatKlarnaInstallment } from '@/lib/klarna';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { ShippingPrecheck } from '@/components/checkout/ShippingPrecheck';
+import type { CartShippingCheck, CountryCode } from '@/lib/cj-shipping-matrix';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -193,6 +195,13 @@ const Checkout = () => {
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [discountOpen, setDiscountOpen] = useState(false);
+
+  // CJ shipping pre-check — blocks Pay when any cart item can't ship to the
+  // selected destination country. Default US to keep US-first conversion.
+  const [shippingCountry, setShippingCountry] = useState<CountryCode>('US');
+  const [shippingCheck, setShippingCheck] = useState<CartShippingCheck | null>(null);
+  const [shippingChecking, setShippingChecking] = useState(true);
+  const shippingBlocked = !shippingChecking && shippingCheck !== null && !shippingCheck.ok;
 
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
@@ -635,6 +644,7 @@ const Checkout = () => {
           })),
           customerEmail: finalEmail,
           discountCode: discountApplied || undefined,
+          shippingCountry,
         },
       });
 
@@ -928,7 +938,19 @@ const Checkout = () => {
               <h2 className={premiumV5 ? 'font-display text-[19px] font-semibold tracking-tight mb-4' : 'text-xl font-bold mb-4'}>
                 {premiumV5 ? 'Review your order' : 'Order Summary'}
               </h2>
-              
+
+              {/* CJ shipping pre-check — must pass before Stripe redirect */}
+              <div className="mb-4">
+                <ShippingPrecheck
+                  items={items.map((i) => ({ id: i.id, name: i.name }))}
+                  onChange={({ country, check, loading }) => {
+                    setShippingCountry(country);
+                    setShippingCheck(check);
+                    setShippingChecking(loading);
+                  }}
+                />
+              </div>
+
               {/* Items */}
               <div className="space-y-3 mb-4">
                 {items.map((item) => (
@@ -1102,7 +1124,7 @@ const Checkout = () => {
               <Button
                 size="lg"
                 className="w-full mt-4 gap-2"
-                disabled={isProcessing}
+                disabled={isProcessing || shippingBlocked || shippingChecking}
                 onClick={handleStripeCheckout}
                 data-testid="checkout-cta-desktop"
               >
@@ -1110,6 +1132,11 @@ const Checkout = () => {
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Processing...
+                  </>
+                ) : shippingBlocked ? (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Not shippable to selected country
                   </>
                 ) : (
                   <>
@@ -1202,7 +1229,7 @@ const Checkout = () => {
                 maxWidth: '100%',
                 boxSizing: 'border-box'
               }}
-              disabled={isProcessing}
+              disabled={isProcessing || shippingBlocked || shippingChecking}
               onClick={handleStripeCheckout}
               data-testid="checkout-cta-mobile"
             >
@@ -1210,6 +1237,11 @@ const Checkout = () => {
                 <>
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   <span className="truncate">Processing...</span>
+                </>
+              ) : shippingBlocked ? (
+                <>
+                  <Lock className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Unavailable</span>
                 </>
               ) : (
                 <>
