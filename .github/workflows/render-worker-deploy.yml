@@ -1,19 +1,17 @@
 name: Redeploy Render Worker
 
-# Automatically triggers the external render worker host (Render.com / Railway / Fly.io)
-# to redeploy whenever the main branch receives a new commit. Especially important when
-# files under `render-worker/` change, but we also fire on any main-branch push so the
-# worker always runs against the latest repo state.
+# Calls the Supabase edge function `render-worker-deploy`, which (a) POSTs the
+# Render.com Deploy Hook stored as a Supabase secret and (b) logs the response,
+# timestamp, commit SHA, and duration into `render_worker_deploys`. The admin
+# dashboard (/admin/worker-recovery) reads that table to show the latest status.
 #
 # Setup (one-time):
-#   1. In your render-worker host dashboard, create a Deploy Hook URL.
-#      - Render.com:  Service → Settings → Deploy Hook
-#      - Railway:     Project → Settings → Triggers → Webhook
-#      - Fly.io:      use `flyctl deploy` via a token instead (see FLY_API_TOKEN below)
-#   2. Add the URL as a GitHub Actions secret named `RENDER_DEPLOY_HOOK_URL`.
-#      (Repo → Settings → Secrets and variables → Actions → New repository secret)
-#   3. Optional: also add `RAILWAY_DEPLOY_HOOK_URL` / `FLY_API_TOKEN` if you mirror
-#      the worker on a second host — the job will fan out to whichever are present.
+#   1. In Render.com → worker service → Settings → Deploy Hook, copy the URL.
+#   2. In Lovable Cloud → Edge Function Secrets, add:
+#         RENDER_WORKER_DEPLOY_HOOK_URL   (the URL from step 1)
+#         RENDER_WORKER_DEPLOY_SECRET     (any long random string)
+#   3. In GitHub repo → Settings → Secrets and variables → Actions, add:
+#         RENDER_WORKER_DEPLOY_SECRET     (same value as step 2)
 
 on:
   push:
@@ -34,41 +32,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Ping Render.com deploy hook
-        if: ${{ env.RENDER_DEPLOY_HOOK_URL != '' }}
+      - name: Trigger render-worker-deploy edge function
         env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          DEPLOY_SECRET: ${{ secrets.RENDER_WORKER_DEPLOY_SECRET }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          ACTOR: ${{ github.actor }}
+          REASON: ${{ github.event.inputs.reason || github.event_name }}
         run: |
           set -euo pipefail
-          echo "Triggering Render.com deploy hook..."
-          http_code=$(curl -sS -o /tmp/render.out -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+          if [ -z "$DEPLOY_SECRET" ]; then
+            echo "::warning::RENDER_WORKER_DEPLOY_SECRET not set in GitHub Actions secrets. Skipping."
+            exit 0
+          fi
+          payload=$(jq -n \
+            --arg src "github-actions:$REASON" \
+            --arg sha "$COMMIT_SHA" \
+            --arg msg "$COMMIT_MSG" \
+            --arg actor "$ACTOR" \
+            '{trigger_source:$src, commit_sha:$sha, commit_message:$msg, actor:$actor}')
+          echo "Calling edge function with payload:"
+          echo "$payload"
+          http_code=$(curl -sS -o /tmp/deploy.out -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-deploy-secret: $DEPLOY_SECRET" \
+            --data "$payload" \
+            "https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/render-worker-deploy")
           echo "HTTP $http_code"
-          cat /tmp/render.out || true
+          cat /tmp/deploy.out || true
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Render deploy hook returned $http_code"
+            echo "::error::Render worker deploy returned $http_code"
             exit 1
           fi
-
-      - name: Ping Railway deploy hook
-        if: ${{ env.RAILWAY_DEPLOY_HOOK_URL != '' }}
-        env:
-          RAILWAY_DEPLOY_HOOK_URL: ${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}
-        run: |
-          set -euo pipefail
-          echo "Triggering Railway deploy hook..."
-          http_code=$(curl -sS -o /tmp/railway.out -w "%{http_code}" -X POST "$RAILWAY_DEPLOY_HOOK_URL")
-          echo "HTTP $http_code"
-          cat /tmp/railway.out || true
-          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Railway deploy hook returned $http_code"
-            exit 1
-          fi
-
-      - name: Skip when no hooks configured
-        if: ${{ env.RENDER_DEPLOY_HOOK_URL == '' && env.RAILWAY_DEPLOY_HOOK_URL == '' }}
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          RAILWAY_DEPLOY_HOOK_URL: ${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}
-        run: |
-          echo "::warning::No deploy hook secrets configured. Add RENDER_DEPLOY_HOOK_URL (or RAILWAY_DEPLOY_HOOK_URL) under repo Settings → Secrets → Actions to enable auto-redeploy."
-          exit 0
