@@ -1,0 +1,318 @@
+import { useEffect, useState, useCallback } from "react";
+import { Helmet } from "react-helmet-async";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Send,
+  RotateCcw,
+  ShieldCheck,
+  Save,
+  MessageSquare,
+} from "lucide-react";
+
+const FIELDS = [
+  { key: "TWILIO_ACCOUNT_SID", label: "Twilio Account SID", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" },
+  { key: "TWILIO_AUTH_TOKEN", label: "Twilio Auth Token", placeholder: "••••••••••••••••" },
+  { key: "TWILIO_FROM_NUMBER", label: "Twilio From Number", placeholder: "+15558675310" },
+  { key: "OWNER_ALERT_PHONE", label: "Owner Alert Phone", placeholder: "+15558675310" },
+] as const;
+type FieldKey = (typeof FIELDS)[number]["key"];
+
+interface StatusEntry {
+  configured: boolean;
+  preview: string | null;
+  updated_at: string | null;
+}
+interface LogRow {
+  id: string;
+  created_at: string;
+  alert_type: string;
+  status: string;
+  twilio_message_sid: string | null;
+  error_reason: string | null;
+  recipient: string | null;
+}
+interface StatusResp {
+  ok: boolean;
+  status: Record<FieldKey, StatusEntry>;
+  recent: LogRow[];
+  lastTest?: LogRow;
+  lastOrder?: LogRow;
+}
+
+export default function SmsAlertsPage() {
+  const { isAdmin } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [status, setStatus] = useState<StatusResp | null>(null);
+  const [values, setValues] = useState<Record<FieldKey, string>>({
+    TWILIO_ACCOUNT_SID: "",
+    TWILIO_AUTH_TOKEN: "",
+    TWILIO_FROM_NUMBER: "",
+    OWNER_ALERT_PHONE: "",
+  });
+  const [validationReport, setValidationReport] =
+    useState<{ pass: boolean; checks: { field: string; pass: boolean; reason: string }[] } | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("sms-alerts-admin", {
+      body: { action: "status" },
+    });
+    if (error) {
+      toast({ title: "Failed to load status", description: error.message, variant: "destructive" });
+    } else {
+      setStatus(data as StatusResp);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) refresh();
+  }, [isAdmin, refresh]);
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">Access denied</h1>
+      </div>
+    );
+  }
+
+  const run = async (action: string, extra?: Record<string, unknown>) => {
+    setBusy(action);
+    try {
+      const { data, error } = await supabase.functions.invoke("sms-alerts-admin", {
+        body: { action, ...extra },
+      });
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      toast({ title: `${action} failed`, description: msg, variant: "destructive" });
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleSave = async () => {
+    const submitted: Partial<Record<FieldKey, string>> = {};
+    for (const f of FIELDS) {
+      if (values[f.key]) submitted[f.key] = values[f.key];
+    }
+    if (Object.keys(submitted).length === 0) {
+      toast({ title: "Nothing to save", description: "Fill at least one field." });
+      return;
+    }
+    const res = await run("save", { values: submitted });
+    if (res?.ok) {
+      toast({ title: "Saved", description: `Updated: ${(res.saved as string[]).join(", ")}` });
+      setValues({ TWILIO_ACCOUNT_SID: "", TWILIO_AUTH_TOKEN: "", TWILIO_FROM_NUMBER: "", OWNER_ALERT_PHONE: "" });
+      await refresh();
+    }
+  };
+
+  const handleTest = async () => {
+    const res = await run("test");
+    if (res?.ok) toast({ title: "Test SMS sent", description: `Twilio SID: ${res.sid}` });
+    else if (res) toast({ title: "Test SMS failed", description: res.error ?? res.message, variant: "destructive" });
+    await refresh();
+  };
+
+  const handleReplay = async () => {
+    const res = await run("replay");
+    if (res?.duplicate) toast({ title: "Already sent", description: res.message });
+    else if (res?.ok) toast({ title: "Replay SMS sent", description: `Order ${res.order_id?.slice(0, 8)} · SID ${res.sid}` });
+    else if (res) toast({ title: "Replay failed", description: res.error ?? res.message, variant: "destructive" });
+    await refresh();
+  };
+
+  const handleValidate = async () => {
+    const res = await run("validate");
+    if (res) setValidationReport({ pass: !!res.pass, checks: res.checks ?? [] });
+  };
+
+  return (
+    <>
+      <Helmet>
+        <title>SMS Alerts — Admin</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Helmet>
+
+      <div className="mx-auto w-full max-w-2xl p-4 space-y-4 sm:p-6 sm:space-y-6">
+        <header>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <MessageSquare className="h-6 w-6" /> SMS Alerts
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Owner SMS notifications for paid orders. Secrets stored encrypted; values are never returned.
+          </p>
+        </header>
+
+        {/* Status */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {loading && !status ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              </div>
+            ) : (
+              <>
+                {FIELDS.map((f) => {
+                  const s = status?.status?.[f.key];
+                  const ok = s?.configured;
+                  return (
+                    <div key={f.key} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate">{f.label}</span>
+                      <span className={`flex items-center gap-1.5 font-mono text-xs ${ok ? "text-green-600" : "text-destructive"}`}>
+                        {ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                        {ok ? s?.preview ?? "set" : "missing"}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="border-t pt-2 mt-2 grid grid-cols-1 gap-1 text-xs text-muted-foreground">
+                  <div>
+                    Last test:{" "}
+                    <span className="font-mono">
+                      {status?.lastTest ? `${status.lastTest.status} · ${new Date(status.lastTest.created_at).toLocaleString()}` : "—"}
+                    </span>
+                  </div>
+                  <div>
+                    Last order SMS:{" "}
+                    <span className="font-mono">
+                      {status?.lastOrder ? `${status.lastOrder.status} · ${new Date(status.lastOrder.created_at).toLocaleString()}` : "—"}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Config form */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Configure secrets</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {FIELDS.map((f) => (
+              <div key={f.key} className="space-y-1">
+                <Label htmlFor={f.key} className="text-sm">{f.label}</Label>
+                <Input
+                  id={f.key}
+                  type={f.key === "TWILIO_AUTH_TOKEN" ? "password" : "text"}
+                  inputMode={f.key.includes("NUMBER") || f.key.includes("PHONE") ? "tel" : "text"}
+                  autoComplete="off"
+                  placeholder={f.placeholder}
+                  value={values[f.key]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  className="font-mono text-sm"
+                />
+              </div>
+            ))}
+            <Button onClick={handleSave} disabled={busy === "save"} className="w-full">
+              {busy === "save" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save secrets
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Leave a field blank to keep its existing value. Values are encrypted at rest and never returned to the browser.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-2">
+            <Button onClick={handleTest} disabled={busy === "test"} variant="default">
+              {busy === "test" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Send Test SMS
+            </Button>
+            <Button onClick={handleReplay} disabled={busy === "replay"} variant="secondary">
+              {busy === "replay" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+              Replay Last Order SMS
+            </Button>
+            <Button onClick={handleValidate} disabled={busy === "validate"} variant="outline">
+              {busy === "validate" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Validate Twilio Configuration
+            </Button>
+
+            {validationReport && (
+              <Alert variant={validationReport.pass ? "default" : "destructive"} className="mt-2">
+                <AlertDescription className="space-y-1.5">
+                  <div className="font-semibold">
+                    {validationReport.pass ? "PASS — configuration looks valid" : "FAIL — fix the issues below"}
+                  </div>
+                  <ul className="text-xs space-y-1">
+                    {validationReport.checks.map((c) => (
+                      <li key={c.field} className="flex items-start gap-1.5">
+                        {c.pass ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                        )}
+                        <span><span className="font-mono">{c.field}</span> — {c.reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent logs */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Recent SMS activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!status?.recent?.length ? (
+              <p className="text-sm text-muted-foreground">No SMS activity yet.</p>
+            ) : (
+              <ul className="divide-y">
+                {status.recent.map((r) => (
+                  <li key={r.id} className="py-2 text-xs flex items-start gap-2">
+                    {r.status === "sent" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
+                    ) : (
+                      <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex justify-between gap-2">
+                        <span className="font-mono">{r.alert_type} · {r.status}</span>
+                        <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                      </div>
+                      {r.twilio_message_sid && (
+                        <div className="font-mono text-muted-foreground truncate">SID: {r.twilio_message_sid}</div>
+                      )}
+                      {r.error_reason && (
+                        <div className="text-destructive truncate">{r.error_reason}</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}

@@ -21645,6 +21645,53 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_alert_logs: {
+        Row: {
+          alert_type: string
+          body: string | null
+          created_at: string
+          error_reason: string | null
+          id: string
+          order_id: string | null
+          recipient: string | null
+          status: string
+          stripe_session_id: string | null
+          twilio_message_sid: string | null
+        }
+        Insert: {
+          alert_type?: string
+          body?: string | null
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          order_id?: string | null
+          recipient?: string | null
+          status: string
+          stripe_session_id?: string | null
+          twilio_message_sid?: string | null
+        }
+        Update: {
+          alert_type?: string
+          body?: string | null
+          created_at?: string
+          error_reason?: string | null
+          id?: string
+          order_id?: string | null
+          recipient?: string | null
+          status?: string
+          stripe_session_id?: string | null
+          twilio_message_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_alert_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sourcing_opportunities: {
         Row: {
           cj_product_id: string | null

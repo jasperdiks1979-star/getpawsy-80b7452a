@@ -193,10 +193,27 @@ export async function sendOrderSmsAlert(
   supabase: SBClient,
   ctx: PostPaymentContext,
 ): Promise<void> {
-  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-  const fromNumber = Deno.env.get("TWILIO_FROM_NUMBER");
-  const ownerPhone = Deno.env.get("OWNER_ALERT_PHONE");
+  // Prefer DB-managed secrets (admin UI), fall back to env vars.
+  const keys = [
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_FROM_NUMBER",
+    "OWNER_ALERT_PHONE",
+  ];
+  const dbSecrets: Record<string, string | null> = {};
+  try {
+    const { data } = await supabase
+      .from("admin_secrets")
+      .select("name, value")
+      .in("name", keys);
+    for (const r of data ?? []) {
+      dbSecrets[(r as { name: string }).name] = (r as { value: string }).value;
+    }
+  } catch (_) { /* ignore */ }
+  const accountSid = dbSecrets.TWILIO_ACCOUNT_SID || Deno.env.get("TWILIO_ACCOUNT_SID");
+  const authToken = dbSecrets.TWILIO_AUTH_TOKEN || Deno.env.get("TWILIO_AUTH_TOKEN");
+  const fromNumber = dbSecrets.TWILIO_FROM_NUMBER || Deno.env.get("TWILIO_FROM_NUMBER");
+  const ownerPhone = dbSecrets.OWNER_ALERT_PHONE || Deno.env.get("OWNER_ALERT_PHONE");
 
   const itemCount = ctx.items.reduce((s, it) => s + (it.quantity ?? 1), 0) || 1;
   const shortSid = ctx.stripeSessionId.slice(0, 14);
