@@ -141,6 +141,56 @@ const TEMPLATES: Record<string, BoardTemplate> = {
   },
 };
 
+// Additional niche-specific templates (gold-standard overlays approved
+// by the brand: 2–5 words, no banners, no comparison language).
+TEMPLATES.cat_bed = {
+  overlay: (p) => shortBenefit(p, "Made for cozy naps"),
+  titles: (p) => {
+    const price = fmtPrice(p.price);
+    return [
+      `${p.name} — Cozy Cat Bed`,
+      `Soft Modern Cat Bed`,
+      price ? `${p.name} from ${price}` : `${p.name}`,
+      `Cat Beds We Love: ${p.name}`,
+    ];
+  },
+  description: (p) => {
+    const price = fmtPrice(p.price);
+    return [
+      `${p.name} — a soft, plush bed designed for long cat naps.`,
+      p.benefit ? `${p.benefit}.` : "Calming shape, warm fabrics, and a non-slip base.",
+      price ? `From ${price}.` : "",
+      "Free US shipping. Shop now at getpawsy.pet.",
+      "#catbed #cats #cozyhome #getpawsy",
+    ].filter(Boolean).join(" ");
+  },
+  cta: "Shop Cat Beds",
+};
+
+TEMPLATES.feeder = {
+  overlay: (p) => shortBenefit(p, "Designed for daily use"),
+  titles: (p) => {
+    const price = fmtPrice(p.price);
+    return [
+      `${p.name} — Premium Feeding Station`,
+      `Stylish Pet Feeder for Modern Homes`,
+      price ? `${p.name} from ${price}` : `${p.name}`,
+      `Daily Feeding, Done Right: ${p.name}`,
+    ];
+  },
+  description: (p) => {
+    const price = fmtPrice(p.price);
+    return [
+      `${p.name} — a premium feeding station built for everyday meals.`,
+      p.benefit ? `${p.benefit}.` : "Sturdy, easy-clean, and designed to fit warm interiors.",
+      price ? `From ${price}.` : "",
+      "Free US shipping. Shop now at getpawsy.pet.",
+      "#petfeeder #feedingstation #petparents #getpawsy",
+    ].filter(Boolean).join(" ");
+  },
+  cta: "Shop Feeders",
+};
+
 const DEFAULT_TEMPLATE: BoardTemplate = {
   overlay: (p) => shortBenefit(p, "Loved by US pet parents"),
   titles: (p) => {
@@ -171,6 +221,8 @@ function pickTemplate(niche: string): BoardTemplate {
   if (n.includes("litter")) return TEMPLATES.cat_litter;
   if (n.includes("cat_tree") || n === "cat_climb") return TEMPLATES.cat_tree;
   if (n.includes("cat_furniture") || n === "enclosure") return TEMPLATES.cat_furniture;
+  if (n.includes("cat_bed") || n === "calming_bed") return TEMPLATES.cat_bed;
+  if (n.includes("feeder") || n.includes("bowl_station") || n.includes("fountain")) return TEMPLATES.feeder;
   return DEFAULT_TEMPLATE;
 }
 
