@@ -1,5 +1,8 @@
 project_id = "nojvgfbcjgipjxpfatmm"
 
+[functions.render-worker-deploy]
+verify_jwt = false
+
 [functions.cj-dropshipping]
 verify_jwt = false
 
