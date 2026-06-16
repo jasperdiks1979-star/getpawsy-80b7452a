@@ -23937,6 +23937,26 @@ export type Database = {
           utm_campaign: string
         }[]
       }
+      get_pinterest_connection_admin: {
+        Args: never
+        Returns: {
+          account_id: string
+          account_name: string
+          board_count: number
+          connected: boolean
+          created_at: string
+          id: string
+          last_account_status: number
+          last_boards_status: number
+          last_error: string
+          last_publish_at: string
+          scopes: string
+          status: string
+          token_created_at: string
+          token_expires_at: string
+          updated_at: string
+        }[]
+      }
       get_placement_overview:
         | {
             Args: { p_days?: number; p_include_internal?: boolean }

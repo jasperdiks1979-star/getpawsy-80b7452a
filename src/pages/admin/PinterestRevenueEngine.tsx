@@ -254,12 +254,12 @@ export default function PinterestRevenueEngine() {
         .select("id,action_type,product_slug,reason,details,created_at")
         .order("created_at", { ascending: false })
         .limit(100),
-      supabase
-        .from("pinterest_connection")
-        .select("account_name,status,token_expires_at,last_account_status,last_boards_status,board_count,last_publish_at,last_error")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      (supabase as any)
+        .rpc("get_pinterest_connection_admin")
+        .then((res: any) => ({
+          data: Array.isArray(res.data) ? res.data[0] ?? null : res.data ?? null,
+          error: res.error,
+        })),
       supabase
         .from("cron_job_logs")
         .select("id,job_name,started_at,completed_at,success,items_processed,items_failed,error_message")
