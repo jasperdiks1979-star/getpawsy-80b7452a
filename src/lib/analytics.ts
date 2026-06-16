@@ -473,7 +473,7 @@ export const trackSelectItem = (
       price: item.price,
       item_category: item.category,
       index: item.position,
-      currency: 'EUR',
+      currency: 'USD',
     }],
   });
 };
@@ -503,7 +503,7 @@ export const trackCrossSellImpression = (
       price: item.price,
       item_category: item.category,
       index: item.position ?? index,
-      currency: 'EUR',
+      currency: 'USD',
     })),
   });
 };
@@ -530,7 +530,7 @@ export const trackCrossSellClick = (
       price: clickedItem.price,
       item_category: clickedItem.category,
       index: clickedItem.position,
-      currency: 'EUR',
+      currency: 'USD',
     }],
   });
 
@@ -544,7 +544,7 @@ export const trackCrossSellClick = (
     clicked_product_category: clickedItem.category,
     cross_sell_type: crossSellType,
     position: clickedItem.position,
-    currency: 'EUR',
+    currency: 'USD',
   });
 };
 
