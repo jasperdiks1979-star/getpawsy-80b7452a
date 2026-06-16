@@ -197,7 +197,7 @@ export const trackNewsletterSignup = (email?: string): void => {
 // Wishlist actions
 export const trackAddToWishlist = (productId: string, productName?: string, productPrice?: number): void => {
   trackEvent('add_to_wishlist', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice,
     items: [{
       item_id: productId,
@@ -251,7 +251,7 @@ export const trackRemoveFromCart = (
   quantity: number = 1
 ): void => {
   trackEvent('remove_from_cart', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice * quantity,
     items: [{
       item_id: productId,
@@ -352,7 +352,9 @@ export const trackBeginCheckout = (
 };
 
 
-// Purchase complete — with US-only guard for GA4
+// Purchase complete — sent to GA4 for all visitors regardless of country.
+// The previous US-only guard caused non-US orders to be under-counted in
+// GA4 Conversions/Realtime. Idempotency still prevents double-fires.
 export const trackPurchase = (
   transactionId: string,
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
@@ -382,20 +384,6 @@ export const trackPurchase = (
 
   // Clear begin_checkout signature so a follow-up cart re-enters cleanly
   try { sessionStorage.removeItem('gp_begin_checkout_fired'); } catch {}
-
-  // Country guard: only send purchase to GA4 for US traffic
-  const cachedLocation = sessionStorage.getItem('visitor_location');
-  if (cachedLocation) {
-    try {
-      const loc = JSON.parse(cachedLocation);
-      if (loc.country && loc.country !== 'United States') {
-        console.debug('[Analytics] Purchase event blocked for GA4: non-US country', loc.country);
-        return;
-      }
-    } catch {
-      // Parse error — allow event through
-    }
-  }
 
   trackEvent('purchase', withPersistedUtm({
     transaction_id: transactionId,
