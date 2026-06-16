@@ -1570,6 +1570,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="sms-alerts"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SmsAlertsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="payments"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
