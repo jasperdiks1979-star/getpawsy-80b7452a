@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import { splitKlarnaInstallments, formatKlarnaInstallment } from "@/lib/klarna";
 import { trackCheckoutFunnel } from "@/lib/checkoutFunnel";
+import { ensureGeoClassified, getCachedGeoCountry } from "@/lib/geoClassify";
 import {
   ShoppingCart,
   Heart,
@@ -940,8 +941,52 @@ const ProductDetail = () => {
   const availabilityResult = computeAvailability(product, variantStock);
   const inStock = availabilityResult.isInStock;
 
+  // ---- Geo shipping gate -------------------------------------------------
+  // Block Add to Cart when this product's CJ warehouse can't reach the
+  // visitor's country (currently: US-warehouse products only ship US/CA).
+  const [visitorCountry, setVisitorCountry] = useState<string | null>(null);
+  useEffect(() => {
+    ensureGeoClassified();
+    const read = () => {
+      const c = (getCachedGeoCountry() || '').toUpperCase();
+      if (c) { setVisitorCountry(c); return true; }
+      return false;
+    };
+    if (read()) return;
+    const iv = window.setInterval(() => { if (read()) window.clearInterval(iv); }, 400);
+    const to = window.setTimeout(() => window.clearInterval(iv), 5000);
+    return () => { window.clearInterval(iv); window.clearTimeout(to); };
+  }, []);
+  const productWarehouse = ((product as any)?.supplier_warehouse || '').toUpperCase();
+  const geoBlocked =
+    productWarehouse === 'US' &&
+    !!visitorCountry &&
+    visitorCountry !== 'US' &&
+    visitorCountry !== 'CA';
+  // Fire shipping_country_blocked once per (product, country) pair.
+  useEffect(() => {
+    if (!geoBlocked || !product?.id) return;
+    const key = `gp_geo_blocked_${product.id}_${visitorCountry}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch { /* ignore */ }
+    trackCheckoutFunnel({
+      step: 'shipping_country_blocked',
+      placement: 'pdp',
+      metadata: {
+        destination_country: visitorCountry,
+        product_id: product.id,
+        warehouse: productWarehouse,
+      },
+    });
+  }, [geoBlocked, product?.id, visitorCountry, productWarehouse]);
 
   const handleAddToCart = () => {
+    if (geoBlocked) {
+      toast.error('This product is currently only available in the United States and Canada.');
+      return;
+    }
     // Prevent adding out-of-stock items
     if (!inStock) {
       toast.error("This product is out of stock");
@@ -1731,10 +1776,10 @@ const ProductDetail = () => {
                 size="lg"
                 className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!inStock || geoBlocked}
               >
                 <ShoppingCart className="w-5 h-5" />
-                Add to Cart
+                {geoBlocked ? 'Unavailable in your region' : 'Add to Cart'}
               </Button>
 
               {/* Wishlist */}
@@ -1747,6 +1792,14 @@ const ProductDetail = () => {
                 <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
               </Button>
             </motion.div>
+            {geoBlocked && (
+              <div
+                role="alert"
+                className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                This product is currently only available in the United States and Canada.
+              </div>
+            )}
 
             {/* Trust Badges — single consolidated trust block */}
             {/*
@@ -2345,10 +2398,10 @@ const ProductDetail = () => {
                 className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!inStock || geoBlocked}
               >
                 <ShoppingCart className="w-4 h-4" />
-                Add to Cart
+                {geoBlocked ? 'Unavailable in region' : 'Add to Cart'}
               </Button>
 
               {/* Wishlist Button */}

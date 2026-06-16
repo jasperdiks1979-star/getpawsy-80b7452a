@@ -31,6 +31,8 @@ import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { ShippingPrecheck } from '@/components/checkout/ShippingPrecheck';
 import type { CartShippingCheck, CountryCode } from '@/lib/cj-shipping-matrix';
+import { SUPPORTED_COUNTRIES } from '@/lib/cj-shipping-matrix';
+import { ensureGeoClassified, getCachedGeoCountry } from '@/lib/geoClassify';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
@@ -202,6 +204,51 @@ const Checkout = () => {
   const [shippingCheck, setShippingCheck] = useState<CartShippingCheck | null>(null);
   const [shippingChecking, setShippingChecking] = useState(true);
   const shippingBlocked = !shippingChecking && shippingCheck !== null && !shippingCheck.ok;
+
+  // Visitor-country auto-detect. Best-effort; never throws / blocks render.
+  const [visitorCountry, setVisitorCountry] = useState<CountryCode | null>(null);
+  useEffect(() => {
+    ensureGeoClassified();
+    const tryRead = () => {
+      const raw = (getCachedGeoCountry() || '').toUpperCase();
+      if (raw && SUPPORTED_COUNTRIES.some((c) => c.code === raw)) {
+        setVisitorCountry(raw as CountryCode);
+        return true;
+      }
+      return false;
+    };
+    if (tryRead()) return;
+    const iv = window.setInterval(() => {
+      if (tryRead()) window.clearInterval(iv);
+    }, 400);
+    const to = window.setTimeout(() => window.clearInterval(iv), 5000);
+    return () => {
+      window.clearInterval(iv);
+      window.clearTimeout(to);
+    };
+  }, []);
+
+  // Track `shipping_country_blocked` once whenever the blocked state flips on
+  // for a given destination, so we get a clean funnel signal per attempt.
+  const blockedTrackedRef = (globalThis as any).__gp_blocked_ref ||= { country: null as string | null };
+  useEffect(() => {
+    if (!shippingBlocked) {
+      blockedTrackedRef.country = null;
+      return;
+    }
+    if (blockedTrackedRef.country === shippingCountry) return;
+    blockedTrackedRef.country = shippingCountry;
+    const blockedItems = (shippingCheck?.blocked || []).map((b) => b.productId);
+    trackCheckoutFunnel({
+      step: 'shipping_country_blocked',
+      placement: 'checkout',
+      metadata: {
+        destination_country: shippingCountry,
+        blocked_count: blockedItems.length,
+        blocked_product_ids: blockedItems.slice(0, 10),
+      },
+    });
+  }, [shippingBlocked, shippingCountry, shippingCheck]);
 
   // CI-11: hide-on-scroll-down for mobile sticky checkout bar.
   const scrollDir = useScrollDirection(8);
@@ -593,6 +640,23 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
+    // Hard gate — never invoke create-checkout when the destination is
+    // unshippable. Show a structured message instead of the generic toast.
+    if (shippingBlocked) {
+      const destName =
+        SUPPORTED_COUNTRIES.find((c) => c.code === shippingCountry)?.name || shippingCountry;
+      const names = (shippingCheck?.blocked || []).slice(0, 2).map((b) => b.name).join(', ');
+      toast.error(
+        names
+          ? `We can't ship to ${destName}: ${names}${
+              (shippingCheck?.blocked.length || 0) > 2 ? '…' : ''
+            }`
+          : `This product is currently only available in the United States and Canada.`,
+      );
+      setIsProcessing(false);
+      return;
+    }
+
     // ✅ Real user click on the Stripe checkout button. Fired BEFORE any
     // async work so the funnel event is guaranteed to be recorded even if
     // the create-checkout invoke later fails.
@@ -649,6 +713,38 @@ const Checkout = () => {
       });
 
       if (error) {
+        // supabase-js wraps non-2xx responses as FunctionsHttpError. Try to
+        // read the JSON body so we can surface our structured CJ shipping
+        // message instead of "Edge Function returned a non-2xx status code".
+        let parsed: { code?: string; error?: string; blocked?: Array<{ name: string }> } | null = null;
+        try {
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === 'function') {
+            parsed = await ctx.clone().json();
+          }
+        } catch {
+          /* ignore */
+        }
+        if (parsed?.code === 'cj_shipping_unavailable' || parsed?.code === 'country_not_supported') {
+          const destName =
+            SUPPORTED_COUNTRIES.find((c) => c.code === shippingCountry)?.name || shippingCountry;
+          const names = (parsed.blocked || []).slice(0, 2).map((b) => b.name).join(', ');
+          const msg = names
+            ? `We can't ship to ${destName}: ${names}${(parsed.blocked?.length || 0) > 2 ? '…' : ''}`
+            : `This product is currently only available in the United States and Canada.`;
+          trackCheckoutFunnel({
+            step: 'shipping_country_blocked',
+            placement: 'checkout',
+            metadata: {
+              destination_country: shippingCountry,
+              source: 'server_reject',
+              code: parsed.code,
+            },
+          });
+          toast.error(msg);
+          setIsProcessing(false);
+          return;
+        }
         throw new Error(error.message);
       }
 
@@ -943,6 +1039,7 @@ const Checkout = () => {
               <div className="mb-4">
                 <ShippingPrecheck
                   items={items.map((i) => ({ id: i.id, name: i.name }))}
+                  initialCountry={visitorCountry ?? undefined}
                   onChange={({ country, check, loading }) => {
                     setShippingCountry(country);
                     setShippingCheck(check);

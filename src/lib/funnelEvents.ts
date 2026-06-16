@@ -292,7 +292,12 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
 }
 
 export interface CheckoutEventInput {
-  step: 'checkout_click' | 'checkout_redirect_attempt' | 'checkout_redirect_success' | 'checkout_error';
+  step:
+    | 'checkout_click'
+    | 'checkout_redirect_attempt'
+    | 'checkout_redirect_success'
+    | 'checkout_error'
+    | 'shipping_country_blocked';
   source_component: string;
   cart_id?: string | null;
   item_count?: number | null;
