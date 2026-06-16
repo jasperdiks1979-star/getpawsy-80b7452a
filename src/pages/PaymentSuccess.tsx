@@ -50,6 +50,19 @@ const PaymentSuccess = () => {
   useEffect(() => {
     if (lpFiredRef.current) return;
     if (!sessionId) return;
+    // Cross-mount idempotency: refresh / back-button must not re-fire
+    // payment_success or the canonical purchase mirror for the same
+    // Stripe session. Keyed by session_id so distinct orders still fire.
+    const lpKey = `gp_purchase_lp_fired_${sessionId}`;
+    try {
+      if (window.localStorage.getItem(lpKey)) {
+        lpFiredRef.current = true;
+        return;
+      }
+      window.localStorage.setItem(lpKey, String(Date.now()));
+    } catch {
+      /* storage unavailable — fall through, ref still guards in-mount */
+    }
     lpFiredRef.current = true;
     try {
       firePaymentSuccess({
@@ -98,6 +111,20 @@ const PaymentSuccess = () => {
   useEffect(() => {
     // Track purchase conversion and clear cart only once
     if (!tracked && sessionId && items.length > 0) {
+      // Cross-mount idempotency for GA4 / Google Ads / Pinterest / TikTok
+      // purchase conversion. Without this, a refresh on /payment-success
+      // with items still in the cart (rare but possible before clearCart
+      // commits) would double-fire `purchase` into GA4 + Ads.
+      const convKey = `gp_purchase_conv_fired_${sessionId}`;
+      try {
+        if (window.localStorage.getItem(convKey)) {
+          setTracked(true);
+          return;
+        }
+        window.localStorage.setItem(convKey, String(Date.now()));
+      } catch {
+        /* storage unavailable — `tracked` state still guards in-mount */
+      }
       // Capture product IDs for post-purchase offer before cart is cleared
       purchasedIdsRef.current = items.map(item => item.id);
       // Track GA4 purchase event
