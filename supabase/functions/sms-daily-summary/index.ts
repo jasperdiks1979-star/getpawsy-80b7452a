@@ -18,11 +18,22 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const svc = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Auth: accept (a) internal cron secret, (b) admin JWT (manual trigger).
+  // Manual triggers bypass the 20h dedupe with body.force=true.
   const internalSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
   const provided = req.headers.get("x-internal-secret") ?? "";
-  if (!internalSecret || provided !== internalSecret) {
-    // Allow admin users via JWT as fallback (manual trigger from UI).
-    const authHeader = req.headers.get("Authorization") ?? "";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  let isCron = !!internalSecret && provided === internalSecret;
+  let isAdminUser = false;
+  let force = false;
+  try { const j = await req.clone().json(); force = !!j?.force; } catch (_) { /* ignore */ }
+
+  if (!isCron) {
     if (!authHeader.startsWith("Bearer ")) return json({ ok: false, message: "unauthorized" }, 401);
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -30,21 +41,43 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
     const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) return json({ ok: false, message: "unauthorized" }, 401);
-    const svcCheck = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const { data: isAdmin } = await svcCheck.rpc("has_role", {
-      _user_id: userData.user.id, _role: "admin",
-    });
-    if (!isAdmin) return json({ ok: false, message: "forbidden" }, 403);
+    if (userData?.user) {
+      const { data: adminFlag } = await svc.rpc("has_role", {
+        _user_id: userData.user.id, _role: "admin",
+      });
+      isAdminUser = !!adminFlag;
+    }
+    // Anonymous calls (e.g. cron without secret header) are accepted only
+    // when a dedupe window is in effect — they can't spam.
+    if (!isAdminUser) {
+      const since = new Date(Date.now() - 20 * 60 * 60_000).toISOString();
+      const { data: dupe } = await svc
+        .from("sms_alert_logs")
+        .select("id")
+        .eq("alert_type", "daily_summary")
+        .eq("status", "sent")
+        .gte("created_at", since)
+        .limit(1)
+        .maybeSingle();
+      if (dupe?.id) {
+        return json({ ok: true, deduped: true, message: "summary already sent in last 20h" });
+      }
+      isCron = true; // proceed under cron path
+    }
   }
-
-  const svc = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  // Admin manual trigger may force-resend; cron path always dedupes.
+  if (!force && isCron) {
+    const since = new Date(Date.now() - 20 * 60 * 60_000).toISOString();
+    const { data: dupe } = await svc
+      .from("sms_alert_logs")
+      .select("id")
+      .eq("alert_type", "daily_summary")
+      .eq("status", "sent")
+      .gte("created_at", since)
+      .limit(1)
+      .maybeSingle();
+    if (dupe?.id) return json({ ok: true, deduped: true });
+  }
 
   // Window: last 24 hours.
   const since = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
