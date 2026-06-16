@@ -320,9 +320,15 @@ async function generateBriefs(
   const sys = [
     "You are a Creative Director for a premium US pet brand running Pinterest ads.",
     "You write SCENE BRIEFS for an AI image model that will photograph each scene.",
-    "Style: editorial DTC photography. NEVER floating product cards, NEVER collage,",
-    "NEVER giant CTA bars, NEVER text overlays in the brief itself (text is added later).",
-    "Each brief must be a fully-composed real lifestyle scene with the product naturally placed.",
+    "GOLD STANDARD VISUAL IDENTITY (mandatory default for every brief):",
+    "premium lifestyle photography, warm natural lighting, luxury US home interiors,",
+    "Pinterest-native aesthetic, photorealistic AI render, product integrated naturally into the scene,",
+    "minimal overlays, no aggressive sales language, no crowded layouts.",
+    "ABSOLUTELY FORBIDDEN: infographic-style pins, comparison graphics, feature lists, discount banners,",
+    "product collages, multi-tile layouts, split-screen before/after, ecommerce catalogue look,",
+    "stock-photo appearance, floating product cutouts, Canva templates, CTA bars, price tags,",
+    "and any text overlay inside the scene brief itself (overlays are added later, max 2–5 words).",
+    "Each brief must be ONE fully-composed real lifestyle scene with the product naturally placed in a luxury US home.",
     "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
     "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
   ].join(" ");
@@ -568,21 +574,22 @@ async function renderSceneWithSource(
     ? ` Render EXACTLY ONE short benefit caption in clean modern sans-serif typography ` +
       `(white text with a soft drop shadow OR a thin translucent bar) reading verbatim: ` +
       `"${overlay.text}". Also render a small wordmark in the bottom-right corner reading verbatim: ` +
-      `"${overlay.brand}". Do NOT render any other text, captions, prices, CTAs, emojis, hashtags, or graphics.`
+      `"${overlay.brand}". The caption MUST stay 2–5 words, minimal, unobtrusive, never a sentence, never a sales pitch. ` +
+      `Do NOT render any other text, captions, prices, CTAs, emojis, hashtags, feature lists, comparison labels, discount badges, or graphics.`
     : ` Do NOT render any text, captions, watermarks, logos, or graphic overlays in the image itself.`;
   const styleSuffix =
-    `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
-    `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-    `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
-    `Absolutely NO floating product cutouts, NO collage, NO template look, NO CTA bars, NO price tags.`;
+    `Premium lifestyle photography, warm natural lighting, luxury US home interior, ${dna.light}, mood: ${dna.mood}. ` +
+    `Pinterest-native editorial aesthetic. Photorealistic textures, natural shadows, correct perspective, ` +
+    `product integrated naturally into the scene as if professionally styled in a real home. ` +
+    `Vertical 2:3 composition (1000x1500) for Pinterest.${overlayDirective} ` +
+    `Absolutely NO infographics, NO feature lists, NO comparison graphics, NO discount banners, NO product collages, ` +
+    `NO multi-tile layouts, NO split-screen, NO floating product cutouts, NO Canva-template look, NO CTA bars, ` +
+    `NO price tags, NO stock-photo appearance, NO crowded layouts.`;
 
   // For collage modes, replace the anti-collage clause with the explicit
   // collage contract so the image model isn't given contradictory directives.
   const styleSuffixForMode = mode?.is_collage
-    ? `Clean premium product photography, ${dna.light}, mood: ${dna.mood}. ` +
-      `Premium DTC pet brand aesthetic. Realistic textures, natural shadows, correct perspective. ` +
-      `Vertical 9:16 composition for Pinterest.${overlayDirective} ` +
-      `No floating product cutouts, no Canva-template look, no CTA bars, no price tags.`
+    ? styleSuffix
     : styleSuffix;
 
   const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;

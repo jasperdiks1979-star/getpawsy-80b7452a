@@ -48,7 +48,17 @@ function fmtPrice(p?: number | null): string | null {
 
 function shortBenefit(p: PinProductInfo, fallback: string): string {
   const b = (p.benefit || "").trim();
-  if (b) return b.length <= 32 ? b : b.slice(0, 30).replace(/\s+\S*$/, "") + "…";
+  if (b) {
+    // Gold-standard rule: 2–5 word overlays. Truncate longer benefits to the
+    // first 5 words; if the product has no usable short benefit, fall back to
+    // the curated 2–5 word board phrase.
+    const words = b.split(/\s+/).filter(Boolean);
+    if (words.length >= 2 && words.length <= 5 && b.length <= 32) return b;
+    if (words.length > 5) {
+      const trimmed = words.slice(0, 5).join(" ");
+      if (trimmed.length <= 32) return trimmed;
+    }
+  }
   return fallback;
 }
 
@@ -211,6 +221,8 @@ export interface PinValidationResult {
 }
 
 const OVERLAY_MAX_CHARS = 32;
+const OVERLAY_MIN_WORDS = 2;
+const OVERLAY_MAX_WORDS = 5;
 
 function findBanned(text: string): string[] {
   const hay = (text || "").toLowerCase();
@@ -228,6 +240,10 @@ export function validatePinCopy(input: PinValidationInput): PinValidationResult 
     if (overlay.length > OVERLAY_MAX_CHARS) {
       errors.push(`overlay_too_long:${overlay.length}`);
     }
+    // Gold-standard rule: 2–5 words only. Reject sentence-style overlays.
+    const wordCount = overlay.split(/\s+/).filter(Boolean).length;
+    if (wordCount < OVERLAY_MIN_WORDS) errors.push(`overlay_too_few_words:${wordCount}`);
+    if (wordCount > OVERLAY_MAX_WORDS) errors.push(`overlay_too_many_words:${wordCount}`);
     // Exactly one short benefit overlay → no line breaks and no second
     // sentence-style separator like " | " or " • " inside the overlay itself.
     if (/[\r\n]/.test(overlay)) errors.push("overlay_multiline");
