@@ -22411,6 +22411,7 @@ export type Database = {
           landing_page: string | null
           missing_fields: string[]
           notes: string | null
+          pin_id: string | null
           referrer: string | null
           session_id: string
           source_channel: string | null
@@ -22434,6 +22435,7 @@ export type Database = {
           landing_page?: string | null
           missing_fields?: string[]
           notes?: string | null
+          pin_id?: string | null
           referrer?: string | null
           session_id: string
           source_channel?: string | null
@@ -22457,6 +22459,7 @@ export type Database = {
           landing_page?: string | null
           missing_fields?: string[]
           notes?: string | null
+          pin_id?: string | null
           referrer?: string | null
           session_id?: string
           source_channel?: string | null
@@ -24139,25 +24142,46 @@ export type Database = {
           id: string
         }[]
       }
-      log_utm_session: {
-        Args: {
-          p_fbclid: string
-          p_gclid: string
-          p_is_internal?: boolean
-          p_landing_page: string
-          p_referrer: string
-          p_session_id: string
-          p_ttclid: string
-          p_utm_campaign: string
-          p_utm_content: string
-          p_utm_id: string
-          p_utm_medium: string
-          p_utm_source: string
-          p_utm_term: string
-          p_visitor_id: string
-        }
-        Returns: string
-      }
+      log_utm_session:
+        | {
+            Args: {
+              p_fbclid: string
+              p_gclid: string
+              p_is_internal?: boolean
+              p_landing_page: string
+              p_referrer: string
+              p_session_id: string
+              p_ttclid: string
+              p_utm_campaign: string
+              p_utm_content: string
+              p_utm_id: string
+              p_utm_medium: string
+              p_utm_source: string
+              p_utm_term: string
+              p_visitor_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_fbclid: string
+              p_gclid: string
+              p_is_internal?: boolean
+              p_landing_page: string
+              p_pin_id?: string
+              p_referrer: string
+              p_session_id: string
+              p_ttclid: string
+              p_utm_campaign: string
+              p_utm_content: string
+              p_utm_id: string
+              p_utm_medium: string
+              p_utm_source: string
+              p_utm_term: string
+              p_visitor_id: string
+            }
+            Returns: string
+          }
       pinterest_publish_health: { Args: never; Returns: Json }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
