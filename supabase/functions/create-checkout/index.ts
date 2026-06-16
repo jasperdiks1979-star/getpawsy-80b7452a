@@ -274,6 +274,25 @@ serve(async (req) => {
     }
 
     // Create Stripe checkout session
+    // Origin fallback: Origin → Referer → APP_BASE_URL → canonical domain.
+    // Eliminates failures from in-app browsers (Pinterest/FB/IG/TikTok) and
+    // iOS Safari edge cases that strip the Origin header.
+    const rawOrigin = req.headers.get("origin");
+    const rawReferer = req.headers.get("referer");
+    let baseUrl =
+      rawOrigin ||
+      (rawReferer ? rawReferer.replace(/^(https?:\/\/[^/]+).*$/, "$1") : "") ||
+      Deno.env.get("APP_BASE_URL") ||
+      "https://getpawsy.pet";
+    try {
+      const u = new URL(baseUrl);
+      if (!/^https?:$/.test(u.protocol)) throw new Error("bad protocol");
+      baseUrl = `${u.protocol}//${u.host}`;
+    } catch {
+      baseUrl = "https://getpawsy.pet";
+    }
+    console.log("[CREATE-CHECKOUT] baseUrl:", baseUrl, "origin:", rawOrigin, "referer:", rawReferer);
+
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : userEmail,
