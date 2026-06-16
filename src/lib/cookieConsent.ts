@@ -136,24 +136,22 @@ export function setConsent(
 export function applyGtagConsent(value: ConsentValue): void {
   if (typeof window === 'undefined') return;
   try {
-    // Use the gtag function if available (correct API), fallback to dataLayer
     const w = window as any;
+    const payload = {
+      analytics_storage: value === 'all' ? 'granted' : 'denied',
+      ad_storage: value === 'all' ? 'granted' : 'denied',
+      ad_user_data: value === 'all' ? 'granted' : 'denied',
+      ad_personalization: value === 'all' ? 'granted' : 'denied',
+    } as const;
+    // Prefer the global gtag stub (installed in index.html <head>) so the
+    // call is queued correctly even before the GA script finishes loading.
     if (typeof w.gtag === 'function') {
-      w.gtag('consent', 'update', {
-        analytics_storage: value === 'all' ? 'granted' : 'denied',
-        ad_storage: value === 'all' ? 'granted' : 'denied',
-        ad_user_data: value === 'all' ? 'granted' : 'denied',
-        ad_personalization: value === 'all' ? 'granted' : 'denied',
-      });
+      w.gtag('consent', 'update', payload);
     } else {
+      // Last-resort fallback: push the raw gtag-style tuple onto dataLayer.
+      // gtag('consent','update',{...}) === dataLayer.push(['consent','update',{...}])
       w.dataLayer = w.dataLayer || [];
-      w.dataLayer.push({
-        event: 'consent_update',
-        analytics_storage: value === 'all' ? 'granted' : 'denied',
-        ad_storage: value === 'all' ? 'granted' : 'denied',
-        ad_user_data: value === 'all' ? 'granted' : 'denied',
-        ad_personalization: value === 'all' ? 'granted' : 'denied',
-      });
+      w.dataLayer.push(['consent', 'update', payload]);
     }
   } catch (e) {
     console.warn('[CookieConsent] gtag consent update failed (non-fatal):', e);
