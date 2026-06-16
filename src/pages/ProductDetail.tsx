@@ -941,8 +941,52 @@ const ProductDetail = () => {
   const availabilityResult = computeAvailability(product, variantStock);
   const inStock = availabilityResult.isInStock;
 
+  // ---- Geo shipping gate -------------------------------------------------
+  // Block Add to Cart when this product's CJ warehouse can't reach the
+  // visitor's country (currently: US-warehouse products only ship US/CA).
+  const [visitorCountry, setVisitorCountry] = useState<string | null>(null);
+  useEffect(() => {
+    ensureGeoClassified();
+    const read = () => {
+      const c = (getCachedGeoCountry() || '').toUpperCase();
+      if (c) { setVisitorCountry(c); return true; }
+      return false;
+    };
+    if (read()) return;
+    const iv = window.setInterval(() => { if (read()) window.clearInterval(iv); }, 400);
+    const to = window.setTimeout(() => window.clearInterval(iv), 5000);
+    return () => { window.clearInterval(iv); window.clearTimeout(to); };
+  }, []);
+  const productWarehouse = ((product as any)?.supplier_warehouse || '').toUpperCase();
+  const geoBlocked =
+    productWarehouse === 'US' &&
+    !!visitorCountry &&
+    visitorCountry !== 'US' &&
+    visitorCountry !== 'CA';
+  // Fire shipping_country_blocked once per (product, country) pair.
+  useEffect(() => {
+    if (!geoBlocked || !product?.id) return;
+    const key = `gp_geo_blocked_${product.id}_${visitorCountry}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch { /* ignore */ }
+    trackCheckoutFunnel({
+      step: 'shipping_country_blocked',
+      placement: 'pdp',
+      metadata: {
+        destination_country: visitorCountry,
+        product_id: product.id,
+        warehouse: productWarehouse,
+      },
+    });
+  }, [geoBlocked, product?.id, visitorCountry, productWarehouse]);
 
   const handleAddToCart = () => {
+    if (geoBlocked) {
+      toast.error('This product is currently only available in the United States and Canada.');
+      return;
+    }
     // Prevent adding out-of-stock items
     if (!inStock) {
       toast.error("This product is out of stock");
