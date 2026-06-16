@@ -315,9 +315,31 @@ serve(async (req) => {
       // Stripe dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
       // Cash App Pay, …) when `payment_method_types` is omitted.
       shipping_address_collection: {
-        // US-only storefront: only accept US shipping addresses to prevent
-        // accidental international orders we cannot fulfill.
-        allowed_countries: ["US"],
+        // US-first storefront, but accept shipping to a curated list of
+        // supported destinations. Sanctioned/high-risk countries (Iran,
+        // North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk/Luhansk,
+        // Venezuela, Myanmar, etc.) are intentionally excluded.
+        allowed_countries: [
+          // North America
+          "US", "CA", "MX",
+          // United Kingdom & Ireland
+          "GB", "IE",
+          // EU / EEA
+          "NL", "BE", "LU", "DE", "FR", "ES", "IT", "AT", "PT",
+          "SE", "DK", "NO", "FI", "IS", "PL", "CZ", "SK", "HU",
+          "SI", "EE", "LV", "LT", "GR", "RO", "BG", "HR",
+          // Switzerland & other Europe
+          "CH", "LI",
+          // Asia-Pacific
+          "JP", "KR", "SG", "HK", "TW", "MY", "TH", "PH", "ID", "IN",
+          "AU", "NZ",
+          // Middle East
+          "AE", "SA", "IL", "QA", "KW", "BH", "OM",
+          // LATAM (Stripe-supported)
+          "BR", "CL", "CO", "PE", "UY", "CR",
+          // Africa (Stripe-supported)
+          "ZA",
+        ],
       },
       // Show shipping line in Stripe's order summary so the customer sees
       // the same breakdown as the site (subtotal − discount + shipping).
