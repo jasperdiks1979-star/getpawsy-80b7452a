@@ -31,6 +31,8 @@ import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { ShippingPrecheck } from '@/components/checkout/ShippingPrecheck';
 import type { CartShippingCheck, CountryCode } from '@/lib/cj-shipping-matrix';
+import { SUPPORTED_COUNTRIES } from '@/lib/cj-shipping-matrix';
+import { ensureGeoClassified, getCachedGeoCountry } from '@/lib/geoClassify';
 import {
   FREE_SHIPPING_THRESHOLD,
   FLAT_SHIPPING_RATE,
