@@ -67,23 +67,30 @@ serve(async (req) => {
   }
 
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    // PROD: prefer STRIPE_SECRET_KEY_LIVE. Fall back to STRIPE_SECRET_KEY (test).
+    // NODE_ENV=production forces LIVE and errors if the live key is missing.
+    const nodeEnv = (Deno.env.get("NODE_ENV") || "").toLowerCase();
+    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+    const testKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const forceLive = nodeEnv === "production";
+    const stripeKey = forceLive ? liveKey : (liveKey || testKey);
     if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY is not configured");
+      throw new Error(
+        forceLive
+          ? "STRIPE_SECRET_KEY_LIVE is not configured (NODE_ENV=production requires the live key)"
+          : "Neither STRIPE_SECRET_KEY_LIVE nor STRIPE_SECRET_KEY is configured",
+      );
     }
-
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2025-08-27.basil",
-    });
-
-    // Detect Stripe mode from the key prefix (sk_test_* vs sk_live_*).
-    // Never log the key itself — only the derived mode.
     const stripeMode: "test" | "live" | "unknown" = stripeKey.startsWith("sk_live_")
       ? "live"
       : stripeKey.startsWith("sk_test_")
         ? "test"
         : "unknown";
-    console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode);
+    if (forceLive && stripeMode !== "live") {
+      throw new Error(`NODE_ENV=production requires sk_live_ key, got prefix: ${stripeKey.substring(0, 8)}`);
+    }
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode, "source:", stripeKey === liveKey ? "LIVE" : "TEST");
 
     // Create Supabase clients
     const supabaseClient = createClient(
