@@ -437,15 +437,16 @@ serve(async (req) => {
       success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout`,
       metadata: orderMetadata,
-      // Never allow promotion codes — discount is already applied as a
-      // one-off coupon for the exact UI-displayed amount. Allowing manual
-      // codes would stack and undercharge.
-      allow_promotion_codes: false,
     };
 
-    // Only add discounts if we have a valid code
+    // Only add discounts if we have a valid code.
+    // Stripe rejects sessions that set BOTH `discounts` and
+    // `allow_promotion_codes` — so we set `allow_promotion_codes:false`
+    // ONLY when no server-applied discount is attached.
     if (discounts.length > 0) {
       sessionConfig.discounts = discounts;
+    } else {
+      sessionConfig.allow_promotion_codes = false;
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
