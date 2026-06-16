@@ -48,7 +48,17 @@ function fmtPrice(p?: number | null): string | null {
 
 function shortBenefit(p: PinProductInfo, fallback: string): string {
   const b = (p.benefit || "").trim();
-  if (b) return b.length <= 32 ? b : b.slice(0, 30).replace(/\s+\S*$/, "") + "…";
+  if (b) {
+    // Gold-standard rule: 2–5 word overlays. Truncate longer benefits to the
+    // first 5 words; if the product has no usable short benefit, fall back to
+    // the curated 2–5 word board phrase.
+    const words = b.split(/\s+/).filter(Boolean);
+    if (words.length >= 2 && words.length <= 5 && b.length <= 32) return b;
+    if (words.length > 5) {
+      const trimmed = words.slice(0, 5).join(" ");
+      if (trimmed.length <= 32) return trimmed;
+    }
+  }
   return fallback;
 }
 
