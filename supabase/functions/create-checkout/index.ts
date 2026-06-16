@@ -19,6 +19,13 @@ interface CheckoutRequest {
   items: CartItem[];
   customerEmail?: string;
   discountCode?: string;
+  /**
+   * ISO-3166 alpha-2 of the destination. When present, the request is
+   * validated against the CJ shipping matrix and Stripe's allowed_countries
+   * is locked to this single code so the shopper can't change it on the
+   * hosted page.
+   */
+  shippingCountry?: string;
   shippingAddress?: {
     firstName: string;
     lastName: string;
@@ -42,6 +49,29 @@ const COUPON_CODE_PERCENT: Record<string, number> = {
   BUNDLE20: 20,
   SLOWFEEDER25: 25,
 };
+
+// ---- CJ shipping matrix (mirror of src/lib/cj-shipping-matrix.ts) -------
+// Keep in sync. Edge functions can't import from `src/`.
+type WarehouseCode = "US" | "CN" | "DE" | "UNKNOWN";
+const CJ_SHIP_SUPPORTED_COUNTRIES = new Set<string>([
+  "US", "CA", "GB", "NL", "BE", "DE", "FR", "AU",
+]);
+const CJ_MATRIX: Record<WarehouseCode, Record<string, boolean>> = {
+  US:      { US: true, CA: true },
+  DE:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true },
+  CN:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
+  UNKNOWN: { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
+};
+function normWarehouse(raw: string | null | undefined): WarehouseCode {
+  const v = (raw || "").trim().toUpperCase();
+  if (v === "US") return "US";
+  if (v === "CN") return "CN";
+  if (v === "DE") return "DE";
+  return "UNKNOWN";
+}
+function cjCanShip(warehouse: string | null | undefined, country: string): boolean {
+  return CJ_MATRIX[normWarehouse(warehouse)][country] === true;
+}
 
 // Shipping mirrors src/lib/shipping-constants.ts. Kept inline because edge
 // functions cannot import from `src/`.
