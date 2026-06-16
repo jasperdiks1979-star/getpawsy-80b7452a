@@ -641,6 +641,27 @@
       // 1) Ensure dataLayer exists for any gtag references (prevents TDZ)
       window.dataLayer = window.dataLayer || [];
 
+      // 1a) Install a global gtag stub IMMEDIATELY so any consent / config
+      //     calls made before the GA script finishes loading are queued
+      //     correctly. Without this, early consent updates fell back to a
+      //     malformed { event: 'consent_update', ... } payload that GA4
+      //     does not recognize, which is why the consent rate showed 0%.
+      //     When the gtag/js script later loads it will replace this stub
+      //     and replay every queued call.
+      if (typeof window.gtag !== 'function') {
+        window.gtag = function gtag(){ window.dataLayer.push(arguments); };
+        // Default consent state — denied until the cookie banner grants.
+        // Mirrors src/lib/deferred-analytics.ts so the very first GA hit
+        // already carries the correct consent signal.
+        window.gtag('consent', 'default', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied',
+          wait_for_update: 500,
+        });
+      }
+
       // 2) One-shot SW cleanup — only runs if SWs exist (avoids pointless work every load)
       (function(){
         if ('serviceWorker' in navigator) {

@@ -198,11 +198,16 @@ export async function initDeferredAnalytics(): Promise<void> {
     // Load the main gtag script
     await loadScript('https://www.googletagmanager.com/gtag/js?id=G-5WYL8RJDZF');
 
-    // Configure all properties
+    // Configure all properties.
+    // NOTE: GT-5D48HPG2 (Google Tag container) was removed on 2026-06-16.
+    // That container had a destination configured for a legacy GA4 property
+    // (G-SK5PC3KTHJ) and was causing every page_view / event to be sent to
+    // TWO GA4 properties simultaneously. Canonical property is G-5WYL8RJDZF.
+    // Google Ads (AW-381705659) is configured directly below — the GT
+    // container is not required for Ads conversions.
     gtag('js', new Date());
     gtag('config', 'G-5WYL8RJDZF');
     gtag('config', 'AW-381705659');
-    gtag('config', 'GT-5D48HPG2');
 
     // Load TikTok Pixel alongside Google scripts
     initTikTokPixel();
