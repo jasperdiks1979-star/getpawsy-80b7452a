@@ -350,8 +350,8 @@ serve(async (req) => {
             fixed_amount: { amount: shippingCents, currency: "usd" },
             display_name:
               shippingCents === 0
-                ? "Free shipping (US)"
-                : "Standard shipping (US)",
+                ? "Free shipping"
+                : "Standard shipping",
             delivery_estimate: {
               minimum: { unit: "business_day", value: 5 },
               maximum: { unit: "business_day", value: 10 },
