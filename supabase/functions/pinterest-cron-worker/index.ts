@@ -388,8 +388,14 @@ Deno.serve(async (req) => {
     // ── 1. Fetch due pins ──
     // Pre-publish board_id repair: never let NULL board_id stall the queue.
     try {
-      const { error: repairErr } = await sb.rpc("noop_placeholder").catch(() => ({ error: null } as any));
-      void repairErr;
+      // NOTE: supabase-js v2 rpc() returns a PostgrestFilterBuilder which is thenable
+      // but does NOT expose `.catch`. Wrap in try/await instead — calling `.catch`
+      // on it throws `sb.rpc(...).catch is not a function`.
+      try {
+        await sb.rpc("noop_placeholder");
+      } catch {
+        /* placeholder rpc — ignore */
+      }
       // Use plain update via PostgREST: any publishable row missing board_id
       // gets a safe fallback (cat→Best Cat Trees, dog→Dog Walking, other→Pet Parent Hacks).
       const { data: nullRows } = await sb
