@@ -15,6 +15,7 @@ import { Loader2, AlertTriangle, CreditCard } from "lucide-react";
 export default function TestPaymentPage() {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [validationLoading, setValidationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isAdmin) {
@@ -26,13 +27,14 @@ export default function TestPaymentPage() {
     );
   }
 
-  const handleStartTest = async () => {
-    setLoading(true);
+  const handleStartTest = async (validationRun = false) => {
+    if (validationRun) setValidationLoading(true);
+    else setLoading(true);
     setError(null);
     try {
       const { data, error: invokeError } = await supabase.functions.invoke(
         "create-test-checkout",
-        { body: {} },
+        { body: validationRun ? { validation_run: true } : {} },
       );
       if (invokeError) throw invokeError;
       if (!data?.url) throw new Error("No checkout URL returned");
@@ -41,6 +43,7 @@ export default function TestPaymentPage() {
       const msg = e instanceof Error ? e.message : "Unknown error";
       setError(msg);
       setLoading(false);
+      setValidationLoading(false);
     }
   };
 
@@ -96,8 +99,8 @@ export default function TestPaymentPage() {
 
         <Button
           size="lg"
-          onClick={handleStartTest}
-          disabled={loading}
+          onClick={() => handleStartTest(false)}
+          disabled={loading || validationLoading}
           className="w-full"
         >
           {loading ? (
@@ -112,6 +115,40 @@ export default function TestPaymentPage() {
             </>
           )}
         </Button>
+
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle className="text-lg">$9.99 Refundable Validation Run</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Places a single <strong>$9.99 USD</strong> order flagged as a refundable
+              validation run. Fires the full GA4 <code>purchase</code> event, Google Ads
+              conversion, and Pinterest CAPI <code>checkout</code> on <code>/payment-success</code>.
+              Tagged with <code>metadata.validation_run=1</code> and <code>refundable=1</code> so
+              it can be auto-refunded from <code>/admin/payments</code>.
+            </p>
+            <Button
+              size="lg"
+              variant="default"
+              onClick={() => handleStartTest(true)}
+              disabled={loading || validationLoading}
+              className="w-full"
+            >
+              {validationLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating $9.99 validation checkout...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Start $9.99 USD Validation Run (refundable)
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
         <p className="text-xs text-muted-foreground text-center">
           You will be redirected to Stripe Checkout. Use your own card.
