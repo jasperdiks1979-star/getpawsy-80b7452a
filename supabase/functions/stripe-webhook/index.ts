@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
+import { runPostPaymentTracking } from "../_shared/post-payment-tracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -655,6 +656,25 @@ serve(async (req) => {
           }
         } catch (e) {
           console.error("[STRIPE-WEBHOOK] tiktok server event failed:", e);
+        }
+
+        // ── Canonical purchase-tracking mirrors (idempotent per session) ──
+        // Fills the previously-empty lp_funnel_events.purchase payload,
+        // creates the visitor_activity purchase row, enqueues the Pinterest
+        // CAPI checkout event, and triggers the owner SMS. Each helper
+        // swallows its own errors — order processing is never blocked.
+        try {
+          await runPostPaymentTracking(supabaseAdmin, {
+            orderId,
+            stripeSessionId: session.id,
+            stripePaymentIntentId: (session.payment_intent as string) ?? null,
+            totalValue,
+            currency: session.currency || "usd",
+            items,
+            customerEmail: customerEmail ?? null,
+          });
+        } catch (e) {
+          console.error("[STRIPE-WEBHOOK] post-payment tracking failed:", e);
         }
 
         break;

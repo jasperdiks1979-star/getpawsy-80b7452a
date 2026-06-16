@@ -11471,6 +11471,63 @@ export type Database = {
         }
         Relationships: []
       }
+      order_sms_alerts: {
+        Row: {
+          amount: number | null
+          attempts: number
+          body: string | null
+          created_at: string
+          currency: string | null
+          error_reason: string | null
+          id: string
+          item_count: number | null
+          order_id: string | null
+          sent_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string
+          to_phone: string | null
+          twilio_message_sid: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          attempts?: number
+          body?: string | null
+          created_at?: string
+          currency?: string | null
+          error_reason?: string | null
+          id?: string
+          item_count?: number | null
+          order_id?: string | null
+          sent_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id: string
+          to_phone?: string | null
+          twilio_message_sid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          attempts?: number
+          body?: string | null
+          created_at?: string
+          currency?: string | null
+          error_reason?: string | null
+          id?: string
+          item_count?: number | null
+          order_id?: string | null
+          sent_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string
+          to_phone?: string | null
+          twilio_message_sid?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cj_order_created_at: string | null
