@@ -1,0 +1,74 @@
+name: Redeploy Render Worker
+
+# Automatically triggers the external render worker host (Render.com / Railway / Fly.io)
+# to redeploy whenever the main branch receives a new commit. Especially important when
+# files under `render-worker/` change, but we also fire on any main-branch push so the
+# worker always runs against the latest repo state.
+#
+# Setup (one-time):
+#   1. In your render-worker host dashboard, create a Deploy Hook URL.
+#      - Render.com:  Service → Settings → Deploy Hook
+#      - Railway:     Project → Settings → Triggers → Webhook
+#      - Fly.io:      use `flyctl deploy` via a token instead (see FLY_API_TOKEN below)
+#   2. Add the URL as a GitHub Actions secret named `RENDER_DEPLOY_HOOK_URL`.
+#      (Repo → Settings → Secrets and variables → Actions → New repository secret)
+#   3. Optional: also add `RAILWAY_DEPLOY_HOOK_URL` / `FLY_API_TOKEN` if you mirror
+#      the worker on a second host — the job will fan out to whichever are present.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you manually redeploying the worker?"
+        required: false
+        default: "manual redeploy"
+
+concurrency:
+  group: render-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  trigger-deploy-hook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Render.com deploy hook
+        if: ${{ env.RENDER_DEPLOY_HOOK_URL != '' }}
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Render.com deploy hook..."
+          http_code=$(curl -sS -o /tmp/render.out -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+          echo "HTTP $http_code"
+          cat /tmp/render.out || true
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Render deploy hook returned $http_code"
+            exit 1
+          fi
+
+      - name: Ping Railway deploy hook
+        if: ${{ env.RAILWAY_DEPLOY_HOOK_URL != '' }}
+        env:
+          RAILWAY_DEPLOY_HOOK_URL: ${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          echo "Triggering Railway deploy hook..."
+          http_code=$(curl -sS -o /tmp/railway.out -w "%{http_code}" -X POST "$RAILWAY_DEPLOY_HOOK_URL")
+          echo "HTTP $http_code"
+          cat /tmp/railway.out || true
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Railway deploy hook returned $http_code"
+            exit 1
+          fi
+
+      - name: Skip when no hooks configured
+        if: ${{ env.RENDER_DEPLOY_HOOK_URL == '' && env.RAILWAY_DEPLOY_HOOK_URL == '' }}
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RAILWAY_DEPLOY_HOOK_URL: ${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}
+        run: |
+          echo "::warning::No deploy hook secrets configured. Add RENDER_DEPLOY_HOOK_URL (or RAILWAY_DEPLOY_HOOK_URL) under repo Settings → Secrets → Actions to enable auto-redeploy."
+          exit 0
