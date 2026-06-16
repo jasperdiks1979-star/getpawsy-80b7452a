@@ -348,6 +348,7 @@ const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/Ti
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
 const TestPaymentPage = lazyWithRetry(() => import("./pages/admin/TestPaymentPage"));
 const SmsAlertsPage = lazyWithRetry(() => import("./pages/admin/SmsAlertsPage"));
+const PinterestHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestHealthPage"));
 const AdminPaymentsPage = lazyWithRetry(() => import("./pages/admin/AdminPaymentsPage"));
 const WebhookHealthPage = lazyWithRetry(() => import("./pages/admin/WebhookHealthPage"));
 const AdminSmokeTestEventsPage = lazyWithRetry(() => import("./pages/admin/AdminSmokeTestEventsPage"));
@@ -1574,6 +1575,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <SmsAlertsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestHealthPage />
                                 </Suspense>
                               }
                             />

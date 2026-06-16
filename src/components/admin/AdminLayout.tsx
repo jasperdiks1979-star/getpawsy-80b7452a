@@ -56,6 +56,7 @@ const navItems = [
   { to: '/admin/perf-audit', label: 'Performance', icon: Activity },
   { to: '/admin/security-credentials', label: 'Security', icon: ShieldAlert },
   { to: '/admin/sms-alerts', label: 'SMS Alerts', icon: MessageSquare },
+  { to: '/admin/pinterest-health', label: 'Pinterest Health', icon: Activity },
   { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
   { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
