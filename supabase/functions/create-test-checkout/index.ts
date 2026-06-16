@@ -96,11 +96,29 @@ serve(async (req) => {
       );
     }
 
-    // ---- Build minimal test line item (€0.50) ----
-    // Stripe account settles in EUR, so we charge in EUR to hit the €0.50 minimum exactly.
-    const TEST_AMOUNT_CENTS = 50; // €0.50 — Stripe EUR minimum
-    const TEST_CURRENCY = "eur";
-    const TEST_ITEM_ID = "TEST-PAYMENT-VALIDATION";
+    // ---- Parse request body for amount / mode ----
+    let body: { amount_cents?: number; currency?: string; validation_run?: boolean } = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    const isValidation = body.validation_run === true;
+    // Default: €0.50 webhook smoke test. Validation run: $9.99 full funnel purchase event.
+    const TEST_AMOUNT_CENTS = isValidation
+      ? 999
+      : typeof body.amount_cents === "number" && body.amount_cents >= 50
+      ? Math.floor(body.amount_cents)
+      : 50;
+    const TEST_CURRENCY = (body.currency ?? (isValidation ? "usd" : "eur")).toLowerCase();
+    const TEST_ITEM_ID = isValidation
+      ? "VALIDATION-RUN-999"
+      : "TEST-PAYMENT-VALIDATION";
+    const TEST_ITEM_NAME = isValidation
+      ? "Validation Run — GetPawsy Ecommerce Funnel ($9.99, refundable)"
+      : "Test Payment — GetPawsy Validation";
+    const amountMajor = TEST_AMOUNT_CENTS / 100;
 
     // Reuse Stripe customer if exists
     let customerId: string | undefined;
@@ -117,10 +135,16 @@ serve(async (req) => {
           price_data: {
             currency: TEST_CURRENCY,
             product_data: {
-              name: "Test Payment — GetPawsy Validation",
+              name: TEST_ITEM_NAME,
               description:
-                "Internal test charge to validate webhook flow. Not a real product. Will be refunded.",
-              metadata: { product_id: TEST_ITEM_ID, test_payment: "1" },
+                isValidation
+                  ? "Refundable validation run — full ecommerce funnel + purchase event check. Auto-refundable from /admin/payments."
+                  : "Internal test charge to validate webhook flow. Not a real product. Will be refunded.",
+              metadata: {
+                product_id: TEST_ITEM_ID,
+                test_payment: "1",
+                validation_run: isValidation ? "1" : "0",
+              },
             },
             unit_amount: TEST_AMOUNT_CENTS,
           },
@@ -135,17 +159,19 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/admin/test-payment`,
       metadata: {
         test_payment: "1",
+        validation_run: isValidation ? "1" : "0",
+        refundable: "1",
         triggered_by: user.email ?? user.id,
         items: JSON.stringify([
           {
             id: TEST_ITEM_ID,
-            name: "Test Payment — GetPawsy Validation",
-            price: 0.5,
+            name: TEST_ITEM_NAME,
+            price: amountMajor,
             quantity: 1,
           },
         ]),
         total_items: "1",
-        total_value: "0.50",
+        total_value: amountMajor.toFixed(2),
         discount_code: "",
       },
     });
@@ -157,14 +183,14 @@ serve(async (req) => {
       user_id: user.id,
       stripe_session_id: session.id,
       status: "pending",
-      total_amount: 0.5,
+      total_amount: amountMajor,
       currency: TEST_CURRENCY,
       customer_email: user.email,
       items: [
         {
           id: TEST_ITEM_ID,
-          name: "Test Payment — GetPawsy Validation",
-          price: 0.5,
+          name: TEST_ITEM_NAME,
+          price: amountMajor,
           quantity: 1,
         },
       ],
