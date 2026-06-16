@@ -74,3 +74,17 @@ If Render logs show `npm error path /opt/render/project/src/render-worker/packag
 - Renders **one** job at a time (server-side single-render guard + local `busy` flag)
 - Failed renders are re-queued automatically up to **2 attempts**, then marked `failed`
 - Run a single render and exit: `npm --prefix render-worker run once`
+
+## Auto-redeploy on every main-branch commit
+
+`.github/workflows/render-worker-deploy.yml` pings your host's Deploy Hook on every push to `main` (and via "Run workflow" in the Actions tab).
+
+One-time setup:
+
+1. **Render.com** → your worker service → Settings → **Deploy Hook** → copy the URL.
+2. GitHub repo → Settings → Secrets and variables → Actions → **New repository secret**:
+   - Name: `RENDER_DEPLOY_HOOK_URL`
+   - Value: paste the URL from step 1.
+3. (Optional) Add `RAILWAY_DEPLOY_HOOK_URL` if you mirror the worker on Railway.
+
+After that, every commit to `main` triggers a fresh deploy automatically — no more dead worker after merges.
