@@ -640,6 +640,23 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
+    // Hard gate — never invoke create-checkout when the destination is
+    // unshippable. Show a structured message instead of the generic toast.
+    if (shippingBlocked) {
+      const destName =
+        SUPPORTED_COUNTRIES.find((c) => c.code === shippingCountry)?.name || shippingCountry;
+      const names = (shippingCheck?.blocked || []).slice(0, 2).map((b) => b.name).join(', ');
+      toast.error(
+        names
+          ? `We can't ship to ${destName}: ${names}${
+              (shippingCheck?.blocked.length || 0) > 2 ? '…' : ''
+            }`
+          : `This product is currently only available in the United States and Canada.`,
+      );
+      setIsProcessing(false);
+      return;
+    }
+
     // ✅ Real user click on the Stripe checkout button. Fired BEFORE any
     // async work so the funnel event is guaranteed to be recorded even if
     // the create-checkout invoke later fails.
