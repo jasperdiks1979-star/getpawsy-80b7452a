@@ -31,6 +31,9 @@ export interface PostPaymentContext {
   currency: string;
   items: OrderItem[];
   customerEmail: string | null;
+  customerName?: string | null;
+  country?: string | null;
+  orderNumber?: string | null;
 }
 
 async function sha256Hex(input: string): Promise<string> {
