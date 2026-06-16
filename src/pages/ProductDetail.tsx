@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import { splitKlarnaInstallments, formatKlarnaInstallment } from "@/lib/klarna";
 import { trackCheckoutFunnel } from "@/lib/checkoutFunnel";
+import { ensureGeoClassified, getCachedGeoCountry } from "@/lib/geoClassify";
 import {
   ShoppingCart,
   Heart,
