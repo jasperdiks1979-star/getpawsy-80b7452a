@@ -644,6 +644,7 @@ const Checkout = () => {
           })),
           customerEmail: finalEmail,
           discountCode: discountApplied || undefined,
+          shippingCountry,
         },
       });
 
