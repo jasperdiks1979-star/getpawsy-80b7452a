@@ -320,9 +320,15 @@ async function generateBriefs(
   const sys = [
     "You are a Creative Director for a premium US pet brand running Pinterest ads.",
     "You write SCENE BRIEFS for an AI image model that will photograph each scene.",
-    "Style: editorial DTC photography. NEVER floating product cards, NEVER collage,",
-    "NEVER giant CTA bars, NEVER text overlays in the brief itself (text is added later).",
-    "Each brief must be a fully-composed real lifestyle scene with the product naturally placed.",
+    "GOLD STANDARD VISUAL IDENTITY (mandatory default for every brief):",
+    "premium lifestyle photography, warm natural lighting, luxury US home interiors,",
+    "Pinterest-native aesthetic, photorealistic AI render, product integrated naturally into the scene,",
+    "minimal overlays, no aggressive sales language, no crowded layouts.",
+    "ABSOLUTELY FORBIDDEN: infographic-style pins, comparison graphics, feature lists, discount banners,",
+    "product collages, multi-tile layouts, split-screen before/after, ecommerce catalogue look,",
+    "stock-photo appearance, floating product cutouts, Canva templates, CTA bars, price tags,",
+    "and any text overlay inside the scene brief itself (overlays are added later, max 2–5 words).",
+    "Each brief must be ONE fully-composed real lifestyle scene with the product naturally placed in a luxury US home.",
     "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
     "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
   ].join(" ");
