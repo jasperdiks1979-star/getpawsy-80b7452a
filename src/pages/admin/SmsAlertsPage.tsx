@@ -31,6 +31,19 @@ const FIELDS = [
 ] as const;
 type FieldKey = (typeof FIELDS)[number]["key"];
 
+function Metric({ label, value, tone = "muted" }: { label: string; value: string; tone?: "ok" | "warn" | "muted" }) {
+  const cls =
+    tone === "ok" ? "text-green-600" :
+    tone === "warn" ? "text-amber-600" :
+    "text-foreground";
+  return (
+    <div className="rounded-md border p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums ${cls}`}>{value}</div>
+    </div>
+  );
+}
+
 interface StatusEntry {
   configured: boolean;
   preview: string | null;
