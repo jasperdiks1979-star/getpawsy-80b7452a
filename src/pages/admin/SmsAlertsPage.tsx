@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   Save,
   MessageSquare,
+  BarChart3,
+  Wallet,
+  Activity,
+  CalendarClock,
 } from "lucide-react";
 
 const FIELDS = [
@@ -26,6 +30,19 @@ const FIELDS = [
   { key: "OWNER_ALERT_PHONE", label: "Owner Alert Phone", placeholder: "+15558675310" },
 ] as const;
 type FieldKey = (typeof FIELDS)[number]["key"];
+
+function Metric({ label, value, tone = "muted" }: { label: string; value: string; tone?: "ok" | "warn" | "muted" }) {
+  const cls =
+    tone === "ok" ? "text-green-600" :
+    tone === "warn" ? "text-amber-600" :
+    "text-foreground";
+  return (
+    <div className="rounded-md border p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums ${cls}`}>{value}</div>
+    </div>
+  );
+}
 
 interface StatusEntry {
   configured: boolean;
@@ -49,11 +66,34 @@ interface StatusResp {
   lastOrder?: LogRow;
 }
 
+interface StatsResp {
+  ok: boolean;
+  totals: {
+    total_sent: number;
+    sent_today: number;
+    failed: number;
+    attempts: number;
+    success_rate_pct: number | null;
+  };
+  last_success: { created_at: string; alert_type: string; twilio_message_sid: string | null } | null;
+  last_failed: { created_at: string; alert_type: string; error_reason: string | null } | null;
+  balance: { amount: string; currency: string } | null;
+  balance_error: string | null;
+}
+
+interface ProdCheckResp {
+  ok: boolean;
+  ready: boolean;
+  checks: { name: string; pass: boolean; detail: string }[];
+}
+
 export default function SmsAlertsPage() {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusResp | null>(null);
+  const [stats, setStats] = useState<StatsResp | null>(null);
+  const [prodCheck, setProdCheck] = useState<ProdCheckResp | null>(null);
   const [values, setValues] = useState<Record<FieldKey, string>>({
     TWILIO_ACCOUNT_SID: "",
     TWILIO_AUTH_TOKEN: "",
@@ -65,14 +105,16 @@ export default function SmsAlertsPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("sms-alerts-admin", {
-      body: { action: "status" },
-    });
-    if (error) {
-      toast({ title: "Failed to load status", description: error.message, variant: "destructive" });
+    const [s, st] = await Promise.all([
+      supabase.functions.invoke("sms-alerts-admin", { body: { action: "status" } }),
+      supabase.functions.invoke("sms-alerts-admin", { body: { action: "stats" } }),
+    ]);
+    if (s.error) {
+      toast({ title: "Failed to load status", description: s.error.message, variant: "destructive" });
     } else {
-      setStatus(data as StatusResp);
+      setStatus(s.data as StatusResp);
     }
+    if (!st.error) setStats(st.data as StatsResp);
     setLoading(false);
   }, []);
 
@@ -142,6 +184,18 @@ export default function SmsAlertsPage() {
     if (res) setValidationReport({ pass: !!res.pass, checks: res.checks ?? [] });
   };
 
+  const handleProdCheck = async () => {
+    const res = (await run("production_check")) as ProdCheckResp | null;
+    if (res) setProdCheck(res);
+  };
+
+  const handleDailySummary = async () => {
+    const res = await run("trigger_daily_summary");
+    if (res?.ok) toast({ title: "Daily summary triggered", description: "SMS dispatched if Twilio configured." });
+    else if (res) toast({ title: "Daily summary failed", description: JSON.stringify(res.result ?? res), variant: "destructive" });
+    await refresh();
+  };
+
   return (
     <>
       <Helmet>
@@ -203,6 +257,55 @@ export default function SmsAlertsPage() {
           </CardContent>
         </Card>
 
+        {/* Metrics */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" /> Delivery metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!stats ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading metrics…
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <Metric label="Total sent" value={String(stats.totals.total_sent)} />
+                  <Metric label="Sent today" value={String(stats.totals.sent_today)} />
+                  <Metric label="Failed" value={String(stats.totals.failed)} tone={stats.totals.failed > 0 ? "warn" : "ok"} />
+                  <Metric
+                    label="Success rate"
+                    value={stats.totals.success_rate_pct == null ? "—" : `${stats.totals.success_rate_pct}%`}
+                    tone={stats.totals.success_rate_pct == null ? "muted" : stats.totals.success_rate_pct >= 95 ? "ok" : "warn"}
+                  />
+                </div>
+                <div className="text-xs space-y-1 border-t pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Twilio balance</span>
+                    <span className="font-mono">
+                      {stats.balance ? `${stats.balance.currency} ${Number(stats.balance.amount).toFixed(2)}` : stats.balance_error ?? "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> Last success</span>
+                    <span className="font-mono text-muted-foreground">
+                      {stats.last_success ? `${stats.last_success.alert_type} · ${new Date(stats.last_success.created_at).toLocaleString()}` : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-destructive"><XCircle className="h-3.5 w-3.5" /> Last failed</span>
+                    <span className="font-mono text-muted-foreground truncate max-w-[60%]" title={stats.last_failed?.error_reason ?? ""}>
+                      {stats.last_failed ? `${stats.last_failed.alert_type} · ${new Date(stats.last_failed.created_at).toLocaleString()}` : "—"}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Config form */}
         <Card>
           <CardHeader className="pb-3">
@@ -252,6 +355,14 @@ export default function SmsAlertsPage() {
               {busy === "validate" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Validate Twilio Configuration
             </Button>
+            <Button onClick={handleDailySummary} disabled={busy === "trigger_daily_summary"} variant="outline">
+              {busy === "trigger_daily_summary" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarClock className="mr-2 h-4 w-4" />}
+              Send Daily Summary Now
+            </Button>
+            <Button onClick={handleProdCheck} disabled={busy === "production_check"} variant="outline">
+              {busy === "production_check" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Production Readiness Check
+            </Button>
 
             {validationReport && (
               <Alert variant={validationReport.pass ? "default" : "destructive"} className="mt-2">
@@ -268,6 +379,28 @@ export default function SmsAlertsPage() {
                           <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
                         )}
                         <span><span className="font-mono">{c.field}</span> — {c.reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {prodCheck && (
+              <Alert variant={prodCheck.ready ? "default" : "destructive"} className="mt-2">
+                <AlertDescription className="space-y-1.5">
+                  <div className="font-semibold">
+                    {prodCheck.ready ? "🟢 PRODUCTION READY" : "🔴 NOT READY — fix the issues below"}
+                  </div>
+                  <ul className="text-xs space-y-1">
+                    {prodCheck.checks.map((c) => (
+                      <li key={c.name} className="flex items-start gap-1.5">
+                        {c.pass ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                        )}
+                        <span><span className="font-medium">{c.name}</span> — <span className="text-muted-foreground">{c.detail}</span></span>
                       </li>
                     ))}
                   </ul>

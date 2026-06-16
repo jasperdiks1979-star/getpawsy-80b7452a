@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
-import { runPostPaymentTracking } from "../_shared/post-payment-tracking.ts";
+import { runPostPaymentTracking, sendFailureAlert } from "../_shared/post-payment-tracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -672,6 +672,13 @@ serve(async (req) => {
             currency: session.currency || "usd",
             items,
             customerEmail: customerEmail ?? null,
+            customerName: (session.shipping_details as { name?: string } | null)?.name
+              ?? (session.customer_details as { name?: string } | null)?.name
+              ?? null,
+            country: (session.shipping_details as { address?: { country?: string } } | null)?.address?.country
+              ?? (session.customer_details as { address?: { country?: string } } | null)?.address?.country
+              ?? null,
+            orderNumber: orderId.slice(0, 8).toUpperCase(),
           });
         } catch (e) {
           console.error("[STRIPE-WEBHOOK] post-payment tracking failed:", e);
@@ -754,6 +761,10 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[STRIPE-WEBHOOK] Error:", errorMessage);
+    // Fire-and-forget failure alert; throttled in helper.
+    try {
+      await sendFailureAlert(supabaseAdmin, "Stripe Webhook", errorMessage);
+    } catch (_) { /* never block response */ }
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
