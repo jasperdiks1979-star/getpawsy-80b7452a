@@ -211,6 +211,8 @@ export interface PinValidationResult {
 }
 
 const OVERLAY_MAX_CHARS = 32;
+const OVERLAY_MIN_WORDS = 2;
+const OVERLAY_MAX_WORDS = 5;
 
 function findBanned(text: string): string[] {
   const hay = (text || "").toLowerCase();
@@ -228,6 +230,10 @@ export function validatePinCopy(input: PinValidationInput): PinValidationResult 
     if (overlay.length > OVERLAY_MAX_CHARS) {
       errors.push(`overlay_too_long:${overlay.length}`);
     }
+    // Gold-standard rule: 2–5 words only. Reject sentence-style overlays.
+    const wordCount = overlay.split(/\s+/).filter(Boolean).length;
+    if (wordCount < OVERLAY_MIN_WORDS) errors.push(`overlay_too_few_words:${wordCount}`);
+    if (wordCount > OVERLAY_MAX_WORDS) errors.push(`overlay_too_many_words:${wordCount}`);
     // Exactly one short benefit overlay → no line breaks and no second
     // sentence-style separator like " | " or " • " inside the overlay itself.
     if (/[\r\n]/.test(overlay)) errors.push("overlay_multiline");
