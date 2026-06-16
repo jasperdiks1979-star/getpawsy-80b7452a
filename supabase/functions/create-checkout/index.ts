@@ -314,8 +314,8 @@ serve(async (req) => {
       locale: "en",
       // Improves wallet payments by surfacing it as the express choice
       billing_address_collection: "auto",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/checkout`,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout`,
       metadata: orderMetadata,
       // Never allow promotion codes — discount is already applied as a
       // one-off coupon for the exact UI-displayed amount. Allowing manual
