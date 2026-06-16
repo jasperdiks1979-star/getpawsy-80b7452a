@@ -360,9 +360,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  // Same key selection as create-checkout: live preferred when available,
+  // STRIPE_MODE override for emergency rollback.
+  const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
+  const testKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const modeOverride = (Deno.env.get("STRIPE_MODE") || "").toLowerCase();
+  let stripeKey: string | undefined;
+  if (modeOverride === "test") stripeKey = testKey;
+  else if (modeOverride === "live") stripeKey = liveKey;
+  else stripeKey = liveKey || testKey;
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  
+
   if (!stripeKey || !webhookSecret) {
     console.error("[STRIPE-WEBHOOK] Missing required environment variables");
     return new Response(
