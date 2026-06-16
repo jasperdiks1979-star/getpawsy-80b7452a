@@ -14215,6 +14215,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_health_incidents: {
+        Row: {
+          condition: string
+          created_at: string
+          detail: Json
+          id: string
+          recovery_attempted: boolean
+          recovery_result: Json | null
+          resolved_at: string | null
+          severity: string
+          sms_alert_sent: boolean
+          status: string
+        }
+        Insert: {
+          condition: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          recovery_attempted?: boolean
+          recovery_result?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          sms_alert_sent?: boolean
+          status?: string
+        }
+        Update: {
+          condition?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          recovery_attempted?: boolean
+          recovery_result?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          sms_alert_sent?: boolean
+          status?: string
+        }
+        Relationships: []
+      }
       pinterest_historical_cleanup_runs: {
         Row: {
           created_at: string
