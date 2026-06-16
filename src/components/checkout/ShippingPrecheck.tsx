@@ -15,6 +15,8 @@ interface CartItemLite {
 
 interface Props {
   items: CartItemLite[];
+  /** Pre-selected destination (e.g. derived from visitor geo). */
+  initialCountry?: CountryCode;
   onChange?: (state: {
     country: CountryCode;
     check: CartShippingCheck | null;
@@ -29,8 +31,18 @@ interface Props {
  * country, then runs `checkCartShipping`. Blocks the Pay button (via the
  * parent's `onChange` callback) when any product can't be fulfilled.
  */
-export function ShippingPrecheck({ items, onChange }: Props) {
-  const [country, setCountry] = useState<CountryCode>("US");
+export function ShippingPrecheck({ items, initialCountry, onChange }: Props) {
+  const [country, setCountry] = useState<CountryCode>(initialCountry || "US");
+  // If the parent resolves a geo country after mount, adopt it once.
+  const [adoptedInitial, setAdoptedInitial] = useState(false);
+  useEffect(() => {
+    if (!adoptedInitial && initialCountry && initialCountry !== country) {
+      setCountry(initialCountry);
+      setAdoptedInitial(true);
+    } else if (initialCountry) {
+      setAdoptedInitial(true);
+    }
+  }, [initialCountry, adoptedInitial, country]);
   const [warehouses, setWarehouses] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
 
