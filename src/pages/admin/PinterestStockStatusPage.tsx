@@ -191,6 +191,45 @@ export default function PinterestStockStatusPage() {
     });
   };
 
+  const exportToCsv = () => {
+    const headers = [
+      "Product",
+      "Slug",
+      "Stock",
+      "Availability",
+      "Queued",
+      "Rejected",
+      ...REASON_CATEGORIES.map((c) => c.label),
+      "Posted",
+      "Total",
+    ];
+    const lines = [
+      headers.join(","),
+      ...visible.map((r) =>
+        [
+          `"${(r.name ?? "").replace(/"/g, '""')}"`,
+          r.slug,
+          r.stock,
+          r.availability,
+          r.queued,
+          r.rejected,
+          ...REASON_CATEGORIES.map((c) => r.reasons[c.key] ?? 0),
+          r.posted,
+          r.total,
+        ].join(","),
+      ),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cd-stock-status-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main className="container mx-auto px-4 py-8">
       <Helmet>
@@ -211,6 +250,13 @@ export default function PinterestStockStatusPage() {
             className="rounded-md border border-border px-3 py-1.5 text-sm"
           >
             {oosFilter === "oos" ? "Show all" : "Show OOS only"}
+          </button>
+          <button
+            onClick={exportToCsv}
+            disabled={visible.length === 0}
+            className="rounded-md border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+          >
+            Export CSV
           </button>
           <button
             onClick={load}
