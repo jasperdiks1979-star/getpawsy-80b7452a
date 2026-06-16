@@ -111,14 +111,27 @@ serve(async (req) => {
     // Validate shape, then re-fetch the canonical price/name/image from the
     // products table using the service-role client. The Stripe line items
     // are built ONLY from DB values; the client `price` field is ignored.
+    // Cart rows for variant SKUs are keyed as `${uuid}-${vid}` or
+    // `${uuid}_${vid}` (see ProductDetail.tsx / BestsellerDetail.tsx). We
+    // accept that and extract the canonical UUID prefix for the DB lookup.
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const UUID_PREFIX_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[_-].+)?$/i;
+    const extractProductId = (raw: unknown): string | null => {
+      if (typeof raw !== "string") return null;
+      const m = raw.match(UUID_PREFIX_RE);
+      return m ? m[1].toLowerCase() : null;
+    };
     if (items.length > 50) {
       throw new Error("Too many items in cart (max 50)");
     }
     for (const it of items) {
-      if (!it || typeof it.id !== "string" || !UUID_RE.test(it.id)) {
+      const productId = it ? extractProductId(it.id) : null;
+      if (!productId) {
+        console.error("[CREATE-CHECKOUT] Invalid item id:", it?.id);
         throw new Error("Invalid item id");
       }
+      // Normalize: downstream lookup + Stripe metadata use the canonical UUID
+      it.id = productId;
       if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 100) {
         throw new Error("Invalid item quantity");
       }
