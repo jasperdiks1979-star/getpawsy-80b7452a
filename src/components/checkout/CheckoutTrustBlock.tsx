@@ -35,7 +35,7 @@ export function CheckoutTrustBlock() {
         </li>
         <li className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
           <span className="text-sm flex-shrink-0" aria-hidden>🇺🇸</span>
-          <span className="text-[12px] font-medium leading-tight">Fast US Shipping (5–10 business days)</span>
+          <span className="text-[12px] font-medium leading-tight">Fast US shipping · International where supported</span>
         </li>
         <li className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
           <Truck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden />
