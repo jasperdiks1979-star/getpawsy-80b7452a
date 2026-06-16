@@ -284,6 +284,158 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "stats") {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const { count: total } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "sent");
+      const { count: today } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "sent")
+        .gte("created_at", startOfDay);
+      const { count: totalAttempts } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["sent", "failed"]);
+      const { count: failed } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed");
+      const { data: lastSuccess } = await svc
+        .from("sms_alert_logs")
+        .select("created_at, alert_type, twilio_message_sid")
+        .eq("status", "sent")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const { data: lastFailed } = await svc
+        .from("sms_alert_logs")
+        .select("created_at, alert_type, error_reason")
+        .eq("status", "failed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const denom = totalAttempts ?? 0;
+      const successRate = denom ? Math.round(((total ?? 0) / denom) * 1000) / 10 : null;
+
+      // Twilio account balance (best-effort).
+      let balance: { amount: string; currency: string } | null = null;
+      let balanceError: string | null = null;
+      const cfg = await loadSecrets(svc);
+      const sid = cfg.TWILIO_ACCOUNT_SID?.value;
+      const tok = cfg.TWILIO_AUTH_TOKEN?.value;
+      if (sid && tok) {
+        try {
+          const r = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${sid}/Balance.json`,
+            { headers: { Authorization: `Basic ${btoa(`${sid}:${tok}`)}` } },
+          );
+          const j: { balance?: string; currency?: string; message?: string } = await r
+            .json().catch(() => ({}));
+          if (r.ok && j.balance) balance = { amount: j.balance, currency: j.currency ?? "USD" };
+          else balanceError = j.message ?? `twilio_${r.status}`;
+        } catch (e) {
+          balanceError = (e as Error).message;
+        }
+      } else {
+        balanceError = "missing_credentials";
+      }
+
+      return json({
+        ok: true,
+        totals: {
+          total_sent: total ?? 0,
+          sent_today: today ?? 0,
+          failed: failed ?? 0,
+          attempts: denom,
+          success_rate_pct: successRate,
+        },
+        last_success: lastSuccess ?? null,
+        last_failed: lastFailed ?? null,
+        balance,
+        balance_error: balanceError,
+      });
+    }
+
+    if (action === "production_check") {
+      // Twilio
+      const cfg = await loadSecrets(svc);
+      const validation = validateConfig(cfg);
+      let twilioReachable = false;
+      let twilioError: string | null = null;
+      const tsid = cfg.TWILIO_ACCOUNT_SID?.value;
+      const ttok = cfg.TWILIO_AUTH_TOKEN?.value;
+      if (tsid && ttok) {
+        try {
+          const r = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${tsid}.json`,
+            { headers: { Authorization: `Basic ${btoa(`${tsid}:${ttok}`)}` } },
+          );
+          twilioReachable = r.ok;
+          if (!r.ok) twilioError = `twilio_${r.status}`;
+        } catch (e) { twilioError = (e as Error).message; }
+      } else twilioError = "missing_credentials";
+
+      // Stripe
+      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") || Deno.env.get("STRIPE_SECRET_KEY");
+      const stripeWebhook = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+      const stripeOk = !!stripeKey && !!stripeWebhook;
+
+      // Recent SMS delivery health
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
+      const { count: sentRecently } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "sent")
+        .gte("created_at", since);
+      const { count: failedRecently } = await svc
+        .from("sms_alert_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed")
+        .gte("created_at", since);
+
+      // DB reachability proxy
+      const { error: dbErr } = await svc
+        .from("orders").select("id", { head: true, count: "exact" }).limit(1);
+      const dbOk = !dbErr;
+
+      // Webhook recent activity (paid orders in last 14d)
+      const sinceWh = new Date(Date.now() - 14 * 24 * 60 * 60_000).toISOString();
+      const { count: paidRecently } = await svc
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid")
+        .gte("created_at", sinceWh);
+      const webhookOk = stripeOk && (paidRecently ?? 0) > 0;
+
+      const checks = [
+        { name: "Twilio credentials", pass: validation.pass, detail: validation.checks.map((c) => `${c.field}: ${c.reason}`).join(" · ") },
+        { name: "Twilio API reachable", pass: twilioReachable, detail: twilioError ?? "200 OK" },
+        { name: "Stripe configured", pass: stripeOk, detail: stripeOk ? "live/test key + webhook secret present" : "missing key or webhook secret" },
+        { name: "Stripe webhook activity (14d)", pass: webhookOk, detail: `${paidRecently ?? 0} paid orders` },
+        { name: "SMS delivery (7d)", pass: (sentRecently ?? 0) >= 0 && (failedRecently ?? 0) === 0, detail: `${sentRecently ?? 0} sent · ${failedRecently ?? 0} failed` },
+        { name: "Database reachable", pass: dbOk, detail: dbOk ? "ok" : (dbErr?.message ?? "error") },
+      ];
+      const allPass = checks.every((c) => c.pass);
+      return json({ ok: true, ready: allPass, checks });
+    }
+
+    if (action === "trigger_daily_summary") {
+      const r = await fetch(
+        `${SUPABASE_URL}/functions/v1/sms-daily-summary`,
+        {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: "{}",
+        },
+      );
+      const j = await r.json().catch(() => ({}));
+      return json({ ok: r.ok, result: j });
+    }
+
     return json({ ok: false, message: "unknown_action" }, 400);
   } catch (e) {
     console.error("[sms-alerts-admin] error:", e);
