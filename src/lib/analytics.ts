@@ -48,6 +48,55 @@ const isGtagAvailable = (): boolean => {
   return typeof window !== 'undefined' && typeof window.gtag === 'function';
 };
 
+// ----------------------------------------------------------------------------
+// Pending-event queue.
+//
+// gtag.js is loaded via deferred-analytics AFTER React mounts. PDP effects
+// (view_item, scroll, etc.) can fire BEFORE gtag is available, in which case
+// the hit was previously dropped on the floor — only the Postgres mirror
+// survived. We now buffer those events and flush them as soon as the real
+// gtag function is installed by gtag.js.
+// ----------------------------------------------------------------------------
+type PendingEvent = { name: string; params: Record<string, unknown> };
+const pendingEvents: PendingEvent[] = [];
+let pendingPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const flushPendingEvents = (): void => {
+  if (!isGtagAvailable()) return;
+  while (pendingEvents.length) {
+    const ev = pendingEvents.shift()!;
+    try {
+      window.gtag('event', ev.name, ev.params);
+      console.debug('[Analytics] Flushed pending event:', ev.name);
+    } catch (err) {
+      console.debug('[Analytics] Flush failed:', err);
+    }
+  }
+  if (pendingPollTimer) {
+    clearInterval(pendingPollTimer);
+    pendingPollTimer = null;
+  }
+};
+
+const queuePendingEvent = (name: string, params: Record<string, unknown>): void => {
+  pendingEvents.push({ name, params });
+  // Cap queue size to avoid unbounded growth if gtag never loads.
+  if (pendingEvents.length > 100) pendingEvents.splice(0, pendingEvents.length - 100);
+  if (pendingPollTimer || typeof window === 'undefined') return;
+  // Poll briefly for gtag readiness, then drain.
+  let ticks = 0;
+  pendingPollTimer = setInterval(() => {
+    ticks += 1;
+    if (isGtagAvailable()) {
+      flushPendingEvents();
+    } else if (ticks > 75) {
+      // ~15s ceiling — give up; events stay in postgres mirror only.
+      if (pendingPollTimer) clearInterval(pendingPollTimer);
+      pendingPollTimer = null;
+    }
+  }, 200);
+};
+
 // Initialize founder user properties on gtag (call once on app init)
 export const initAnalyticsUserProperties = (): void => {
   if (!isGtagAvailable()) return;
@@ -97,7 +146,10 @@ export const trackEvent = (
     window.gtag('event', eventName, enrichedParams);
     console.debug('[Analytics] Event tracked:', eventName, enrichedParams);
   } else {
-    console.debug('[Analytics] gtag not ready — mirroring only:', eventName);
+    // Buffer until gtag.js finishes loading, then flush. Prevents loss of
+    // early-firing events like view_item on PDP cold loads.
+    queuePendingEvent(eventName, enrichedParams);
+    console.debug('[Analytics] gtag not ready — queued for flush:', eventName);
   }
 
   // Mirror funnel + downstream events to Postgres for the admin
@@ -145,7 +197,7 @@ export const trackNewsletterSignup = (email?: string): void => {
 // Wishlist actions
 export const trackAddToWishlist = (productId: string, productName?: string, productPrice?: number): void => {
   trackEvent('add_to_wishlist', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice,
     items: [{
       item_id: productId,
@@ -199,7 +251,7 @@ export const trackRemoveFromCart = (
   quantity: number = 1
 ): void => {
   trackEvent('remove_from_cart', {
-    currency: 'EUR',
+    currency: 'USD',
     value: productPrice * quantity,
     items: [{
       item_id: productId,
@@ -300,7 +352,9 @@ export const trackBeginCheckout = (
 };
 
 
-// Purchase complete — with US-only guard for GA4
+// Purchase complete — sent to GA4 for all visitors regardless of country.
+// The previous US-only guard caused non-US orders to be under-counted in
+// GA4 Conversions/Realtime. Idempotency still prevents double-fires.
 export const trackPurchase = (
   transactionId: string,
   items: Array<{ id: string; name: string; price: number; quantity: number }>,
@@ -330,20 +384,6 @@ export const trackPurchase = (
 
   // Clear begin_checkout signature so a follow-up cart re-enters cleanly
   try { sessionStorage.removeItem('gp_begin_checkout_fired'); } catch {}
-
-  // Country guard: only send purchase to GA4 for US traffic
-  const cachedLocation = sessionStorage.getItem('visitor_location');
-  if (cachedLocation) {
-    try {
-      const loc = JSON.parse(cachedLocation);
-      if (loc.country && loc.country !== 'United States') {
-        console.debug('[Analytics] Purchase event blocked for GA4: non-US country', loc.country);
-        return;
-      }
-    } catch {
-      // Parse error — allow event through
-    }
-  }
 
   trackEvent('purchase', withPersistedUtm({
     transaction_id: transactionId,
@@ -433,7 +473,7 @@ export const trackSelectItem = (
       price: item.price,
       item_category: item.category,
       index: item.position,
-      currency: 'EUR',
+      currency: 'USD',
     }],
   });
 };
@@ -463,7 +503,7 @@ export const trackCrossSellImpression = (
       price: item.price,
       item_category: item.category,
       index: item.position ?? index,
-      currency: 'EUR',
+      currency: 'USD',
     })),
   });
 };
@@ -490,7 +530,7 @@ export const trackCrossSellClick = (
       price: clickedItem.price,
       item_category: clickedItem.category,
       index: clickedItem.position,
-      currency: 'EUR',
+      currency: 'USD',
     }],
   });
 
@@ -504,7 +544,7 @@ export const trackCrossSellClick = (
     clicked_product_category: clickedItem.category,
     cross_sell_type: crossSellType,
     position: clickedItem.position,
-    currency: 'EUR',
+    currency: 'USD',
   });
 };
 
