@@ -713,6 +713,38 @@ const Checkout = () => {
       });
 
       if (error) {
+        // supabase-js wraps non-2xx responses as FunctionsHttpError. Try to
+        // read the JSON body so we can surface our structured CJ shipping
+        // message instead of "Edge Function returned a non-2xx status code".
+        let parsed: { code?: string; error?: string; blocked?: Array<{ name: string }> } | null = null;
+        try {
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === 'function') {
+            parsed = await ctx.clone().json();
+          }
+        } catch {
+          /* ignore */
+        }
+        if (parsed?.code === 'cj_shipping_unavailable' || parsed?.code === 'country_not_supported') {
+          const destName =
+            SUPPORTED_COUNTRIES.find((c) => c.code === shippingCountry)?.name || shippingCountry;
+          const names = (parsed.blocked || []).slice(0, 2).map((b) => b.name).join(', ');
+          const msg = names
+            ? `We can't ship to ${destName}: ${names}${(parsed.blocked?.length || 0) > 2 ? '…' : ''}`
+            : `This product is currently only available in the United States and Canada.`;
+          trackCheckoutFunnel({
+            step: 'shipping_country_blocked',
+            placement: 'checkout',
+            metadata: {
+              destination_country: shippingCountry,
+              source: 'server_reject',
+              code: parsed.code,
+            },
+          });
+          toast.error(msg);
+          setIsProcessing(false);
+          return;
+        }
         throw new Error(error.message);
       }
 
