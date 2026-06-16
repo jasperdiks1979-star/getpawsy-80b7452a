@@ -239,9 +239,9 @@ const Checkout = () => {
     if (blockedTrackedRef.country === shippingCountry) return;
     blockedTrackedRef.country = shippingCountry;
     const blockedItems = (shippingCheck?.blocked || []).map((b) => b.productId);
-    fireCheckoutEvent({
+    trackCheckoutFunnel({
       step: 'shipping_country_blocked',
-      source_component: 'checkout_shipping_precheck',
+      placement: 'checkout',
       metadata: {
         destination_country: shippingCountry,
         blocked_count: blockedItems.length,
