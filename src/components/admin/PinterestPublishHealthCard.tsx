@@ -82,12 +82,8 @@ export function PinterestPublishHealthCard() {
         .maybeSingle();
       setAutoApprove(!!(rt as any)?.auto_approve_queue);
       setConn(rt as any);
-      const { data: pc } = await (supabase as any)
-        .from("pinterest_connection")
-        .select("scopes, status, last_account_status, last_boards_status, updated_at")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: pcRows } = await (supabase as any).rpc("get_pinterest_connection_admin");
+      const pc = Array.isArray(pcRows) ? pcRows[0] ?? null : pcRows ?? null;
       setScopeDiag((pc as ScopeDiagnostics) ?? null);
     } catch (e: any) {
       toast.error(`Health load failed: ${e?.message || e}`);
