@@ -478,9 +478,28 @@ Deno.serve(async (req) => {
       console.warn("[cron] override filter failed (non-fatal):", e);
     }
 
-    // ── 1c. Premium Creative Engine gate ───────────────────────────────────
-    // Block any queued pin that did not originate from creative-director v2,
-    // unless an admin has explicitly enabled the legacy product-feed bypass.
+    // ── 1c. AI-only publisher gate ─────────────────────────────────────────
+    // Hard rule: only Creative Director AI lifestyle/composite output may
+    // publish to Pinterest. CJ supplier images, raw product images, and
+    // Cloudinary text-card overlays are NEVER allowed (regardless of the
+    // legacy bypass flag). `allow_legacy_product_feed=true` only relaxes the
+    // bypass for untagged rows that already passed earlier QA — it cannot
+    // re-enable supplier/overlay sources.
+    const categorizeSource = (p: any): string => {
+      const url: string = String(p?.pin_image_url ?? "");
+      const meta = (p?.meta ?? {}) as Record<string, unknown>;
+      if (url.includes("/creative-director/")) return "creative_director_path";
+      if ((meta as any)?.creative_source === "creative_director_v2") return "creative_director_meta";
+      if (/cf\.cjdropshipping\.com|oss-cf\.cjdropshipping\.com/i.test(url)) return "cj_supplier";
+      if (/getpawsy\.pet\/images\/products\//i.test(url)) return "product_image";
+      if (/res\.cloudinary\.com/i.test(url) && /l_text[:_]/i.test(url)) return "cloudinary_template_overlay";
+      if ((meta as any)?.creative_source === "noai_refill_v1") return "legacy_noai_refill";
+      if ((meta as any)?.creative_source === "replacement_v1") return "legacy_replacement";
+      return "untagged_non_creative_director";
+    };
+    const isAiAllowed = (cat: string) =>
+      cat === "creative_director_path" || cat === "creative_director_meta";
+
     try {
       const { data: rtPremium } = await sb
         .from("pinterest_runtime_settings")
@@ -493,28 +512,54 @@ Deno.serve(async (req) => {
           { logStatus: "skipped", success: true, processed: 0 },
         );
       }
-      if (!(rtPremium as any)?.allow_legacy_product_feed) {
-        const before = pins.length;
-        const dropped = (pins as any[]).filter(
-          (p) => ((p as any)?.meta?.creative_source ?? null) !== "creative_director_v2",
-        );
-        const kept = (pins as any[]).filter(
-          (p) => ((p as any)?.meta?.creative_source ?? null) === "creative_director_v2",
-        );
-        for (const d of dropped) {
-          await sb.from("pinterest_pin_queue").update({
-            status: "rejected",
-            error_message: "rejected_low_quality_supplier_style",
-          }).eq("id", d.id);
+      const allowLegacy = !!(rtPremium as any)?.allow_legacy_product_feed;
+
+      const before = pins.length;
+      const kept: any[] = [];
+      for (const p of pins as any[]) {
+        const cat = categorizeSource(p);
+        const allowed = isAiAllowed(cat);
+        console.log("[cron][ai-gate]", JSON.stringify({
+          pin_queue_id: p.id,
+          creative_source: (p?.meta as any)?.creative_source ?? null,
+          source_category: cat,
+          image_url: p.pin_image_url ?? null,
+          allowed_by_ai_gate: allowed,
+        }));
+        if (allowed) {
+          kept.push(p);
+          continue;
         }
-        pins.length = 0;
-        pins.push(...kept);
-        if (before !== pins.length) {
-          console.log(`[cron] premium gate rejected ${before - pins.length} legacy pins`);
+        // Hard supplier/overlay categories: ALWAYS block, even if legacy bypass is on
+        const hardBlock =
+          cat === "cj_supplier" ||
+          cat === "product_image" ||
+          cat === "cloudinary_template_overlay";
+        if (!hardBlock && allowLegacy) {
+          kept.push(p);
+          continue;
         }
+        const blockMeta = {
+          ...((p?.meta as any) ?? {}),
+          block_reason: "legacy_or_non_ai_source_blocked_by_ai_only_gate",
+          blocked_at: new Date().toISOString(),
+          source_category: cat,
+          legacy_feed: true,
+          publish_allowed: false,
+        };
+        await sb.from("pinterest_pin_queue").update({
+          status: "blocked_legacy_source",
+          error_message: "legacy_or_non_ai_source_blocked_by_ai_only_gate",
+          meta: blockMeta,
+        }).eq("id", p.id);
+      }
+      pins.length = 0;
+      pins.push(...kept);
+      if (before !== pins.length) {
+        console.log(`[cron] ai-only gate blocked ${before - pins.length} non-AI pins`);
       }
     } catch (e) {
-      console.warn("[cron] premium gate failed (non-fatal):", e);
+      console.warn("[cron] ai-only gate failed (non-fatal):", e);
     }
 
     if (!pins.length) {
