@@ -3738,6 +3738,113 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_v3_jobs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          duration_seconds: number | null
+          failure_reasons: string[]
+          final_mp4_url: string | null
+          id: string
+          music_bed: string | null
+          pinterest_queue_id: string | null
+          product_id: string | null
+          product_slug: string
+          qa_passed: boolean
+          qa_scores: Json
+          qa_total: number | null
+          render_log: string | null
+          requested_by: string | null
+          scenes: Json | null
+          script: Json | null
+          status: string
+          updated_at: string
+          voice_id: string
+          voiceover_transcript: string | null
+          voiceover_url: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          failure_reasons?: string[]
+          final_mp4_url?: string | null
+          id?: string
+          music_bed?: string | null
+          pinterest_queue_id?: string | null
+          product_id?: string | null
+          product_slug: string
+          qa_passed?: boolean
+          qa_scores?: Json
+          qa_total?: number | null
+          render_log?: string | null
+          requested_by?: string | null
+          scenes?: Json | null
+          script?: Json | null
+          status?: string
+          updated_at?: string
+          voice_id?: string
+          voiceover_transcript?: string | null
+          voiceover_url?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          failure_reasons?: string[]
+          final_mp4_url?: string | null
+          id?: string
+          music_bed?: string | null
+          pinterest_queue_id?: string | null
+          product_id?: string | null
+          product_slug?: string
+          qa_passed?: boolean
+          qa_scores?: Json
+          qa_total?: number | null
+          render_log?: string | null
+          requested_by?: string | null
+          scenes?: Json | null
+          script?: Json | null
+          status?: string
+          updated_at?: string
+          voice_id?: string
+          voiceover_transcript?: string | null
+          voiceover_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cinematic_voice_profiles: {
         Row: {
           active: boolean
