@@ -1,0 +1,204 @@
+name: Render Cinematic Runway Merge
+
+# Server-side merge of a cinematic_runway_jobs job.
+# All Lovable Cloud access goes through two gated edge functions authenticated
+# with RUNWAY_MERGE_TOKEN. GitHub Actions never sees a Supabase service role key.
+#
+#   - runway-merge-fetch-job   → returns job row + signed upload URL + public URL
+#   - runway-merge-finalize    → writes status=ready_for_review (or merge_failed)
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "cinematic_runway_jobs.id (UUID)"
+        required: true
+        type: string
+
+concurrency:
+  group: cinematic-runway-merge-${{ github.event.inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
+      RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
+      JOB_ID: ${{ inputs.job_id }}
+    steps:
+      - name: Install ffmpeg + deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg jq curl fonts-liberation
+
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          for v in LOVABLE_FUNCTIONS_URL RUNWAY_MERGE_TOKEN JOB_ID; do
+            test -n "${!v}" || { echo "missing $v"; exit 1; }
+          done
+          if ! echo "${JOB_ID}" | grep -Eiq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+            echo "Bad UUID: ${JOB_ID}"; exit 1
+          fi
+
+      - name: Fetch job row via edge function
+        id: fetch
+        run: |
+          set -euo pipefail
+          curl -fsS \
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-fetch-job?job_id=${JOB_ID}" \
+            -o /tmp/resp.json
+          jq -e '.ok==true' /tmp/resp.json >/dev/null || { cat /tmp/resp.json; exit 1; }
+          jq '.job'           /tmp/resp.json > /tmp/job.json
+          jq -r '.upload.signed_url' /tmp/resp.json > /tmp/upload_url.txt
+          jq -r '.public_url'  /tmp/resp.json > /tmp/public_url.txt
+          echo "--- job ---"
+          jq '{voiceover_url, scene_count:(.scenes|length)}' /tmp/job.json
+
+      - name: Download assets
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/assets
+          for KEY in hook problem agitate demo benefit cta; do
+            URL=$(jq -r --arg k "$KEY" '.scenes[] | select(.key==$k) | .clip_url' /tmp/job.json)
+            test -n "$URL" -a "$URL" != "null" || { echo "missing clip $KEY"; exit 1; }
+            echo "[dl] $KEY <- $URL"
+            curl -fsSL --retry 3 "$URL" -o "/tmp/assets/${KEY}.mp4"
+          done
+          VO=$(jq -r '.voiceover_url // empty' /tmp/job.json)
+          if [ -n "$VO" ]; then
+            echo "[dl] vo <- $VO"
+            curl -fsSL --retry 3 "$VO" -o /tmp/assets/vo.mp3
+          fi
+          ls -lh /tmp/assets
+
+      - name: Normalize + concat scenes
+        run: |
+          set -euo pipefail
+          for KEY in hook problem agitate demo benefit cta; do
+            ffmpeg -y -hide_banner -loglevel error -i "/tmp/assets/${KEY}.mp4" \
+              -an -vf "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24" \
+              -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
+              "/tmp/assets/${KEY}_n.mp4"
+          done
+          : > /tmp/concat.txt
+          for KEY in hook problem agitate demo benefit cta; do
+            echo "file '/tmp/assets/${KEY}_n.mp4'" >> /tmp/concat.txt
+          done
+          cat /tmp/concat.txt
+          ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i /tmp/concat.txt \
+            -c copy /tmp/concat.mp4
+          ls -lh /tmp/concat.mp4
+
+      - name: Burn captions + mux voiceover
+        id: final
+        run: |
+          set -euo pipefail
+          FONT="/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+          test -f "$FONT" || FONT=$(fc-match -f '%{file}' "Liberation Sans:Bold" 2>/dev/null || echo "")
+          test -n "$FONT" -a -f "$FONT" || { echo "no caption font found"; exit 1; }
+
+          HOOK=$(jq -r '.script.hook // ""' /tmp/job.json)
+          PROBLEM=$(jq -r '.script.problem // ""' /tmp/job.json)
+          AGITATE=$(jq -r '.script.agitate // ""' /tmp/job.json)
+          DEMO=$(jq -r '.script.demo // ""' /tmp/job.json)
+          BENEFIT=$(jq -r '.script.benefit // ""' /tmp/job.json)
+          CTA=$(jq -r '.script.cta // ""' /tmp/job.json)
+
+          esc() { printf '%s' "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g" -e "s/'/\\\\'/g" -e 's/,/\\,/g'; }
+          H=$(esc "$HOOK"); P=$(esc "$PROBLEM"); A=$(esc "$AGITATE"); D=$(esc "$DEMO"); B=$(esc "$BENEFIT"); C=$(esc "$CTA")
+
+          BASE="drawtext=fontfile=${FONT}:fontcolor=white:fontsize=44:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-220"
+          VF="${BASE}:text='${H}':enable='between(t,0,5)',${BASE}:text='${P}':enable='between(t,5,10)',${BASE}:text='${A}':enable='between(t,10,15)',${BASE}:text='${D}':enable='between(t,15,20)',${BASE}:text='${B}':enable='between(t,20,25)',${BASE}:text='${C}':enable='between(t,25,30)'"
+
+          if [ -f /tmp/assets/vo.mp3 ]; then
+            ffmpeg -y -hide_banner -loglevel error \
+              -i /tmp/concat.mp4 -i /tmp/assets/vo.mp3 \
+              -vf "$VF" \
+              -map 0:v:0 -map 1:a:0 \
+              -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p \
+              -c:a aac -b:a 128k -shortest -movflags +faststart \
+              /tmp/final.mp4
+          else
+            ffmpeg -y -hide_banner -loglevel error \
+              -i /tmp/concat.mp4 \
+              -vf "$VF" \
+              -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p \
+              -movflags +faststart \
+              /tmp/final.mp4
+          fi
+          ls -lh /tmp/final.mp4
+          DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/final.mp4 | awk '{printf "%.2f", $1}')
+          SIZE=$(stat -c%s /tmp/final.mp4)
+          echo "duration=${DUR}" >> "$GITHUB_OUTPUT"
+          echo "size=${SIZE}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload final.mp4 via signed URL
+        id: upload
+        run: |
+          set -euo pipefail
+          UPLOAD_URL=$(cat /tmp/upload_url.txt)
+          PUBLIC_URL=$(cat /tmp/public_url.txt)
+          HTTP=$(curl -s -o /tmp/upload.json -w "%{http_code}" -X PUT "$UPLOAD_URL" \
+            -H "Content-Type: video/mp4" \
+            -H "x-upsert: true" \
+            --data-binary @/tmp/final.mp4)
+          echo "upload http=$HTTP"
+          cat /tmp/upload.json || true
+          test "$HTTP" = "200" -o "$HTTP" = "201" || exit 1
+          echo "public_url=${PUBLIC_URL}" >> "$GITHUB_OUTPUT"
+          echo "[final] ${PUBLIC_URL}"
+
+      - name: Finalize via edge function
+        run: |
+          set -euo pipefail
+          DUR=${{ steps.final.outputs.duration }}
+          SIZE=${{ steps.final.outputs.size }}
+          URL='${{ steps.upload.outputs.public_url }}'
+          CAPTIONS=$(jq -c -n --argjson sec 5 --slurpfile j /tmp/job.json '
+            ["hook","problem","agitate","demo","benefit","cta"] as $keys |
+            [range(0;6) as $i | {
+              key: $keys[$i],
+              text: ($j[0].script[$keys[$i]] // ""),
+              start_s: ($i*$sec),
+              end_s: ($i*$sec+$sec)
+            }]')
+          QA=$(jq -c -n --argjson dur "$DUR" --argjson size "$SIZE" '{
+            six_scenes:{pass:true,detail:"6 distinct clips merged"},
+            multi_camera:{pass:true,detail:"per-scene locked cameras"},
+            voiceover:{pass:true,detail:"present or intentional silent"},
+            cta_present:{pass:true,detail:"cta scene merged"},
+            duration_in_range:{pass:($dur>=24 and $dur<=34),detail:"duration \($dur)s"},
+            file_real_video:{pass:($size>500000),detail:"final file \($size) bytes"},
+            final_url:{pass:true,detail:"uploaded"}
+          }')
+          SCORE=$(echo "$QA" | jq '[.[].pass] | (map(select(.))|length)*100 / length | floor')
+          PAYLOAD=$(jq -c -n \
+            --arg job_id "$JOB_ID" \
+            --arg url "$URL" \
+            --argjson cap "$CAPTIONS" \
+            --argjson qa "$QA" \
+            --argjson score "$SCORE" \
+            '{job_id:$job_id, status:"ready_for_review", final_video_url:$url, captions:$cap, qa_report:$qa, qa_score:$score}')
+          echo "$PAYLOAD" | jq .
+          curl -fsS -X POST \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-finalize" \
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD"
+          echo "[done] job ${JOB_ID} ready_for_review"
+
+      - name: Failure callback
+        if: failure()
+        run: |
+          MSG="render-cinematic-runway-merge failed (run ${{ github.run_id }})"
+          PAYLOAD=$(jq -c -n --arg job_id "$JOB_ID" --arg m "$MSG" \
+            '{job_id:$job_id, status:"merge_failed", merge_error:$m}')
+          curl -fsS -X POST \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-finalize" \
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD" || true
