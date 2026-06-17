@@ -21,6 +21,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const GH_PAT = Deno.env.get("GH_PAT");
 const GH_REPO = Deno.env.get("GH_REPO"); // "owner/repo"
+const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET");
 const WORKFLOW_FILE = "render-cinematic-runway-merge.yml";
 
 function json(body: unknown, status = 200) {
@@ -38,19 +39,22 @@ Deno.serve(async (req) => {
       return json({ ok: false, traceId, message: "GH_PAT or GH_REPO not configured" }, 500);
     }
 
-    // Admin auth
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: ures } = await userClient.auth.getUser();
-    if (!ures?.user) return json({ ok: false, traceId, message: "unauthorized" }, 401);
-
+    // Auth: either admin user JWT, or internal-secret server-to-server call.
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: roleData } = await admin
-      .from("user_roles").select("role")
-      .eq("user_id", ures.user.id).eq("role", "admin").maybeSingle();
-    if (!roleData) return json({ ok: false, traceId, message: "admin required" }, 403);
+    const internalHeader = req.headers.get("x-internal-secret") ?? "";
+    const isInternal = !!INTERNAL_SECRET && internalHeader === INTERNAL_SECRET;
+    if (!isInternal) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: ures } = await userClient.auth.getUser();
+      if (!ures?.user) return json({ ok: false, traceId, message: "unauthorized" }, 401);
+      const { data: roleData } = await admin
+        .from("user_roles").select("role")
+        .eq("user_id", ures.user.id).eq("role", "admin").maybeSingle();
+      if (!roleData) return json({ ok: false, traceId, message: "admin required" }, 403);
+    }
 
     const body = await req.json().catch(() => ({}));
     const jobId = body?.job_id;
