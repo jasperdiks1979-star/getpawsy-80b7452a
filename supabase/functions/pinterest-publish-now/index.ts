@@ -61,6 +61,12 @@ async function validatePin(row: Record<string, unknown>, boardId: string | null,
   if (description.length > MAX_DESC) issues.push({ field: "pin_description", reason: `>${MAX_DESC} chars`, value: description.length });
   if (!imageUrl) issues.push({ field: "pin_image_url", reason: "empty" });
   else if (!/^https?:\/\//i.test(imageUrl)) issues.push({ field: "pin_image_url", reason: "not http(s)" });
+  // 2026-06-17 hard rule: CJ / supplier / marketplace catalog images are
+  // NEVER allowed on Pinterest. Only AI lifestyle, interior, pet-owner
+  // lifestyle, or branded GetPawsy assets are publishable.
+  if (imageUrl && /(^|\.)(cjdropshipping\.com|cjjsbox\.com|alicdn\.com|aliexpress\.com|alibaba\.com|1688\.com|dhgate\.com)(\/|$)/i.test(imageUrl)) {
+    issues.push({ field: "pin_image_url", reason: "blocked_supplier_image" });
+  }
   if (!link) issues.push({ field: "destination_link", reason: "empty" });
   if (!boardId) issues.push({ field: "board_id", reason: "missing" });
   if (!token) issues.push({ field: "access_token", reason: "missing" });
