@@ -1,69 +1,154 @@
-# Pinterest Premium Creative Engine — implementation plan
 
-Before I build, I need to flag overlap with what already ships and confirm the right path. GetPawsy already has three layers that do most of what you're describing:
+# Cinematic Video Engine V3 — Implementation Plan
 
-- **Creative Director** (`pinterest-creative-director`) — niche detection + AI scene briefs + Gemini image render + draft insert. No raw product feed.
-- **Creative Intelligence** (hooks + multi-axis quality scoring + retry loop, threshold 78).
-- **Premium pivot constraints** (14-day cooldown, hook cooldown 30d, pHash≥10, reject white-bg/orange-bar/aggressive-CTA, allowed creative categories, blocked styles).
-- **Visual duplicate guard** (last-100 pHash scan pre-insert).
-- **Queue type contract** + sanitizer + schema verify.
+Scope is strictly the cinematic ad pipeline. Pinterest publishing, product imports, checkout, Runway merge workflow, and existing infrastructure are **not** modified — V3 runs alongside V2 behind a feature flag and only feeds the Pinterest queue once a job passes QA ≥ 95.
 
-So the work is **not** "build a new engine from scratch" — it's **harden, raise the bar, block the legacy path, and migrate**. Rebuilding parallel tables (`pinterest_premium_creative_jobs`, `pinterest_creative_style_profiles`, `pinterest_creative_quality_scores`) would fork the system and break attribution/cron/QA we just stabilized.
+## Guiding principle
 
-## What I'll actually ship
+> The product is sacred. The animal is fake until proven real.
 
-### 1. Raise quality bar on the existing pipeline
-- In `_shared/pinterest-quality.ts`: bump threshold 78 → **85 total**, add new axes `non_dropshipping` (≥90) and `pinterest_fit` (≥85), `lifestyle` (≥80). Gemini scorer prompt updated to detect: white-bg dominance, supplier-cutout look, marketplace product-card, overlay dumped on product photo, fake badges, unreadable text, German/foreign text.
-- Add banned-phrase list (your 8 phrases + memory's existing list) enforced on headline/cta/title/description at brief stage AND post-render OCR check using existing `pinterest_pin_ocr_cache`.
-- Retry budget: keep MAX_RETRIES=2; on 3rd failure mark `qa_failed` (not inserted to queue).
+V3 never asks a generative model to invent a product or an animal. Every frame either composites the **real stored product media** or uses **abstract cinematic motion graphics** built from that same media.
 
-### 2. Enforce pin-type mix (70/15/10/5)
-- New table **`pinterest_pin_type_governor`** (rolling 30d counters per `pin_type` ∈ {lifestyle, problem_solution, listicle, product_showcase}).
-- Pre-insert gate in `pinterest-creative-director`: if `product_showcase` share >10% in last 30d → force regen as lifestyle.
-- Brief generator picks pin_type by current deficit vs target ratio.
+---
 
-### 3. Category style profiles
-- Seed **`pinterest_creative_style_profiles`** (the 11 categories you listed) with `scene_prompt_template`, `negative_prompt`, `overlay_rules`, `allowed_pin_types`. This replaces the hardcoded `pinterest-style-dna.ts` presets — DNA file becomes the fallback only.
-- Director loads profile by `detectNiche(product)` → category key.
+## 1. Architecture
 
-### 4. Block the legacy product-feed path
-- Audit edge functions that still insert pins from raw `product.image_url` without going through Director. Candidates: `pinterest-viral-batch`, `pinterest-content-correction`, any `pinterest-automation` raw-image path.
-- Add a **hard gate** in `pinterest-cron-worker` + `pinterest-publish-now` + `pinterest-automation` + `pinterest-video-publisher`: reject pins where `meta.intelligence.scores` is missing OR `meta.creative_source != 'creative_director_v2'`. Reason: `rejected_low_quality_supplier_style`. Admin override flag in `pinterest_runtime_settings.allow_legacy_product_feed` (default false).
+New, isolated module: `supabase/functions/cinematic-v3-*` + a new `cinematic_v3_jobs` table. The existing `cinematic_ad_jobs` table and Runway merge pipeline are untouched.
 
-### 5. Migration of existing drafts/queue
-- One-shot SQL: mark all currently `queued`/`draft` pins missing `meta.intelligence.scores` OR matching banned phrases OR pHash-matching raw `products.image_url` as `rejected` with reason `rejected_low_quality_supplier_style`.
-- Enqueue replacement jobs via Director for the same products (respecting 14d cooldown).
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ cinematic-v3-orchestrator  (single entry point per job)         │
+│                                                                 │
+│  1. RULE-1 Product accuracy gate                                │
+│       • load product + media + reviews                          │
+│       • require ≥ N high-res images, no AI-generated tag        │
+│       • reject if accuracy_confidence < 95                      │
+│                                                                 │
+│  2. Script writer (Lovable AI: gpt-5-mini)                      │
+│       • Hook → Problem → Agitate → Solution → Benefit → Trust → CTA│
+│       • returns 7 scenes w/ timing, VO line, on-screen caption  │
+│                                                                 │
+│  3. Voiceover (ElevenLabs, mp3)                                 │
+│       • RULE-5 mandatory — abort job on failure                 │
+│       • per-line stitching (previous_text / next_text)          │
+│       • saved to storage: voiceovers/<jobId>/line-<n>.mp3       │
+│                                                                 │
+│  4. Visual layer (NO AI animals, NO AI products)                │
+│       • Scene type = one of:                                    │
+│         – product_pan   (Ken-Burns on real product image)       │
+│         – product_parallax (multi-layer cut-out + bg blur)      │
+│         – authentic_clip (real CJ/uploaded video, trimmed)      │
+│         – motion_graphic (typography + product silhouette)      │
+│       • All frames are deterministic ffmpeg compositions —      │
+│         NO Runway / NO Veo / NO image generation here.          │
+│                                                                 │
+│  5. Caption + safe-frame engine                                 │
+│       • 1080×1920, top safe 150px, bottom safe 350px            │
+│       • drawtext via textfile= (no inline escaping)             │
+│       • font auto-scales: max 2 lines × 8 words, binary-search  │
+│         font size until bbox fits safe band                     │
+│                                                                 │
+│  6. Mux                                                         │
+│       • concat scenes → overlay captions → mux VO + bg music    │
+│       • -ar 44100 -c:a aac -b:a 192k -c:v libx264 -preset slow  │
+│                                                                 │
+│  7. QA engine (RULE-8) — see §3                                 │
+│       • score 0-100 per category, refuse < 95 overall           │
+│                                                                 │
+│  8. On pass → enqueue to existing Pinterest queue               │
+│     On fail → job stays in `needs_review`, never published      │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### 6. Admin surface
-- New section on `/admin/pinterest-pin-status` (not a new route — keeps muscle memory): **Premium Creative Engine** panel showing:
-  - drafts (premium), QA passed, QA failed (with top reasons), legacy blocked count
-  - 30d ratio: lifestyle / problem_solution / listicle / product_showcase vs target
-  - buttons: Generate premium drafts (N=10), Queue QA-passed, Publish next, Regenerate failed, Emergency stop (writes `runtime_settings.premium_engine_paused`)
-  - red warning banner: "Raw product-feed pins are blocked by default."
+Reuses existing infra:
+- GitHub Actions render runner (the working `render-cinematic-runway-merge.yml`)
+- Storage bucket `cinematic-runway`
+- Pinterest queue table (only inserts happen, no schema change)
 
-### 7. Smoke validation after deploy
-1. Trigger Director `run_full` for 30 products.
-2. Confirm ≥10 drafts pass QA (score≥85, non_dropshipping≥90).
-3. Approve+queue them.
-4. Run `pinterest-cron-debug` to confirm next eligible pin is one of them.
-5. Trigger one `pinterest-publish-now` (respects warm-up/cap), verify destination URL has `pin_id=` + UTMs (already fixed last turn).
-6. Confirm one legacy-style queued pin is now `rejected` with the new reason.
-7. Return counts + dashboard URL + next cron time.
+---
 
-## What I'm explicitly **not** doing
-- Not creating `pinterest_premium_creative_jobs` as a parallel queue. Director already writes to `pinterest_pin_queue` with `meta.intelligence`. A parallel queue would break cron, attribution, and the publisher-path audit we just finished.
-- Not creating `pinterest_creative_quality_scores` as a new table. `pinterest_render_attempts` already stores per-attempt scores + reasons. I'll add the 3 new axis columns there.
-- Not changing UTM/pin_id stamping — that's done.
-- Not touching board routing, warm-up, daily cap, dup guard — already enforced.
+## 2. Database (one migration)
 
-## Tables touched
-- **New:** `pinterest_creative_style_profiles` (seeded 11 categories), `pinterest_pin_type_governor` (30d rolling).
-- **Altered:** `pinterest_render_attempts` (+3 score columns), `pinterest_runtime_settings` (+`premium_engine_paused`, `allow_legacy_product_feed`, `pin_type_target_ratio` jsonb).
-- **Data migration:** mass-reject legacy queued pins.
+`cinematic_v3_jobs`
+- product_id, status, script (jsonb), scenes (jsonb)
+- voiceover_url, final_mp4_url
+- qa_scores (jsonb), qa_total, qa_passed (bool)
+- failure_reasons (text[])
+- timestamps
 
-## Open questions before I build
-1. **Image model:** Director currently uses `google/gemini-3-pro-image-preview` (Lovable AI Gateway). OK to keep, or do you want `gpt-image-2` for the premium tier? Gemini is faster + cheaper, Pro-image is genuinely photoreal for interiors. I'll keep Gemini Pro unless you say otherwise.
-2. **Threshold strictness:** 85/90/85/80 will kill ~60-70% of first-pass renders (with 2 retries). That's the point, but it means slower queue fill. Acceptable?
-3. **Migration scope:** Mass-reject applies to `queued` + `draft` rows ≤30 days old, or **all** legacy rows regardless of age? I'd do ≤30d to avoid noise.
+RLS: admin-only read/write, service_role full. No anon access.
 
-Reply **approve** (or with answers to 1–3) and I ship it in one pass — migration, code, seed, smoke test, report.
+---
+
+## 3. QA engine (RULE-8, hard gate)
+
+Each category scored 0–100. Final = min of all (one failure fails the job).
+
+| Category | How it's measured |
+|---|---|
+| Product accuracy | SSIM between source product image and a sampled frame's product crop ≥ 0.92 |
+| Visual consistency | frame-to-frame perceptual hash drift below threshold |
+| Text visibility | OCR (tesseract) bbox vs safe zone, contrast ratio ≥ 4.5 |
+| Voiceover presence | ffprobe: audio stream exists, RMS > -30 dB, duration ≥ video − 1s |
+| Audio quality | LUFS between -18 and -14 (commercial loudness) |
+| Aspect ratio | exactly 1080×1920 |
+| Safe zones | no OCR text crossing 0–150 or 1570–1920 |
+| Caption timing | each caption's on-screen window ≥ its VO line duration |
+| Pinterest compliance | duration 6–60s, mp4/h264, < 2 GB, < 16 MB/s |
+
+`qa_passed = (every category ≥ 95)`. Anything else → `needs_review`, never auto-published.
+
+---
+
+## 4. Voiceover (ElevenLabs)
+
+- Standard connector for `ELEVENLABS_API_KEY` (will prompt if not linked).
+- Voice: `JBFqnCBsd6RMkjVDRZzb` (George — warm/trustworthy US male) by default; admin can override.
+- Model: `eleven_multilingual_v2` for quality; `eleven_turbo_v2_5` fallback.
+- Per-scene generation with request stitching for smooth prosody.
+- Saved to Lovable Cloud storage; URL stored on the job.
+
+If voiceover generation returns non-2xx → job aborts with `failure_reasons: ['voiceover_failed']`. No video is produced.
+
+---
+
+## 5. No-AI-animal guarantee (RULE-2)
+
+Enforced at three layers:
+1. Script writer system prompt forbids referencing animals visually; copy may *say* "your cat" but never instruct the renderer to show one.
+2. Scene type whitelist (see §1) — there is no scene type that can produce an animal frame.
+3. QA OCR + a lightweight image classifier (open-source MobileNet via the render worker) scans 8 sampled frames; if "cat"/"dog"/"person" confidence > 0.6 anywhere and no authentic source clip is tagged for that scene → fail.
+
+---
+
+## 6. Admin UI
+
+New page `src/pages/admin/CinematicV3QaPage.tsx` linked from the admin sidebar under "Cinematic":
+
+- Job list with thumbnail, duration, QA total, per-category scores as chips
+- Filter: passed / needs_review / failed
+- Detail drawer: script, VO player, final MP4 player, frame-by-frame QA evidence
+- "Re-render" button (admin-only)
+- "Approve to Pinterest queue" button (only enabled when `qa_passed = true`)
+
+Pinterest queue insertion is the **only** integration point and uses the existing insert path — no change to publishing logic.
+
+---
+
+## 7. Rollout
+
+1. Ship migration + V3 functions behind admin-only access.
+2. Generate 3 pilot jobs from existing top products; review QA dashboard.
+3. Only after the user confirms the 3 pilots look like commercial ads do we open V3 to feed the Pinterest queue.
+4. V2 jobs already in flight are untouched.
+
+---
+
+## Open questions before I start
+
+1. **ElevenLabs**: link the standard connector now? (preferred — keeps the key managed). If you'd rather use a manual `ELEVENLABS_API_KEY` secret, say so.
+2. **Background music**: include a small royalty-free music bed at -22 LUFS under the VO, or VO-only? (commercial ads almost always have a bed)
+3. **Pilot products**: pick the first 3 product slugs to validate against, or let me auto-pick the top 3 winners by revenue?
+4. **Voice**: default to George (warm US male) or do you want a female voice (Sarah / Jessica)?
+
+Once you answer these I'll execute the full build in one pass: migration → edge functions → render-worker changes → admin QA page → 3 pilot renders. No existing infrastructure will be touched.
