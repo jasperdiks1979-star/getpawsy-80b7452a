@@ -316,9 +316,11 @@ export const Navbar = () => {
       >
         <div className="container flex items-center justify-center gap-2 py-2 px-4 relative" style={{ height: 40 }}>
           <Truck className="w-4 h-4" />
-          <span>Free shipping on eligible orders over $35</span>
+          <span className="font-semibold">10% off your first order</span>
+          <span className="hidden xs:inline text-primary-foreground/80">— code</span>
+          <span className="font-mono font-semibold tracking-wider bg-primary-foreground/15 px-1.5 py-0.5 rounded">WELCOME10</span>
           <span className="hidden sm:inline text-primary-foreground/80">•</span>
-          <span className="hidden sm:inline text-primary-foreground/80">Estimated delivery: 5–10 business days</span>
+          <span className="hidden sm:inline text-primary-foreground/80">Free U.S. shipping over $35</span>
           <button
             onClick={dismissBanner}
             className="absolute right-4 p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"

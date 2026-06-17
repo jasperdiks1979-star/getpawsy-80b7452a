@@ -19106,6 +19106,8 @@ export type Database = {
           metadata_optimized_at: string | null
           mpn: string | null
           name: string
+          name_clean: string | null
+          name_clean_updated_at: string | null
           needs_admin_review: boolean
           optimized_description: string | null
           optimized_title: string | null
@@ -19232,6 +19234,8 @@ export type Database = {
           metadata_optimized_at?: string | null
           mpn?: string | null
           name: string
+          name_clean?: string | null
+          name_clean_updated_at?: string | null
           needs_admin_review?: boolean
           optimized_description?: string | null
           optimized_title?: string | null
@@ -19358,6 +19362,8 @@ export type Database = {
           metadata_optimized_at?: string | null
           mpn?: string | null
           name?: string
+          name_clean?: string | null
+          name_clean_updated_at?: string | null
           needs_admin_review?: boolean
           optimized_description?: string | null
           optimized_title?: string | null
