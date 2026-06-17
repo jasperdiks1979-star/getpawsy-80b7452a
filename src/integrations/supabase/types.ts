@@ -15704,6 +15704,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          batch_id: string | null
           board_id: string | null
           board_name: string
           cap_recovery_mode: boolean
@@ -15711,6 +15712,7 @@ export type Database = {
           content_type: string
           created_at: string
           creative_fingerprint: string | null
+          creative_source_tracked: string | null
           destination_link: string
           error_message: string | null
           external_url: string | null
@@ -15758,6 +15760,7 @@ export type Database = {
           replacement_for_pin_id: string | null
           retries: number
           scheduled_at: string | null
+          source_type: string | null
           status: string
           updated_at: string
           us_audience_score: number | null
@@ -15766,6 +15769,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          batch_id?: string | null
           board_id?: string | null
           board_name?: string
           cap_recovery_mode?: boolean
@@ -15773,6 +15777,7 @@ export type Database = {
           content_type?: string
           created_at?: string
           creative_fingerprint?: string | null
+          creative_source_tracked?: string | null
           destination_link: string
           error_message?: string | null
           external_url?: string | null
@@ -15820,6 +15825,7 @@ export type Database = {
           replacement_for_pin_id?: string | null
           retries?: number
           scheduled_at?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           us_audience_score?: number | null
@@ -15828,6 +15834,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          batch_id?: string | null
           board_id?: string | null
           board_name?: string
           cap_recovery_mode?: boolean
@@ -15835,6 +15842,7 @@ export type Database = {
           content_type?: string
           created_at?: string
           creative_fingerprint?: string | null
+          creative_source_tracked?: string | null
           destination_link?: string
           error_message?: string | null
           external_url?: string | null
@@ -15882,6 +15890,7 @@ export type Database = {
           replacement_for_pin_id?: string | null
           retries?: number
           scheduled_at?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
           us_audience_score?: number | null
@@ -24785,6 +24794,15 @@ export type Database = {
           }
       pinterest_guard_audit: { Args: never; Returns: Json }
       pinterest_guard_sweep: { Args: never; Returns: Json }
+      pinterest_infer_source_type: {
+        Args: {
+          _content_type: string
+          _image_url: string
+          _meta: Json
+          _pin_variant: string
+        }
+        Returns: string
+      }
       pinterest_publish_health: { Args: never; Returns: Json }
       pinterest_scheduler_health: { Args: never; Returns: Json }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
