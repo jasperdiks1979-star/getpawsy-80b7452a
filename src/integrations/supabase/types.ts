@@ -19037,6 +19037,60 @@ export type Database = {
           },
         ]
       }
+      product_winner_scores: {
+        Row: {
+          bestseller_score: number
+          competition_level: string
+          conversion_probability: number
+          created_at: string
+          estimated_profit_per_sale: number
+          first_sale_score: number
+          id: string
+          impulse_score: number
+          perceived_value_score: number
+          pinterest_click_probability: number
+          product_id: string
+          revenue_probability: number
+          run_id: string
+          signals: Json
+          verdict: string
+        }
+        Insert: {
+          bestseller_score?: number
+          competition_level?: string
+          conversion_probability?: number
+          created_at?: string
+          estimated_profit_per_sale?: number
+          first_sale_score?: number
+          id?: string
+          impulse_score?: number
+          perceived_value_score?: number
+          pinterest_click_probability?: number
+          product_id: string
+          revenue_probability?: number
+          run_id: string
+          signals?: Json
+          verdict?: string
+        }
+        Update: {
+          bestseller_score?: number
+          competition_level?: string
+          conversion_probability?: number
+          created_at?: string
+          estimated_profit_per_sale?: number
+          first_sale_score?: number
+          id?: string
+          impulse_score?: number
+          perceived_value_score?: number
+          pinterest_click_probability?: number
+          product_id?: string
+          revenue_probability?: number
+          run_id?: string
+          signals?: Json
+          verdict?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           admin_review_reason: string | null
