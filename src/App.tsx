@@ -2865,6 +2865,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="product-diversity"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductDiversityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-niche-rules"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
