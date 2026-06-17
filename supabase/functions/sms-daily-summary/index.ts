@@ -2,6 +2,7 @@
 // Protected by INTERNAL_FUNCTION_SECRET or admin auth.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { loadTwilioConfig } from "../_shared/post-payment-tracking.ts";
+import { gateAndLog } from "../_shared/sms-mode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
