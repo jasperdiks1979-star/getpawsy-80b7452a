@@ -101,18 +101,15 @@ jobs:
           test -f "$FONT" || FONT=$(fc-match -f '%{file}' "Liberation Sans:Bold" 2>/dev/null || echo "")
           test -n "$FONT" -a -f "$FONT" || { echo "no caption font found"; exit 1; }
 
-          HOOK=$(jq -r '.script.hook // ""' /tmp/job.json)
-          PROBLEM=$(jq -r '.script.problem // ""' /tmp/job.json)
-          AGITATE=$(jq -r '.script.agitate // ""' /tmp/job.json)
-          DEMO=$(jq -r '.script.demo // ""' /tmp/job.json)
-          BENEFIT=$(jq -r '.script.benefit // ""' /tmp/job.json)
-          CTA=$(jq -r '.script.cta // ""' /tmp/job.json)
-
-          esc() { printf '%s' "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g" -e "s/'/\\\\'/g" -e 's/,/\\,/g'; }
-          H=$(esc "$HOOK"); P=$(esc "$PROBLEM"); A=$(esc "$AGITATE"); D=$(esc "$DEMO"); B=$(esc "$BENEFIT"); C=$(esc "$CTA")
+          # Write each caption to a file and use drawtext's textfile= to avoid
+          # all shell/ffmpeg quoting issues (apostrophes, colons, commas, etc.).
+          mkdir -p /tmp/caps
+          for KEY in hook problem agitate demo benefit cta; do
+            jq -r --arg k "$KEY" '.script[$k] // ""' /tmp/job.json > "/tmp/caps/${KEY}.txt"
+          done
 
           BASE="drawtext=fontfile=${FONT}:fontcolor=white:fontsize=44:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-220"
-          VF="${BASE}:text='${H}':enable='between(t,0,5)',${BASE}:text='${P}':enable='between(t,5,10)',${BASE}:text='${A}':enable='between(t,10,15)',${BASE}:text='${D}':enable='between(t,15,20)',${BASE}:text='${B}':enable='between(t,20,25)',${BASE}:text='${C}':enable='between(t,25,30)'"
+          VF="${BASE}:textfile=/tmp/caps/hook.txt:enable='between(t,0,5)',${BASE}:textfile=/tmp/caps/problem.txt:enable='between(t,5,10)',${BASE}:textfile=/tmp/caps/agitate.txt:enable='between(t,10,15)',${BASE}:textfile=/tmp/caps/demo.txt:enable='between(t,15,20)',${BASE}:textfile=/tmp/caps/benefit.txt:enable='between(t,20,25)',${BASE}:textfile=/tmp/caps/cta.txt:enable='between(t,25,30)'"
 
           if [ -f /tmp/assets/vo.mp3 ]; then
             ffmpeg -y -hide_banner -loglevel error \
