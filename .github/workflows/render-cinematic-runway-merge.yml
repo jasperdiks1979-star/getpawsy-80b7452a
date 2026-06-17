@@ -1,7 +1,7 @@
 name: Render Cinematic Runway Merge
 
 # Server-side merge of a cinematic_runway_jobs job.
-# Downloads 4 Runway clips + ElevenLabs voiceover from storage, runs native
+# Downloads 6 Runway clips + optional ElevenLabs voiceover from storage, runs native
 # ffmpeg to concat + burn captions + mux audio, uploads final.mp4, and writes
 # status=ready_for_review back to the cinematic_runway_jobs row via PostgREST.
 #
@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/assets
-          for KEY in hook problem solution cta; do
+          for KEY in hook problem agitate demo benefit cta; do
             URL=$(jq -r --arg k "$KEY" '.scenes[] | select(.key==$k) | .clip_url' /tmp/job.json)
             test -n "$URL" -a "$URL" != "null" || { echo "missing clip $KEY"; exit 1; }
             echo "[dl] $KEY <- $URL"
@@ -79,14 +79,14 @@ jobs:
         run: |
           set -euo pipefail
           # Re-encode each scene to identical params so concat is safe.
-          for KEY in hook problem solution cta; do
+          for KEY in hook problem agitate demo benefit cta; do
             ffmpeg -y -hide_banner -loglevel error -i "/tmp/assets/${KEY}.mp4" \
               -an -vf "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24" \
               -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
               "/tmp/assets/${KEY}_n.mp4"
           done
           : > /tmp/concat.txt
-          for KEY in hook problem solution cta; do
+          for KEY in hook problem agitate demo benefit cta; do
             echo "file '/tmp/assets/${KEY}_n.mp4'" >> /tmp/concat.txt
           done
           cat /tmp/concat.txt
@@ -105,14 +105,16 @@ jobs:
 
           HOOK=$(jq -r '.script.hook // ""' /tmp/job.json)
           PROBLEM=$(jq -r '.script.problem // ""' /tmp/job.json)
-          SOLUTION=$(jq -r '.script.solution // ""' /tmp/job.json)
+          AGITATE=$(jq -r '.script.agitate // ""' /tmp/job.json)
+          DEMO=$(jq -r '.script.demo // ""' /tmp/job.json)
+          BENEFIT=$(jq -r '.script.benefit // ""' /tmp/job.json)
           CTA=$(jq -r '.script.cta // ""' /tmp/job.json)
 
           esc() { printf '%s' "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g" -e "s/'/\\\\'/g" -e 's/,/\\,/g'; }
-          H=$(esc "$HOOK"); P=$(esc "$PROBLEM"); S=$(esc "$SOLUTION"); C=$(esc "$CTA")
+          H=$(esc "$HOOK"); P=$(esc "$PROBLEM"); A=$(esc "$AGITATE"); D=$(esc "$DEMO"); B=$(esc "$BENEFIT"); C=$(esc "$CTA")
 
           BASE="drawtext=fontfile=${FONT}:fontcolor=white:fontsize=44:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-220"
-          VF="${BASE}:text='${H}':enable='between(t,0,5)',${BASE}:text='${P}':enable='between(t,5,10)',${BASE}:text='${S}':enable='between(t,10,15)',${BASE}:text='${C}':enable='between(t,15,20)'"
+          VF="${BASE}:text='${H}':enable='between(t,0,5)',${BASE}:text='${P}':enable='between(t,5,10)',${BASE}:text='${A}':enable='between(t,10,15)',${BASE}:text='${D}':enable='between(t,15,20)',${BASE}:text='${B}':enable='between(t,20,25)',${BASE}:text='${C}':enable='between(t,25,30)'"
 
           if [ -f /tmp/assets/vo.mp3 ]; then
             ffmpeg -y -hide_banner -loglevel error \
@@ -162,17 +164,19 @@ jobs:
           SIZE=${{ steps.final.outputs.size }}
           URL='${{ steps.upload.outputs.public_url }}'
           CAPTIONS=$(jq -c -n --argjson sec 5 --slurpfile j /tmp/job.json '
-            ["hook","problem","solution","cta"] as $keys |
-            [range(0;4) as $i | {
+            ["hook","problem","agitate","demo","benefit","cta"] as $keys |
+            [range(0;6) as $i | {
               key: $keys[$i],
               text: ($j[0].script[$keys[$i]] // ""),
               start_s: ($i*$sec),
               end_s: ($i*$sec+$sec)
             }]')
           QA=$(jq -c -n --argjson dur "$DUR" --argjson size "$SIZE" '{
-            four_scenes:{pass:true,detail:"4 distinct clips merged"},
-            voiceover:{pass:true,detail:"present"},
-            duration_in_range:{pass:($dur>=14 and $dur<=22),detail:"duration \($dur)s"},
+            six_scenes:{pass:true,detail:"6 distinct clips merged"},
+            multi_camera:{pass:true,detail:"per-scene locked cameras"},
+            voiceover:{pass:true,detail:"present or intentional silent"},
+            cta_present:{pass:true,detail:"cta scene merged"},
+            duration_in_range:{pass:($dur>=24 and $dur<=34),detail:"duration \($dur)s"},
             file_real_video:{pass:($size>500000),detail:"final file \($size) bytes"},
             final_url:{pass:true,detail:"uploaded"}
           }')
