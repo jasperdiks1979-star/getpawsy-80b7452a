@@ -1419,7 +1419,7 @@ Deno.serve(async (req) => {
         let lastReasons: string[] = [];
         let lastScores: Record<string, number> = {};
 
-        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+        for (let attempt = 1; attempt <= EFFECTIVE_MAX_RETRIES + 1; attempt++) {
           try {
             // ── Pre-render DiversityGuard (2026-06 cost hardening) ───────
             // Hash the planned overlay + hook + CTA + headline BEFORE we burn
@@ -1450,7 +1450,7 @@ Deno.serve(async (req) => {
                 rejected: true,
                 reasons: lastReasons,
               });
-              if (attempt > MAX_RETRIES) {
+              if (attempt > EFFECTIVE_MAX_RETRIES) {
                 rejected.push({ brief, reasons: lastReasons, scores: lastScores, diversity: preGuard, pre_render_skip: true });
                 break;
               }
@@ -1498,7 +1498,7 @@ Deno.serve(async (req) => {
             });
 
             if (!qc.ok) {
-              if (attempt > MAX_RETRIES) break;
+              if (attempt > EFFECTIVE_MAX_RETRIES) break;
               // Regenerate THIS brief with rejection reasons appended.
               const single = await generateBriefs(
                 product,
@@ -1531,7 +1531,7 @@ Deno.serve(async (req) => {
                   ...(qc.reasons ?? []),
                   `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
                 ];
-                if (attempt > MAX_RETRIES) break;
+                if (attempt > EFFECTIVE_MAX_RETRIES) break;
                 // Retry: regen this brief, source-lock still applied next loop.
                 const single = await generateBriefs(
                   product, dna, 1,
@@ -1618,7 +1618,7 @@ Deno.serve(async (req) => {
             break;
           } catch (e) {
             lastReasons = [(e as Error).message];
-            if (attempt > MAX_RETRIES) break;
+            if (attempt > EFFECTIVE_MAX_RETRIES) break;
           }
         }
 
