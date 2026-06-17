@@ -12302,6 +12302,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_batch_overrides: {
+        Row: {
+          batch_tag: string
+          created_at: string
+          id: string
+          lifted_at: string
+          notes: string | null
+          pin_ids: string[]
+          restored: boolean
+          restored_at: string | null
+          snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          batch_tag: string
+          created_at?: string
+          id?: string
+          lifted_at?: string
+          notes?: string | null
+          pin_ids: string[]
+          restored?: boolean
+          restored_at?: string | null
+          snapshot: Json
+          updated_at?: string
+        }
+        Update: {
+          batch_tag?: string
+          created_at?: string
+          id?: string
+          lifted_at?: string
+          notes?: string | null
+          pin_ids?: string[]
+          restored?: boolean
+          restored_at?: string | null
+          snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_board_mappings: {
         Row: {
           board_names: string[]
@@ -24295,6 +24334,10 @@ export type Database = {
           skipped_other_species: number
           skipped_policy_unsafe: number
         }[]
+      }
+      check_and_restore_batch_gates: {
+        Args: { _batch_tag: string }
+        Returns: Json
       }
       check_heartbeat_liveness: { Args: never; Returns: Json }
       check_rate_limit: {
