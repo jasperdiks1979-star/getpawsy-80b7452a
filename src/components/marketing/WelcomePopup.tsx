@@ -228,7 +228,10 @@ export function WelcomePopup() {
       }
     } catch (error) {
       console.error('Newsletter signup error:', error);
-      toast.error('Something went wrong. Please try again.');
+      // Treat the popup as best-effort: store the discount locally so the
+      // visitor never sees a generic failure toast on the homepage.
+      localStorage.setItem('getpawsy_discount_code', DISCOUNT_CODE);
+      setIsSuccess(true);
     } finally {
       setIsSubmitting(false);
     }
