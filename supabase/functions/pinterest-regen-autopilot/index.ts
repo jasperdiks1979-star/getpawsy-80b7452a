@@ -15,7 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
+import { isCreditPaused, isAutopilotDisabled } from "../_shared/pinterest-credit-guard.ts";
 import { isHighPriorityCategory, categoryPriorityScore } from "../_shared/pinterest-credit-forecast.ts";
 
 const corsHeaders = {
@@ -76,6 +76,21 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
     auth: { persistSession: false },
   });
+
+  // 2026-06-17 hard cost-protection kill switch: the entire autopilot lane is
+  // disabled. Recovery worker + publish drain continue independently. Reset by
+  // flipping `pinterest_credit_state.autopilot_disabled=false`.
+  if (await isAutopilotDisabled(supabase)) {
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        traceId: trace,
+        disabled: true,
+        message: "pinterest-regen-autopilot is DISABLED by cost-protection kill switch. Publish + recovery lanes unaffected.",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   // Credit protection: if AI gateway is paused due to exhausted credits,
   // skip generation entirely and trigger a probe to detect recovery.
