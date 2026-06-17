@@ -506,6 +506,11 @@ export async function sendFailureAlert(
   errorMessage: string,
 ): Promise<void> {
   try {
+    // SMS Mode gate — "failure" alerts are blocked in sales_only mode.
+    // We still log the attempt so admins can see what would have fired.
+    const fingerprintBody = `${component}:${errorMessage.slice(0, 80)}`;
+    const gate = await gateAndLog(supabase, "failure", fingerprintBody);
+    if (!gate.allowed) return;
     const cfg = await loadTwilioConfig(supabase);
     const fingerprint = `${component}:${errorMessage.slice(0, 80)}`;
     const since = new Date(Date.now() - 30 * 60_000).toISOString();
