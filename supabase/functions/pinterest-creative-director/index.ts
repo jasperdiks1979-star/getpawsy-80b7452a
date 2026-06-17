@@ -1406,6 +1406,60 @@ Deno.serve(async (req) => {
 
         for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
           try {
+            // ── Pre-render DiversityGuard (2026-06 cost hardening) ───────
+            // Hash the planned overlay + hook + CTA + headline BEFORE we burn
+            // any image-gen credits. If the guard would reject this brief, we
+            // skip the render entirely and try to regenerate the brief.
+            const preGuard = guard.evaluate(
+              {
+                headline: brief.headline,
+                cta: brief.cta,
+                hook: brief.hook_category ?? null,
+                product_id: product.id,
+              },
+              normaliseCategoryKey(niche),
+            );
+            if (!preGuard.ok && !emergency) {
+              lastReasons = [
+                ...(lastReasons ?? []),
+                ...preGuard.reasons.map((r) => `pre_diversity:${r}`),
+              ];
+              await logRenderAttempt(supabase, {
+                pin_queue_id: null,
+                product_slug: product.slug,
+                niche_key: niche,
+                brief,
+                attempt_no: attempt,
+                scores: {},
+                total_score: 0,
+                rejected: true,
+                reasons: lastReasons,
+              });
+              if (attempt > MAX_RETRIES) {
+                rejected.push({ brief, reasons: lastReasons, scores: lastScores, diversity: preGuard, pre_render_skip: true });
+                break;
+              }
+              // Regen the brief with the diversity reasons so the model picks
+              // a different angle/headline/CTA next time. No image was rendered.
+              const single = await generateBriefs(
+                product, dna, 1,
+                [brief.pattern_id!] as PatternId[],
+                weights,
+                { 0: preGuard.reasons },
+              );
+              brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+              continue;
+            }
+            // Apply any cheap pool replacements the guard suggested so the
+            // overlay we render matches what we'll insert.
+            if (Object.keys(preGuard.replacedFromPool).length) {
+              if (preGuard.replacedFromPool.headline) brief.headline = preGuard.final.headline;
+              if (preGuard.replacedFromPool.cta) brief.cta = preGuard.final.cta;
+              if (preGuard.replacedFromPool.hook && preGuard.final.hook) {
+                (brief as any).hook_category = preGuard.final.hook;
+              }
+            }
+
             const bytes = await renderSceneWithSource(
               brief,
               dna,
