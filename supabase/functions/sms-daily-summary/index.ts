@@ -119,6 +119,14 @@ Deno.serve(async (req) => {
     `Top Product:\n${bestSeller}`;
 
   const cfg = await loadTwilioConfig(svc);
+
+  // SMS Mode gate — daily_summary is non-sale; muted in sales_only mode.
+  // Admin-forced manual trigger (force=true) STILL respects the gate;
+  // use /admin/sms-alerts → Send Test SMS for an always-on manual ping.
+  const gate = await gateAndLog(svc, "daily_summary", body);
+  if (!gate.allowed) {
+    return json({ ok: true, blocked_by_sms_mode: true, mode: gate.mode, count, revenue });
+  }
   if (!cfg.accountSid || !cfg.authToken || !cfg.fromNumber || !cfg.ownerPhone) {
     await svc.from("sms_alert_logs").insert({
       alert_type: "daily_summary",
