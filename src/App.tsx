@@ -500,6 +500,7 @@ const PinterestIntelligence = lazyWithRetry(() => import("./pages/admin/Pinteres
 const PinterestGrowthEnginePage = lazyWithRetry(() => import("./pages/admin/PinterestGrowthEnginePage"));
 const PinterestGenericNichePage = lazyWithRetry(() => import("./pages/admin/PinterestGenericNichePage"));
 const PinterestNicheCoveragePage = lazyWithRetry(() => import("./pages/admin/PinterestNicheCoveragePage"));
+const ProductDiversityPage = lazyWithRetry(() => import("./pages/admin/ProductDiversityPage"));
 const PinterestNicheRulesPage = lazyWithRetry(() => import("./pages/admin/PinterestNicheRulesPage"));
 const RejectedSpamEventsPage = lazyWithRetry(() => import("./pages/admin/RejectedSpamEventsPage"));
 const BotTrafficDrilldownPage = lazyWithRetry(() => import("./pages/admin/BotTrafficDrilldownPage"));
@@ -2860,6 +2861,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestNicheCoveragePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="product-diversity"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductDiversityPage />
                                 </Suspense>
                               }
                             />
