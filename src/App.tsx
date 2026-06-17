@@ -1615,6 +1615,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="revenue-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="payments"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
