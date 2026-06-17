@@ -385,7 +385,39 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    // PRODUCTION RESILIENCE: a stale lazy chunk can transiently import a
+    // different CartContext module identity (deploy mid-session). Throwing
+    // there crashes the whole route — including PDP "Add to Cart". Instead,
+    // log + report and return a safe no-op so the page keeps rendering;
+    // the next click triggers our chunk-reload guard which refreshes to
+    // the new build. In dev we keep the loud error to catch real bugs.
+    if (import.meta.env.DEV) {
+      throw new Error('useCart must be used within a CartProvider');
+    }
+    if (typeof window !== 'undefined') {
+      console.error('[useCart] Context missing — likely stale chunk after deploy. Returning safe no-op.');
+      try {
+        // Trigger the unified reload guard (debounced via session key) on next tick.
+        import('@/lib/boot-diagnostics').catch(() => {});
+        const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
+        const count = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
+        if (count === 0) {
+          sessionStorage.setItem(guardKey, '1');
+          setTimeout(() => window.location.reload(), 250);
+        }
+      } catch {}
+    }
+    const noop = () => {};
+    return {
+      items: [] as CartItem[],
+      addItem: noop,
+      removeItem: noop,
+      updateQuantity: noop,
+      clearCart: noop,
+      setAbandonedCartEmail: noop,
+      totalItems: 0,
+      totalPrice: 0,
+    } as CartContextType;
   }
   return context;
 };
