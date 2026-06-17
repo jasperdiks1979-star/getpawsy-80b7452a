@@ -17463,6 +17463,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_source_block_stats: {
+        Row: {
+          blocked_count: number
+          day: string
+          last_blocked_at: string
+          source_type: string
+        }
+        Insert: {
+          blocked_count?: number
+          day?: string
+          last_blocked_at?: string
+          source_type: string
+        }
+        Update: {
+          blocked_count?: number
+          day?: string
+          last_blocked_at?: string
+          source_type?: string
+        }
+        Relationships: []
+      }
       pinterest_strategy_state: {
         Row: {
           archetype_boosts: Json
