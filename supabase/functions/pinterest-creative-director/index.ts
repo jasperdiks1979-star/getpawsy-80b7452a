@@ -53,6 +53,7 @@ import { checkGovernor, governorRejectReason } from "../_shared/pinterest-govern
 import {
   isCreditPaused,
   recordCreditEvent,
+  isImageGenerationKilled,
 } from "../_shared/pinterest-credit-guard.ts";
 
 const corsHeaders = {
@@ -565,6 +566,15 @@ async function renderSceneWithSource(
   overlay: { text: string; brand: string } | null = null,
 ): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+
+  // ── Hard cost-protection kill switch (2026-06-17) ───────────────────────
+  // Refuse to call the image model when the kill switch is engaged. The
+  // calling loop catches this as a render failure and rejects the brief
+  // WITHOUT charging any AI gateway credits.
+  const killed = await isImageGenerationKilled(creditClient() as any);
+  if (killed.killed) {
+    throw new Error(`image_generation_killed:${killed.reason ?? "kill_switch"}`);
+  }
 
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
   const patternDirective = pattern
