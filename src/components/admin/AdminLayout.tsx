@@ -34,6 +34,7 @@ import { AiBalanceBanner } from '@/components/admin/AiBalanceBanner';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/revenue-command-center', label: '★ Revenue Command Center', icon: Gauge },
   { to: '/admin/growth-execution', label: 'SEO Growth V4', icon: TrendingUp },
   { to: '/admin/seo-command-center', label: 'SEO Command', icon: Target },
   { to: '/admin/autonomous-seo', label: 'Autonomous SEO', icon: Brain },
