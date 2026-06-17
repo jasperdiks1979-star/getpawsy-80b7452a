@@ -24581,6 +24581,8 @@ export type Database = {
             }
             Returns: string
           }
+      pinterest_guard_audit: { Args: never; Returns: Json }
+      pinterest_guard_sweep: { Args: never; Returns: Json }
       pinterest_publish_health: { Args: never; Returns: Json }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
