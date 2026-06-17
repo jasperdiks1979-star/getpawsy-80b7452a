@@ -12852,6 +12852,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_category_targets: {
+        Row: {
+          category_key: string
+          display_name: string
+          target_pct: number
+          updated_at: string
+        }
+        Insert: {
+          category_key: string
+          display_name: string
+          target_pct: number
+          updated_at?: string
+        }
+        Update: {
+          category_key?: string
+          display_name?: string
+          target_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_cleanup_actions: {
         Row: {
           action: string
@@ -24813,6 +24834,28 @@ export type Database = {
             }
             Returns: string
           }
+      pinterest_canonical_category: { Args: { _raw: string }; Returns: string }
+      pinterest_category_imbalance: {
+        Args: { _days?: number }
+        Returns: {
+          actual_pct: number
+          actual_posts: number
+          category_key: string
+          display_name: string
+          gap_pct: number
+          target_pct: number
+          total_posts: number
+        }[]
+      }
+      pinterest_diversity_pick_next: {
+        Args: never
+        Returns: {
+          category_key: string
+          product_id: string
+          product_slug: string
+          reason: string
+        }[]
+      }
       pinterest_guard_audit: { Args: never; Returns: Json }
       pinterest_guard_sweep: { Args: never; Returns: Json }
       pinterest_infer_source_type: {
