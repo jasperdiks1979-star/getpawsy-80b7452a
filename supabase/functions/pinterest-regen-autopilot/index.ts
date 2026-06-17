@@ -173,11 +173,12 @@ Deno.serve(async (req) => {
   if (allSlugs.length > 0) {
     const { data: prodRows } = await supabase
       .from("products")
-      .select("slug, in_stock, is_active")
+      .select("slug, is_active, availability")
       .in("slug", allSlugs);
     for (const r of (prodRows ?? []) as any[]) {
-      const ok = r.in_stock !== false && r.is_active !== false;
-      if (!ok) stockOkSlugs.add(r.slug); else stockOkSlugs.add(r.slug);
+      const avail = String(r.availability ?? "").toLowerCase();
+      const inStock = avail === "" || avail === "in_stock" || avail === "in stock" || avail === "available";
+      const ok = r.is_active !== false && inStock;
       if (!ok) stockOkSlugs.delete(r.slug);
     }
   }
