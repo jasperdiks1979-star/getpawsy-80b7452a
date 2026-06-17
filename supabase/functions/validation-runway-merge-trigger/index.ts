@@ -69,6 +69,15 @@ Deno.serve(async (req) => {
       });
       return json({ ok: true, jobs: await jr.json() });
     }
+    if (mode === "file") {
+      const path = url.searchParams.get("path") ?? ".github/workflows/render-cinematic-runway-merge.yml";
+      const fr = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=main`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      const j = await fr.json();
+      const content = j.content ? atob(j.content.replace(/\n/g, "")) : null;
+      return json({ ok: true, sha: j.sha, size: j.size, snippet: content ? content.slice(0, 4000) : null });
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const results: any[] = [];
