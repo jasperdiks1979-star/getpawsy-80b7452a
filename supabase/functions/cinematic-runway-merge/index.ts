@@ -4,7 +4,7 @@
 //
 // Flow:
 //   1. admin auth check
-//   2. validate job has 4 clips (voiceover optional if no vo_text)
+//   2. validate job has 6 clips (voiceover optional if no vo_text)
 //   3. mark job status=merging, clear merge_error, set merge_attempted_at
 //   4. POST workflow_dispatch to GitHub API
 //   5. return { ok:true } — the workflow updates the job row directly
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     if (jobErr || !job) return json({ ok: false, traceId, message: "job not found" }, 404);
 
     const scenes = Array.isArray(job.scenes) ? (job.scenes as any[]) : [];
-    const requiredKeys = ["hook", "problem", "solution", "cta"];
+    const requiredKeys = ["hook", "problem", "agitate", "demo", "benefit", "cta"];
     const missing = requiredKeys.filter(
       (k) => !scenes.find((s) => s?.key === k && typeof s?.clip_url === "string" && s.clip_url),
     );
