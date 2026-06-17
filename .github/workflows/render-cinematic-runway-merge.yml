@@ -1,12 +1,11 @@
 name: Render Cinematic Runway Merge
 
 # Server-side merge of a cinematic_runway_jobs job.
-# Downloads 6 Runway clips + optional ElevenLabs voiceover from storage, runs native
-# ffmpeg to concat + burn captions + mux audio, uploads final.mp4, and writes
-# status=ready_for_review back to the cinematic_runway_jobs row via PostgREST.
+# All Lovable Cloud access goes through two gated edge functions authenticated
+# with RUNWAY_MERGE_TOKEN. GitHub Actions never sees a Supabase service role key.
 #
-# Dispatched by the cinematic-runway-merge edge function. Replaces the
-# previous browser ffmpeg.wasm path (which failed on Safari).
+#   - runway-merge-fetch-job   → returns job row + signed upload URL + public URL
+#   - runway-merge-finalize    → writes status=ready_for_review (or merge_failed)
 
 on:
   workflow_dispatch:
@@ -25,10 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
+      RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
       JOB_ID: ${{ inputs.job_id }}
-      BUCKET: cinematic-runway
     steps:
       - name: Install ffmpeg + deps
         run: |
@@ -38,23 +36,25 @@ jobs:
       - name: Preflight
         run: |
           set -euo pipefail
-          for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY JOB_ID; do
+          for v in LOVABLE_FUNCTIONS_URL RUNWAY_MERGE_TOKEN JOB_ID; do
             test -n "${!v}" || { echo "missing $v"; exit 1; }
           done
           if ! echo "${JOB_ID}" | grep -Eiq '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
             echo "Bad UUID: ${JOB_ID}"; exit 1
           fi
 
-      - name: Fetch job row
+      - name: Fetch job row via edge function
         id: fetch
         run: |
           set -euo pipefail
           curl -fsS \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/cinematic_runway_jobs?id=eq.${JOB_ID}&select=id,script,scenes,voiceover_url" \
-            | jq '.[0]' > /tmp/job.json
-          test -s /tmp/job.json || { echo "job row not found"; exit 1; }
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-fetch-job?job_id=${JOB_ID}" \
+            -o /tmp/resp.json
+          jq -e '.ok==true' /tmp/resp.json >/dev/null || { cat /tmp/resp.json; exit 1; }
+          jq '.job'           /tmp/resp.json > /tmp/job.json
+          jq -r '.upload.signed_url' /tmp/resp.json > /tmp/upload_url.txt
+          jq -r '.public_url'  /tmp/resp.json > /tmp/public_url.txt
           echo "--- job ---"
           jq '{voiceover_url, scene_count:(.scenes|length)}' /tmp/job.json
 
@@ -78,7 +78,6 @@ jobs:
       - name: Normalize + concat scenes
         run: |
           set -euo pipefail
-          # Re-encode each scene to identical params so concat is safe.
           for KEY in hook problem agitate demo benefit cta; do
             ffmpeg -y -hide_banner -loglevel error -i "/tmp/assets/${KEY}.mp4" \
               -an -vf "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24" \
@@ -101,7 +100,6 @@ jobs:
           FONT="/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
           test -f "$FONT" || FONT=$(fc-match -f '%{file}' "Liberation Sans:Bold" 2>/dev/null || echo "")
           test -n "$FONT" -a -f "$FONT" || { echo "no caption font found"; exit 1; }
-          echo "font=$FONT"
 
           HOOK=$(jq -r '.script.hook // ""' /tmp/job.json)
           PROBLEM=$(jq -r '.script.problem // ""' /tmp/job.json)
@@ -138,26 +136,23 @@ jobs:
           echo "duration=${DUR}" >> "$GITHUB_OUTPUT"
           echo "size=${SIZE}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload final.mp4
+      - name: Upload final.mp4 via signed URL
         id: upload
         run: |
           set -euo pipefail
-          PATH_KEY="jobs/${JOB_ID}/final.mp4"
-          URL="${SUPABASE_URL}/storage/v1/object/${BUCKET}/${PATH_KEY}"
-          HTTP=$(curl -s -o /tmp/upload.json -w "%{http_code}" -X POST "$URL" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+          UPLOAD_URL=$(cat /tmp/upload_url.txt)
+          PUBLIC_URL=$(cat /tmp/public_url.txt)
+          HTTP=$(curl -s -o /tmp/upload.json -w "%{http_code}" -X PUT "$UPLOAD_URL" \
             -H "Content-Type: video/mp4" \
             -H "x-upsert: true" \
             --data-binary @/tmp/final.mp4)
           echo "upload http=$HTTP"
           cat /tmp/upload.json || true
           test "$HTTP" = "200" -o "$HTTP" = "201" || exit 1
-          PUB="${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${PATH_KEY}"
-          echo "public_url=${PUB}" >> "$GITHUB_OUTPUT"
-          echo "[final] ${PUB}"
+          echo "public_url=${PUBLIC_URL}" >> "$GITHUB_OUTPUT"
+          echo "[final] ${PUBLIC_URL}"
 
-      - name: Mark job ready_for_review
+      - name: Finalize via edge function
         run: |
           set -euo pipefail
           DUR=${{ steps.final.outputs.duration }}
@@ -182,18 +177,17 @@ jobs:
           }')
           SCORE=$(echo "$QA" | jq '[.[].pass] | (map(select(.))|length)*100 / length | floor')
           PAYLOAD=$(jq -c -n \
+            --arg job_id "$JOB_ID" \
             --arg url "$URL" \
             --argjson cap "$CAPTIONS" \
             --argjson qa "$QA" \
             --argjson score "$SCORE" \
-            '{status:"ready_for_review", final_video_url:$url, captions:$cap, qa_report:$qa, qa_score:$score, error:null, merge_error:null}')
+            '{job_id:$job_id, status:"ready_for_review", final_video_url:$url, captions:$cap, qa_report:$qa, qa_score:$score}')
           echo "$PAYLOAD" | jq .
-          curl -fsS -X PATCH \
-            "${SUPABASE_URL}/rest/v1/cinematic_runway_jobs?id=eq.${JOB_ID}" \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          curl -fsS -X POST \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-finalize" \
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
             -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
             --data "$PAYLOAD"
           echo "[done] job ${JOB_ID} ready_for_review"
 
@@ -201,11 +195,10 @@ jobs:
         if: failure()
         run: |
           MSG="render-cinematic-runway-merge failed (run ${{ github.run_id }})"
-          PAYLOAD=$(jq -c -n --arg m "$MSG" '{status:"merge_failed", merge_error:$m, error:$m}')
-          curl -fsS -X PATCH \
-            "${SUPABASE_URL}/rest/v1/cinematic_runway_jobs?id=eq.${JOB_ID}" \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          PAYLOAD=$(jq -c -n --arg job_id "$JOB_ID" --arg m "$MSG" \
+            '{job_id:$job_id, status:"merge_failed", merge_error:$m}')
+          curl -fsS -X POST \
+            "${LOVABLE_FUNCTIONS_URL}/runway-merge-finalize" \
+            -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
             -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
             --data "$PAYLOAD" || true
