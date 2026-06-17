@@ -2274,6 +2274,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-v3"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV3QaPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-runway"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
