@@ -55,6 +55,10 @@ export const ConsentLeakWarning = () => {
   const firstSeenAllZeroRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Dev-only diagnostic. Must NEVER render on any deployed build —
+    // not on getpawsy.pet, getpawsy.lovable.app, or *.lovableproject.com
+    // previews shown to end users. Gate strictly to Vite dev mode.
+    if (!import.meta.env.DEV) return;
     if (!isDevConsentToggleAvailable()) return;
     setAvailable(true);
   }, []);

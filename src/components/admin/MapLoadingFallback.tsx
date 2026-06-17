@@ -52,7 +52,7 @@ export const MapLoadingFallback = () => {
               <ul className="text-xs text-muted-foreground text-left list-disc pl-6 space-y-1">
                 <li>Trage verbinding (chunk is ~3MB unzipped)</li>
                 <li>Browser blokkeert de chunk (adblocker/privacy)</li>
-                <li>Mapbox token niet geconfigureerd</li>
+                <li>Niet ingelogd als admin (map token vereist admin-rol)</li>
                 <li>Netwerk fout — check console voor details</li>
               </ul>
               <Button

@@ -89,7 +89,13 @@ export const RealtimeVisitorMap = () => {
         const { data, error } = await supabase.functions.invoke("get-mapbox-token");
         
         if (error || !data?.token) {
-          setMapError("Mapbox token niet geconfigureerd");
+          // Most common cause is the caller not yet being flagged as admin
+          // in user_roles (function returns 401/403), not a missing token.
+          // The rest of the analytics dashboard keeps working regardless.
+          setMapError(
+            "Map provider unavailable. The rest of the dashboard keeps working. " +
+            "If you are signed in as an admin and still see this, refresh once."
+          );
           return;
         }
 
