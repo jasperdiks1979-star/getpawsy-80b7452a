@@ -94,11 +94,18 @@ Deno.serve(async (req) => {
   const slugs = Array.from(new Set(candidateRows.map((r: any) => String(r.product_slug)).filter(Boolean)));
   const productMap = new Map<string, any>();
   if (slugs.length) {
-    const { data: products } = await sb
-      .from("products")
-      .select("id, slug, name, category, price, benefit_angle, is_active, availability, stock, image_url")
-      .in("slug", slugs);
-    for (const p of products ?? []) productMap.set(String(p.slug), p);
+    // Chunk to keep PostgREST URL length under ~6KB; long product slugs blow
+    // past the limit with a single .in() call and silently return zero rows.
+    const CHUNK = 40;
+    for (let i = 0; i < slugs.length; i += CHUNK) {
+      const chunk = slugs.slice(i, i + CHUNK);
+      const { data: products, error: pErr } = await sb
+        .from("products")
+        .select("id, slug, name, category, price, benefit_angle, is_active, availability, stock, image_url")
+        .in("slug", chunk);
+      if (pErr) console.warn("[recovery-worker] product chunk error", pErr.message);
+      for (const p of products ?? []) productMap.set(String(p.slug), p);
+    }
   }
 
   let recovered = 0;
