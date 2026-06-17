@@ -55,9 +55,21 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { /* GET / empty body ok */ }
 
+  // 2026-06 throughput hardening: generate more variants per product so the
+  // DiversityGuard has real choice, and skip chronic-failure slugs.
   const maxSlugs = Math.max(1, Math.min(50, Number(body?.maxSlugs ?? 25)));
-  const count = Math.max(1, Math.min(8, Number(body?.count ?? 3)));
+  const count = Math.max(1, Math.min(10, Number(body?.count ?? 6)));
   const concurrency = Math.max(1, Math.min(8, Number(body?.concurrency ?? 4)));
+  // Repeated-failure auto-skip thresholds (rolling 24h).
+  const failSkipThreshold = Math.max(3, Number(body?.failSkipThreshold ?? 5));
+  const failSkipReasons: string[] = Array.isArray(body?.failSkipReasons)
+    ? body.failSkipReasons
+    : [
+        "duplicate_image_30d",
+        "creative_reuse_cap_exceeded",
+        "creative_mismatch",
+        "product_oos",
+      ];
   const force = body?.force !== false;
   const runAudit = body?.runAudit !== false;
 
@@ -128,10 +140,55 @@ Deno.serve(async (req) => {
     slugMap.set(slug, arr);
   }
 
+  // ── Auto-skip chronic-failure slugs ───────────────────────────────────────
+  // Any slug that produced ≥ failSkipThreshold rejections in the last 24h
+  // for the listed reasons is parked for the rest of this run; their queue
+  // rows stay open and we'll retry next tick (after the 24h window rolls).
+  const allSlugs = Array.from(slugMap.keys());
+  const skippedSlugs = new Set<string>();
+  if (allSlugs.length > 0) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: failRows } = await supabase
+      .from("pinterest_pin_queue")
+      .select("product_slug, rejection_reason")
+      .in("product_slug", allSlugs)
+      .in("rejection_reason", failSkipReasons)
+      .gte("created_at", since)
+      .limit(5000);
+    const counts = new Map<string, number>();
+    for (const r of (failRows ?? []) as any[]) {
+      const s = String(r.product_slug || "");
+      if (!s) continue;
+      counts.set(s, (counts.get(s) || 0) + 1);
+    }
+    for (const [s, n] of counts) {
+      if (n >= failSkipThreshold) skippedSlugs.add(s);
+    }
+  }
+
+  // ── Prioritise products with available stock + valid destination ─────────
+  // Skip out-of-stock or inactive products entirely so we don't burn credits
+  // on briefs the destination guard would later reject.
+  const stockOkSlugs = new Set<string>(allSlugs);
+  if (allSlugs.length > 0) {
+    const { data: prodRows } = await supabase
+      .from("products")
+      .select("slug, is_active, availability")
+      .in("slug", allSlugs);
+    for (const r of (prodRows ?? []) as any[]) {
+      const avail = String(r.availability ?? "").toLowerCase();
+      const inStock = avail === "" || avail === "in_stock" || avail === "in stock" || avail === "available";
+      const ok = r.is_active !== false && inStock;
+      if (!ok) stockOkSlugs.delete(r.slug);
+    }
+  }
+
   // Flatten into (slug, board) pairs so each flagged board gets its own
   // director call — preserves the requested board on the pin_queue row.
   const pairs: Array<{ slug: string; board: string | null; ids: string[] }> = [];
   for (const [slug, items] of slugMap) {
+    if (skippedSlugs.has(slug)) continue;
+    if (!stockOkSlugs.has(slug)) continue;
     const byBoard = new Map<string, string[]>();
     for (const it of items) {
       const key = it.board ?? "(none)";
@@ -263,6 +320,9 @@ Deno.serve(async (req) => {
       ok: true,
       traceId: trace,
       slugs_total: slugMap.size,
+      slugs_auto_skipped_chronic: skippedSlugs.size,
+      slugs_filtered_no_stock: allSlugs.filter((s) => !stockOkSlugs.has(s)).length,
+      effective_variants_per_product: effCount,
       pairs_total: pairs.length,
       pairs_attempted: work.length,
       processed,
