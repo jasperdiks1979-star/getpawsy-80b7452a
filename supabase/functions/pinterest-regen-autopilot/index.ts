@@ -58,18 +58,18 @@ Deno.serve(async (req) => {
   // 2026-06 throughput hardening: generate more variants per product so the
   // DiversityGuard has real choice, and skip chronic-failure slugs.
   const maxSlugs = Math.max(1, Math.min(50, Number(body?.maxSlugs ?? 25)));
-  const count = Math.max(1, Math.min(10, Number(body?.count ?? 6)));
+  // 2026-06 cost hardening: default 3 variants per product. Slugs with a
+  // historical approval rate > 40% get bumped to 6 (see perSlugCount).
+  const count = Math.max(1, Math.min(10, Number(body?.count ?? 3)));
+  const highPerfCount = Math.max(count, Math.min(10, Number(body?.highPerfCount ?? 6)));
+  const highPerfApprovalThreshold = Math.max(0, Math.min(1, Number(body?.highPerfApprovalThreshold ?? 0.4)));
   const concurrency = Math.max(1, Math.min(8, Number(body?.concurrency ?? 4)));
   // Repeated-failure auto-skip thresholds (rolling 24h).
   const failSkipThreshold = Math.max(3, Number(body?.failSkipThreshold ?? 5));
-  const failSkipReasons: string[] = Array.isArray(body?.failSkipReasons)
-    ? body.failSkipReasons
-    : [
-        "duplicate_image_30d",
-        "creative_reuse_cap_exceeded",
-        "creative_mismatch",
-        "product_oos",
-      ];
+  // 2026-06 cost hardening: count ALL non-posted outcomes as failures,
+  // including NULL rejection_reason and `blocked_legacy_source`. The previous
+  // reason allow-list missed ~277 silent failures per day.
+  const blockHours = Math.max(1, Math.min(720, Number(body?.blockHours ?? 72)));
   const force = body?.force !== false;
   const runAudit = body?.runAudit !== false;
 
@@ -140,21 +140,30 @@ Deno.serve(async (req) => {
     slugMap.set(slug, arr);
   }
 
-  // ── Auto-skip chronic-failure slugs ───────────────────────────────────────
-  // Any slug that produced ≥ failSkipThreshold rejections in the last 24h
-  // for the listed reasons is parked for the rest of this run; their queue
-  // rows stay open and we'll retry next tick (after the 24h window rolls).
+  // ── Auto-skip chronic-failure slugs + auto-blocklist (72h) ───────────────
+  // Count EVERY non-posted outcome in the last 24h: rejected, blocked,
+  // filtered, draft-discarded, NULL rejection_reason, blocked_legacy_source,
+  // duplicate_image_30d, product_oos, creative_mismatch, etc. Any slug that
+  // crosses `failSkipThreshold` is skipped this run AND inserted into
+  // pinterest_loser_blocklist for `blockHours` so the director short-circuits
+  // before spending any AI credits.
   const allSlugs = Array.from(slugMap.keys());
   const skippedSlugs = new Set<string>();
+  const newlyBlocked: Array<{ slug: string; failures: number }> = [];
+  const alreadyBlocked = new Set<string>();
   if (allSlugs.length > 0) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // ANY pinterest_pin_queue row created in the last 24h whose status is
+    // not 'posted' counts as a failure — this captures NULL reasons,
+    // blocked_legacy_source, rejected/blocked/filtered statuses, and any
+    // future failure mode we haven't named yet.
     const { data: failRows } = await supabase
       .from("pinterest_pin_queue")
-      .select("product_slug, rejection_reason")
+      .select("product_slug, status")
       .in("product_slug", allSlugs)
-      .in("rejection_reason", failSkipReasons)
+      .neq("status", "posted")
       .gte("created_at", since)
-      .limit(5000);
+      .limit(10000);
     const counts = new Map<string, number>();
     for (const r of (failRows ?? []) as any[]) {
       const s = String(r.product_slug || "");
@@ -162,7 +171,74 @@ Deno.serve(async (req) => {
       counts.set(s, (counts.get(s) || 0) + 1);
     }
     for (const [s, n] of counts) {
-      if (n >= failSkipThreshold) skippedSlugs.add(s);
+      if (n >= failSkipThreshold) {
+        skippedSlugs.add(s);
+        newlyBlocked.push({ slug: s, failures: n });
+      }
+    }
+
+    // Also skip anything already in the active blocklist so we don't waste a
+    // director invocation on it (the director will short-circuit too).
+    const { data: activeBlocks } = await supabase
+      .from("pinterest_loser_blocklist")
+      .select("product_slug")
+      .in("product_slug", allSlugs)
+      .gt("blocked_until", new Date().toISOString());
+    for (const r of (activeBlocks ?? []) as any[]) {
+      if (r.product_slug) {
+        alreadyBlocked.add(r.product_slug);
+        skippedSlugs.add(r.product_slug);
+      }
+    }
+
+    // Upsert 72h blocks for chronic losers. Unique partial index on
+    // (product_slug) WHERE asset_id IS NULL AND hook_variant IS NULL
+    // (see migration 2026-06-17) makes this idempotent.
+    if (newlyBlocked.length > 0) {
+      const blockedUntil = new Date(Date.now() + blockHours * 3600 * 1000).toISOString();
+      const rows = newlyBlocked.map(({ slug, failures }) => ({
+        product_slug: slug,
+        reason: `autopilot_chronic_failures:${failures}/24h`,
+        blocked_until: blockedUntil,
+      }));
+      await supabase
+        .from("pinterest_loser_blocklist")
+        .upsert(rows, { onConflict: "product_slug", ignoreDuplicates: false })
+        .then(({ error }) => {
+          if (error) console.warn("[regen-autopilot] blocklist upsert failed", error.message);
+        });
+    }
+  }
+
+  // ── Per-slug variant count based on historical approval rate ──────────────
+  // approval_rate = posted / total over last 30d. Slugs above the threshold
+  // unlock the higher variant pool; everything else stays at the default 3.
+  const perSlugCount = new Map<string, number>();
+  if (allSlugs.length > 0) {
+    const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: histRows } = await supabase
+      .from("pinterest_pin_queue")
+      .select("product_slug, status")
+      .in("product_slug", allSlugs)
+      .gte("created_at", since30)
+      .limit(20000);
+    const totals = new Map<string, { total: number; posted: number }>();
+    for (const r of (histRows ?? []) as any[]) {
+      const s = String(r.product_slug || "");
+      if (!s) continue;
+      const t = totals.get(s) ?? { total: 0, posted: 0 };
+      t.total += 1;
+      if (r.status === "posted") t.posted += 1;
+      totals.set(s, t);
+    }
+    for (const s of allSlugs) {
+      const t = totals.get(s);
+      // Need a minimum sample size (10) before promoting a slug to highPerf.
+      if (t && t.total >= 10 && t.posted / t.total > highPerfApprovalThreshold) {
+        perSlugCount.set(s, highPerfCount);
+      } else {
+        perSlugCount.set(s, count);
+      }
     }
   }
 
@@ -240,11 +316,12 @@ Deno.serve(async (req) => {
     const batchResults = await Promise.all(
       batch.map(async (pair) => {
         const startedAt = new Date().toISOString();
+        const slugCount = perSlugCount.get(pair.slug) ?? effCount;
         const { status, json } = await callFn("pinterest-creative-director", {
           action: "run_full",
           productSlug: pair.slug,
           boardName: pair.board,
-          count: effCount,
+          count: emergency ? Math.min(slugCount, effCount) : slugCount,
           force,
         });
         return { pair, status, json, startedAt };
@@ -321,6 +398,12 @@ Deno.serve(async (req) => {
       traceId: trace,
       slugs_total: slugMap.size,
       slugs_auto_skipped_chronic: skippedSlugs.size,
+      slugs_already_blocked: alreadyBlocked.size,
+      slugs_newly_blocked: newlyBlocked.length,
+      newly_blocked: newlyBlocked,
+      block_hours: blockHours,
+      high_perf_count: highPerfCount,
+      high_perf_threshold: highPerfApprovalThreshold,
       slugs_filtered_no_stock: allSlugs.filter((s) => !stockOkSlugs.has(s)).length,
       effective_variants_per_product: effCount,
       pairs_total: pairs.length,
