@@ -352,6 +352,7 @@ const PinterestHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestH
 const PinterestRevenueControlPage = lazyWithRetry(() => import("./pages/admin/PinterestRevenueControlPage"));
 const ProductWinnerDiscoveryPage = lazyWithRetry(() => import("./pages/admin/ProductWinnerDiscoveryPage"));
 const PinterestScalingPage = lazyWithRetry(() => import("./pages/admin/PinterestScalingPage"));
+const RevenueCommandCenterPage = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenterPage"));
 const AdminPaymentsPage = lazyWithRetry(() => import("./pages/admin/AdminPaymentsPage"));
 const WebhookHealthPage = lazyWithRetry(() => import("./pages/admin/WebhookHealthPage"));
 const AdminSmokeTestEventsPage = lazyWithRetry(() => import("./pages/admin/AdminSmokeTestEventsPage"));
