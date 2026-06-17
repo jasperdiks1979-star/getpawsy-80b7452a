@@ -12377,6 +12377,65 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_board_quotas: {
+        Row: {
+          board_id: string
+          board_name: string
+          clicks_30d: number
+          created_at: string
+          daily_quota: number
+          effective_date: string
+          id: string
+          impressions_30d: number
+          pins_posted_today: number
+          reason: string | null
+          run_id: string | null
+          smoothed_ctr: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          board_id: string
+          board_name: string
+          clicks_30d?: number
+          created_at?: string
+          daily_quota?: number
+          effective_date?: string
+          id?: string
+          impressions_30d?: number
+          pins_posted_today?: number
+          reason?: string | null
+          run_id?: string | null
+          smoothed_ctr?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          board_id?: string
+          board_name?: string
+          clicks_30d?: number
+          created_at?: string
+          daily_quota?: number
+          effective_date?: string
+          id?: string
+          impressions_30d?: number
+          pins_posted_today?: number
+          reason?: string | null
+          run_id?: string | null
+          smoothed_ctr?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_board_quotas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_scaling_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_boards: {
         Row: {
           blacklist_reason: string | null
@@ -17124,6 +17183,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pinterest_scaling_runs: {
+        Row: {
+          board_analysis: Json
+          category_gaps: Json
+          created_at: string
+          hook_fatigue: Json
+          id: string
+          ran_at: string
+          recommendations: Json
+          summary: Json
+          total_daily_target: number
+          trigger: string
+        }
+        Insert: {
+          board_analysis?: Json
+          category_gaps?: Json
+          created_at?: string
+          hook_fatigue?: Json
+          id?: string
+          ran_at?: string
+          recommendations?: Json
+          summary?: Json
+          total_daily_target?: number
+          trigger?: string
+        }
+        Update: {
+          board_analysis?: Json
+          category_gaps?: Json
+          created_at?: string
+          hook_fatigue?: Json
+          id?: string
+          ran_at?: string
+          recommendations?: Json
+          summary?: Json
+          total_daily_target?: number
+          trigger?: string
+        }
+        Relationships: []
       }
       pinterest_slug_sync_log: {
         Row: {
