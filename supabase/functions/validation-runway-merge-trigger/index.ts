@@ -33,6 +33,43 @@ Deno.serve(async (req) => {
   const traceId = crypto.randomUUID();
   try {
     if (!GH_PAT || !GH_REPO) return json({ ok: false, traceId, message: "GH not configured" }, 500);
+    const url = new URL(req.url);
+    const mode = url.searchParams.get("mode") ?? "dispatch";
+
+    // Inspect recent workflow runs + per-run jobs/logs for our 3 IDs.
+    if (mode === "status") {
+      const runsResp = await fetch(
+        `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=10`,
+        { headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" } },
+      );
+      const runs = await runsResp.json();
+      const summary = (runs.workflow_runs ?? []).slice(0, 10).map((r: any) => ({
+        id: r.id, status: r.status, conclusion: r.conclusion, event: r.event, created: r.created_at, html_url: r.html_url, head_sha: r.head_sha,
+      }));
+      return json({ ok: true, traceId, runs: summary });
+    }
+    if (mode === "logs") {
+      const runId = url.searchParams.get("run_id");
+      if (!runId) return json({ ok: false, message: "run_id required" }, 400);
+      const logsResp = await fetch(
+        `https://api.github.com/repos/${GH_REPO}/actions/runs/${runId}/logs`,
+        { headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" }, redirect: "follow" },
+      );
+      const buf = await logsResp.arrayBuffer();
+      return new Response(buf, {
+        status: logsResp.status,
+        headers: { ...corsHeaders, "Content-Type": logsResp.headers.get("content-type") ?? "application/zip", "Content-Disposition": `attachment; filename="run-${runId}-logs.zip"` },
+      });
+    }
+    if (mode === "jobs") {
+      const runId = url.searchParams.get("run_id");
+      if (!runId) return json({ ok: false, message: "run_id required" }, 400);
+      const jr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${runId}/jobs`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      return json({ ok: true, jobs: await jr.json() });
+    }
+
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const results: any[] = [];
     for (const jobId of ALLOWLIST) {
