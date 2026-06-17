@@ -107,7 +107,9 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const results: any[] = [];
-    for (const jobId of ALLOWLIST) {
+    const only = url.searchParams.get("only");
+    const targets = only && ALLOWLIST.has(only) ? [only] : Array.from(ALLOWLIST);
+    for (const jobId of targets) {
       await admin
         .from("cinematic_runway_jobs")
         .update({
