@@ -72,7 +72,10 @@ Deno.serve(async (req) => {
   const blockedImageUrls = new Set((imgBlockRes.data ?? []).map((r: any) => String(r.image_url || "")));
 
   // ── Load DiversityGuard
-  const guard = new DiversityGuard();
+  // Recovery mode tolerates exact-overlay repeats inside the last-25 window
+  // because we are reusing existing images (no new image render). The per-90
+  // headline/cta/overlay caps still apply, which keeps real variety enforced.
+  const guard = new DiversityGuard({ windowLast25Exact: false });
   await guard.load(sb);
 
   // ── Pull pending recovery rows
@@ -215,8 +218,11 @@ Deno.serve(async (req) => {
     const copy = accepted.copy;
     const hookParam = encodeURIComponent(copy.overlay.slice(0, 40));
     const destination = `${BASE_URL}/products/${slug}?utm_source=pinterest&utm_medium=social&utm_campaign=recovery&utm_content=${niche}&hook=${hookParam}`;
-    const overlayFinal = `${copy.overlay} • ${copy.cta}`
-      .replace(/[|\r\n]/g, " ").replace(/\s+/g, " ").trim().slice(0, 32);
+    // DB trigger `enforce_pin_copy_rules` rejects `|` or `•` inside
+    // overlay_text. Store ONLY the short benefit overlay; the CTA lives in
+    // meta.cta and is rendered separately by the publisher.
+    const overlayFinal = copy.overlay
+      .replace(/[|•\r\n]/g, " ").replace(/\s+/g, " ").trim().slice(0, 32);
 
     const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
     const variant = `recovery_${niche}_${stamp}_${String(r.id).slice(-6)}`;
