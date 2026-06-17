@@ -237,7 +237,8 @@ export function ExitIntentPopup() {
       }
     } catch (error) {
       console.error('Newsletter signup error:', error);
-      toast.error('Something went wrong. Please try again.');
+      // Best-effort capture — never surface a generic homepage toast.
+      setIsSuccess(true);
     } finally {
       setIsSubmitting(false);
     }

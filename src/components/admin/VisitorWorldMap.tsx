@@ -560,7 +560,11 @@ export const VisitorWorldMap = () => {
           const { data, error } = await supabase.functions.invoke("get-mapbox-token");
           
           if (error || !data?.token) {
-            setMapError("Mapbox token niet geconfigureerd. Voeg MAPBOX_PUBLIC_TOKEN toe aan de secrets.");
+            console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
+            setMapError(
+              "Map provider unavailable. Add MAPBOX_PUBLIC_TOKEN in Lovable Cloud → Settings → Secrets. " +
+              "All other analytics on this dashboard continue to work."
+            );
             return;
           }
           token = data.token;

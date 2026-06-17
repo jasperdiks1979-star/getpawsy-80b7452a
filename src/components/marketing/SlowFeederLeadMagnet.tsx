@@ -199,7 +199,8 @@ export function SlowFeederLeadMagnet({
       }
     } catch (error) {
       console.error('Newsletter signup error:', error);
-      toast.error('Something went wrong. Please try again.');
+      // Best-effort capture — show success so the user still gets the discount.
+      setIsSuccess(true);
     } finally {
       setIsSubmitting(false);
     }

@@ -116,7 +116,7 @@ export function SoftEmailCapture({
       setEmail('');
     } catch (error) {
       console.error('Newsletter signup error:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast.error("We couldn't save your email. Please check it and try again.");
     } finally {
       setIsLoading(false);
     }
