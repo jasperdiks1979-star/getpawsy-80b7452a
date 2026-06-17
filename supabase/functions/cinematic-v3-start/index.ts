@@ -20,6 +20,7 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 const GH_PAT = Deno.env.get("GH_PAT");
 const GH_REPO = Deno.env.get("GH_REPO"); // "owner/repo"
+const INTERNAL_FUNCTION_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET");
 const BUCKET = "cinematic-v3";
 const DEFAULT_VOICE = "cgSgspJ2msm6clMCkdW9"; // Jessica
 
@@ -51,7 +52,7 @@ HARD RULES:
 - Never describe an on-screen animal or person. Copy MAY say "your cat" or "your dog" but the visuals only show the product.
 - Never invent product specs. Use only the product fields provided.
 
-Return strictly: { "scenes": Scene[7] } where each Scene has { key, start, end, vo, caption, visual, asset_index }.
+Return strictly JSON: { "scenes": Scene[7] } where each Scene has { key, start, end, vo, caption, visual, asset_index }.
 visual must be one of: product_pan, product_parallax, authentic_clip, motion_graphic.
 asset_index is a 0-based index into available product images.`;
 
@@ -106,16 +107,24 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = crypto.randomUUID();
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ ok: false, traceId, message: "unauthorized" }, 401);
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userRes, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userRes?.user) return json({ ok: false, traceId, message: "unauthorized" }, 401);
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userRes.user.id, _role: "admin" });
-    if (!isAdmin) return json({ ok: false, traceId, message: "admin required" }, 403);
+    const internalToken = req.headers.get("x-internal-secret") ?? "";
+    let requesterId: string | null = null;
+    if (INTERNAL_FUNCTION_SECRET && internalToken && internalToken === INTERNAL_FUNCTION_SECRET) {
+      // pilot/automation bypass
+      requesterId = null;
+    } else {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (!authHeader.startsWith("Bearer ")) return json({ ok: false, traceId, message: "unauthorized" }, 401);
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userRes, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userRes?.user) return json({ ok: false, traceId, message: "unauthorized" }, 401);
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userRes.user.id, _role: "admin" });
+      if (!isAdmin) return json({ ok: false, traceId, message: "admin required" }, 403);
+      requesterId = userRes.user.id;
+    }
 
     const body = await req.json().catch(() => ({} as any));
     const slug = String(body?.product_slug ?? "").trim();
@@ -125,7 +134,7 @@ Deno.serve(async (req) => {
     // RULE-1 gate
     const { data: product, error: prodErr } = await admin
       .from("products")
-      .select("id, slug, title, description, image_url, images, price, brand, category")
+      .select("id, slug, name, description, image_url, images, price, brand, category")
       .eq("slug", slug)
       .maybeSingle();
     if (prodErr || !product) return json({ ok: false, traceId, message: "product not found" }, 404);
@@ -145,7 +154,7 @@ Deno.serve(async (req) => {
         product_slug: slug,
         status: "scripting",
         voice_id: voiceId,
-        requested_by: userRes.user.id,
+        requested_by: requesterId,
       })
       .select("id")
       .single();
@@ -154,7 +163,7 @@ Deno.serve(async (req) => {
 
     let scenes: Scene[];
     try {
-      scenes = await generateScript({ ...product, title: (product as any).title ?? slug, images: cleanImgs });
+      scenes = await generateScript({ ...product, title: (product as any).name ?? slug, images: cleanImgs });
     } catch (e: any) {
       await admin.from("cinematic_v3_jobs").update({
         status: "failed",
