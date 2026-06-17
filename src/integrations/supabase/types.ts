@@ -16566,6 +16566,87 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_regeneration_queue: {
+        Row: {
+          ai_lifestyle_images: number
+          cloudinary_images: number
+          composite_score: number
+          created_at: string
+          id: string
+          legacy_live_count: number
+          legacy_pin_count: number
+          margin_percent: number | null
+          margin_rank: number | null
+          missing_lifestyle: boolean
+          pinterest_clicks_30d: number | null
+          pinterest_rank: number | null
+          pinterest_tier_score: number | null
+          priority: number | null
+          product_id: string
+          product_name: string | null
+          product_slug: string | null
+          product_views_30d: number | null
+          rehosted_images: number
+          status: string
+          supplier_images: number
+          total_images: number
+          traffic_rank: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_lifestyle_images?: number
+          cloudinary_images?: number
+          composite_score?: number
+          created_at?: string
+          id?: string
+          legacy_live_count?: number
+          legacy_pin_count?: number
+          margin_percent?: number | null
+          margin_rank?: number | null
+          missing_lifestyle?: boolean
+          pinterest_clicks_30d?: number | null
+          pinterest_rank?: number | null
+          pinterest_tier_score?: number | null
+          priority?: number | null
+          product_id: string
+          product_name?: string | null
+          product_slug?: string | null
+          product_views_30d?: number | null
+          rehosted_images?: number
+          status?: string
+          supplier_images?: number
+          total_images?: number
+          traffic_rank?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_lifestyle_images?: number
+          cloudinary_images?: number
+          composite_score?: number
+          created_at?: string
+          id?: string
+          legacy_live_count?: number
+          legacy_pin_count?: number
+          margin_percent?: number | null
+          margin_rank?: number | null
+          missing_lifestyle?: boolean
+          pinterest_clicks_30d?: number | null
+          pinterest_rank?: number | null
+          pinterest_tier_score?: number | null
+          priority?: number | null
+          product_id?: string
+          product_name?: string | null
+          product_slug?: string | null
+          product_views_30d?: number | null
+          rehosted_images?: number
+          status?: string
+          supplier_images?: number
+          total_images?: number
+          traffic_rank?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_render_attempts: {
         Row: {
           attempt_no: number
