@@ -11,7 +11,7 @@
 //   • angle    → max 5 uses   (tightened 2026-06 — operator request)
 //   • benefit  → max 5 uses
 //   • overlay  → max 5 uses   (rolling 90 — new)
-//   • last 25  → exact-overlay duplicates always rejected
+//   • last 50  → exact-overlay duplicates always rejected (widened 2026-06)
 //
 // All pool replacements are STRICTLY category-scoped — a litter draft can
 // never pull from cat_trees, etc. The category key is normalised through
@@ -234,7 +234,9 @@ export class DiversityGuard {
     this.postedTotal = rows.length;
 
     const last90 = rows.slice(0, 90);
-    const last25 = rows.slice(0, 25);
+    // Widened from 25 → 50 (2026-06 throughput hardening) to prevent the
+    // same overlay copy snapping back too quickly across consecutive pins.
+    const last25 = rows.slice(0, 50);
     this.last90Total = last90.length;
     this.last25Total = last25.length;
 
