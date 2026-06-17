@@ -16,6 +16,8 @@
 // deno-lint-ignore no-explicit-any
 type SBClient = any;
 
+import { gateAndLog } from "./sms-mode.ts";
+
 export interface OrderItem {
   id?: string;
   name?: string;
@@ -463,6 +465,13 @@ async function sendHighValueAlert(
   cfg: TwilioConfig,
 ): Promise<void> {
   try {
+    // SMS Mode gate — "high_value" is a non-sale companion alert.
+    const gate = await gateAndLog(supabase, "high_value", body, {
+      order_id: ctx.orderId,
+      stripe_session_id: ctx.stripeSessionId,
+      recipient: cfg.ownerPhone,
+    });
+    if (!gate.allowed) return;
     // Idempotency: one high_value SMS per session.
     const { data: existing } = await supabase
       .from("sms_alert_logs")
