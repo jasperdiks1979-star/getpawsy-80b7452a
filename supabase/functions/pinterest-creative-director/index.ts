@@ -123,6 +123,11 @@ const IMAGE_MODEL =
 const TEXT_MODEL =
   Deno.env.get("PINTEREST_CD_TEXT_MODEL") || "google/gemini-3-flash-preview";
 
+// 2026-06-17 cost hardening: cap to exactly ONE image render per brief.
+// Any guard failure (diversity / quality / fidelity) rejects the candidate
+// instead of regenerating — regeneration was the dominant credit leak.
+const EFFECTIVE_MAX_RETRIES = 0;
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function traceId() {
