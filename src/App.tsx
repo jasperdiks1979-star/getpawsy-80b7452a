@@ -1606,6 +1606,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-scaling"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestScalingPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="payments"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
