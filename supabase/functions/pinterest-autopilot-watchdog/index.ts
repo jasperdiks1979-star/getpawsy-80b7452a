@@ -142,8 +142,13 @@ Deno.serve(async (req) => {
     const minSinceCreate = minutesSince(lastCreatedAt);
 
     // 3. Scheduler health
-    const { data: schedRaw } = await sb.rpc("pinterest_scheduler_health");
-    const scheduler: SchedulerRow[] = (schedRaw as SchedulerRow[]) ?? [];
+    const { data: schedRaw, error: schedErr } = await sb.rpc("pinterest_scheduler_health");
+    if (schedErr) console.error("[watchdog] scheduler rpc error", schedErr);
+    const scheduler: SchedulerRow[] = Array.isArray(schedRaw)
+      ? (schedRaw as SchedulerRow[])
+      : typeof schedRaw === "string"
+      ? (JSON.parse(schedRaw) as SchedulerRow[])
+      : [];
     const schedJobs: Record<string, SchedulerRow> = {};
     for (const r of scheduler) schedJobs[r.jobname] = r;
     const autopilotSched = schedJobs["pinterest-autopilot-scheduler-15min"];
