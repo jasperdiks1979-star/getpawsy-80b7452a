@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Play, AlertCircle } from "lucide-react";
+import { RefreshCw, Play, AlertCircle, ShieldCheck } from "lucide-react";
 
 type Snapshot = {
   status: "healthy" | "delayed" | "stalled";
@@ -25,6 +25,37 @@ type Snapshot = {
   recovery?: any;
 };
 
+type WatchdogPayload = {
+  status: "green" | "yellow" | "red";
+  checked_at: string;
+  thresholds: Record<string, number>;
+  metrics: {
+    approved: number;
+    drafts: number;
+    queued: number;
+    failed: number;
+    posted_today: number;
+    generated_today: number;
+    generated_24h: number;
+    last_publish_at: string | null;
+    minutes_since_publish: number | null;
+    last_generation_at: string | null;
+    minutes_since_generation: number | null;
+  };
+  scheduler: Array<{
+    jobname: string;
+    schedule: string;
+    active: boolean;
+    last_run: string | null;
+    last_success: string | null;
+    fails_2h: number;
+    succ_2h: number;
+  }>;
+  incidents: Array<{ condition: string; action: string; detail: any }>;
+  recovery: Record<string, any>;
+  escalated: { allowed: boolean; mode: string } | null;
+};
+
 const statusColor = {
   healthy: { dot: "🟢", label: "Healthy", cls: "bg-emerald-100 text-emerald-800" },
   delayed: { dot: "🟡", label: "Delayed", cls: "bg-amber-100 text-amber-800" },
@@ -41,6 +72,8 @@ export default function PinterestHealthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
+  const [watchdog, setWatchdog] = useState<WatchdogPayload | null>(null);
+  const [watchdogLoading, setWatchdogLoading] = useState(false);
 
   async function refresh(runAction = false) {
     setLoading(true);
@@ -66,13 +99,39 @@ export default function PinterestHealthPage() {
     setIncidents(incs ?? []);
   }
 
+  async function refreshWatchdog(runRecovery = false) {
+    setWatchdogLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-autopilot-watchdog",
+        { body: runRecovery ? { source: "manual" } : { snapshot: true } },
+      );
+      if (!error && data?.ok) setWatchdog(data.watchdog as WatchdogPayload);
+    } catch (_) {
+      /* swallow — surface via snap error UI */
+    } finally {
+      setWatchdogLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
-    const t = setInterval(() => refresh(false), 60_000);
+    refreshWatchdog(false);
+    const t = setInterval(() => {
+      refresh(false);
+      refreshWatchdog(false);
+    }, 60_000);
     return () => clearInterval(t);
   }, []);
 
   const sc = snap ? statusColor[snap.status] : statusColor.healthy;
+  const wdColor =
+    watchdog?.status === "red"
+      ? "bg-red-100 text-red-800"
+      : watchdog?.status === "yellow"
+      ? "bg-amber-100 text-amber-800"
+      : "bg-emerald-100 text-emerald-800";
+  const wdDot = watchdog?.status === "red" ? "🔴" : watchdog?.status === "yellow" ? "🟡" : "🟢";
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-4">
@@ -98,6 +157,99 @@ export default function PinterestHealthPage() {
           </Button>
         </div>
       </div>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            <h2 className="font-semibold">Autopilot Watchdog</h2>
+            <Badge className={wdColor}>
+              {wdDot} {watchdog?.status?.toUpperCase() ?? "—"}
+            </Badge>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => refreshWatchdog(false)} disabled={watchdogLoading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${watchdogLoading ? "animate-spin" : ""}`} />
+              Check
+            </Button>
+            <Button size="sm" onClick={() => refreshWatchdog(true)} disabled={watchdogLoading}>
+              <Play className="h-4 w-4 mr-1" />
+              Run watchdog
+            </Button>
+          </div>
+        </div>
+
+        {watchdog ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
+              <Stat label="Approved (queued)" value={watchdog.metrics.approved} />
+              <Stat label="Drafts" value={watchdog.metrics.drafts} />
+              <Stat label="Generated today" value={watchdog.metrics.generated_today} />
+              <Stat label="Generated 24h" value={watchdog.metrics.generated_24h} />
+              <Stat label="Published today" value={watchdog.metrics.posted_today} />
+              <Stat label="Failed/stuck" value={watchdog.metrics.failed} />
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <Row
+                label="Last generation"
+                value={`${fmt(watchdog.metrics.last_generation_at)} (${watchdog.metrics.minutes_since_generation ?? "—"} min)`}
+              />
+              <Row
+                label="Last publish"
+                value={`${fmt(watchdog.metrics.last_publish_at)} (${watchdog.metrics.minutes_since_publish ?? "—"} min)`}
+              />
+              <Row label="Checked at" value={fmt(watchdog.checked_at)} />
+              <Row
+                label="SMS escalation"
+                value={
+                  watchdog.escalated
+                    ? `${watchdog.escalated.allowed ? "SENT" : "BLOCKED"} (mode=${watchdog.escalated.mode})`
+                    : "not needed"
+                }
+              />
+            </div>
+
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold mb-2">Cron jobs (last 2h)</h3>
+              <div className="space-y-1 text-xs">
+                {watchdog.scheduler.map((s) => {
+                  const dot =
+                    s.fails_2h > 0
+                      ? "🔴"
+                      : s.succ_2h === 0
+                      ? "🟡"
+                      : "🟢";
+                  return (
+                    <div key={s.jobname} className="flex justify-between border-b py-1 gap-2 flex-wrap">
+                      <span className="font-mono">{dot} {s.jobname}</span>
+                      <span className="text-muted-foreground">
+                        {s.schedule} • succ:{s.succ_2h} fail:{s.fails_2h} • last {s.last_run ? new Date(s.last_run).toLocaleTimeString() : "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {watchdog.incidents.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-2">Active watchdog incidents</h3>
+                <ul className="text-sm space-y-1">
+                  {watchdog.incidents.map((i, n) => (
+                    <li key={n} className="flex justify-between border-b py-1">
+                      <span className="font-mono">{i.condition}</span>
+                      <span className="text-muted-foreground">→ {i.action}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading watchdog…</p>
+        )}
+      </Card>
 
       {error && (
         <Card className="p-4 bg-red-50 border-red-200 text-red-800 text-sm flex gap-2">
