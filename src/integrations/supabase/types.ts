@@ -15686,6 +15686,8 @@ export type Database = {
           last_publish_error: string | null
           last_validated_at: string | null
           last_validation_error: string | null
+          legacy_supplier_content: boolean
+          legacy_supplier_reason: string | null
           live_pin_verified_at: string | null
           meta: Json | null
           overlay_text: string | null
@@ -15746,6 +15748,8 @@ export type Database = {
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
+          legacy_supplier_content?: boolean
+          legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
@@ -15806,6 +15810,8 @@ export type Database = {
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
+          legacy_supplier_content?: boolean
+          legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
@@ -15971,6 +15977,8 @@ export type Database = {
           created_at: string
           generated_at: string
           id: string
+          legacy_supplier_content: boolean
+          legacy_supplier_reason: string | null
           pin_data: Json
           product_id: string
           product_name: string
@@ -15982,6 +15990,8 @@ export type Database = {
           created_at?: string
           generated_at?: string
           id?: string
+          legacy_supplier_content?: boolean
+          legacy_supplier_reason?: string | null
           pin_data?: Json
           product_id: string
           product_name: string
@@ -15993,6 +16003,8 @@ export type Database = {
           created_at?: string
           generated_at?: string
           id?: string
+          legacy_supplier_content?: boolean
+          legacy_supplier_reason?: string | null
           pin_data?: Json
           product_id?: string
           product_name?: string
