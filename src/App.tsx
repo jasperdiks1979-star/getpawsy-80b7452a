@@ -1597,6 +1597,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="winner-discovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductWinnerDiscoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="payments"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
