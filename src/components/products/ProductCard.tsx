@@ -19,11 +19,13 @@ import { getProductDiscount } from "@/lib/discount";
 import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 import { getConversionFlag } from "@/lib/conversionFlags";
+import { displayName } from "@/lib/displayName";
 
 export interface Product {
   id: string;
   cj_product_id?: string | null;
   name: string;
+  name_clean?: string | null;
   slug?: string | null;
   description?: string | null;
   category?: string | null;
@@ -107,7 +109,7 @@ export const ProductCard = memo(
     const handleCardClick = () => {
       trackSelectItem(listId, listName, {
         id: product.id,
-        name: product.name,
+        name: displayName(product),
         price: cardPrice,
         category: product.category || undefined,
         position,
@@ -130,12 +132,12 @@ export const ProductCard = memo(
       addItem({
         id: product.id,
         slug: product.slug ?? undefined,
-        name: product.name,
+        name: displayName(product),
         price: cardPrice,
         image: product.image_url || "/placeholder.svg",
       });
 
-      trackAddToCart(product.id, product.name, cardPrice, 1);
+      trackAddToCart(product.id, displayName(product), cardPrice, 1);
       toast.success("Added to cart");
     };
 
@@ -148,10 +150,10 @@ export const ProductCard = memo(
       toggleWishlist(product.id);
 
       if (inWishlist) {
-        trackRemoveFromWishlist(product.id, product.name);
+        trackRemoveFromWishlist(product.id, displayName(product));
         toast.success("Removed from wishlist");
       } else {
-        trackAddToWishlist(product.id, product.name, cardPrice);
+        trackAddToWishlist(product.id, displayName(product), cardPrice);
         toast.success("Added to wishlist");
       }
 
@@ -218,7 +220,7 @@ export const ProductCard = memo(
             <div className={`relative aspect-square overflow-hidden ${premium ? "bg-secondary/30" : "bg-muted"}`}>
               <OptimizedImage
                 src={product.image_url || "/placeholder.svg"}
-                alt={product.image_alt_text || `${product.name}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
+                alt={product.image_alt_text || `${displayName(product)}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
                 aspectRatio="square"
                 className={premium ? "group-hover:scale-[1.03] transition-transform duration-500 ease-out" : "group-hover:scale-105"}
                 priority={priority}
@@ -328,7 +330,7 @@ export const ProductCard = memo(
                   ? "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-[15px] md:text-base leading-snug min-h-[2.5rem]"
                   : "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-base leading-snug min-h-[2.5rem]"
               }>
-                {safeString(product.name)}
+                {safeString(displayName(product))}
               </h3>
 
               <p className={premium ? "text-[10px] text-muted-foreground/90 font-medium" : "text-[10px] text-primary/80 font-medium mt-0.5"}>
