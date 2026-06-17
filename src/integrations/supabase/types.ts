@@ -20427,6 +20427,84 @@ export type Database = {
           },
         ]
       }
+      revenue_alert_config: {
+        Row: {
+          alert_checkout_errors: boolean
+          alert_new_order: boolean
+          alert_out_of_stock: boolean
+          alert_pinterest_stall: boolean
+          alert_revenue_threshold: boolean
+          checkout_error_threshold: number
+          id: boolean
+          pinterest_stall_minutes: number
+          revenue_threshold_today_cents: number
+          revenue_threshold_week_cents: number
+          updated_at: string
+        }
+        Insert: {
+          alert_checkout_errors?: boolean
+          alert_new_order?: boolean
+          alert_out_of_stock?: boolean
+          alert_pinterest_stall?: boolean
+          alert_revenue_threshold?: boolean
+          checkout_error_threshold?: number
+          id?: boolean
+          pinterest_stall_minutes?: number
+          revenue_threshold_today_cents?: number
+          revenue_threshold_week_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_checkout_errors?: boolean
+          alert_new_order?: boolean
+          alert_out_of_stock?: boolean
+          alert_pinterest_stall?: boolean
+          alert_revenue_threshold?: boolean
+          checkout_error_threshold?: number
+          id?: boolean
+          pinterest_stall_minutes?: number
+          revenue_threshold_today_cents?: number
+          revenue_threshold_week_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      revenue_alert_log: {
+        Row: {
+          alert_key: string
+          alert_type: string
+          created_at: string
+          error: string | null
+          id: string
+          message: string
+          meta: Json
+          sent_ok: boolean
+          twilio_sid: string | null
+        }
+        Insert: {
+          alert_key: string
+          alert_type: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          message: string
+          meta?: Json
+          sent_ok?: boolean
+          twilio_sid?: string | null
+        }
+        Update: {
+          alert_key?: string
+          alert_type?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          message?: string
+          meta?: Json
+          sent_ok?: boolean
+          twilio_sid?: string | null
+        }
+        Relationships: []
+      }
       review_requests: {
         Row: {
           completed_at: string | null
