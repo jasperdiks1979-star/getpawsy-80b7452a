@@ -1,6 +1,7 @@
 // SMS Alerts Admin — secure CRUD + test/replay/validate.
 // All actions require an authenticated admin user.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getSmsMode, setSmsMode, type SmsMode } from "../_shared/sms-mode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -166,7 +167,22 @@ Deno.serve(async (req) => {
         .limit(20);
       const lastTest = (last ?? []).find((r) => (r as { alert_type: string }).alert_type === "test");
       const lastOrder = (last ?? []).find((r) => (r as { alert_type: string }).alert_type === "order");
-      return json({ ok: true, status, recent: last ?? [], lastTest, lastOrder });
+      const sms_mode = await getSmsMode(svc);
+      return json({ ok: true, status, recent: last ?? [], lastTest, lastOrder, sms_mode });
+    }
+
+    if (action === "get_mode") {
+      const sms_mode = await getSmsMode(svc);
+      return json({ ok: true, sms_mode });
+    }
+
+    if (action === "set_mode") {
+      const m = (body as { mode?: string }).mode;
+      if (m !== "sales_only" && m !== "sales_plus_critical" && m !== "all") {
+        return json({ ok: false, message: "invalid mode" }, 400);
+      }
+      await setSmsMode(svc, m as SmsMode);
+      return json({ ok: true, sms_mode: m });
     }
 
     if (action === "save") {

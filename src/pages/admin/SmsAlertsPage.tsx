@@ -64,6 +64,7 @@ interface StatusResp {
   recent: LogRow[];
   lastTest?: LogRow;
   lastOrder?: LogRow;
+  sms_mode?: "sales_only" | "sales_plus_critical" | "all";
 }
 
 interface StatsResp {
@@ -196,6 +197,12 @@ export default function SmsAlertsPage() {
     await refresh();
   };
 
+  const handleSetMode = async (mode: "sales_only" | "sales_plus_critical" | "all") => {
+    const res = await run("set_mode", { mode });
+    if (res?.ok) toast({ title: "SMS mode updated", description: `Now: ${mode}` });
+    await refresh();
+  };
+
   return (
     <>
       <Helmet>
@@ -219,6 +226,44 @@ export default function SmsAlertsPage() {
             <CardTitle className="text-base">Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wide">SMS mode</div>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  current: {status?.sms_mode ?? "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {([
+                  { v: "sales_only", label: "Sales only", hint: "Default. Real paid orders only." },
+                  { v: "sales_plus_critical", label: "Sales + critical", hint: "Adds Stripe/webhook outages." },
+                  { v: "all", label: "All alerts / debug", hint: "Pinterest, cron, daily summary, failures." },
+                ] as const).map((opt) => {
+                  const active = status?.sms_mode === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      onClick={() => handleSetMode(opt.v)}
+                      disabled={busy === "set_mode"}
+                      className={`text-left rounded-md border p-2 text-xs transition ${
+                        active
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "hover:bg-accent"
+                      }`}
+                    >
+                      <div className="font-semibold flex items-center gap-1.5">
+                        {active && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
+                        {opt.label}
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">{opt.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Manual “Send Test SMS” and “Replay Last Order SMS” always send regardless of mode.
+              </p>
+            </div>
             {loading && !status ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading…

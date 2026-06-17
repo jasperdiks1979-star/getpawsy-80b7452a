@@ -1,6 +1,7 @@
 // Revenue Alert Monitor — cron checks thresholds + sends SMS via Twilio.
 // Dedupes via revenue_alert_log (alert_key + cool-down window).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { gateAndLog } from "../_shared/sms-mode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,23 @@ async function fire(
   cooldownMin: number,
   meta: Record<string, unknown> = {},
 ) {
+  // SMS Mode gate — every revenue-monitor alert (pinterest_stall, no_publish_30m,
+  // queue_not_draining, daily summaries, etc.) is non-sale and must be muted in
+  // sales_only mode. Logged via gateAndLog for admin visibility.
+  const gate = await gateAndLog(svc, alertType, message);
+  if (!gate.allowed) {
+    // Still record in revenue_alert_log so dashboards show the would-be alert.
+    try {
+      await svc.from("revenue_alert_log").insert({
+        alert_key: alertKey, alert_type: alertType, message,
+        twilio_sid: null, sent_ok: false,
+        error: `blocked_by_sms_mode=${gate.mode}`,
+        meta: { ...meta, sms_mode_blocked: true },
+      });
+    } catch (_) { /* ignore */ }
+    return { skipped: true, blocked: true, alertKey, mode: gate.mode };
+  }
+
   // Dedupe via cooldown
   const since = new Date(Date.now() - cooldownMin * 60_000).toISOString();
   const { data: recent } = await svc
