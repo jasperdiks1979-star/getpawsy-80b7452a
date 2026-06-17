@@ -78,6 +78,21 @@ Deno.serve(async (req) => {
       const content = j.content ? atob(j.content.replace(/\n/g, "")) : null;
       return json({ ok: true, sha: j.sha, size: j.size, snippet: content ? content.slice(0, 4000) : null });
     }
+    if (mode === "run") {
+      const runId = url.searchParams.get("run_id");
+      if (!runId) return json({ ok: false, message: "run_id required" }, 400);
+      const r = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${runId}`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      return json({ ok: true, run: await r.json() });
+    }
+    if (mode === "billing") {
+      const owner = GH_REPO!.split("/")[0];
+      const r = await fetch(`https://api.github.com/users/${owner}/settings/billing/actions`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      return json({ ok: true, status: r.status, body: await r.json() });
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const results: any[] = [];
