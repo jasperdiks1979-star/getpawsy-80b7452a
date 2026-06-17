@@ -58,6 +58,7 @@ const navItems = [
   { to: '/admin/sms-alerts', label: 'SMS Alerts', icon: MessageSquare },
   { to: '/admin/pinterest-health', label: 'Pinterest Health', icon: Activity },
   { to: '/admin/pinterest-revenue-control', label: '★ Pinterest Revenue Control', icon: Pin },
+  { to: '/admin/winner-discovery', label: '★ Winner Discovery', icon: Pin },
   { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
   { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
   { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
