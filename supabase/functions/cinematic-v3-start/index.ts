@@ -52,7 +52,7 @@ HARD RULES:
 - Never describe an on-screen animal or person. Copy MAY say "your cat" or "your dog" but the visuals only show the product.
 - Never invent product specs. Use only the product fields provided.
 
-Return strictly: { "scenes": Scene[7] } where each Scene has { key, start, end, vo, caption, visual, asset_index }.
+Return strictly JSON: { "scenes": Scene[7] } where each Scene has { key, start, end, vo, caption, visual, asset_index }.
 visual must be one of: product_pan, product_parallax, authentic_clip, motion_graphic.
 asset_index is a 0-based index into available product images.`;
 
