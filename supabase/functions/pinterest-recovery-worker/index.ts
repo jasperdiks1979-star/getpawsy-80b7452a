@@ -9,9 +9,13 @@
 // Zero image-render credits. Text-only.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { buildPinCopy, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
 import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
