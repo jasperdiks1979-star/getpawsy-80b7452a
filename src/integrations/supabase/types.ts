@@ -16488,6 +16488,60 @@ export type Database = {
           },
         ]
       }
+      pinterest_recovery_queue: {
+        Row: {
+          attempts: number
+          board_id: string | null
+          board_name: string | null
+          created_at: string
+          external_url: string | null
+          id: string
+          last_error: string | null
+          original_rejection_reason: string | null
+          pin_image_phash: string | null
+          pin_image_url: string
+          processed_at: string | null
+          product_slug: string
+          source_pin_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          board_id?: string | null
+          board_name?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          last_error?: string | null
+          original_rejection_reason?: string | null
+          pin_image_phash?: string | null
+          pin_image_url: string
+          processed_at?: string | null
+          product_slug: string
+          source_pin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          board_id?: string | null
+          board_name?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          last_error?: string | null
+          original_rejection_reason?: string | null
+          pin_image_phash?: string | null
+          pin_image_url?: string
+          processed_at?: string | null
+          product_slug?: string
+          source_pin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_render_attempts: {
         Row: {
           attempt_no: number
