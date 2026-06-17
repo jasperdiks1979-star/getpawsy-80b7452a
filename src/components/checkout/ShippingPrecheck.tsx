@@ -25,6 +25,31 @@ interface Props {
 }
 
 /**
+ * Add N business days (Mon–Fri) to a starting date, skipping weekends.
+ * Pure date math, no holiday calendar — keeps the estimate honest and safe.
+ */
+function addBusinessDays(start: Date, days: number): Date {
+  const d = new Date(start);
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d;
+}
+
+function formatArrivalRange(daysMin: number, daysMax: number): string {
+  const now = new Date();
+  const minDate = addBusinessDays(now, daysMin);
+  const maxDate = addBusinessDays(now, daysMax);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  if (minDate.toDateString() === maxDate.toDateString()) return fmt(minDate);
+  return `${fmt(minDate)} – ${fmt(maxDate)}`;
+}
+
+/**
  * Pre-checkout shipping gate.
  *
  * Loads each cart product's CJ warehouse, lets the shopper pick a destination
@@ -134,7 +159,9 @@ export function ShippingPrecheck({ items, initialCountry, onChange }: Props) {
         <div className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium">Delivery available</p>
+            <p className="font-medium">
+              Arrives {formatArrivalRange(check.daysMin, check.daysMax)}
+            </p>
             <p className="text-xs text-muted-foreground">
               Estimated {check.daysMin}–{check.daysMax} business days · standard shipping
               {" "}
