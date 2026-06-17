@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
       board_name: r.board_name || null,
       board_id: r.board_id || null,
       overlay_text: overlayFinal,
-      content_type: "image",
+      content_type: "product",
       recovery_mode_publish: true,
       meta: {
         creative_source: "creative_director_v2",
