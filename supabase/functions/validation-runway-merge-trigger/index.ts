@@ -93,6 +93,17 @@ Deno.serve(async (req) => {
       });
       return json({ ok: true, status: r.status, body: await r.json() });
     }
+    if (mode === "annot") {
+      const checkId = url.searchParams.get("check_id");
+      if (!checkId) return json({ ok: false, message: "check_id required" }, 400);
+      const r = await fetch(`https://api.github.com/repos/${GH_REPO}/check-runs/${checkId}/annotations`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      const cr = await fetch(`https://api.github.com/repos/${GH_REPO}/check-runs/${checkId}`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${GH_PAT}`, "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      return json({ ok: true, annotations: await r.json(), check_run: await cr.json() });
+    }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const results: any[] = [];
