@@ -24,6 +24,79 @@ export function getServiceClient(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+// ── Hard cost-protection kill switches (2026-06-17) ─────────────────────────
+// CJ / supplier image hosts are NEVER allowed on Pinterest. Pins backed by
+// these URLs are rejected before any API call.
+export const CJ_SUPPLIER_IMAGE_HOSTS: readonly string[] = [
+  "cjdropshipping.com",
+  "cf.cjdropshipping.com",
+  "cc.cjdropshipping.com",
+  "img.cjdropshipping.com",
+  "oss.cjdropshipping.com",
+  "cjjsbox.com",
+  "alicdn.com",
+  "aliexpress.com",
+  "alibaba.com",
+  "dhgate.com",
+  "1688.com",
+];
+
+export function isCjSupplierImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return CJ_SUPPLIER_IMAGE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return /cjdropshipping|cjjsbox|alicdn|aliexpress|alibaba|1688|dhgate/i.test(url);
+  }
+}
+
+/**
+ * Hard kill switch for ALL image-model generation. Honors three signals:
+ *   1. env `PINTEREST_IMAGE_GENERATION_KILLED=true` (instant ops switch)
+ *   2. `pinterest_credit_state.image_generation_killed` column
+ *   3. `pinterest_credit_state.manual_pause`
+ * Also enforces a rolling 24h image-credit budget cap.
+ */
+export async function isImageGenerationKilled(
+  supabase: SupabaseClient,
+): Promise<{ killed: boolean; reason: string | null }> {
+  if ((Deno.env.get("PINTEREST_IMAGE_GENERATION_KILLED") ?? "").toLowerCase() === "true") {
+    return { killed: true, reason: "env_kill_switch" };
+  }
+  const { data } = await supabase
+    .from("pinterest_credit_state")
+    .select("image_generation_killed, manual_pause, manual_pause_reason, daily_image_credit_cap, ai_generation_paused")
+    .eq("id", 1)
+    .maybeSingle();
+  if (data?.image_generation_killed) return { killed: true, reason: "image_generation_killed" };
+  if (data?.manual_pause) return { killed: true, reason: data?.manual_pause_reason ?? "manual_pause" };
+  if (data?.ai_generation_paused) return { killed: true, reason: "ai_generation_paused" };
+  const cap = Number(data?.daily_image_credit_cap ?? 0);
+  if (cap > 0) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: events } = await supabase
+      .from("pinterest_credit_events")
+      .select("credits_used")
+      .eq("event_type", "success")
+      .eq("function_name", "creative-director:image")
+      .gte("created_at", since);
+    const used = (events ?? []).reduce((s, r: any) => s + Number(r.credits_used ?? 0), 0);
+    if (used >= cap) return { killed: true, reason: `daily_image_cap_reached:${used}>=${cap}` };
+  }
+  return { killed: false, reason: null };
+}
+
+export async function isAutopilotDisabled(supabase: SupabaseClient): Promise<boolean> {
+  if ((Deno.env.get("PINTEREST_AUTOPILOT_DISABLED") ?? "").toLowerCase() === "true") return true;
+  const { data } = await supabase
+    .from("pinterest_credit_state")
+    .select("autopilot_disabled")
+    .eq("id", 1)
+    .maybeSingle();
+  return data?.autopilot_disabled === true;
+}
+
 export async function isCreditPaused(supabase: SupabaseClient): Promise<{
   paused: boolean;
   state: "green" | "orange" | "red";

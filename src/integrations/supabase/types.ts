@@ -13737,6 +13737,7 @@ export type Database = {
         Row: {
           ai_generation_paused: boolean
           alert_recipient_email: string | null
+          autopilot_disabled: boolean
           avg_credits_per_creative: number | null
           consecutive_402_count: number
           credits_balance_initial: number | null
@@ -13744,6 +13745,7 @@ export type Database = {
           credits_remaining: number | null
           credits_used_since_set: number
           daily_burn_rate: number | null
+          daily_image_credit_cap: number
           emergency_creative_threshold: number
           emergency_mode: boolean
           estimated_creatives_remaining: number | null
@@ -13754,6 +13756,7 @@ export type Database = {
           forecast_state: string | null
           forecast_updated_at: string | null
           id: number
+          image_generation_killed: boolean
           last_24h_alert_sent_at: string | null
           last_402_at: string | null
           last_probe_at: string | null
@@ -13762,6 +13765,7 @@ export type Database = {
           manual_pause: boolean
           manual_pause_at: string | null
           manual_pause_reason: string | null
+          min_balance_credits: number
           notes: string | null
           paused: boolean
           publishing_paused: boolean
@@ -13773,6 +13777,7 @@ export type Database = {
         Insert: {
           ai_generation_paused?: boolean
           alert_recipient_email?: string | null
+          autopilot_disabled?: boolean
           avg_credits_per_creative?: number | null
           consecutive_402_count?: number
           credits_balance_initial?: number | null
@@ -13780,6 +13785,7 @@ export type Database = {
           credits_remaining?: number | null
           credits_used_since_set?: number
           daily_burn_rate?: number | null
+          daily_image_credit_cap?: number
           emergency_creative_threshold?: number
           emergency_mode?: boolean
           estimated_creatives_remaining?: number | null
@@ -13790,6 +13796,7 @@ export type Database = {
           forecast_state?: string | null
           forecast_updated_at?: string | null
           id?: number
+          image_generation_killed?: boolean
           last_24h_alert_sent_at?: string | null
           last_402_at?: string | null
           last_probe_at?: string | null
@@ -13798,6 +13805,7 @@ export type Database = {
           manual_pause?: boolean
           manual_pause_at?: string | null
           manual_pause_reason?: string | null
+          min_balance_credits?: number
           notes?: string | null
           paused?: boolean
           publishing_paused?: boolean
@@ -13809,6 +13817,7 @@ export type Database = {
         Update: {
           ai_generation_paused?: boolean
           alert_recipient_email?: string | null
+          autopilot_disabled?: boolean
           avg_credits_per_creative?: number | null
           consecutive_402_count?: number
           credits_balance_initial?: number | null
@@ -13816,6 +13825,7 @@ export type Database = {
           credits_remaining?: number | null
           credits_used_since_set?: number
           daily_burn_rate?: number | null
+          daily_image_credit_cap?: number
           emergency_creative_threshold?: number
           emergency_mode?: boolean
           estimated_creatives_remaining?: number | null
@@ -13826,6 +13836,7 @@ export type Database = {
           forecast_state?: string | null
           forecast_updated_at?: string | null
           id?: number
+          image_generation_killed?: boolean
           last_24h_alert_sent_at?: string | null
           last_402_at?: string | null
           last_probe_at?: string | null
@@ -13834,6 +13845,7 @@ export type Database = {
           manual_pause?: boolean
           manual_pause_at?: string | null
           manual_pause_reason?: string | null
+          min_balance_credits?: number
           notes?: string | null
           paused?: boolean
           publishing_paused?: boolean

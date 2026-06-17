@@ -53,6 +53,7 @@ import { checkGovernor, governorRejectReason } from "../_shared/pinterest-govern
 import {
   isCreditPaused,
   recordCreditEvent,
+  isImageGenerationKilled,
 } from "../_shared/pinterest-credit-guard.ts";
 
 const corsHeaders = {
@@ -121,6 +122,11 @@ const IMAGE_MODEL =
   "google/gemini-3-pro-image-preview";
 const TEXT_MODEL =
   Deno.env.get("PINTEREST_CD_TEXT_MODEL") || "google/gemini-3-flash-preview";
+
+// 2026-06-17 cost hardening: cap to exactly ONE image render per brief.
+// Any guard failure (diversity / quality / fidelity) rejects the candidate
+// instead of regenerating — regeneration was the dominant credit leak.
+const EFFECTIVE_MAX_RETRIES = 0;
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -565,6 +571,15 @@ async function renderSceneWithSource(
   overlay: { text: string; brand: string } | null = null,
 ): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+
+  // ── Hard cost-protection kill switch (2026-06-17) ───────────────────────
+  // Refuse to call the image model when the kill switch is engaged. The
+  // calling loop catches this as a render failure and rejects the brief
+  // WITHOUT charging any AI gateway credits.
+  const killed = await isImageGenerationKilled(creditClient() as any);
+  if (killed.killed) {
+    throw new Error(`image_generation_killed:${killed.reason ?? "kill_switch"}`);
+  }
 
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
   const patternDirective = pattern
@@ -1404,7 +1419,7 @@ Deno.serve(async (req) => {
         let lastReasons: string[] = [];
         let lastScores: Record<string, number> = {};
 
-        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+        for (let attempt = 1; attempt <= EFFECTIVE_MAX_RETRIES + 1; attempt++) {
           try {
             // ── Pre-render DiversityGuard (2026-06 cost hardening) ───────
             // Hash the planned overlay + hook + CTA + headline BEFORE we burn
@@ -1435,7 +1450,7 @@ Deno.serve(async (req) => {
                 rejected: true,
                 reasons: lastReasons,
               });
-              if (attempt > MAX_RETRIES) {
+              if (attempt > EFFECTIVE_MAX_RETRIES) {
                 rejected.push({ brief, reasons: lastReasons, scores: lastScores, diversity: preGuard, pre_render_skip: true });
                 break;
               }
@@ -1483,7 +1498,7 @@ Deno.serve(async (req) => {
             });
 
             if (!qc.ok) {
-              if (attempt > MAX_RETRIES) break;
+              if (attempt > EFFECTIVE_MAX_RETRIES) break;
               // Regenerate THIS brief with rejection reasons appended.
               const single = await generateBriefs(
                 product,
@@ -1516,7 +1531,7 @@ Deno.serve(async (req) => {
                   ...(qc.reasons ?? []),
                   `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
                 ];
-                if (attempt > MAX_RETRIES) break;
+                if (attempt > EFFECTIVE_MAX_RETRIES) break;
                 // Retry: regen this brief, source-lock still applied next loop.
                 const single = await generateBriefs(
                   product, dna, 1,
@@ -1603,7 +1618,7 @@ Deno.serve(async (req) => {
             break;
           } catch (e) {
             lastReasons = [(e as Error).message];
-            if (attempt > MAX_RETRIES) break;
+            if (attempt > EFFECTIVE_MAX_RETRIES) break;
           }
         }
 
