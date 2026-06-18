@@ -1,7 +1,7 @@
 // Cinematic V4: GitHub Actions dispatcher.
 // Triggers render-cinematic-v4.yml for one or more storyboard IDs.
 // Refuses to dispatch a storyboard that is not in 'validated' status (pre-gate
-// must have passed) or whose unique_image_count < 3.
+// must have passed) or whose unique_image_count < 5.
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -64,14 +64,23 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
     for (const id of ids) {
-      const { data: row } = await sb.from("cinematic_v4_storyboards").select("id, status, unique_image_count, cv4_reject_reasons").eq("id", id).maybeSingle();
+      const { data: row } = await sb.from("cinematic_v4_storyboards").select("id, status, unique_image_count, cv4_reject_reasons, scene_assets").eq("id", id).maybeSingle();
       if (!row) { results.push({ id, ok: false, message: "not_found" }); continue; }
+      if (row.status !== "validated") {
+        results.push({ id, ok: false, message: `not_validated:${row.status}` });
+        continue;
+      }
       if (row.status === "rejected" || (row.cv4_reject_reasons || []).length > 0) {
         results.push({ id, ok: false, message: `pre_gate_failed:${(row.cv4_reject_reasons || []).join("|")}` });
         continue;
       }
-      if ((row.unique_image_count ?? 0) < 3) {
-        results.push({ id, ok: false, message: "unique_images_lt_3" });
+      if ((row.unique_image_count ?? 0) < 5) {
+        results.push({ id, ok: false, message: "needs_better_assets:unique_images_lt_5" });
+        continue;
+      }
+      const sources = Array.isArray(row.scene_assets) ? row.scene_assets.map((a: any) => a?.source) : [];
+      if (sources.some((source: string) => source && source !== "gallery")) {
+        results.push({ id, ok: false, message: "non_gallery_scene_assets_blocked" });
         continue;
       }
       const d = await dispatchOne(id);
