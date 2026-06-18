@@ -44,9 +44,8 @@ Deno.serve(async (req) => {
   let authorized = false;
   if (bearer && bearer === SR_KEY) authorized = true;
   else if (bearer) {
-    const userClient = createClient(SB_URL, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
-    const { data: claims } = await userClient.auth.getClaims(bearer);
-    const uid = claims?.claims?.sub;
+    const { data: u } = await sb.auth.getUser(bearer);
+    const uid = u?.user?.id;
     if (uid) {
       const { data: roleRow } = await sb.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
       if (roleRow) authorized = true;
