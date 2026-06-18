@@ -3986,6 +3986,212 @@ export type Database = {
           },
         ]
       }
+      cinematic_v3_quality_audit: {
+        Row: {
+          audited_at: string
+          benefit_present: boolean
+          branding_ok: boolean
+          caption_clipped: boolean
+          cta_present: boolean
+          hook_present: boolean
+          id: string
+          issues: Json
+          job_id: string
+          low_res_source: boolean
+          mp4_url: string | null
+          product_slug: string | null
+          quality_score: number
+          safe_area_ok: boolean
+          supplier_collage: boolean
+          verdict: string
+          zoom_pan_only: boolean
+        }
+        Insert: {
+          audited_at?: string
+          benefit_present?: boolean
+          branding_ok?: boolean
+          caption_clipped?: boolean
+          cta_present?: boolean
+          hook_present?: boolean
+          id?: string
+          issues?: Json
+          job_id: string
+          low_res_source?: boolean
+          mp4_url?: string | null
+          product_slug?: string | null
+          quality_score?: number
+          safe_area_ok?: boolean
+          supplier_collage?: boolean
+          verdict?: string
+          zoom_pan_only?: boolean
+        }
+        Update: {
+          audited_at?: string
+          benefit_present?: boolean
+          branding_ok?: boolean
+          caption_clipped?: boolean
+          cta_present?: boolean
+          hook_present?: boolean
+          id?: string
+          issues?: Json
+          job_id?: string
+          low_res_source?: boolean
+          mp4_url?: string | null
+          product_slug?: string | null
+          quality_score?: number
+          safe_area_ok?: boolean
+          supplier_collage?: boolean
+          verdict?: string
+          zoom_pan_only?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cinematic_v3_quality_audit_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "cinematic_v3_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cinematic_v4_jobs: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          final_mp4_url: string | null
+          github_run_id: string | null
+          id: string
+          product_id: string | null
+          product_slug: string
+          quality_report: Json | null
+          quality_score: number | null
+          rejection_reasons: string[]
+          scene_assets: Json | null
+          script_json: Json | null
+          status: string
+          storyboard: Json | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          final_mp4_url?: string | null
+          github_run_id?: string | null
+          id?: string
+          product_id?: string | null
+          product_slug: string
+          quality_report?: Json | null
+          quality_score?: number | null
+          rejection_reasons?: string[]
+          scene_assets?: Json | null
+          script_json?: Json | null
+          status?: string
+          storyboard?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          final_mp4_url?: string | null
+          github_run_id?: string | null
+          id?: string
+          product_id?: string | null
+          product_slug?: string
+          quality_report?: Json | null
+          quality_score?: number | null
+          rejection_reasons?: string[]
+          scene_assets?: Json | null
+          script_json?: Json | null
+          status?: string
+          storyboard?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cinematic_v4_safe_zone_config: {
+        Row: {
+          approval_threshold: number
+          bottom_reserve_pct: number
+          brand_accent: string | null
+          brand_logo_url: string | null
+          brand_primary: string | null
+          canvas_height: number
+          canvas_width: number
+          id: string
+          max_font_px: number
+          max_lines: number
+          min_font_px: number
+          min_source_image_px: number
+          penalty_branding: number
+          penalty_caption_clipped: number
+          penalty_low_res: number
+          penalty_missing_benefit: number
+          penalty_missing_cta: number
+          penalty_missing_hook: number
+          penalty_safe_area: number
+          penalty_supplier_collage: number
+          penalty_zoom_pan_only: number
+          side_reserve_px: number
+          top_reserve_pct: number
+          updated_at: string
+        }
+        Insert: {
+          approval_threshold?: number
+          bottom_reserve_pct?: number
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_primary?: string | null
+          canvas_height?: number
+          canvas_width?: number
+          id?: string
+          max_font_px?: number
+          max_lines?: number
+          min_font_px?: number
+          min_source_image_px?: number
+          penalty_branding?: number
+          penalty_caption_clipped?: number
+          penalty_low_res?: number
+          penalty_missing_benefit?: number
+          penalty_missing_cta?: number
+          penalty_missing_hook?: number
+          penalty_safe_area?: number
+          penalty_supplier_collage?: number
+          penalty_zoom_pan_only?: number
+          side_reserve_px?: number
+          top_reserve_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          approval_threshold?: number
+          bottom_reserve_pct?: number
+          brand_accent?: string | null
+          brand_logo_url?: string | null
+          brand_primary?: string | null
+          canvas_height?: number
+          canvas_width?: number
+          id?: string
+          max_font_px?: number
+          max_lines?: number
+          min_font_px?: number
+          min_source_image_px?: number
+          penalty_branding?: number
+          penalty_caption_clipped?: number
+          penalty_low_res?: number
+          penalty_missing_benefit?: number
+          penalty_missing_cta?: number
+          penalty_missing_hook?: number
+          penalty_safe_area?: number
+          penalty_supplier_collage?: number
+          penalty_zoom_pan_only?: number
+          side_reserve_px?: number
+          top_reserve_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cinematic_v4_storyboards: {
         Row: {
           approved_at: string | null
@@ -18065,6 +18271,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           us_score_threshold: number
+          v3_publish_paused: boolean
           verified_client_id_prefix: string | null
           warmup_until: string | null
         }
@@ -18112,6 +18319,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           us_score_threshold?: number
+          v3_publish_paused?: boolean
           verified_client_id_prefix?: string | null
           warmup_until?: string | null
         }
@@ -18159,6 +18367,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           us_score_threshold?: number
+          v3_publish_paused?: boolean
           verified_client_id_prefix?: string | null
           warmup_until?: string | null
         }

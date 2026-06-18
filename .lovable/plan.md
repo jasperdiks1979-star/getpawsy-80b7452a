@@ -1,106 +1,99 @@
-## V4 → V5 Pivot: Pinterest-Native UGC Story Ads
+## V4 Pinterest Revenue Renderer — Audit + Build
 
-We're abandoning the "Ken Burns over product photos" approach entirely. V5 produces narrative ad films with a HOOK→PROBLEM→SOLUTION→BENEFIT→CTA arc, AI-generated lifestyle scenes (no raw CJ product shots full-screen), and automatic ElevenLabs voice-over. Nothing publishes — 3 prototypes go straight to `/admin/cinematic-v4-review` for your judgment.
+Stop generating V3 videos and build a new renderer with a hard quality gate. No new Pinterest pins until V4 passes validation against the existing 30 V3 videos.
 
-### 1. Story engine (`cv5-storyboard`)
+---
 
-For each product, generate a 5-beat script keyed to the niche (cat toy / litter box / dog bed / etc.):
+### Phase 1 — Audit the 30 approved V3 videos (read-only)
 
-```text
-beat 1  HOOK      0–3s   pattern interrupt, emotional hook line
-beat 2  PROBLEM   3–8s   the pain the pet/owner feels today
-beat 3  SOLUTION  8–15s  product introduced in real environment
-beat 4  BENEFIT  15–22s  outcome: happy pet, calm home, freedom
-beat 5  CTA      22–30s  "Tap to see why owners love it"
+Build `supabase/functions/cinematic-v3-quality-audit/index.ts` that scores each of the 30 approved V3 jobs and writes results to a new `cinematic_v3_quality_audit` table.
+
+Per-video checks:
+- **Safe area** — extract sample frames via ffprobe/ffmpeg and run OCR; flag text bboxes outside 1080×(15%–80%) center band
+- **Caption clipping** — text bbox touches frame edge or extends past safe rect
+- **Supplier collage detection** — perceptual hash + edge density heuristic on source `product_media` rows (multi-panel grid signature)
+- **Low-res source** — any source image <1000px on shortest side
+- **Zoom/pan only** — scene motion vectors uniform across all scenes (no scene cuts, no composition change)
+- **Missing hook / benefit / CTA** — inspect `cinematic_v3_jobs.script_json` for Scene 1/3/5 presence + non-empty text
+- **Branding** — GetPawsy logo/wordmark missing from final 2s
+
+Output columns:
+```
+job_id, slug, safe_area_ok, caption_clipped, supplier_collage, low_res_source,
+zoom_pan_only, hook_present, benefit_present, cta_present, branding_ok,
+quality_score (0-100), issues jsonb, mp4_url
 ```
 
-Each beat carries: `scene_prompt` (for image gen), `vo_line` (≤14 words), `on_screen_caption` (≤5 words), `duration_s`, `camera_move`.
+Quality score formula: 100 − penalties (safe_area=-25, clipped=-20, collage=-30, lowres=-15, zoom_only=-15, missing_hook=-15, missing_benefit=-10, missing_cta=-20, branding=-10), clamped 0-100. Approve at 90+.
 
-Niche-aware beat templates are stored in `cv5_story_templates`. Cat-toy / litter-box / dog-bed templates ship first; fallback = generic pet template.
+Report page: `/admin/cinematic-v3-quality-audit` — table with score, badges, thumbnail, mp4 preview, issues list. Read-only.
 
-### 2. Lifestyle scene generation (`cv5-scenes`)
+---
 
-Source product photos are used ONLY as reference for color/shape — never shown full-screen. For each beat we generate a lifestyle image:
+### Phase 2 — Build V4 Pinterest Revenue Renderer
 
-- Cat toy: bored cat on couch → cat mid-pounce → cat playing with ball → owner laughing → product hero in living room
-- Litter box: dirty corner → frustrated owner with scoop → clean modern setup → cat using box calmly → product in styled bathroom
-- Dog bed: restless dog pacing → dog curled asleep → fabric texture macro → cozy living room wide → product styled
+#### Database
+Migration creates:
+- `cinematic_v4_jobs` (mirrors v3 shape: status, slug, product_id, script_json, scene_assets, final_mp4_url, quality_score, quality_report jsonb, rejection_reasons text[], created_at, approved_at)
+- `cinematic_v4_safe_zone_config` (canvas, top_reserve_pct=15, bottom_reserve_pct=20, min_font_px, max_lines, brand_logo_url)
+- GRANTs + RLS (admin read, service_role all)
 
-Generated via `imagegen` (premium tier for hero beats). Real product shot composited into beats 3 and 5 only, as a small inset / on-shelf element — never the full frame. Saved to `cinematic-ads-v5` storage bucket.
+#### Renderer architecture
+`supabase/functions/cinematic-v4-orchestrator/index.ts` — orchestrates per job:
+1. **Script generation** — Lovable AI Gateway (`google/gemini-2.5-flash`) produces 5-scene script with strict schema: `{hook, problem, benefit, key_feature, cta}`. Each scene has `text` (≤max chars for safe area), `b_roll_query`, `duration_s`.
+2. **Asset selection** — query `product_media` excluding supplier-collage hashes (from Phase 1 blocklist), require min 1200px, prefer lifestyle > white background. Reject job if no qualifying asset.
+3. **Storyboard layout** — pure-function `buildSafeLayout(text, fontFamily, maxWidth=864px=1080-2×108)` that auto-scales font down (96→48px) until text fully fits inside 1080×(288–1632) center band. If still overflows at min size, split lines; if still overflows, **fail the job** with reason `text_exceeds_safe_zone`.
+4. **Render dispatch** — push storyboard to existing GitHub Actions render worker (Remotion) using a new composition `MainVideoV4` with five scenes:
+   - Scene 1 Hook — full-bleed lifestyle, large hook text, top-anchored within safe area
+   - Scene 2 Problem — split-screen / dim overlay, mid copy
+   - Scene 3 Benefit — clean white background, product hero, benefit copy
+   - Scene 4 Key feature — close-up product detail with callout label
+   - Scene 5 CTA — branded end-card with GetPawsy logo + URL pill
+5. **Quality gate (server-side, post-render)** — re-runs Phase-1 audit on the produced mp4: safe-area OCR, supplier-collage hash check, branding presence, scene count, scene tags (hook/benefit/cta). Computes `quality_score`. If score <90 → `status=rejected` with `rejection_reasons[]`. ≥90 → `status=approved`.
 
-### 3. Voice-over (`cv5-voiceover`)
+#### Remotion composition
+`remotion/src/MainVideoV4.tsx` + `remotion/src/v4/` scenes:
+- `SafeZoneFrame.tsx` — debug overlay (dev only) + runtime guard that throws if a child's measured rect exits the safe rect (catches author errors at build time)
+- `BrandEndCard.tsx` — consistent logo + colors
+- `AutoFitText.tsx` — measures DOM, shrinks font until contained
+- `Scene1Hook`, `Scene2Problem`, `Scene3Benefit`, `Scene4Feature`, `Scene5CTA`
+- 30fps, 1080×1920, ~24s total (5+5+5+5+4)
 
-ElevenLabs required. We call the ElevenLabs connector (will request the standard connector link if missing) to synthesize all 5 vo_lines as MP3, stitched with `previous_text`/`next_text` for prosody continuity. Voice defaults to a warm female US voice (Sarah `EXAVITQu4vr4xnSDxMaL`); cat vs dog niches can swap. Output uploaded to storage; URLs stored on the storyboard row. **A storyboard without a successful voice-over render is hard-blocked from review.**
+#### UI
+- `/admin/cinematic-v4-jobs` — list + filters (approved / rejected / failed), thumbnail, quality score, rejection reasons, mp4 preview, re-queue button
+- `/admin/cinematic-v4-quality-gate` — live config: penalty weights, safe-zone reserves, min source resolution, approval threshold
 
-### 4. Pinterest Quality Score (`cv5-quality-gate`)
+---
 
-Pre-render checks (reject before sending to renderer):
+### Phase 3 — Validate against V3 baseline
 
-| Check | Reject if |
-|---|---|
-| white-bg product slides | >20% of beats are raw product cutouts on white |
-| infographic detection | any beat image OCR finds >10 words of UI text |
-| caption clip | OCR bbox exits 0–86% vertical safe zone or overflows horizontally |
-| voice-over | missing, <total_duration−2s, or ElevenLabs error |
-| scene variety | fewer than 5 distinct scene types across beats |
-| caption length | any caption >5 words |
+Smoke script `scripts/v4-baseline-validation.mjs`:
+1. Pick the 10 slugs from the 30 approved V3 jobs that scored lowest in Phase 1
+2. Re-render via V4 orchestrator (one at a time, no Pinterest publish)
+3. Print side-by-side table: slug | v3_score | v4_score | v4_status | issues
+4. Pass criteria: ≥8/10 V4 outputs score ≥90, none have safe-zone violations, none have supplier collages
 
-Pass = `quality_score ≥ 80` AND all hard checks green → status `awaiting_render`. Fail = `creative_rejected` with reason list.
+---
 
-### 5. Renderer update (`render-cinematic-v4.yml` → v5 path)
+### Phase 4 — Guards (do NOT proceed without these)
 
-GitHub Actions workflow renders 1080×1920 @ 30fps. Per beat: lifestyle image with subtle camera move (push-in, parallax, or drift — varied per beat, never identical Ken Burns), captions in safe zone (top 14% & bottom 22% clear), vo_line audio. Final ffmpeg pass muxes the stitched ElevenLabs MP3. Post-render OCR re-check; on clip → mark `upload_failed`, don't auto-pass.
+- Pinterest publisher: add hard check — refuse to enqueue any `cinematic_v4_jobs` row with `status != 'approved'`
+- V3 dispatcher: leave running for inventory but flag in `pinterest_runtime_settings` `v3_publish_paused=true` so existing V3 jobs are not pushed to Pinterest until V4 lands
+- No new Pinterest pins are created during Phases 1–3 (the orchestrator never calls the Pinterest publisher; it only writes to its own tables)
 
-### 6. Review UI (`/admin/cinematic-v4-review`)
+---
 
-Add a V5 tab. Each card shows:
-- playable 9:16 MP4
-- waveform of voice-over with transcript per beat
-- 5 beat thumbnails with captions
-- which source images were used (and how — reference only vs composited)
-- quality score breakdown (white-bg %, scene variety, OCR results)
-- Approve / Reject (with reason)
+### Out of scope (explicit)
+- Deleting V3 videos
+- Touching V5 / Cinematic engines
+- Repairing ElevenLabs key or render-worker heartbeats (separate known issues)
+- Building new Pinterest pin queue entries
 
-No auto-publish. Kill switch from previous turn stays on. V5 rows publish only after explicit approval, same gate as V4.
+---
 
-### 7. Prototypes
-
-Generate exactly 3, then stop:
-1. Interactive Cat Toy Ball
-2. Smart Laser Cat Teaser
-3. Memory Foam Pet Bed
-
-Selected via slug match in `products_public`; if a slug isn't found we pick the closest niche match and log it on the card.
-
-### Technical details
-
-**New tables / columns**
-- `cv5_storyboards` (product_id, beats jsonb, vo_audio_url, quality_score, quality_breakdown jsonb, status, mp4_url, github_run_id…)
-- `cv5_story_templates` (niche, beats jsonb)
-- storage bucket `cinematic-ads-v5` (private; signed URLs in UI)
-- `pinterest_video_queue.engine_version` already supports values; add `'v5'`
-
-**New edge functions**
-- `cv5-storyboard` — picks template, fills beats with Lovable AI
-- `cv5-scenes` — generates 5 lifestyle images via imagegen
-- `cv5-voiceover` — ElevenLabs synth + upload
-- `cv5-quality-gate` — pre-render checks, sets score
-- `cv5-queue-render` — dispatches GH workflow (reuses v4 dispatcher pattern incl. run_id capture)
-- `cv5-render-callback` — same hardened logic as v4 (distinguishes render failure vs creative reject), additional OCR post-check
-- `cv5-generate-prototypes` — orchestrates the 3 prototypes end-to-end
-
-**Connector**
-- ElevenLabs standard connector required. If not linked I'll trigger the connect flow before generating voice-over.
-
-**What we do NOT change**
-- V4 rows stay frozen, kill switch stays on, existing Pinterest pins untouched.
-- No publisher changes; V5 inherits the same approval-gated publish path.
-
-### Order of execution (after you approve)
-1. ElevenLabs connector link + storage bucket + tables
-2. `cv5-storyboard` + `cv5-scenes` + `cv5-voiceover` + `cv5-quality-gate`
-3. Renderer workflow + callback
-4. Review UI V5 tab
-5. Run `cv5-generate-prototypes` for the 3 SKUs and report back with playable URLs
-
-Approve to proceed, or tell me what to adjust (voice choice, beat timing, niche templates, scene list).
+### Technical notes
+- OCR: `tesseract.js` inside the audit edge function (lightweight, English only)
+- Perceptual hash: 8×8 dHash in pure TS — no native deps
+- All edge functions use `corsHeaders` from `npm:@supabase/supabase-js@2/cors`
+- Migrations include GRANTs (authenticated SELECT, service_role ALL) per project standard
+- Frontend lazy-loads both new admin routes
