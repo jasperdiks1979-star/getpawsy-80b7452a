@@ -3973,14 +3973,18 @@ export type Database = {
           created_by: string | null
           cv4_reject_reasons: string[]
           destination_url: string | null
+          github_run_id: string | null
+          github_run_url: string | null
           hook_archetype: string | null
           id: string
+          last_render_dispatched_at: string | null
           mp4_url: string | null
           preview_thumb_url: string | null
           product_id: string | null
           product_slug: string
           quality_score: number | null
           rejected_at: string | null
+          render_error: string | null
           scene_assets: Json
           scene_count: number | null
           status: string
@@ -3995,14 +3999,18 @@ export type Database = {
           created_by?: string | null
           cv4_reject_reasons?: string[]
           destination_url?: string | null
+          github_run_id?: string | null
+          github_run_url?: string | null
           hook_archetype?: string | null
           id?: string
+          last_render_dispatched_at?: string | null
           mp4_url?: string | null
           preview_thumb_url?: string | null
           product_id?: string | null
           product_slug: string
           quality_score?: number | null
           rejected_at?: string | null
+          render_error?: string | null
           scene_assets?: Json
           scene_count?: number | null
           status?: string
@@ -4017,14 +4025,18 @@ export type Database = {
           created_by?: string | null
           cv4_reject_reasons?: string[]
           destination_url?: string | null
+          github_run_id?: string | null
+          github_run_url?: string | null
           hook_archetype?: string | null
           id?: string
+          last_render_dispatched_at?: string | null
           mp4_url?: string | null
           preview_thumb_url?: string | null
           product_id?: string | null
           product_slug?: string
           quality_score?: number | null
           rejected_at?: string | null
+          render_error?: string | null
           scene_assets?: Json
           scene_count?: number | null
           status?: string

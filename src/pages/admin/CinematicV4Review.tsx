@@ -23,6 +23,10 @@ type Storyboard = {
   approved_at: string | null;
   rejected_at: string | null;
   created_at: string;
+  github_run_id: string | null;
+  github_run_url: string | null;
+  last_render_dispatched_at: string | null;
+  render_error: string | null;
 };
 
 type QueueRow = {
@@ -70,6 +74,14 @@ export default function CinematicV4Review() {
 
   useEffect(() => { load(); }, []);
 
+  // Auto-refresh while any storyboard is mid-pipeline so the user sees status flips.
+  useEffect(() => {
+    const mid = items.some((it) => ["github_dispatched", "rendering", "awaiting_render", "pending"].includes(it.sb.status));
+    if (!mid) return;
+    const t = setInterval(load, 8000);
+    return () => clearInterval(t);
+  }, [items]);
+
   async function approve(item: { sb: Storyboard; queue: QueueRow | null }) {
     if (!item.queue) return toast.error("No queue row to approve");
     setBusy(item.sb.id);
@@ -112,10 +124,20 @@ export default function CinematicV4Review() {
 
   async function renderAll() {
     setGenBusy(true);
-    const { data, error } = await supabase.functions.invoke("cv4-queue-render", { body: {} });
+    // Pull every storyboard currently stuck pre-render so a single click recovers them.
+    const { data: stuck } = await supabase
+      .from("cinematic_v4_storyboards")
+      .select("id")
+      .in("status", ["awaiting_render", "validated", "upload_failed", "callback_failed"]);
+    const ids = (stuck || []).map((r: any) => r.id);
+    const { data, error } = await supabase.functions.invoke("cv4-queue-render", { body: { storyboard_ids: ids } });
     setGenBusy(false);
     if (error) toast.error(error.message);
-    else { toast.success(`Dispatched ${data?.dispatched ?? 0}/${data?.total ?? 0} renders`); load(); }
+    else {
+      const okRuns = (data?.results || []).filter((r: any) => r.ok && r.run_id).map((r: any) => r.run_id);
+      toast.success(`Force-rendered ${data?.dispatched ?? 0}/${data?.total ?? 0}${okRuns.length ? ` · run ${okRuns[0]}` : ""}`);
+      load();
+    }
   }
 
   async function renderOne(storyboard_id: string) {
@@ -124,7 +146,23 @@ export default function CinematicV4Review() {
     setBusy(null);
     if (error) toast.error(error.message);
     else if (!data?.results?.[0]?.ok) toast.error(data?.results?.[0]?.message || "dispatch failed");
-    else { toast.success("Render dispatched"); load(); }
+    else {
+      const r = data.results[0];
+      toast.success(r.run_id ? `Render dispatched · GitHub run ${r.run_id}` : "Render dispatched");
+      load();
+    }
+  }
+
+  function pipelineStage(sb: Storyboard, queueStatus: string): { label: string; tone: "default" | "secondary" | "destructive" | "outline" } {
+    if (queueStatus === "awaiting_review") return { label: "awaiting_review", tone: "default" };
+    if (sb.status === "rejected") return { label: "rejected", tone: "destructive" };
+    if (sb.status === "upload_failed") return { label: "upload_failed", tone: "destructive" };
+    if (sb.status === "callback_failed") return { label: "callback_failed", tone: "destructive" };
+    if (sb.status === "rendered") return { label: "rendered", tone: "secondary" };
+    if (sb.status === "rendering") return { label: "rendering", tone: "outline" };
+    if (sb.status === "github_dispatched") return { label: "github_dispatched", tone: "outline" };
+    if (sb.status === "awaiting_render") return { label: "waiting_for_github", tone: "outline" };
+    return { label: sb.status, tone: "outline" };
   }
 
   return (
@@ -135,7 +173,7 @@ export default function CinematicV4Review() {
           <p className="text-sm text-muted-foreground">5-beat storyboards staged before Pinterest publish. Auto-publish disabled — every video needs manual approval. Captions are hard-capped at 5 words / 32 chars and OCR-validated post-render.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={renderAll} disabled={genBusy}>Render all validated</Button>
+          <Button variant="outline" onClick={renderAll} disabled={genBusy}>Force render all awaiting_render</Button>
           <Button onClick={generateShowcase} disabled={genBusy}>{genBusy ? "Working…" : "Generate 5 showcase videos"}</Button>
         </div>
       </header>
@@ -158,13 +196,17 @@ export default function CinematicV4Review() {
                     <CardTitle className="text-base">{sb.product_slug}</CardTitle>
                     <p className="text-xs text-muted-foreground">{new Date(sb.created_at).toLocaleString()}</p>
                   </div>
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    <Badge variant={sb.status === "rejected" ? "destructive" : "secondary"}>sb: {sb.status}</Badge>
-                    <Badge variant="outline">queue: {queueStatus}</Badge>
-                    <Badge variant="outline">scenes: {sb.scene_count ?? 0}</Badge>
-                    <Badge variant="outline">imgs: {sb.unique_image_count ?? 0}</Badge>
-                    {sb.quality_score != null && <Badge variant="outline">QA {Math.round(sb.quality_score)}</Badge>}
-                  </div>
+                  {(() => {
+                    const stage = pipelineStage(sb, queueStatus);
+                    return (
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        <Badge variant={stage.tone}>{stage.label}</Badge>
+                        <Badge variant="outline">scenes: {sb.scene_count ?? 0}</Badge>
+                        <Badge variant="outline">imgs: {sb.unique_image_count ?? 0}</Badge>
+                        {sb.quality_score != null && <Badge variant="outline">QA {Math.round(sb.quality_score)}</Badge>}
+                      </div>
+                    );
+                  })()}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -211,10 +253,26 @@ export default function CinematicV4Review() {
                   </div>
                 )}
 
+                {(sb.github_run_id || sb.mp4_url || sb.render_error) && (
+                  <div className="text-xs space-y-0.5 border-t pt-2">
+                    {sb.github_run_id && (
+                      <div>GitHub run: {sb.github_run_url ? (
+                        <a href={sb.github_run_url} target="_blank" rel="noreferrer" className="underline">{sb.github_run_id}</a>
+                      ) : sb.github_run_id}</div>
+                    )}
+                    {sb.mp4_url && (
+                      <div>MP4: <a href={sb.mp4_url} target="_blank" rel="noreferrer" className="underline break-all">{sb.mp4_url}</a></div>
+                    )}
+                    {sb.render_error && <div className="text-destructive break-all">render_error: {sb.render_error}</div>}
+                  </div>
+                )}
+
                 <div className="flex gap-2 justify-end pt-2">
                   <Button variant="outline" size="sm" onClick={() => reject(it)} disabled={busy === sb.id}>Reject</Button>
-                  {!sb.mp4_url && !blocked && (
-                    <Button variant="secondary" size="sm" onClick={() => renderOne(sb.id)} disabled={busy === sb.id}>Render</Button>
+                  {!blocked && (
+                    <Button variant="secondary" size="sm" onClick={() => renderOne(sb.id)} disabled={busy === sb.id}>
+                      {sb.mp4_url ? "Re-render" : "Force render this video"}
+                    </Button>
                   )}
                   <Button size="sm" onClick={() => approve(it)} disabled={busy === sb.id || blocked || !sb.mp4_url || !it.queue}>
                     {sb.mp4_url ? "Approve & queue" : "Awaiting render"}
