@@ -50,7 +50,7 @@ async function processJob(supa: any, job: any): Promise<Result> {
   // Fetch product context
   const { data: product, error: pErr } = await supa
     .from("products")
-    .select("id, slug, name, description, short_description")
+    .select("id, slug, name, description")
     .eq("id", job.product_id)
     .maybeSingle();
   if (pErr || !product) {
@@ -60,7 +60,7 @@ async function processJob(supa: any, job: any): Promise<Result> {
 
   const slug = product.slug || job.product_slug;
   const title = (product.name || slug || "Pet Product").toString().slice(0, 100);
-  const description = (product.short_description || product.description || `Discover ${title} at GetPawsy.`).toString().slice(0, 500);
+  const description = (product.description || `Discover ${title} at GetPawsy.`).toString().slice(0, 500);
   const destination_url = `${SITE_URL}/products/${slug}`;
   const checksum = `cinematic_v3:${job.id}`;
 
