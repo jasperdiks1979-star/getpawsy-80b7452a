@@ -34,6 +34,33 @@ function stripQuery(u: string | null | undefined) {
   }
 }
 
+// Force any cinematic-v3 storage URL (signed or otherwise) into a public
+// `/object/public/cinematic-v3/...` form. The bucket is set to public so this
+// URL is fetchable by Pinterest's CDN.
+function toPublicStorageUrl(u: string | null | undefined, fallbackPath: string): string {
+  const publicPrefix = `${SUPABASE_URL}/storage/v1/object/public/cinematic-v3/`;
+  if (u) {
+    try {
+      const url = new URL(u);
+      const m = url.pathname.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/cinematic-v3\/(.+)$/);
+      if (m) return `${publicPrefix}${m[1]}`;
+    } catch {
+      // fall through
+    }
+  }
+  return `${publicPrefix}${fallbackPath}`;
+}
+
+// Cap the queued pin title so the publisher's text-safe-area validator
+// (max 2 lines at Pinterest's bold typeface) never trips.
+function truncatePinTitle(raw: string, maxChars = 38): string {
+  const clean = (raw || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= maxChars) return clean;
+  const cut = clean.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
 async function processJob(supa: any, job: any): Promise<Result> {
   const res: Result = {
     job_id: job.id,
@@ -59,7 +86,8 @@ async function processJob(supa: any, job: any): Promise<Result> {
   }
 
   const slug = product.slug || job.product_slug;
-  const title = (product.name || slug || "Pet Product").toString().slice(0, 100);
+  const rawTitle = (product.name || slug || "Pet Product").toString();
+  const title = truncatePinTitle(rawTitle, 38);
   const description = (product.description || `Discover ${title} at GetPawsy.`).toString().slice(0, 500);
   const destination_url = `${SITE_URL}/products/${slug}`;
   const checksum = `cinematic_v3:${job.id}`;
@@ -108,17 +136,25 @@ async function processJob(supa: any, job: any): Promise<Result> {
     .eq("content_hash", checksum)
     .maybeSingle();
 
+  const storage_path = `jobs/${job.id}/final.mp4`;
+  const public_url = toPublicStorageUrl(job.final_mp4_url, storage_path);
+
   if (existingAsset) {
     asset_id = existingAsset.id;
+    // Heal legacy rows that captured a /sign/ URL before this fix.
+    await supa
+      .from("pinterest_video_assets")
+      .update({ public_url })
+      .eq("id", asset_id)
+      .like("public_url", "%/storage/v1/object/sign/%");
   } else {
-    const storage_path = `jobs/${job.id}/final.mp4`;
     const { data: assetIns, error: aErr } = await supa
       .from("pinterest_video_assets")
       .insert({
         filename: `cinematic-v3-${slug}-${job.id}.mp4`,
         storage_bucket: "cinematic-v3",
         storage_path,
-        public_url: stripQuery(job.final_mp4_url) ?? job.final_mp4_url,
+        public_url,
         duration_seconds: job.duration_seconds ?? null,
         aspect_ratio: "9:16",
         hook_type: "cinematic_v3",
