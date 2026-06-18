@@ -205,6 +205,25 @@ const TONES: Record<Category, ToneProfile> = {
     hashtags: ["#dogparent","#doglife","#doghome","#dogowner","#dogs","#getpawsy"],
     fallbackNoun: "dog essential",
   },
+  pet_guardrail: {
+    titles: [
+      "{product} for a Safe Indoor Play Zone",
+      "Portable {product} for Indoor & Outdoor Use",
+      "A {product} That Sets Up in Minutes",
+      "{product} for Puppies & Small Dogs",
+      "Sturdy {product} for Everyday Boundaries",
+    ],
+    descriptions: [
+      "A sturdy {product} that creates a safe play area indoors or outdoors — easy to set up, easy to move.",
+      "Built for daily use, with a secure gate and durable panels that hold up to real puppy energy.",
+      "Great for new puppies, recovery time, or keeping curious dogs out of certain rooms.",
+      "Portable, foldable, and stable enough for everyday boundaries at home or in the yard.",
+      "A practical {product} for households that want a flexible, safe space for their dog.",
+    ],
+    ctas: ["Shop on GetPawsy", "View details", "Tap to explore", "See it on GetPawsy"],
+    hashtags: ["#dogplaypen","#puppyfence","#petgate","#dogparent","#puppylife","#dogtraining","#getpawsy"],
+    fallbackNoun: "dog playpen",
+  },
   pet_tech: {
     titles: [
       "Smart {product} for Modern Pet Homes",
