@@ -28,6 +28,9 @@ Deno.serve(async (req) => {
     const { data: row } = await sb.from("cinematic_v4_storyboards").select("*").eq("id", storyboard_id).maybeSingle();
     if (!row) return new Response(JSON.stringify({ ok: false, code: "NOT_FOUND", traceId: trace_id }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (row.status === "rejected") return new Response(JSON.stringify({ ok: false, code: "REJECTED", traceId: trace_id }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (row.status !== "validated" || (row.unique_image_count ?? 0) < 5 || (row.cv4_reject_reasons || []).length > 0) {
+      return new Response(JSON.stringify({ ok: false, code: "V4_PREFLIGHT_BLOCKED", traceId: trace_id, status: row.status, unique_image_count: row.unique_image_count, reasons: row.cv4_reject_reasons || [] }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Mark as rendering so dashboards reflect work in progress.
     await sb.from("cinematic_v4_storyboards").update({ status: "rendering" }).eq("id", storyboard_id);

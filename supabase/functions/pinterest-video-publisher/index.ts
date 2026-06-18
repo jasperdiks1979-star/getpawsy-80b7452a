@@ -231,6 +231,44 @@ async function getPinterestToken(sb: any): Promise<string | null> {
   return data?.access_token || null;
 }
 
+async function isVideoAutoPublishDisabled(sb: any): Promise<boolean> {
+  const envValue = (Deno.env.get("PINTEREST_VIDEO_AUTO_PUBLISH") ?? "").trim().toLowerCase();
+  if (["false", "0", "off", "no", "disabled"].includes(envValue)) return true;
+  try {
+    const { data } = await sb
+      .from("app_config")
+      .select("key,value")
+      .in("key", ["PINTEREST_VIDEO_AUTO_PUBLISH", "pinterest_video_auto_publish"]);
+    return (data ?? []).some((cfg: any) => {
+      const raw = typeof cfg.value === "string" ? cfg.value : JSON.stringify(cfg.value);
+      const v = String(raw ?? "").replace(/^"|"$/g, "").trim().toLowerCase();
+      return ["false", "0", "off", "no", "disabled"].includes(v);
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function assertPublishAllowed(sb: any, row: any, queue_id: string, trace_id: string): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
+  if (await isVideoAutoPublishDisabled(sb)) {
+    await logStage(sb, queue_id, "publish_blocked_kill_switch", "fail", { engine_version: row?.engine_version }, trace_id);
+    return { ok: false, code: "AUTO_PUBLISH_DISABLED", message: "PINTEREST_VIDEO_AUTO_PUBLISH kill switch active" };
+  }
+  const payload = row?.failure_payload ?? {};
+  const markers = [row?.status, row?.error_message, payload?.preview_mode, payload?.voiceover_status, payload?.render_mode]
+    .filter(Boolean).map((v) => String(v).toLowerCase());
+  if (markers.includes("silent_preview") || markers.some((v) => v.includes("silent_preview"))) {
+    await logStage(sb, queue_id, "publish_blocked_silent_preview", "fail", { engine_version: row?.engine_version }, trace_id);
+    return { ok: false, code: "SILENT_PREVIEW_BLOCKED", message: "silent_preview videos are review-only and cannot publish" };
+  }
+  if (row?.engine_version === "v4" && (!row.approved_at || row.status !== "pending")) {
+    await logStage(sb, queue_id, "publish_blocked_v4_unapproved", "fail",
+      { storyboard_id: row.storyboard_id, status: row.status, approved_at: row.approved_at }, trace_id);
+    return { ok: false, code: "V4_NOT_APPROVED", message: `V4 row requires approved_at + status='pending' (got status=${row.status}, approved_at=${row.approved_at})` };
+  }
+  return { ok: true };
+}
+
 async function resolveBoardId(sb: any, _token: string): Promise<string | null> {
   const { data: settings } = await sb.from("pinterest_runtime_settings").select("active_board_id").eq("id", 1).maybeSingle();
   if (settings?.active_board_id) return settings.active_board_id;
@@ -640,6 +678,8 @@ serve(async (req) => {
       const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
       if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
       if (row.status === "published") return ok({ ok: true, traceId: trace_id, message: "already_published" });
+      const allowed = await assertPublishAllowed(sb, row, queue_id, trace_id);
+      if (!allowed.ok) return ok({ ok: false, traceId: trace_id, code: allowed.code, message: allowed.message });
       const max = row.max_retries ?? 3;
       if ((row.attempt_count || 0) >= max) {
         return ok({ ok: false, code: "MAX_RETRIES_EXCEEDED", traceId: trace_id, message: `cap=${max}` });
@@ -689,30 +729,8 @@ serve(async (req) => {
       const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
       if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
       if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, pin_url: row.external_url, external_url: row.external_url, title: row.title, media_url: null, board: row.board_id, message: "already_published" });
-      // ── Global emergency kill switch ──────────────────────────────
-      // Env var OR app_config row { key: 'pinterest_video_auto_publish' } = "false" halts everything.
-      const envKill = (Deno.env.get("PINTEREST_VIDEO_AUTO_PUBLISH") ?? "").toLowerCase();
-      let killSwitch = envKill === "false" || envKill === "0" || envKill === "off";
-      if (!killSwitch) {
-        try {
-          const { data: cfg } = await sb.from("app_config").select("value").eq("key", "pinterest_video_auto_publish").maybeSingle();
-          const v = String(cfg?.value ?? "").toLowerCase();
-          if (v === "false" || v === "0" || v === "off") killSwitch = true;
-        } catch { /* ignore */ }
-      }
-      if (killSwitch) {
-        await logStage(sb, queue_id, "publish_blocked_kill_switch", "fail", { engine_version: row.engine_version }, trace_id);
-        return ok({ ok: false, code: "AUTO_PUBLISH_DISABLED", traceId: trace_id, message: "PINTEREST_VIDEO_AUTO_PUBLISH kill switch active" });
-      }
-      // ── Cinematic V4 hard gate ────────────────────────────────────
-      // V4 rows MUST have approved_at AND status='pending'. Anything else is refused.
-      if (row.engine_version === "v4") {
-        if (!row.approved_at || row.status !== "pending") {
-          await logStage(sb, queue_id, "publish_blocked_v4_unapproved", "fail",
-            { storyboard_id: row.storyboard_id, status: row.status, approved_at: row.approved_at }, trace_id);
-          return ok({ ok: false, code: "V4_NOT_APPROVED", traceId: trace_id, message: `V4 row requires approved_at + status='pending' (got status=${row.status}, approved_at=${row.approved_at})` });
-        }
-      }
+      const allowed = await assertPublishAllowed(sb, row, queue_id, trace_id);
+      if (!allowed.ok) return ok({ ok: false, traceId: trace_id, code: allowed.code, message: allowed.message });
       if (row.status === "awaiting_review" || row.status === "awaiting_render") {
         return ok({ ok: false, code: "AWAITING_REVIEW", traceId: trace_id, message: `row in status=${row.status}` });
       }

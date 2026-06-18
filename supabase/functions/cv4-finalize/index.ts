@@ -26,6 +26,9 @@ Deno.serve(async (req) => {
     const { data: row } = await sb.from("cinematic_v4_storyboards").select("*").eq("id", storyboard_id).maybeSingle();
     if (!row) return new Response(JSON.stringify({ ok: false, code: "STORYBOARD_NOT_FOUND", traceId: trace_id }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (row.status === "rejected") return new Response(JSON.stringify({ ok: false, code: "STORYBOARD_REJECTED", traceId: trace_id }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if ((row.cv4_reject_reasons || []).length > 0 || row.status === "needs_better_assets") {
+      return new Response(JSON.stringify({ ok: false, code: "V4_PREFLIGHT_BLOCKED", traceId: trace_id, reasons: row.cv4_reject_reasons || [], status: row.status }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const beats = Array.isArray(row.beats) ? row.beats : [];
     const assets = Array.isArray(row.scene_assets) ? row.scene_assets : [];
@@ -69,6 +72,12 @@ Deno.serve(async (req) => {
         storyboard_id,
         engine_version: "v4",
         status: mp4_url ? "awaiting_review" : "awaiting_render",
+        error_message: "silent_preview_review_only",
+        failure_payload: {
+          preview_mode: "silent_preview",
+          voiceover_status: "missing",
+          publish_blocked_reason: "v4_review_only_until_quality_rebuild",
+        },
         title,
         description,
         cta_text,
@@ -84,6 +93,12 @@ Deno.serve(async (req) => {
       await sb.from("pinterest_video_queue").update({
         status: "awaiting_review",
         title, description, cta_text,
+        error_message: "silent_preview_review_only",
+        failure_payload: {
+          preview_mode: "silent_preview",
+          voiceover_status: "missing",
+          publish_blocked_reason: "v4_review_only_until_quality_rebuild",
+        },
       }).eq("id", queue_id);
     }
 

@@ -31,6 +31,17 @@ export const C = {
 
 // Pinterest / TikTok safe zones (1080x1920)
 export const SAFE = { top: 180, bottom: 320, left: 60, right: 60 };
+export const CAPTION_SAFE = {
+  minX: 90,
+  maxX: 990,
+  minY: 300,
+  maxY: 1500,
+  preferredMinY: 360,
+  preferredMaxY: 1380,
+  maxWidth: 842,
+  fontSize: 44,
+  lineHeight: 1.08,
+};
 
 // ---------------- types ----------------
 export type Beat =
@@ -206,19 +217,20 @@ export const CaptionBurn: React.FC<{
   return (
     <AbsoluteFill
       style={{
-        alignItems: "center",
-        justifyContent: position === "middle" ? "center" : "flex-end",
-        padding: `0 ${SAFE.left}px ${position === "lower" ? SAFE.bottom : 0}px`,
         pointerEvents: "none",
       }}
     >
       <div
         style={{
+          position: "absolute",
+          left: CAPTION_SAFE.minX,
+          top: position === "middle" ? 820 : 1180,
+          width: CAPTION_SAFE.maxX - CAPTION_SAFE.minX,
+          minHeight: 120,
           display: "flex",
-          flexDirection: "column",
-          gap: 14,
           alignItems: "center",
-          maxWidth: 940,
+          justifyContent: "center",
+          textAlign: "center",
         }}
       >
         {chunks.map((chunk, i) => {
@@ -243,14 +255,21 @@ export const CaptionBurn: React.FC<{
                 )})`,
                 fontFamily: "Inter, system-ui, sans-serif",
                 fontWeight: 900,
-                fontSize: 64,
-                lineHeight: 1.05,
-                letterSpacing: -1,
+                fontSize: CAPTION_SAFE.fontSize,
+                lineHeight: CAPTION_SAFE.lineHeight,
+                letterSpacing: 0,
                 color: isAccent ? accent : C.caption,
                 textAlign: "center",
                 textShadow: `0 4px 18px ${C.captionShadow}, 0 0 2px ${C.captionShadow}`,
-                WebkitTextStroke: `2px ${C.captionShadow}`,
+                WebkitTextStroke: `1.5px ${C.captionShadow}`,
                 textTransform: "uppercase",
+                maxWidth: CAPTION_SAFE.maxWidth,
+                maxHeight: CAPTION_SAFE.fontSize * CAPTION_SAFE.lineHeight * 2,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflowWrap: "break-word",
               }}
             >
               {chunk.join(" ")}

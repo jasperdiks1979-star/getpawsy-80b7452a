@@ -174,6 +174,9 @@ export default function CinematicV4Review() {
 
   async function approve(item: { sb: Storyboard; queue: QueueRow | null }) {
     if (!item.queue) return toast.error("No queue row to approve");
+    if (item.sb.status === "rejected" || item.sb.cv4_reject_reasons?.length > 0 || item.queue.status === "creative_rejected") {
+      return toast.error("V4 is emergency-blocked. Rebuild quality before approval.");
+    }
     setBusy(item.sb.id);
     const nowIso = new Date().toISOString();
     const { error } = await supabase

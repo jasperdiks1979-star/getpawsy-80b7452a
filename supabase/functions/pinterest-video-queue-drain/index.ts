@@ -20,6 +20,24 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RENDER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 
+async function isVideoAutoPublishDisabled(sb: any): Promise<boolean> {
+  const envValue = (Deno.env.get("PINTEREST_VIDEO_AUTO_PUBLISH") ?? "").trim().toLowerCase();
+  if (["false", "0", "off", "no", "disabled"].includes(envValue)) return true;
+  try {
+    const { data } = await sb
+      .from("app_config")
+      .select("key,value")
+      .in("key", ["PINTEREST_VIDEO_AUTO_PUBLISH", "pinterest_video_auto_publish"]);
+    return (data ?? []).some((cfg: any) => {
+      const raw = typeof cfg.value === "string" ? cfg.value : JSON.stringify(cfg.value);
+      const v = String(raw ?? "").replace(/^"|"$/g, "").trim().toLowerCase();
+      return ["false", "0", "off", "no", "disabled"].includes(v);
+    });
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace_id = crypto.randomUUID();
@@ -28,12 +46,17 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({} as any));
     const limit = Math.max(1, Math.min(10, Number(body?.limit ?? 3)));
 
+    if (await isVideoAutoPublishDisabled(sb)) {
+      return json({ ok: true, traceId: trace_id, picked: 0, uploaded: 0, published: 0, failed: 0, urls: [], kill_switch_active: true });
+    }
+
     // Select eligible pending rows: not archived, attempts below cap, not test slugs.
     const { data: rows, error } = await sb
       .from("pinterest_video_queue")
-      .select("id, asset_id, attempt_count, max_retries, priority, created_at")
+      .select("id, asset_id, attempt_count, max_retries, priority, created_at, engine_version, approved_at, failure_payload, error_message")
       .eq("status", "pending")
       .eq("archived", false)
+      .or("engine_version.is.null,engine_version.neq.v4,and(engine_version.eq.v4,approved_at.not.is.null)")
       .order("priority", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: true })
       .limit(limit);
@@ -44,6 +67,18 @@ serve(async (req) => {
     const urls: string[] = [];
 
     for (const row of rows ?? []) {
+      const payload = row.failure_payload ?? {};
+      const markers = [row.error_message, payload?.preview_mode, payload?.voiceover_status, payload?.render_mode]
+        .filter(Boolean).map((v) => String(v).toLowerCase());
+      if (markers.includes("silent_preview") || markers.some((v) => v.includes("silent_preview"))) {
+        await sb.from("pinterest_video_queue").update({
+          status: "awaiting_review",
+          error_message: "silent_preview_blocked_from_publish",
+        }).eq("id", row.id);
+        failed++;
+        results.push({ queue_id: row.id, ok: false, code: "SILENT_PREVIEW_BLOCKED" });
+        continue;
+      }
       const cap = row.max_retries ?? 3;
       if ((row.attempt_count ?? 0) >= cap) {
         // safety: mark exhausted as failed if somehow still pending
