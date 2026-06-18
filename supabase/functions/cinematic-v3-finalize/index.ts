@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       const finalPath = `jobs/${jobId}/final.mp4`;
       const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(finalPath, 60 * 60 * 24 * 30);
 
-      update.status = passed ? "passed" : "needs_review";
+      update.status = passed ? "approved" : "needs_review";
       update.qa_scores = scores;
       update.qa_total = total;
       update.qa_passed = passed;
