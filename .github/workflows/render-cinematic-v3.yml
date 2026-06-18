@@ -183,8 +183,12 @@ jobs:
             # tsv cols: 1=level 2=page 3=block 4=par 5=line 6=word 7=left 8=top 9=width 10=height 11=conf 12=text
             # Bug fix: previously used $7/$9 (left/width) instead of $8/$10 (top/height).
             # Skip 1-char OCR artifacts and very low confidence words to avoid false positives from product packaging glyphs.
+            # OCR also picks up text printed on the product images themselves (packaging labels like 6", logos,
+            # spec callouts) which we cannot relocate. Restrict the safe-zone check to substantive alphabetic
+            # tokens (>=4 chars, mostly letters, high confidence) — that matches our drawn captions and ignores
+            # short numeric/punctuation fragments from product imagery.
             VIOLATION=$(awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" -v m="$SAFE_MARGIN" '
-              NR>1 && $11>70 && length($12)>=2 {
+              NR>1 && $11>85 && length($12)>=4 && $12 ~ /^[A-Za-z][A-Za-z'\''\-]+$/ {
                 y=$8+0; hh=$10+0;
                 if (y < top + m)             { print "top:" $12 "@y="y; exit }
                 if (y + hh > h - bot - m)    { print "bot:" $12 "@y="y "+h="hh; exit }
