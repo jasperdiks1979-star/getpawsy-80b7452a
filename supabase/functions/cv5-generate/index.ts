@@ -128,6 +128,36 @@ Deno.serve(async (req) => {
     const beats: any[] = template.beats;
     const voiceId: string = template.voice_id;
 
+    // Apply winning patterns: if cv5_winning_patterns has a top performer for
+    // this niche+role, swap the template beat text with the proven winner.
+    // This is the feedback loop from cv5-extract-patterns. Beats not covered
+    // by a winning pattern (e.g. PROBLEM, SOLUTION-scene) keep template text.
+    try {
+      const { data: winners } = await sb
+        .from("cv5_winning_patterns")
+        .select("pattern_type, pattern_text, avg_score")
+        .eq("niche", niche)
+        .eq("is_active", true)
+        .in("pattern_type", ["hook", "benefit", "cta"])
+        .order("avg_score", { ascending: false });
+      const topByType: Record<string, string> = {};
+      for (const w of winners || []) {
+        if (!topByType[w.pattern_type]) topByType[w.pattern_type] = w.pattern_text;
+      }
+      for (const b of beats) {
+        const r = (b.role || "").toLowerCase();
+        const type = r.includes("hook") ? "hook"
+          : r.includes("benefit") || r.includes("solution") ? "benefit"
+          : r.includes("cta") ? "cta" : null;
+        if (type && topByType[type]) {
+          b.vo_line = topByType[type];
+          // Caption guard still enforces ≤5 words below — keep template caption.
+        }
+      }
+    } catch (e) {
+      console.warn("[cv5-generate] winning-pattern lookup failed", e);
+    }
+
     // Caption guard: any beat caption > 5 words is a hard reject before we spend money.
     const captionViolations = beats.filter((b) => countWords(b.caption) > 5).map((b) => `caption_over_5_words:${b.role}`);
 

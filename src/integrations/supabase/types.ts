@@ -5554,6 +5554,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cv5_pattern_runs: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          patterns_found: number
+          triggered_by: string | null
+          videos_analyzed: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patterns_found?: number
+          triggered_by?: string | null
+          videos_analyzed?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patterns_found?: number
+          triggered_by?: string | null
+          videos_analyzed?: number
+        }
+        Relationships: []
+      }
       cv5_story_templates: {
         Row: {
           beats: Json
@@ -5656,6 +5683,128 @@ export type Database = {
           updated_at?: string
           vo_audio_url?: string | null
           vo_total_duration_s?: number | null
+        }
+        Relationships: []
+      }
+      cv5_video_analytics: {
+        Row: {
+          avg_watch_time_s: number
+          completion_rate: number
+          composite_score: number
+          created_at: string
+          ctr: number
+          id: string
+          impressions: number
+          last_synced_at: string
+          outbound_clicks: number
+          pin_id: string | null
+          product_id: string | null
+          save_rate: number
+          saves: number
+          storyboard_id: string
+          total_watch_time_s: number
+          updated_at: string
+          video_views: number
+        }
+        Insert: {
+          avg_watch_time_s?: number
+          completion_rate?: number
+          composite_score?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          last_synced_at?: string
+          outbound_clicks?: number
+          pin_id?: string | null
+          product_id?: string | null
+          save_rate?: number
+          saves?: number
+          storyboard_id: string
+          total_watch_time_s?: number
+          updated_at?: string
+          video_views?: number
+        }
+        Update: {
+          avg_watch_time_s?: number
+          completion_rate?: number
+          composite_score?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          last_synced_at?: string
+          outbound_clicks?: number
+          pin_id?: string | null
+          product_id?: string | null
+          save_rate?: number
+          saves?: number
+          storyboard_id?: string
+          total_watch_time_s?: number
+          updated_at?: string
+          video_views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv5_video_analytics_storyboard_id_fkey"
+            columns: ["storyboard_id"]
+            isOneToOne: false
+            referencedRelation: "cv5_storyboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cv5_winning_patterns: {
+        Row: {
+          avg_completion: number
+          avg_ctr: number
+          avg_save_rate: number
+          avg_score: number
+          created_at: string
+          example_storyboard_ids: Json
+          id: string
+          is_active: boolean
+          lift_vs_baseline: number
+          niche: string | null
+          pattern_key: string
+          pattern_text: string
+          pattern_type: string
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          avg_completion?: number
+          avg_ctr?: number
+          avg_save_rate?: number
+          avg_score?: number
+          created_at?: string
+          example_storyboard_ids?: Json
+          id?: string
+          is_active?: boolean
+          lift_vs_baseline?: number
+          niche?: string | null
+          pattern_key: string
+          pattern_text: string
+          pattern_type: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_completion?: number
+          avg_ctr?: number
+          avg_save_rate?: number
+          avg_score?: number
+          created_at?: string
+          example_storyboard_ids?: Json
+          id?: string
+          is_active?: boolean
+          lift_vs_baseline?: number
+          niche?: string | null
+          pattern_key?: string
+          pattern_text?: string
+          pattern_type?: string
+          sample_size?: number
+          updated_at?: string
         }
         Relationships: []
       }
