@@ -2283,6 +2283,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-v3-dispatcher"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV3DispatcherPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-runway"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
