@@ -115,24 +115,21 @@ Deno.serve(async (req) => {
     if (candidates.length < need * 3) {
       const { data: products } = await admin
         .from("products")
-        .select("id, slug, image_url, images, is_active, created_at, supplier_sku")
+        .select("id, slug, image_url, images, is_active, created_at, sku")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(500);
-      const pids = (products ?? []).map((p: any) => p.id);
-      const slugs = (products ?? []).map((p: any) => p.slug).filter(Boolean);
-      const { data: pinned } = await admin
-        .from("pinterest_pin_queue")
-        .select("product_id, product_slug")
-        .or(`product_id.in.(${pids.join(",")}),product_slug.in.(${slugs.map((s: string) => `"${s}"`).join(",")})`);
+      const pids = (products ?? []).map((p: any) => p.id).filter(Boolean);
+      const { data: pinned } = pids.length
+        ? await admin.from("pinterest_pin_queue").select("product_id").in("product_id", pids)
+        : { data: [] as any[] };
       const pinnedIds = new Set<string>();
       (pinned ?? []).forEach((p: any) => p.product_id && pinnedIds.add(p.product_id));
       const pinnedSlugs = new Set<string>();
-      (pinned ?? []).forEach((p: any) => p.product_slug && pinnedSlugs.add(p.product_slug));
       (products ?? []).forEach((p: any) => {
         if (!p.slug) return;
         if (pinnedIds.has(p.id) || pinnedSlugs.has(p.slug)) return;
-        if (discontinuedSkus.has(p.supplier_sku) || blockedSkus.has(p.supplier_sku)) return;
+        if (discontinuedSkus.has(p.sku) || blockedSkus.has(p.sku)) return;
         const imgs = Array.isArray(p.images) ? p.images : (p.image_url ? [p.image_url] : []);
         if (imgs.filter((u: any) => typeof u === "string" && /^https?:/.test(u)).length < 2) return;
         push({ product_id: p.id, product_slug: p.slug, reason: "no_pinterest", score: 250 });
@@ -144,14 +141,14 @@ Deno.serve(async (req) => {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: fresh } = await admin
         .from("products")
-        .select("id, slug, image_url, images, supplier_sku, created_at")
+        .select("id, slug, image_url, images, sku, created_at")
         .eq("is_active", true)
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(100);
       (fresh ?? []).forEach((p: any) => {
         if (!p.slug) return;
-        if (discontinuedSkus.has(p.supplier_sku) || blockedSkus.has(p.supplier_sku)) return;
+        if (discontinuedSkus.has(p.sku) || blockedSkus.has(p.sku)) return;
         const imgs = Array.isArray(p.images) ? p.images : (p.image_url ? [p.image_url] : []);
         if (imgs.filter((u: any) => typeof u === "string" && /^https?:/.test(u)).length < 2) return;
         push({ product_id: p.id, product_slug: p.slug, reason: "new", score: 100 });
