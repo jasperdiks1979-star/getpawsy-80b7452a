@@ -3965,6 +3965,75 @@ export type Database = {
           },
         ]
       }
+      cinematic_v4_storyboards: {
+        Row: {
+          approved_at: string | null
+          beats: Json
+          created_at: string
+          created_by: string | null
+          cv4_reject_reasons: string[]
+          destination_url: string | null
+          hook_archetype: string | null
+          id: string
+          mp4_url: string | null
+          preview_thumb_url: string | null
+          product_id: string | null
+          product_slug: string
+          quality_score: number | null
+          rejected_at: string | null
+          scene_assets: Json
+          scene_count: number | null
+          status: string
+          trace_id: string | null
+          unique_image_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          beats?: Json
+          created_at?: string
+          created_by?: string | null
+          cv4_reject_reasons?: string[]
+          destination_url?: string | null
+          hook_archetype?: string | null
+          id?: string
+          mp4_url?: string | null
+          preview_thumb_url?: string | null
+          product_id?: string | null
+          product_slug: string
+          quality_score?: number | null
+          rejected_at?: string | null
+          scene_assets?: Json
+          scene_count?: number | null
+          status?: string
+          trace_id?: string | null
+          unique_image_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          beats?: Json
+          created_at?: string
+          created_by?: string | null
+          cv4_reject_reasons?: string[]
+          destination_url?: string | null
+          hook_archetype?: string | null
+          id?: string
+          mp4_url?: string | null
+          preview_thumb_url?: string | null
+          product_id?: string | null
+          product_slug?: string
+          quality_score?: number | null
+          rejected_at?: string | null
+          scene_assets?: Json
+          scene_count?: number | null
+          status?: string
+          trace_id?: string | null
+          unique_image_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cinematic_voice_profiles: {
         Row: {
           active: boolean
@@ -18470,6 +18539,7 @@ export type Database = {
       }
       pinterest_video_queue: {
         Row: {
+          approved_at: string | null
           archived: boolean
           asset_id: string
           attempt_count: number
@@ -18481,6 +18551,7 @@ export type Database = {
           cta_variant: string | null
           description: string
           destination_url: string
+          engine_version: string | null
           error_message: string | null
           external_url: string | null
           failure_payload: Json | null
@@ -18491,14 +18562,19 @@ export type Database = {
           max_retries: number
           pin_id: string | null
           priority: number
+          quality_score: number | null
+          scene_count: number | null
           scheduled_at: string | null
           status: string
+          storyboard_id: string | null
           title: string
+          unique_image_count: number | null
           updated_at: string
           variation_hash: string
           winner_score: number | null
         }
         Insert: {
+          approved_at?: string | null
           archived?: boolean
           asset_id: string
           attempt_count?: number
@@ -18510,6 +18586,7 @@ export type Database = {
           cta_variant?: string | null
           description: string
           destination_url: string
+          engine_version?: string | null
           error_message?: string | null
           external_url?: string | null
           failure_payload?: Json | null
@@ -18520,14 +18597,19 @@ export type Database = {
           max_retries?: number
           pin_id?: string | null
           priority?: number
+          quality_score?: number | null
+          scene_count?: number | null
           scheduled_at?: string | null
           status?: string
+          storyboard_id?: string | null
           title: string
+          unique_image_count?: number | null
           updated_at?: string
           variation_hash: string
           winner_score?: number | null
         }
         Update: {
+          approved_at?: string | null
           archived?: boolean
           asset_id?: string
           attempt_count?: number
@@ -18539,6 +18621,7 @@ export type Database = {
           cta_variant?: string | null
           description?: string
           destination_url?: string
+          engine_version?: string | null
           error_message?: string | null
           external_url?: string | null
           failure_payload?: Json | null
@@ -18549,9 +18632,13 @@ export type Database = {
           max_retries?: number
           pin_id?: string | null
           priority?: number
+          quality_score?: number | null
+          scene_count?: number | null
           scheduled_at?: string | null
           status?: string
+          storyboard_id?: string | null
           title?: string
+          unique_image_count?: number | null
           updated_at?: string
           variation_hash?: string
           winner_score?: number | null
@@ -18570,6 +18657,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_queue_storyboard_id_fkey"
+            columns: ["storyboard_id"]
+            isOneToOne: false
+            referencedRelation: "cinematic_v4_storyboards"
+            referencedColumns: ["id"]
           },
         ]
       }
