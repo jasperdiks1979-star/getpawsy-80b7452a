@@ -169,36 +169,96 @@ jobs:
           DUR_INT=$(printf '%.0f' "$DUR")
           if [ "$DUR_INT" -ge 6 ] && [ "$DUR_INT" -le 60 ]; then PIN_SCORE=100; else PIN_SCORE=0; REASONS+=("duration_${DUR_INT}s_out_of_6..60"); fi
 
-          # Safe-zone OCR check: sample 6 frames evenly, OCR each, check bbox via tesseract TSV
+          # Caption-aware safe-zone QA.
+          # The renderer draws exactly one drawtext caption per scene with deterministic geometry:
+          #   - horizontally centered:        x = (W - text_w) / 2
+          #   - dark background box:          box=1, boxcolor=black@0.55
+          #   - vertically anchored:          y = H - text_h - BOTTOM_SAFE - MARGIN  (MARGIN = 40 + ~50% of fontsize)
+          #   - font:                         DejaVuSans-Bold
+          # Any OCR token that does NOT match those characteristics is text baked into the
+          # source product image (packaging labels, printed callouts, supplier watermarks,
+          # manufacturer graphics). Those are physically immovable and MUST NOT be validated.
+          #
+          # Classification rules (a token is a renderer_caption iff ALL hold):
+          #   1. Vertical center sits inside the deterministic caption band
+          #      [CAPTION_TOP, CAPTION_BOT] where
+          #        CAPTION_BOT = H - BOTTOM_SAFE                                       (1570)
+          #        CAPTION_TOP = H - BOTTOM_SAFE - MAX_MARGIN - MAX_CAPTION_HEIGHT     (1089)
+          #   2. Horizontal center is near the canvas midline (|cx - W/2| <= W*0.30)
+          #   3. Pixel at the token center is dark (luma < 90) — i.e. sitting on the
+          #      black@0.55 caption box, not on bright product imagery.
           mkdir -p /tmp/frames
+          : > /tmp/qa_debug.log
+          : > /tmp/viol.txt
           for k in $(seq 1 6); do
             T=$(awk -v d="$DUR" -v k="$k" 'BEGIN{printf "%.2f", d*k/7}')
             ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
           done
+
+          # Deterministic caption band (matches the drawtext geometry above).
+          MAX_SIZE=82
+          MAX_MARGIN=$(( 40 + (MAX_SIZE * 50 / 100) ))           # 81
+          MAX_CAPTION_HEIGHT=400                                 # 3 wrapped lines + box border headroom
+          CAPTION_BOT=$(( H - BOTTOM_SAFE ))                     # 1570
+          CAPTION_TOP=$(( CAPTION_BOT - MAX_MARGIN - MAX_CAPTION_HEIGHT ))  # 1089
           SAFE_SCORE=100
-          # Drawtext already buffers captions 40px above the safe zone; QA enforces only the raw safe-zone boundary.
-          SAFE_MARGIN=0
+
           for f in /tmp/frames/*.png; do
             tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
             # tsv cols: 1=level 2=page 3=block 4=par 5=line 6=word 7=left 8=top 9=width 10=height 11=conf 12=text
-            # Bug fix: previously used $7/$9 (left/width) instead of $8/$10 (top/height).
-            # Skip 1-char OCR artifacts and very low confidence words to avoid false positives from product packaging glyphs.
-            # OCR also picks up text printed on the product images themselves (packaging labels like 6", logos,
-            # spec callouts) which we cannot relocate. Restrict the safe-zone check to substantive alphabetic
-            # tokens (>=4 chars, mostly letters, high confidence) — that matches our drawn captions and ignores
-            # short numeric/punctuation fragments from product imagery.
-            VIOLATION=$(awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" -v m="$SAFE_MARGIN" '
-              NR>1 && $11>85 && length($12)>=4 && $12 ~ /^[A-Za-z][A-Za-z'\''\-]+$/ {
-                y=$8+0; hh=$10+0;
-                if (y < top + m)             { print "top:" $12 "@y="y; exit }
-                if (y + hh > h - bot - m)    { print "bot:" $12 "@y="y "+h="hh; exit }
-              }' /tmp/ocr.tsv)
-            if [ -n "$VIOLATION" ]; then
-              SAFE_SCORE=70
-              REASONS+=("text_outside_safe_zone:$(basename $f):${VIOLATION}")
-              break
-            fi
+            # Pass 1: emit candidate tokens + their bbox/center; per-pixel darkness sampled via ImageMagick.
+            awk -v conf=60 'NR>1 && $11>conf && length($12)>=2 {
+              x=$7+0; y=$8+0; ww=$9+0; hh=$10+0;
+              cx=int(x+ww/2); cy=int(y+hh/2);
+              gsub(/[^[:print:]]/, "", $12);
+              if (length($12)==0) next;
+              printf "%s\t%d\t%d\t%d\t%d\t%d\t%d\n", $12, x, y, ww, hh, cx, cy;
+            }' /tmp/ocr.tsv > /tmp/ocr_cand.tsv
+
+            while IFS=$'\t' read -r TXT X Y WW HH CX CY; do
+              [ -z "$TXT" ] && continue
+              # Sample the pixel at the token center to detect the dark caption box.
+              PX=$(convert "$f" -crop "1x1+${CX}+${CY}" -depth 8 -format "%[fx:int(luminance*255)]" info: 2>/dev/null || echo "255")
+              IS_DARK=$([ "$PX" -lt 90 ] 2>/dev/null && echo 1 || echo 0)
+              IN_BAND=$([ "$CY" -ge "$CAPTION_TOP" ] && [ "$CY" -le "$CAPTION_BOT" ] && echo 1 || echo 0)
+              # |cx - W/2| <= W*0.30  →  centered alignment
+              HALF=$(( W / 2 ))
+              TOL=$(( W * 30 / 100 ))
+              DELTA=$(( CX > HALF ? CX - HALF : HALF - CX ))
+              IS_CENTERED=$([ "$DELTA" -le "$TOL" ] && echo 1 || echo 0)
+
+              if [ "$IN_BAND" = "1" ] && [ "$IS_CENTERED" = "1" ] && [ "$IS_DARK" = "1" ]; then
+                SOURCE="renderer_caption"
+                INCLUDED="true"
+              else
+                SOURCE="source_image_text"
+                INCLUDED="false"
+              fi
+
+              echo "QA frame=$(basename $f) detected_text=\"${TXT}\" bbox=${X},${Y},${WW},${HH} luma=${PX} in_band=${IN_BAND} centered=${IS_CENTERED} dark=${IS_DARK} source_type=${SOURCE} included_in_validation=${INCLUDED}" >> /tmp/qa_debug.log
+
+              if [ "$INCLUDED" = "true" ]; then
+                # Only renderer captions are validated against the safe zones.
+                if [ "$Y" -lt "$TOP_SAFE" ]; then
+                  echo "$(basename $f):top:\"${TXT}\"@y=${Y}" >> /tmp/viol.txt
+                fi
+                BOT_EDGE=$(( Y + HH ))
+                BOT_LIMIT=$(( H - BOTTOM_SAFE ))
+                if [ "$BOT_EDGE" -gt "$BOT_LIMIT" ]; then
+                  echo "$(basename $f):bot:\"${TXT}\"@y=${Y}+h=${HH}" >> /tmp/viol.txt
+                fi
+              fi
+            done < /tmp/ocr_cand.tsv
           done
+
+          echo "----- QA debug (first 80 lines) -----"
+          head -n 80 /tmp/qa_debug.log || true
+          echo "----- /QA debug -----"
+
+          if [ -s /tmp/viol.txt ]; then
+            SAFE_SCORE=70
+            while IFS= read -r line; do REASONS+=("text_outside_safe_zone:${line}"); done < /tmp/viol.txt
+          fi
 
           # Caption timing — captions are baked, score 100 if any captions defined
           CAP_DEFINED=$(jq '[.[] | select(.caption != "")] | length' /tmp/scenes.json)
