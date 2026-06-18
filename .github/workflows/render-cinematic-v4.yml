@@ -1,0 +1,216 @@
+name: Render Cinematic V4
+
+# Renders a single cinematic_v4_storyboards row into a Pinterest-safe 1080x1920 MP4.
+# No voiceover. No AI rendering. Real product images + ultra-safe drawtext captions.
+# Hard safe zones per user spec: no text in top 14% (=269px) or bottom 22% (=423px).
+# OCR pass rejects any caption whose bounding box clips those margins.
+# Auth: RUNWAY_MERGE_TOKEN (reused).
+
+on:
+  workflow_dispatch:
+    inputs:
+      storyboard_id:
+        description: "cinematic_v4_storyboards.id (UUID)"
+        required: true
+        type: string
+
+concurrency:
+  group: cinematic-v4-${{ inputs.storyboard_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
+      RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
+      SB_ID: ${{ inputs.storyboard_id }}
+      W: "1080"
+      H: "1920"
+      TOP_SAFE: "269"     # 14% of 1920
+      BOTTOM_SAFE: "423"  # 22% of 1920
+      FPS: "30"
+      FONT: "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    steps:
+      - name: Install ffmpeg + tesseract + jq + imagemagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg jq curl tesseract-ocr fonts-dejavu-core imagemagick bc
+
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          for v in LOVABLE_FUNCTIONS_URL RUNWAY_MERGE_TOKEN SB_ID; do
+            test -n "${!v}" || { echo "missing $v"; exit 1; }
+          done
+
+      - name: Fetch storyboard
+        run: |
+          set -euo pipefail
+          curl -fsS -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            "${LOVABLE_FUNCTIONS_URL}/cv4-fetch-job?storyboard_id=${SB_ID}" \
+            -o /tmp/resp.json
+          jq -e '.ok==true' /tmp/resp.json >/dev/null || { cat /tmp/resp.json; exit 1; }
+          jq '.storyboard.beats'        /tmp/resp.json > /tmp/beats.json
+          jq '.storyboard.scene_assets' /tmp/resp.json > /tmp/assets.json
+          jq -r '.upload.signed_url'    /tmp/resp.json > /tmp/upload_url.txt
+          echo "beats: $(jq 'length' /tmp/beats.json)  assets: $(jq 'length' /tmp/assets.json)"
+
+      - name: Download scene images
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/img
+          COUNT=$(jq 'length' /tmp/assets.json)
+          for i in $(seq 0 $((COUNT - 1))); do
+            URL=$(jq -r ".[$i].image_url" /tmp/assets.json)
+            curl -fsSL --retry 3 "$URL" -o "/tmp/img/${i}.bin"
+            convert "/tmp/img/${i}.bin" -resize "${W}x${H}^" -gravity center -extent "${W}x${H}" \
+                    -quality 90 "/tmp/img/${i}.jpg"
+          done
+          ls -la /tmp/img
+
+      - name: Render (concat + ken-burns + ultra-safe drawtext)
+        run: |
+          set -euo pipefail
+          COUNT=$(jq 'length' /tmp/beats.json)
+          INPUTS=()
+          FC=""
+          CONCAT_LABELS=""
+          DRAWTEXT=""
+          T_CURSOR=0
+          for i in $(seq 0 $((COUNT - 1))); do
+            DFRAMES=$(jq -r ".[$i].duration_frames // 54" /tmp/beats.json)
+            CAP=$(jq -r ".[$i].caption" /tmp/beats.json)
+            MOTION=$(jq -r ".[$i].motion // \"push_in\"" /tmp/beats.json)
+            DUR=$(awk -v f="$DFRAMES" -v fps="$FPS" 'BEGIN{printf "%.3f", f/fps}')
+            IMG="/tmp/img/${i}.jpg"
+            test -f "$IMG" || IMG="/tmp/img/0.jpg"
+            INPUTS+=( -framerate "$FPS" -loop 1 -t "$DUR" -i "$IMG" )
+
+            case "$MOTION" in
+              push_in)   ZEXPR="z='min(1.0+0.0015*on,1.22)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              pan_right) ZEXPR="z='1.12':x='(iw-iw/zoom)*min(on/${DFRAMES},1)':y='ih/2-(ih/zoom/2)'" ;;
+              pan_left)  ZEXPR="z='1.12':x='(iw-iw/zoom)*(1-min(on/${DFRAMES},1))':y='ih/2-(ih/zoom/2)'" ;;
+              parallax)  ZEXPR="z='min(1.0+0.0010*on,1.18)':x='iw/2-(iw/zoom/2)+sin(on/30)*30':y='ih/2-(ih/zoom/2)'" ;;
+              pull_out)  ZEXPR="z='max(1.25-0.0015*on,1.02)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              *)         ZEXPR="z='min(1.0+0.0010*on,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+            esac
+
+            FC+="[${i}:v]zoompan=${ZEXPR}:d=1:s=${W}x${H}:fps=${FPS},setpts=PTS-STARTPTS,format=yuv420p[v${i}];"
+            CONCAT_LABELS+="[v${i}]"
+
+            START="$T_CURSOR"
+            END=$(awk -v s="$T_CURSOR" -v d="$DUR" 'BEGIN{printf "%.3f", s+d}')
+            T_CURSOR="$END"
+
+            TF="/tmp/cap_${i}.txt"
+            printf '%s' "$CAP" > "$TF"
+            # Fixed large font; 5-word/32-char cap is enforced upstream.
+            SIZE=88
+            [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
+            DESCENDER=$(( SIZE * 50 / 100 ))
+            MARGIN=$(( 40 + DESCENDER ))
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=28:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}:enable='between(t,${START},${END})'"
+          done
+
+          FC+="${CONCAT_LABELS}concat=n=${COUNT}:v=1:a=0[vc];[vc]${DRAWTEXT}[vout]"
+
+          ffmpeg -y -hide_banner -loglevel error \
+            "${INPUTS[@]}" \
+            -filter_complex "$FC" \
+            -map "[vout]" \
+            -r "$FPS" \
+            -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p \
+            /tmp/final.mp4
+          ls -lh /tmp/final.mp4
+          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/final.mp4
+
+      - name: OCR safe-zone gate (REJECT on clip)
+        id: qa
+        run: |
+          set -euo pipefail
+          DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/final.mp4)
+          REASONS=()
+          mkdir -p /tmp/frames
+          : > /tmp/viol.txt
+          for k in $(seq 1 6); do
+            T=$(awk -v d="$DUR" -v k="$k" 'BEGIN{printf "%.2f", d*k/7}')
+            ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
+          done
+
+          # Caption band identical to drawtext geometry.
+          MAX_MARGIN=$(( 40 + (88 * 50 / 100) ))
+          MAX_CAPTION_HEIGHT=420
+          CAPTION_BOT=$(( H - BOTTOM_SAFE ))
+          CAPTION_TOP=$(( CAPTION_BOT - MAX_MARGIN - MAX_CAPTION_HEIGHT ))
+          for f in /tmp/frames/*.png; do
+            tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
+            awk -v conf=55 'NR>1 && $11>conf && length($12)>=2 {
+              gsub(/[^[:print:]]/, "", $12);
+              if (length($12)==0) next;
+              x=$7+0; y=$8+0; ww=$9+0; hh=$10+0;
+              cx=int(x+ww/2); cy=int(y+hh/2);
+              printf "%s\t%d\t%d\t%d\t%d\t%d\t%d\n", $12, x, y, ww, hh, cx, cy;
+            }' /tmp/ocr.tsv > /tmp/ocr_cand.tsv
+            while IFS=$'\t' read -r TXT X Y WW HH CX CY; do
+              [ -z "$TXT" ] && continue
+              PX=$(convert "$f" -crop "1x1+${CX}+${CY}" -depth 8 -format "%[fx:int(luminance*255)]" info: 2>/dev/null || echo "255")
+              IN_BAND=$([ "$CY" -ge "$CAPTION_TOP" ] && [ "$CY" -le "$CAPTION_BOT" ] && echo 1 || echo 0)
+              HALF=$(( W / 2 ))
+              TOL=$(( W * 30 / 100 ))
+              DELTA=$(( CX > HALF ? CX - HALF : HALF - CX ))
+              IS_CENTERED=$([ "$DELTA" -le "$TOL" ] && echo 1 || echo 0)
+              IS_DARK=$([ "$PX" -lt 90 ] 2>/dev/null && echo 1 || echo 0)
+              if [ "$IN_BAND" = "1" ] && [ "$IS_CENTERED" = "1" ] && [ "$IS_DARK" = "1" ]; then
+                # renderer caption -> validate margins
+                BOT_EDGE=$(( Y + HH ))
+                if [ "$Y" -lt "$TOP_SAFE" ]; then
+                  echo "$(basename $f):top:\"${TXT}\"@y=${Y}" >> /tmp/viol.txt
+                fi
+                if [ "$BOT_EDGE" -gt "$CAPTION_BOT" ]; then
+                  echo "$(basename $f):bot:\"${TXT}\"@y=${Y}+h=${HH}" >> /tmp/viol.txt
+                fi
+                R_EDGE=$(( X + WW ))
+                if [ "$X" -lt 24 ] || [ "$R_EDGE" -gt $(( W - 24 )) ]; then
+                  echo "$(basename $f):side:\"${TXT}\"@x=${X}+w=${WW}" >> /tmp/viol.txt
+                fi
+              fi
+            done < /tmp/ocr_cand.tsv
+          done
+
+          QA_PASS=true
+          if [ -s /tmp/viol.txt ]; then
+            QA_PASS=false
+            while IFS= read -r line; do REASONS+=("ocr_clipped:${line}"); done < /tmp/viol.txt
+          fi
+
+          printf '%s\n' "${REASONS[@]}" | jq -R . | jq -s . > /tmp/reasons.json
+          echo "qa_pass=$QA_PASS" >> "$GITHUB_OUTPUT"
+          echo "duration=$DUR"   >> "$GITHUB_OUTPUT"
+          cat /tmp/reasons.json
+
+      - name: Upload MP4 (only if QA pass)
+        if: steps.qa.outputs.qa_pass == 'true'
+        run: |
+          set -euo pipefail
+          URL=$(cat /tmp/upload_url.txt)
+          curl -fsS -X PUT -H "Content-Type: video/mp4" --data-binary @/tmp/final.mp4 "$URL"
+
+      - name: Finalize
+        if: always()
+        run: |
+          set -euo pipefail
+          PASS="${{ steps.qa.outputs.qa_pass || 'false' }}"
+          DUR="${{ steps.qa.outputs.duration || 0 }}"
+          if [ -f /tmp/reasons.json ]; then REASONS_JSON=$(cat /tmp/reasons.json); else REASONS_JSON='[]'; fi
+          BODY=$(jq -n \
+            --arg sb "$SB_ID" \
+            --arg pass "$PASS" \
+            --argjson dur "$DUR" \
+            --argjson reasons "$REASONS_JSON" \
+            '{storyboard_id:$sb, qa_pass:($pass=="true"), duration_seconds:$dur, post_render_reject_reasons:$reasons}')
+          curl -fsS -X POST -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${LOVABLE_FUNCTIONS_URL}/cv4-render-callback" \
+            --data-raw "$BODY"

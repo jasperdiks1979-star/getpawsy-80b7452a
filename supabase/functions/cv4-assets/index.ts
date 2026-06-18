@@ -48,13 +48,20 @@ async function gatherGalleryImages(sb: any, productId: string | null, slug: stri
   return uniqueUrls(urls);
 }
 
-async function generateAiBackdrop(beat: string, productName: string, category: string): Promise<string | null> {
+async function generateAiBackdrop(beat: string, _productName: string, category: string): Promise<string | null> {
+  // HARD RULE: AI lifestyle backdrops MUST NOT depict any pet touching, holding,
+  // sitting on, or otherwise interacting with the product. The product is never
+  // rendered by AI — we only generate empty rooms / textures / lifestyle scenes
+  // where the real product image will be composited.
+  const room = category.toLowerCase().includes("cat")
+    ? "a calm sunlit modern living room styled for cats, no animals in frame"
+    : "a calm sunlit modern living room styled for dogs, no animals in frame";
   const prompts: Record<string, string> = {
-    lifestyle: `Cinematic photo of a happy ${category.includes("Cat") ? "cat" : "dog"} in a sunlit modern home, soft natural light, lifestyle product photography, no text overlays, 9:16 vertical composition, premium editorial look`,
-    benefit:   `Editorial flat-lay product photography of ${productName}, clean minimal background, soft shadows, 9:16 vertical, no text, premium quality`,
-    cta:       `Cozy lifestyle scene with a pet at home, warm golden-hour light, soft bokeh, 9:16 vertical composition, no text, editorial advertising style`,
-    problem:   `Documentary-style photo showing a common pet-owner frustration moment in a real home, natural light, 9:16 vertical, no text overlay`,
-    solution:  `Hero product photo of ${productName} on a clean wooden surface, soft window light, 9:16 vertical, no text, premium look`,
+    lifestyle: `Editorial interior photograph of ${room}, soft natural window light, neutral palette, premium pet-home aesthetic, empty floor in foreground, NO animals, NO products, NO text, NO logos, 9:16 vertical composition`,
+    benefit:   `Minimalist textured backdrop, warm beige and cream tones, soft shadows, premium editorial advertising surface, NO animals, NO products, NO text, NO logos, 9:16 vertical composition`,
+    cta:       `Warm golden-hour interior scene, soft bokeh background, empty floor in foreground, NO animals, NO products, NO text, NO logos, 9:16 vertical composition`,
+    problem:   `Documentary photo of a tidy real home with neutral light, empty room, NO animals, NO products, NO text, NO logos, 9:16 vertical composition`,
+    solution:  `Clean wooden surface in soft window light with empty space ready for product placement, NO animals, NO products, NO text, NO logos, 9:16 vertical composition`,
   };
   const prompt = prompts[beat] || prompts.lifestyle;
   try {
@@ -111,25 +118,33 @@ Deno.serve(async (req) => {
     const gallery = await gatherGalleryImages(sb, product?.id || null, sb_row.product_slug);
     const beats = Array.isArray(sb_row.beats) ? sb_row.beats : [];
     const scene_assets: SceneAsset[] = [];
-    let galleryIdx = 0;
+
+    // HARD RULE (per user constraint #1):
+    // Use real product/gallery/CJ images FIRST for every scene.
+    // AI backdrops are ONLY allowed when the product has fewer than 3 unique
+    // real images, and only fill the surplus scenes after every gallery image
+    // has been assigned at least once.
+    const realImages = gallery.slice(); // already unique
+    const needsAi = !skip_ai && realImages.length < 3;
 
     for (let i = 0; i < beats.length; i++) {
       const beat = beats[i];
       const beatName: string = beat?.beat || `scene${i}`;
-      const wantsAi = beatName === "lifestyle" || beatName === "benefit";
       let url: string | null = null;
       let source: "gallery" | "ai" = "gallery";
-      if ((!wantsAi || skip_ai) && galleryIdx < gallery.length) {
-        url = gallery[galleryIdx++];
-      } else if (skip_ai) {
-        // skip_ai mode: cycle through gallery instead of generating
-        if (gallery.length > 0) { url = gallery[i % gallery.length]; source = "gallery"; }
-      } else {
+
+      // First pass: every gallery image gets used before any reuse / AI.
+      if (i < realImages.length) {
+        url = realImages[i];
+        source = "gallery";
+      } else if (needsAi && (beatName === "lifestyle" || beatName === "benefit")) {
         url = await generateAiBackdrop(beatName, productName, category);
         source = "ai";
-        if (!url && galleryIdx < gallery.length) { url = gallery[galleryIdx++]; source = "gallery"; }
+        if (!url && realImages.length > 0) { url = realImages[i % realImages.length]; source = "gallery"; }
+      } else if (realImages.length > 0) {
+        url = realImages[i % realImages.length];
+        source = "gallery";
       }
-      if (!url && gallery.length > 0) { url = gallery[i % gallery.length]; source = "gallery"; }
       if (url) scene_assets.push({ beat: beatName, index: i, image_url: url, source });
     }
 

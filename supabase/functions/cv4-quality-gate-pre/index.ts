@@ -23,20 +23,18 @@ export function runPreChecks(storyboard: any): { reasons: string[]; quality_scor
   if (dupCaption) reasons.push("duplicate_caption");
 
   for (const b of beats) {
-    const w = String(b?.caption || "").trim().split(/\s+/).filter(Boolean);
+    const c = String(b?.caption || "").trim();
+    const w = c.split(/\s+/).filter(Boolean);
     if (w.length === 0) reasons.push(`empty_caption:${b?.beat}`);
-    if (w.length > 6) reasons.push(`caption_over_6_words:${b?.beat}:${w.length}`);
+    if (w.length > 5) reasons.push(`caption_over_5_words:${b?.beat}:${w.length}`);
+    if (c.length > 32) reasons.push(`caption_over_32_chars:${b?.beat}:${c.length}`);
   }
 
   const uniqueImgs = new Set(assets.map((a) => a?.image_url).filter(Boolean));
   if (uniqueImgs.size < 3) reasons.push(`unique_images_lt_3:${uniqueImgs.size}`);
   if (uniqueImgs.size === 1) reasons.push("single_image_detected");
 
-  // crude position check: captions must be ≤32 chars to fit Pinterest safe-zone at default size
-  for (const b of beats) {
-    const c = String(b?.caption || "");
-    if (c.length > 38) reasons.push(`unsafe_caption_position:${b?.beat}:${c.length}chars`);
-  }
+  // (length check folded above — 32 char hard limit fits Pinterest safe-zone at fontsize 82)
 
   // simple deterministic score
   let score = 100;
