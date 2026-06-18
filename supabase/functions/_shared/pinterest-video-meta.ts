@@ -422,6 +422,7 @@ const CATEGORY_KEYWORDS: Partial<Record<Category, RegExp>> = {
   cat_tree: /cat.?tree|cat.?condo|cat.?tower|scratch.*post|scratching.*post/i,
   dog_bed: /\bdog.?bed|orthopedic.*bed|pet.?cot|cooling.?bed|nap.*mat/i,
   dog_travel: /stroller|carrier|backpack|car.?seat|travel\s*crate/i,
+  pet_guardrail: /playpen|puppy.?fence|pet.?fence|pet.?gate|guard.?rail/i,
   toy: /\btoy\b|chew\s*toy|puzzle\s*toy|tug\s*toy/i,
 };
 
