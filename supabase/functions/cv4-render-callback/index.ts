@@ -23,13 +23,26 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, code: "UNAUTHORIZED", traceId: trace_id }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const body = await req.json();
-    const { storyboard_id, qa_pass, post_render_reject_reasons } = body || {};
+    const { storyboard_id, qa_pass, post_render_reject_reasons, workflow_status, upload_completed, render_file_exists } = body || {};
     if (!storyboard_id) return new Response(JSON.stringify({ ok: false, code: "MISSING_STORYBOARD_ID", traceId: trace_id }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: row } = await sb.from("cinematic_v4_storyboards").select("id, cv4_reject_reasons").eq("id", storyboard_id).maybeSingle();
     if (!row) return new Response(JSON.stringify({ ok: false, code: "NOT_FOUND", traceId: trace_id }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     if (!qa_pass) {
+      const isRenderFailure = workflow_status && workflow_status !== "success";
+      if (isRenderFailure || render_file_exists === false || upload_completed === false) {
+        const reason = isRenderFailure ? `workflow_${workflow_status}` : (render_file_exists === false ? "mp4_not_rendered" : "upload_not_completed");
+        await sb.from("cinematic_v4_storyboards").update({
+          status: "upload_failed",
+          render_error: reason,
+        }).eq("id", storyboard_id);
+        await sb.from("pinterest_video_queue").update({
+          status: "awaiting_render",
+          error_message: reason,
+        }).eq("storyboard_id", storyboard_id);
+        return new Response(JSON.stringify({ ok: false, traceId: trace_id, code: "RENDER_OR_UPLOAD_FAILED", reason }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const merged = Array.from(new Set([...(row.cv4_reject_reasons || []), ...(post_render_reject_reasons || [])]));
       await sb.from("cinematic_v4_storyboards").update({
         status: "rejected", rejected_at: new Date().toISOString(),

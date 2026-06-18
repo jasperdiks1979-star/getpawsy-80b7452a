@@ -21,7 +21,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
       RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
@@ -33,10 +33,23 @@ jobs:
       FPS: "30"
       FONT: "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     steps:
-      - name: Install ffmpeg + tesseract + jq + imagemagick
+      - name: Ensure render tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg jq curl tesseract-ocr fonts-dejavu-core imagemagick bc
+          missing=()
+          command -v ffmpeg >/dev/null || missing+=(ffmpeg)
+          command -v ffprobe >/dev/null || missing+=(ffmpeg)
+          command -v jq >/dev/null || missing+=(jq)
+          command -v curl >/dev/null || missing+=(curl)
+          command -v tesseract >/dev/null || missing+=(tesseract-ocr)
+          command -v convert >/dev/null || missing+=(imagemagick)
+          fc-match DejaVuSans-Bold >/dev/null || missing+=(fonts-dejavu-core)
+          command -v bc >/dev/null || missing+=(bc)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            sudo apt-get install -y --no-install-recommends "${missing[@]}"
+          fi
+          ffmpeg -version | head -1
+          tesseract --version | head -1
 
       - name: Preflight
         run: |
@@ -191,11 +204,13 @@ jobs:
           cat /tmp/reasons.json
 
       - name: Upload MP4 (only if QA pass)
+        id: upload
         if: steps.qa.outputs.qa_pass == 'true'
         run: |
           set -euo pipefail
           URL=$(cat /tmp/upload_url.txt)
           curl -fsS -X PUT -H "Content-Type: video/mp4" --data-binary @/tmp/final.mp4 "$URL"
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
 
       - name: Finalize
         if: always()
@@ -207,9 +222,12 @@ jobs:
           BODY=$(jq -n \
             --arg sb "$SB_ID" \
             --arg pass "$PASS" \
+            --arg job_status "${{ job.status }}" \
+            --arg uploaded "${{ steps.upload.outputs.uploaded || 'false' }}" \
             --argjson dur "$DUR" \
             --argjson reasons "$REASONS_JSON" \
-            '{storyboard_id:$sb, qa_pass:($pass=="true"), duration_seconds:$dur, post_render_reject_reasons:$reasons}')
+            --arg render_file_exists "$([ -s /tmp/final.mp4 ] && echo true || echo false)" \
+            '{storyboard_id:$sb, qa_pass:($pass=="true"), workflow_status:$job_status, upload_completed:($uploaded=="true"), render_file_exists:($render_file_exists=="true"), duration_seconds:$dur, post_render_reject_reasons:$reasons}')
           curl -fsS -X POST -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
             -H "Content-Type: application/json" \
             "${LOVABLE_FUNCTIONS_URL}/cv4-render-callback" \
