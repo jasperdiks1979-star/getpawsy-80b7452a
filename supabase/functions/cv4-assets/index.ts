@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
     }
     const { data: sb_row } = await sb.from("cinematic_v4_storyboards").select("*").eq("id", storyboard_id).maybeSingle();
     if (!sb_row) return new Response(JSON.stringify({ ok: false, code: "STORYBOARD_NOT_FOUND", traceId: trace_id }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const skip_ai = Boolean((await Promise.resolve(0), (sb_row as any))) && false; // placeholder; real flag below
 
     const { data: product } = await sb.from("products")
       .select("id, name, category").eq("slug", sb_row.product_slug).maybeSingle();
