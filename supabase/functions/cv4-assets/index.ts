@@ -119,8 +119,11 @@ Deno.serve(async (req) => {
       const wantsAi = beatName === "lifestyle" || beatName === "benefit";
       let url: string | null = null;
       let source: "gallery" | "ai" = "gallery";
-      if (!wantsAi && galleryIdx < gallery.length) {
+      if ((!wantsAi || skip_ai) && galleryIdx < gallery.length) {
         url = gallery[galleryIdx++];
+      } else if (skip_ai) {
+        // skip_ai mode: cycle through gallery instead of generating
+        if (gallery.length > 0) { url = gallery[i % gallery.length]; source = "gallery"; }
       } else {
         url = await generateAiBackdrop(beatName, productName, category);
         source = "ai";
