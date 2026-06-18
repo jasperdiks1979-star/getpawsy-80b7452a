@@ -50,6 +50,13 @@ export function validateCanonicalDestination(rawUrl: string | null | undefined):
   return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
 }
 
+// Test/fixture slugs must never reach the live publisher.
+export function isTestFixtureSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  const s = String(slug).trim().toLowerCase();
+  return s.startsWith("_") || s.includes("e2e-test") || s.includes("smoke-test");
+}
+
 // ── Product context loader ────────────────────────────────────────
 async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
   const s = (slug || "").trim();
