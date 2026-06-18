@@ -26,13 +26,17 @@ export function runPreChecks(storyboard: any): { reasons: string[]; quality_scor
     const c = String(b?.caption || "").trim();
     const w = c.split(/\s+/).filter(Boolean);
     if (w.length === 0) reasons.push(`empty_caption:${b?.beat}`);
-    if (w.length > 5) reasons.push(`caption_over_5_words:${b?.beat}:${w.length}`);
-    if (c.length > 32) reasons.push(`caption_over_32_chars:${b?.beat}:${c.length}`);
+    if (w.length > 8) reasons.push(`caption_over_8_words:${b?.beat}:${w.length}`);
+    if (c.length > 52) reasons.push(`caption_over_52_chars:${b?.beat}:${c.length}`);
   }
 
   const uniqueImgs = new Set(assets.map((a) => a?.image_url).filter(Boolean));
-  if (uniqueImgs.size < 3) reasons.push(`unique_images_lt_3:${uniqueImgs.size}`);
+  if (uniqueImgs.size < 5) reasons.push(`needs_better_assets:unique_images_lt_5:${uniqueImgs.size}`);
   if (uniqueImgs.size === 1) reasons.push("single_image_detected");
+  const sceneTypes = new Set(assets.map((a) => String(a?.beat || "").toLowerCase()).filter(Boolean));
+  if (sceneTypes.size < 5) reasons.push(`scene_types_lt_5:${sceneTypes.size}`);
+  const nonGallery = assets.filter((a) => a?.source && a.source !== "gallery").length;
+  if (nonGallery > 0) reasons.push(`non_gallery_scene_assets:${nonGallery}`);
 
   // (length check folded above — 32 char hard limit fits Pinterest safe-zone at fontsize 82)
 
@@ -58,7 +62,7 @@ Deno.serve(async (req) => {
       cv4_reject_reasons: reasons,
       quality_score,
       status: passed ? "validated" : "rejected",
-      rejected_at: passed ? null : new Date().toISOString(),
+    rejected_at: passed ? null : new Date().toISOString(),
     }).eq("id", storyboard_id);
     return new Response(JSON.stringify({ ok: passed, traceId: trace_id, reasons, quality_score }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
