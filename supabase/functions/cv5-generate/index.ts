@@ -62,6 +62,55 @@ async function genVoBeat(text: string, voiceId: string, prev?: string, next?: st
 
 function countWords(s: string) { return (s || "").trim().split(/\s+/).filter(Boolean).length; }
 
+// Gallery-first scene sourcing. Prefer authentic product imagery over AI when
+// the product ships with enough usable gallery shots. Returns the URLs we
+// successfully rehosted into the V5 bucket, or null when the gallery is too
+// thin / too low quality to carry 5 scenes.
+async function tryGallerySources(
+  sb: any,
+  sb_id: string,
+  images: string[] | null | undefined,
+): Promise<{ urls: string[]; rejected: string[] } | null> {
+  const MIN_BYTES = 25_000; // ~25KB filters out 1px trackers / tiny thumbs
+  const MAX_BYTES = 6_000_000;
+  const list = (images || []).filter((u) => typeof u === "string" && /^https?:\/\//.test(u));
+  if (list.length < 5) return null;
+  const usable: { url: string; bytes: Uint8Array; ext: string }[] = [];
+  const rejected: string[] = [];
+  for (const url of list) {
+    if (usable.length >= 8) break;
+    try {
+      const r = await fetch(url);
+      if (!r.ok) { rejected.push(`fetch_${r.status}`); continue; }
+      const ct = r.headers.get("content-type") || "";
+      if (!ct.startsWith("image/")) { rejected.push("not_image"); continue; }
+      const buf = new Uint8Array(await r.arrayBuffer());
+      if (buf.length < MIN_BYTES) { rejected.push(`too_small:${buf.length}`); continue; }
+      if (buf.length > MAX_BYTES) { rejected.push(`too_large:${buf.length}`); continue; }
+      const ext = ct.includes("webp") ? "webp" : ct.includes("png") ? "png" : "jpg";
+      usable.push({ url, bytes: buf, ext });
+    } catch (e) {
+      rejected.push(`err:${String(e).slice(0, 40)}`);
+    }
+  }
+  if (usable.length < 5) return null;
+  // Rehost to V5 bucket so renderer always gets stable signed URLs.
+  const out: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    const it = usable[i];
+    const path = `gallery/${sb_id}/beat_${i}.${it.ext}`;
+    const up = await sb.storage.from(BUCKET).upload(path, it.bytes, {
+      contentType: it.ext === "webp" ? "image/webp" : it.ext === "png" ? "image/png" : "image/jpeg",
+      upsert: true,
+    });
+    if (up.error) { rejected.push(`upload:${up.error.message}`); continue; }
+    const signed = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (signed.data?.signedUrl) out.push(signed.data.signedUrl);
+  }
+  if (out.length < 5) return null;
+  return { urls: out, rejected };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const trace_id = crypto.randomUUID();
@@ -94,17 +143,39 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, storyboard_id: sb_id, reasons: captionViolations, traceId: trace_id }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 1) Generate 5 lifestyle scenes (sequential to stay under rate limits).
+    // 1) Source scene imagery. Gallery-first: if the product ships with ≥5
+    //    usable gallery shots, build the scene track from real product imagery
+    //    (cropped / composited by the renderer). Only fall back to synthetic
+    //    Lovable AI lifestyle scenes when the gallery is insufficient.
+    const { data: prod } = await sb
+      .from("products_public")
+      .select("images,image_url")
+      .eq("id", product_id)
+      .maybeSingle();
+    const candidateImgs: string[] = Array.isArray(prod?.images)
+      ? prod.images
+      : (prod?.image_url ? [prod.image_url] : []);
     const sceneUrls: string[] = [];
     const sceneFailures: string[] = [];
-    for (let i = 0; i < beats.length; i++) {
-      const bytes = await genSceneImage(beats[i].scene);
-      if (!bytes) { sceneFailures.push(`scene_gen_failed:beat_${i}`); continue; }
-      const path = `scenes/${sb_id}/beat_${i}.png`;
-      const up = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: "image/png", upsert: true });
-      if (up.error) { sceneFailures.push(`scene_upload_failed:beat_${i}:${up.error.message}`); continue; }
-      const signed = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
-      sceneUrls.push(signed.data?.signedUrl || "");
+    let sourceKind: "gallery" | "ai_lifestyle" = "ai_lifestyle";
+    let gallerySkipReasons: string[] = [];
+
+    const gallery = await tryGallerySources(sb, sb_id, candidateImgs);
+    if (gallery) {
+      sourceKind = "gallery";
+      sceneUrls.push(...gallery.urls);
+      gallerySkipReasons = gallery.rejected;
+    } else {
+      gallerySkipReasons.push(`gallery_insufficient:${candidateImgs.length}`);
+      for (let i = 0; i < beats.length; i++) {
+        const bytes = await genSceneImage(beats[i].scene);
+        if (!bytes) { sceneFailures.push(`scene_gen_failed:beat_${i}`); continue; }
+        const path = `scenes/${sb_id}/beat_${i}.png`;
+        const up = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: "image/png", upsert: true });
+        if (up.error) { sceneFailures.push(`scene_upload_failed:beat_${i}:${up.error.message}`); continue; }
+        const signed = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+        sceneUrls.push(signed.data?.signedUrl || "");
+      }
     }
 
     // 2) Generate 5 VO clips with stitching.
@@ -142,7 +213,14 @@ Deno.serve(async (req) => {
       vo_audio_url: voUrls.length === beats.length ? voUrls : null,
       vo_total_duration_s: totalVoDur,
       quality_score: score,
-      quality_breakdown: { reasons, scene_variety: sceneVariety, scene_count: sceneUrls.length, vo_count: voUrls.length },
+      quality_breakdown: {
+        reasons,
+        scene_variety: sceneVariety,
+        scene_count: sceneUrls.length,
+        vo_count: voUrls.length,
+        source_kind: sourceKind,
+        gallery_skip_reasons: gallerySkipReasons,
+      },
       status: pass ? "awaiting_render" : "rejected",
       rejected_reason: pass ? null : reasons.join("|"),
     };
