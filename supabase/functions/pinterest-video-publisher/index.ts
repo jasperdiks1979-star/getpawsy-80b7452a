@@ -305,6 +305,26 @@ async function publishVideoPin(opts: {
     return { ok: false, code: guard.code, message: guard.message };
   }
 
+  // Stage 0b: product integrity guard — the video must point to its own
+  // product page. Block + mark publish_blocked otherwise. Hard rule.
+  const assetSlug = String(asset?.product_slug ?? "").trim().toLowerCase();
+  const destSlug = String(guard.slug ?? "").trim().toLowerCase();
+  if (!assetSlug || assetSlug !== destSlug) {
+    await logStage(sb, queue_id, "product_integrity_guard", "fail", {
+      asset_id: asset?.id,
+      video_product_slug: assetSlug,
+      destination_slug: destSlug,
+      destination_url: queueRow?.destination_url,
+    }, trace_id);
+    try {
+      await sb.from("pinterest_video_queue").update({
+        status: "publish_blocked",
+        error_message: `DESTINATION_PRODUCT_MISMATCH: video=${assetSlug} dest=${destSlug}`,
+      }).eq("id", queue_id);
+    } catch (_) { /* trigger may also flip status */ }
+    return { ok: false, code: "DESTINATION_PRODUCT_MISMATCH", message: `video product '${assetSlug}' != destination product '${destSlug}'` };
+  }
+
   // Stage 1: register media
   console.log(`[pvp ${trace_id}] stage=register_media`);
   const reg = await fetch(`${apiBase}/media`, {
