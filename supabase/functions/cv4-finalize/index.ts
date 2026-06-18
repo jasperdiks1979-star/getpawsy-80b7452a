@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
     const title = beats[1]?.caption || beats[0]?.caption || row.product_slug;
     const description = beats.map((b: any) => b?.caption).filter(Boolean).join(" · ");
     const cta_text = beats[4]?.caption || "Shop now";
+    const variation_hash = `cv4-${storyboard_id}`;
 
     await sb.from("cinematic_v4_storyboards").update({
       mp4_url: mp4_url || null,
@@ -48,15 +49,31 @@ Deno.serve(async (req) => {
 
     let queue_id = existing?.id || null;
     if (!queue_id) {
+      // Stub asset row — V4 queue rows must satisfy the legacy FK to
+      // pinterest_video_assets, but the real MP4 may not exist yet.
+      const stubPublicUrl = mp4_url || preview_thumb_url || firstAsset || `${SITE_URL}/placeholder.svg`;
+      const { data: stubAsset, error: assetErr } = await sb.from("pinterest_video_assets").insert({
+        filename: `cv4-${storyboard_id}.mp4`,
+        storage_bucket: "cinematic-ads",
+        storage_path: `cv4/${storyboard_id}.mp4`,
+        public_url: stubPublicUrl,
+        hook_type: row.hook_archetype || "curiosity",
+        product_slug: row.product_slug,
+        content_hash: `cv4-${storyboard_id}`,
+        is_active: true,
+      }).select("id").single();
+      if (assetErr) throw assetErr;
+
       const { data: q, error } = await sb.from("pinterest_video_queue").insert({
+        asset_id: stubAsset.id,
         storyboard_id,
         engine_version: "v4",
         status: mp4_url ? "awaiting_review" : "awaiting_render",
         title,
         description,
         cta_text,
+        variation_hash,
         destination_url,
-        product_slug: row.product_slug,
         scene_count: row.scene_count ?? beats.length,
         unique_image_count: row.unique_image_count ?? new Set(assets.map((a: any) => a.image_url)).size,
         quality_score: row.quality_score,
