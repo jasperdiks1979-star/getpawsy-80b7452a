@@ -50,6 +50,13 @@ export function validateCanonicalDestination(rawUrl: string | null | undefined):
   return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
 }
 
+// Test/fixture slugs must never reach the live publisher.
+export function isTestFixtureSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  const s = String(slug).trim().toLowerCase();
+  return s.startsWith("_") || s.includes("e2e-test") || s.includes("smoke-test");
+}
+
 // ── Product context loader ────────────────────────────────────────
 async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
   const s = (slug || "").trim();
@@ -546,6 +553,11 @@ serve(async (req) => {
       for (const asset_id of ids) {
         const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", asset_id).maybeSingle();
         if (!asset) continue;
+        if (isTestFixtureSlug(asset.product_slug)) {
+          await logStage(sb, null, "queue_draft_blocked_test_fixture", "fail",
+            { asset_id, product_slug: asset.product_slug }, trace_id);
+          continue;
+        }
         const product = await loadProductContext(sb, asset.product_slug);
         // try up to 8 variations: unique vs queue (variation_hash) + 30-day copy history
         let inserted = false;
@@ -681,6 +693,15 @@ serve(async (req) => {
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
 
       // ── Pre-publish creative QA (last line of defense) ──────────────
+      if (isTestFixtureSlug(asset.product_slug)) {
+        await sb.from("pinterest_video_queue").update({
+          status: "blocked_test_fixture",
+          error_message: `test_fixture_slug:${asset.product_slug}`,
+        }).eq("id", queue_id);
+        await logStage(sb, queue_id, "publish_blocked_test_fixture", "fail",
+          { product_slug: asset.product_slug }, trace_id);
+        return ok({ ok: false, code: "TEST_FIXTURE_BLOCKED", traceId: trace_id, message: `test fixture slug ${asset.product_slug}` });
+      }
       const product = await loadProductContext(sb, asset.product_slug);
       if (product) {
         const cm = validateCategoryMatch({ product, title: row.title, description: row.description, hook: row.hook_variant });

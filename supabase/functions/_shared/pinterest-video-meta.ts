@@ -26,15 +26,29 @@ export function scrubBanned(text: string): string {
 // ── Category detection ─────────────────────────────────────────────
 export type Category =
   | "cat_litter" | "catio" | "cat_tree" | "cat_other"
-  | "dog_bed" | "dog_travel" | "dog_other"
+  | "dog_bed" | "dog_travel" | "dog_other" | "pet_guardrail"
   | "pet_tech" | "toy" | "generic";
 
 export function detectCategory(p: { slug?: string; name?: string; category?: string; tags?: string[] }): Category {
   const hay = [p.slug, p.name, p.category, ...(p.tags || [])].filter(Boolean).join(" ").toLowerCase();
+  // Map explicit product.category strings first — these override slug/name heuristics.
+  const cat = (p.category || "").toLowerCase().trim();
+  if (cat === "dog beds") return "dog_bed";
+  if (cat === "cat enclosures" || cat === "catios") return "catio";
+  if (cat === "cat trees") return "cat_tree";
+  if (cat === "pet guardrails" || cat === "dog playpens" || cat === "pet playpens") return "pet_guardrail";
+  if (cat === "cat toys") {
+    // Cat Toys is overloaded in the catalog — fall through to slug/name regex so
+    // outdoor cat enclosures don't get tagged with generic toy copy.
+    if (/catio|enclosure|outdoor.*cat/.test(hay)) return "catio";
+    if (/cat.?tree|cat.?condo|cat.?tower/.test(hay)) return "cat_tree";
+    return "toy";
+  }
   if (/litter\s*box|self.?cleaning.*litter|automatic.*litter/.test(hay)) return "cat_litter";
   if (/catio|cat.*enclosure|outdoor.*cat/.test(hay)) return "catio";
   if (/cat.?tree|cat.?condo|cat.?tower|scratch.*post/.test(hay)) return "cat_tree";
   if (/orthopedic.*bed|dog.?bed|pet.?cot|cooling.?bed/.test(hay)) return "dog_bed";
+  if (/playpen|pet.?fence|pet.?gate|guard.?rail|puppy.?fence/.test(hay)) return "pet_guardrail";
   if (/stroller|carrier|backpack|car.?seat|travel/.test(hay)) return "dog_travel";
   if (/smart|app.?control|wifi|automatic|sensor|camera|feeder/.test(hay)) return "pet_tech";
   if (/toy|chew|ball|puzzle|interactive/.test(hay)) return "toy";
@@ -190,6 +204,25 @@ const TONES: Record<Category, ToneProfile> = {
     ctas: ["Shop on GetPawsy", "View details", "Tap to explore", "See it on GetPawsy"],
     hashtags: ["#dogparent","#doglife","#doghome","#dogowner","#dogs","#getpawsy"],
     fallbackNoun: "dog essential",
+  },
+  pet_guardrail: {
+    titles: [
+      "{product} for a Safe Indoor Play Zone",
+      "Portable {product} for Indoor & Outdoor Use",
+      "A {product} That Sets Up in Minutes",
+      "{product} for Puppies & Small Dogs",
+      "Sturdy {product} for Everyday Boundaries",
+    ],
+    descriptions: [
+      "A sturdy {product} that creates a safe play area indoors or outdoors — easy to set up, easy to move.",
+      "Built for daily use, with a secure gate and durable panels that hold up to real puppy energy.",
+      "Great for new puppies, recovery time, or keeping curious dogs out of certain rooms.",
+      "Portable, foldable, and stable enough for everyday boundaries at home or in the yard.",
+      "A practical {product} for households that want a flexible, safe space for their dog.",
+    ],
+    ctas: ["Shop on GetPawsy", "View details", "Tap to explore", "See it on GetPawsy"],
+    hashtags: ["#dogplaypen","#puppyfence","#petgate","#dogparent","#puppylife","#dogtraining","#getpawsy"],
+    fallbackNoun: "dog playpen",
   },
   pet_tech: {
     titles: [
@@ -389,6 +422,7 @@ const CATEGORY_KEYWORDS: Partial<Record<Category, RegExp>> = {
   cat_tree: /cat.?tree|cat.?condo|cat.?tower|scratch.*post|scratching.*post/i,
   dog_bed: /\bdog.?bed|orthopedic.*bed|pet.?cot|cooling.?bed|nap.*mat/i,
   dog_travel: /stroller|carrier|backpack|car.?seat|travel\s*crate/i,
+  pet_guardrail: /playpen|puppy.?fence|pet.?fence|pet.?gate|guard.?rail/i,
   toy: /\btoy\b|chew\s*toy|puzzle\s*toy|tug\s*toy/i,
 };
 
@@ -416,7 +450,7 @@ export function validateCategoryMatch(opts: {
       const productPillar = productCategory.startsWith("cat") ? "cat" : productCategory.startsWith("dog") ? "dog" : "other";
       const conflictPillar = cat.startsWith("cat") ? "cat" : cat.startsWith("dog") ? "dog" : "other";
       // Always block when copy claims a SPECIFIC category different from product's specific one.
-      const isSpecific = (c: string) => ["cat_litter","catio","cat_tree","dog_bed","dog_travel","toy"].includes(c);
+      const isSpecific = (c: string) => ["cat_litter","catio","cat_tree","dog_bed","dog_travel","pet_guardrail","toy"].includes(c);
       if (isSpecific(productCategory) && isSpecific(cat)) {
         return { ok: false, productCategory, conflictingCategory: cat as Category, reason: `copy mentions ${cat} but product is ${productCategory}` };
       }

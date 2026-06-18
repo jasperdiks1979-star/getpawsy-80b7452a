@@ -106,6 +106,14 @@ export function isDuplicateVariantSlug(slug: string | null | undefined): boolean
   return DUPLICATE_SLUG_RE.test(String(slug).trim().toLowerCase());
 }
 
+// Block test/fixture slugs (`_e2e-test`, `_smoke`, anything starting with `_`)
+// from ever entering the production Pinterest queue.
+export function isTestFixtureSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  const s = String(slug).trim().toLowerCase();
+  return s.startsWith("_") || s.includes("e2e-test") || s.includes("smoke-test");
+}
+
 async function processJob(supa: any, job: any): Promise<Result> {
   const res: Result = {
     job_id: job.id,
@@ -131,6 +139,11 @@ async function processJob(supa: any, job: any): Promise<Result> {
   }
 
   const slug = product.slug || job.product_slug;
+  if (isTestFixtureSlug(slug)) {
+    res.skipped = `blocked_test_fixture_slug:${slug}`;
+    console.warn(`[cv3-post-approval] blocked test fixture slug "${slug}" — never enqueue to production`);
+    return res;
+  }
   if (isDuplicateVariantSlug(slug)) {
     res.skipped = `blocked_duplicate_variant_slug:${slug}`;
     console.warn(
