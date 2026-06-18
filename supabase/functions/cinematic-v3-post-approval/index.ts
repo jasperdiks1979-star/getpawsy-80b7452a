@@ -12,6 +12,12 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SITE_URL = "https://getpawsy.pet";
 
+// Pinterest's publisher requires `/storage/v1/object/public/...` URLs, but the
+// workspace policy forbids flipping the `cinematic-v3` bucket public. So we
+// mirror each approved MP4 into the existing public `cinematic-ads` bucket and
+// reference that copy from the Pinterest pipeline.
+const PUBLIC_BUCKET = "cinematic-ads";
+
 type Result = {
   job_id: string;
   product_id: string | null;
@@ -34,21 +40,50 @@ function stripQuery(u: string | null | undefined) {
   }
 }
 
-// Force any cinematic-v3 storage URL (signed or otherwise) into a public
-// `/object/public/cinematic-v3/...` form. The bucket is set to public so this
-// URL is fetchable by Pinterest's CDN.
-function toPublicStorageUrl(u: string | null | undefined, fallbackPath: string): string {
-  const publicPrefix = `${SUPABASE_URL}/storage/v1/object/public/cinematic-v3/`;
-  if (u) {
+// Mirror a cinematic-v3 MP4 (private bucket) into the public cinematic-ads
+// bucket so Pinterest can fetch it. Idempotent: skips upload if the copy
+// already exists. Returns the public URL of the mirrored file.
+async function mirrorToPublicBucket(
+  supa: any,
+  job: any,
+): Promise<{ public_url: string; storage_path: string } | { error: string }> {
+  const dest_path = `cinematic-v3/${job.id}.mp4`;
+  const public_url = `${SUPABASE_URL}/storage/v1/object/public/${PUBLIC_BUCKET}/${dest_path}`;
+
+  // HEAD-equivalent: list the parent prefix and look for the file.
+  const { data: existing } = await supa
+    .storage
+    .from(PUBLIC_BUCKET)
+    .list("cinematic-v3", { search: `${job.id}.mp4`, limit: 1 });
+  if (existing && existing.length > 0 && existing.some((f: any) => f.name === `${job.id}.mp4`)) {
+    return { public_url, storage_path: dest_path };
+  }
+
+  // Read the source MP4 from the private bucket. final_mp4_url is a signed
+  // URL we can fetch directly; if that fails, fall back to a service-role
+  // download from the storage API.
+  let body: ArrayBuffer | null = null;
+  if (job.final_mp4_url) {
     try {
-      const url = new URL(u);
-      const m = url.pathname.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/cinematic-v3\/(.+)$/);
-      if (m) return `${publicPrefix}${m[1]}`;
+      const r = await fetch(job.final_mp4_url);
+      if (r.ok) body = await r.arrayBuffer();
     } catch {
       // fall through
     }
   }
-  return `${publicPrefix}${fallbackPath}`;
+  if (!body) {
+    const src_path = `jobs/${job.id}/final.mp4`;
+    const { data: dl, error: dlErr } = await supa.storage.from("cinematic-v3").download(src_path);
+    if (dlErr || !dl) return { error: `source download failed: ${dlErr?.message ?? "no body"}` };
+    body = await dl.arrayBuffer();
+  }
+
+  const { error: upErr } = await supa.storage
+    .from(PUBLIC_BUCKET)
+    .upload(dest_path, body, { contentType: "video/mp4", upsert: true });
+  if (upErr) return { error: `public upload failed: ${upErr.message}` };
+
+  return { public_url, storage_path: dest_path };
 }
 
 // Cap the queued pin title so the publisher's text-safe-area validator
@@ -136,15 +171,19 @@ async function processJob(supa: any, job: any): Promise<Result> {
     .eq("content_hash", checksum)
     .maybeSingle();
 
-  const storage_path = `jobs/${job.id}/final.mp4`;
-  const public_url = toPublicStorageUrl(job.final_mp4_url, storage_path);
+  const mirror = await mirrorToPublicBucket(supa, job);
+  if ("error" in mirror) {
+    res.error = `mirror to public bucket failed: ${mirror.error}`;
+    return res;
+  }
+  const { public_url, storage_path } = mirror;
 
   if (existingAsset) {
     asset_id = existingAsset.id;
     // Heal legacy rows that captured a /sign/ URL before this fix.
     await supa
       .from("pinterest_video_assets")
-      .update({ public_url })
+      .update({ public_url, storage_bucket: PUBLIC_BUCKET, storage_path })
       .eq("id", asset_id)
       .like("public_url", "%/storage/v1/object/sign/%");
   } else {
@@ -152,7 +191,7 @@ async function processJob(supa: any, job: any): Promise<Result> {
       .from("pinterest_video_assets")
       .insert({
         filename: `cinematic-v3-${slug}-${job.id}.mp4`,
-        storage_bucket: "cinematic-v3",
+        storage_bucket: PUBLIC_BUCKET,
         storage_path,
         public_url,
         duration_seconds: job.duration_seconds ?? null,
