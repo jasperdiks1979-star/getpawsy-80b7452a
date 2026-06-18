@@ -34,10 +34,10 @@ async function gatherGalleryImages(sb: any, productId: string | null, slug: stri
   const urls: string[] = [];
   if (productId) {
     const { data: p } = await sb.from("products")
-      .select("image_url, gallery_images")
+      .select("image_url, images")
       .eq("id", productId).maybeSingle();
     if (p?.image_url) urls.push(p.image_url);
-    if (Array.isArray(p?.gallery_images)) urls.push(...p.gallery_images);
+    if (Array.isArray(p?.images)) urls.push(...p.images);
     const { data: media } = await sb.from("product_media")
       .select("url, media_type")
       .eq("product_id", productId)
