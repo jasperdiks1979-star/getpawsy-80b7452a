@@ -95,13 +95,13 @@ Deno.serve(async (req) => {
   const trace_id = crypto.randomUUID();
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { storyboard_id } = await req.json();
+    const body = await req.json();
+    const { storyboard_id, skip_ai } = body || {};
     if (!storyboard_id) {
       return new Response(JSON.stringify({ ok: false, code: "MISSING_STORYBOARD_ID", traceId: trace_id }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const { data: sb_row } = await sb.from("cinematic_v4_storyboards").select("*").eq("id", storyboard_id).maybeSingle();
     if (!sb_row) return new Response(JSON.stringify({ ok: false, code: "STORYBOARD_NOT_FOUND", traceId: trace_id }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const skip_ai = Boolean((await Promise.resolve(0), (sb_row as any))) && false; // placeholder; real flag below
 
     const { data: product } = await sb.from("products")
       .select("id, name, category").eq("slug", sb_row.product_slug).maybeSingle();
