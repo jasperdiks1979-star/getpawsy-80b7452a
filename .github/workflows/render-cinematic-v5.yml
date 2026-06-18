@@ -1,0 +1,202 @@
+name: Render Cinematic V5
+
+# Renders a Cinematic V5 UGC story video (5 beats, lifestyle scenes + ElevenLabs VO)
+# into a 1080x1920 MP4. Per-beat duration = max(template_duration_s, vo_duration_s).
+# Safe zone: no caption text in top 14% or bottom 22%. Captions hard-capped at 5 words.
+
+on:
+  workflow_dispatch:
+    inputs:
+      storyboard_id:
+        description: "cv5_storyboards.id (UUID)"
+        required: true
+        type: string
+
+concurrency:
+  group: cinematic-v5-${{ inputs.storyboard_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
+      RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
+      SB_ID: ${{ inputs.storyboard_id }}
+      W: "1080"
+      H: "1920"
+      TOP_SAFE: "269"
+      BOTTOM_SAFE: "423"
+      FPS: "30"
+      FONT: "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    steps:
+      - name: Ensure render tools
+        run: |
+          missing=()
+          command -v ffmpeg >/dev/null || missing+=(ffmpeg)
+          command -v ffprobe >/dev/null || missing+=(ffmpeg)
+          command -v jq >/dev/null || missing+=(jq)
+          command -v tesseract >/dev/null || missing+=(tesseract-ocr)
+          command -v convert >/dev/null || missing+=(imagemagick)
+          fc-match DejaVuSans-Bold >/dev/null || missing+=(fonts-dejavu-core)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends "${missing[@]}"
+          fi
+
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          for v in LOVABLE_FUNCTIONS_URL RUNWAY_MERGE_TOKEN SB_ID; do
+            test -n "${!v}" || { echo "missing $v"; exit 1; }
+          done
+
+      - name: Fetch storyboard
+        run: |
+          set -euo pipefail
+          curl -fsS -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            "${LOVABLE_FUNCTIONS_URL}/cv5-fetch-job?storyboard_id=${SB_ID}" \
+            -o /tmp/resp.json
+          jq -e '.ok==true' /tmp/resp.json >/dev/null || { cat /tmp/resp.json; exit 1; }
+          jq '.storyboard.beats'      /tmp/resp.json > /tmp/beats.json
+          jq -r '.storyboard.scene_urls[]' /tmp/resp.json > /tmp/scene_urls.txt
+          jq -r '.storyboard.vo_urls[]'    /tmp/resp.json > /tmp/vo_urls.txt
+          jq -r '.upload.signedUrl // .upload.signed_url' /tmp/resp.json > /tmp/upload_url.txt
+          echo "beats: $(jq 'length' /tmp/beats.json)"
+
+      - name: Download scenes + VO
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/img /tmp/vo
+          i=0
+          while IFS= read -r URL; do
+            curl -fsSL --retry 3 "$URL" -o "/tmp/img/${i}.png"
+            convert "/tmp/img/${i}.png" -resize "${W}x${H}^" -gravity center -extent "${W}x${H}" -quality 90 "/tmp/img/${i}.jpg"
+            i=$((i+1))
+          done < /tmp/scene_urls.txt
+          i=0
+          while IFS= read -r URL; do
+            curl -fsSL --retry 3 "$URL" -o "/tmp/vo/${i}.mp3"
+            i=$((i+1))
+          done < /tmp/vo_urls.txt
+          ls -la /tmp/img /tmp/vo
+
+      - name: Render (per-beat clips with VO + caption, then concat)
+        run: |
+          set -euo pipefail
+          COUNT=$(jq 'length' /tmp/beats.json)
+          : > /tmp/concat.txt
+          for i in $(seq 0 $((COUNT - 1))); do
+            CAP=$(jq -r ".[$i].caption" /tmp/beats.json)
+            TPL_DUR=$(jq -r ".[$i].duration_s // 5" /tmp/beats.json)
+            MOTION=$(jq -r ".[$i].camera // \"slow_push_in\"" /tmp/beats.json)
+            VO_DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "/tmp/vo/${i}.mp3" 2>/dev/null || echo "$TPL_DUR")
+            # Use max so VO never gets cut off.
+            DUR=$(awk -v a="$TPL_DUR" -v b="$VO_DUR" 'BEGIN{printf "%.3f", (a>b?a:b)+0.2}')
+            DFRAMES=$(awk -v d="$DUR" -v fps="$FPS" 'BEGIN{printf "%d", d*fps}')
+
+            case "$MOTION" in
+              slow_push_in)  ZEXPR="z='min(1.0+0.0015*on,1.22)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              slow_dolly_in) ZEXPR="z='min(1.0+0.0018*on,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              slow_dolly_out)ZEXPR="z='max(1.25-0.0018*on,1.02)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              pan_left)      ZEXPR="z='1.12':x='(iw-iw/zoom)*(1-min(on/${DFRAMES},1))':y='ih/2-(ih/zoom/2)'" ;;
+              pan_right)     ZEXPR="z='1.12':x='(iw-iw/zoom)*min(on/${DFRAMES},1)':y='ih/2-(ih/zoom/2)'" ;;
+              tracking_shot) ZEXPR="z='min(1.0+0.0012*on,1.15)':x='iw/2-(iw/zoom/2)+sin(on/20)*40':y='ih/2-(ih/zoom/2)'" ;;
+              hold)          ZEXPR="z='1.05':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              *)             ZEXPR="z='min(1.0+0.0010*on,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+            esac
+
+            TF="/tmp/cap_${i}.txt"
+            printf '%s' "$CAP" > "$TF"
+            SIZE=88
+            DESCENDER=$(( SIZE * 50 / 100 ))
+            MARGIN=$(( 40 + DESCENDER ))
+            DRAW="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=28:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}"
+            FC="[0:v]zoompan=${ZEXPR}:d=1:s=${W}x${H}:fps=${FPS},setpts=PTS-STARTPTS,format=yuv420p,${DRAW}[v]"
+            ffmpeg -y -hide_banner -loglevel error \
+              -framerate "$FPS" -loop 1 -t "$DUR" -i "/tmp/img/${i}.jpg" \
+              -i "/tmp/vo/${i}.mp3" \
+              -filter_complex "$FC" \
+              -map "[v]" -map "1:a" \
+              -r "$FPS" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p \
+              -c:a aac -b:a 128k -shortest=0 -t "$DUR" \
+              "/tmp/clip_${i}.mp4"
+            echo "file '/tmp/clip_${i}.mp4'" >> /tmp/concat.txt
+          done
+          ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i /tmp/concat.txt -c copy /tmp/final.mp4
+          ls -lh /tmp/final.mp4
+          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/final.mp4
+
+      - name: OCR safe-zone gate
+        id: qa
+        run: |
+          set -euo pipefail
+          DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/final.mp4)
+          REASONS=()
+          mkdir -p /tmp/frames
+          : > /tmp/viol.txt
+          for k in $(seq 1 6); do
+            T=$(awk -v d="$DUR" -v k="$k" 'BEGIN{printf "%.2f", d*k/7}')
+            ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
+          done
+          CAPTION_BOT=$(( H - BOTTOM_SAFE ))
+          for f in /tmp/frames/*.png; do
+            tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
+            awk -v conf=55 'NR>1 && $11>conf && length($12)>=2 {
+              x=$7+0; y=$8+0; ww=$9+0; hh=$10+0;
+              print $12"\t"x"\t"y"\t"ww"\t"hh;
+            }' /tmp/ocr.tsv > /tmp/ocr_cand.tsv
+            while IFS=$'\t' read -r TXT X Y WW HH; do
+              [ -z "$TXT" ] && continue
+              BOT_EDGE=$(( Y + HH ))
+              if [ "$Y" -lt "$TOP_SAFE" ]; then
+                echo "$(basename $f):top:\"${TXT}\"" >> /tmp/viol.txt
+              fi
+              if [ "$BOT_EDGE" -gt "$CAPTION_BOT" ]; then
+                echo "$(basename $f):bot:\"${TXT}\"" >> /tmp/viol.txt
+              fi
+              R_EDGE=$(( X + WW ))
+              if [ "$X" -lt 24 ] || [ "$R_EDGE" -gt $(( W - 24 )) ]; then
+                echo "$(basename $f):side:\"${TXT}\"" >> /tmp/viol.txt
+              fi
+            done < /tmp/ocr_cand.tsv
+          done
+          QA_PASS=true
+          if [ -s /tmp/viol.txt ]; then
+            QA_PASS=false
+            while IFS= read -r line; do REASONS+=("ocr_clipped:${line}"); done < /tmp/viol.txt
+          fi
+          printf '%s\n' "${REASONS[@]}" | jq -R . | jq -s . > /tmp/reasons.json
+          echo "qa_pass=$QA_PASS" >> "$GITHUB_OUTPUT"
+          echo "duration=$DUR"   >> "$GITHUB_OUTPUT"
+
+      - name: Upload MP4 (only if QA pass)
+        id: upload
+        if: steps.qa.outputs.qa_pass == 'true'
+        run: |
+          set -euo pipefail
+          URL=$(cat /tmp/upload_url.txt)
+          curl -fsS -X PUT -H "Content-Type: video/mp4" --data-binary @/tmp/final.mp4 "$URL"
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
+
+      - name: Finalize
+        if: always()
+        run: |
+          set -euo pipefail
+          PASS="${{ steps.qa.outputs.qa_pass || 'false' }}"
+          DUR="${{ steps.qa.outputs.duration || 0 }}"
+          if [ -f /tmp/reasons.json ]; then REASONS_JSON=$(cat /tmp/reasons.json); else REASONS_JSON='[]'; fi
+          BODY=$(jq -n \
+            --arg sb "$SB_ID" \
+            --arg pass "$PASS" \
+            --arg job_status "${{ job.status }}" \
+            --arg uploaded "${{ steps.upload.outputs.uploaded || 'false' }}" \
+            --argjson dur "$DUR" \
+            --argjson reasons "$REASONS_JSON" \
+            --arg render_file_exists "$([ -s /tmp/final.mp4 ] && echo true || echo false)" \
+            '{storyboard_id:$sb, qa_pass:($pass=="true"), workflow_status:$job_status, upload_completed:($uploaded=="true"), render_file_exists:($render_file_exists=="true"), duration_seconds:$dur, post_render_reject_reasons:$reasons}')
+          curl -fsS -X POST -H "Authorization: Bearer ${RUNWAY_MERGE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${LOVABLE_FUNCTIONS_URL}/cv5-render-callback" \
+            --data-raw "$BODY"

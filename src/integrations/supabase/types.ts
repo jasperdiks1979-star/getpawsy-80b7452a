@@ -5554,6 +5554,111 @@ export type Database = {
         }
         Relationships: []
       }
+      cv5_story_templates: {
+        Row: {
+          beats: Json
+          created_at: string
+          id: string
+          niche: string
+          voice_id: string
+        }
+        Insert: {
+          beats: Json
+          created_at?: string
+          id?: string
+          niche: string
+          voice_id?: string
+        }
+        Update: {
+          beats?: Json
+          created_at?: string
+          id?: string
+          niche?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      cv5_storyboards: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          beats: Json
+          created_at: string
+          github_run_id: number | null
+          github_run_url: string | null
+          id: string
+          last_render_dispatched_at: string | null
+          mp4_url: string | null
+          niche: string | null
+          product_id: string
+          product_slug: string | null
+          product_title: string | null
+          quality_breakdown: Json | null
+          quality_score: number | null
+          rejected_reason: string | null
+          render_error: string | null
+          scene_image_urls: Json | null
+          source_images: Json | null
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          vo_audio_url: string | null
+          vo_total_duration_s: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          beats?: Json
+          created_at?: string
+          github_run_id?: number | null
+          github_run_url?: string | null
+          id?: string
+          last_render_dispatched_at?: string | null
+          mp4_url?: string | null
+          niche?: string | null
+          product_id: string
+          product_slug?: string | null
+          product_title?: string | null
+          quality_breakdown?: Json | null
+          quality_score?: number | null
+          rejected_reason?: string | null
+          render_error?: string | null
+          scene_image_urls?: Json | null
+          source_images?: Json | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          vo_audio_url?: string | null
+          vo_total_duration_s?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          beats?: Json
+          created_at?: string
+          github_run_id?: number | null
+          github_run_url?: string | null
+          id?: string
+          last_render_dispatched_at?: string | null
+          mp4_url?: string | null
+          niche?: string | null
+          product_id?: string
+          product_slug?: string | null
+          product_title?: string | null
+          quality_breakdown?: Json | null
+          quality_score?: number | null
+          rejected_reason?: string | null
+          render_error?: string | null
+          scene_image_urls?: Json | null
+          source_images?: Json | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          vo_audio_url?: string | null
+          vo_total_duration_s?: number | null
+        }
+        Relationships: []
+      }
       cwv_validation_events: {
         Row: {
           created_by: string | null
