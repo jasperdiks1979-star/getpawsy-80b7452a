@@ -5168,6 +5168,102 @@ export type Database = {
         }
         Relationships: []
       }
+      content_product_audit_runs: {
+        Row: {
+          asset_id: string | null
+          confidence: number | null
+          created_at: string
+          destination_url: string | null
+          detected_product: string | null
+          frame_urls: Json
+          id: string
+          linked_product_slug: string | null
+          model: string | null
+          pin_id: string | null
+          queue_id: string | null
+          reasoning: string | null
+          repair_error: string | null
+          repair_status: string | null
+          scan_id: string
+          verdict: string
+          video_product_slug: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          destination_url?: string | null
+          detected_product?: string | null
+          frame_urls?: Json
+          id?: string
+          linked_product_slug?: string | null
+          model?: string | null
+          pin_id?: string | null
+          queue_id?: string | null
+          reasoning?: string | null
+          repair_error?: string | null
+          repair_status?: string | null
+          scan_id: string
+          verdict: string
+          video_product_slug?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          destination_url?: string | null
+          detected_product?: string | null
+          frame_urls?: Json
+          id?: string
+          linked_product_slug?: string | null
+          model?: string | null
+          pin_id?: string | null
+          queue_id?: string | null
+          reasoning?: string | null
+          repair_error?: string | null
+          repair_status?: string | null
+          scan_id?: string
+          verdict?: string
+          video_product_slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_product_audit_runs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_product_audit_runs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "content_product_audit_runs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_winners"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "content_product_audit_runs_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["queue_id"]
+          },
+          {
+            foreignKeyName: "content_product_audit_runs_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crawler_sampling_decisions: {
         Row: {
           always_log: boolean
