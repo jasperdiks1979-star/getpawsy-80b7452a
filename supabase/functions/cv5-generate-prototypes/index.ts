@@ -18,13 +18,13 @@ const PROTOTYPES = [
 
 async function findProduct(sb: any, slugTokens: string[], titleTokens: string[]) {
   // Try OR of ilike on slug for any token combo.
-  const orClause = slugTokens.map((t) => `product_url.ilike.%${t}%`).join(",");
-  const { data } = await sb.from("products_public").select("id, product_url, product_name").or(orClause).limit(20);
+  const orClause = slugTokens.map((t) => `slug.ilike.%${t}%`).join(",");
+  const { data } = await sb.from("products_public").select("id, slug, name").or(orClause).limit(20);
   if (!data || data.length === 0) return null;
   // Prefer rows matching all tokens.
   const scored = data.map((r: any) => {
-    const slug = (r.product_url || "").toLowerCase();
-    const title = (r.product_name || "").toLowerCase();
+    const slug = (r.slug || "").toLowerCase();
+    const title = (r.name || "").toLowerCase();
     const slugHits = slugTokens.filter((t) => slug.includes(t)).length;
     const titleHits = titleTokens.filter((t) => title.includes(t)).length;
     return { row: r, score: slugHits * 2 + titleHits };
@@ -44,10 +44,10 @@ Deno.serve(async (req) => {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/cv5-generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
-        body: JSON.stringify({ product_id: row.id, product_slug: row.product_url, product_title: row.product_name }),
+        body: JSON.stringify({ product_id: row.id, product_slug: row.slug, product_title: row.name }),
       });
       const j = await r.json().catch(() => ({}));
-      results.push({ name: p.name, product_id: row.id, slug: row.product_url, ok: j.ok, storyboard_id: j.storyboard_id, score: j.score, reasons: j.reasons });
+      results.push({ name: p.name, product_id: row.id, slug: row.slug, ok: j.ok, storyboard_id: j.storyboard_id, score: j.score, reasons: j.reasons });
     }
     return new Response(JSON.stringify({ ok: true, traceId: trace_id, results }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
