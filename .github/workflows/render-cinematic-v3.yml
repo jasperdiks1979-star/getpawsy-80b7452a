@@ -78,77 +78,63 @@ jobs:
           ffprobe -v error -show_entries stream=codec_type,sample_rate,channels -of json /tmp/assets/vo.mp3 > /tmp/vo_probe.json
           cat /tmp/vo_probe.json
 
-      - name: Render scenes (Ken-Burns on real product images)
+      - name: Render single-pass (Ken-Burns + captions + VO mux in one ffmpeg call)
         run: |
           set -euo pipefail
           COUNT=$(jq 'length' /tmp/scenes.json)
-          : > /tmp/concat.txt
+          INPUTS=()
+          FC=""
+          CONCAT_LABELS=""
+          DRAWTEXT=""
           for i in $(seq 0 $((COUNT - 1))); do
             START=$(jq -r ".[$i].start" /tmp/scenes.json)
             END=$(jq -r ".[$i].end"   /tmp/scenes.json)
             IDX=$(jq -r ".[$i].asset_index" /tmp/scenes.json)
             VISUAL=$(jq -r ".[$i].visual" /tmp/scenes.json)
+            CAP=$(jq -r ".[$i].caption" /tmp/scenes.json)
             DUR=$(echo "$END - $START" | bc -l)
+            DFRAMES=$(echo "$DUR*$FPS/1" | bc)
             IMG="/tmp/assets/img/${IDX}.jpg"
             test -f "$IMG" || IMG="/tmp/assets/img/0.jpg"
-            OUT="/tmp/assets/scenes/scene_${i}.mp4"
+            INPUTS+=( -loop 1 -t "$DUR" -i "$IMG" )
 
-            # Motion preset by visual type — all deterministic ffmpeg, no AI.
             case "$VISUAL" in
-              product_pan)
-                ZOOM="zoompan=z='min(zoom+0.0015,1.25)':d=$(echo "$DUR*$FPS/1" | bc):x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}" ;;
-              product_parallax)
-                ZOOM="zoompan=z='if(lte(zoom,1.0),1.18,zoom-0.0010)':d=$(echo "$DUR*$FPS/1" | bc):x='iw/2-(iw/zoom/2)+sin(on/30)*40':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}" ;;
-              motion_graphic)
-                ZOOM="zoompan=z='1.05+0.05*sin(on/40)':d=$(echo "$DUR*$FPS/1" | bc):x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}" ;;
-              *)
-                ZOOM="zoompan=z='min(zoom+0.0010,1.15)':d=$(echo "$DUR*$FPS/1" | bc):x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}" ;;
+              product_pan)      ZEXPR="z='min(zoom+0.0015,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              product_parallax) ZEXPR="z='if(lte(zoom,1.0),1.18,zoom-0.0010)':x='iw/2-(iw/zoom/2)+sin(on/30)*40':y='ih/2-(ih/zoom/2)'" ;;
+              motion_graphic)   ZEXPR="z='1.05+0.05*sin(on/40)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              *)                ZEXPR="z='min(zoom+0.0010,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
             esac
 
-            ffmpeg -y -hide_banner -loglevel error \
-              -loop 1 -t "$DUR" -i "$IMG" \
-              -filter_complex "[0:v]${ZOOM},format=yuv420p[v]" \
-              -map "[v]" -r "$FPS" -an -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p "$OUT"
-            echo "file '$OUT'" >> /tmp/concat.txt
-          done
-          ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i /tmp/concat.txt -c copy /tmp/video_silent.mp4
-          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/video_silent.mp4 > /tmp/dur.txt
-          echo "video duration: $(cat /tmp/dur.txt)s"
+            FC+="[${i}:v]zoompan=${ZEXPR}:d=${DFRAMES}:s=${W}x${H}:fps=${FPS},setpts=PTS-STARTPTS,format=yuv420p[v${i}];"
+            CONCAT_LABELS+="[v${i}]"
 
-      - name: Burn captions (safe-zone enforced via textfile=)
-        run: |
-          set -euo pipefail
-          COUNT=$(jq 'length' /tmp/scenes.json)
-          FILTER=""
-          for i in $(seq 0 $((COUNT - 1))); do
-            START=$(jq -r ".[$i].start" /tmp/scenes.json)
-            END=$(jq -r ".[$i].end"   /tmp/scenes.json)
-            CAP=$(jq -r ".[$i].caption" /tmp/scenes.json)
             TF="/tmp/cap_${i}.txt"
             printf '%s' "$CAP" > "$TF"
-            # font size scales to caption length (8 words/line, 2 lines max)
             LEN=${#CAP}
             if   [ "$LEN" -lt 28 ]; then SIZE=82
             elif [ "$LEN" -lt 50 ]; then SIZE=68
             else SIZE=56; fi
-            # safe band Y range: top=TOP_SAFE..(H-BOTTOM_SAFE-160). Caption lives at H-BOTTOM_SAFE-120.
             Y=$((H - BOTTOM_SAFE - 200))
-            FILTER+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=${Y}:enable='between(t,${START},${END})',"
+            [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=${Y}:enable='between(t,${START},${END})'"
           done
-          FILTER="${FILTER%,}"
-          ffmpeg -y -hide_banner -loglevel error -i /tmp/video_silent.mp4 -vf "$FILTER" \
-            -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -an /tmp/video_captioned.mp4
 
-      - name: Mux voiceover (loudness-normalized)
-        run: |
-          set -euo pipefail
-          # loudnorm pass to commercial -16 LUFS
-          ffmpeg -y -hide_banner -loglevel error -i /tmp/assets/vo.mp3 \
-            -af "loudnorm=I=-16:TP=-1.5:LRA=11" -ar 44100 -ac 2 /tmp/assets/vo_norm.m4a
+          AUDIO_IDX=$COUNT
+          INPUTS+=( -i /tmp/assets/vo.mp3 )
+
+          FC+="${CONCAT_LABELS}concat=n=${COUNT}:v=1:a=0[vc];[vc]${DRAWTEXT}[vout];[${AUDIO_IDX}:a]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=44100[aout]"
+
+          echo "filter_complex length: ${#FC}"
           ffmpeg -y -hide_banner -loglevel error \
-            -i /tmp/video_captioned.mp4 -i /tmp/assets/vo_norm.m4a \
-            -map 0:v -map 1:a -shortest -c:v copy -c:a aac -b:a 192k /tmp/final.mp4
+            "${INPUTS[@]}" \
+            -filter_complex "$FC" \
+            -map "[vout]" -map "[aout]" \
+            -r "$FPS" -shortest \
+            -c:v libx264 -preset ultrafast -crf 21 -pix_fmt yuv420p \
+            -c:a aac -b:a 192k \
+            /tmp/final.mp4
           ls -lh /tmp/final.mp4
+          ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 /tmp/final.mp4
 
       - name: QA engine
         id: qa
