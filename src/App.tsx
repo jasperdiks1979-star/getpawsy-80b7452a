@@ -2436,6 +2436,30 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-v3-quality-audit"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV3QualityAudit />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-v4-jobs"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV4Jobs />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-v4-quality-gate"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV4QualityGate />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-stock-status"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
