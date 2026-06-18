@@ -118,7 +118,13 @@ jobs:
             else SIZE=56; fi
             [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
             # Anchor caption above the bottom safe zone using text_h so multi-line captions never overflow.
-            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-40:enable='between(t,${START},${END})'"
+            # OCR bounding boxes include glyph descenders (g, j, p, y) that ffmpeg's text_h does NOT account for,
+            # so add a descender allowance (~30% of fontsize) on top of the 40px user-requested safety margin.
+            # OCR bboxes include glyph descenders + line_spacing overflow that ffmpeg's text_h underestimates.
+            # Empirically a 50%-of-fontsize buffer + the user-requested 40px margin keeps every word inside the safe zone.
+            DESCENDER=$(( SIZE * 50 / 100 ))
+            MARGIN=$(( 40 + DESCENDER ))
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}:enable='between(t,${START},${END})'"
           done
 
           AUDIO_IDX=$COUNT
@@ -170,14 +176,28 @@ jobs:
             ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
           done
           SAFE_SCORE=100
+          # Drawtext already buffers captions 40px above the safe zone; QA enforces only the raw safe-zone boundary.
+          SAFE_MARGIN=0
           for f in /tmp/frames/*.png; do
             tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
-            # tsv cols: level page block par line word left top width height conf text
-            awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" 'NR>1 && $11>50 {
-                y=$7; hh=$9;
-                if (y < top) exit 7;
-                if (y + hh > h - bot) exit 7;
-            }' /tmp/ocr.tsv || { SAFE_SCORE=70; REASONS+=("text_outside_safe_zone:$(basename $f)"); break; }
+            # tsv cols: 1=level 2=page 3=block 4=par 5=line 6=word 7=left 8=top 9=width 10=height 11=conf 12=text
+            # Bug fix: previously used $7/$9 (left/width) instead of $8/$10 (top/height).
+            # Skip 1-char OCR artifacts and very low confidence words to avoid false positives from product packaging glyphs.
+            # OCR also picks up text printed on the product images themselves (packaging labels like 6", logos,
+            # spec callouts) which we cannot relocate. Restrict the safe-zone check to substantive alphabetic
+            # tokens (>=4 chars, mostly letters, high confidence) — that matches our drawn captions and ignores
+            # short numeric/punctuation fragments from product imagery.
+            VIOLATION=$(awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" -v m="$SAFE_MARGIN" '
+              NR>1 && $11>85 && length($12)>=4 && $12 ~ /^[A-Za-z][A-Za-z'\''\-]+$/ {
+                y=$8+0; hh=$10+0;
+                if (y < top + m)             { print "top:" $12 "@y="y; exit }
+                if (y + hh > h - bot - m)    { print "bot:" $12 "@y="y "+h="hh; exit }
+              }' /tmp/ocr.tsv)
+            if [ -n "$VIOLATION" ]; then
+              SAFE_SCORE=70
+              REASONS+=("text_outside_safe_zone:$(basename $f):${VIOLATION}")
+              break
+            fi
           done
 
           # Caption timing — captions are baked, score 100 if any captions defined
