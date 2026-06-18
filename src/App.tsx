@@ -2293,6 +2293,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="canonical-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CanonicalHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-v3-repair"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
