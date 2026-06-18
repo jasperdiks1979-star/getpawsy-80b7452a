@@ -1,3 +1,10 @@
+## [0.2.0](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.4...v0.2.0) (2026-06-18)
+
+
+### Features
+
+* **qa:** caption-aware OCR validator (ignore source-image text) ([5cc6ac9](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/5cc6ac9a25860fc303a31ad6262934c098925b53))
+
 ## [0.1.4](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.3...v0.1.4) (2026-06-18)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * QA OCR column indices (use top/height not left/width) + 40px safe margin ([ea43750](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/ea43750a8a176fc2aa34e370da8818d6978896fc))
-
-## [0.1.0](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/d9a3e6a307f81cda3a64bf58fae3180004cf152c...v0.1.0) (2026-06-18)
-
-
-### Bug Fixes
-
-* **cinematic-v3:** correct zoompan frame count + safe-zone caption anchoring ([d9a3e6a](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/d9a3e6a307f81cda3a64bf58fae3180004cf152c))
 
