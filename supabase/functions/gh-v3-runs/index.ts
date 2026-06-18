@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   const enriched = await Promise.all(
     runs.map(async (r: any) => {
       let failedJobs: any[] = [];
-      if (r.conclusion === "failure" || r.status === "in_progress" || r.status === "queued") {
+      {
         const jr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${r.id}/jobs`, { headers: h });
         const jj = await jr.json().catch(() => ({}));
         failedJobs = (jj.jobs ?? []).map((j: any) => ({
