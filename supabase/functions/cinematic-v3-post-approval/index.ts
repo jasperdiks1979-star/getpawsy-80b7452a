@@ -96,6 +96,16 @@ function truncatePinTitle(raw: string, maxChars = 38): string {
   return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trim();
 }
 
+// Block numeric-suffix variant slugs (`-2`, `-3`, … `-9`) from entering the
+// Pinterest queue. These are content duplicates of the parent slug and
+// Pinterest's dedupe layer always rejects them as
+// "this site doesn't allow you to save Pins".
+const DUPLICATE_SLUG_RE = /-(?:[2-9]|\d{2,})$/;
+export function isDuplicateVariantSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  return DUPLICATE_SLUG_RE.test(String(slug).trim().toLowerCase());
+}
+
 async function processJob(supa: any, job: any): Promise<Result> {
   const res: Result = {
     job_id: job.id,
