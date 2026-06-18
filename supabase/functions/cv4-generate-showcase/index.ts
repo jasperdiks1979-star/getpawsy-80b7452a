@@ -56,19 +56,24 @@ Deno.serve(async (req) => {
       ? body.slugs.slice(0, 5)
       : await pickShowcaseSlugs(sb);
 
-    // Run all slugs in parallel; skip AI image gen for showcase speed.
+    // Run all slugs in parallel. AI backdrops are allowed (cv4-assets only uses
+    // them when the product has <3 real images — see cv4-assets hard rule).
     const results = await Promise.all(slugs.map(async (slug) => {
       const r: any = { slug };
       const sbr = await callFn("cv4-storyboard", { product_slug: slug });
       r.storyboard = sbr;
       if (!sbr?.ok || !sbr?.storyboard_id) return r;
-      r.assets   = await callFn("cv4-assets",            { storyboard_id: sbr.storyboard_id, skip_ai: true });
+      r.assets   = await callFn("cv4-assets",            { storyboard_id: sbr.storyboard_id });
       r.gate     = await callFn("cv4-quality-gate-pre",  { storyboard_id: sbr.storyboard_id });
       r.finalize = await callFn("cv4-finalize",          { storyboard_id: sbr.storyboard_id });
       return r;
     }));
 
-    return new Response(JSON.stringify({ ok: true, traceId: trace_id, count: results.length, results }), {
+    // Dispatch GitHub Actions render for every storyboard that passed the pre-gate.
+    const validIds = results.filter((r) => r?.gate?.ok && r?.storyboard?.storyboard_id).map((r) => r.storyboard.storyboard_id);
+    const dispatch = validIds.length > 0 ? await callFn("cv4-queue-render", { storyboard_ids: validIds }) : { ok: true, dispatched: 0, skipped: "no_validated_storyboards" };
+
+    return new Response(JSON.stringify({ ok: true, traceId: trace_id, count: results.length, results, dispatch }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
