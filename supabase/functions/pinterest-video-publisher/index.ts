@@ -245,6 +245,21 @@ async function publishVideoPin(opts: {
   const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
   const apiBase = await getPinterestApiBase(sb);
 
+  // Stage 0: canonical guard — reject up-front if the destination URL would
+  // collapse into the homepage canonical bucket (Pinterest dedupe → "this
+  // site doesn't allow you to save Pins") or carries a numeric-variant slug.
+  const guard = validateCanonicalDestination(queueRow?.destination_url);
+  if (!guard.ok) {
+    await logStage(sb, queue_id, "canonical_guard", "fail", {
+      destination_url: queueRow?.destination_url,
+      product_slug: (queueRow as any)?.product_slug ?? null,
+      asset_product_id: asset?.product_id ?? null,
+      code: guard.code,
+      message: guard.message,
+    }, trace_id);
+    return { ok: false, code: guard.code, message: guard.message };
+  }
+
   // Stage 1: register media
   console.log(`[pvp ${trace_id}] stage=register_media`);
   const reg = await fetch(`${apiBase}/media`, {
