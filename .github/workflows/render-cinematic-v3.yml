@@ -19,7 +19,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       LOVABLE_FUNCTIONS_URL: ${{ secrets.LOVABLE_FUNCTIONS_URL }}
       RUNWAY_MERGE_TOKEN: ${{ secrets.RUNWAY_MERGE_TOKEN }}
@@ -108,7 +108,7 @@ jobs:
             ffmpeg -y -hide_banner -loglevel error \
               -loop 1 -t "$DUR" -i "$IMG" \
               -filter_complex "[0:v]${ZOOM},format=yuv420p[v]" \
-              -map "[v]" -r "$FPS" -an -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p "$OUT"
+              -map "[v]" -r "$FPS" -an -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p "$OUT"
             echo "file '$OUT'" >> /tmp/concat.txt
           done
           ffmpeg -y -hide_banner -loglevel error -f concat -safe 0 -i /tmp/concat.txt -c copy /tmp/video_silent.mp4
@@ -137,7 +137,7 @@ jobs:
           done
           FILTER="${FILTER%,}"
           ffmpeg -y -hide_banner -loglevel error -i /tmp/video_silent.mp4 -vf "$FILTER" \
-            -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -an /tmp/video_captioned.mp4
+            -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -an /tmp/video_captioned.mp4
 
       - name: Mux voiceover (loudness-normalized)
         run: |
