@@ -553,6 +553,11 @@ serve(async (req) => {
       for (const asset_id of ids) {
         const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", asset_id).maybeSingle();
         if (!asset) continue;
+        if (isTestFixtureSlug(asset.product_slug)) {
+          await logStage(sb, null, "queue_draft_blocked_test_fixture", "fail",
+            { asset_id, product_slug: asset.product_slug }, trace_id);
+          continue;
+        }
         const product = await loadProductContext(sb, asset.product_slug);
         // try up to 8 variations: unique vs queue (variation_hash) + 30-day copy history
         let inserted = false;
