@@ -432,6 +432,7 @@ const CinematicAdsPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsP
 const CinematicRunwayPage = lazyWithRetry(() => import("./pages/admin/CinematicRunwayPage"));
 const CinematicAdsControlCenterPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsControlCenterPage"));
 const CinematicV3QaPage = lazyWithRetry(() => import("./pages/admin/CinematicV3QaPage"));
+const CinematicV3DispatcherPage = lazyWithRetry(() => import("./pages/admin/CinematicV3DispatcherPage"));
 const CinematicAdQaSummaryPage = lazyWithRetry(() => import("./pages/admin/CinematicAdQaSummaryPage"));
 const CinematicAdsDashboardPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsDashboardPage"));
 const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/CinematicAdPreviewPage"));
