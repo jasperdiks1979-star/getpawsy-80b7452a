@@ -170,14 +170,23 @@ jobs:
             ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
           done
           SAFE_SCORE=100
+          SAFE_MARGIN=40
           for f in /tmp/frames/*.png; do
             tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
-            # tsv cols: level page block par line word left top width height conf text
-            awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" 'NR>1 && $11>50 {
-                y=$7; hh=$9;
-                if (y < top) exit 7;
-                if (y + hh > h - bot) exit 7;
-            }' /tmp/ocr.tsv || { SAFE_SCORE=70; REASONS+=("text_outside_safe_zone:$(basename $f)"); break; }
+            # tsv cols: 1=level 2=page 3=block 4=par 5=line 6=word 7=left 8=top 9=width 10=height 11=conf 12=text
+            # Bug fix: previously used $7/$9 (left/width) instead of $8/$10 (top/height).
+            # Skip 1-char OCR artifacts and very low confidence words to avoid false positives from product packaging glyphs.
+            VIOLATION=$(awk -v top="$TOP_SAFE" -v bot="$BOTTOM_SAFE" -v h="$H" -v m="$SAFE_MARGIN" '
+              NR>1 && $11>70 && length($12)>=2 {
+                y=$8+0; hh=$10+0;
+                if (y < top + m)             { print "top:" $12 "@y="y; exit }
+                if (y + hh > h - bot - m)    { print "bot:" $12 "@y="y "+h="hh; exit }
+              }' /tmp/ocr.tsv)
+            if [ -n "$VIOLATION" ]; then
+              SAFE_SCORE=70
+              REASONS+=("text_outside_safe_zone:$(basename $f):${VIOLATION}")
+              break
+            fi
           done
 
           # Caption timing — captions are baked, score 100 if any captions defined
