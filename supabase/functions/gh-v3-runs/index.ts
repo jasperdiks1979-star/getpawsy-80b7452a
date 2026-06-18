@@ -64,6 +64,71 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, scanned: stuck?.length ?? 0, reaped }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
+  // GET /gh-v3-runs?action=steps&run_id=X → full per-step timings + conclusions for every job in the run
+  if (url.searchParams.get("action") === "steps") {
+    const runId = url.searchParams.get("run_id");
+    if (!runId) return new Response(JSON.stringify({ ok: false, message: "run_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const jr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${runId}/jobs`, { headers: h });
+    const jj = await jr.json().catch(() => ({}));
+    const out = (jj.jobs ?? []).map((j: any) => ({
+      job_name: j.name,
+      status: j.status,
+      conclusion: j.conclusion,
+      started_at: j.started_at,
+      completed_at: j.completed_at,
+      runner_name: j.runner_name,
+      steps: (j.steps ?? []).map((s: any) => {
+        const start = s.started_at ? Date.parse(s.started_at) : null;
+        const end = s.completed_at ? Date.parse(s.completed_at) : null;
+        return {
+          number: s.number,
+          name: s.name,
+          status: s.status,
+          conclusion: s.conclusion,
+          started_at: s.started_at,
+          completed_at: s.completed_at,
+          duration_s: start && end ? Math.round((end - start) / 1000) : null,
+        };
+      }),
+    }));
+    return new Response(JSON.stringify({ ok: true, run_id: runId, jobs: out }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  // GET /gh-v3-runs?action=logs&run_id=X[&step=NAME_SUBSTR] → text logs from the run's zip
+  if (url.searchParams.get("action") === "logs") {
+    const runId = url.searchParams.get("run_id");
+    const stepFilter = (url.searchParams.get("step") ?? "").toLowerCase();
+    if (!runId) return new Response(JSON.stringify({ ok: false, message: "run_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const lr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${runId}/logs`, { headers: h, redirect: "follow" });
+    if (!lr.ok) return new Response(JSON.stringify({ ok: false, status: lr.status, body: await lr.text() }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const buf = new Uint8Array(await lr.arrayBuffer());
+    // unzip via deno std
+    const { ZipReader, Uint8ArrayReader, TextWriter } = await import("https://deno.land/x/zipjs@v2.7.45/index.js");
+    const reader = new ZipReader(new Uint8ArrayReader(buf));
+    const entries = await reader.getEntries();
+    const out: Record<string, { size: number; tail: string }> = {};
+    for (const e of entries) {
+      if (e.directory) continue;
+      if (stepFilter && !e.filename.toLowerCase().includes(stepFilter)) continue;
+      const txt = await e.getData!(new TextWriter());
+      const lines = txt.split("\n");
+      out[e.filename] = { size: txt.length, tail: lines.slice(-80).join("\n") };
+    }
+    await reader.close();
+    return new Response(JSON.stringify({ ok: true, run_id: runId, files: out }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  // GET /gh-v3-runs?action=workflow_on_main → verify the timeout-minutes value actually live on main
+  if (url.searchParams.get("action") === "workflow_on_main") {
+    const cr = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/.github/workflows/${WF}?ref=main`, { headers: h });
+    const cj = await cr.json().catch(() => ({}));
+    const content = cj?.content ? atob(cj.content.replace(/\n/g, "")) : "";
+    const m = content.match(/timeout-minutes:\s*(\d+)/);
+    const cm = await fetch(`https://api.github.com/repos/${GH_REPO}/commits?path=.github/workflows/${WF}&sha=main&per_page=5`, { headers: h });
+    const commits = (await cm.json().catch(() => [])).map((c: any) => ({ sha: c.sha, date: c.commit?.author?.date, msg: c.commit?.message }));
+    return new Response(JSON.stringify({ ok: true, sha: cj.sha, timeout_minutes_on_main: m ? Number(m[1]) : null, size: content.length, recent_commits: commits }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const runsRes = await fetch(
     `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/runs?per_page=10`,
     { headers: h },
