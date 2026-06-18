@@ -28,6 +28,28 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   } catch (e) { console.error("[pvp] log failed", e); }
 }
 
+// ── Canonical guard ────────────────────────────────────────────────
+// Rejects publish if the destination URL would resolve to the homepage
+// canonical bucket, is missing/invalid, or carries a numeric-variant slug
+// (`-2`, `-3`, …) that Pinterest's dedupe always rejects.
+const DUPLICATE_SLUG_RE = /-(?:[2-9]|\d{2,})$/;
+export function validateCanonicalDestination(rawUrl: string | null | undefined):
+  | { ok: true; slug: string; canonical: string }
+  | { ok: false; code: string; message: string } {
+  if (!rawUrl) return { ok: false, code: "CANONICAL_MISSING", message: "destination_url empty" };
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return { ok: false, code: "CANONICAL_INVALID", message: `unparseable url: ${rawUrl}` }; }
+  const path = u.pathname.replace(/\/+$/, "").toLowerCase();
+  if (path === "" || path === "/") return { ok: false, code: "CANONICAL_HOMEPAGE", message: "destination resolves to homepage" };
+  const m = path.match(/^\/products\/([a-z0-9][a-z0-9-]*)$/);
+  if (!m) return { ok: false, code: "CANONICAL_NON_PDP", message: `not a /products/{slug} path: ${path}` };
+  const slug = m[1];
+  if (DUPLICATE_SLUG_RE.test(slug)) {
+    return { ok: false, code: "CANONICAL_DUPLICATE_SLUG", message: `numeric variant slug "${slug}" — Pinterest dedupe always rejects` };
+  }
+  return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
+}
+
 // ── Product context loader ────────────────────────────────────────
 async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
   const s = (slug || "").trim();
