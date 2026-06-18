@@ -2302,6 +2302,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-v4-review"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV4ReviewPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-v3-repair"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
