@@ -457,6 +457,9 @@ const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/Pi
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
 const CinematicV3Library = lazyWithRetry(() => import("./pages/admin/CinematicV3Library"));
+const CinematicV3QualityAudit = lazyWithRetry(() => import("./pages/admin/CinematicV3QualityAudit"));
+const CinematicV4Jobs = lazyWithRetry(() => import("./pages/admin/CinematicV4Jobs"));
+const CinematicV4QualityGate = lazyWithRetry(() => import("./pages/admin/CinematicV4QualityGate"));
 const PinterestStockStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestStockStatusPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
