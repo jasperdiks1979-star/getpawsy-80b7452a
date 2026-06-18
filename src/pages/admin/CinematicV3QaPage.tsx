@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Play, RefreshCw } from "lucide-react";
+import { Loader2, Play, RefreshCw, Mic } from "lucide-react";
 
 type Job = {
   id: string;
@@ -47,6 +47,8 @@ export default function CinematicV3QaPage() {
   const [slugs, setSlugs] = useState("");
   const [starting, setStarting] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [retryingAll, setRetryingAll] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -63,6 +65,41 @@ export default function CinematicV3QaPage() {
   useEffect(() => { load(); }, []);
 
   const selected = useMemo(() => jobs.find((j) => j.id === selectedId) ?? null, [jobs, selectedId]);
+
+  async function retryVoiceover(jobId: string): Promise<boolean> {
+    const { data, error } = await supabase.functions.invoke("cinematic-v3-retry-voiceover", {
+      body: { job_id: jobId },
+    });
+    if (error || !(data as any)?.ok) {
+      toast.error(`Retry failed: ${error?.message || (data as any)?.message || "unknown"}`);
+      return false;
+    }
+    return true;
+  }
+
+  async function onRetryOne(jobId: string) {
+    setRetryingId(jobId);
+    const ok = await retryVoiceover(jobId);
+    setRetryingId(null);
+    if (ok) {
+      toast.success("Voiceover re-queued — rendering started");
+      load();
+    }
+  }
+
+  async function onRetryAllFailed() {
+    const failed = jobs.filter((j) => j.status === "failed" && (j.voiceover_transcript || (j.scenes && j.scenes.length)));
+    if (failed.length === 0) { toast.info("No failed jobs with a transcript to retry"); return; }
+    setRetryingAll(true);
+    let ok = 0, fail = 0;
+    for (const j of failed) {
+      const r = await retryVoiceover(j.id);
+      r ? ok++ : fail++;
+    }
+    setRetryingAll(false);
+    toast.success(`Retried ${ok} job(s)${fail ? `, ${fail} failed` : ""}`);
+    load();
+  }
 
   async function startJobs() {
     const list = slugs.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
@@ -95,9 +132,15 @@ export default function CinematicV3QaPage() {
             Real product images only. Mandatory voiceover. OCR-validated safe zones. QA ≥ 95 to publish.
           </p>
         </div>
-        <Button onClick={load} variant="outline" size="sm" disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={onRetryAllFailed} variant="outline" size="sm" disabled={retryingAll}>
+            {retryingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
+            Retry all failed VO
+          </Button>
+          <Button onClick={load} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </header>
 
       <Card className="p-4 space-y-3">
@@ -168,6 +211,19 @@ export default function CinematicV3QaPage() {
                 <div className="text-xs text-muted-foreground">Product</div>
                 <div className="font-mono text-sm">{selected.product_slug}</div>
               </div>
+              {selected.status === "failed" && (
+                <Button
+                  onClick={() => onRetryOne(selected.id)}
+                  disabled={retryingId === selected.id}
+                  size="sm"
+                  className="w-full"
+                >
+                  {retryingId === selected.id
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Mic className="mr-2 h-4 w-4" />}
+                  Retry Voiceover
+                </Button>
+              )}
               {selected.final_mp4_url && (
                 <video
                   src={selected.final_mp4_url}
