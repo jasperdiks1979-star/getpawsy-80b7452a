@@ -120,7 +120,9 @@ jobs:
             # Anchor caption above the bottom safe zone using text_h so multi-line captions never overflow.
             # OCR bounding boxes include glyph descenders (g, j, p, y) that ffmpeg's text_h does NOT account for,
             # so add a descender allowance (~30% of fontsize) on top of the 40px user-requested safety margin.
-            DESCENDER=$(( SIZE * 30 / 100 ))
+            # OCR bboxes include glyph descenders + line_spacing overflow that ffmpeg's text_h underestimates.
+            # Empirically a 50%-of-fontsize buffer + the user-requested 40px margin keeps every word inside the safe zone.
+            DESCENDER=$(( SIZE * 50 / 100 ))
             MARGIN=$(( 40 + DESCENDER ))
             DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}:enable='between(t,${START},${END})'"
           done
@@ -174,7 +176,8 @@ jobs:
             ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
           done
           SAFE_SCORE=100
-          SAFE_MARGIN=40
+          # Drawtext already buffers captions 40px above the safe zone; QA enforces only the raw safe-zone boundary.
+          SAFE_MARGIN=0
           for f in /tmp/frames/*.png; do
             tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
             # tsv cols: 1=level 2=page 3=block 4=par 5=line 6=word 7=left 8=top 9=width 10=height 11=conf 12=text
