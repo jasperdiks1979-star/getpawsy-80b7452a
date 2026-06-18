@@ -49,6 +49,7 @@ export default function CinematicV3QaPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [retryingAll, setRetryingAll] = useState(false);
+  const [lastPolledAt, setLastPolledAt] = useState<Date | null>(null);
 
   async function load() {
     setLoading(true);
@@ -59,10 +60,24 @@ export default function CinematicV3QaPage() {
       .limit(50);
     if (error) toast.error(error.message);
     setJobs((data as any) ?? []);
+    setLastPolledAt(new Date());
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
+
+  // Auto-poll every 30s while any job is still in-flight (validation render not yet completed/failed).
+  const ACTIVE_STATUSES = ["queued", "pending", "processing", "rendering", "scripting", "voiceover", "dispatching", "running"];
+  const hasActiveJob = useMemo(
+    () => jobs.some((j) => ACTIVE_STATUSES.includes((j.status || "").toLowerCase())),
+    [jobs]
+  );
+
+  useEffect(() => {
+    if (!hasActiveJob) return;
+    const id = setInterval(() => { load(); }, 30_000);
+    return () => clearInterval(id);
+  }, [hasActiveJob]);
 
   const selected = useMemo(() => jobs.find((j) => j.id === selectedId) ?? null, [jobs, selectedId]);
 
@@ -133,6 +148,17 @@ export default function CinematicV3QaPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {hasActiveJob && (
+            <Badge variant="outline" className="self-center">
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              Auto-polling 30s
+            </Badge>
+          )}
+          {lastPolledAt && (
+            <span className="self-center text-xs text-muted-foreground">
+              Updated {lastPolledAt.toLocaleTimeString()}
+            </span>
+          )}
           <Button onClick={onRetryAllFailed} variant="outline" size="sm" disabled={retryingAll}>
             {retryingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
             Retry all failed VO
