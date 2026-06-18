@@ -689,6 +689,16 @@ serve(async (req) => {
       const { data: row } = await sb.from("pinterest_video_queue").select("*").eq("id", queue_id).maybeSingle();
       if (!row) return ok({ ok: false, code: "QUEUE_NOT_FOUND", traceId: trace_id });
       if (row.pin_id) return ok({ ok: true, traceId: trace_id, pin_id: row.pin_id, pin_url: row.external_url, external_url: row.external_url, title: row.title, media_url: null, board: row.board_id, message: "already_published" });
+      // ── Cinematic V4 admin-approval gate ──────────────────────────
+      // V4 rows must be approved in the review UI before the publisher fires.
+      if (row.engine_version === "v4" && !row.approved_at) {
+        await logStage(sb, queue_id, "publish_blocked_v4_unapproved", "fail",
+          { storyboard_id: row.storyboard_id }, trace_id);
+        return ok({ ok: false, code: "V4_NOT_APPROVED", traceId: trace_id, message: "V4 row requires admin approval (approved_at is null)" });
+      }
+      if (row.status === "awaiting_review" || row.status === "awaiting_render") {
+        return ok({ ok: false, code: "AWAITING_REVIEW", traceId: trace_id, message: `row in status=${row.status}` });
+      }
       const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", row.asset_id).maybeSingle();
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
 
