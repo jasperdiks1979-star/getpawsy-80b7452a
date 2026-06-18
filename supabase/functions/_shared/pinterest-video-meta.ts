@@ -450,7 +450,7 @@ export function validateCategoryMatch(opts: {
       const productPillar = productCategory.startsWith("cat") ? "cat" : productCategory.startsWith("dog") ? "dog" : "other";
       const conflictPillar = cat.startsWith("cat") ? "cat" : cat.startsWith("dog") ? "dog" : "other";
       // Always block when copy claims a SPECIFIC category different from product's specific one.
-      const isSpecific = (c: string) => ["cat_litter","catio","cat_tree","dog_bed","dog_travel","toy"].includes(c);
+      const isSpecific = (c: string) => ["cat_litter","catio","cat_tree","dog_bed","dog_travel","pet_guardrail","toy"].includes(c);
       if (isSpecific(productCategory) && isSpecific(cat)) {
         return { ok: false, productCategory, conflictingCategory: cat as Category, reason: `copy mentions ${cat} but product is ${productCategory}` };
       }
