@@ -2638,6 +2638,13 @@ export type Database = {
             foreignKeyName: "cinematic_ad_jobs_pinterest_asset_id_fkey"
             columns: ["pinterest_asset_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_jobs_pinterest_asset_id_fkey"
+            columns: ["pinterest_asset_id"]
+            isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
           },
@@ -2707,6 +2714,13 @@ export type Database = {
             foreignKeyName: "cinematic_ad_publish_queue_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
           },
@@ -2723,6 +2737,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cinematic_ad_pipeline_tracking"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cinematic_ad_publish_queue_pinterest_video_queue_id_fkey"
+            columns: ["pinterest_video_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["queue_id"]
           },
           {
             foreignKeyName: "cinematic_ad_publish_queue_pinterest_video_queue_id_fkey"
@@ -18760,6 +18781,13 @@ export type Database = {
             foreignKeyName: "pinterest_video_metrics_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_metrics_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
           },
@@ -18794,6 +18822,13 @@ export type Database = {
           trace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pinterest_video_publish_log_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["queue_id"]
+          },
           {
             foreignKeyName: "pinterest_video_publish_log_queue_id_fkey"
             columns: ["queue_id"]
@@ -18921,6 +18956,13 @@ export type Database = {
             foreignKeyName: "pinterest_video_queue_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["asset_id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_queue_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
             referencedRelation: "pinterest_video_winners"
             referencedColumns: ["asset_id"]
           },
@@ -18930,6 +18972,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cinematic_v4_storyboards"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_video_queue_storyboard_id_fkey"
+            columns: ["storyboard_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_video_destination_audit"
+            referencedColumns: ["storyboard_id"]
           },
         ]
       }
@@ -24261,6 +24310,24 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_video_destination_audit: {
+        Row: {
+          approved_at: string | null
+          asset_id: string | null
+          created_at: string | null
+          destination_url: string | null
+          external_url: string | null
+          pin_id: string | null
+          queue_id: string | null
+          status: string | null
+          storyboard_id: string | null
+          storyboard_product_id: string | null
+          storyboard_product_slug: string | null
+          verdict: string | null
+          video_product_slug: string | null
+        }
+        Relationships: []
+      }
       pinterest_video_winners: {
         Row: {
           asset_id: string | null
@@ -25458,6 +25525,10 @@ export type Database = {
       pinterest_scheduler_health: { Args: never; Returns: Json }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
+      pvq_destination_matches_slug: {
+        Args: { dest: string; slug: string }
+        Returns: boolean
+      }
       reset_cinematic_ad_job_to_queued: {
         Args: { p_job_id: string }
         Returns: {
