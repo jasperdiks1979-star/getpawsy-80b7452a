@@ -455,6 +455,7 @@ const CinematicMotionForensicsPage = lazyWithRetry(() => import("./pages/admin/C
 const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/PinterestCleanupPage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
+const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
 const PinterestStockStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestStockStatusPage"));
 const GitHubSyncStatusPage = lazyWithRetry(() => import("./pages/admin/GitHubSyncStatusPage"));
 const SeoConsolePage = lazyWithRetry(() => import("./pages/admin/SeoConsole"));
@@ -2411,6 +2412,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestVideoDestinationAudit />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="content-product-audit"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ContentProductAudit />
                                 </Suspense>
                               }
                             />
