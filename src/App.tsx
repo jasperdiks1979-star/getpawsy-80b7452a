@@ -2425,6 +2425,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cinematic-v3-library"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV3Library />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-stock-status"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
