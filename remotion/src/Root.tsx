@@ -16,9 +16,31 @@ import { CinematicProductDemo, cinematicDemoSchema } from "./cinematic/Cinematic
 import { CompilationReel, compilationSchema } from "./cinematic/CompilationReel";
 import { UgcPovScene, ugcPovSchema } from "./cinematic/UgcPovScene";
 import { LifestyleScene, lifestyleSchema } from "./cinematic/LifestyleScene";
+import { MainVideoV4, v4PropsSchema } from "./MainVideoV4";
 
 export const RemotionRoot = () => (
   <>
+    {/* ---------------- Cinematic v4 Pinterest Revenue Renderer ---------------- */}
+    <Composition
+      id="cinematic-v4"
+      component={MainVideoV4}
+      durationInFrames={720}
+      fps={30}
+      width={1080}
+      height={1920}
+      schema={v4PropsSchema}
+      defaultProps={{
+        script: {
+          hook: "Your dog deserves better.",
+          problem: "Tangled leashes ruin every walk.",
+          benefit: "One leash that adapts to any pace.",
+          key_feature: "Reflective, elastic, and built to last.",
+          cta: "Shop Today",
+        },
+        assets: {},
+        productUrl: "getpawsy.pet",
+      }}
+    />
     {/* ---------------- Cinematic v4 ---------------- */}
     <Composition
       id="cinematic-product-demo"
