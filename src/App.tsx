@@ -2407,6 +2407,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-video-destination-audit"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestVideoDestinationAudit />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-stock-status"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
