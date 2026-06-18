@@ -1,38 +1,7 @@
-# Changelog
+## 0.1.0 (2026-06-18)
 
-All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### Bug Fixes
 
-## [Unreleased]
+* **cinematic-v3:** correct zoompan frame count + safe-zone caption anchoring ([d9a3e6a](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/d9a3e6a307f81cda3a64bf58fae3180004cf152c))
 
-### Added
-- Initial project setup with React, Vite, and Tailwind CSS
-- Product catalog with category filtering
-- Shopping cart functionality
-- Checkout flow with Stripe integration
-- User authentication with Supabase
-- Blog section with pet care articles
-- Newsletter subscription
-- Admin dashboard for product management
-- Visual regression testing with Playwright
-- Accessibility testing with axe-core
-- Bundle size monitoring
-- Security vulnerability scanning
-- Code coverage reporting
-
-### Changed
-- N/A
-
-### Deprecated
-- N/A
-
-### Removed
-- N/A
-
-### Fixed
-- N/A
-
-### Security
-- N/A
