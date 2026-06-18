@@ -32,13 +32,16 @@ const NICHE_FILTERS: Array<{ niche: string; cats: string[] }> = [
 async function pickShowcaseSlugs(sb: any): Promise<string[]> {
   const slugs: string[] = [];
   for (const f of NICHE_FILTERS) {
-    const ors = f.cats.map((c) => `category.ilike.%${c}%`).join(",");
-    const { data } = await sb.from("products")
-      .select("slug, category, is_active, in_stock")
-      .or(ors)
-      .eq("is_active", true)
-      .limit(1);
-    if (data && data.length > 0 && data[0]?.slug) slugs.push(data[0].slug);
+    let chosen: string | null = null;
+    for (const c of f.cats) {
+      const { data } = await sb.from("products")
+        .select("slug, category")
+        .ilike("category", `%${c}%`)
+        .eq("is_active", true)
+        .limit(1);
+      if (data && data.length > 0 && data[0]?.slug) { chosen = data[0].slug; break; }
+    }
+    if (chosen) slugs.push(chosen);
   }
   return slugs;
 }
@@ -53,23 +56,17 @@ Deno.serve(async (req) => {
       ? body.slugs.slice(0, 5)
       : await pickShowcaseSlugs(sb);
 
-    const results: any[] = [];
-    for (const slug of slugs) {
+    // Run all slugs in parallel; skip AI image gen for showcase speed.
+    const results = await Promise.all(slugs.map(async (slug) => {
       const r: any = { slug };
       const sbr = await callFn("cv4-storyboard", { product_slug: slug });
       r.storyboard = sbr;
-      if (!sbr?.ok || !sbr?.storyboard_id) { results.push(r); continue; }
-
-      const ar = await callFn("cv4-assets", { storyboard_id: sbr.storyboard_id });
-      r.assets = ar;
-
-      const gr = await callFn("cv4-quality-gate-pre", { storyboard_id: sbr.storyboard_id });
-      r.gate = gr;
-
-      const fr = await callFn("cv4-finalize", { storyboard_id: sbr.storyboard_id });
-      r.finalize = fr;
-      results.push(r);
-    }
+      if (!sbr?.ok || !sbr?.storyboard_id) return r;
+      r.assets   = await callFn("cv4-assets",            { storyboard_id: sbr.storyboard_id, skip_ai: true });
+      r.gate     = await callFn("cv4-quality-gate-pre",  { storyboard_id: sbr.storyboard_id });
+      r.finalize = await callFn("cv4-finalize",          { storyboard_id: sbr.storyboard_id });
+      return r;
+    }));
 
     return new Response(JSON.stringify({ ok: true, traceId: trace_id, count: results.length, results }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
