@@ -1,8 +1,6 @@
 // Cinematic V4: Asset resolver.
-// Pulls product gallery + product_media for the slug. If <3 unique images,
-// generates lifestyle/benefit AI backdrops via Lovable AI image gen and uploads
-// them to the existing `cinematic-ads` public bucket. Updates the storyboard
-// row with scene_assets[] aligned to its beats.
+// Pulls product gallery + product_media for the slug. V4 now requires at least
+// 5 usable real gallery images; weak galleries are held as needs_better_assets.
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -119,13 +117,24 @@ Deno.serve(async (req) => {
     const beats = Array.isArray(sb_row.beats) ? sb_row.beats : [];
     const scene_assets: SceneAsset[] = [];
 
+    if (gallery.length < 5) {
+      const reasons = Array.from(new Set([...(sb_row.cv4_reject_reasons || []), `needs_better_assets:usable_gallery_lt_5:${gallery.length}`]));
+      await sb.from("cinematic_v4_storyboards").update({
+        scene_assets: [],
+        unique_image_count: gallery.length,
+        cv4_reject_reasons: reasons,
+        status: "needs_better_assets",
+        rejected_at: new Date().toISOString(),
+      }).eq("id", storyboard_id);
+      return new Response(JSON.stringify({ ok: false, traceId: trace_id, code: "NEEDS_BETTER_ASSETS", usable_gallery_count: gallery.length, reasons }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // HARD RULE (per user constraint #1):
     // Use real product/gallery/CJ images FIRST for every scene.
-    // AI backdrops are ONLY allowed when the product has fewer than 3 unique
-    // real images, and only fill the surplus scenes after every gallery image
-    // has been assigned at least once.
+    // V4 is review-only and must not synthesize missing scene variety.
     const realImages = gallery.slice(); // already unique
-    const needsAi = !skip_ai && realImages.length < 3;
 
     for (let i = 0; i < beats.length; i++) {
       const beat = beats[i];
@@ -137,10 +146,6 @@ Deno.serve(async (req) => {
       if (i < realImages.length) {
         url = realImages[i];
         source = "gallery";
-      } else if (needsAi && (beatName === "lifestyle" || beatName === "benefit")) {
-        url = await generateAiBackdrop(beatName, productName, category);
-        source = "ai";
-        if (!url && realImages.length > 0) { url = realImages[i % realImages.length]; source = "gallery"; }
       } else if (realImages.length > 0) {
         url = realImages[i % realImages.length];
         source = "gallery";
