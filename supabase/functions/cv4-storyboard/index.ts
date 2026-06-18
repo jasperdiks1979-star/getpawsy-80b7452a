@@ -32,24 +32,24 @@ const MOTION_BY_BEAT: Record<Beat, string> = {
   cta: "pan_left",
 };
 
-function clampToSixWords(s: string): string {
+function clampToFiveWords(s: string): string {
   const words = String(s || "").trim().split(/\s+/).filter(Boolean);
-  return words.slice(0, 6).join(" ");
+  return words.slice(0, 5).join(" ");
 }
 
 function fallbackBeats(productName: string) {
   const name = productName || "this product";
   return [
-    { beat: "problem",   caption: clampToSixWords(`Tired of mess every day?`) },
-    { beat: "solution",  caption: clampToSixWords(`Meet ${name}`) },
-    { beat: "benefit",   caption: clampToSixWords(`Cleaner home in minutes`) },
-    { beat: "lifestyle", caption: clampToSixWords(`Pets and people love it`) },
-    { beat: "cta",       caption: clampToSixWords(`Shop now at GetPawsy`) },
+    { beat: "problem",   caption: clampToFiveWords(`Tired of daily mess?`) },
+    { beat: "solution",  caption: clampToFiveWords(`Meet ${name}`) },
+    { beat: "benefit",   caption: clampToFiveWords(`Cleaner home, calmer pet`) },
+    { beat: "lifestyle", caption: clampToFiveWords(`Loved in real homes`) },
+    { beat: "cta",       caption: clampToFiveWords(`Shop now at GetPawsy`) },
   ];
 }
 
 async function generateBeatsWithAi(product: any): Promise<Array<{ beat: Beat; caption: string }>> {
-  const sys = `You write Pinterest video captions. Exactly 5 beats in this order: problem, solution, benefit, lifestyle, cta. Each caption is at most 6 words. No emoji. No hashtags. No quotes. US English. Return JSON.`;
+  const sys = `You write Pinterest video captions. Exactly 5 beats in this order: problem, solution, benefit, lifestyle, cta. STRICT: each caption is at most 5 words AND at most 32 characters. No emoji. No hashtags. No quotes. No exclamation marks. US English. Return JSON.`;
   const usr = `Product: ${product.name}\nCategory: ${product.category}\nPrimary benefit: ${product.benefit_angle || product.primary_keyword || ""}\n\nRespond as JSON: {"beats":[{"beat":"problem","caption":"..."},{"beat":"solution","caption":"..."},{"beat":"benefit","caption":"..."},{"beat":"lifestyle","caption":"..."},{"beat":"cta","caption":"..."}]}`;
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
