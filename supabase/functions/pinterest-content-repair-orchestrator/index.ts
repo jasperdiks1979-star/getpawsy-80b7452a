@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
         const newTitle = prod?.name ? `${prod.name}` : `New arrival`;
         const newDesc = prod?.name ? `Discover ${prod.name}. Shop premium pet essentials at GetPawsy.` : `Discover premium pet essentials at GetPawsy.`;
         // Enqueue replacement (reuse original asset which contains correct video)
+        const variationHash = `repair-${runId.slice(0,8)}-${h.pin_id}-${Date.now()}`;
         const { data: newQueue, error: qErr } = await sb.from("pinterest_video_queue").insert({
           asset_id: h.asset_id,
           status: "pending",
@@ -143,6 +144,7 @@ Deno.serve(async (req) => {
           title: newTitle,
           description: newDesc,
           priority: 100,
+          variation_hash: variationHash,
         }).select("id").maybeSingle();
         // Mark audit row repaired
         await sb.from("content_product_audit_runs").update({ repair_status: "recreated", repair_error: null }).eq("id", h.id);
