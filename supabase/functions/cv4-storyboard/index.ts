@@ -69,7 +69,7 @@ async function generateBeatsWithAi(product: any): Promise<Array<{ beat: Beat; ca
     const byBeat = new Map<Beat, string>();
     for (const r of raw) {
       const b = String(r?.beat || "").toLowerCase().trim() as Beat;
-      if (BEAT_ORDER.includes(b)) byBeat.set(b, clampToSixWords(String(r?.caption || "")));
+      if (BEAT_ORDER.includes(b)) byBeat.set(b, clampToFiveWords(String(r?.caption || "")));
     }
     const out: Array<{ beat: Beat; caption: string }> = [];
     const fb = fallbackBeats(product.name);
