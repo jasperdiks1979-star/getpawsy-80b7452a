@@ -26,15 +26,29 @@ export function scrubBanned(text: string): string {
 // ── Category detection ─────────────────────────────────────────────
 export type Category =
   | "cat_litter" | "catio" | "cat_tree" | "cat_other"
-  | "dog_bed" | "dog_travel" | "dog_other"
+  | "dog_bed" | "dog_travel" | "dog_other" | "pet_guardrail"
   | "pet_tech" | "toy" | "generic";
 
 export function detectCategory(p: { slug?: string; name?: string; category?: string; tags?: string[] }): Category {
   const hay = [p.slug, p.name, p.category, ...(p.tags || [])].filter(Boolean).join(" ").toLowerCase();
+  // Map explicit product.category strings first — these override slug/name heuristics.
+  const cat = (p.category || "").toLowerCase().trim();
+  if (cat === "dog beds") return "dog_bed";
+  if (cat === "cat enclosures" || cat === "catios") return "catio";
+  if (cat === "cat trees") return "cat_tree";
+  if (cat === "pet guardrails" || cat === "dog playpens" || cat === "pet playpens") return "pet_guardrail";
+  if (cat === "cat toys") {
+    // Cat Toys is overloaded in the catalog — fall through to slug/name regex so
+    // outdoor cat enclosures don't get tagged with generic toy copy.
+    if (/catio|enclosure|outdoor.*cat/.test(hay)) return "catio";
+    if (/cat.?tree|cat.?condo|cat.?tower/.test(hay)) return "cat_tree";
+    return "toy";
+  }
   if (/litter\s*box|self.?cleaning.*litter|automatic.*litter/.test(hay)) return "cat_litter";
   if (/catio|cat.*enclosure|outdoor.*cat/.test(hay)) return "catio";
   if (/cat.?tree|cat.?condo|cat.?tower|scratch.*post/.test(hay)) return "cat_tree";
   if (/orthopedic.*bed|dog.?bed|pet.?cot|cooling.?bed/.test(hay)) return "dog_bed";
+  if (/playpen|pet.?fence|pet.?gate|guard.?rail|puppy.?fence/.test(hay)) return "pet_guardrail";
   if (/stroller|carrier|backpack|car.?seat|travel/.test(hay)) return "dog_travel";
   if (/smart|app.?control|wifi|automatic|sensor|camera|feeder/.test(hay)) return "pet_tech";
   if (/toy|chew|ball|puzzle|interactive/.test(hay)) return "toy";
