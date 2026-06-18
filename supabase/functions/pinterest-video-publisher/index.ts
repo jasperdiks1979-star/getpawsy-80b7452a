@@ -693,6 +693,15 @@ serve(async (req) => {
       if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id });
 
       // ── Pre-publish creative QA (last line of defense) ──────────────
+      if (isTestFixtureSlug(asset.product_slug)) {
+        await sb.from("pinterest_video_queue").update({
+          status: "blocked_test_fixture",
+          error_message: `test_fixture_slug:${asset.product_slug}`,
+        }).eq("id", queue_id);
+        await logStage(sb, queue_id, "publish_blocked_test_fixture", "fail",
+          { product_slug: asset.product_slug }, trace_id);
+        return ok({ ok: false, code: "TEST_FIXTURE_BLOCKED", traceId: trace_id, message: `test fixture slug ${asset.product_slug}` });
+      }
       const product = await loadProductContext(sb, asset.product_slug);
       if (product) {
         const cm = validateCategoryMatch({ product, title: row.title, description: row.description, hook: row.hook_variant });
