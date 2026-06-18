@@ -118,7 +118,11 @@ jobs:
             else SIZE=56; fi
             [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
             # Anchor caption above the bottom safe zone using text_h so multi-line captions never overflow.
-            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-40:enable='between(t,${START},${END})'"
+            # OCR bounding boxes include glyph descenders (g, j, p, y) that ffmpeg's text_h does NOT account for,
+            # so add a descender allowance (~30% of fontsize) on top of the 40px user-requested safety margin.
+            DESCENDER=$(( SIZE * 30 / 100 ))
+            MARGIN=$(( 40 + DESCENDER ))
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}:enable='between(t,${START},${END})'"
           done
 
           AUDIO_IDX=$COUNT
