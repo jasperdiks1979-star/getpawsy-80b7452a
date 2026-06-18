@@ -1,3 +1,10 @@
+## [0.1.3](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.2...v0.1.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* drawtext descender 50%, QA margin=0 (no double-buffer) ([35f7a00](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/35f7a00cc7c5160c1d118aa4951ada76217a149b))
+
 ## [0.1.2](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.1...v0.1.2) (2026-06-18)
 
 
