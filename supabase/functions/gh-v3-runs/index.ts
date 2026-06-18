@@ -162,6 +162,108 @@ Deno.serve(async (req) => {
     }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
+  // GET /gh-v3-runs?action=poll_job&job_id=X[&timeout_s=120&interval_s=5]
+  // Polls cinematic_v3_jobs until the row leaves `rendering`, then returns a
+  // structured report: status, duration, QA, final mp4 URL, file size, preview.
+  if (url.searchParams.get("action") === "poll_job") {
+    const jobId = url.searchParams.get("job_id");
+    if (!jobId) return new Response(JSON.stringify({ ok: false, message: "job_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const timeoutS = Math.min(Number(url.searchParams.get("timeout_s") ?? "120"), 140);
+    const intervalS = Math.max(Number(url.searchParams.get("interval_s") ?? "5"), 2);
+    const deadline = Date.now() + timeoutS * 1000;
+    const startedAt = new Date().toISOString();
+
+    let row: any = null;
+    let polls = 0;
+    while (Date.now() < deadline) {
+      polls++;
+      const { data } = await sb
+        .from("cinematic_v3_jobs")
+        .select("id, product_slug, status, qa_total, qa_passed, qa_scores, duration_seconds, final_mp4_url, failure_reasons, updated_at, created_at")
+        .eq("id", jobId)
+        .maybeSingle();
+      row = data;
+      if (!row) break;
+      if (row.status !== "rendering" && row.status !== "queued") break;
+      await new Promise((r) => setTimeout(r, intervalS * 1000));
+    }
+
+    if (!row) {
+      return new Response(JSON.stringify({ ok: false, message: "job not found", job_id: jobId }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const stillRendering = row.status === "rendering" || row.status === "queued";
+
+    // File size via HEAD on final mp4
+    let fileSize: number | null = null;
+    let contentType: string | null = null;
+    if (row.final_mp4_url) {
+      try {
+        const head = await fetch(row.final_mp4_url, { method: "HEAD" });
+        const len = head.headers.get("content-length");
+        fileSize = len ? Number(len) : null;
+        contentType = head.headers.get("content-type");
+      } catch (_) { /* ignore */ }
+    }
+
+    // Signed preview image (try common paths in the cinematic-v3 bucket)
+    let previewImageUrl: string | null = null;
+    for (const p of [`jobs/${jobId}/preview.jpg`, `jobs/${jobId}/thumbnail.jpg`, `jobs/${jobId}/preview.png`]) {
+      const { data: signed } = await sb.storage.from("cinematic-v3").createSignedUrl(p, 60 * 60);
+      if (signed?.signedUrl) {
+        const ok = await fetch(signed.signedUrl, { method: "HEAD" }).then((r) => r.ok).catch(() => false);
+        if (ok) { previewImageUrl = signed.signedUrl; break; }
+      }
+    }
+
+    // Locate the GitHub run for this job to surface runtime context.
+    let activeRun: any = null;
+    try {
+      const rr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/runs?per_page=20`, { headers: h });
+      const rj = await rr.json().catch(() => ({}));
+      const match = (rj.workflow_runs ?? []).find((r: any) =>
+        (r.display_title ?? "").includes(jobId) || (r.name ?? "").includes(jobId)
+      );
+      if (match) {
+        const jr = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/runs/${match.id}/jobs`, { headers: h });
+        const jj = await jr.json().catch(() => ({}));
+        const ghJob = (jj.jobs ?? [])[0] ?? null;
+        const activeStep = ghJob?.steps?.find((s: any) => s.status === "in_progress")?.name
+          ?? ghJob?.steps?.filter((s: any) => s.conclusion === "success").pop()?.name
+          ?? null;
+        activeRun = {
+          run_id: match.id,
+          run_number: match.run_number,
+          status: match.status,
+          conclusion: match.conclusion,
+          html_url: match.html_url,
+          run_started_at: match.run_started_at,
+          updated_at: match.updated_at,
+          active_or_last_step: activeStep,
+        };
+      }
+    } catch (_) { /* ignore */ }
+
+    return new Response(JSON.stringify({
+      ok: true,
+      job_id: jobId,
+      product_slug: row.product_slug,
+      polled: { started_at: startedAt, polls, timeout_s: timeoutS, interval_s: intervalS, still_rendering: stillRendering },
+      status: row.status,
+      qa_total: row.qa_total,
+      qa_passed: row.qa_passed,
+      qa_scores: row.qa_scores,
+      render_duration_seconds: row.duration_seconds,
+      final_mp4_url: row.final_mp4_url,
+      file_size_bytes: fileSize,
+      content_type: contentType,
+      preview_image_url: previewImageUrl,
+      failure_reasons: row.failure_reasons,
+      updated_at: row.updated_at,
+      github_run: activeRun,
+    }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const runsRes = await fetch(
     `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/runs?per_page=10`,
     { headers: h },
