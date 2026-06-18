@@ -132,14 +132,16 @@ Deno.serve(async (req) => {
         const { data: prod } = await sb.from("products").select("slug, name, category").eq("slug", correctSlug).maybeSingle();
         // Build new destination
         const newDest = `https://getpawsy.pet/products/${correctSlug}?utm_source=pinterest&utm_medium=video_pin&utm_campaign=integrity_repair`;
+        const newTitle = prod?.name ? `${prod.name}` : `New arrival`;
+        const newDesc = prod?.name ? `Discover ${prod.name}. Shop premium pet essentials at GetPawsy.` : `Discover premium pet essentials at GetPawsy.`;
         // Enqueue replacement (reuse original asset which contains correct video)
         const { data: newQueue, error: qErr } = await sb.from("pinterest_video_queue").insert({
           asset_id: h.asset_id,
           status: "pending",
           destination_url: newDest,
           board_id: null,
-          title: prod?.name ? `${prod.name}` : null,
-          description: null,
+          title: newTitle,
+          description: newDesc,
           priority: 100,
         }).select("id").maybeSingle();
         // Mark audit row repaired
@@ -163,6 +165,9 @@ Deno.serve(async (req) => {
         await sb.from("product_slug_history").insert({ product_id: existing.id, old_slug: rn.old_slug, current_slug: rn.new_slug, reason: `repair ${runId}: PDP labeling drift correction` });
         // Apply rename
         const { error: updErr } = await sb.from("products").update({ slug: rn.new_slug, name: rn.name, category: rn.category }).eq("id", existing.id);
+        // Mark any related audit rows as resolved by rename
+        await sb.from("content_product_audit_runs").update({ repair_status: "renamed_pdp" })
+          .or(`linked_product_slug.eq.${rn.old_slug},video_product_slug.eq.${rn.old_slug}`);
         phase3Results.push({ from: rn.old_slug, to: rn.new_slug, name: rn.name, category: rn.category, error: updErr?.message || null });
       }
     }
@@ -195,6 +200,14 @@ Deno.serve(async (req) => {
     report.phase4 = phase4Result;
 
     // ─── PHASE 5: Compute final mismatch state ────────────────────────
+    // Flag any remaining unresolved CONFIRMED_MISMATCH (video content doesn't match destination but slugs match — e.g. self-mismatch)
+    // as needs_manual_recreation so the dashboard surfaces them clearly.
+    if (!dryRun) {
+      await sb.from("content_product_audit_runs")
+        .update({ repair_status: "needs_manual_recreation" })
+        .eq("verdict", "CONFIRMED_MISMATCH")
+        .is("repair_status", null);
+    }
     const { count: finalMismatch } = await sb.from("content_product_audit_runs")
       .select("*", { count: "exact", head: true })
       .eq("verdict", "CONFIRMED_MISMATCH")
