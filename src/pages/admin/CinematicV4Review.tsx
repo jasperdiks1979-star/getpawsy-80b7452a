@@ -107,7 +107,24 @@ export default function CinematicV4Review() {
     const { data, error } = await supabase.functions.invoke("cv4-generate-showcase", { body: {} });
     setGenBusy(false);
     if (error) toast.error(error.message);
-    else { toast.success(`Generated ${data?.count ?? 0} storyboards`); load(); }
+    else { toast.success(`Generated ${data?.count ?? 0} storyboards · dispatched ${data?.dispatch?.dispatched ?? 0}`); load(); }
+  }
+
+  async function renderAll() {
+    setGenBusy(true);
+    const { data, error } = await supabase.functions.invoke("cv4-queue-render", { body: {} });
+    setGenBusy(false);
+    if (error) toast.error(error.message);
+    else { toast.success(`Dispatched ${data?.dispatched ?? 0}/${data?.total ?? 0} renders`); load(); }
+  }
+
+  async function renderOne(storyboard_id: string) {
+    setBusy(storyboard_id);
+    const { data, error } = await supabase.functions.invoke("cv4-queue-render", { body: { storyboard_id } });
+    setBusy(null);
+    if (error) toast.error(error.message);
+    else if (!data?.results?.[0]?.ok) toast.error(data?.results?.[0]?.message || "dispatch failed");
+    else { toast.success("Render dispatched"); load(); }
   }
 
   return (
@@ -115,9 +132,12 @@ export default function CinematicV4Review() {
       <header className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Cinematic V4 Review</h1>
-          <p className="text-sm text-muted-foreground">5-beat storyboards staged before Pinterest publish. Auto-publish disabled — every video needs manual approval.</p>
+          <p className="text-sm text-muted-foreground">5-beat storyboards staged before Pinterest publish. Auto-publish disabled — every video needs manual approval. Captions are hard-capped at 5 words / 32 chars and OCR-validated post-render.</p>
         </div>
-        <Button onClick={generateShowcase} disabled={genBusy}>{genBusy ? "Generating…" : "Generate 5 showcase videos"}</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={renderAll} disabled={genBusy}>Render all validated</Button>
+          <Button onClick={generateShowcase} disabled={genBusy}>{genBusy ? "Working…" : "Generate 5 showcase videos"}</Button>
+        </div>
       </header>
 
       {loading && <div>Loading…</div>}
@@ -171,6 +191,20 @@ export default function CinematicV4Review() {
                   ))}
                 </ol>
 
+                {(sb.scene_assets || []).length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Source images ({sb.scene_assets.length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {sb.scene_assets.map((a, i) => (
+                        <a key={i} href={a.image_url} target="_blank" rel="noreferrer" className="relative w-12 h-20 rounded overflow-hidden bg-muted border" title={`${a.beat} · ${a.source}`}>
+                          {a.image_url ? <img src={a.image_url} alt={a.beat} className="w-full h-full object-cover" /> : null}
+                          <span className={`absolute bottom-0 left-0 right-0 text-[8px] text-white px-0.5 ${a.source === "ai" ? "bg-amber-600/80" : "bg-emerald-700/80"}`}>{a.source}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {blocked && (
                   <div className="text-xs text-destructive space-y-0.5">
                     {sb.cv4_reject_reasons.map((r) => <div key={r}>• {r}</div>)}
@@ -179,6 +213,9 @@ export default function CinematicV4Review() {
 
                 <div className="flex gap-2 justify-end pt-2">
                   <Button variant="outline" size="sm" onClick={() => reject(it)} disabled={busy === sb.id}>Reject</Button>
+                  {!sb.mp4_url && !blocked && (
+                    <Button variant="secondary" size="sm" onClick={() => renderOne(sb.id)} disabled={busy === sb.id}>Render</Button>
+                  )}
                   <Button size="sm" onClick={() => approve(it)} disabled={busy === sb.id || blocked || !sb.mp4_url || !it.queue}>
                     {sb.mp4_url ? "Approve & queue" : "Awaiting render"}
                   </Button>
