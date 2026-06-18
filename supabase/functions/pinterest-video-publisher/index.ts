@@ -266,6 +266,41 @@ async function assertPublishAllowed(sb: any, row: any, queue_id: string, trace_i
       { storyboard_id: row.storyboard_id, status: row.status, approved_at: row.approved_at }, trace_id);
     return { ok: false, code: "V4_NOT_APPROVED", message: `V4 row requires approved_at + status='pending' (got status=${row.status}, approved_at=${row.approved_at})` };
   }
+
+  // V3 hard pause — once cinematic_v4_jobs is in production, V3 must not publish.
+  if (row?.engine_version === "v3" || row?.engine_version === "v3.cinematic") {
+    const { data: rt } = await sb.from("pinterest_runtime_settings").select("v3_publish_paused").eq("id", 1).maybeSingle();
+    if (rt?.v3_publish_paused === true) {
+      await logStage(sb, queue_id, "publish_blocked_v3_paused", "fail", { engine_version: row.engine_version }, trace_id);
+      return { ok: false, code: "V3_PUBLISH_PAUSED", message: "V3 publishing is paused while V4 quality gate is active" };
+    }
+  }
+
+  // V4 hard quality gate — must have an approved cinematic_v4_jobs row with quality_score >= 90 and final_mp4_url.
+  if (row?.engine_version === "v4") {
+    const slug = (row?.product_slug || row?.slug || "").trim();
+    if (slug) {
+      const { data: v4 } = await sb
+        .from("cinematic_v4_jobs")
+        .select("status, quality_score, final_mp4_url, rejection_reasons")
+        .eq("slug", slug)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!v4) {
+        await logStage(sb, queue_id, "publish_blocked_v4_no_job", "fail", { slug }, trace_id);
+        return { ok: false, code: "V4_NO_JOB", message: `No cinematic_v4_jobs row for slug=${slug}` };
+      }
+      if (v4.status !== "approved" || (v4.quality_score ?? 0) < 90 || !v4.final_mp4_url) {
+        await logStage(sb, queue_id, "publish_blocked_v4_quality_gate", "fail", {
+          slug, status: v4.status, quality_score: v4.quality_score, has_mp4: !!v4.final_mp4_url,
+          rejection_reasons: v4.rejection_reasons,
+        }, trace_id);
+        return { ok: false, code: "V4_QUALITY_GATE", message: `V4 quality gate failed (status=${v4.status}, score=${v4.quality_score}, mp4=${!!v4.final_mp4_url})` };
+      }
+    }
+  }
+
   return { ok: true };
 }
 
