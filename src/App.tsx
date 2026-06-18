@@ -2416,6 +2416,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="content-product-audit"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ContentProductAudit />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-stock-status"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
