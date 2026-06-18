@@ -131,6 +131,13 @@ async function processJob(supa: any, job: any): Promise<Result> {
   }
 
   const slug = product.slug || job.product_slug;
+  if (isDuplicateVariantSlug(slug)) {
+    res.skipped = `blocked_duplicate_variant_slug:${slug}`;
+    console.warn(
+      `[cv3-post-approval] blocked duplicate variant slug "${slug}" for product ${job.product_id} — Pinterest dedupe always rejects these`,
+    );
+    return res;
+  }
   const rawTitle = (product.name || slug || "Pet Product").toString();
   const title = truncatePinTitle(rawTitle, 38);
   const description = (product.description || `Discover ${title} at GetPawsy.`).toString().slice(0, 500);
