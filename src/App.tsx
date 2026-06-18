@@ -433,6 +433,7 @@ const CinematicRunwayPage = lazyWithRetry(() => import("./pages/admin/CinematicR
 const CinematicAdsControlCenterPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsControlCenterPage"));
 const CinematicV3QaPage = lazyWithRetry(() => import("./pages/admin/CinematicV3QaPage"));
 const CinematicV3DispatcherPage = lazyWithRetry(() => import("./pages/admin/CinematicV3DispatcherPage"));
+const CinematicV3RepairPage = lazyWithRetry(() => import("./pages/admin/CinematicV3RepairPage"));
 const CinematicAdQaSummaryPage = lazyWithRetry(() => import("./pages/admin/CinematicAdQaSummaryPage"));
 const CinematicAdsDashboardPage = lazyWithRetry(() => import("./pages/admin/CinematicAdsDashboardPage"));
 const CinematicAdPreviewPage = lazyWithRetry(() => import("./pages/admin/CinematicAdPreviewPage"));
@@ -2287,6 +2288,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CinematicV3DispatcherPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cinematic-v3-repair"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicV3RepairPage />
                                 </Suspense>
                               }
                             />
