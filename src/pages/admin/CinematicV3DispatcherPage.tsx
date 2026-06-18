@@ -84,17 +84,19 @@ export default function CinematicV3DispatcherPage() {
   const [dispatching, setDispatching] = useState(false);
   const [savingEnabled, setSavingEnabled] = useState(false);
   const [lastPolled, setLastPolled] = useState<Date | null>(null);
-  const [handoff, setHandoff] = useState<{ approved: number; attached: number; queued: number; published: number; failed: number } | null>(null);
+  const [handoff, setHandoff] = useState<{ approved: number; attached: number; queued: number; uploading: number; published: number; failed: number } | null>(null);
+  const [draining, setDraining] = useState(false);
 
   async function load() {
     setLoading(true);
-    const [cfg, q, lg, approved, attached, queued, published, failed] = await Promise.all([
+    const [cfg, q, lg, approved, attached, queued, uploading, published, failed] = await Promise.all([
       supabase.from("cinematic_v3_dispatch_config").select("*").eq("id", true).maybeSingle(),
       supabase.from("cinematic_v3_dispatch_queue").select("*").order("priority_score", { ascending: false }).order("enqueued_at", { ascending: true }).limit(100),
       supabase.from("cinematic_v3_dispatch_log").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("cinematic_v3_jobs").select("id", { count: "exact", head: true }).eq("status", "approved"),
       supabase.from("product_media").select("id", { count: "exact", head: true }).eq("source", "cinematic_v3"),
-      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).in("status", ["pending", "scheduled", "processing", "draft"]),
+      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).in("status", ["pending", "scheduled", "draft", "retried"]),
+      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).in("status", ["publishing", "processing"]),
       supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).eq("status", "published"),
       supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).eq("status", "failed"),
     ]);
@@ -106,6 +108,7 @@ export default function CinematicV3DispatcherPage() {
       approved: approved.count ?? 0,
       attached: attached.count ?? 0,
       queued: queued.count ?? 0,
+      uploading: uploading.count ?? 0,
       published: published.count ?? 0,
       failed: failed.count ?? 0,
     });
@@ -156,6 +159,18 @@ export default function CinematicV3DispatcherPage() {
     setDispatching(false);
   }
 
+  async function triggerDrain() {
+    setDraining(true);
+    const { data, error } = await supabase.functions.invoke("pinterest-video-queue-drain", { body: { limit: 3 } });
+    if (error) toast.error(error.message);
+    else {
+      const r: any = data ?? {};
+      toast.success(`Drain: picked ${r.picked ?? 0} · published ${r.published ?? 0} · failed ${r.failed ?? 0}`);
+    }
+    await load();
+    setDraining(false);
+  }
+
   async function toggleEnabled(v: boolean) {
     setSavingEnabled(true);
     const { error } = await supabase.from("cinematic_v3_dispatch_config").update({ enabled: v }).eq("id", true);
@@ -180,6 +195,9 @@ export default function CinematicV3DispatcherPage() {
           </Button>
           <Button size="sm" onClick={triggerDispatch} disabled={dispatching}>
             {dispatching ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1" />} Dispatch now
+          </Button>
+          <Button variant="outline" size="sm" onClick={triggerDrain} disabled={draining}>
+            {draining ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />} Drain video queue
           </Button>
         </div>
       </header>
@@ -217,10 +235,11 @@ export default function CinematicV3DispatcherPage() {
             <Link to="/admin/cinematic-v3-repair">Open repair tool</Link>
           </Button>
         </div>
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
           <div><div className="text-xs text-muted-foreground">Approved videos</div><div className="text-2xl font-semibold">{handoff?.approved ?? "—"}</div></div>
           <div><div className="text-xs text-muted-foreground">Attached to PDP</div><div className="text-2xl font-semibold">{handoff?.attached ?? "—"}</div></div>
-          <div><div className="text-xs text-muted-foreground">Queued for Pinterest</div><div className="text-2xl font-semibold">{handoff?.queued ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Pending</div><div className="text-2xl font-semibold">{handoff?.queued ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Uploading</div><div className="text-2xl font-semibold">{handoff?.uploading ?? "—"}</div></div>
           <div><div className="text-xs text-muted-foreground">Published to Pinterest</div><div className="text-2xl font-semibold">{handoff?.published ?? "—"}</div></div>
           <div><div className="text-xs text-muted-foreground">Failed</div><div className="text-2xl font-semibold">{handoff?.failed ?? "—"}</div></div>
         </div>
