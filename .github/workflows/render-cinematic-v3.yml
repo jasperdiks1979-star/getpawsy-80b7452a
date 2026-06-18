@@ -96,16 +96,18 @@ jobs:
             DFRAMES=$(echo "$DUR*$FPS/1" | bc)
             IMG="/tmp/assets/img/${IDX}.jpg"
             test -f "$IMG" || IMG="/tmp/assets/img/0.jpg"
-            INPUTS+=( -loop 1 -t "$DUR" -i "$IMG" )
+            INPUTS+=( -framerate "$FPS" -loop 1 -t "$DUR" -i "$IMG" )
 
             case "$VISUAL" in
-              product_pan)      ZEXPR="z='min(zoom+0.0015,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
-              product_parallax) ZEXPR="z='if(lte(zoom,1.0),1.18,zoom-0.0010)':x='iw/2-(iw/zoom/2)+sin(on/30)*40':y='ih/2-(ih/zoom/2)'" ;;
+              # NOTE: With d=1, zoom is reset every frame, so use 'on' (output frame counter) for time-based ramps.
+              product_pan)      ZEXPR="z='min(1.0+0.0015*on,1.25)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              product_parallax) ZEXPR="z='min(1.0+0.0010*on,1.20)':x='iw/2-(iw/zoom/2)+sin(on/30)*40':y='ih/2-(ih/zoom/2)'" ;;
               motion_graphic)   ZEXPR="z='1.05+0.05*sin(on/40)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
-              *)                ZEXPR="z='min(zoom+0.0010,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
+              *)                ZEXPR="z='min(1.0+0.0010*on,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'" ;;
             esac
 
-            FC+="[${i}:v]zoompan=${ZEXPR}:d=${DFRAMES}:s=${W}x${H}:fps=${FPS},setpts=PTS-STARTPTS,format=yuv420p[v${i}];"
+            # d=1 → one output frame per input frame; with -framerate FPS on the input, total output = DUR*FPS frames per scene.
+            FC+="[${i}:v]zoompan=${ZEXPR}:d=1:s=${W}x${H}:fps=${FPS},setpts=PTS-STARTPTS,format=yuv420p[v${i}];"
             CONCAT_LABELS+="[v${i}]"
 
             TF="/tmp/cap_${i}.txt"
@@ -114,9 +116,9 @@ jobs:
             if   [ "$LEN" -lt 28 ]; then SIZE=82
             elif [ "$LEN" -lt 50 ]; then SIZE=68
             else SIZE=56; fi
-            Y=$((H - BOTTOM_SAFE - 200))
             [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
-            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=${Y}:enable='between(t,${START},${END})'"
+            # Anchor caption above the bottom safe zone using text_h so multi-line captions never overflow.
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=24:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-40:enable='between(t,${START},${END})'"
           done
 
           AUDIO_IDX=$COUNT
