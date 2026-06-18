@@ -24325,6 +24325,8 @@ export type Database = {
           storyboard_product_slug: string | null
           verdict: string | null
           video_product_slug: string | null
+          video_thumbnail_url: string | null
+          video_url: string | null
         }
         Relationships: []
       }
