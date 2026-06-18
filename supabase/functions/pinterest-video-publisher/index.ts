@@ -28,6 +28,28 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
   } catch (e) { console.error("[pvp] log failed", e); }
 }
 
+// ── Canonical guard ────────────────────────────────────────────────
+// Rejects publish if the destination URL would resolve to the homepage
+// canonical bucket, is missing/invalid, or carries a numeric-variant slug
+// (`-2`, `-3`, …) that Pinterest's dedupe always rejects.
+const DUPLICATE_SLUG_RE = /-(?:[2-9]|\d{2,})$/;
+export function validateCanonicalDestination(rawUrl: string | null | undefined):
+  | { ok: true; slug: string; canonical: string }
+  | { ok: false; code: string; message: string } {
+  if (!rawUrl) return { ok: false, code: "CANONICAL_MISSING", message: "destination_url empty" };
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return { ok: false, code: "CANONICAL_INVALID", message: `unparseable url: ${rawUrl}` }; }
+  const path = u.pathname.replace(/\/+$/, "").toLowerCase();
+  if (path === "" || path === "/") return { ok: false, code: "CANONICAL_HOMEPAGE", message: "destination resolves to homepage" };
+  const m = path.match(/^\/products\/([a-z0-9][a-z0-9-]*)$/);
+  if (!m) return { ok: false, code: "CANONICAL_NON_PDP", message: `not a /products/{slug} path: ${path}` };
+  const slug = m[1];
+  if (DUPLICATE_SLUG_RE.test(slug)) {
+    return { ok: false, code: "CANONICAL_DUPLICATE_SLUG", message: `numeric variant slug "${slug}" — Pinterest dedupe always rejects` };
+  }
+  return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
+}
+
 // ── Product context loader ────────────────────────────────────────
 async function loadProductContext(sb: any, slug: string | null | undefined): Promise<ProductContext | undefined> {
   const s = (slug || "").trim();
@@ -222,6 +244,21 @@ async function publishVideoPin(opts: {
 }): Promise<{ ok: true; pin_id: string; external_url: string } | { ok: false; code: string; message: string }> {
   const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
   const apiBase = await getPinterestApiBase(sb);
+
+  // Stage 0: canonical guard — reject up-front if the destination URL would
+  // collapse into the homepage canonical bucket (Pinterest dedupe → "this
+  // site doesn't allow you to save Pins") or carries a numeric-variant slug.
+  const guard = validateCanonicalDestination(queueRow?.destination_url);
+  if (!guard.ok) {
+    await logStage(sb, queue_id, "canonical_guard", "fail", {
+      destination_url: queueRow?.destination_url,
+      product_slug: (queueRow as any)?.product_slug ?? null,
+      asset_product_id: asset?.product_id ?? null,
+      code: guard.code,
+      message: guard.message,
+    }, trace_id);
+    return { ok: false, code: guard.code, message: guard.message };
+  }
 
   // Stage 1: register media
   console.log(`[pvp ${trace_id}] stage=register_media`);

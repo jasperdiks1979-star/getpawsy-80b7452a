@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
     const compareAt = Number(product.compare_at_price) || 0;
     const hasDiscount = compareAt > price && price > 0;
     const isInStock = product.is_active !== false && product.stock !== 0;
-    const productUrl = `${BASE_URL}/product/${product.slug}`;
+    // Canonical PDP path is /products/{slug} — singular /product/ is a
+    // legacy alias and must NEVER appear in canonical or og:url, or
+    // Pinterest will dedupe the legacy alias against the canonical bucket
+    // and reject subsequent pins as "site doesn't allow you to save Pins".
+    const productUrl = `${BASE_URL}/products/${product.slug}`;
     const primaryImage =
       (product.images && product.images[0]) || product.image_url || "";
 

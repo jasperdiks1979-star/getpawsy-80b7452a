@@ -179,26 +179,40 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════
          PRE-HYDRATION CANONICAL + ROBOTS INJECTION
-         Runs synchronously BEFORE React mounts. Ensures Googlebot sees
-         the correct canonical URL and robots directive in the raw HTML
-         response, even without JS execution.
+         Runs synchronously BEFORE React mounts. Ensures JS-executing
+         crawlers (Googlebot, Bingbot, Pinterestbot in JS mode) see the
+         correct PER-ROUTE canonical URL in the head BEFORE React hydrates.
+
+         The canonical tag intentionally ships with NO static href so that
+         non-JS crawlers (Pinterestbot, Facebook crawler) never receive a
+         wrong (homepage) canonical for a deep route — they fall back to
+         the request URL as the canonical, keeping per-PDP dedupe correct.
          ═══════════════════════════════════════════════════════════════════ -->
-    <link rel="canonical" href="https://getpawsy.pet/" id="gp-canonical" />
+    <link rel="canonical" id="gp-canonical" />
     <script>
     (function(){
       var ORIGIN = 'https://getpawsy.pet';
       var p = location.pathname;
+      // Tracking params that MUST be stripped from canonical URL generation.
+      // Pinterest dedupes on canonical → including pin_id/utm_* would split
+      // every pin into its own bucket and break attribution rollups.
+      var STRIP_PARAMS = /^(pin_id|ref|gclid|fbclid|msclkid|mc_cid|mc_eid|igshid|yclid|utm_.*)$/i;
 
       // Normalize: lowercase, collapse double slashes, strip trailing slash
       p = p.replace(/\/{2,}/g, '/').toLowerCase();
       if (p.length > 1 && p.charAt(p.length - 1) === '/') p = p.replace(/\/+$/, '');
 
-      // Build canonical: homepage gets trailing slash, all others don't
+      // Build canonical from PATHNAME ONLY — query string is intentionally
+      // discarded so pin_id, utm_*, ref, gclid etc. never leak in.
       var canonical = p === '/' || p === '' ? ORIGIN + '/' : ORIGIN + p;
 
       // Set canonical link
       var el = document.getElementById('gp-canonical');
       if (el) el.setAttribute('href', canonical);
+
+      // Expose the strip-params regex for the React canonical hook so a
+      // single source of truth governs tracking-param removal.
+      try { window.__GP_CANONICAL_STRIP__ = STRIP_PARAMS; } catch(_) {}
 
       // Sync hreflang tags to match canonical
       var hIds = ['gp-hreflang-en','gp-hreflang-en-us','gp-hreflang-default'];
