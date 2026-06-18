@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
     if (!qa_pass) {
       const merged = Array.from(new Set([...(row.cv4_reject_reasons || []), ...(post_render_reject_reasons || [])]));
       await sb.from("cinematic_v4_storyboards").update({
-        status: "rejected", rejected_at: new Date().toISOString(), cv4_reject_reasons: merged,
+        status: "rejected", rejected_at: new Date().toISOString(),
+        cv4_reject_reasons: merged, render_error: "qa_failed",
       }).eq("id", storyboard_id);
       // Also flip any awaiting_render queue row to creative_rejected.
       await sb.from("pinterest_video_queue").update({
@@ -42,6 +43,26 @@ Deno.serve(async (req) => {
     }
 
     const mp4_url = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/cv4/${storyboard_id}.mp4`;
+    // Verify the MP4 was actually uploaded before flipping the queue to awaiting_review.
+    // If the upload step in the workflow failed silently, the public URL will 404.
+    try {
+      const head = await fetch(mp4_url, { method: "HEAD" });
+      const ctype = head.headers.get("content-type") || "";
+      const clen = Number(head.headers.get("content-length") || "0");
+      if (!head.ok || !ctype.startsWith("video/") || clen < 50_000) {
+        await sb.from("cinematic_v4_storyboards").update({
+          status: "upload_failed",
+          render_error: `mp4_not_playable status=${head.status} type=${ctype} bytes=${clen}`,
+        }).eq("id", storyboard_id);
+        return new Response(JSON.stringify({ ok: false, code: "UPLOAD_FAILED", traceId: trace_id, mp4_url, head_status: head.status }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    } catch (e) {
+      await sb.from("cinematic_v4_storyboards").update({
+        status: "callback_failed", render_error: `head_check_failed:${String(e).slice(0, 200)}`,
+      }).eq("id", storyboard_id);
+      return new Response(JSON.stringify({ ok: false, code: "HEAD_CHECK_FAILED", traceId: trace_id, message: String(e) }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Delegate to cv4-finalize so queue row flips to awaiting_review.
     const fr = await fetch(`${SUPABASE_URL}/functions/v1/cv4-finalize`, {
       method: "POST",
