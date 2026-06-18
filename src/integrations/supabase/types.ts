@@ -17463,6 +17463,87 @@ export type Database = {
           },
         ]
       }
+      pinterest_repair_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          phase1_deleted: number | null
+          phase2_recreated: number | null
+          phase3_renamed: number | null
+          phase4_retried: number | null
+          phase5_final_errors: number | null
+          phase5_final_mismatches: number | null
+          phase6_engines_enabled: Json | null
+          report: Json | null
+          started_at: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          phase1_deleted?: number | null
+          phase2_recreated?: number | null
+          phase3_renamed?: number | null
+          phase4_retried?: number | null
+          phase5_final_errors?: number | null
+          phase5_final_mismatches?: number | null
+          phase6_engines_enabled?: Json | null
+          report?: Json | null
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          phase1_deleted?: number | null
+          phase2_recreated?: number | null
+          phase3_renamed?: number | null
+          phase4_retried?: number | null
+          phase5_final_errors?: number | null
+          phase5_final_mismatches?: number | null
+          phase6_engines_enabled?: Json | null
+          report?: Json | null
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_repair_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          phase: string
+          pin_id: string | null
+          repair_run_id: string
+          row_snapshot: Json
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase: string
+          pin_id?: string | null
+          repair_run_id: string
+          row_snapshot: Json
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase?: string
+          pin_id?: string | null
+          repair_run_id?: string
+          row_snapshot?: Json
+          table_name?: string
+        }
+        Relationships: []
+      }
       pinterest_revenue_attribution_v3: {
         Row: {
           add_to_carts: number
