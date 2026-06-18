@@ -1,82 +1,115 @@
-# Cinematic V3 Auto Dispatcher
 
-End-to-end autonomous pipeline that keeps Cinematic V3 rendering 24/7 without manual triggers.
+## Goal
+Replace the two current Pinterest video paths (static `pinterest-video-publisher` Ken Burns + `cinematic-v3/v4/v5` ad jobs) with one **Cinematic V4 engine** that ships 5-scene, multi-image, safe-zone-validated MP4s into `pinterest_video_queue` at `awaiting_review` — no auto-publish.
 
-## 1. Database schema (migration)
+## Architecture
 
-New tables:
-
-- **`cinematic_v3_dispatch_queue`** — pending products awaiting render
-  - `product_id` (unique), `priority_score`, `priority_reason` (bestseller | traffic | no_pinterest | new), `status` (pending | dispatched | skipped), `attempts`, `last_error`, `enqueued_at`, `dispatched_at`
-- **`cinematic_v3_dispatch_log`** — every dispatch event
-  - `event_type` (enqueue | dispatch | skip | retry | watchdog | emergency | refill), `product_id`, `job_id`, `outcome`, `details` jsonb, `created_at`
-- **`cinematic_v3_dispatch_config`** — single-row control
-  - `enabled` bool, `min_queue_size` (10), `low_water_mark` (5), `max_retries` (3), `emergency_idle_minutes` (30), `last_dispatch_at`, `last_emergency_at`
-
-All tables: GRANT to authenticated + service_role, RLS admin-only, no anon.
-
-## 2. Edge functions
-
-- **`cinematic-v3-auto-dispatcher`** (cron entry point, no JWT)
-  1. Read config; abort if `enabled = false`.
-  2. Skip emergency check: if `last_dispatch_at` older than `emergency_idle_minutes` AND any active job in `cinematic_v3_jobs` — log `emergency`, force run.
-  3. Refill queue (watchdog): if `pending` queue size < `low_water_mark`, run selector until queue >= `min_queue_size`.
-  4. Pick top-priority pending row, INSERT into `cinematic_v3_jobs` via `cinematic-v3-start`, mark queue row `dispatched`, log `dispatch`.
-  5. On failure, increment `attempts`; if `attempts < max_retries` keep `pending`, else mark `skipped` and log.
-
-- **`cinematic-v3-queue-refill`** (callable independently from dashboard)
-  - Selector logic (priority order, deduped against approved jobs):
-    1. Bestsellers — join `bestsellers` (rank asc).
-    2. High traffic — `gi_product_performance_daily` last 7d sessions desc.
-    3. No Pinterest content — products with 0 rows in `pinterest_pin_queue` / `pinterest_pins`.
-    4. New products — `products.created_at` desc, last 30d.
-  - Excludes: products with an `approved` v3 job, products already in queue, products in `pinterest_loser_blocklist`, discontinued.
-
-## 3. Cron schedule
-
-Via `supabase--insert` (not migration — contains anon key):
-
-```sql
-select cron.schedule(
-  'cinematic-v3-auto-dispatcher',
-  '*/15 * * * *',
-  $$ select net.http_post(
-    url := 'https://<project>.supabase.co/functions/v1/cinematic-v3-auto-dispatcher',
-    headers := '{"Content-Type":"application/json","apikey":"<anon>"}'::jsonb,
-    body := '{}'::jsonb
-  ) $$
-);
+```text
+products + gallery + AI backdrops
+        │
+        ▼
+[cv4-storyboard]  ── 5-beat plan (problem→solution→benefit→lifestyle→cta)
+        │
+        ▼
+[cv4-assets]      ── resolves 3+ unique images; AI-generates lifestyle if gallery thin
+        │
+        ▼
+[cv4-quality-gate-pre]  ── reject if <3 imgs / dup captions / >6 words / unsafe
+        │
+        ▼
+[GH Actions render-cinematic-v4]  ── new Remotion composition `CinematicV4`
+        │
+        ▼
+[cv4-quality-gate-post] ── frame-diff slideshow detection, OCR safe-zone re-check
+        │
+        ▼
+pinterest_video_queue.status = 'awaiting_review'   (publisher already blocks non-pending)
+        │
+        ▼
+Admin review page → Approve → status='pending' → existing drainer publishes
 ```
 
-Ensures `pg_cron` + `pg_net` extensions enabled.
+## What gets built
 
-## 4. Admin dashboard
+### 1. Storyboard builder — `supabase/functions/cv4-storyboard/index.ts`
+- Lovable AI (`google/gemini-3-flash-preview`), structured `Output.object`.
+- Returns exactly 5 beats: `problem | solution | benefit | lifestyle | cta`.
+- Per beat: `caption` (≤6 words, enforced), `duration_frames` (36–75), `image_role` (`product_callout | feature_zoom | lifestyle | benefit_card | cta_card`), `motion` (`pan_left | pan_right | push_in | pull_out | parallax | shake`).
+- Persisted to new `cinematic_v4_storyboards` table.
 
-New route `/admin/cinematic-v3-dispatcher` (page `src/pages/admin/CinematicV3DispatcherPage.tsx`), linked from existing admin nav next to the QA page.
+### 2. Asset resolver — `supabase/functions/cv4-assets/index.ts`
+- Pulls `products.gallery_images` + `product_media` for the slug.
+- If <3 unique images, calls Lovable AI image generation (gemini-3-pro-image-preview) for the missing `lifestyle` / `benefit_card` scenes using a brand-safe prompt template (no AI pets in product role).
+- Stores image URLs in `cinematic_v4_storyboards.scene_assets` as `{beat, image_url, source: 'gallery'|'ai'}`.
 
-Panels:
-- **Status header** — enabled toggle, last dispatch, last emergency, next cron tick (computed from `*/15`).
-- **Queue size** with low/min thresholds, refill button.
-- **Next product** card (top pending row).
-- **Last dispatched product** with link to QA dashboard.
-- **Last render result** (joined from `cinematic_v3_jobs` — status, qa_total, qa_passed).
-- **Failed/retry table** — queue rows with `attempts > 0`.
-- **Recent dispatch log** (last 50 events).
+### 3. Remotion composition — `remotion/src/cinematic-v4/`
+- `CinematicV4.tsx` root + 5 scene components (`ProblemScene`, `SolutionScene`, `BenefitScene`, `LifestyleScene`, `CtaScene`).
+- `TransitionSeries` between scenes (`fade`, `slide`, `wipe` rotated by beat).
+- `safeZone.ts` already exists — caption layout uses `safeAreaValidator()` clamped to Pinterest 9:16 safe area (top 14%, bottom 18% banned).
+- Per-scene unique motion via `humanCamera.ts` (already in repo).
+- Reads `storyboard` + `scene_assets` from props.
 
-Auto-polls every 30s, gated to mounted route (same pattern as `CinematicV3QaPage`).
+### 4. Pre-render quality gate — `supabase/functions/cv4-quality-gate-pre/index.ts`
+Reject reasons (write to `cv4_reject_reasons[]`):
+- `scenes_lt_5`, `unique_images_lt_3`, `duplicate_caption`, `caption_over_6_words`, `single_image_detected`, `unsafe_caption_position`.
 
-## 5. Activation
+### 5. Render dispatcher — extend `.github/workflows/render-cinematic-ad.yml`
+- Add a `v4` matrix path that mounts the new composition and uploads MP4 to Supabase Storage (`cinematic-v4-renders` bucket).
+- On success, edge fn `cv4-finalize` inserts the row into `pinterest_video_queue` with `status='awaiting_review'`, `engine_version='v4'`, `quality_score`, `scene_count`, `unique_image_count`.
 
-After migration approval:
-1. Insert default config row (`enabled=true`).
-2. Run initial refill so queue has ≥10 products.
-3. Schedule cron job.
-4. Manually invoke dispatcher once so the first render kicks off immediately.
+### 6. Post-render quality gate — `supabase/functions/cv4-quality-gate-post/index.ts`
+- Uses Lovable AI vision on 5 evenly-spaced frames extracted via ffmpeg in GH Actions step.
+- Detects: text outside safe zone (OCR bbox), `>0.95` similarity between frame 1 & frame N (slideshow), single image across all frames.
+- Fail → `status='creative_rejected'`, never reaches review.
 
-## Technical notes
+### 7. Publisher guard — patch `pinterest-video-publisher/index.ts`
+- Refuse rows where `status != 'pending'` (already done) **and** add: refuse if `engine_version='v4' AND approved_at IS NULL`.
 
-- `cinematic-v3-start` is called with service-role key from inside the dispatcher (server-to-server).
-- All dispatcher SQL paths use `service_role`; dashboard reads use `authenticated` + `has_role(admin)`.
-- Auto-verdict trigger from previous fix remains the single source of truth for `qa_passed` / `status='approved'`.
-- Watchdog refill is idempotent: queue rows use `ON CONFLICT (product_id) DO NOTHING`.
-- Selector caps a single refill batch at 25 candidates to keep the cron run under 10s.
+### 8. Review UI — `src/pages/admin/CinematicV4Review.tsx`
+Route: `/admin/cinematic-v4-review`.
+Shows queue cards with: video player, storyboard beats (caption + thumbnail), scene count, unique image count, quality gate scores, **Approve** / **Reject** buttons.
+Approve → flips `status='pending'` and sets `approved_at`. Reject → `creative_rejected`.
+
+### 9. Showcase trigger — `supabase/functions/cv4-generate-showcase/index.ts`
+- Selects 5 distinct top-winner slugs across 5 different niches (dog beds, cat trees, cat litter, dog playpen, cat enclosure) from `cj_us_winners`.
+- Runs the full pipeline per slug. Returns trace IDs.
+
+## Database changes
+```sql
+create table public.cinematic_v4_storyboards (
+  id uuid primary key default gen_random_uuid(),
+  product_slug text not null,
+  beats jsonb not null,           -- 5-beat array
+  scene_assets jsonb not null,    -- [{beat,image_url,source}]
+  hook_archetype text,
+  status text not null default 'pending', -- pending|rendering|rendered|rejected
+  cv4_reject_reasons text[] default '{}',
+  quality_score numeric,
+  scene_count int,
+  unique_image_count int,
+  mp4_url text,
+  approved_at timestamptz,
+  created_at timestamptz default now()
+);
+-- GRANTs + RLS (admin-only read/write, service_role all)
+
+alter table public.pinterest_video_queue
+  add column if not exists engine_version text,
+  add column if not exists approved_at timestamptz,
+  add column if not exists storyboard_id uuid references public.cinematic_v4_storyboards(id);
+```
+Status value `awaiting_review` reused (already supported via free-text column).
+
+## Out of scope this pass
+- Music/voiceover (V5 territory; can be additive later).
+- Auto-publish — explicitly disabled, every V4 row requires manual Approve.
+- Replacing the V3/V5 ad-jobs path for non-Pinterest surfaces (TikTok stays on its own pipeline).
+- Retroactive re-render of historical pins.
+
+## Acceptance
+- 5 storyboards created, 5 MP4s rendered, all 5 land in `pinterest_video_queue.status='awaiting_review'` with `engine_version='v4'`, `scene_count=5`, `unique_image_count≥3`.
+- `/admin/cinematic-v4-review` shows all 5 with playable previews.
+- Existing drainer cannot publish any V4 row until `approved_at` is set.
+- All captions verified inside safe zone via OCR check; any failures appear as `creative_rejected` instead.
+
+Approve to proceed; I'll ship in this order: DB migration → storyboard fn → assets fn → Remotion composition → GH Actions matrix → review UI → showcase trigger.
