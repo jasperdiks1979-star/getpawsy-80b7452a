@@ -1,3 +1,10 @@
+## [0.1.4](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.3...v0.1.4) (2026-06-18)
+
+
+### Bug Fixes
+
+* OCR filter — only flag substantive alphabetic caption tokens, ignore product-image labels ([f02ddd1](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/commit/f02ddd17006d68e4656867070a669cf75c3278b7))
+
 ## [0.1.3](https://github.com/jasperdiks1979-star/getpawsy-80b7452a/compare/v0.1.2...v0.1.3) (2026-06-18)
 
 
