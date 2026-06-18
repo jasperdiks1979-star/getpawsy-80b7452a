@@ -3738,6 +3738,126 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_v3_dispatch_config: {
+        Row: {
+          created_at: string
+          emergency_idle_minutes: number
+          enabled: boolean
+          id: boolean
+          last_dispatch_at: string | null
+          last_emergency_at: string | null
+          last_refill_at: string | null
+          low_water_mark: number
+          max_retries: number
+          min_queue_size: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emergency_idle_minutes?: number
+          enabled?: boolean
+          id?: boolean
+          last_dispatch_at?: string | null
+          last_emergency_at?: string | null
+          last_refill_at?: string | null
+          low_water_mark?: number
+          max_retries?: number
+          min_queue_size?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emergency_idle_minutes?: number
+          enabled?: boolean
+          id?: boolean
+          last_dispatch_at?: string | null
+          last_emergency_at?: string | null
+          last_refill_at?: string | null
+          low_water_mark?: number
+          max_retries?: number
+          min_queue_size?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cinematic_v3_dispatch_log: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          job_id: string | null
+          outcome: string | null
+          product_id: string | null
+          product_slug: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          job_id?: string | null
+          outcome?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          job_id?: string | null
+          outcome?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_v3_dispatch_queue: {
+        Row: {
+          attempts: number
+          dispatched_at: string | null
+          enqueued_at: string
+          id: string
+          last_error: string | null
+          last_job_id: string | null
+          priority_reason: string
+          priority_score: number
+          product_id: string
+          product_slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          dispatched_at?: string | null
+          enqueued_at?: string
+          id?: string
+          last_error?: string | null
+          last_job_id?: string | null
+          priority_reason: string
+          priority_score?: number
+          product_id: string
+          product_slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          dispatched_at?: string | null
+          enqueued_at?: string
+          id?: string
+          last_error?: string | null
+          last_job_id?: string | null
+          priority_reason?: string
+          priority_score?: number
+          product_id?: string
+          product_slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cinematic_v3_jobs: {
         Row: {
           approved_at: string | null
