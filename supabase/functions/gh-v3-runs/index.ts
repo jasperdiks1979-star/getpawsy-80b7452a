@@ -129,6 +129,39 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, sha: cj.sha, timeout_minutes_on_main: m ? Number(m[1]) : null, size: content.length, recent_commits: commits }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
+  // POST /gh-v3-runs?action=put_workflow  body:{ content_b64, message? }
+  // Fallback when Lovable→GitHub sync hasn't pushed the local workflow file.
+  // Uses the GitHub Contents API to PUT the new file directly on main.
+  if (req.method === "POST" && url.searchParams.get("action") === "put_workflow") {
+    const { content_b64, message } = await req.json().catch(() => ({}));
+    if (!content_b64) return new Response(JSON.stringify({ ok: false, message: "content_b64 required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const path = `.github/workflows/${WF}`;
+    const cr = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=main`, { headers: h });
+    const cj = await cr.json().catch(() => ({}));
+    const currentSha = cj?.sha ?? null;
+    const putRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, {
+      method: "PUT",
+      headers: { ...h, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: message ?? "chore(ci): force-push render-cinematic-v3 workflow (single-pass ffmpeg, 60min)",
+        content: content_b64,
+        sha: currentSha ?? undefined,
+        branch: "main",
+      }),
+    });
+    const putJson = await putRes.json().catch(() => ({}));
+    if (!putRes.ok) {
+      return new Response(JSON.stringify({ ok: false, status: putRes.status, body: putJson }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    return new Response(JSON.stringify({
+      ok: true,
+      previous_sha: currentSha,
+      new_sha: putJson?.content?.sha ?? null,
+      commit_sha: putJson?.commit?.sha ?? null,
+      commit_url: putJson?.commit?.html_url ?? null,
+    }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const runsRes = await fetch(
     `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/runs?per_page=10`,
     { headers: h },
