@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Play, AlertTriangle, Activity } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type Config = {
   enabled: boolean;
@@ -83,18 +84,31 @@ export default function CinematicV3DispatcherPage() {
   const [dispatching, setDispatching] = useState(false);
   const [savingEnabled, setSavingEnabled] = useState(false);
   const [lastPolled, setLastPolled] = useState<Date | null>(null);
+  const [handoff, setHandoff] = useState<{ approved: number; attached: number; queued: number; published: number; failed: number } | null>(null);
 
   async function load() {
     setLoading(true);
-    const [cfg, q, lg] = await Promise.all([
+    const [cfg, q, lg, approved, attached, queued, published, failed] = await Promise.all([
       supabase.from("cinematic_v3_dispatch_config").select("*").eq("id", true).maybeSingle(),
       supabase.from("cinematic_v3_dispatch_queue").select("*").order("priority_score", { ascending: false }).order("enqueued_at", { ascending: true }).limit(100),
       supabase.from("cinematic_v3_dispatch_log").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("cinematic_v3_jobs").select("id", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("product_media").select("id", { count: "exact", head: true }).eq("source", "cinematic_v3"),
+      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).in("status", ["pending", "scheduled", "processing", "draft"]),
+      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabase.from("pinterest_video_queue").select("id", { count: "exact", head: true }).eq("status", "failed"),
     ]);
     if (cfg.error) toast.error(cfg.error.message);
     setConfig((cfg.data as any) ?? null);
     setQueue((q.data as any) ?? []);
     setLogs((lg.data as any) ?? []);
+    setHandoff({
+      approved: approved.count ?? 0,
+      attached: attached.count ?? 0,
+      queued: queued.count ?? 0,
+      published: published.count ?? 0,
+      failed: failed.count ?? 0,
+    });
 
     const lastDispatchLog = (lg.data ?? []).find((l: any) => l.event_type === "dispatch" && l.job_id);
     if (lastDispatchLog?.job_id) {
@@ -195,6 +209,22 @@ export default function CinematicV3DispatcherPage() {
           <div className="text-xs text-muted-foreground">trigger after {config?.emergency_idle_minutes ?? 30}m idle</div>
         </Card>
       </div>
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-semibold">Post-approval handoff</div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/cinematic-v3-repair">Open repair tool</Link>
+          </Button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-5">
+          <div><div className="text-xs text-muted-foreground">Approved videos</div><div className="text-2xl font-semibold">{handoff?.approved ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Attached to PDP</div><div className="text-2xl font-semibold">{handoff?.attached ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Queued for Pinterest</div><div className="text-2xl font-semibold">{handoff?.queued ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Published to Pinterest</div><div className="text-2xl font-semibold">{handoff?.published ?? "—"}</div></div>
+          <div><div className="text-xs text-muted-foreground">Failed</div><div className="text-2xl font-semibold">{handoff?.failed ?? "—"}</div></div>
+        </div>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-4">
