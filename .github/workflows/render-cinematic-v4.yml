@@ -28,8 +28,12 @@ jobs:
       SB_ID: ${{ inputs.storyboard_id }}
       W: "1080"
       H: "1920"
-      TOP_SAFE: "269"     # 14% of 1920
-      BOTTOM_SAFE: "423"  # 22% of 1920
+      CAPTION_MIN_X: "90"
+      CAPTION_MAX_X: "990"
+      CAPTION_MIN_Y: "300"
+      CAPTION_MAX_Y: "1500"
+      CAPTION_BAND_TOP: "360"
+      CAPTION_BAND_BOTTOM: "1380"
       FPS: "30"
       FONT: "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     steps:
@@ -119,12 +123,9 @@ jobs:
 
             TF="/tmp/cap_${i}.txt"
             printf '%s' "$CAP" > "$TF"
-            # Fixed large font; 5-word/32-char cap is enforced upstream.
-            SIZE=88
+            SIZE=44
             [ -n "$DRAWTEXT" ] && DRAWTEXT+=","
-            DESCENDER=$(( SIZE * 50 / 100 ))
-            MARGIN=$(( 40 + DESCENDER ))
-            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=14:box=1:boxcolor=black@0.55:boxborderw=28:x=(w-text_w)/2:y=h-text_h-${BOTTOM_SAFE}-${MARGIN}:enable='between(t,${START},${END})'"
+            DRAWTEXT+="drawtext=fontfile=${FONT}:textfile=${TF}:reload=0:fontcolor=white:fontsize=${SIZE}:line_spacing=6:box=1:boxcolor=black@0.55:boxborderw=18:x='min(max((w-text_w)/2,${CAPTION_MIN_X}),${CAPTION_MAX_X}-text_w)':y='min(max(${CAPTION_BAND_TOP}+(${CAPTION_BAND_BOTTOM}-${CAPTION_BAND_TOP}-text_h)/2,${CAPTION_MIN_Y}),${CAPTION_MAX_Y}-text_h)':enable='between(t,${START},${END})'"
           done
 
           FC+="${CONCAT_LABELS}concat=n=${COUNT}:v=1:a=0[vc];[vc]${DRAWTEXT}[vout]"
@@ -152,11 +153,8 @@ jobs:
             ffmpeg -y -hide_banner -loglevel error -ss "$T" -i /tmp/final.mp4 -frames:v 1 "/tmp/frames/f_${k}.png"
           done
 
-          # Caption band identical to drawtext geometry.
-          MAX_MARGIN=$(( 40 + (88 * 50 / 100) ))
-          MAX_CAPTION_HEIGHT=420
-          CAPTION_BOT=$(( H - BOTTOM_SAFE ))
-          CAPTION_TOP=$(( CAPTION_BOT - MAX_MARGIN - MAX_CAPTION_HEIGHT ))
+          CAPTION_BOT="$CAPTION_MAX_Y"
+          CAPTION_TOP="$CAPTION_MIN_Y"
           for f in /tmp/frames/*.png; do
             tesseract "$f" /tmp/ocr -l eng tsv 2>/dev/null || true
             awk -v conf=55 'NR>1 && $11>conf && length($12)>=2 {
@@ -178,14 +176,14 @@ jobs:
               if [ "$IN_BAND" = "1" ] && [ "$IS_CENTERED" = "1" ] && [ "$IS_DARK" = "1" ]; then
                 # renderer caption -> validate margins
                 BOT_EDGE=$(( Y + HH ))
-                if [ "$Y" -lt "$TOP_SAFE" ]; then
+                if [ "$Y" -lt "$CAPTION_MIN_Y" ]; then
                   echo "$(basename $f):top:\"${TXT}\"@y=${Y}" >> /tmp/viol.txt
                 fi
-                if [ "$BOT_EDGE" -gt "$CAPTION_BOT" ]; then
+                if [ "$BOT_EDGE" -gt "$CAPTION_MAX_Y" ]; then
                   echo "$(basename $f):bot:\"${TXT}\"@y=${Y}+h=${HH}" >> /tmp/viol.txt
                 fi
                 R_EDGE=$(( X + WW ))
-                if [ "$X" -lt 24 ] || [ "$R_EDGE" -gt $(( W - 24 )) ]; then
+                if [ "$X" -lt "$CAPTION_MIN_X" ] || [ "$R_EDGE" -gt "$CAPTION_MAX_X" ]; then
                   echo "$(basename $f):side:\"${TXT}\"@x=${X}+w=${WW}" >> /tmp/viol.txt
                 fi
               fi
