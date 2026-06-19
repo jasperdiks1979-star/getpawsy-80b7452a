@@ -63,9 +63,16 @@ jobs:
       - name: Preflight
         run: |
           set -euo pipefail
-          for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY RENDER_WORKER_SECRET JOB_ID MP4_URL; do
+          # MP4_URL is optional — we always re-resolve via DB lookup and only use
+          # the workflow-input URL if it actually returns 200.
+          for v in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY JOB_ID; do
             test -n "${!v}" || { echo "missing $v"; exit 1; }
           done
+          if [ -z "${RENDER_WORKER_SECRET:-}" ]; then
+            echo "Error: required GitHub Actions repository secret missing: RENDER_WORKER_SECRET"
+            echo "Add it under repo Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
           # Strip trailing slashes from SUPABASE_URL to prevent `…supabase.co//storage/…`
           # which iPhone Safari sometimes refuses to play inline.
           SUPABASE_URL="${SUPABASE_URL%/}"
@@ -74,14 +81,92 @@ jobs:
           echo "TARGET_SEC=${TARGET_SEC}"
           echo "JOB_ID=${JOB_ID}"
 
-      - name: Download original
+      - name: Resolve source MP4 URL
+        id: resolve
         run: |
           set -euo pipefail
-          curl -fsSL --retry 3 "${MP4_URL}" -o /tmp/in.mp4
+          safe_prefix() { echo "$1" | cut -c1-80; }
+
+          LOOKUP_URL="${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${JOB_ID}&select=output_mp4_url,output_duration_seconds"
+          DB_RESP=$(curl -fsS \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "${LOOKUP_URL}")
+          DB_URL=$(echo "${DB_RESP}" | jq -r '.[0].output_mp4_url // ""')
+          DB_DUR=$(echo "${DB_RESP}" | jq -r '.[0].output_duration_seconds // 0')
+          echo "[resolve] db_url_prefix=$(safe_prefix "${DB_URL}") db_duration=${DB_DUR}"
+
+          CHOSEN=""
+          if [ -n "${MP4_URL:-}" ]; then
+            INPUT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --retry 2 -I "${MP4_URL}")
+            echo "[resolve] input_url_prefix=$(safe_prefix "${MP4_URL}") http=${INPUT_STATUS}"
+            if [ "${INPUT_STATUS}" = "200" ]; then
+              CHOSEN="${MP4_URL}"
+            else
+              echo "[resolve] input URL not reachable (HTTP ${INPUT_STATUS}) — falling back to DB output_mp4_url"
+            fi
+          fi
+
+          if [ -z "${CHOSEN}" ] && [ -n "${DB_URL}" ]; then
+            DB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --retry 2 -I "${DB_URL}")
+            echo "[resolve] db_url http=${DB_STATUS}"
+            if [ "${DB_STATUS}" = "200" ]; then
+              CHOSEN="${DB_URL}"
+            else
+              echo "[resolve] DB URL also unreachable (HTTP ${DB_STATUS})" | tee /tmp/last_err
+            fi
+          fi
+
+          if [ -z "${CHOSEN}" ]; then
+            echo "no_reachable_source_mp4 for job ${JOB_ID}" | tee /tmp/last_err
+            exit 22
+          fi
+
+          echo "SOURCE_URL=${CHOSEN}" >> "$GITHUB_ENV"
+          echo "DB_DURATION=${DB_DUR}" >> "$GITHUB_ENV"
+
+      - name: Skip trim if already within 60s cap
+        id: skipcheck
+        run: |
+          set -euo pipefail
+          DUR_INT=$(printf "%.0f" "${DB_DURATION:-0}")
+          if [ "${DUR_INT}" -gt 0 ] && [ "${DUR_INT}" -le 60 ]; then
+            echo "[skip] duration=${DB_DURATION}s <= 60s — posting render_complete callback, no trim"
+            PAYLOAD=$(jq -n \
+              --arg job_id "${JOB_ID}" \
+              --arg url    "${SOURCE_URL}" \
+              --arg tok    "${RENDER_TOKEN}" \
+              --arg wid    "${WORKER_ID}" \
+              --argjson dur ${DB_DURATION} \
+              '{job_id:$job_id, status:"uploaded", event:"auto_trim_skipped_within_cap",
+                mp4_url:$url, duration:$dur, render_token:$tok, worker_id:$wid,
+                duration_auto_trimmed:true, original_duration_seconds:$dur,
+                trim_ffmpeg_exit_code:0, auto_approve:true, black_bars:false}')
+            curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
+              -H "Content-Type: application/json" \
+              -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
+              --data "$PAYLOAD"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+      - name: Download original
+        if: steps.skipcheck.outputs.skipped != 'true'
+        run: |
+          set -euo pipefail
+          safe_prefix() { echo "$1" | cut -c1-80; }
+          STATUS=$(curl -s -o /tmp/in.mp4 -w "%{http_code}" -L --retry 3 "${SOURCE_URL}")
+          echo "[download] url_prefix=$(safe_prefix "${SOURCE_URL}") http=${STATUS}"
+          if [ "${STATUS}" != "200" ]; then
+            echo "download_failed http=${STATUS}" | tee /tmp/last_err
+            exit 22
+          fi
           ls -lh /tmp/in.mp4
 
       - name: Probe original duration
         id: probe
+        if: steps.skipcheck.outputs.skipped != 'true'
         run: |
           set -euo pipefail
           ORIG=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/in.mp4 | awk '{printf "%.2f", $1}')
@@ -90,6 +175,7 @@ jobs:
 
       - name: ffmpeg trim
         id: trim
+        if: steps.skipcheck.outputs.skipped != 'true'
         run: |
           set +e
           # Re-encode video to guarantee a clean keyframe at t=TARGET_SEC; keep audio.
@@ -99,12 +185,15 @@ jobs:
             -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
             -c:a aac -b:a 128k -ac 2 -ar 44100 \
             -movflags +faststart \
-            /tmp/out.mp4
+            /tmp/out.mp4 2> /tmp/ffmpeg.err
           EC=$?
           echo "exit_code=${EC}" >> "$GITHUB_OUTPUT"
           echo "[trim] ffmpeg_exit_code=${EC}"
           set -e
-          test "${EC}" = "0" || exit "${EC}"
+          if [ "${EC}" != "0" ]; then
+            echo "ffmpeg_exit=${EC}: $(tail -n 1 /tmp/ffmpeg.err 2>/dev/null || true)" | tee /tmp/last_err
+            exit "${EC}"
+          fi
           ls -lh /tmp/out.mp4
           TRIM=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/out.mp4 | awk '{printf "%.2f", $1}')
           echo "trimmed=${TRIM}" >> "$GITHUB_OUTPUT"
@@ -112,6 +201,7 @@ jobs:
 
       - name: Upload trimmed MP4 to storage
         id: upload
+        if: steps.skipcheck.outputs.skipped != 'true'
         run: |
           set -euo pipefail
           PATH_KEY="${JOB_ID}/output-trimmed.mp4"
@@ -133,6 +223,7 @@ jobs:
 
       - name: Probe trimmed metadata
         id: meta
+        if: steps.skipcheck.outputs.skipped != 'true'
         run: |
           set -euo pipefail
           SIZE=$(stat -c%s /tmp/out.mp4)
@@ -145,6 +236,7 @@ jobs:
           echo "[trim] trimmed_size=${SIZE} width=${W} height=${H}"
 
       - name: Callback to render webhook
+        if: steps.skipcheck.outputs.skipped != 'true'
         run: |
           set -euo pipefail
           PAYLOAD=$(jq -n \
@@ -172,7 +264,17 @@ jobs:
       - name: Failure callback
         if: failure()
         run: |
+          ERR_LINE=$(tail -n 1 /tmp/last_err 2>/dev/null || echo "see GH run ${{ github.run_id }}")
+          EC_VAL="${{ steps.trim.outputs.exit_code }}"
+          if [ -z "${EC_VAL}" ]; then EC_VAL=22; fi
+          PAYLOAD=$(jq -n \
+            --arg job_id "${JOB_ID}" \
+            --arg wid "${WORKER_ID}" \
+            --arg err "${ERR_LINE}" \
+            --argjson ec ${EC_VAL} \
+            '{job_id:$job_id, status:"failed", event:"auto_trim_failed",
+              error_message:$err, trim_ffmpeg_exit_code:$ec, worker_id:$wid}')
           curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
             -H "Content-Type: application/json" \
             -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
-            -d "{\"job_id\":\"${JOB_ID}\",\"status\":\"failed\",\"event\":\"auto_trim_failed\",\"error_message\":\"ffmpeg auto-trim failed (see GH run ${{ github.run_id }})\",\"worker_id\":\"${WORKER_ID}\"}" || true
+            --data "$PAYLOAD" || true
