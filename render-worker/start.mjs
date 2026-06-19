@@ -362,10 +362,9 @@ function startHealthServer() {
           pollIntervalMs: POLL,
           workerId: WORKER_ID,
           envPresent: REQUIRED.reduce((a,k)=>(a[k]=!!process.env[k],a),{}),
-          serviceKey: {
-            ok: SERVICE_KEY_OK,
-            role: SERVICE_KEY_ROLE,
-            keyRef: SERVICE_KEY_REF,
+          backendAuth: {
+            mode: "edge_function_shared_secret",
+            serviceRoleRequired: false,
             urlRef: URL_REF,
           },
           state,
@@ -393,7 +392,7 @@ async function main() {
   console.log("[CINEMATIC WORKER] started from render-worker/start.mjs");
   console.log("[CINEMATIC WORKER] started");
   console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} pollMs=${POLL} workerId=${WORKER_ID} safeMode=${SAFE_MODE}`);
-  console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} SERVICE_KEY set=${!!SERVICE_KEY} RENDER_WORKER_SECRET set=${!!SECRET}`);
+  console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} RENDER_WORKER_SECRET set=${!!SECRET}`);
   setBootPhase("env_validated", { node: process.version, memMb: Math.round(process.memoryUsage().rss/1024/1024) });
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE, safeMode: SAFE_MODE, maxRetries: MAX_RETRIES });
   // Hard startup-timeout guard
