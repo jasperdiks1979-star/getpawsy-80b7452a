@@ -61,7 +61,7 @@ const URL_REF = SUPABASE_HOST.split(".")[0] || null;
 
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
-const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
+const WORKER_ID = process.env.RENDER_WORKER_ID || `render-worker-${Math.random().toString(36).slice(2, 8)}`;
 const ONCE = process.argv.includes("--once");
 const PORT = Number(process.env.PORT || 10000);
 const MAX_CONSECUTIVE_FAILURES = Number(process.env.MAX_CONSECUTIVE_FAILURES || 5);
