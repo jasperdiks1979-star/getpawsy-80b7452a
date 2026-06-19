@@ -7,6 +7,23 @@ Deno.serve(async (req) => {
   const GH_REF = Deno.env.get("GH_REF") ?? "main";
   const WF = Deno.env.get("TRIM_WORKFLOW_FILE") ?? "trim-cinematic-ad.yml";
 
+  // Optional: inspect a specific run id (?run_id=...) to get job step details.
+  const url0 = new URL(req.url);
+  const inspectRunId = url0.searchParams.get("run_id");
+  if (inspectRunId) {
+    const jobsRes = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/actions/runs/${inspectRunId}/jobs`,
+      { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
+    );
+    const jobsJson = await jobsRes.json().catch(() => ({}));
+    const runRes = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/actions/runs/${inspectRunId}`,
+      { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
+    );
+    const runJson = await runRes.json().catch(() => ({}));
+    return new Response(JSON.stringify({ run: { id: runJson.id, status: runJson.status, conclusion: runJson.conclusion, html_url: runJson.html_url }, jobs: (jobsJson.jobs ?? []).map((j: any) => ({ id: j.id, name: j.name, status: j.status, conclusion: j.conclusion, steps: (j.steps ?? []).map((s: any) => ({ name: s.name, status: s.status, conclusion: s.conclusion, number: s.number })) })) }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   // 1. Identity check — confirms token is valid + lists scopes for classic PATs.
   const who = await fetch("https://api.github.com/user", {
     headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
