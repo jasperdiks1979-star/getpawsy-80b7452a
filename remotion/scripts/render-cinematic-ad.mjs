@@ -493,16 +493,15 @@ async function download(url, dest) {
   throw lastErr;
 }
 
-async function uploadToStorage(localPath, objectPath) {
+async function uploadToStorage(localPath, objectPath, uploadInfo) {
+  if (!uploadInfo?.signed_url) {
+    throw new Error("signed upload URL missing from claim payload");
+  }
   const data = readFileSync(localPath);
-  const url = `${SUPABASE_URL}/storage/v1/object/${objectPath}`;
-  const r = await fetch(url, {
-    method: "POST",
+  const r = await fetch(uploadInfo.signed_url, {
+    method: "PUT",
     headers: {
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      apikey: SERVICE_KEY,
       "Content-Type": "video/mp4",
-      "x-upsert": "true",
     },
     body: data,
   });
@@ -512,7 +511,7 @@ async function uploadToStorage(localPath, objectPath) {
     throw new Error(`upload failed: ${r.status} ${txt.slice(0, 400)}`);
   }
   // Public URL
-  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${objectPath}`;
+  const publicUrl = uploadInfo.public_url ?? `${SUPABASE_URL}/storage/v1/object/public/${objectPath}`;
   diagLog("UPLOAD_URL_CREATED", publicUrl);
   return publicUrl;
 }
