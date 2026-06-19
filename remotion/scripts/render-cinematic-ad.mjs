@@ -115,16 +115,18 @@ async function postWebhook(payload, { critical = false } = {}) {
  * is non-null.
  */
 async function verifyJobMp4Persisted(jobId) {
-  const url = `${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${encodeURIComponent(jobId)}&select=output_mp4_url,status`;
+  const url = `${FUNCTIONS_BASE_URL}/render-worker-job-status`;
   const r = await fetchWithTimeout(url, {
-    headers: { Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY },
+    method: "POST",
+    headers: HEADERS,
+    body: JSON.stringify({ job_id: jobId }),
   }, 10_000);
   if (!r.ok) {
     const t = await r.text().catch(() => "");
-    throw new Error(`db_verify_fetch_failed status=${r.status} body=${t.slice(0, 300)}`);
+    throw new Error(`job_status_fetch_failed status=${r.status} body=${t.slice(0, 300)}`);
   }
-  const rows = await r.json().catch(() => []);
-  const row = Array.isArray(rows) ? rows[0] : null;
+  const data = await r.json().catch(() => ({}));
+  const row = data?.job ?? null;
   const mp4 = row?.output_mp4_url ?? null;
   diagLog("JOB_UPDATED_OUTPUT_MP4_URL", mp4 ?? "null");
   if (!mp4) {
@@ -161,30 +163,14 @@ async function claimJob() {
   try { data = JSON.parse(text); } catch { data = { ok: false, message: text }; }
   console.log(`[claim] response status=${r.status} ok=${Boolean(data?.ok)} trace=${data?.traceId ?? "none"}`);
   if (!data.ok || !data.job) {
-    // Surface the claim rejection clearly into the DB row so the admin UI
-    // shows "claim rejected: <reason>" instead of a misleading
-    // "REMOTION_RENDER_FAILED" (which can only fire AFTER a successful claim).
+    // Surface the claim rejection through the authenticated webhook path so
+    // the worker never needs direct database credentials.
     const reason = data?.reason ?? "claim_rejected";
     const currentStatus = data?.current_status ?? null;
     const msg = `claim rejected (${reason})${currentStatus ? ` — current_status=${currentStatus}` : ""}. Use "Recover and requeue job" to reset to render_queued.`;
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/cinematic_ad_jobs?id=eq.${JOB_ID}`, {
-        method: "PATCH",
-        headers: {
-          "apikey": Deno?.env?.get?.("SUPABASE_SERVICE_ROLE_KEY") ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
-          "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal",
-        },
-        body: JSON.stringify({
-          status_message: msg,
-          error_message: msg,
-          latest_github_run_id: process.env.GITHUB_RUN_ID ?? null,
-        }),
-      });
-    } catch (e) {
-      console.warn(`[claim] could not patch status_message: ${e?.message}`);
-    }
+    await postWebhook({ job_id: JOB_ID, status: "failed", error_message: msg, worker_id: WORKER_ID }).catch((e) => {
+      console.warn(`[claim] could not post claim rejection: ${e?.message}`);
+    });
     throw new Error(msg + ` raw=${JSON.stringify(data).slice(0, 400)}`);
   }
   return data.job;
