@@ -96,33 +96,41 @@ jobs:
           DB_DUR=$(echo "${DB_RESP}" | jq -r '.[0].output_duration_seconds // 0')
           echo "[resolve] db_url_prefix=$(safe_prefix "${DB_URL}") db_duration=${DB_DUR}"
 
-          CHOSEN=""
-          if [ -n "${MP4_URL:-}" ]; then
-            INPUT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --retry 2 -I "${MP4_URL}")
-            echo "[resolve] input_url_prefix=$(safe_prefix "${MP4_URL}") http=${INPUT_STATUS}"
-            if [ "${INPUT_STATUS}" = "200" ]; then
-              CHOSEN="${MP4_URL}"
-            else
-              echo "[resolve] input URL not reachable (HTTP ${INPUT_STATUS}) — falling back to DB output_mp4_url"
-            fi
-          fi
-
-          if [ -z "${CHOSEN}" ] && [ -n "${DB_URL}" ]; then
-            DB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --retry 2 -I "${DB_URL}")
-            echo "[resolve] db_url http=${DB_STATUS}"
-            if [ "${DB_STATUS}" = "200" ]; then
-              CHOSEN="${DB_URL}"
-            else
-              echo "[resolve] DB URL also unreachable (HTTP ${DB_STATUS})" | tee /tmp/last_err
-            fi
-          fi
-
-          if [ -z "${CHOSEN}" ]; then
-            echo "no_reachable_source_mp4 for job ${JOB_ID}" | tee /tmp/last_err
+          # DB is the single source of truth — never trust workflow-input MP4_URL,
+          # it is frequently stale and was the cause of repeated 404s.
+          if [ -z "${DB_URL}" ]; then
+            echo "missing output_mp4_url for job_id=${JOB_ID}" | tee /tmp/last_err
+            # callback so job doesn't hang on status=trimming forever
+            PAYLOAD=$(jq -n --arg job_id "${JOB_ID}" --arg tok "${RENDER_TOKEN}" --arg wid "${WORKER_ID}" \
+              '{job_id:$job_id, status:"failed", event:"auto_trim_failed",
+                error_message:"missing output_mp4_url for job_id",
+                render_token:$tok, worker_id:$wid, trim_ffmpeg_exit_code:22}')
+            curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
+              -H "Content-Type: application/json" \
+              -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
+              --data "$PAYLOAD" || true
             exit 22
           fi
 
-          echo "SOURCE_URL=${CHOSEN}" >> "$GITHUB_ENV"
+          DB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L --retry 2 -I "${DB_URL}")
+          echo "[resolve] db_url_prefix=$(safe_prefix "${DB_URL}") http=${DB_STATUS}"
+          if [ "${DB_STATUS}" != "200" ]; then
+            echo "trim source url 404 (http=${DB_STATUS}) job_id=${JOB_ID}" | tee /tmp/last_err
+            # Mark job back to render_complete with error_message — do NOT leave it in 'trimming'.
+            PAYLOAD=$(jq -n --arg job_id "${JOB_ID}" --arg tok "${RENDER_TOKEN}" --arg wid "${WORKER_ID}" --arg url "${DB_URL}" --argjson dur ${DB_DUR} \
+              '{job_id:$job_id, status:"uploaded", event:"auto_trim_source_404",
+                mp4_url:$url, duration:$dur, render_token:$tok, worker_id:$wid,
+                duration_auto_trimmed:true, original_duration_seconds:$dur,
+                trim_ffmpeg_exit_code:22, error_message:"trim source url 404",
+                auto_approve:true, black_bars:false}')
+            curl -fsS -X POST "${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook" \
+              -H "Content-Type: application/json" \
+              -H "x-render-secret: ${RENDER_WORKER_SECRET}" \
+              --data "$PAYLOAD" || true
+            exit 22
+          fi
+
+          echo "SOURCE_URL=${DB_URL}" >> "$GITHUB_ENV"
           echo "DB_DURATION=${DB_DUR}" >> "$GITHUB_ENV"
 
       - name: Skip trim if already within 60s cap
