@@ -656,6 +656,62 @@ async function runWatchdog(admin: any, traceId: string, opts: { force?: boolean 
     }
   }
 
+  // === (2.5) Stuck trimming jobs — trim GH workflow either failed
+  // silently or never fired its callback. Synthesize an auto_trim_failed
+  // event into the render webhook so its bounded retry loop re-dispatches
+  // the trim workflow (or bypasses + promotes when within cap on the
+  // last attempt). 15 min is generous — the trim workflow normally
+  // completes in 1–3 min for sub-30s MP4s.
+  const TRIM_STUCK_MS = 15 * 60 * 1000;
+  const trimCutoff = new Date(now - TRIM_STUCK_MS).toISOString();
+  const { data: stuckTrim } = await admin
+    .from("cinematic_ad_jobs")
+    .select("id,trim_attempted_at,trim_attempts,output_mp4_url,duration_auto_trimmed")
+    .eq("status", "trimming")
+    .or("duration_auto_trimmed.is.null,duration_auto_trimmed.eq.false")
+    .lt("trim_attempted_at", trimCutoff)
+    .order("trim_attempted_at", { ascending: true })
+    .limit(10);
+  result.detections.trim_stuck = stuckTrim?.length ?? 0;
+
+  if (!paused && result.hard_stop_reasons.length === 0) {
+    for (const row of stuckTrim ?? []) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-render-secret": RENDER_WORKER_SECRET,
+          },
+          body: JSON.stringify({
+            job_id: row.id,
+            status: "failed",
+            event: "auto_trim_stuck",
+            error_message: `trim stuck > ${Math.round(TRIM_STUCK_MS / 60000)}min with no callback`,
+            worker_id: "watchdog",
+          }),
+        });
+        const ok = res.ok;
+        result.retried.push({ job_id: row.id, attempt: (row.trim_attempts ?? 0) + 1 });
+        await logEvent(admin, {
+          job_id: row.id,
+          event_type: ok ? "trim_retry_dispatched" : "trim_retry_failed",
+          action_taken: "synthesize_auto_trim_failed",
+          previous_status: "trimming",
+          new_status: "trimming",
+          trace_id: traceId,
+          recovery_result: ok ? "success" : "failed",
+          payload: {
+            trim_attempts: row.trim_attempts ?? 0,
+            stuck_for_ms: now - new Date(row.trim_attempted_at as string).getTime(),
+          },
+        });
+      } catch (e) {
+        console.error("[watchdog] trim_stuck retry failed", row.id, e);
+      }
+    }
+  }
+
   // === (3) Failed jobs with retryable errors — exponential backoff ===
   const { data: failed } = await admin
     .from("cinematic_ad_jobs")

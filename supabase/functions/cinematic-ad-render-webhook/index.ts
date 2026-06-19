@@ -36,6 +36,21 @@ const GH_REF = Deno.env.get("GH_REF") ?? "main";
 
 const MAX_ATTEMPTS = 2;
 const MAX_PUBLISH_ATTEMPTS = 3;
+// Bounded auto-retry for the trim step. The render itself already
+// succeeded (output_mp4_url is present) — only the trim GH workflow
+// failed (ffmpeg, upload, GH dispatch, or stuck >15min with no callback).
+// We re-dispatch the trim workflow up to MAX_TRIM_ATTEMPTS times before
+// giving up. If the MP4 is already within the duration cap when the
+// trim worker keeps failing, we bypass the trim and promote the job to
+// render_complete so the publish chain can continue.
+const MAX_TRIM_ATTEMPTS = 3;
+// Trim-failure events the worker / watchdog may report.
+const TRIM_FAILURE_EVENTS = new Set([
+  "auto_trim_failed",
+  "auto_trim_dispatch_failed",
+  "auto_trim_stuck",
+  "auto_trim_timeout",
+]);
 
 /**
  * Dispatch the trim-cinematic-ad GitHub Actions workflow. The workflow
@@ -445,12 +460,73 @@ Deno.serve(async (req) => {
         }
       }
     } else if (status === "failed") {
-      const attempts = (job.render_attempts ?? 0);
-      const willRetry = attempts < MAX_ATTEMPTS;
-      patch.status = willRetry ? "render_queued" : "failed";
-      patch.error_message = String(body.error_message ?? "render failed");
-      if (!willRetry) patch.status_message = `worker failed after ${attempts} attempts.`;
-      else patch.status_message = `attempt ${attempts} failed; re-queued (${attempts}/${MAX_ATTEMPTS}).`;
+      // ---- Trim-step failure: re-dispatch the trim workflow, do NOT
+      // re-render. The render itself produced output_mp4_url; only the
+      // post-render trim step failed (ffmpeg / upload / stuck / dispatch).
+      const eventName = String(body.event ?? "");
+      const isTrimFailure =
+        TRIM_FAILURE_EVENTS.has(eventName) ||
+        /trim/i.test(eventName) ||
+        /auto_trim/i.test(String(body.error_message ?? ""));
+      if (isTrimFailure) {
+        const mp4 = String(job.output_mp4_url ?? body.mp4_url ?? "");
+        const trimAttempts = (job.trim_attempts ?? 0);
+        const presetForJob = getPreset(job.preset);
+        const targetDuration = Math.min(presetForJob.durationSec, HARD_MAX_DURATION_SEC);
+        const cap = targetDuration + DURATION_OVERRUN_SLACK_SEC;
+        const currentDuration = Number(job.output_duration_seconds ?? 0);
+        const withinCap = Number.isFinite(currentDuration) && currentDuration > 0 && currentDuration <= cap;
+        // Fallback when retries are exhausted: if the MP4 is already
+        // within the duration cap, no trim is actually required — promote
+        // straight to render_complete so the publish chain can continue.
+        if (trimAttempts >= MAX_TRIM_ATTEMPTS) {
+          if (withinCap && mp4) {
+            patch.status = "render_complete";
+            patch.duration_auto_trimmed = true;
+            patch.error_message = null;
+            patch.status_message = `trim retry exhausted (${trimAttempts}/${MAX_TRIM_ATTEMPTS}) — MP4 already within ${cap}s cap, bypassing trim`;
+            patch.rendered_at = patch.rendered_at ?? new Date().toISOString();
+            patch.render_complete_at = new Date().toISOString();
+            console.warn(`[trim-retry] ${traceId} bypass — within cap`, { jobId, currentDuration, trimAttempts });
+          } else {
+            patch.status = "needs_admin_review";
+            patch.error_message = `auto_trim_max_retries:${trimAttempts}`;
+            patch.status_message = `auto-trim failed ${trimAttempts}× — manual review required`;
+            console.error(`[trim-retry] ${traceId} exhausted; admin review`, { jobId, trimAttempts, currentDuration });
+          }
+        } else if (!mp4) {
+          patch.status = "failed";
+          patch.error_message = "auto_trim_failed_no_mp4";
+          patch.status_message = "trim failed and no output_mp4_url to re-dispatch";
+        } else {
+          // Re-dispatch the trim workflow.
+          const dispatch = await dispatchTrimWorkflow(jobId, mp4, targetDuration, job.render_token ?? null, traceId);
+          if (dispatch.ok) {
+            patch.status = "trimming";
+            patch.trim_attempts = trimAttempts + 1;
+            patch.trim_attempted_at = new Date().toISOString();
+            patch.error_message = null;
+            patch.status_message = `auto-trim retry ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS} dispatched`;
+            console.log(`[trim-retry] ${traceId} re-dispatched`, { jobId, attempt: trimAttempts + 1 });
+          } else {
+            // GH dispatch itself failed — count the attempt and let the
+            // watchdog try again on its next tick.
+            patch.status = "trimming";
+            patch.trim_attempts = trimAttempts + 1;
+            patch.trim_attempted_at = new Date().toISOString();
+            patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
+            patch.status_message = `trim re-dispatch failed (attempt ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS}): ${dispatch.message}`;
+            console.error(`[trim-retry] ${traceId} dispatch failed`, { jobId, attempt: trimAttempts + 1, msg: dispatch.message });
+          }
+        }
+      } else {
+        const attempts = (job.render_attempts ?? 0);
+        const willRetry = attempts < MAX_ATTEMPTS;
+        patch.status = willRetry ? "render_queued" : "failed";
+        patch.error_message = String(body.error_message ?? "render failed");
+        if (!willRetry) patch.status_message = `worker failed after ${attempts} attempts.`;
+        else patch.status_message = `attempt ${attempts} failed; re-queued (${attempts}/${MAX_ATTEMPTS}).`;
+      }
     }
 
     // Phase 5: motion-score publish gate. Any render whose motion_score is

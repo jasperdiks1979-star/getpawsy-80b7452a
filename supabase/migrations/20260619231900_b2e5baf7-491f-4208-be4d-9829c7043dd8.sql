@@ -1,0 +1,2 @@
+ALTER TABLE public.cinematic_ad_jobs ADD COLUMN IF NOT EXISTS trim_attempts integer NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.cinematic_ad_jobs.trim_attempts IS 'Number of times the auto-trim GH Actions workflow was dispatched. Capped by MAX_TRIM_ATTEMPTS in cinematic-ad-render-webhook for bounded auto-retry.';

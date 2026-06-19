@@ -2019,6 +2019,7 @@ export type Database = {
           thumbnail_phash: string | null
           transition_count: number | null
           trim_attempted_at: string | null
+          trim_attempts: number
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null
           ugc_authenticity_score: number | null
@@ -2305,6 +2306,7 @@ export type Database = {
           thumbnail_phash?: string | null
           transition_count?: number | null
           trim_attempted_at?: string | null
+          trim_attempts?: number
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
           ugc_authenticity_score?: number | null
@@ -2591,6 +2593,7 @@ export type Database = {
           thumbnail_phash?: string | null
           transition_count?: number | null
           trim_attempted_at?: string | null
+          trim_attempts?: number
           trim_ffmpeg_exit_code?: number | null
           trim_workflow_run_id?: string | null
           ugc_authenticity_score?: number | null
@@ -26170,6 +26173,7 @@ export type Database = {
           thumbnail_phash: string | null
           transition_count: number | null
           trim_attempted_at: string | null
+          trim_attempts: number
           trim_ffmpeg_exit_code: number | null
           trim_workflow_run_id: string | null
           ugc_authenticity_score: number | null
