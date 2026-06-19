@@ -10,7 +10,7 @@ const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 // to actually render and just burns the per-product 24h budget) is locked out
 // unless the operator explicitly flips CLAIM_JOB_ALLOW_NON_GH=1.
 const ALLOW_NON_GH_WORKERS = (Deno.env.get("CLAIM_JOB_ALLOW_NON_GH") ?? "") === "1";
-const GH_WORKER_PREFIXES = ["gh-actions-", "gh-trim-"];
+const GH_WORKER_PREFIXES = ["gh-actions-", "gh-trim-", "render-worker-"];
 function isGhWorker(workerId: string): boolean {
   return GH_WORKER_PREFIXES.some((p) => workerId.startsWith(p));
 }
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
         ok: false,
         traceId,
         reason: "non_gh_worker_blocked",
-        message: "Only gh-actions-* workers may claim render_queued jobs. Set CLAIM_JOB_ALLOW_NON_GH=1 to override.",
+        message: "Only gh-actions-*, gh-trim-*, or render-worker-* workers may claim render_queued jobs. Set CLAIM_JOB_ALLOW_NON_GH=1 to override.",
         worker_id: workerId,
       }, 403);
     }
