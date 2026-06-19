@@ -14,8 +14,18 @@ name: Redeploy Render Worker
 #         RENDER_WORKER_DEPLOY_SECRET     (same value as step 2)
 
 on:
+  workflow_run:
+    # Only redeploy AFTER the new image has been pushed to GHCR — otherwise
+    # Render pulls the previous :latest digest and the fix never lands.
+    workflows: ["Build Render Worker Image (GHCR)"]
+    types: [completed]
+    branches: [main]
   push:
     branches: [main]
+    paths:
+      # Allow code-only changes (no Dockerfile edit) to still trigger a
+      # redeploy of the existing image — e.g. when only an env var changed.
+      - ".github/workflows/render-worker-deploy.yml"
   workflow_dispatch:
     inputs:
       reason:
@@ -31,6 +41,8 @@ jobs:
   trigger-deploy-hook:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # When chained from build-render-worker-image, skip if that build failed.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Trigger render-worker-deploy edge function
         env:

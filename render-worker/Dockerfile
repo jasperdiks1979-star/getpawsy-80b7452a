@@ -23,6 +23,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # System deps: ffmpeg for rendering, ca-certificates + curl for healthchecks
 # and Supabase HTTPS calls, unzip for the bun installer, tini for clean PID 1.
+# Plus the shared libraries Chrome-for-Testing needs at runtime (Remotion
+# launches headless Chrome from /app/.remotion/chrome-for-testing). Without
+# libnss3/libnspr4/etc. Chrome exits with `error while loading shared
+# libraries: libnspr4.so` and every render fails with REMOTION_RENDER_FAILED.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ffmpeg \
@@ -30,6 +34,26 @@ RUN apt-get update \
       curl \
       unzip \
       tini \
+      libnss3 \
+      libnspr4 \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libcups2 \
+      libdrm2 \
+      libxkbcommon0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxfixes3 \
+      libxrandr2 \
+      libgbm1 \
+      libpango-1.0-0 \
+      libcairo2 \
+      libasound2 \
+      libxshmfence1 \
+      libx11-xcb1 \
+      libxext6 \
+      libxss1 \
+      fonts-liberation \
  && rm -rf /var/lib/apt/lists/*
 
 # Install bun (used by remotion/scripts/render-cinematic-ad.mjs shebang).
