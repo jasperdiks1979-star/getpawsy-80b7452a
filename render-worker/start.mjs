@@ -2,7 +2,7 @@
 /**
  * GetPawsy cinematic render worker — production-hardened.
  *
- * Required env:  SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET
+ * Required env:  SUPABASE_URL, RENDER_WORKER_SECRET
  * Optional env:  POLL_INTERVAL_MS (default 120000), RENDER_WORKER_ID,
  *                PORT (if set, exposes /health, /health/worker,
  *                      /health/supabase, /debug/runtime),
@@ -27,7 +27,7 @@ const log = (level, msg, extra = {}) => {
 };
 
 // ---------- env validation ----------
-const REQUIRED = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "RENDER_WORKER_SECRET"];
+const REQUIRED = ["SUPABASE_URL", "RENDER_WORKER_SECRET"];
 const missing = REQUIRED.filter(k => !process.env[k]);
 if (missing.length) {
   log("fatal", "missing required env", { missing });
@@ -57,44 +57,7 @@ if (HOST_MISMATCH) {
   });
 }
 const SECRET = process.env.RENDER_WORKER_SECRET;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// ---------- service-role key self-check ----------
-// Decode the JWT payload (no signature verification) and assert the key has
-// role=service_role and ref matches SUPABASE_URL. Logs ONLY role + ref —
-// never the key, never the signature.
-function decodeJwtPayload(jwt) {
-  try {
-    const part = String(jwt).split(".")[1];
-    if (!part) return null;
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
-    return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
-  } catch { return null; }
-}
-const SERVICE_KEY_CLAIMS = decodeJwtPayload(SERVICE_KEY);
-const SERVICE_KEY_ROLE = SERVICE_KEY_CLAIMS?.role ?? null;
-const SERVICE_KEY_REF = SERVICE_KEY_CLAIMS?.ref ?? null;
 const URL_REF = SUPABASE_HOST.split(".")[0] || null;
-const SERVICE_KEY_OK =
-  SERVICE_KEY_ROLE === "service_role" &&
-  !!SERVICE_KEY_REF &&
-  !!URL_REF &&
-  SERVICE_KEY_REF === URL_REF;
-if (!SERVICE_KEY_CLAIMS) {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY is not a decodable JWT", {});
-} else if (SERVICE_KEY_ROLE !== "service_role") {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY has wrong role — expected service_role", {
-    role: SERVICE_KEY_ROLE, ref: SERVICE_KEY_REF, urlRef: URL_REF,
-  });
-} else if (SERVICE_KEY_REF !== URL_REF) {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY belongs to a different project than SUPABASE_URL", {
-    role: SERVICE_KEY_ROLE, keyRef: SERVICE_KEY_REF, urlRef: URL_REF,
-  });
-} else {
-  log("info", "service-role key self-check ok", {
-    role: SERVICE_KEY_ROLE, ref: SERVICE_KEY_REF,
-  });
-}
 
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
