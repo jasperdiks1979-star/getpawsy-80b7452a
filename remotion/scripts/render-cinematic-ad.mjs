@@ -5,7 +5,7 @@
  * Modes:
  *   1) Pull mode (worker / GitHub Actions):
  *        env: JOB_ID, RENDER_TOKEN, WEBHOOK_URL, SUPABASE_URL,
- *             SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET
+ *             RENDER_WORKER_SECRET
  *        Calls cinematic-ad-claim-job (with explicit job_id) to fetch payload,
  *        renders MP4, uploads to cinematic-ads bucket, posts webhook.
  *
@@ -22,7 +22,6 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 
 const SUPABASE_URL_RAW = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKER_SECRET = process.env.RENDER_WORKER_SECRET;
 const JOB_ID = process.env.JOB_ID || process.argv.find(a => a.startsWith("--job="))?.slice(6);
 const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
@@ -30,8 +29,8 @@ const EXPECTED_PROJECT_REF = "nojvgfbcjgipjxpfatmm";
 const SUPABASE_URL = SUPABASE_URL_RAW ? SUPABASE_URL_RAW.replace(/\/+$/, "") : "";
 const FUNCTIONS_BASE_URL = (process.env.FUNCTIONS_BASE_URL || process.env.SUPABASE_FUNCTIONS_BASE_URL || `${SUPABASE_URL}/functions/v1`).replace(/\/+$/, "");
 
-if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET || !JOB_ID) {
-  console.error("Missing env. Required: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET, JOB_ID");
+if (!SUPABASE_URL || !WORKER_SECRET || !JOB_ID) {
+  console.error("Missing env. Required: SUPABASE_URL, RENDER_WORKER_SECRET, JOB_ID");
   process.exit(2);
 }
 
