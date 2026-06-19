@@ -14,6 +14,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 
 // ---------- structured logger ----------
 const log = (level, msg, extra = {}) => {
@@ -58,6 +59,17 @@ if (HOST_MISMATCH) {
 }
 const SECRET = process.env.RENDER_WORKER_SECRET;
 const URL_REF = SUPABASE_HOST.split(".")[0] || null;
+// Safe fingerprint: never logs the secret itself. Lets ops compare worker vs
+// edge-function side without exposing the value.
+const SECRET_FINGERPRINT = SECRET
+  ? {
+      length: SECRET.length,
+      sha256_prefix: createHash("sha256").update(SECRET).digest("hex").slice(0, 12),
+      has_leading_ws: /^\s/.test(SECRET),
+      has_trailing_ws: /\s$/.test(SECRET),
+      has_quotes: /^["'].*["']$/.test(SECRET),
+    }
+  : null;
 
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
@@ -393,6 +405,7 @@ async function main() {
   console.log("[CINEMATIC WORKER] started");
   console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} pollMs=${POLL} workerId=${WORKER_ID} safeMode=${SAFE_MODE}`);
   console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} RENDER_WORKER_SECRET set=${!!SECRET}`);
+  console.log(`[CINEMATIC WORKER] secret fingerprint ${JSON.stringify(SECRET_FINGERPRINT)}`);
   setBootPhase("env_validated", { node: process.version, memMb: Math.round(process.memoryUsage().rss/1024/1024) });
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE, safeMode: SAFE_MODE, maxRetries: MAX_RETRIES });
   // Hard startup-timeout guard
