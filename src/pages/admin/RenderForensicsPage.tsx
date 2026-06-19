@@ -73,6 +73,8 @@ export default function RenderForensicsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [selftest, setSelftest] = useState<any | null>(null);
   const [selftestBusy, setSelftestBusy] = useState(false);
+  const [restartResult, setRestartResult] = useState<any | null>(null);
+  const [restartBusy, setRestartBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -151,6 +153,24 @@ export default function RenderForensicsPage() {
     }
   };
 
+  const restartRenderWorker = async () => {
+    setRestartBusy(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("render-worker-restart", { body: {} });
+      if (error) throw error;
+      setRestartResult(res);
+      if ((res as any)?.ok) {
+        toast.success("Render worker deploy triggered — new container in ~60s");
+      } else {
+        toast.error((res as any)?.message ?? "Restart failed");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "restart failed");
+    } finally {
+      setRestartBusy(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       <Helmet>
@@ -170,6 +190,9 @@ export default function RenderForensicsPage() {
           </Button>
           <Button variant="secondary" size="sm" onClick={runSelftest} disabled={selftestBusy}>
             {selftestBusy ? "Testing…" : "Run worker self-test"}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={restartRenderWorker} disabled={restartBusy}>
+            {restartBusy ? "Restarting…" : "Restart Render worker"}
           </Button>
           <Button variant="outline" size="sm" onClick={triggerWatchdog} disabled={busy === "watchdog"}>
             Run watchdog now
