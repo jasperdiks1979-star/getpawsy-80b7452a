@@ -168,19 +168,26 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
     const nowIso = new Date().toISOString();
     const body = {
       worker_id: WORKER_ID,
+      claimed,
+      job_id: jobId,
       last_poll_at: nowIso,
-      updated_at: nowIso,
-      ...(claimed ? { last_claim_at: nowIso, last_job_id: jobId } : {}),
+      queue_depth: state.queueDepth,
+      supabase_host: SUPABASE_HOST,
+      safe_mode: SAFE_MODE,
+      payload: {
+        bootPhase: state.bootPhase,
+        busy: state.busy,
+        currentJobId: state.currentJobId,
+        consecutiveFailures: state.consecutiveFailures,
+      },
     };
     const r = await fetchWithRetry(
-      `${SUPABASE_URL}/rest/v1/cinematic_worker_heartbeats?on_conflict=worker_id`,
+      `${SUPABASE_URL}/functions/v1/render-worker-heartbeat`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${SERVICE_KEY}`,
-          Prefer: "resolution=merge-duplicates,return=minimal",
+          "x-render-secret": SECRET,
         },
         body: JSON.stringify(body),
       },
@@ -188,48 +195,24 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
     );
     if (!r.ok) {
       const txt = await r.text().catch(() => "");
-      log("warn", "heartbeat upsert non-2xx", { status: r.status, body: txt.slice(0, 200) });
+      log("warn", "heartbeat function non-2xx", { status: r.status, body: txt.slice(0, 200) });
+      return;
     }
-    // Mirror to new render_worker_heartbeats truth table (idempotent upsert).
-    try {
-      await fetchWithRetry(
-        `${SUPABASE_URL}/rest/v1/render_worker_heartbeats?on_conflict=worker_id`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SERVICE_KEY,
-            Authorization: `Bearer ${SERVICE_KEY}`,
-            Prefer: "resolution=merge-duplicates,return=minimal",
-          },
-          body: JSON.stringify({
-            worker_id: WORKER_ID,
-            last_seen_at: nowIso,
-            queue_depth: state.queueDepth,
-            supabase_host: SUPABASE_HOST,
-            safe_mode: SAFE_MODE,
-            payload: {
-              bootPhase: state.bootPhase,
-              busy: state.busy,
-              currentJobId: state.currentJobId,
-              consecutiveFailures: state.consecutiveFailures,
-            },
-          }),
-        },
-        { timeoutMs: 5_000, retries: 1 },
-      );
-    } catch {}
     state.lastHeartbeatAt = nowIso;
   } catch (e) {
-    log("warn", "heartbeat upsert failed", { err: String(e?.message ?? e) });
+    log("warn", "heartbeat function failed", { err: String(e?.message ?? e) });
   }
 }
 
 async function pingSupabase() {
   try {
     const r = await fetchWithRetry(
-      `${SUPABASE_URL}/auth/v1/health`,
-      { headers: { apikey: SERVICE_KEY } },
+      `${SUPABASE_URL}/functions/v1/render-worker-heartbeat`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-render-secret": SECRET },
+        body: JSON.stringify({ worker_id: WORKER_ID, supabase_host: SUPABASE_HOST, safe_mode: SAFE_MODE, payload: { bootPhase: "ping" } }),
+      },
       { timeoutMs: 5_000, retries: 1 },
     );
     return { ok: r.ok, status: r.status };
