@@ -71,6 +71,8 @@ export default function RenderForensicsPage() {
   const [data, setData] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [selftest, setSelftest] = useState<any | null>(null);
+  const [selftestBusy, setSelftestBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -134,6 +136,21 @@ export default function RenderForensicsPage() {
     }
   };
 
+  const runSelftest = async () => {
+    setSelftestBusy(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke("render-worker-selftest", { body: {} });
+      if (error) throw error;
+      setSelftest(res);
+      if (res?.ok) toast.success("Self-test passed");
+      else toast.error("Self-test failed — see per-step results");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "self-test failed");
+    } finally {
+      setSelftestBusy(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       <Helmet>
@@ -151,6 +168,9 @@ export default function RenderForensicsPage() {
           <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
             {loading ? "Refreshing…" : "Refresh"}
           </Button>
+          <Button variant="secondary" size="sm" onClick={runSelftest} disabled={selftestBusy}>
+            {selftestBusy ? "Testing…" : "Run worker self-test"}
+          </Button>
           <Button variant="outline" size="sm" onClick={triggerWatchdog} disabled={busy === "watchdog"}>
             Run watchdog now
           </Button>
@@ -162,6 +182,64 @@ export default function RenderForensicsPage() {
           </Button>
         </div>
       </header>
+
+      {selftest && (
+        <Card className={selftest.ok ? "border-emerald-500/40" : "border-red-500/40"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>Render worker self-test</span>
+              <Badge variant="outline" className={selftest.ok ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
+                {selftest.ok ? "PASS" : "FAIL"}
+              </Badge>
+              <span className="text-xs text-muted-foreground font-mono">trace {selftest.traceId}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">{selftest.summary}</p>
+            <div className="rounded border bg-muted/30 p-3 font-mono text-xs">
+              <div><strong>env var:</strong> {selftest.cloud_secret?.env_var}</div>
+              <div><strong>configured:</strong> {String(selftest.cloud_secret?.configured)}</div>
+              <div><strong>length:</strong> {selftest.cloud_secret?.fingerprint?.length}</div>
+              <div><strong>sha256_prefix:</strong> {selftest.cloud_secret?.fingerprint?.sha256_prefix ?? "—"}</div>
+              <div><strong>has_leading_ws:</strong> {String(selftest.cloud_secret?.fingerprint?.has_leading_ws)}</div>
+              <div><strong>has_trailing_ws:</strong> {String(selftest.cloud_secret?.fingerprint?.has_trailing_ws)}</div>
+              <div><strong>has_quotes:</strong> {String(selftest.cloud_secret?.fingerprint?.has_quotes)}</div>
+              <div className="text-muted-foreground mt-1">Compare these to the Render.com worker startup log fingerprint.</div>
+            </div>
+            {(selftest.steps ?? []).map((s: any, i: number) => (
+              <div key={i} className="rounded border p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={
+                    s.http_status === 200 ? "bg-emerald-500/15 text-emerald-700"
+                    : s.ok ? "bg-amber-500/15 text-amber-700"
+                    : "bg-red-500/15 text-red-700"
+                  }>
+                    {s.http_status || "ERR"}
+                  </Badge>
+                  <strong>Step {i + 1}: {s.name}</strong>
+                  <Badge variant="outline" className={s.ok ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
+                    {s.ok ? "OK" : "FAIL"}
+                  </Badge>
+                  <span className="ml-auto text-xs text-muted-foreground">{s.duration_ms}ms</span>
+                </div>
+                <div className="text-xs font-mono text-muted-foreground">
+                  function: <span className="text-foreground">{s.function}</span>
+                  {"  ·  "}env: <span className="text-foreground">{s.env_var}</span>
+                  {s.traceId && <> {"  ·  "}trace: <span className="text-foreground">{s.traceId}</span></>}
+                </div>
+                <div className="text-xs"><strong>Expected:</strong> {s.expected}</div>
+                <div className="text-xs"><strong>Message:</strong> {s.message}</div>
+                {s.http_status === 401 && (
+                  <div className="text-xs text-red-700">
+                    401 = the {s.function} function read a different RENDER_WORKER_SECRET than the caller sent.
+                    Both sides read from Lovable Cloud env, so the function is likely running on stale boot env — redeploy it.
+                  </div>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {!data ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">Loading…</CardContent></Card>
