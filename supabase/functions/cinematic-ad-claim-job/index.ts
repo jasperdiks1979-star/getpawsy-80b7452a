@@ -21,11 +21,40 @@ function json(obj: unknown, status = 200) {
   });
 }
 
+async function secretFingerprint(secret: string) {
+  if (!secret) {
+    return {
+      length: 0,
+      sha256_prefix: null,
+      has_leading_ws: false,
+      has_trailing_ws: false,
+      has_quotes: false,
+    };
+  }
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+  const hex = Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return {
+    length: secret.length,
+    sha256_prefix: hex.slice(0, 12),
+    has_leading_ws: /^\s/.test(secret),
+    has_trailing_ws: /\s$/.test(secret),
+    has_quotes: /^["'].*["']$/.test(secret),
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = crypto.randomUUID().slice(0, 8);
   try {
     const secret = req.headers.get("x-render-secret") ?? "";
+    console.log("[claim-job] secret fingerprint", {
+      traceId,
+      env_var: "RENDER_WORKER_SECRET",
+      configured: await secretFingerprint(RENDER_WORKER_SECRET),
+      incoming: await secretFingerprint(secret),
+    });
     if (!RENDER_WORKER_SECRET || secret !== RENDER_WORKER_SECRET) {
       return json({ ok: false, traceId, message: "unauthorized" }, 401);
     }
