@@ -850,17 +850,15 @@ async function main() {
     let thumbnailUrl = null;
     try {
       await extractThumbnail(finalPath, thumbPath);
-      const thumbObject = `cinematic-ads/${job.product_slug}/${job.job_id}-thumb.jpg`;
-      const thumbUrl = `${SUPABASE_URL}/storage/v1/object/${thumbObject}`;
-      const tr = await fetch(thumbUrl, {
-        method: "POST",
+      const thumbUpload = job.thumbnail_upload;
+      const tr = await fetch(thumbUpload?.signed_url ?? "", {
+        method: "PUT",
         headers: {
-          Authorization: `Bearer ${SERVICE_KEY}`, apikey: SERVICE_KEY,
-          "Content-Type": "image/jpeg", "x-upsert": "true",
+          "Content-Type": "image/jpeg",
         },
         body: readFileSync(thumbPath),
       });
-      if (tr.ok) thumbnailUrl = `${SUPABASE_URL}/storage/v1/object/public/${thumbObject}`;
+      if (tr.ok) thumbnailUrl = thumbUpload?.public_url ?? null;
       else console.warn("[render] thumbnail upload failed", tr.status, await tr.text());
     } catch (e) {
       console.warn("[render] thumbnail extract failed", e?.message ?? e);
@@ -869,7 +867,7 @@ async function main() {
     // 6. upload MP4
     const objectPath = job.output_target; // already cinematic-ads/...
     console.log(`[render] upload_started -> ${objectPath} (${size} bytes)`);
-    const publicUrl = await uploadToStorage(finalPath, objectPath);
+    const publicUrl = await uploadToStorage(finalPath, objectPath, job.upload);
     console.log(`[render] upload_completed -> ${publicUrl}`);
     clearInterval(heartbeat);
 
