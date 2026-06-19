@@ -142,9 +142,10 @@ Deno.serve(async (req) => {
   }
 
   const secretFp = await fingerprint(RENDER_WORKER_SECRET);
-  // Use render-worker-* prefix so we pass the GH_WORKER_PREFIXES allowlist
-  // in cinematic-ad-claim-job (mirrors the real Render worker identity).
-  const probeWorkerId = "render-worker-selftest-" + traceId;
+  // Intentionally NOT a render-worker-* / gh-actions-* prefix: we want the
+  // claim-job allowlist gate to reject this probe (403 non_gh_worker_blocked)
+  // so we don't steal a real queued render job.
+  const probeWorkerId = "selftest-probe-" + traceId;
 
   const heartbeat = await callTarget("render-worker-heartbeat", {
     worker_id: probeWorkerId,
