@@ -42,8 +42,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$DEPLOY_SECRET" ]; then
-            echo "::warning::RENDER_WORKER_DEPLOY_SECRET not set in GitHub Actions secrets. Skipping."
-            exit 0
+            echo "::error::RENDER_WORKER_DEPLOY_SECRET is not set in GitHub Actions secrets."
+            echo "::error::Add it under Settings → Secrets and variables → Actions, then re-run."
+            echo "::error::Failing loudly so this regression cannot silently disable worker auto-redeploy."
+            exit 1
           fi
           payload=$(jq -n \
             --arg src "github-actions:$REASON" \
