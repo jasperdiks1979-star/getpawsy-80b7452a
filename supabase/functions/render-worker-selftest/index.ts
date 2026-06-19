@@ -101,10 +101,10 @@ async function callTarget(fn: string, body: Record<string, unknown>): Promise<St
     ok = httpStatus === 200;
   } else if (fn === "cinematic-ad-claim-job") {
     name = "Claim job";
-    // 403 non_gh_worker_blocked means auth passed and the post-auth gate
-    // rejected our probe worker_id — exactly what we want.
-    expected = "200 (claim) or 403 non_gh_worker_blocked (auth OK, gate blocked probe)";
-    ok = httpStatus === 200 || (httpStatus === 403 && (payload as any)?.reason === "non_gh_worker_blocked");
+    // Probe uses a render-worker-* worker_id so it passes the allowlist gate.
+    // 200 = auth + allowlist OK (job claimed or queue empty).
+    expected = "200 (auth + allowlist OK — job claimed or queue empty)";
+    ok = httpStatus === 200;
   } else {
     name = fn;
     expected = "200";
@@ -138,7 +138,9 @@ Deno.serve(async (req) => {
   }
 
   const secretFp = await fingerprint(RENDER_WORKER_SECRET);
-  const probeWorkerId = "selftest-probe-" + traceId;
+  // Use render-worker-* prefix so we pass the GH_WORKER_PREFIXES allowlist
+  // in cinematic-ad-claim-job (mirrors the real Render worker identity).
+  const probeWorkerId = "render-worker-selftest-" + traceId;
 
   const heartbeat = await callTarget("render-worker-heartbeat", {
     worker_id: probeWorkerId,
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
   });
 
   const claim = await callTarget("cinematic-ad-claim-job", {
-    worker_id: probeWorkerId, // non-gh prefix → 403 expected when auth OK
+    worker_id: probeWorkerId, // render-worker-* prefix → passes allowlist
   });
 
   const steps: Step[] = [heartbeat, claim];
