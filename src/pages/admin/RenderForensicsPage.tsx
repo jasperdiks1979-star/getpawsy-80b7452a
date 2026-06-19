@@ -264,6 +264,27 @@ export default function RenderForensicsPage() {
         </Card>
       )}
 
+      {restartResult && (
+        <Card className={restartResult.ok ? "border-emerald-500/40" : "border-red-500/40"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>Render worker restart</span>
+              <Badge variant="outline" className={restartResult.ok ? "bg-emerald-500/15 text-emerald-700" : "bg-red-500/15 text-red-700"}>
+                {restartResult.ok ? "TRIGGERED" : "FAILED"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="font-mono text-xs">
+              <div><strong>service_id:</strong> {restartResult.service_id}</div>
+              <div><strong>render api status:</strong> {restartResult.render_status}</div>
+              {restartResult.deploy?.id && <div><strong>deploy_id:</strong> {restartResult.deploy.id}</div>}
+            </div>
+            <p className="text-muted-foreground text-xs">{restartResult.note ?? restartResult.message}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {!data ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">Loading…</CardContent></Card>
       ) : (
