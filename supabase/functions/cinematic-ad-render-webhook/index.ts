@@ -36,6 +36,21 @@ const GH_REF = Deno.env.get("GH_REF") ?? "main";
 
 const MAX_ATTEMPTS = 2;
 const MAX_PUBLISH_ATTEMPTS = 3;
+// Bounded auto-retry for the trim step. The render itself already
+// succeeded (output_mp4_url is present) — only the trim GH workflow
+// failed (ffmpeg, upload, GH dispatch, or stuck >15min with no callback).
+// We re-dispatch the trim workflow up to MAX_TRIM_ATTEMPTS times before
+// giving up. If the MP4 is already within the duration cap when the
+// trim worker keeps failing, we bypass the trim and promote the job to
+// render_complete so the publish chain can continue.
+const MAX_TRIM_ATTEMPTS = 3;
+// Trim-failure events the worker / watchdog may report.
+const TRIM_FAILURE_EVENTS = new Set([
+  "auto_trim_failed",
+  "auto_trim_dispatch_failed",
+  "auto_trim_stuck",
+  "auto_trim_timeout",
+]);
 
 /**
  * Dispatch the trim-cinematic-ad GitHub Actions workflow. The workflow
