@@ -565,8 +565,14 @@ async function main() {
     console.log(`[render] dispatching to remotion cinematic renderer (${reason})`);
     const remScript = new URL("./render-cinematic-remotion.mjs", import.meta.url).pathname;
     const remotionResult = await new Promise((resolve) => {
+      // Tee remotion stdout+stderr to console AND a ring buffer so the crash
+      // tail can be persisted to cinematic_ad_jobs.admin_diagnostics. Without
+      // this every Remotion failure is just `exited code=1`, undiagnosable.
+      const MAX_BUF = 16 * 1024;
+      let stdoutBuf = "";
+      let stderrBuf = "";
       const p = spawn(process.execPath, [remScript, `--job=${job.job_id}`], {
-        stdio: "inherit",
+        stdio: ["inherit", "pipe", "pipe"],
         env: {
           ...process.env,
           JOB_ID: job.job_id,
@@ -574,8 +580,18 @@ async function main() {
           RENDER_WORKER_ID: WORKER_ID,
         },
       });
-      p.on("exit", (code) => resolve({ ok: code === 0, code }));
-      p.on("error", (err) => resolve({ ok: false, code: -1, err: err?.message ?? String(err) }));
+      p.stdout?.on("data", (d) => {
+        const s = d.toString();
+        process.stdout.write(s);
+        stdoutBuf = (stdoutBuf + s).slice(-MAX_BUF);
+      });
+      p.stderr?.on("data", (d) => {
+        const s = d.toString();
+        process.stderr.write(s);
+        stderrBuf = (stderrBuf + s).slice(-MAX_BUF);
+      });
+      p.on("exit", (code) => resolve({ ok: code === 0, code, stdoutTail: stdoutBuf, stderrTail: stderrBuf }));
+      p.on("error", (err) => resolve({ ok: false, code: -1, err: err?.message ?? String(err), stdoutTail: stdoutBuf, stderrTail: stderrBuf }));
     });
     if (remotionResult.ok) {
       console.log(`[render] remotion cinematic render complete job=${job.job_id}`);
@@ -599,8 +615,16 @@ async function main() {
       return;
     }
     // Phase 5: NO silent ffmpeg fallback. Remotion crash = hard fail.
-    const msg = `REMOTION_RENDER_FAILED: remotion compositor exited code=${remotionResult.code}${remotionResult.err ? ` (${remotionResult.err})` : ""}`;
+    const stderrTail = String(remotionResult.stderrTail ?? "").slice(-4000).trim();
+    const stdoutTail = String(remotionResult.stdoutTail ?? "").slice(-2000).trim();
+    const stderrLine = stderrTail
+      ? `\n--- remotion stderr (tail) ---\n${stderrTail}`
+      : "\n--- remotion stderr (tail) --- (empty — process produced no stderr)";
+    const msg = `REMOTION_RENDER_FAILED: remotion compositor exited code=${remotionResult.code}${remotionResult.err ? ` (${remotionResult.err})` : ""}${stderrLine}`.slice(0, 6000);
     console.error(`[render] ${msg}`);
+    adminDiagnostics.remotion_exit_code = remotionResult.code;
+    adminDiagnostics.remotion_stderr_tail = stderrTail || null;
+    adminDiagnostics.remotion_stdout_tail = stdoutTail || null;
     await postWebhook({
       job_id: job.job_id,
       status: "failed",
@@ -610,6 +634,11 @@ async function main() {
       error_message: msg,
       render_mode: "remotion_crashed",
       motion_engine_used: "v2",
+      admin_diagnostics: {
+        remotion_exit_code: remotionResult.code,
+        remotion_stderr_tail: stderrTail || null,
+        remotion_stdout_tail: stdoutTail || null,
+      },
     });
     return;
   }
