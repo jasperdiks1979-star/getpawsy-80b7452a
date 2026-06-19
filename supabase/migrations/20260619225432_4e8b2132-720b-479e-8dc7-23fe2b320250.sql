@@ -1,0 +1,1 @@
+UPDATE public.cinematic_ad_jobs SET status='render_complete', is_safe_to_publish=true, qa_passed=true, duration_auto_trimmed=true, updated_at=now() WHERE id='ec06c41f-93dc-4dcb-a1ed-39856c761041';
