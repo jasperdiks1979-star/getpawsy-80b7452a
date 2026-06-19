@@ -11,6 +11,15 @@ Deno.serve(async (req) => {
   const url0 = new URL(req.url);
   const inspectRunId = url0.searchParams.get("run_id");
   if (inspectRunId) {
+    const stepLogsUrl = url0.searchParams.get("step");
+    if (stepLogsUrl) {
+      const logRes = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/jobs/${inspectRunId}/logs`, {
+        headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
+        redirect: "follow",
+      });
+      const txt = await logRes.text();
+      return new Response(txt.slice(0, 8000), { headers: { ...corsHeaders, "Content-Type": "text/plain" } });
+    }
     const jobsRes = await fetch(
       `https://api.github.com/repos/${GH_REPO}/actions/runs/${inspectRunId}/jobs`,
       { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
