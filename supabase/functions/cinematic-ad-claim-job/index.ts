@@ -10,7 +10,7 @@ const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
 // to actually render and just burns the per-product 24h budget) is locked out
 // unless the operator explicitly flips CLAIM_JOB_ALLOW_NON_GH=1.
 const ALLOW_NON_GH_WORKERS = (Deno.env.get("CLAIM_JOB_ALLOW_NON_GH") ?? "") === "1";
-const GH_WORKER_PREFIXES = ["gh-actions-", "gh-trim-"];
+const GH_WORKER_PREFIXES = ["gh-actions-", "gh-trim-", "render-worker-"];
 function isGhWorker(workerId: string): boolean {
   return GH_WORKER_PREFIXES.some((p) => workerId.startsWith(p));
 }
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
         ok: false,
         traceId,
         reason: "non_gh_worker_blocked",
-        message: "Only gh-actions-* workers may claim render_queued jobs. Set CLAIM_JOB_ALLOW_NON_GH=1 to override.",
+        message: "Only gh-actions-*, gh-trim-*, or render-worker-* workers may claim render_queued jobs. Set CLAIM_JOB_ALLOW_NON_GH=1 to override.",
         worker_id: workerId,
       }, 403);
     }
@@ -248,6 +248,19 @@ Deno.serve(async (req) => {
       console.warn(`[claim-job] ${traceId} motion extras fetch failed:`, (e as Error)?.message);
     }
 
+    const outputTarget = `cinematic-ads/${locked.product_slug}/${locked.id}.mp4`;
+    const outputStoragePath = outputTarget.replace(/^cinematic-ads\//, "");
+    const thumbTarget = `cinematic-ads/${locked.product_slug}/${locked.id}-thumb.jpg`;
+    const thumbStoragePath = thumbTarget.replace(/^cinematic-ads\//, "");
+    const [mp4Upload, thumbUpload] = await Promise.all([
+      admin.storage.from("cinematic-ads").createSignedUploadUrl(outputStoragePath, { upsert: true }),
+      admin.storage.from("cinematic-ads").createSignedUploadUrl(thumbStoragePath, { upsert: true }),
+    ]);
+    if (mp4Upload.error || !mp4Upload.data) {
+      console.error(`[claim-job] ${traceId} signed upload error`, mp4Upload.error);
+      return json({ ok: false, traceId, message: mp4Upload.error?.message ?? "signed upload failed", supabase_host: supabaseHost }, 500);
+    }
+
     return json({
       ok: true, traceId,
       queued_count: queuedCount,
@@ -270,7 +283,21 @@ Deno.serve(async (req) => {
           vo_script: locked.vo_script ?? null,
           product_lock: locked.product_lock ?? {},
           render_token: locked.render_token,
-          output_target: `cinematic-ads/${locked.product_slug}/${locked.id}.mp4`,
+          output_target: outputTarget,
+          upload: {
+            signed_url: mp4Upload.data.signedUrl,
+            token: mp4Upload.data.token,
+            bucket: "cinematic-ads",
+            path: outputStoragePath,
+            public_url: `${SUPABASE_URL}/storage/v1/object/public/${outputTarget}`,
+          },
+          thumbnail_upload: thumbUpload.data ? {
+            signed_url: thumbUpload.data.signedUrl,
+            token: thumbUpload.data.token,
+            bucket: "cinematic-ads",
+            path: thumbStoragePath,
+            public_url: `${SUPABASE_URL}/storage/v1/object/public/${thumbTarget}`,
+          } : null,
           webhook_url: `${SUPABASE_URL}/functions/v1/cinematic-ad-render-webhook`,
           // Phase 5: motion-engine enforcement payload — when motion_storyboard
           // is present + engine_version >= v3, the worker MUST dispatch to the

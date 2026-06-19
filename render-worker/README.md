@@ -1,8 +1,8 @@
 # GetPawsy Cinematic Render Worker
 
-External worker that polls Supabase for `render_queued` cinematic ad jobs,
-renders them with `ffmpeg`, uploads the MP4 to the `cinematic-ads` storage
-bucket, and reports status via the secured webhook.
+External worker that polls Lovable Cloud edge functions for `render_queued`
+cinematic ad jobs, renders them with `ffmpeg`, uploads via signed upload URLs,
+and reports status via the secured webhook.
 
 ## Why external?
 
@@ -14,8 +14,7 @@ Fly.io, a VPS, your laptop).
 
 | Var | Where to get it |
 |-----|-----------------|
-| `SUPABASE_URL` | Lovable Cloud → Settings → Project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Lovable Cloud → Settings → Service role key |
+| `SUPABASE_URL` | Lovable Cloud backend URL for this project (`https://nojvgfbcjgipjxpfatmm.supabase.co`) |
 | `RENDER_WORKER_SECRET` | Same value as the `RENDER_WORKER_SECRET` secret in Lovable Cloud |
 | `POLL_INTERVAL_MS` | optional, default `120000` (2 min) |
 | `RENDER_WORKER_ID` | optional, defaults to a random id |
@@ -40,7 +39,7 @@ All endpoints return JSON. No secrets are exposed.
 ```bash
 # install ffmpeg + bun first
 # then:
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... RENDER_WORKER_SECRET=... \
+SUPABASE_URL=... RENDER_WORKER_SECRET=... \
   npm --prefix render-worker start
 ```
 
@@ -71,6 +70,7 @@ If Render logs show `npm error path /opt/render/project/src/render-worker/packag
 ## Behavior
 
 - Polls `cinematic-ad-claim-job` every 2 min (configurable)
+- Never receives a Lovable Cloud service-role key; all database access happens inside edge functions authenticated by `RENDER_WORKER_SECRET`
 - Renders **one** job at a time (server-side single-render guard + local `busy` flag)
 - Failed renders are re-queued automatically up to **2 attempts**, then marked `failed`
 - Run a single render and exit: `npm --prefix render-worker run once`

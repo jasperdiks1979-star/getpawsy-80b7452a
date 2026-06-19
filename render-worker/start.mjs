@@ -2,7 +2,7 @@
 /**
  * GetPawsy cinematic render worker — production-hardened.
  *
- * Required env:  SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET
+ * Required env:  SUPABASE_URL, RENDER_WORKER_SECRET
  * Optional env:  POLL_INTERVAL_MS (default 120000), RENDER_WORKER_ID,
  *                PORT (if set, exposes /health, /health/worker,
  *                      /health/supabase, /debug/runtime),
@@ -27,7 +27,7 @@ const log = (level, msg, extra = {}) => {
 };
 
 // ---------- env validation ----------
-const REQUIRED = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "RENDER_WORKER_SECRET"];
+const REQUIRED = ["SUPABASE_URL", "RENDER_WORKER_SECRET"];
 const missing = REQUIRED.filter(k => !process.env[k]);
 if (missing.length) {
   log("fatal", "missing required env", { missing });
@@ -57,48 +57,11 @@ if (HOST_MISMATCH) {
   });
 }
 const SECRET = process.env.RENDER_WORKER_SECRET;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// ---------- service-role key self-check ----------
-// Decode the JWT payload (no signature verification) and assert the key has
-// role=service_role and ref matches SUPABASE_URL. Logs ONLY role + ref —
-// never the key, never the signature.
-function decodeJwtPayload(jwt) {
-  try {
-    const part = String(jwt).split(".")[1];
-    if (!part) return null;
-    const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
-    return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
-  } catch { return null; }
-}
-const SERVICE_KEY_CLAIMS = decodeJwtPayload(SERVICE_KEY);
-const SERVICE_KEY_ROLE = SERVICE_KEY_CLAIMS?.role ?? null;
-const SERVICE_KEY_REF = SERVICE_KEY_CLAIMS?.ref ?? null;
 const URL_REF = SUPABASE_HOST.split(".")[0] || null;
-const SERVICE_KEY_OK =
-  SERVICE_KEY_ROLE === "service_role" &&
-  !!SERVICE_KEY_REF &&
-  !!URL_REF &&
-  SERVICE_KEY_REF === URL_REF;
-if (!SERVICE_KEY_CLAIMS) {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY is not a decodable JWT", {});
-} else if (SERVICE_KEY_ROLE !== "service_role") {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY has wrong role — expected service_role", {
-    role: SERVICE_KEY_ROLE, ref: SERVICE_KEY_REF, urlRef: URL_REF,
-  });
-} else if (SERVICE_KEY_REF !== URL_REF) {
-  log("fatal", "SUPABASE_SERVICE_ROLE_KEY belongs to a different project than SUPABASE_URL", {
-    role: SERVICE_KEY_ROLE, keyRef: SERVICE_KEY_REF, urlRef: URL_REF,
-  });
-} else {
-  log("info", "service-role key self-check ok", {
-    role: SERVICE_KEY_ROLE, ref: SERVICE_KEY_REF,
-  });
-}
 
 const POLL = Number(process.env.POLL_INTERVAL_MS || 5_000);
 const HEARTBEAT_MS = Number(process.env.HEARTBEAT_MS || 30_000);
-const WORKER_ID = process.env.RENDER_WORKER_ID || `worker-${Math.random().toString(36).slice(2, 8)}`;
+const WORKER_ID = process.env.RENDER_WORKER_ID || `render-worker-${Math.random().toString(36).slice(2, 8)}`;
 const ONCE = process.argv.includes("--once");
 const PORT = Number(process.env.PORT || 10000);
 const MAX_CONSECUTIVE_FAILURES = Number(process.env.MAX_CONSECUTIVE_FAILURES || 5);
@@ -205,19 +168,26 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
     const nowIso = new Date().toISOString();
     const body = {
       worker_id: WORKER_ID,
+      claimed,
+      job_id: jobId,
       last_poll_at: nowIso,
-      updated_at: nowIso,
-      ...(claimed ? { last_claim_at: nowIso, last_job_id: jobId } : {}),
+      queue_depth: state.queueDepth,
+      supabase_host: SUPABASE_HOST,
+      safe_mode: SAFE_MODE,
+      payload: {
+        bootPhase: state.bootPhase,
+        busy: state.busy,
+        currentJobId: state.currentJobId,
+        consecutiveFailures: state.consecutiveFailures,
+      },
     };
     const r = await fetchWithRetry(
-      `${SUPABASE_URL}/rest/v1/cinematic_worker_heartbeats?on_conflict=worker_id`,
+      `${SUPABASE_URL}/functions/v1/render-worker-heartbeat`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${SERVICE_KEY}`,
-          Prefer: "resolution=merge-duplicates,return=minimal",
+          "x-render-secret": SECRET,
         },
         body: JSON.stringify(body),
       },
@@ -225,48 +195,24 @@ async function writeHeartbeat({ claimed = false, jobId = null } = {}) {
     );
     if (!r.ok) {
       const txt = await r.text().catch(() => "");
-      log("warn", "heartbeat upsert non-2xx", { status: r.status, body: txt.slice(0, 200) });
+      log("warn", "heartbeat function non-2xx", { status: r.status, body: txt.slice(0, 200) });
+      return;
     }
-    // Mirror to new render_worker_heartbeats truth table (idempotent upsert).
-    try {
-      await fetchWithRetry(
-        `${SUPABASE_URL}/rest/v1/render_worker_heartbeats?on_conflict=worker_id`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SERVICE_KEY,
-            Authorization: `Bearer ${SERVICE_KEY}`,
-            Prefer: "resolution=merge-duplicates,return=minimal",
-          },
-          body: JSON.stringify({
-            worker_id: WORKER_ID,
-            last_seen_at: nowIso,
-            queue_depth: state.queueDepth,
-            supabase_host: SUPABASE_HOST,
-            safe_mode: SAFE_MODE,
-            payload: {
-              bootPhase: state.bootPhase,
-              busy: state.busy,
-              currentJobId: state.currentJobId,
-              consecutiveFailures: state.consecutiveFailures,
-            },
-          }),
-        },
-        { timeoutMs: 5_000, retries: 1 },
-      );
-    } catch {}
     state.lastHeartbeatAt = nowIso;
   } catch (e) {
-    log("warn", "heartbeat upsert failed", { err: String(e?.message ?? e) });
+    log("warn", "heartbeat function failed", { err: String(e?.message ?? e) });
   }
 }
 
 async function pingSupabase() {
   try {
     const r = await fetchWithRetry(
-      `${SUPABASE_URL}/auth/v1/health`,
-      { headers: { apikey: SERVICE_KEY } },
+      `${SUPABASE_URL}/functions/v1/render-worker-heartbeat`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-render-secret": SECRET },
+        body: JSON.stringify({ worker_id: WORKER_ID, supabase_host: SUPABASE_HOST, safe_mode: SAFE_MODE, payload: { bootPhase: "ping" } }),
+      },
       { timeoutMs: 5_000, retries: 1 },
     );
     return { ok: r.ok, status: r.status };
@@ -416,10 +362,9 @@ function startHealthServer() {
           pollIntervalMs: POLL,
           workerId: WORKER_ID,
           envPresent: REQUIRED.reduce((a,k)=>(a[k]=!!process.env[k],a),{}),
-          serviceKey: {
-            ok: SERVICE_KEY_OK,
-            role: SERVICE_KEY_ROLE,
-            keyRef: SERVICE_KEY_REF,
+          backendAuth: {
+            mode: "edge_function_shared_secret",
+            serviceRoleRequired: false,
             urlRef: URL_REF,
           },
           state,
@@ -447,7 +392,7 @@ async function main() {
   console.log("[CINEMATIC WORKER] started from render-worker/start.mjs");
   console.log("[CINEMATIC WORKER] started");
   console.log(`[CINEMATIC WORKER] config host=${SUPABASE_HOST} pollMs=${POLL} workerId=${WORKER_ID} safeMode=${SAFE_MODE}`);
-  console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} SERVICE_KEY set=${!!SERVICE_KEY} RENDER_WORKER_SECRET set=${!!SECRET}`);
+  console.log(`[CINEMATIC WORKER] env: SUPABASE_URL set=${!!SUPABASE_URL} RENDER_WORKER_SECRET set=${!!SECRET}`);
   setBootPhase("env_validated", { node: process.version, memMb: Math.round(process.memoryUsage().rss/1024/1024) });
   log("info", "worker starting", { workerId: WORKER_ID, pollMs: POLL, port: PORT, once: ONCE, safeMode: SAFE_MODE, maxRetries: MAX_RETRIES });
   // Hard startup-timeout guard

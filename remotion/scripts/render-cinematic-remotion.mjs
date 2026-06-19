@@ -9,7 +9,7 @@
  *   ugc_pov                -> composition "cinematic-ugc-pov"
  *   lifestyle_scene        -> composition "cinematic-lifestyle"
  *
- * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET, JOB_ID
+ * Env: SUPABASE_URL, RENDER_WORKER_SECRET, JOB_ID
  */
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition, openBrowser } from "@remotion/renderer";
@@ -20,14 +20,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const WORKER_SECRET = process.env.RENDER_WORKER_SECRET;
 const JOB_ID = process.env.JOB_ID || process.argv.find((a) => a.startsWith("--job="))?.slice(6);
-const WORKER_ID = process.env.RENDER_WORKER_ID || `remotion-${Math.random().toString(36).slice(2, 8)}`;
+const WORKER_ID = process.env.RENDER_WORKER_ID || `render-worker-remotion-${Math.random().toString(36).slice(2, 8)}`;
 const FUNCTIONS_BASE_URL = (process.env.FUNCTIONS_BASE_URL || `${SUPABASE_URL}/functions/v1`).replace(/\/+$/, "");
 
-if (!SUPABASE_URL || !SERVICE_KEY || !WORKER_SECRET || !JOB_ID) {
-  console.error("[cinematic-remotion] missing env (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RENDER_WORKER_SECRET, JOB_ID)");
+if (!SUPABASE_URL || !WORKER_SECRET || !JOB_ID) {
+  console.error("[cinematic-remotion] missing env (SUPABASE_URL, RENDER_WORKER_SECRET, JOB_ID)");
   process.exit(2);
 }
 
@@ -77,21 +76,18 @@ async function claimJob() {
   return data.job;
 }
 
-async function uploadMp4(localPath, objectPath) {
+async function uploadMp4(localPath, uploadInfo) {
+  if (!uploadInfo?.signed_url) throw new Error("signed upload URL missing from claim payload");
   const data = readFileSync(localPath);
-  const url = `${SUPABASE_URL}/storage/v1/object/${objectPath}`;
-  const r = await fetch(url, {
-    method: "POST",
+  const r = await fetch(uploadInfo.signed_url, {
+    method: "PUT",
     headers: {
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      apikey: SERVICE_KEY,
       "Content-Type": "video/mp4",
-      "x-upsert": "true",
     },
     body: data,
   });
   if (!r.ok) throw new Error(`upload failed ${r.status} ${await r.text()}`);
-  return `${SUPABASE_URL}/storage/v1/object/public/${objectPath}`;
+  return uploadInfo.public_url;
 }
 
 /**
@@ -233,8 +229,7 @@ async function main() {
 
   const size = statSync(out).size;
   log("rendered", { bytes: size });
-  const objectPath = `cinematic-ads/${job.job_id}.mp4`;
-  const publicUrl = await uploadMp4(out, objectPath);
+  const publicUrl = await uploadMp4(out, job.upload);
   // Phase 5: stamp motion-engine diagnostics so the admin UI can show
   // render_mode / motion_engine_used / motion_diversity / transition_count
   // per concept and the webhook gate can reject low-motion outputs.
