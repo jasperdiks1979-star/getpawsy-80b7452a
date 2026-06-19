@@ -100,11 +100,15 @@ async function callTarget(fn: string, body: Record<string, unknown>): Promise<St
     expected = "200 (secret matches → row written)";
     ok = httpStatus === 200;
   } else if (fn === "cinematic-ad-claim-job") {
-    name = "Claim job";
-    // Probe uses a render-worker-* worker_id so it passes the allowlist gate.
-    // 200 = auth + allowlist OK (job claimed or queue empty).
-    expected = "200 (auth + allowlist OK — job claimed or queue empty)";
-    ok = httpStatus === 200;
+    name = "Claim job (auth + gate)";
+    // We DELIBERATELY send a non-allowlisted worker_id so the function
+    // proves two things without stealing a real queued job:
+    //   1. secret auth passes (otherwise we'd get 401)
+    //   2. the post-auth GH_WORKER_PREFIXES gate is wired up (returns 403
+    //      with reason=non_gh_worker_blocked)
+    // Real Render workers use render-worker-* IDs which pass this gate.
+    expected = "403 non_gh_worker_blocked (auth OK + allowlist gate active; real render-worker-* IDs pass)";
+    ok = httpStatus === 403 && (payload as any)?.reason === "non_gh_worker_blocked";
   } else {
     name = fn;
     expected = "200";
