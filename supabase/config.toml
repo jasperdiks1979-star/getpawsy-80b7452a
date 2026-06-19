@@ -374,3 +374,6 @@ verify_jwt = false
 
 [functions.media-master-pipeline]
 verify_jwt = false
+
+[functions.render-diagnose]
+verify_jwt = false
