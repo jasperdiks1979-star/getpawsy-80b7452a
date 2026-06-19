@@ -22,7 +22,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const WORKER_SECRET = process.env.RENDER_WORKER_SECRET;
 const JOB_ID = process.env.JOB_ID || process.argv.find((a) => a.startsWith("--job="))?.slice(6);
-const WORKER_ID = process.env.RENDER_WORKER_ID || `remotion-${Math.random().toString(36).slice(2, 8)}`;
+const WORKER_ID = process.env.RENDER_WORKER_ID || `render-worker-remotion-${Math.random().toString(36).slice(2, 8)}`;
 const FUNCTIONS_BASE_URL = (process.env.FUNCTIONS_BASE_URL || `${SUPABASE_URL}/functions/v1`).replace(/\/+$/, "");
 
 if (!SUPABASE_URL || !WORKER_SECRET || !JOB_ID) {
