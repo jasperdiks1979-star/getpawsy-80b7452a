@@ -19545,6 +19545,93 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_voice_assignments: {
+        Row: {
+          assigned_at: string
+          category: string | null
+          cinematic_job_id: string | null
+          elevenlabs_voice_id: string
+          id: string
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          queue_id: string | null
+          voice_name: string
+          voice_style: string
+          voice_type: string
+        }
+        Insert: {
+          assigned_at?: string
+          category?: string | null
+          cinematic_job_id?: string | null
+          elevenlabs_voice_id: string
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          queue_id?: string | null
+          voice_name: string
+          voice_style: string
+          voice_type: string
+        }
+        Update: {
+          assigned_at?: string
+          category?: string | null
+          cinematic_job_id?: string | null
+          elevenlabs_voice_id?: string
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          queue_id?: string | null
+          voice_name?: string
+          voice_style?: string
+          voice_type?: string
+        }
+        Relationships: []
+      }
+      pinterest_voice_performance: {
+        Row: {
+          category: string
+          conversion_score: number
+          ctr: number
+          id: string
+          impressions: number
+          outbound_clicks: number
+          pins_count: number
+          purchases: number
+          saves: number
+          updated_at: string
+          voice_name: string
+        }
+        Insert: {
+          category: string
+          conversion_score?: number
+          ctr?: number
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pins_count?: number
+          purchases?: number
+          saves?: number
+          updated_at?: string
+          voice_name: string
+        }
+        Update: {
+          category?: string
+          conversion_score?: number
+          ctr?: number
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pins_count?: number
+          purchases?: number
+          saves?: number
+          updated_at?: string
+          voice_name?: string
+        }
+        Relationships: []
+      }
       pinterest_winner_actions_log: {
         Row: {
           action_type: string
