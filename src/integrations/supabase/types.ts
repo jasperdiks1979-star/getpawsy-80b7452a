@@ -22379,6 +22379,423 @@ export type Database = {
           },
         ]
       }
+      revenue_ai_category_profiles: {
+        Row: {
+          avg_revenue_per_click: number
+          category: string
+          last_refreshed: string
+          sample_size: number
+          winning_camera: string | null
+          winning_cta: string[]
+          winning_duration_bucket: string | null
+          winning_hook_archetypes: string[]
+          winning_voice_ids: string[]
+        }
+        Insert: {
+          avg_revenue_per_click?: number
+          category: string
+          last_refreshed?: string
+          sample_size?: number
+          winning_camera?: string | null
+          winning_cta?: string[]
+          winning_duration_bucket?: string | null
+          winning_hook_archetypes?: string[]
+          winning_voice_ids?: string[]
+        }
+        Update: {
+          avg_revenue_per_click?: number
+          category?: string
+          last_refreshed?: string
+          sample_size?: number
+          winning_camera?: string | null
+          winning_cta?: string[]
+          winning_duration_bucket?: string | null
+          winning_hook_archetypes?: string[]
+          winning_voice_ids?: string[]
+        }
+        Relationships: []
+      }
+      revenue_ai_executive_reports: {
+        Row: {
+          created_at: string
+          day: string
+          falling_categories: Json
+          full_markdown: string | null
+          headline_text: string | null
+          id: string
+          kpis: Json
+          promote_less: Json
+          promote_more: Json
+          rising_categories: Json
+          sent_at: string | null
+          top_products: Json
+          worst_products: Json
+        }
+        Insert: {
+          created_at?: string
+          day?: string
+          falling_categories?: Json
+          full_markdown?: string | null
+          headline_text?: string | null
+          id?: string
+          kpis?: Json
+          promote_less?: Json
+          promote_more?: Json
+          rising_categories?: Json
+          sent_at?: string | null
+          top_products?: Json
+          worst_products?: Json
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          falling_categories?: Json
+          full_markdown?: string | null
+          headline_text?: string | null
+          id?: string
+          kpis?: Json
+          promote_less?: Json
+          promote_more?: Json
+          rising_categories?: Json
+          sent_at?: string | null
+          top_products?: Json
+          worst_products?: Json
+        }
+        Relationships: []
+      }
+      revenue_ai_loser_blocklist: {
+        Row: {
+          blocked_until: string
+          created_at: string
+          evidence_pins: string[]
+          id: string
+          key: string
+          reason: string | null
+          scope: string
+          severity: string
+        }
+        Insert: {
+          blocked_until?: string
+          created_at?: string
+          evidence_pins?: string[]
+          id?: string
+          key: string
+          reason?: string | null
+          scope: string
+          severity?: string
+        }
+        Update: {
+          blocked_until?: string
+          created_at?: string
+          evidence_pins?: string[]
+          id?: string
+          key?: string
+          reason?: string | null
+          scope?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      revenue_ai_pin_performance: {
+        Row: {
+          atc: number
+          atc_rate: number
+          camera_archetype: string | null
+          category: string | null
+          checkout_rate: number
+          checkouts: number
+          created_at: string
+          cta_archetype: string | null
+          day: string
+          hook_archetype: string | null
+          id: string
+          impressions: number
+          opening_scene_archetype: string | null
+          outbound_clicks: number
+          outbound_ctr: number
+          percentile_revenue: number
+          pin_id: string
+          product_id: string | null
+          purchase_rate: number
+          purchases: number
+          revenue_cents: number
+          revenue_per_click: number
+          revenue_per_impression: number
+          saves: number
+          tier: string
+          updated_at: string
+          video_duration_bucket: string | null
+          voice_id: string | null
+        }
+        Insert: {
+          atc?: number
+          atc_rate?: number
+          camera_archetype?: string | null
+          category?: string | null
+          checkout_rate?: number
+          checkouts?: number
+          created_at?: string
+          cta_archetype?: string | null
+          day?: string
+          hook_archetype?: string | null
+          id?: string
+          impressions?: number
+          opening_scene_archetype?: string | null
+          outbound_clicks?: number
+          outbound_ctr?: number
+          percentile_revenue?: number
+          pin_id: string
+          product_id?: string | null
+          purchase_rate?: number
+          purchases?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          revenue_per_impression?: number
+          saves?: number
+          tier?: string
+          updated_at?: string
+          video_duration_bucket?: string | null
+          voice_id?: string | null
+        }
+        Update: {
+          atc?: number
+          atc_rate?: number
+          camera_archetype?: string | null
+          category?: string | null
+          checkout_rate?: number
+          checkouts?: number
+          created_at?: string
+          cta_archetype?: string | null
+          day?: string
+          hook_archetype?: string | null
+          id?: string
+          impressions?: number
+          opening_scene_archetype?: string | null
+          outbound_clicks?: number
+          outbound_ctr?: number
+          percentile_revenue?: number
+          pin_id?: string
+          product_id?: string | null
+          purchase_rate?: number
+          purchases?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          revenue_per_impression?: number
+          saves?: number
+          tier?: string
+          updated_at?: string
+          video_duration_bucket?: string | null
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
+      revenue_ai_revenue_scores: {
+        Row: {
+          composite: number
+          ctr_score: number
+          media_score: number
+          pinterest_score: number
+          product_id: string
+          publish_multiplier: number
+          reason: string | null
+          sales_score: number
+          stock_score: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          composite?: number
+          ctr_score?: number
+          media_score?: number
+          pinterest_score?: number
+          product_id: string
+          publish_multiplier?: number
+          reason?: string | null
+          sales_score?: number
+          stock_score?: number
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          composite?: number
+          ctr_score?: number
+          media_score?: number
+          pinterest_score?: number
+          product_id?: string
+          publish_multiplier?: number
+          reason?: string | null
+          sales_score?: number
+          stock_score?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      revenue_ai_settings: {
+        Row: {
+          executive_hour_utc: number
+          id: boolean
+          loser_block_days: number
+          loser_ctr_floor_ratio: number
+          loser_min_impressions: number
+          queue_min_pins: number
+          queue_min_reserve: number
+          queue_min_video_jobs: number
+          revenue_weight_split: Json
+          top1_pct: number
+          top10_pct: number
+          top5_pct: number
+          updated_at: string
+          voice_min_pins: number
+          winner_clone_max_per_day: number
+        }
+        Insert: {
+          executive_hour_utc?: number
+          id?: boolean
+          loser_block_days?: number
+          loser_ctr_floor_ratio?: number
+          loser_min_impressions?: number
+          queue_min_pins?: number
+          queue_min_reserve?: number
+          queue_min_video_jobs?: number
+          revenue_weight_split?: Json
+          top1_pct?: number
+          top10_pct?: number
+          top5_pct?: number
+          updated_at?: string
+          voice_min_pins?: number
+          winner_clone_max_per_day?: number
+        }
+        Update: {
+          executive_hour_utc?: number
+          id?: boolean
+          loser_block_days?: number
+          loser_ctr_floor_ratio?: number
+          loser_min_impressions?: number
+          queue_min_pins?: number
+          queue_min_reserve?: number
+          queue_min_video_jobs?: number
+          revenue_weight_split?: Json
+          top1_pct?: number
+          top10_pct?: number
+          top5_pct?: number
+          updated_at?: string
+          voice_min_pins?: number
+          winner_clone_max_per_day?: number
+        }
+        Relationships: []
+      }
+      revenue_ai_trend_signals: {
+        Row: {
+          category: string
+          created_at: string
+          day: string
+          direction: string
+          id: string
+          pct_change_7d: number
+          recommended_quota_multiplier: number
+          trend_score: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          day?: string
+          direction?: string
+          id?: string
+          pct_change_7d?: number
+          recommended_quota_multiplier?: number
+          trend_score?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          day?: string
+          direction?: string
+          id?: string
+          pct_change_7d?: number
+          recommended_quota_multiplier?: number
+          trend_score?: number
+        }
+        Relationships: []
+      }
+      revenue_ai_voice_rankings: {
+        Row: {
+          allocation_weight: number
+          conversion_rate: number
+          n_pins: number
+          outbound_clicks: number
+          purchases: number
+          ranking: number
+          revenue_cents: number
+          revenue_per_click: number
+          updated_at: string
+          voice_id: string
+        }
+        Insert: {
+          allocation_weight?: number
+          conversion_rate?: number
+          n_pins?: number
+          outbound_clicks?: number
+          purchases?: number
+          ranking?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          updated_at?: string
+          voice_id: string
+        }
+        Update: {
+          allocation_weight?: number
+          conversion_rate?: number
+          n_pins?: number
+          outbound_clicks?: number
+          purchases?: number
+          ranking?: number
+          revenue_cents?: number
+          revenue_per_click?: number
+          updated_at?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      revenue_ai_winner_dna: {
+        Row: {
+          avg_purchase_rate: number
+          avg_revenue_per_click: number
+          dimension: string
+          ewma: number
+          id: string
+          key: string
+          last_seen: string
+          n_pins: number
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          avg_purchase_rate?: number
+          avg_revenue_per_click?: number
+          dimension: string
+          ewma?: number
+          id?: string
+          key: string
+          last_seen?: string
+          n_pins?: number
+          score?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_purchase_rate?: number
+          avg_revenue_per_click?: number
+          dimension?: string
+          ewma?: number
+          id?: string
+          key?: string
+          last_seen?: string
+          n_pins?: number
+          score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       revenue_alert_config: {
         Row: {
           alert_checkout_errors: boolean
