@@ -55,19 +55,33 @@ Deno.serve(async (req) => {
       if (!bestCj || score > bestCj.score) bestCj = { pid, title, sellPrice: Number(c.sellPrice), qty, score, image: c.productImage };
     }
 
-    const top = (bestInternal?.score ?? 0) >= (bestCj?.score ?? 0) ? { kind: "internal", ...bestInternal } : { kind: "cj", ...bestCj };
+    const top = (bestInternal?.score ?? 0) >= (bestCj?.score ?? 0)
+      ? { kind: "internal", ...bestInternal }
+      : { kind: "cj", ...bestCj };
     if (!top || !top.score) return jsonResponse({ ok: true, found: false });
     const matchPct = Number((top.score * 100).toFixed(1));
 
-    await sb.from("product_replacement_candidates").upsert({
-      product_id: productId,
-      candidate_kind: top.kind,
-      candidate_ref: top.kind === "internal" ? top.id : top.pid,
-      match_score: matchPct,
-      details: top,
-      status: matchPct >= 90 ? "ready_for_review" : "below_threshold",
-      created_at: new Date().toISOString(),
-    } as any, { onConflict: "product_id,candidate_ref" }).then(() => {}).catch(() => {});
+    if (top.kind === "internal") {
+      await sb.from("product_replacement_candidates").upsert({
+        product_id: productId,
+        candidate_product_id: top.id,
+        match_score: Math.round(matchPct),
+        reason: "global_oos_recovery",
+      }, { onConflict: "product_id,candidate_product_id" });
+    } else {
+      await sb.from("product_supplier_candidates").upsert({
+        product_id: productId,
+        supplier: "cj",
+        supplier_product_id: top.pid,
+        title: top.title,
+        image_url: top.image,
+        price_cents: Math.round((top.sellPrice || 0) * 100) || null,
+        global_qty: top.qty,
+        match_score: matchPct,
+        signals: top,
+        status: matchPct >= 90 ? "replacement_ready" : "replacement_low_match",
+      }, { onConflict: "product_id,supplier,supplier_product_id" });
+    }
 
     return jsonResponse({ ok: true, found: true, matchPct, top });
   } catch (e) {
