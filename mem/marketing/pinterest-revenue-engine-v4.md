@@ -18,3 +18,5 @@ type: feature
 **Admin route:** `/admin/pinterest-revenue-v4` (lazy-loaded, `PinterestRevenueV4.tsx`).
 
 **Source tier priority (item 5):** `pickCreativeSourceTier()` — product_video > photos (≥5) > ai. Wire into cinematic orchestrators before AI fallback.
+
+**Voice Diversity Engine (item 13):** `_shared/voice-pool.ts` defines 8-voice pool (female/male × friendly/premium/energetic/{storytelling|trustworthy}) mapped to approved ElevenLabs IDs. `pickVoice()` enforces no >2 consecutive in same category and no >20% share of last 100 pins, then weighted-random by learned performance. `cinematic-voice-selector` now uses pool, records every choice in `pinterest_voice_assignments` (voice_name/voice_type/voice_style/elevenlabs_voice_id) and writes job.meta.voice. Cron `pinterest-voice-optimizer` (06:30 UTC) aggregates last-30d CTR / outbound / saves / purchases per (voice, category) into `pinterest_voice_performance`. Learned weights only activate after ≥50 pins in a category; otherwise neutral weights.
