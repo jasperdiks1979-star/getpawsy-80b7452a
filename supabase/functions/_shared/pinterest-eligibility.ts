@@ -65,7 +65,7 @@ export async function assessProductEligibility(
 
   const { data: p } = await sb
     .from("products")
-    .select("id, slug, category, price, stock, is_active, images, image_url, us_stock, eu_stock, cn_stock")
+    .select("id, slug, category, price, stock, is_active, images, image_url, us_stock, eu_stock, cn_stock, effective_stock, inventory_source, inventory_priority")
     .eq("id", productId)
     .maybeSingle();
 
@@ -89,14 +89,17 @@ export async function assessProductEligibility(
     return finalize(sb, p, false, "inactive", 0, {}, opts);
   }
 
-  // Multi-warehouse gate (Item 14): pass when any warehouse > 0.
+  // Global Inventory V1: prefer canonical effective_stock when present.
   const us = Number((p as any).us_stock ?? 0);
   const eu = Number((p as any).eu_stock ?? 0);
   const cn = Number((p as any).cn_stock ?? 0);
+  const effective = (p as any).effective_stock;
   const hasWarehouseCols =
+    effective != null ||
     (p as any).us_stock != null || (p as any).eu_stock != null || (p as any).cn_stock != null;
   if (hasWarehouseCols) {
-    if (us + eu + cn <= 0) {
+    const total = effective != null ? Number(effective) : (us + eu + cn);
+    if (total <= 0) {
       return finalize(sb, p, false, "all_warehouses_empty", 0, {}, opts);
     }
   } else {
@@ -143,7 +146,8 @@ export async function assessProductEligibility(
 
   const result = await finalize(sb, p, true, "ok", score, breakdown, opts);
   const source: "US" | "EU" | "CN" | "NONE" =
-    us > 0 ? "US" : eu > 0 ? "EU" : cn > 0 ? "CN" : "NONE";
+    ((p as any).inventory_source as any) ??
+    (us > 0 ? "US" : eu > 0 ? "EU" : cn > 0 ? "CN" : "NONE");
   result.warehouseSource = source;
   result.isFallback = source === "CN" || source === "EU";
   return result;
