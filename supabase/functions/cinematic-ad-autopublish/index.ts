@@ -474,6 +474,29 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "v4_reject" });
       continue;
     }
+    // Gold Standard gate — score the job (live) and block anything below the floor.
+    // Tier `gold` (>= priority) is published with priority flag; `medium` normal; `low` blocked.
+    if (gsEnabled) {
+      const gs = scoreCreative(job as any, { minScore: gsMin, priorityScore: gsPriority });
+      await admin.from("cinematic_ad_jobs").update({
+        creative_score: gs.creative_score,
+        creative_score_voice: gs.voice,
+        creative_score_motion: gs.motion,
+        creative_score_product_visibility: gs.product_visibility,
+        creative_score_conversion: gs.conversion,
+        creative_score_brand: gs.brand,
+        creative_quality_tier: gs.tier,
+      }).eq("id", job.id);
+      if (gs.tier === "low") {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: `gold_standard_below_${gsMin}:${gs.creative_score}|${gs.reasons.slice(0, 4).join(",")}`,
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "gold_standard_low", creative_score: gs.creative_score });
+        continue;
+      }
+      (job as any).__gs_tier = gs.tier;
+      (job as any).__gs_score = gs.creative_score;
+    }
     // V5 gate: native-UGC realism / authenticity / emotional arc.
     if (v5Enabled && (job as any).validation_v5_passed === false) {
       const reasons = Array.isArray((job as any).v5_reject_reasons) ? (job as any).v5_reject_reasons.join("|") : "v5_failed";
