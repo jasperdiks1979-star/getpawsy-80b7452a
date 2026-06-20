@@ -2,6 +2,13 @@
 // based on niche, demographic, emotion, and purchase intent.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import {
+  pickVoice,
+  loadRecentVoices,
+  loadPerformanceWeights,
+  recordVoiceAssignment,
+  VOICE_POOL,
+} from "../_shared/voice-pool.ts";
 
 type VoiceId =
   | "premium_female_warm"
@@ -95,24 +102,51 @@ Deno.serve(async (req) => {
     if (error || !job) return new Response(JSON.stringify({ ok: false, traceId, message: "job not found" }),
       { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { selected, alt, reasoning } = selectVoice(job);
-    const elevenLabsId = VOICE_CATALOG[selected.id as VoiceId].elevenlabs_id;
+    // Voice Diversity Engine: rotate across 8-voice pool with recency + 20% cap rules.
+    const category = inferCategoryBucket(`${job.category || ""} ${job.product_name || job.product_slug || ""}`);
+    const [{ recentCategoryVoices, recentGlobalVoices }, performanceWeights] = await Promise.all([
+      loadRecentVoices(supabase, category),
+      loadPerformanceWeights(supabase, category),
+    ]);
+    const pick = pickVoice({ category, recentCategoryVoices, recentGlobalVoices, performanceWeights });
+
+    await recordVoiceAssignment(supabase, {
+      voice: pick.voice,
+      category,
+      cinematic_job_id: job.id,
+      product_id: job.product_id ?? null,
+      product_slug: job.product_slug ?? null,
+    });
 
     const upd = await supabase.from("cinematic_ad_jobs").update({
-      selected_voice_id: selected.id,
-      voice_fit_score: selected.score,
-      voice_alt_id: alt.id,
-      voice_id: elevenLabsId,            // also wire to the existing render-time voice_id
+      selected_voice_id: pick.voice.voice_name,
+      voice_fit_score: 100,
+      voice_alt_id: null,
+      voice_id: pick.voice.elevenlabs_voice_id,
+      meta: { ...(job.meta || {}), voice: {
+        voice_name: pick.voice.voice_name,
+        voice_type: pick.voice.voice_type,
+        voice_style: pick.voice.voice_style,
+        elevenlabs_voice_id: pick.voice.elevenlabs_voice_id,
+        reason: pick.reason,
+        weights_active: Object.keys(performanceWeights).length > 0,
+      }},
     }).eq("id", job_id);
     if (upd.error) throw upd.error;
 
     return new Response(JSON.stringify({
       ok: true, traceId,
-      message: `Voice selected: ${VOICE_CATALOG[selected.id as VoiceId].label} (fit=${selected.score})`,
-      selected: { id: selected.id, score: selected.score, label: VOICE_CATALOG[selected.id as VoiceId].label, elevenlabs_id: elevenLabsId },
-      alt:      { id: alt.id, score: alt.score, label: VOICE_CATALOG[alt.id as VoiceId].label },
-      reasoning,
-      catalog: VOICE_CATALOG,
+      message: `Voice selected: ${pick.voice.display_name} (${pick.reason})`,
+      selected: {
+        voice_name: pick.voice.voice_name,
+        voice_type: pick.voice.voice_type,
+        voice_style: pick.voice.voice_style,
+        elevenlabs_id: pick.voice.elevenlabs_voice_id,
+        label: pick.voice.display_name,
+      },
+      candidates: pick.candidates,
+      category,
+      pool: VOICE_POOL,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, traceId, message: (e as Error).message }),
