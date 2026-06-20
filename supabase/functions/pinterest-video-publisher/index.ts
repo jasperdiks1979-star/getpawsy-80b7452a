@@ -341,6 +341,20 @@ async function publishVideoPin(opts: {
   const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
   const apiBase = await getPinterestApiBase(sb);
 
+  // Multi-warehouse (Item 14): hydrate warehouse source so copy injection
+  // appends fallback tags / strips banned "out of stock" wording.
+  try {
+    const slug = (queueRow as any)?.product_slug ?? asset?.product_slug ?? null;
+    if (slug) {
+      const { data: prow } = await sb.from("products")
+        .select("us_stock, eu_stock, cn_stock, stock, is_active")
+        .eq("slug", slug).maybeSingle();
+      if (prow) {
+        (queueRow as any)._warehouseSource = resolveWarehouse(prow as any).source;
+      }
+    }
+  } catch (_e) { /* non-fatal */ }
+
   // Stage 0: canonical guard — reject up-front if the destination URL would
   // collapse into the homepage canonical bucket (Pinterest dedupe → "this
   // site doesn't allow you to save Pins") or carries a numeric-variant slug.
