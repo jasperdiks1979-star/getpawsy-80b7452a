@@ -20317,6 +20317,51 @@ export type Database = {
           },
         ]
       }
+      product_global_inventory: {
+        Row: {
+          cost_cents: number | null
+          country_code: string | null
+          created_at: string
+          id: string
+          last_checked_at: string
+          product_id: string
+          qty: number
+          raw: Json
+          shipping_days_max: number | null
+          shipping_days_min: number | null
+          supplier: string
+          warehouse: string
+        }
+        Insert: {
+          cost_cents?: number | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          last_checked_at?: string
+          product_id: string
+          qty?: number
+          raw?: Json
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          supplier?: string
+          warehouse: string
+        }
+        Update: {
+          cost_cents?: number | null
+          country_code?: string | null
+          created_at?: string
+          id?: string
+          last_checked_at?: string
+          product_id?: string
+          qty?: number
+          raw?: Json
+          shipping_days_max?: number | null
+          shipping_days_min?: number | null
+          supplier?: string
+          warehouse?: string
+        }
+        Relationships: []
+      }
       product_image_compliance: {
         Row: {
           created_at: string
@@ -20985,6 +21030,63 @@ export type Database = {
           },
         ]
       }
+      product_supplier_candidates: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          discovered_at: string
+          global_qty: number
+          id: string
+          image_url: string | null
+          match_score: number
+          price_cents: number | null
+          product_id: string
+          signals: Json
+          status: string
+          supplier: string
+          supplier_product_id: string
+          supplier_sku: string | null
+          title: string | null
+          warehouses: Json
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          discovered_at?: string
+          global_qty?: number
+          id?: string
+          image_url?: string | null
+          match_score?: number
+          price_cents?: number | null
+          product_id: string
+          signals?: Json
+          status?: string
+          supplier?: string
+          supplier_product_id: string
+          supplier_sku?: string | null
+          title?: string | null
+          warehouses?: Json
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          discovered_at?: string
+          global_qty?: number
+          id?: string
+          image_url?: string | null
+          match_score?: number
+          price_cents?: number | null
+          product_id?: string
+          signals?: Json
+          status?: string
+          supplier?: string
+          supplier_product_id?: string
+          supplier_sku?: string | null
+          title?: string | null
+          warehouses?: Json
+        }
+        Relationships: []
+      }
       product_supplier_mappings: {
         Row: {
           created_at: string
@@ -21053,6 +21155,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_supplier_swaps: {
+        Row: {
+          executed_at: string
+          executed_by: string | null
+          from_snapshot: Json
+          id: string
+          product_id: string
+          reason: string | null
+          rolled_back_at: string | null
+          to_snapshot: Json
+        }
+        Insert: {
+          executed_at?: string
+          executed_by?: string | null
+          from_snapshot?: Json
+          id?: string
+          product_id: string
+          reason?: string | null
+          rolled_back_at?: string | null
+          to_snapshot?: Json
+        }
+        Update: {
+          executed_at?: string
+          executed_by?: string | null
+          from_snapshot?: Json
+          id?: string
+          product_id?: string
+          reason?: string | null
+          rolled_back_at?: string | null
+          to_snapshot?: Json
+        }
+        Relationships: []
       }
       product_winner_scores: {
         Row: {
@@ -21919,6 +22054,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           window_start?: string
+        }
+        Relationships: []
+      }
+      recovery_engine_runs: {
+        Row: {
+          alerts: number
+          audited: number
+          deactivated: number
+          details: Json
+          finished_at: string | null
+          id: string
+          replaced: number
+          scanned: number
+          started_at: string
+          swapped: number
+          trigger: string
+        }
+        Insert: {
+          alerts?: number
+          audited?: number
+          deactivated?: number
+          details?: Json
+          finished_at?: string | null
+          id?: string
+          replaced?: number
+          scanned?: number
+          started_at?: string
+          swapped?: number
+          trigger?: string
+        }
+        Update: {
+          alerts?: number
+          audited?: number
+          deactivated?: number
+          details?: Json
+          finished_at?: string | null
+          id?: string
+          replaced?: number
+          scanned?: number
+          started_at?: string
+          swapped?: number
+          trigger?: string
         }
         Relationships: []
       }
@@ -25505,6 +25682,45 @@ export type Database = {
           ts?: string
           ttfb_value?: number | null
           ua?: string | null
+        }
+        Relationships: []
+      }
+      winner_products: {
+        Row: {
+          created_at: string
+          id: string
+          is_protected: boolean
+          niche: string | null
+          product_id: string
+          recovery_mode: boolean
+          refreshed_at: string
+          score: number
+          signals: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_protected?: boolean
+          niche?: string | null
+          product_id: string
+          recovery_mode?: boolean
+          refreshed_at?: string
+          score?: number
+          signals?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_protected?: boolean
+          niche?: string | null
+          product_id?: string
+          recovery_mode?: boolean
+          refreshed_at?: string
+          score?: number
+          signals?: Json
+          updated_at?: string
         }
         Relationships: []
       }
