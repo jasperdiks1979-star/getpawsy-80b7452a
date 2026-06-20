@@ -1813,6 +1813,7 @@ export type Database = {
           creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null
+          creative_source_tier: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
@@ -2100,6 +2101,7 @@ export type Database = {
           creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
+          creative_source_tier?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -2387,6 +2389,7 @@ export type Database = {
           creative_plan?: Json | null
           creative_quality_score?: number | null
           creative_reject_reason?: string | null
+          creative_source_tier?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
           cta_variants_meta?: Json
@@ -14986,6 +14989,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_eligibility_log: {
+        Row: {
+          checked_at: string
+          details: Json | null
+          eligible: boolean
+          id: string
+          inventory: number | null
+          media_score: number | null
+          product_id: string | null
+          product_slug: string | null
+          reason: string | null
+          source: string | null
+        }
+        Insert: {
+          checked_at?: string
+          details?: Json | null
+          eligible: boolean
+          id?: string
+          inventory?: number | null
+          media_score?: number | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          source?: string | null
+        }
+        Update: {
+          checked_at?: string
+          details?: Json | null
+          eligible?: boolean
+          id?: string
+          inventory?: number | null
+          media_score?: number | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       pinterest_evolution_log: {
         Row: {
           created_at: string
@@ -17753,6 +17795,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_replacement_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          id: string
+          original_product_id: string | null
+          reason: string | null
+          replacement_product_id: string | null
+          winner_pin_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          original_product_id?: string | null
+          reason?: string | null
+          replacement_product_id?: string | null
+          winner_pin_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          original_product_id?: string | null
+          reason?: string | null
+          replacement_product_id?: string | null
+          winner_pin_id?: string | null
+        }
+        Relationships: []
+      }
       pinterest_revenue_attribution_v3: {
         Row: {
           add_to_carts: number
@@ -18257,6 +18329,7 @@ export type Database = {
           min_gap_minutes: number
           mode: string
           non_dropshipping_min: number
+          optimization_target: string | null
           pacing_mode: string
           per_category_daily_cap: number
           pin_type_target_ratio: Json
@@ -18305,6 +18378,7 @@ export type Database = {
           min_gap_minutes?: number
           mode?: string
           non_dropshipping_min?: number
+          optimization_target?: string | null
           pacing_mode?: string
           per_category_daily_cap?: number
           pin_type_target_ratio?: Json
@@ -18353,6 +18427,7 @@ export type Database = {
           min_gap_minutes?: number
           mode?: string
           non_dropshipping_min?: number
+          optimization_target?: string | null
           pacing_mode?: string
           per_category_daily_cap?: number
           pin_type_target_ratio?: Json
@@ -19551,6 +19626,51 @@ export type Database = {
           revenue_per_impression?: number | null
           sample_size?: number
           save_rate?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_winner_templates: {
+        Row: {
+          category: string | null
+          composite_score: number | null
+          created_at: string
+          cta: string | null
+          duration_s: number | null
+          headline_pattern: string | null
+          hook_category: string | null
+          id: string
+          scene_pattern: Json | null
+          source_pin_id: string | null
+          updated_at: string
+          uses_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          composite_score?: number | null
+          created_at?: string
+          cta?: string | null
+          duration_s?: number | null
+          headline_pattern?: string | null
+          hook_category?: string | null
+          id?: string
+          scene_pattern?: Json | null
+          source_pin_id?: string | null
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          composite_score?: number | null
+          created_at?: string
+          cta?: string | null
+          duration_s?: number | null
+          headline_pattern?: string | null
+          hook_category?: string | null
+          id?: string
+          scene_pattern?: Json | null
+          source_pin_id?: string | null
+          updated_at?: string
+          uses_count?: number | null
         }
         Relationships: []
       }
@@ -25967,6 +26087,7 @@ export type Database = {
           creative_plan: Json | null
           creative_quality_score: number | null
           creative_reject_reason: string | null
+          creative_source_tier: string | null
           cta_clarity_score: number | null
           cta_text: string | null
           cta_variants_meta: Json
