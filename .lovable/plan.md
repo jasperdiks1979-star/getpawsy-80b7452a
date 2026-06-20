@@ -1,88 +1,69 @@
-# Pinterest Video Revenue Engine V4 + Stripe Webhook Audit
+# GetPawsy Production Recovery + Revenue Engine Master Audit
 
-This is a large multi-track request. I want to confirm scope and sequencing before shipping it, because several parts overlap with systems that already exist (Recovery Engine, Revenue AI V1, V4 Quality Gate, Self-Healing pipeline) and a few parts need real keys / live calls.
+This is a large, evidence-based audit. I want to confirm scope and a few rules before executing — the wrong assumption here can take down publishing, promotion, or orders.
 
-## Track 1 — Stripe webhook audit (CRITICAL, do first)
+## Scope (9 phases)
 
-1. Inspect `supabase/functions/stripe-webhook` source + deploy state.
-2. Probe the endpoint live (GET + POST without signature) to confirm 200/400 behavior and signature enforcement.
-3. Query DB: `cron_job_logs`, `orders` (last paid/pending), `checkout_funnel_events`, `disputes` to confirm whether it still drives revenue.
-4. Reuse existing `webhook-health` edge function output.
-5. Verdict matrix:
-   - **In use** → repair signature/200, run end-to-end Stripe test event, document.
-   - **Legacy/Skidzo** → mark legacy in code header + memory, do NOT delete (safer); add admin note.
-6. Deliver short CRITICAL / WARNING / SAFE report in chat.
+1. **System inventory** — every cron job, GH workflow, edge function, queue, worker. Status + last run + failure %.
+2. **Pinterest audit** — connection, token, boards, pins (24h/7d/30d), duplicates, broken URLs.
+3. **Video pipeline audit** — v3 / v4 / v5 job counts, success %, bottlenecks.
+4. **Revenue Engine audit** — winner_products, scoring, top 50 promoted with revenue.
+5. **Catalog health** — active/inactive/OOS/discontinued, restorability.
+6. **Traffic audit** — GA4 / Pinterest / Stripe / server, funnel dropoff.
+7. **Credit consumption audit** — where Lovable credits go, identify waste.
+8. **Auto-healing** — repair broken crons, stuck queues, zombie systems. **Do NOT touch:** Stripe webhook, orders, customer data.
+9. **Proof** — every claim cited with table + row counts + timestamps.
 
-## Track 2 — Golden Reference video (`pin.it/73g2ln0as`)
+## How I'll execute
 
-`pin.it` short links cannot be resolved server-side without the full pin id. **I need either the expanded `pinterest.com/pin/<id>` URL, or the MP4 uploaded to the project**, otherwise I cannot analyze voice-over / pacing / hook for real.
+Read-only first across DB + edge logs + GH workflow state, then apply repairs **only where evidence is unambiguous**. Each repair logged to memory.
 
-Assuming I get it, I will:
-- Insert it into `pinterest_creative_benchmarks` as `tier='gold_standard'`.
-- Persist the quality profile (hook, voice style, pacing, CTA, motion) into a new row in `cinematic_creative_dna` tagged `source='gold_standard'`.
-- Wire `cinematic-ad-validate` to compare new jobs against the gold profile (cosine similarity on the structured profile) and add a `gold_match_score` field.
+Method per phase:
+- Phase 1: SQL on `cron_job_logs`, `job_runs`, `pinterest_pipeline_health_snapshots`, `cinematic_worker_heartbeats` + filesystem scan of `.github/workflows` + `supabase/functions`.
+- Phase 2: SQL on `pinterest_connection`, `pinterest_boards`, `pinterest_pin_queue`, `pinterest_pins`, `pinterest_video_publish_log`, `pinterest_analytics_daily`. Live HEAD against destination URLs for sampled pins.
+- Phase 3: SQL on `cinematic_v3_jobs`, `cinematic_v4_jobs`, `cv5_storyboards`, `cinematic_ad_jobs`. Stuck = status in (rendering/trimming/queued) > 2h.
+- Phase 4: SQL on `winner_products`, `pinterest_revenue_attribution_v3`, `revenue_ai_pin_performance`, `orders`.
+- Phase 5: SQL on `products`, `discontinued_products`, `product_global_inventory`.
+- Phase 6: `pinterest_funnel_events`, `checkout_funnel_events`, `orders`, `gi_traffic_sessions`.
+- Phase 7: `pinterest_credit_events`, `pinterest_credit_state`, `cron_job_logs` failure rates.
+- Phase 8: Targeted repairs (see Auto-repair allowlist).
+- Phase 9: Every number in the final report linked to its SQL.
 
-## Track 3 — Creative Quality Filter (publish gate)
+## Auto-repair allowlist (safe, will execute without asking)
 
-New scoring contract on `cinematic_v4_jobs`:
-`hook_score, voice_score, product_visibility_score, motion_score, visual_score, conversion_score, engagement_score` → `total_quality_score`.
-Gate inside `cinematic-ad-autopublish`:
-- `<85` → status `quality_rejected`
-- `85–89` → status `quality_hold` (queued for hook/voice reroll)
-- `≥90` → publish
+- Mark `cinematic_*_jobs` stuck in `rendering`/`trimming` > 6h as `failed` with reason `watchdog_stale`.
+- Mark `pinterest_pin_queue` rows stuck in `processing` > 2h as `failed`.
+- Deactivate products in `discontinued_products` that still have `is_active=true`.
+- Archive `pinterest_pin_queue` drafts pointing to inactive products / 404 destinations.
+- Clear `pinterest_video_queue` rows for assets whose source MP4 returns 404.
+- Disable cron jobs with **100% failure rate over last 14 days AND > 50 attempts** (legacy zombies only). Will list before disabling.
 
-Reuse existing v4 scoring fields; add the missing dimensions and the gate.
+## NOT auto-repaired (will only report, ask before changing)
 
-## Track 4 — Voice Over Engine V2
+- Stripe webhook + orders + customer data — never touched.
+- Disabling any cron with <100% failure or with recent success.
+- Deleting any product, pin, or SEO URL.
+- Changing Revenue AI scoring weights or budgets.
+- Changing publish-gate thresholds.
+- Rotating any API token.
 
-New table `cinematic_voice_rotation` (5 voice profiles seeded: warm_female, energetic_female, premium_female, warm_male, storyteller_male) + last-used timestamp. Edge function `voice-rotation-pick` returns the least-recently-used voice not used in the last N pins for that product/niche. Wire into `cinematic-ad-generate-voice`.
+## Deliverable
 
-## Track 5 — Video Generation Rules (hard bans)
+Single final report with:
+- Health Score 0–100 + 6 sub-scores
+- Top 10 issues / quick wins / revenue opportunities
+- Direct answers to the 8 closing questions
+- Every claim cited to a SQL row count + timestamp
+- Full list of repairs applied with before/after counts
 
-Update `cinematic-ad-validate`:
-- Reject when `media_type='static'` (already partly done by quality gate).
-- Reject when `voiceover_url IS NULL`.
-- Reject when `scene_change_count < 4` (slideshow heuristic).
-- Reject when source asset hash matches CJ supplier library (new `cj_supplier_asset_hashes` table; seeded from existing `pinterest_image_blocklist` + `product_media_audit`).
+## Out of scope
 
-## Track 6 — Inventory Intelligence Engine
+- Building new dashboards or UI for this audit.
+- New edge functions or schema migrations (unless required to repair a confirmed broken queue).
+- Anything Pinterest video Gold Reference related (still waiting on pin URL from prior turn).
 
-Already mostly built in the **Global Product Recovery Engine** (last ship). I'll add the explicit 3-scenario tagger `inventory_promotion_status` (`PROMOTE | PROMOTE_LONG_ETA | DO_NOT_PROMOTE`) computed from `product_global_inventory` and wire it into:
-- `pinterest-auto-replenish` (skip `DO_NOT_PROMOTE`)
-- `cinematic-ad-autopublish` (skip `DO_NOT_PROMOTE`)
-- PDP delivery badge (show longer ETA for `PROMOTE_LONG_ETA`).
+## Confirm before I start
 
-## Track 7 — Durian Cat Scratching Bed re-audit
-
-Re-run `product-global-audit` + `supplier-discovery` for `cj_product_id=2006968402615898113`. Previous audit returned worldwide stock = 0 and CJ status = 3 (off-shelf). I'll re-confirm against live CJ and ship a short verdict; no code change unless stock reappeared.
-
-## Track 8 — Pinterest Continuity Engine
-
-New cron `pinterest-continuity-tick` (every 30 min):
-- Count rows in `pinterest_pin_queue` where `status in ('queued','rendering')`.
-- Count `cinematic_v4_jobs` where `status='ready_to_publish'`.
-- If publishable videos `<20`, enqueue generation jobs for top-ranked products (Track 9 ranking).
-- Severity log to `pinterest_pipeline_health_snapshots`:
-  - `<20` → info, `<10` → warning, `<5` → critical, `0` → page-out via existing `pipeline-emergency-content`.
-
-## Track 9 — Product Prioritization
-
-New view `product_pinterest_priority_v` = weighted score:
-`stock_ok*40 + margin_norm*20 + past_pin_ctr*20 + has_video_assets*10 + conversion_score*10`.
-Used by Continuity Engine to pick what to render next.
-
-## Track 10 — Final report (in chat after execution)
-
-`# products promotable`, `# excluded`, Durian status, queue depth, publishable videos, scheduled pins, top-10 video targets.
-
-## Out of scope this pass
-- Replacing the existing v4 pacing/realism scoring (reuse, don't duplicate).
-- Building a new voiceover provider integration (use existing ElevenLabs setup).
-- Deleting `stripe-webhook` even if legacy — only mark legacy; user can delete later.
-
-## What I need from you before executing
-1. **Expanded Pinterest URL or MP4** for `pin.it/73g2ln0as` (Track 2 — required).
-2. **Confirm Stripe is still in production use** for GetPawsy (Track 1 verdict path).
-3. Approve the publish gate thresholds (85 / 90) as final.
-
-Reply "go" with answers to 1–3 and I'll ship everything in one pass.
+1. **Auto-repair allowlist above OK?** Especially: deactivating discontinued products that snuck back to active, and disabling 100%-failure crons.
+2. **Time budget**: this audit is roughly 15–25 tool calls of SQL + log reading. Proceed in one pass, or want it phase-by-phase with checkpoints?
+3. **Credit consumption (Phase 7)**: only the workspace billing admin can see Lovable credit usage. If `credits--get_credit_balance` returns permission denied for this role, I'll report Lovable-side credit proxies (Pinterest credit_state, render minutes, AI calls) instead — OK?
