@@ -20417,6 +20417,90 @@ export type Database = {
         }
         Relationships: []
       }
+      product_replacement_candidates: {
+        Row: {
+          candidate_product_id: string
+          created_at: string
+          id: string
+          match_score: number
+          product_id: string
+          reason: string
+        }
+        Insert: {
+          candidate_product_id: string
+          created_at?: string
+          id?: string
+          match_score?: number
+          product_id: string
+          reason?: string
+        }
+        Update: {
+          candidate_product_id?: string
+          created_at?: string
+          id?: string
+          match_score?: number
+          product_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_reviews: {
         Row: {
           content: string | null
@@ -20692,6 +20776,7 @@ export type Database = {
           cj_variant_id: string | null
           cluster_primary: string | null
           cluster_secondary: string | null
+          cn_available: boolean | null
           cn_stock: number | null
           compare_at_price: number | null
           condition: string
@@ -20711,8 +20796,10 @@ export type Database = {
           description: string | null
           description_bullets: string[] | null
           description_optimized_at: string | null
+          effective_stock: number | null
           estimated_delivery_days: number | null
           estimated_shipping_cost: number | null
+          eu_available: boolean | null
           eu_stock: number | null
           fallback_active: boolean | null
           feed_readiness_score: number | null
@@ -20724,6 +20811,8 @@ export type Database = {
           image_url: string | null
           images: string[] | null
           inventory_manual_block: boolean
+          inventory_priority: number | null
+          inventory_score: number | null
           inventory_source: string | null
           is_active: boolean | null
           is_duplicate: boolean
@@ -20797,6 +20886,7 @@ export type Database = {
           supplier_warehouse: string | null
           title_optimized_at: string | null
           updated_at: string
+          us_available: boolean | null
           us_stock: number | null
           variant_stock: Json | null
           variants: Json | null
@@ -20825,6 +20915,7 @@ export type Database = {
           cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
+          cn_available?: boolean | null
           cn_stock?: number | null
           compare_at_price?: number | null
           condition?: string
@@ -20844,8 +20935,10 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          effective_stock?: number | null
           estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
+          eu_available?: boolean | null
           eu_stock?: number | null
           fallback_active?: boolean | null
           feed_readiness_score?: number | null
@@ -20857,6 +20950,8 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           inventory_manual_block?: boolean
+          inventory_priority?: number | null
+          inventory_score?: number | null
           inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
@@ -20930,6 +21025,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          us_available?: boolean | null
           us_stock?: number | null
           variant_stock?: Json | null
           variants?: Json | null
@@ -20958,6 +21054,7 @@ export type Database = {
           cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
+          cn_available?: boolean | null
           cn_stock?: number | null
           compare_at_price?: number | null
           condition?: string
@@ -20977,8 +21074,10 @@ export type Database = {
           description?: string | null
           description_bullets?: string[] | null
           description_optimized_at?: string | null
+          effective_stock?: number | null
           estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
+          eu_available?: boolean | null
           eu_stock?: number | null
           fallback_active?: boolean | null
           feed_readiness_score?: number | null
@@ -20990,6 +21089,8 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           inventory_manual_block?: boolean
+          inventory_priority?: number | null
+          inventory_score?: number | null
           inventory_source?: string | null
           is_active?: boolean | null
           is_duplicate?: boolean
@@ -21063,6 +21164,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          us_available?: boolean | null
           us_stock?: number | null
           variant_stock?: Json | null
           variants?: Json | null
