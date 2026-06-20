@@ -7,6 +7,7 @@ import { Loader2, Sparkles, TrendingUp, MapPin, Target, RefreshCw, Play, AlertTr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import AutonomousRevenueAiPanel from "@/components/admin/AutonomousRevenueAiPanel";
+import ProductRecoveryEnginePanel from "@/components/admin/ProductRecoveryEnginePanel";
 
 type Dash = {
   summary?: { usShare: number; totalPinterestVisitors30d: number; usVisitors30d: number };
@@ -90,6 +91,7 @@ export default function RevenueAiPage() {
       {err && <div className="rounded border border-destructive/40 bg-destructive/10 p-3 text-sm">{err}</div>}
 
       <AutonomousRevenueAiPanel />
+      <ProductRecoveryEnginePanel />
 
       {loading && !data ? (
         <div className="text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
