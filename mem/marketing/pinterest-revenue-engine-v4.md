@@ -30,3 +30,12 @@ type: feature
 - New table `product_replacement_candidates` populated by `inventory-replacement-scan` (same category, ±20% price, priority-ordered).
 - New `inventory-global-audit` edge function (admin-gated) returns US-only/EU-only/CN-only/sold-out/wrongly-marked/reactivatable counts + 30d revenue projection.
 - `InventoryGlobalAuditCard` + replacement scan button mounted under `WarehouseInventoryPanel` on `/admin/pinterest-revenue-v4`.
+
+## Gold Standard Creative System (2026-06-20)
+- New columns on `cinematic_ad_jobs`: `creative_score`, `creative_score_voice|motion|product_visibility|conversion|brand`, `creative_quality_tier` (`low|medium|gold`), `gold_standard_benchmark_id`, `cloned_from_winner_id`.
+- New settings columns on `cinematic_ad_settings`: `gold_standard_enabled` (true), `gold_standard_min_score` (80), `gold_standard_priority_score` (90), `gold_standard_reference_slug` (`cat-scratching-bed`).
+- New tables: `pinterest_creative_benchmarks` (seeded with Cat Scratching Bed reference) and `pinterest_winner_dna` (top-performer voice/pacing/camera/CTA extracted for cloning). Both admin-read, service-write.
+- Shared `supabase/functions/_shared/gold-standard-scorer.ts` derives the 5 axes from existing signals (final_creative_score, voice_score, ctr_prediction_score, realism_score, camera_motion_score, engagement_pacing_score, scene_change_count, product_fidelity_score, dense_caption_ratio, media_type). Voice penalised for robotic names, brand penalised when dense_caption_ratio > 0.15, product visibility target ≥ 80%. Static media + failed v4 cap the ceiling below gold.
+- Edge function `gold-standard-audit` (admin JWT + `has_role`) scores up to 1500 jobs, persists creative_score + tier, returns counts (gold/medium/low). `gold-standard-winner-clone` aggregates 30d `pinterest_video_metrics`, picks the top 25 pins, persists DNA rows.
+- `cinematic-ad-autopublish` now runs the Gold Standard scorer right after the V4 gate. Tier `low` → `publish_blocked_reason='gold_standard_below_80:<score>|reasons'`. Tier `gold` / `medium` continue down the existing publish path with score persisted on the row.
+- Admin UI: `GoldStandardCreativePanel` on `/admin/pinterest-revenue-v4` exposes "Audit videos" and "Capture winner DNA" actions and surfaces scanned / gold / medium / low counts.
