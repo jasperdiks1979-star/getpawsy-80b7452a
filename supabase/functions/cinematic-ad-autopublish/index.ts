@@ -15,6 +15,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { isInWindowEst, nextWindowStartUtc, jitterSeconds, hammingHex } from "../_shared/publish-window.ts";
+import { scoreCreative } from "../_shared/gold-standard-scorer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -79,6 +80,14 @@ Deno.serve(async (req) => {
     .select("cinematic_v5_enabled")
     .eq("id", true).maybeSingle();
   const v5Enabled = v5Gate?.cinematic_v5_enabled !== false;
+  // Gold Standard gate thresholds
+  const { data: gsGate } = await admin
+    .from("cinematic_ad_settings")
+    .select("gold_standard_enabled, gold_standard_min_score, gold_standard_priority_score")
+    .eq("id", true).maybeSingle();
+  const gsEnabled = gsGate?.gold_standard_enabled !== false;
+  const gsMin = Number(gsGate?.gold_standard_min_score ?? 80);
+  const gsPriority = Number(gsGate?.gold_standard_priority_score ?? 90);
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
@@ -464,6 +473,29 @@ Deno.serve(async (req) => {
       }).eq("id", job.id);
       results.push({ job_id: job.id, ok: false, reason: "v4_reject" });
       continue;
+    }
+    // Gold Standard gate — score the job (live) and block anything below the floor.
+    // Tier `gold` (>= priority) is published with priority flag; `medium` normal; `low` blocked.
+    if (gsEnabled) {
+      const gs = scoreCreative(job as any, { minScore: gsMin, priorityScore: gsPriority });
+      await admin.from("cinematic_ad_jobs").update({
+        creative_score: gs.creative_score,
+        creative_score_voice: gs.voice,
+        creative_score_motion: gs.motion,
+        creative_score_product_visibility: gs.product_visibility,
+        creative_score_conversion: gs.conversion,
+        creative_score_brand: gs.brand,
+        creative_quality_tier: gs.tier,
+      }).eq("id", job.id);
+      if (gs.tier === "low") {
+        await admin.from("cinematic_ad_jobs").update({
+          publish_blocked_reason: `gold_standard_below_${gsMin}:${gs.creative_score}|${gs.reasons.slice(0, 4).join(",")}`,
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: "gold_standard_low", creative_score: gs.creative_score });
+        continue;
+      }
+      (job as any).__gs_tier = gs.tier;
+      (job as any).__gs_score = gs.creative_score;
     }
     // V5 gate: native-UGC realism / authenticity / emotional arc.
     if (v5Enabled && (job as any).validation_v5_passed === false) {

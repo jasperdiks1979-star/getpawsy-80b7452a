@@ -1801,6 +1801,7 @@ export type Database = {
           category_safe_rewrite_passes: number
           cinematic_quality_score: number | null
           classification_confidence: number | null
+          cloned_from_winner_id: string | null
           commercial_score: number | null
           concept_index: number | null
           concept_type: string | null
@@ -1812,7 +1813,14 @@ export type Database = {
           creative_kit_diagnostics: Json | null
           creative_plan: Json | null
           creative_quality_score: number | null
+          creative_quality_tier: string | null
           creative_reject_reason: string | null
+          creative_score: number | null
+          creative_score_brand: number | null
+          creative_score_conversion: number | null
+          creative_score_motion: number | null
+          creative_score_product_visibility: number | null
+          creative_score_voice: number | null
           creative_source_tier: string | null
           cta_clarity_score: number | null
           cta_text: string | null
@@ -1848,6 +1856,7 @@ export type Database = {
           force_render_budget_by: string | null
           force_render_budget_override: boolean
           force_render_budget_reason: string | null
+          gold_standard_benchmark_id: string | null
           hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
@@ -2089,6 +2098,7 @@ export type Database = {
           category_safe_rewrite_passes?: number
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
+          cloned_from_winner_id?: string | null
           commercial_score?: number | null
           concept_index?: number | null
           concept_type?: string | null
@@ -2100,7 +2110,14 @@ export type Database = {
           creative_kit_diagnostics?: Json | null
           creative_plan?: Json | null
           creative_quality_score?: number | null
+          creative_quality_tier?: string | null
           creative_reject_reason?: string | null
+          creative_score?: number | null
+          creative_score_brand?: number | null
+          creative_score_conversion?: number | null
+          creative_score_motion?: number | null
+          creative_score_product_visibility?: number | null
+          creative_score_voice?: number | null
           creative_source_tier?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
@@ -2136,6 +2153,7 @@ export type Database = {
           force_render_budget_by?: string | null
           force_render_budget_override?: boolean
           force_render_budget_reason?: string | null
+          gold_standard_benchmark_id?: string | null
           hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
@@ -2377,6 +2395,7 @@ export type Database = {
           category_safe_rewrite_passes?: number
           cinematic_quality_score?: number | null
           classification_confidence?: number | null
+          cloned_from_winner_id?: string | null
           commercial_score?: number | null
           concept_index?: number | null
           concept_type?: string | null
@@ -2388,7 +2407,14 @@ export type Database = {
           creative_kit_diagnostics?: Json | null
           creative_plan?: Json | null
           creative_quality_score?: number | null
+          creative_quality_tier?: string | null
           creative_reject_reason?: string | null
+          creative_score?: number | null
+          creative_score_brand?: number | null
+          creative_score_conversion?: number | null
+          creative_score_motion?: number | null
+          creative_score_product_visibility?: number | null
+          creative_score_voice?: number | null
           creative_source_tier?: string | null
           cta_clarity_score?: number | null
           cta_text?: string | null
@@ -2424,6 +2450,7 @@ export type Database = {
           force_render_budget_by?: string | null
           force_render_budget_override?: boolean
           force_render_budget_reason?: string | null
+          gold_standard_benchmark_id?: string | null
           hard_reject_reasons?: string[]
           has_vo?: boolean | null
           hashtags?: string[]
@@ -2817,6 +2844,10 @@ export type Database = {
           fidelity_max_regen_passes: number
           focus_breathing_amp: number
           framing_correction_chance: number
+          gold_standard_enabled: boolean
+          gold_standard_min_score: number
+          gold_standard_priority_score: number
+          gold_standard_reference_slug: string
           handheld_jitter_amp: number
           hard_reject_ken_burns_only: boolean
           hard_reject_single_image: boolean
@@ -2937,6 +2968,10 @@ export type Database = {
           fidelity_max_regen_passes?: number
           focus_breathing_amp?: number
           framing_correction_chance?: number
+          gold_standard_enabled?: boolean
+          gold_standard_min_score?: number
+          gold_standard_priority_score?: number
+          gold_standard_reference_slug?: string
           handheld_jitter_amp?: number
           hard_reject_ken_burns_only?: boolean
           hard_reject_single_image?: boolean
@@ -3057,6 +3092,10 @@ export type Database = {
           fidelity_max_regen_passes?: number
           focus_breathing_amp?: number
           framing_correction_chance?: number
+          gold_standard_enabled?: boolean
+          gold_standard_min_score?: number
+          gold_standard_priority_score?: number
+          gold_standard_reference_slug?: string
           handheld_jitter_amp?: number
           hard_reject_ken_burns_only?: boolean
           hard_reject_single_image?: boolean
@@ -14418,6 +14457,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_benchmarks: {
+        Row: {
+          camera_profile: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          pacing_profile: Json
+          product_slug: string | null
+          reference_job_id: string | null
+          reference_pin_id: string | null
+          reference_video_url: string | null
+          target_brand: number
+          target_conversion: number
+          target_motion_score: number
+          target_product_visibility: number
+          target_voice_score: number
+          updated_at: string
+          voice_profile: Json
+        }
+        Insert: {
+          camera_profile?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          pacing_profile?: Json
+          product_slug?: string | null
+          reference_job_id?: string | null
+          reference_pin_id?: string | null
+          reference_video_url?: string | null
+          target_brand?: number
+          target_conversion?: number
+          target_motion_score?: number
+          target_product_visibility?: number
+          target_voice_score?: number
+          updated_at?: string
+          voice_profile?: Json
+        }
+        Update: {
+          camera_profile?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          pacing_profile?: Json
+          product_slug?: string | null
+          reference_job_id?: string | null
+          reference_pin_id?: string | null
+          reference_video_url?: string | null
+          target_brand?: number
+          target_conversion?: number
+          target_motion_score?: number
+          target_product_visibility?: number
+          target_voice_score?: number
+          updated_at?: string
+          voice_profile?: Json
+        }
+        Relationships: []
+      }
       pinterest_creative_intents: {
         Row: {
           audience_intent: string | null
@@ -19713,6 +19815,69 @@ export type Database = {
           revenue_per_impression?: number | null
           sample_size?: number
           save_rate?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_winner_dna: {
+        Row: {
+          camera_profile: Json | null
+          captured_at: string
+          category: string | null
+          composite_score: number | null
+          cta_structure: string | null
+          ctr: number | null
+          hook_text: string | null
+          id: string
+          outbound_clicks: number | null
+          pacing_profile: Json | null
+          product_slug: string | null
+          purchases: number | null
+          saves: number | null
+          source_job_id: string | null
+          source_pin_id: string | null
+          voice_name: string | null
+          voice_style: string | null
+          voice_type: string | null
+        }
+        Insert: {
+          camera_profile?: Json | null
+          captured_at?: string
+          category?: string | null
+          composite_score?: number | null
+          cta_structure?: string | null
+          ctr?: number | null
+          hook_text?: string | null
+          id?: string
+          outbound_clicks?: number | null
+          pacing_profile?: Json | null
+          product_slug?: string | null
+          purchases?: number | null
+          saves?: number | null
+          source_job_id?: string | null
+          source_pin_id?: string | null
+          voice_name?: string | null
+          voice_style?: string | null
+          voice_type?: string | null
+        }
+        Update: {
+          camera_profile?: Json | null
+          captured_at?: string
+          category?: string | null
+          composite_score?: number | null
+          cta_structure?: string | null
+          ctr?: number | null
+          hook_text?: string | null
+          id?: string
+          outbound_clicks?: number | null
+          pacing_profile?: Json | null
+          product_slug?: string | null
+          purchases?: number | null
+          saves?: number | null
+          source_job_id?: string | null
+          source_pin_id?: string | null
+          voice_name?: string | null
+          voice_style?: string | null
+          voice_type?: string | null
         }
         Relationships: []
       }
@@ -26315,6 +26480,7 @@ export type Database = {
           category_safe_rewrite_passes: number
           cinematic_quality_score: number | null
           classification_confidence: number | null
+          cloned_from_winner_id: string | null
           commercial_score: number | null
           concept_index: number | null
           concept_type: string | null
@@ -26326,7 +26492,14 @@ export type Database = {
           creative_kit_diagnostics: Json | null
           creative_plan: Json | null
           creative_quality_score: number | null
+          creative_quality_tier: string | null
           creative_reject_reason: string | null
+          creative_score: number | null
+          creative_score_brand: number | null
+          creative_score_conversion: number | null
+          creative_score_motion: number | null
+          creative_score_product_visibility: number | null
+          creative_score_voice: number | null
           creative_source_tier: string | null
           cta_clarity_score: number | null
           cta_text: string | null
@@ -26362,6 +26535,7 @@ export type Database = {
           force_render_budget_by: string | null
           force_render_budget_override: boolean
           force_render_budget_reason: string | null
+          gold_standard_benchmark_id: string | null
           hard_reject_reasons: string[]
           has_vo: boolean | null
           hashtags: string[]
