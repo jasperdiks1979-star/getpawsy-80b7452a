@@ -8,6 +8,7 @@ import type { VideoHook } from "../_shared/pinterest-video-hooks.ts";
 import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { stampUtmsOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
+import { resolveWarehouse, fallbackCopyTags } from "../_shared/warehouse-availability.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,9 +64,10 @@ async function loadProductContext(sb: any, slug: string | null | undefined): Pro
   if (!s) return undefined;
   try {
     const { data } = await sb.from("products")
-      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords")
+      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords, us_stock, eu_stock, cn_stock, stock, is_active")
       .eq("slug", s).maybeSingle();
     if (!data) return { slug: s };
+    const warehouse = resolveWarehouse(data as any);
     return {
       slug: data.slug,
       name: data.name,
@@ -73,8 +75,22 @@ async function loadProductContext(sb: any, slug: string | null | undefined): Pro
       benefit_angle: data.benefit_angle,
       primary_keyword: data.primary_keyword,
       tags: Array.isArray(data.seo_keywords) ? data.seo_keywords : null,
+      // @ts-ignore — augment ProductContext with warehouse hints for copy injection
+      warehouseSource: warehouse.source,
+      // @ts-ignore
+      isFallback: warehouse.isFallback,
     };
   } catch { return { slug: s }; }
+}
+
+// Sanitize description for fallback products. Strip any forbidden
+// "out of stock" mention and append fallback tags (Item 14).
+function sanitizeFallbackDescription(desc: string | null | undefined, source: "US" | "EU" | "CN" | "NONE"): string {
+  const base = (desc ?? "").replace(/\bout\s*of\s*stock\b/gi, "Available Again");
+  const tags = fallbackCopyTags(source);
+  if (tags.length === 0) return base;
+  const append = tags.filter((t) => !new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(base)).join(" • ");
+  return append ? `${base}${base.endsWith(".") || base.endsWith("!") || base.endsWith("?") ? " " : ". "}${append}`.trim() : base;
 }
 
 // ── 30-day copy de-duplication ────────────────────────────────────
