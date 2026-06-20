@@ -11,6 +11,7 @@ export type EligibilityReason =
   | "archived"
   | "missing_inventory"
   | "cj_zero"
+  | "all_warehouses_empty"
   | "media_score_low"
   | "destination_404"
   | "product_not_found";
@@ -24,6 +25,8 @@ export interface EligibilityResult {
   inventory: number | null;
   mediaBreakdown: Record<string, number>;
   details: Record<string, unknown>;
+  warehouseSource?: "US" | "EU" | "CN" | "NONE";
+  isFallback?: boolean;
 }
 
 const MIN_MEDIA_SCORE = 60;
@@ -62,7 +65,7 @@ export async function assessProductEligibility(
 
   const { data: p } = await sb
     .from("products")
-    .select("id, slug, category, price, stock, is_active, images, image_url")
+    .select("id, slug, category, price, stock, is_active, images, image_url, us_stock, eu_stock, cn_stock")
     .eq("id", productId)
     .maybeSingle();
 
@@ -85,11 +88,24 @@ export async function assessProductEligibility(
   if (p.is_active === false) {
     return finalize(sb, p, false, "inactive", 0, {}, opts);
   }
-  if (p.stock === null || p.stock === undefined) {
-    return finalize(sb, p, false, "missing_inventory", 0, {}, opts);
-  }
-  if (p.stock <= 0) {
-    return finalize(sb, p, false, "out_of_stock", 0, {}, opts);
+
+  // Multi-warehouse gate (Item 14): pass when any warehouse > 0.
+  const us = Number((p as any).us_stock ?? 0);
+  const eu = Number((p as any).eu_stock ?? 0);
+  const cn = Number((p as any).cn_stock ?? 0);
+  const hasWarehouseCols =
+    (p as any).us_stock != null || (p as any).eu_stock != null || (p as any).cn_stock != null;
+  if (hasWarehouseCols) {
+    if (us + eu + cn <= 0) {
+      return finalize(sb, p, false, "all_warehouses_empty", 0, {}, opts);
+    }
+  } else {
+    if (p.stock === null || p.stock === undefined) {
+      return finalize(sb, p, false, "missing_inventory", 0, {}, opts);
+    }
+    if (p.stock <= 0) {
+      return finalize(sb, p, false, "out_of_stock", 0, {}, opts);
+    }
   }
 
   // Media scoring
@@ -125,7 +141,12 @@ export async function assessProductEligibility(
     return finalize(sb, p, false, "media_score_low", score, breakdown, opts);
   }
 
-  return finalize(sb, p, true, "ok", score, breakdown, opts);
+  const result = await finalize(sb, p, true, "ok", score, breakdown, opts);
+  const source: "US" | "EU" | "CN" | "NONE" =
+    us > 0 ? "US" : eu > 0 ? "EU" : cn > 0 ? "CN" : "NONE";
+  result.warehouseSource = source;
+  result.isFallback = source === "CN" || source === "EU";
+  return result;
 }
 
 async function finalize(
