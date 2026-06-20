@@ -1,98 +1,88 @@
-# Global Product Recovery Engine V1
+# Pinterest Video Revenue Engine V4 + Stripe Webhook Audit
 
-Goal: a proven winner never disappears because of a local stock issue. A product is only deactivated after a worldwide stock + supplier + replacement search has failed.
+This is a large multi-track request. I want to confirm scope and sequencing before shipping it, because several parts overlap with systems that already exist (Recovery Engine, Revenue AI V1, V4 Quality Gate, Self-Healing pipeline) and a few parts need real keys / live calls.
 
-This builds on top of: Inventory Engine, Self-Healing Pipeline, Autonomous Revenue AI V1, Gold Standard, and the existing CJ integration.
+## Track 1 — Stripe webhook audit (CRITICAL, do first)
 
-## What we build
+1. Inspect `supabase/functions/stripe-webhook` source + deploy state.
+2. Probe the endpoint live (GET + POST without signature) to confirm 200/400 behavior and signature enforcement.
+3. Query DB: `cron_job_logs`, `orders` (last paid/pending), `checkout_funnel_events`, `disputes` to confirm whether it still drives revenue.
+4. Reuse existing `webhook-health` edge function output.
+5. Verdict matrix:
+   - **In use** → repair signature/200, run end-to-end Stripe test event, document.
+   - **Legacy/Skidzo** → mark legacy in code header + memory, do NOT delete (safer); add admin note.
+6. Deliver short CRITICAL / WARNING / SAFE report in chat.
 
-### 1. Winner Product Database (`winner_products`)
-Daily-refreshed table of protected SKUs.
-- Inputs: `revenue_ai_pin_performance`, `revenue_ai_revenue_scores`, `pinterest_pin_performance`, `cinematic_pin_performance`.
-- Score = weighted blend (revenue 35, outbound CTR 20, saves 15, video score 15, conversion 15) — top 100 globally + top 25 per niche → `is_protected = true`.
-- Protected SKUs are **excluded** from `inventory-global-audit`'s automatic deactivation and from `revenue-ai-product-eliminator`.
+## Track 2 — Golden Reference video (`pin.it/73g2ln0as`)
 
-### 2. Global Inventory Audit (`product-global-audit`)
-Per-SKU live worldwide check.
-- Calls CJ `product/stock/getInventoryByPid` + `product/query?features=enable_inventory` for US, EU (DE/UK/FR/ES), CN, AU.
-- Writes `product_global_inventory` rows: warehouse, qty, shipping_days, freight_estimate, last_checked_at.
-- Recomputes `effective_global_stock` (sum across all usable warehouses).
-- Trigger: cron every 30 min for protected SKUs, hourly for `effective_stock<=5`, daily for the rest.
+`pin.it` short links cannot be resolved server-side without the full pin id. **I need either the expanded `pinterest.com/pin/<id>` URL, or the MP4 uploaded to the project**, otherwise I cannot analyze voice-over / pacing / hook for real.
 
-### 3. Supplier Discovery (`supplier-discovery`)
-When global stock = 0 or running low:
-- CJ search by `productNameEn`, `productSku`, `categoryId`, image-hash (already cached in `pinterest_pin_image_match`).
-- Score candidates on: title similarity, image similarity, weight match, price band, status≠3 (off-shelf).
-- Persists ≥10 candidates per winner into `product_supplier_candidates`.
+Assuming I get it, I will:
+- Insert it into `pinterest_creative_benchmarks` as `tier='gold_standard'`.
+- Persist the quality profile (hook, voice style, pacing, CTA, motion) into a new row in `cinematic_creative_dna` tagged `source='gold_standard'`.
+- Wire `cinematic-ad-validate` to compare new jobs against the gold profile (cosine similarity on the structured profile) and add a `gold_match_score` field.
 
-### 4. Alternative Supplier Engine (`supplier-swap`)
-Picks the best candidate and atomically swaps the supplier behind the SAME `products.id`.
-- Updates: `cj_product_id`, `supplier_sku`, `inventory_source`, warehouse stocks, cost price.
-- Preserves: `slug`, `image_url`, `id`, all `product_media`, all `pinterest_*` rows, all reviews, all SEO/canonical state.
-- Logs the swap in `product_supplier_swaps` with before/after snapshot for rollback.
+## Track 3 — Creative Quality Filter (publish gate)
 
-### 5. Best Alternative Match (`product-replacement-finder`)
-If no supplier exists for the original product worldwide:
-- Searches CJ + internal catalog for ≥90% match on shape/function/material/price/audience.
-- Match scoring shares the same heuristic as `cinematic_creative_dna` so the existing Pinterest creative still applies.
-- Writes top match into `product_replacement_candidates` with `match_score`, `decision_pending`.
+New scoring contract on `cinematic_v4_jobs`:
+`hook_score, voice_score, product_visibility_score, motion_score, visual_score, conversion_score, engagement_score` → `total_quality_score`.
+Gate inside `cinematic-ad-autopublish`:
+- `<85` → status `quality_rejected`
+- `85–89` → status `quality_hold` (queued for hook/voice reroll)
+- `≥90` → publish
 
-### 6. Media Preservation
-On supplier swap or replacement promotion:
-- All `pinterest_pin_queue` / `pinterest_pins` / `cinematic_v3_jobs` / `product_media` rows stay attached to the original `products.id`.
-- A new row in `pinterest_evolution_log` records the swap so revenue attribution stays continuous.
+Reuse existing v4 scoring fields; add the missing dimensions and the gate.
 
-### 7. Global Availability Status
-Single derived enum exposed via the existing `products_public` view:
-`US Available · EU Available · Global Available · Low Stock · Sold Out`.
-Computed from `effective_global_stock`, never from `us_stock` alone.
+## Track 4 — Voice Over Engine V2
 
-### 8. Pinterest Protection
-- `pipeline-auto-replenish`, `cinematic-ad-autopublish`, and `revenue-ai-loser-suppress` consult `winner_products.is_protected` before any skip/eliminate decision.
-- Pins for protected SKUs keep publishing as long as `effective_global_stock > 0`, with copy auto-switched to "Ships Worldwide · 8–15 business days" when US=0 (already supported by `pickInventoryHook`).
+New table `cinematic_voice_rotation` (5 voice profiles seeded: warm_female, energetic_female, premium_female, warm_male, storyteller_male) + last-used timestamp. Edge function `voice-rotation-pick` returns the least-recently-used voice not used in the last N pins for that product/niche. Wire into `cinematic-ad-generate-voice`.
 
-### 9. Self-Healing Inventory
-New orchestrator `recovery-engine-tick` (cron, every 15 min):
-1. Find SKUs where `effective_global_stock = 0` AND `is_protected = true`.
-2. Run global audit → if still 0, run supplier discovery.
-3. If a viable candidate exists → auto-swap (preserve media).
-4. If not → run replacement finder; queue ≥90% match for admin one-click promote.
-5. Only after all four steps fail → mark product `is_active=false` and fire `monitoring_alerts` with `severity=high`.
+## Track 5 — Video Generation Rules (hard bans)
 
-### 10. Admin Surface
-New panel `ProductRecoveryEnginePanel` on `/admin/revenue-ai`:
-- Tabs: Winners · Global audits · Supplier candidates · Replacement queue · Swap log.
-- One-click "Run recovery now" per SKU; "Promote replacement" with diff preview (image, price, weight, warehouses).
-- KPI strip: protected SKUs, SKUs in recovery, swaps last 24h, alerts open.
+Update `cinematic-ad-validate`:
+- Reject when `media_type='static'` (already partly done by quality gate).
+- Reject when `voiceover_url IS NULL`.
+- Reject when `scene_change_count < 4` (slideshow heuristic).
+- Reject when source asset hash matches CJ supplier library (new `cj_supplier_asset_hashes` table; seeded from existing `pinterest_image_blocklist` + `product_media_audit`).
 
-### 11. Durian Cat Scratching Bed — special audit
-Re-run the new pipeline immediately for `cj_product_id = 2006968402615898113`:
-- Confirms global=0 (already known: CJ status=3).
-- Runs supplier discovery with image-hash + title; writes candidates.
-- Runs replacement finder; writes top ≥90% match into the queue for review.
-- Reports: global stock, best warehouse, best supplier, est. delivery, recommended action (`keep`, `migrate`, `replace`).
-- Because the product is already winner-tagged historically, it stays in `winner_products` with `recovery_mode=true` so its Pinterest media is preserved.
+## Track 6 — Inventory Intelligence Engine
 
-## Database additions
-- `winner_products` (sku, score, signals jsonb, is_protected, refreshed_at)
-- `product_global_inventory` (product_id, warehouse, qty, shipping_days, cost, last_checked_at)
-- `product_supplier_candidates` (product_id, supplier, supplier_product_id, match_score, signals jsonb, status)
-- `product_supplier_swaps` (product_id, from jsonb, to jsonb, reason, executed_at)
-- Existing `product_replacement_candidates` reused (already has the right shape).
-All with RLS + GRANT to `authenticated` + `service_role`, admin-only writes.
+Already mostly built in the **Global Product Recovery Engine** (last ship). I'll add the explicit 3-scenario tagger `inventory_promotion_status` (`PROMOTE | PROMOTE_LONG_ETA | DO_NOT_PROMOTE`) computed from `product_global_inventory` and wire it into:
+- `pinterest-auto-replenish` (skip `DO_NOT_PROMOTE`)
+- `cinematic-ad-autopublish` (skip `DO_NOT_PROMOTE`)
+- PDP delivery badge (show longer ETA for `PROMOTE_LONG_ETA`).
 
-## New edge functions
-`winner-product-refresh` · `product-global-audit` · `supplier-discovery` · `supplier-swap` · `product-replacement-finder` · `recovery-engine-tick` · `recovery-engine-dashboard`.
+## Track 7 — Durian Cat Scratching Bed re-audit
 
-All Lovable-Cloud functions (no manual deploy step). Cron schedules added via the standard `cron.schedule` insert flow.
+Re-run `product-global-audit` + `supplier-discovery` for `cj_product_id=2006968402615898113`. Previous audit returned worldwide stock = 0 and CJ status = 3 (off-shelf). I'll re-confirm against live CJ and ship a short verdict; no code change unless stock reappeared.
 
-## Files touched
-- New: migration, 7 edge functions, `_shared/recovery-engine.ts`, `ProductRecoveryEnginePanel.tsx`.
-- Updated: `pipeline-auto-replenish`, `revenue-ai-product-eliminator`, `revenue-ai-loser-suppress`, `cinematic-ad-autopublish` (winner-aware), `src/integrations/supabase/types.ts`, `RevenueAiPage.tsx`, memory index.
+## Track 8 — Pinterest Continuity Engine
 
-## Out of scope (deliberate)
-- Non-CJ suppliers (only CJ catalog is wired today; the engine is multi-supplier ready but Topdawg/PetDropshipper hooks stay stubs).
-- Auto-promotion of replacements with match < 90% (always admin-gated).
-- Per-warehouse pricing surfaces on the storefront (badge only, no price split).
+New cron `pinterest-continuity-tick` (every 30 min):
+- Count rows in `pinterest_pin_queue` where `status in ('queued','rendering')`.
+- Count `cinematic_v4_jobs` where `status='ready_to_publish'`.
+- If publishable videos `<20`, enqueue generation jobs for top-ranked products (Track 9 ranking).
+- Severity log to `pinterest_pipeline_health_snapshots`:
+  - `<20` → info, `<10` → warning, `<5` → critical, `0` → page-out via existing `pipeline-emergency-content`.
 
-Approve to build.
+## Track 9 — Product Prioritization
+
+New view `product_pinterest_priority_v` = weighted score:
+`stock_ok*40 + margin_norm*20 + past_pin_ctr*20 + has_video_assets*10 + conversion_score*10`.
+Used by Continuity Engine to pick what to render next.
+
+## Track 10 — Final report (in chat after execution)
+
+`# products promotable`, `# excluded`, Durian status, queue depth, publishable videos, scheduled pins, top-10 video targets.
+
+## Out of scope this pass
+- Replacing the existing v4 pacing/realism scoring (reuse, don't duplicate).
+- Building a new voiceover provider integration (use existing ElevenLabs setup).
+- Deleting `stripe-webhook` even if legacy — only mark legacy; user can delete later.
+
+## What I need from you before executing
+1. **Expanded Pinterest URL or MP4** for `pin.it/73g2ln0as` (Track 2 — required).
+2. **Confirm Stripe is still in production use** for GetPawsy (Track 1 verdict path).
+3. Approve the publish gate thresholds (85 / 90) as final.
+
+Reply "go" with answers to 1–3 and I'll ship everything in one pass.
