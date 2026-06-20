@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
