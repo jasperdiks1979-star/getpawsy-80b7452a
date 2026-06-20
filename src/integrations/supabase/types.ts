@@ -20692,6 +20692,7 @@ export type Database = {
           cj_variant_id: string | null
           cluster_primary: string | null
           cluster_secondary: string | null
+          cn_stock: number | null
           compare_at_price: number | null
           condition: string
           content_readiness_score: number | null
@@ -20712,6 +20713,8 @@ export type Database = {
           description_optimized_at: string | null
           estimated_delivery_days: number | null
           estimated_shipping_cost: number | null
+          eu_stock: number | null
+          fallback_active: boolean | null
           feed_readiness_score: number | null
           google_product_category: string | null
           gtin: string | null
@@ -20761,6 +20764,7 @@ export type Database = {
           primary_intent: string | null
           primary_keyword: string | null
           primary_species: string | null
+          primary_warehouse: string | null
           product_type: string | null
           quality_flags: string[] | null
           quality_score: number | null
@@ -20793,6 +20797,7 @@ export type Database = {
           supplier_warehouse: string | null
           title_optimized_at: string | null
           updated_at: string
+          us_stock: number | null
           variant_stock: Json | null
           variants: Json | null
           warehouse_country: string | null
@@ -20820,6 +20825,7 @@ export type Database = {
           cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
+          cn_stock?: number | null
           compare_at_price?: number | null
           condition?: string
           content_readiness_score?: number | null
@@ -20840,6 +20846,8 @@ export type Database = {
           description_optimized_at?: string | null
           estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
+          eu_stock?: number | null
+          fallback_active?: boolean | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
           gtin?: string | null
@@ -20889,6 +20897,7 @@ export type Database = {
           primary_intent?: string | null
           primary_keyword?: string | null
           primary_species?: string | null
+          primary_warehouse?: string | null
           product_type?: string | null
           quality_flags?: string[] | null
           quality_score?: number | null
@@ -20921,6 +20930,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          us_stock?: number | null
           variant_stock?: Json | null
           variants?: Json | null
           warehouse_country?: string | null
@@ -20948,6 +20958,7 @@ export type Database = {
           cj_variant_id?: string | null
           cluster_primary?: string | null
           cluster_secondary?: string | null
+          cn_stock?: number | null
           compare_at_price?: number | null
           condition?: string
           content_readiness_score?: number | null
@@ -20968,6 +20979,8 @@ export type Database = {
           description_optimized_at?: string | null
           estimated_delivery_days?: number | null
           estimated_shipping_cost?: number | null
+          eu_stock?: number | null
+          fallback_active?: boolean | null
           feed_readiness_score?: number | null
           google_product_category?: string | null
           gtin?: string | null
@@ -21017,6 +21030,7 @@ export type Database = {
           primary_intent?: string | null
           primary_keyword?: string | null
           primary_species?: string | null
+          primary_warehouse?: string | null
           product_type?: string | null
           quality_flags?: string[] | null
           quality_score?: number | null
@@ -21049,6 +21063,7 @@ export type Database = {
           supplier_warehouse?: string | null
           title_optimized_at?: string | null
           updated_at?: string
+          us_stock?: number | null
           variant_stock?: Json | null
           variants?: Json | null
           warehouse_country?: string | null
@@ -24523,6 +24538,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      warehouse_revenue_log: {
+        Row: {
+          amount: number | null
+          created_at: string
+          event: string
+          id: string
+          meta: Json | null
+          occurred_at: string
+          order_id: string | null
+          product_id: string | null
+          warehouse_source: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          event: string
+          id?: string
+          meta?: Json | null
+          occurred_at?: string
+          order_id?: string | null
+          product_id?: string | null
+          warehouse_source?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          event?: string
+          id?: string
+          meta?: Json | null
+          occurred_at?: string
+          order_id?: string | null
+          product_id?: string | null
+          warehouse_source?: string | null
+        }
+        Relationships: []
       }
       web_vitals: {
         Row: {

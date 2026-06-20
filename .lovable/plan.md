@@ -1,56 +1,102 @@
-# Voice Diversity Engine (Item 13)
+# Item 14 — Multi-Warehouse Inventory Engine
 
-Adds intelligent voice rotation + per-category voice optimization to the cinematic ad pipeline.
+Adds US / EU / CN warehouse awareness across availability, PDP, Pinterest, GMC feed, and analytics. Prevents revenue loss by keeping CN-fallback products purchasable instead of marking them sold out.
 
-## 1. Voice Pool (static config)
+## 1. Data model
 
-New shared module `supabase/functions/_shared/voice-pool.ts` exports 8 voices mapped to ElevenLabs voice IDs:
+Migration on `public.products` (additive, nullable):
+- `us_stock int`
+- `eu_stock int`
+- `cn_stock int`
+- `primary_warehouse text` — computed: `US` | `EU` | `CN` | `NONE`
+- `fallback_active boolean` — true when US=0 but CN/EU>0
 
-| voice_name | voice_type | voice_style | elevenlabs_id |
-|---|---|---|---|
-| Female Friendly | female | friendly | EXAVITQu4vr4xnSDxMaL (Sarah) |
-| Female Premium | female | premium | XrExE9yKIg1WjnnlVkGX (Matilda) |
-| Female Energetic | female | energetic | Xb7hH8MSUJpSbSDYk0k2 (Alice) |
-| Female Storytelling | female | storytelling | FGY2WhTYpPnrIDTdsKH5 (Laura) |
-| Male Friendly | male | friendly | TX3LPaxmHKxFdv7VOQHJ (Liam) |
-| Male Premium | male | premium | JBFqnCBsd6RMkjVDRZzb (George) |
-| Male Energetic | male | energetic | bIHbv24MWmeRgasZH58o (Will) |
-| Male Trustworthy | male | trustworthy | onwK4e9ZLuTAKqWW03F9 (Daniel) |
+Backfill from existing CJ variant data (`variants[].inventory` per warehouse code) via one-shot script. Existing `stock` column stays as the legacy aggregate (= us+eu+cn) for backwards compatibility.
 
-Exports `pickVoice({ category, recentVoices, performanceWeights })`:
-- Hard rule: skip voice if last 2 pins in same category used it
-- Hard cap: skip voice if it represents ≥20% of last 100 pins globally
-- Weighted random by `performanceWeights[voice_name]` (default 1.0 when no data)
+New table `public.warehouse_revenue_log`:
+- product_id, event ('us_only_sale' | 'cn_fallback_sale' | 'eu_fallback_sale' | 'missed_sold_out')
+- order_id, amount, occurred_at
+- Service-role write; admin read.
 
-## 2. New tables (single migration)
+## 2. Shared resolver
 
-- `pinterest_voice_assignments` (pin_id, queue_id, cinematic_job_id, product_id, category, voice_name, voice_type, voice_style, elevenlabs_voice_id, assigned_at)
-- `pinterest_voice_performance` (voice_name, category, pins_count, impressions, ctr, outbound_clicks, saves, purchases, conversion_score, updated_at; unique(voice_name, category))
+`src/lib/warehouse-availability.ts` — single source of truth:
 
-Both: admin SELECT via `has_role`, service_role ALL.
+```ts
+resolveWarehouse(product) -> {
+  status: 'in_stock_us' | 'cn_fallback' | 'eu_fallback' | 'sold_out',
+  label: 'In Stock' | 'Available' | 'Sold Out',
+  shippingLabel: 'Fast US Shipping' | 'Ships From Overseas' | null,
+  estimatedDelivery: '3-7 business days' | '7-15 business days' | null,
+  pinterestEligible: boolean,
+  source: 'US' | 'EU' | 'CN' | 'NONE',
+}
+```
 
-## 3. Wiring
+Wire `computeAvailability` and `merchant-safe-product` to call it so PDPs, cards, JSON-LD, OG, and GMC feed all align.
 
-- `cinematic-ad-orchestrator` (or `_shared/voiceover-selector.ts`): before TTS request, call `pickVoice()`, persist row in `pinterest_voice_assignments`, store `voice_name/type/style` on `cinematic_ad_jobs.meta.voice` and `pinterest_video_queue.meta.voice`.
-- `pinterest-video-publisher`: copy `voice_*` fields into `pinterest_video_assets.meta.voice` and `pinterest_pin_queue.meta.voice` at publish.
+Edge equivalent: `supabase/functions/_shared/warehouse-availability.ts` mirroring the same contract for server use.
 
-## 4. New edge function `pinterest-voice-optimizer` (cron daily 06:30 UTC)
+## 3. Pinterest eligibility update
 
-For each (voice_name, category):
-1. Join `pinterest_voice_assignments` + `pinterest_pin_performance` + `pinterest_revenue_attribution_v3` for last 30d
-2. Aggregate impressions, CTR, outbound, saves, purchases
-3. Compute `conversion_score = 0.5*purchases_per_pin + 0.3*outbound_rate + 0.15*save_rate + 0.05*ctr`
-4. Upsert into `pinterest_voice_performance`
-5. Only categories with ≥50 pins get a non-uniform `performanceWeights` written to `app_config.voice_performance_weights` (JSON keyed by category → voice_name → weight 0.1–2.0)
+Extend `_shared/pinterest-eligibility.ts`:
+- Replace `cj_zero` check with multi-warehouse: only block when US+EU+CN all = 0.
+- Add `creative_meta.warehouse_source` so downstream copy can branch.
 
-## 5. Admin panel addition on `/admin/pinterest-revenue-v4`
+## 4. Pinterest copy injection (CN/EU fallback)
 
-New "Voice Diversity" card showing: per-voice share of last 100 pins (with 20% cap line), top performing voice per category, last 30d conversion_score table.
+In `cinematic-ad-orchestrator` + `pinterest-video-publisher` + `pinterest-pin-creator`:
+- When `warehouse_source === 'CN'`, append one of: "Available Again" / "Limited Stock" / "Worldwide Shipping" to overlay + description.
+- Hard-ban any "Out Of Stock" string for fallback products (extend banned-phrases checker).
 
-## Out of scope
+## 5. PDP / cards UI
 
-- New voices, voice cloning, multi-language voices
-- Changing existing voiceover script/length logic
-- Touching V5 engine
+- Update `ProductAvailability`, sticky CTA, and card badges to render the new label + shipping line from `resolveWarehouse`.
+- `computeAvailability` still returns `isInStock` (true for US/CN/EU>0) so existing AddToCart, schema.org, and GMC feed mark CN-fallback as purchasable.
+- Delivery estimate text on PDP swaps to "7-15 business days" for CN fallback.
 
-Approve to ship migration + voice-pool + orchestrator wiring + optimizer cron in one pass.
+## 6. GMC feed + SEO
+
+- `getMerchantAvailability` returns "in stock" whenever any warehouse > 0.
+- Shipping override per fallback: 7-15 days.
+- Sitemap/SEO keeps these URLs live (no noindex injection for CN fallback).
+
+## 7. Revenue recovery tracking
+
+In post-payment orchestrator: when an order ships, log to `warehouse_revenue_log` with source warehouse. New edge `warehouse-missed-revenue-scan` (cron daily) estimates missed revenue from sessions that bounced on a sold-out PDP that had CN stock (uses `visitor_activity` + product snapshot).
+
+## 8. Admin dashboard
+
+Add panel on `/admin/pinterest-revenue-v4` (new `WarehouseInventoryPanel`):
+- Products US only / CN fallback / EU fallback / fully sold out (counts)
+- Missed revenue (sold-out without CN)
+- Recovered revenue via CN fallback (last 30d)
+- Buttons: refresh warehouse snapshot, run missed-revenue scan
+
+Data via new edge `warehouse-inventory-dashboard` (JWT-gated, admin role).
+
+## 9. Out of scope
+
+- Real-time inventory pulls from CJ (uses existing sync job; this layer only consumes columns).
+- Per-variant warehouse routing in checkout fulfillment.
+- Splitting orders across warehouses.
+- EU storefront (EU stock surfaced only as fallback — US remains primary audience).
+
+## Files
+
+Created:
+- `src/lib/warehouse-availability.ts`
+- `supabase/functions/_shared/warehouse-availability.ts`
+- `supabase/functions/warehouse-inventory-dashboard/index.ts`
+- `supabase/functions/warehouse-missed-revenue-scan/index.ts`
+- `src/components/admin/WarehouseInventoryPanel.tsx`
+- migration: products warehouse cols + `warehouse_revenue_log`
+
+Edited:
+- `src/lib/availability.ts`, `src/lib/merchant-safe-product.ts`
+- `supabase/functions/_shared/pinterest-eligibility.ts`
+- `cinematic-ad-orchestrator`, `pinterest-video-publisher`, `pinterest-pin-creator` (copy injection)
+- `src/pages/admin/PinterestRevenueV4.tsx` (mount panel)
+- `mem/marketing/pinterest-revenue-engine-v4.md`
+
+Approve to implement, or tell me which sections to drop/adjust.
