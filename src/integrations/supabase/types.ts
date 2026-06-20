@@ -17144,6 +17144,195 @@ export type Database = {
           },
         ]
       }
+      pinterest_pipeline_failures: {
+        Row: {
+          attempt: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          escalated_at: string | null
+          id: string
+          job_id: string | null
+          job_type: string
+          meta: Json
+          next_retry_at: string | null
+          resolved_at: string | null
+          source: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          escalated_at?: string | null
+          id?: string
+          job_id?: string | null
+          job_type: string
+          meta?: Json
+          next_retry_at?: string | null
+          resolved_at?: string | null
+          source: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          escalated_at?: string | null
+          id?: string
+          job_id?: string | null
+          job_type?: string
+          meta?: Json
+          next_retry_at?: string | null
+          resolved_at?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
+      pinterest_pipeline_health_snapshots: {
+        Row: {
+          avg_render_ms: number | null
+          created_at: string
+          failed_24h: number
+          health_score: number
+          id: string
+          last_pin_at: string | null
+          last_video_at: string | null
+          mode: string
+          pending_pins: number
+          pending_videos: number
+          pins_generated_24h: number
+          pins_published_24h: number
+          publish_rate_per_hour: number | null
+          reasons: Json
+          recovered_24h: number
+          videos_generated_24h: number
+        }
+        Insert: {
+          avg_render_ms?: number | null
+          created_at?: string
+          failed_24h?: number
+          health_score?: number
+          id?: string
+          last_pin_at?: string | null
+          last_video_at?: string | null
+          mode?: string
+          pending_pins?: number
+          pending_videos?: number
+          pins_generated_24h?: number
+          pins_published_24h?: number
+          publish_rate_per_hour?: number | null
+          reasons?: Json
+          recovered_24h?: number
+          videos_generated_24h?: number
+        }
+        Update: {
+          avg_render_ms?: number | null
+          created_at?: string
+          failed_24h?: number
+          health_score?: number
+          id?: string
+          last_pin_at?: string | null
+          last_video_at?: string | null
+          mode?: string
+          pending_pins?: number
+          pending_videos?: number
+          pins_generated_24h?: number
+          pins_published_24h?: number
+          publish_rate_per_hour?: number | null
+          reasons?: Json
+          recovered_24h?: number
+          videos_generated_24h?: number
+        }
+        Relationships: []
+      }
+      pinterest_pipeline_recovery_runs: {
+        Row: {
+          actions: Json
+          checks: Json
+          finished_at: string | null
+          health_after: number | null
+          health_before: number | null
+          id: string
+          outcome: string | null
+          started_at: string
+          trigger: string
+        }
+        Insert: {
+          actions?: Json
+          checks?: Json
+          finished_at?: string | null
+          health_after?: number | null
+          health_before?: number | null
+          id?: string
+          outcome?: string | null
+          started_at?: string
+          trigger: string
+        }
+        Update: {
+          actions?: Json
+          checks?: Json
+          finished_at?: string | null
+          health_after?: number | null
+          health_before?: number | null
+          id?: string
+          outcome?: string | null
+          started_at?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      pinterest_pipeline_settings: {
+        Row: {
+          current_health_score: number
+          current_mode: string
+          dead_pin_minutes: number
+          dead_video_minutes: number
+          emergency_mode_enabled: boolean
+          emergency_score: number
+          id: number
+          light_render_enabled: boolean
+          min_pending_pins: number
+          min_pending_videos: number
+          min_pins_per_day: number
+          recovery_score: number
+          target_pins_per_day: number
+          updated_at: string
+        }
+        Insert: {
+          current_health_score?: number
+          current_mode?: string
+          dead_pin_minutes?: number
+          dead_video_minutes?: number
+          emergency_mode_enabled?: boolean
+          emergency_score?: number
+          id?: number
+          light_render_enabled?: boolean
+          min_pending_pins?: number
+          min_pending_videos?: number
+          min_pins_per_day?: number
+          recovery_score?: number
+          target_pins_per_day?: number
+          updated_at?: string
+        }
+        Update: {
+          current_health_score?: number
+          current_mode?: string
+          dead_pin_minutes?: number
+          dead_video_minutes?: number
+          emergency_mode_enabled?: boolean
+          emergency_score?: number
+          id?: number
+          light_render_enabled?: boolean
+          min_pending_pins?: number
+          min_pending_videos?: number
+          min_pins_per_day?: number
+          recovery_score?: number
+          target_pins_per_day?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_post_logs: {
         Row: {
           action: string
