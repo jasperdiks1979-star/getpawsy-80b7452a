@@ -9,6 +9,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Honor the Global Product Recovery Engine: never auto-eliminate a
+    // protected winner — let recovery-engine-tick handle it.
+    const { data: protectedRows } = await supabase
+      .from("winner_products")
+      .select("product_id")
+      .eq("is_protected", true);
+    const protectedSet = new Set((protectedRows ?? []).map((r: any) => r.product_id));
+
     const { data: products } = await supabase
       .from("products")
       .select("id, effective_stock, media_score, avg_rating, review_count")
@@ -18,6 +26,7 @@ Deno.serve(async (req) => {
     const blocks: any[] = [];
     const blockUntil = new Date(Date.now() + 30 * 86400000).toISOString();
     for (const p of (products ?? []) as any[]) {
+      if (protectedSet.has(p.id)) continue;
       let bad = false; const reasons: string[] = [];
       if ((p.effective_stock ?? 0) <= 0) { bad = true; reasons.push("oos"); }
       if (Number(p.media_score ?? 100) < 40) { bad = true; reasons.push("low_media"); }
