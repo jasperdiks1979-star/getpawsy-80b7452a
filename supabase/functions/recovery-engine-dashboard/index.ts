@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
         .gte("executed_at", new Date(Date.now() - 7 * 86400000).toISOString())
         .order("executed_at", { ascending: false }).limit(50),
       sb.from("recovery_engine_runs").select("*").order("started_at", { ascending: false }).limit(10),
-      sb.from("monitoring_alerts").select("id, severity, title, created_at")
-        .eq("kind", "winner_product_lost").gte("created_at", dayAgo).limit(20),
+      sb.from("monitoring_alerts").select("id, severity, title, created_at, alert_key, is_active")
+        .eq("category", "recovery_engine").eq("is_active", true).gte("created_at", dayAgo).limit(20),
     ]);
 
     const productIds = Array.from(new Set([
