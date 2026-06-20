@@ -69,12 +69,15 @@ Deno.serve(async (req) => {
           // Step 5: deactivate + alert
           await sb.from("products").update({ is_active: false }).eq("id", p.id);
           counters.deactivated++; counters.alerts++; log.action = "deactivated";
-          await sb.from("monitoring_alerts").insert({
+          await sb.from("monitoring_alerts").upsert({
+            alert_key: `winner_lost:${p.id}`,
             severity: "high",
-            kind: "winner_product_lost",
+            category: "recovery_engine",
             title: `Protected winner lost: ${p.name}`,
-            details: { product_id: p.id, audit: log },
-          }).then(() => {}).catch(() => {});
+            description: JSON.stringify({ product_id: p.id, audit: log }).slice(0, 1000),
+            is_active: true,
+            last_detected_at: new Date().toISOString(),
+          }, { onConflict: "alert_key" }).then(() => {}).catch(() => {});
         }
       } catch (e) {
         log.error = String(e);
