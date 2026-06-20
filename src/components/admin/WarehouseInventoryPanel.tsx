@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCcw, Wrench } from "lucide-react";
 import { toast } from "sonner";
+import InventoryGlobalAuditCard from "./InventoryGlobalAuditCard";
 
 interface DashData {
   counts: { us_only: number; cn_fallback: number; eu_fallback: number; sold_out: number; total: number };
@@ -42,6 +43,7 @@ export default function WarehouseInventoryPanel() {
   }
 
   return (
+    <div className="space-y-4">
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle>Multi-Warehouse Inventory</CardTitle>
@@ -79,6 +81,8 @@ export default function WarehouseInventoryPanel() {
         )}
       </CardContent>
     </Card>
+    <InventoryGlobalAuditCard />
+    </div>
   );
 }
 

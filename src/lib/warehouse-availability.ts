@@ -34,6 +34,13 @@ export interface WarehouseResolution {
   isPurchasable: boolean;
 }
 
+export interface WarehouseProductExtended extends WarehouseProduct {
+  effective_stock?: number | null;
+  inventory_source?: WarehouseSource | string | null;
+  inventory_priority?: number | null;
+  inventory_score?: number | null;
+}
+
 const SOLD_OUT: WarehouseResolution = {
   status: 'sold_out',
   label: 'Sold Out',
@@ -121,8 +128,40 @@ export function resolveWarehouse(
 
 /** Pinterest copy tags for CN/EU fallback products. Never includes "Out Of Stock". */
 export function fallbackCopyTags(source: WarehouseSource): string[] {
-  if (source === 'CN' || source === 'EU') {
-    return ['Available Again', 'Limited Stock', 'Worldwide Shipping'];
-  }
+  if (source === 'CN') return ['Back In Stock', 'Still Available', 'Worldwide Shipping'];
+  if (source === 'EU') return ['EU Warehouse', 'Fast EU Shipping', 'Limited Stock'];
   return [];
+}
+
+/** Hook copy injected into Pinterest creatives for non-US fallback products. */
+export function pickInventoryHook(source: WarehouseSource): string | null {
+  const tags = fallbackCopyTags(source);
+  if (tags.length === 0) return null;
+  return tags[Math.floor(Math.random() * tags.length)];
+}
+
+/** Mirrors the DB inventory_score generated column. */
+export function computeInventoryScore(p: WarehouseProduct | null | undefined): number {
+  if (!p) return 0;
+  const us = Number(p.us_stock ?? 0);
+  const eu = Number(p.eu_stock ?? 0);
+  const cn = Number(p.cn_stock ?? 0);
+  if (us > 50) return 100;
+  if (us >= 20) return 90;
+  if (us >= 1) return 75;
+  if (eu > 0) return 60;
+  if (cn > 0) return 50;
+  return 0;
+}
+
+/** Inventory priority mirrors DB column (US=100, EU=70, CN=40, none=0). */
+export function computeInventoryPriority(p: WarehouseProduct | null | undefined): number {
+  if (!p) return 0;
+  const us = Number(p.us_stock ?? 0);
+  const eu = Number(p.eu_stock ?? 0);
+  const cn = Number(p.cn_stock ?? 0);
+  if (us > 0) return 100;
+  if (eu > 0) return 70;
+  if (cn > 0) return 40;
+  return 0;
 }
