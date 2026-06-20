@@ -462,7 +462,11 @@ async function publishVideoPin(opts: {
     }
     const pinPayload = {
       title: queueRow.title,
-      description: queueRow.description,
+      description: sanitizeFallbackDescription(
+        queueRow.description,
+        // @ts-ignore — productContext augmented at load time
+        (queueRow as any)._warehouseSource ?? "US",
+      ),
       board_id: queueRow.board_id,
       link: preStampedVideoLink,
       media_source: mediaSource,
