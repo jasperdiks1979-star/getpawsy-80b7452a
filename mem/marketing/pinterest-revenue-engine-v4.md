@@ -39,3 +39,16 @@ type: feature
 - Edge function `gold-standard-audit` (admin JWT + `has_role`) scores up to 1500 jobs, persists creative_score + tier, returns counts (gold/medium/low). `gold-standard-winner-clone` aggregates 30d `pinterest_video_metrics`, picks the top 25 pins, persists DNA rows.
 - `cinematic-ad-autopublish` now runs the Gold Standard scorer right after the V4 gate. Tier `low` → `publish_blocked_reason='gold_standard_below_80:<score>|reasons'`. Tier `gold` / `medium` continue down the existing publish path with score persisted on the row.
 - Admin UI: `GoldStandardCreativePanel` on `/admin/pinterest-revenue-v4` exposes "Audit videos" and "Capture winner DNA" actions and surfaces scanned / gold / medium / low counts.
+
+## Self-Healing Pinterest Engine V1 (2026-06-20)
+- New tables: `pinterest_pipeline_settings` (singleton: target 48 pins/day, min 24, min pending videos 20 / pins 30, recovery <80, emergency <60), `pinterest_pipeline_health_snapshots`, `pinterest_pipeline_failures` (sources: pinterest_api, render, inventory, cj, supabase, storage, voice, media, other), `pinterest_pipeline_recovery_runs`. Admin-read, service-write.
+- Shared `_shared/pipeline-health.ts` exposes `computeHealthScore()` (throughput 40 + depth 15 + failure 15 + dead-pipeline 15 + min-volume 15), `categorizeFailure()`, `nextRetryAt()` (1/5/15/60-min ladder, max 4 attempts), `recordFailure()`, `safeRecord()`.
+- Edge functions:
+  - `pipeline-health-monitor` (cron */5m) — snapshots queues + last-event ages, computes score, writes snapshot, sets `pinterest_pipeline_settings.current_mode`, and self-invokes `pipeline-auto-replenish` (videos<20 or pins<30), `pipeline-recovery-run` (score<recovery), `pipeline-emergency-content` (score<emergency).
+  - `pipeline-auto-replenish` — winner priority: `effective_stock>0` ordered by `inventory_priority DESC`, `media_score DESC`; skips products already in queue; enqueues into `cinematic_ad_jobs` or `pinterest_pin_queue` with `source='self_healing_replenish'`.
+  - `pipeline-recovery-run` (cron */30m + on-demand) — resets stuck rendering>20m and processing pins>10m, probes credit state + token expiry, kicks autopilot/drain/autopublish/failure-retry.
+  - `pipeline-emergency-content` — when AI render unavailable, enqueues existing `pinterest_video_assets` (≥5s, stock>0) via `pinterest-video-publisher:queue_draft` so Pinterest never stalls.
+  - `pipeline-failure-retry` (cron */1m) — replays unresolved failures on the 1/5/15/60 ladder, escalates to `monitoring_alerts` after 4 attempts.
+  - `pipeline-health-dashboard` (admin JWT) — returns latest snapshot + 96-row trend + open failures + last 10 recovery runs.
+- Admin UI: `PipelineSelfHealingPanel` mounted under `/admin/pinterest-revenue-v4` — health gauge, mode badge, 10 KPI tiles, open-failure feed, recovery feed, manual triggers.
+- Quality Protection preserved: replenish reuses existing eligibility + Gold Standard gate; emergency mode publishes ONLY product video assets ≥5s with stock>0 — never static images, OOS, 404, or empty voice.
