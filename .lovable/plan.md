@@ -1,93 +1,104 @@
-# Global Inventory & Revenue Engine V1
+# Self-Healing Pinterest Engine V1
 
-Builds on the existing Item 14 multi-warehouse foundation (`us_stock` / `eu_stock` / `cn_stock`, `resolveWarehouse`, `warehouse_revenue_log`, `WarehouseInventoryPanel`). This V1 closes the remaining gaps from the spec: a single `effective_stock` truth column, explicit `inventory_source` / `inventory_priority` / `inventory_score`, EU-warehouse copy + delivery, replacement candidates when fully sold out, and a one-shot global audit surfaced in the admin dashboard.
+Builds a closed-loop watchdog so the Pinterest pipeline never goes dark. Sits on top of the existing V4 / V5 stack (eligibility, gold-standard scorer, credit guard, warehouse engine, video queue, render worker) — does not replace them.
 
-## 1. Data model (migration)
+## 1. Data model (single migration)
 
-Additive on `public.products`:
-- `us_available bool` — generated: `coalesce(us_stock,0) > 0`
-- `eu_available bool` — generated: `coalesce(eu_stock,0) > 0`
-- `cn_available bool` — generated: `coalesce(cn_stock,0) > 0`
-- `effective_stock int` — generated: priority US → EU → CN (returns the first warehouse with stock, else 0)
-- `inventory_source text` — generated: `'US' | 'EU' | 'CN' | 'NONE'`
-- `inventory_priority int` — generated: 100 / 70 / 40 / 0
-- `inventory_score int` — generated per spec (us>50 → 100; 20–50 → 90; 1–19 → 75; EU only → 60; CN only → 50; none → 0)
+New tables (admin read, service write, full GRANT block + RLS):
 
-All columns are `STORED GENERATED` so they're automatically maintained whenever `us_stock` / `eu_stock` / `cn_stock` are written by the existing CJ sync. No backfill script needed.
+- `pinterest_pipeline_health_snapshots` — 5-min rollups: `videos_generated_24h`, `pins_generated_24h`, `pins_published_24h`, `pending_videos`, `pending_pins`, `failed_24h`, `recovered_24h`, `avg_render_ms`, `publish_rate_per_hour`, `last_video_at`, `last_pin_at`, `health_score`, `mode` (`normal|recovery|emergency|light_render`), `reasons jsonb`.
+- `pinterest_pipeline_failures` — `id`, `source` (`pinterest_api|render|inventory|cj|supabase|storage|voice|media|other`), `job_type`, `job_id`, `error_code`, `error_message`, `attempt`, `next_retry_at`, `resolved_at`, `created_at`.
+- `pinterest_pipeline_recovery_runs` — `id`, `trigger` (`low_queue|dead_pipeline|low_health|cron`), `actions jsonb`, `checks jsonb`, `outcome`, `health_before`, `health_after`, `started_at`, `finished_at`.
+- `pinterest_pipeline_settings` (singleton id=1) — `target_pins_per_day=48`, `min_pins_per_day=24`, `min_pending_videos=20`, `min_pending_pins=30`, `dead_video_minutes=180`, `dead_pin_minutes=180`, `recovery_score=80`, `emergency_score=60`, `emergency_mode_enabled=true`, `light_render_enabled=true`.
 
-New table `public.product_replacement_candidates`:
-- `product_id`, `candidate_product_id`, `reason`, `match_score`, `created_at`
-- service-role write; admin read.
+Retry schedule (1m / 5m / 15m / 60m) lives in code; failures table just stores `attempt` and `next_retry_at`.
 
-## 2. Shared resolver upgrades
+## 2. Shared module
 
-`src/lib/warehouse-availability.ts` + edge mirror:
-- Add `inventoryScore` and `inventoryPriority` to the returned shape (mirror DB).
-- Add EU branch already present — extend `fallbackCopyTags('EU')` to return `['EU Warehouse', 'Fast EU Shipping']`.
-- Add helper `pickInventoryHook(source)` returning rotation of `['Back In Stock', 'Still Available', 'Limited Inventory', 'Worldwide Shipping']` for CN, EU-specific for EU, none for US.
+`supabase/functions/_shared/pipeline-health.ts`
+- `computeHealthScore(snapshot)` — weighted: throughput vs target (40), pending depth (15), failure ratio (15), dead-pipeline penalty (15), publish-rate (15). Clamped 0–100.
+- `categorizeFailure(err)` — maps error text/code to the 8 sources.
+- `nextRetryAt(attempt)` — 1/5/15/60-minute ladder, caps at 60m, gives up after 4.
+- `recordFailure(supabase, payload)` and `markResolved(supabase, id)`.
 
-`src/lib/availability.ts` already prefers warehouse columns; will switch to read `effective_stock` directly when present (cheaper, no client math).
+## 3. Edge functions
 
-## 3. Pinterest pipeline
+All admin-JWT-gated where user-facing, service-role for crons. Wrap every gateway call with the existing `pinterest-credit-guard.aiGatewayFetch`.
 
-- `_shared/pinterest-eligibility.ts` — replace any `us_stock`-only check with `effective_stock > 0`. Eligibility logs already include `warehouse_source`; add `inventory_priority` so queues can sort.
-- `cinematic-ad-orchestrator`, `pinterest-video-publisher`, `pinterest-pin-creator` — when `inventory_source ∈ {CN, EU}`, inject one of the V1 hooks from `pickInventoryHook` into overlay + description. Keep the banned-phrase guard ("Out Of Stock", any reference to "China"/"shipped from China").
-- Pin queue selector orders by `inventory_priority DESC` before existing scoring.
+1. `pipeline-health-monitor` (cron every 5 min)
+   - Pulls counts from `pinterest_video_queue`, `pinterest_pin_queue`, `cinematic_ad_jobs`, `pinterest_video_publish_log`, `pinterest_publish_logs`.
+   - Writes a `pinterest_pipeline_health_snapshots` row + sets `pinterest_pipeline_settings.current_mode`.
+   - If `pending_videos < min_pending_videos` → invokes `pipeline-auto-replenish` (`kind: video`).
+   - If `pending_pins < min_pending_pins` → invokes `pipeline-auto-replenish` (`kind: pin`).
+   - If `health < recovery_score` or dead-pipeline (>3h no video/pin) → invokes `pipeline-recovery-run`.
+   - If `health < emergency_score` → flips `current_mode=emergency`, invokes `pipeline-emergency-content`.
 
-## 4. Google Merchant feed
+2. `pipeline-auto-replenish`
+   - Selects winner-priority products: `effective_stock > 0`, ordered by `inventory_priority DESC`, then `pinterest_revenue_scores.score DESC`, then `media_score DESC`. Caps to delta needed.
+   - Enqueues into the existing `cinematic_ad_jobs` (for video) or `pinterest_pin_queue` (for pin) using the existing producers — never bypasses Gold Standard or eligibility gates.
 
-`getMerchantAvailability` already returns "in stock" on any warehouse > 0. Add: feed builder emits delivery estimate per `inventory_source` (3-7 / 4-8 / 7-15 business days) via existing `shipping[*].handling_time` field.
+3. `pipeline-recovery-run`
+   - Health checks (each writes into `checks` jsonb): pg_cron job rows for known schedules, last heartbeats (`render_worker_heartbeats`, `cinematic_worker_heartbeats`), Pinterest token freshness via `pinterest_connection`, queue depths, storage reachability (HEAD on a known asset), AI gateway via `pinterest-credit-state`.
+   - Actions: re-kick stuck jobs (`rendering > 20m → render_queued`, `processing > 10m → pending`), retry failures whose `next_retry_at <= now()`, fire `cinematic-ad-worker-control:{action:'wake'}`, re-invoke autopilot, refresh Pinterest token if `< 1h to expiry`.
 
-## 5. PDP / cards UI
+4. `pipeline-emergency-content`
+   - When AI render unavailable or credits red: enqueues pins using existing product video / photo assets via `pinterest-video-publisher` (`queue_draft`) with `creative_source_tier='product_video' | 'photos'`. Skips AI render entirely. Keeps publish flowing.
+   - `light_render_enabled`: forces `cinematic_ad_settings` flag `force_light_motion=true` for the run window.
 
-`ProductAvailability` + `WarehouseInventoryPanel` already render label + shipping line. Add:
-- Inline badge component reading `inventory_source` for: "In Stock" + "Fast Shipping" (US), "EU Warehouse" (EU), "Available" + "Worldwide Shipping" (CN).
-- Never render "Out Of Stock" when `effective_stock > 0` — enforced via central `getDisplayAvailability`.
+5. `pipeline-failure-retry` (cron every minute)
+   - Picks up to 50 unresolved `pinterest_pipeline_failures` with `next_retry_at <= now()`, re-invokes the original job type, increments `attempt`, marks resolved on success, escalates to `monitoring_alerts` after attempt=4.
 
-## 6. SEO / collections
+6. `pipeline-health-dashboard` (admin)
+   - Returns latest snapshot + last 24h trend + open failures by source + recent recovery runs.
 
-Sitemap + collection filters key off `effective_stock > 0` (not `us_stock`). Best-sellers / recommendations selector adds `inventory_priority` as a tie-breaker so US wins, EU/CN still ship.
+## 4. Wiring into existing functions
 
-## 7. Replacement engine
+- `cinematic-ad-autopublish`, `pinterest-video-publisher`, `pinterest-pin-creator`, `pinterest-pipeline-drain`, `pinterest-regen-autopilot` get a small `try/catch` wrapper that calls `recordFailure()` with the categorized source on any throw or non-2xx Pinterest response. No behavior change on success.
+- `pinterest-eligibility` already uses `effective_stock`; nothing to change. Replenish reuses it as the gate.
+- Quality Protection: replenish + emergency both go through existing eligibility (no static, no 404, no OOS, no empty voice) and Gold Standard gate (≥80) when AI render is on. Emergency mode bypasses Gold Standard ONLY for `product_video` source with valid runtime ≥ 5s — never for static images.
 
-New edge `inventory-replacement-scan` (cron daily 04:00 UTC):
-- For every product with `effective_stock = 0`, find up to 3 candidates: same `category`, price within ±20%, `effective_stock > 0`, ordered by `inventory_priority DESC`, then sales rank.
-- Upsert into `product_replacement_candidates`. Consumed by Pinterest queue + best-sellers fallback.
+## 5. Cron schedule (pg_cron, via `supabase--insert`)
 
-## 8. Audit edge + dashboard
+- `pipeline-health-monitor` every 5 min
+- `pipeline-failure-retry` every 1 min
+- `pipeline-recovery-run` every 30 min (safety net; monitor already triggers on demand)
 
-New edge `inventory-global-audit` (admin-gated JWT): returns one snapshot with
-- counts: US-only / EU-only / CN-only / fully sold out / wrongly-marked sold out (legacy `stock=0` but `effective_stock>0`) / reactivatable
-- estimated extra Pinterest-eligible products
-- estimated additional revenue (uses 30d avg AOV × 1.5% conversion baseline)
+## 6. Admin UI
 
-Wire to `WarehouseInventoryPanel`: add "Run Global Audit" button, render the report card under the existing 30d revenue grid. Show the rotating list of reactivatable products with a one-click "Re-queue for Pinterest" action that flips `creative_meta.eligible_for_pinterest = true` and enqueues into `pinterest_publish_queue`.
+`src/components/admin/PipelineSelfHealingPanel.tsx` mounted on `/admin/pinterest-revenue-v4`:
+- Big health score gauge + current mode badge (`normal/recovery/emergency/light`).
+- Tiles: videos today, pins today, published today, pending videos, pending pins, failed 24h, recovered 24h, avg render time, publish rate, last video age, last pin age.
+- Lists: open failures by source, last 10 recovery runs with outcome.
+- Buttons: "Force health check", "Force recovery run", "Force emergency content", "Reset retries".
 
-## 9. Out of scope
+Reuses existing `PipelineHealthBanner` styling.
 
-- New warehouse beyond US/EU/CN.
-- Order-routing / fulfillment splitting (still single-warehouse per order at checkout).
-- Real-time per-second CJ pull; relies on existing periodic sync.
-- EU storefront translation / VAT pricing.
+## 7. Out of scope
 
-## Files
+- New warehouses or new product sources (covered by Inventory V1).
+- Pinterest creative quality tuning (covered by Gold Standard).
+- New AI providers / credit top-up automation (credit-guard already pauses + resumes).
 
-Created:
-- migration: products generated columns + `product_replacement_candidates`
-- `supabase/functions/inventory-replacement-scan/index.ts`
-- `supabase/functions/inventory-global-audit/index.ts`
-- `src/components/admin/InventoryGlobalAuditCard.tsx`
-- `src/components/product/InventorySourceBadge.tsx`
+## 8. Files
 
-Edited:
-- `src/lib/warehouse-availability.ts` + edge mirror (add hook + score helpers)
-- `src/lib/availability.ts` (prefer `effective_stock`)
-- `src/lib/merchant-safe-product.ts` (badge + delivery estimate)
-- `supabase/functions/_shared/pinterest-eligibility.ts`
-- `supabase/functions/cinematic-ad-orchestrator/index.ts`
-- `supabase/functions/pinterest-video-publisher/index.ts`
-- `supabase/functions/pinterest-pin-creator/index.ts`
-- `src/components/admin/WarehouseInventoryPanel.tsx` (mount audit card)
-- `mem/marketing/pinterest-revenue-engine-v4.md`
+**Created**
+- `supabase/migrations/<ts>_self_healing_pinterest_engine.sql`
+- `supabase/functions/_shared/pipeline-health.ts`
+- `supabase/functions/pipeline-health-monitor/index.ts`
+- `supabase/functions/pipeline-auto-replenish/index.ts`
+- `supabase/functions/pipeline-recovery-run/index.ts`
+- `supabase/functions/pipeline-emergency-content/index.ts`
+- `supabase/functions/pipeline-failure-retry/index.ts`
+- `supabase/functions/pipeline-health-dashboard/index.ts`
+- `src/components/admin/PipelineSelfHealingPanel.tsx`
 
-Approve to implement, or tell me which sections to drop.
+**Edited**
+- `src/pages/admin/PinterestRevenueV4.tsx` (mount panel)
+- `supabase/functions/cinematic-ad-autopublish/index.ts` (failure recorder)
+- `supabase/functions/pinterest-video-publisher/index.ts` (failure recorder)
+- `supabase/functions/pinterest-pipeline-drain/index.ts` (failure recorder)
+- `supabase/functions/pinterest-regen-autopilot/index.ts` (failure recorder)
+- `mem/marketing/pinterest-revenue-engine-v4.md` (append "Self-Healing V1" section)
+- `.lovable/plan.md`
+
+Proceed on approval — no demo, no mock data, productie direct.
