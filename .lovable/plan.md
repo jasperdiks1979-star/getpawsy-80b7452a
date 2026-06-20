@@ -1,99 +1,108 @@
-## V4 Pinterest Revenue Renderer — Audit + Build
+# GetPawsy Revenue Engine V4 — Build Plan
 
-Stop generating V3 videos and build a new renderer with a hard quality gate. No new Pinterest pins until V4 passes validation against the existing 30 V3 videos.
-
----
-
-### Phase 1 — Audit the 30 approved V3 videos (read-only)
-
-Build `supabase/functions/cinematic-v3-quality-audit/index.ts` that scores each of the 30 approved V3 jobs and writes results to a new `cinematic_v3_quality_audit` table.
-
-Per-video checks:
-- **Safe area** — extract sample frames via ffprobe/ffmpeg and run OCR; flag text bboxes outside 1080×(15%–80%) center band
-- **Caption clipping** — text bbox touches frame edge or extends past safe rect
-- **Supplier collage detection** — perceptual hash + edge density heuristic on source `product_media` rows (multi-panel grid signature)
-- **Low-res source** — any source image <1000px on shortest side
-- **Zoom/pan only** — scene motion vectors uniform across all scenes (no scene cuts, no composition change)
-- **Missing hook / benefit / CTA** — inspect `cinematic_v3_jobs.script_json` for Scene 1/3/5 presence + non-empty text
-- **Branding** — GetPawsy logo/wordmark missing from final 2s
-
-Output columns:
-```
-job_id, slug, safe_area_ok, caption_clipped, supplier_collage, low_res_source,
-zoom_pan_only, hook_present, benefit_present, cta_present, branding_ok,
-quality_score (0-100), issues jsonb, mp4_url
-```
-
-Quality score formula: 100 − penalties (safe_area=-25, clipped=-20, collage=-30, lowres=-15, zoom_only=-15, missing_hook=-15, missing_benefit=-10, missing_cta=-20, branding=-10), clamped 0-100. Approve at 90+.
-
-Report page: `/admin/cinematic-v3-quality-audit` — table with score, badges, thumbnail, mp4 preview, issues list. Read-only.
+Large, multi-system upgrade across Pinterest publishing, video rendering, inventory safety, and admin observability. Splitting into 4 phases so each ships verifiable.
 
 ---
 
-### Phase 2 — Build V4 Pinterest Revenue Renderer
+## Phase 1 — Inventory Safety + Quality Gate (foundation)
 
-#### Database
-Migration creates:
-- `cinematic_v4_jobs` (mirrors v3 shape: status, slug, product_id, script_json, scene_assets, final_mp4_url, quality_score, quality_report jsonb, rejection_reasons text[], created_at, approved_at)
-- `cinematic_v4_safe_zone_config` (canvas, top_reserve_pct=15, bottom_reserve_pct=20, min_font_px, max_lines, brand_logo_url)
-- GRANTs + RLS (admin read, service_role all)
+New shared module `supabase/functions/_shared/pinterest-eligibility.ts`:
 
-#### Renderer architecture
-`supabase/functions/cinematic-v4-orchestrator/index.ts` — orchestrates per job:
-1. **Script generation** — Lovable AI Gateway (`google/gemini-2.5-flash`) produces 5-scene script with strict schema: `{hook, problem, benefit, key_feature, cta}`. Each scene has `text` (≤max chars for safe area), `b_roll_query`, `duration_s`.
-2. **Asset selection** — query `product_media` excluding supplier-collage hashes (from Phase 1 blocklist), require min 1200px, prefer lifestyle > white background. Reject job if no qualifying asset.
-3. **Storyboard layout** — pure-function `buildSafeLayout(text, fontFamily, maxWidth=864px=1080-2×108)` that auto-scales font down (96→48px) until text fully fits inside 1080×(288–1632) center band. If still overflows at min size, split lines; if still overflows, **fail the job** with reason `text_exceeds_safe_zone`.
-4. **Render dispatch** — push storyboard to existing GitHub Actions render worker (Remotion) using a new composition `MainVideoV4` with five scenes:
-   - Scene 1 Hook — full-bleed lifestyle, large hook text, top-anchored within safe area
-   - Scene 2 Problem — split-screen / dim overlay, mid copy
-   - Scene 3 Benefit — clean white background, product hero, benefit copy
-   - Scene 4 Key feature — close-up product detail with callout label
-   - Scene 5 CTA — branded end-card with GetPawsy logo + URL pill
-5. **Quality gate (server-side, post-render)** — re-runs Phase-1 audit on the produced mp4: safe-area OCR, supplier-collage hash check, branding presence, scene count, scene tags (hook/benefit/cta). Computes `quality_score`. If score <90 → `status=rejected` with `rejection_reasons[]`. ≥90 → `status=approved`.
+- `assessProductEligibility(productId)` returns `{ eligible, reason, mediaScore, inventory, status }`.
+- Reasons: `out_of_stock | inactive | hidden | archived | missing_inventory | cj_zero | media_score_low | destination_404`.
+- Media score formula (0–100): video +30, ≥5 photos +20, ≥1200px +20, lifestyle +10, white-bg +10, multi-angle +10.
 
-#### Remotion composition
-`remotion/src/MainVideoV4.tsx` + `remotion/src/v4/` scenes:
-- `SafeZoneFrame.tsx` — debug overlay (dev only) + runtime guard that throws if a child's measured rect exits the safe rect (catches author errors at build time)
-- `BrandEndCard.tsx` — consistent logo + colors
-- `AutoFitText.tsx` — measures DOM, shrinks font until contained
-- `Scene1Hook`, `Scene2Problem`, `Scene3Benefit`, `Scene4Feature`, `Scene5CTA`
-- 30fps, 1080×1920, ~24s total (5+5+5+5+4)
+New table `pinterest_eligibility_log` (product_id, eligible bool, reason, media_score, inventory, checked_at, source) + GRANTs + admin RLS.
 
-#### UI
-- `/admin/cinematic-v4-jobs` — list + filters (approved / rejected / failed), thumbnail, quality score, rejection reasons, mp4 preview, re-queue button
-- `/admin/cinematic-v4-quality-gate` — live config: penalty weights, safe-zone reserves, min source resolution, approval threshold
+Wire `assessProductEligibility` into:
+- `pinterest-video-queue-drain` — refuse non-eligible, mark queue row `ineligible`.
+- `pinterest-creative-director` — skip seeding ineligible products.
+- `cinematic-ad-orchestrator` (or v3/v4 entry) — refuse render if score < 60.
+
+Hard rules (Quality Gate, item 10):
+- inventory > 0
+- media_score ≥ 60
+- destination URL HEAD = 200
+- product `is_active = true`, not hidden/archived
+- video passes V4 motion validation (Phase 3)
 
 ---
 
-### Phase 3 — Validate against V3 baseline
+## Phase 2 — Winner Replacement Engine
 
-Smoke script `scripts/v4-baseline-validation.mjs`:
-1. Pick the 10 slugs from the 30 approved V3 jobs that scored lowest in Phase 1
-2. Re-render via V4 orchestrator (one at a time, no Pinterest publish)
-3. Print side-by-side table: slug | v3_score | v4_score | v4_status | issues
-4. Pass criteria: ≥8/10 V4 outputs score ≥90, none have safe-zone violations, none have supplier collages
+New edge function `pinterest-winner-replacement`:
+1. Scan `pinterest_pin_performance` for top decile (CTR + outbound + saves).
+2. For each, re-check destination product eligibility via Phase-1 helper.
+3. If ineligible, query products with same `category`, similar price band (±25%), `is_active=true`, `inventory>0`, `media_score≥80`.
+4. Insert new queue row + dispatch cinematic render keyed to replacement product.
+5. Log to new `pinterest_replacement_log` (winner_pin_id, original_product_id, replacement_product_id, reason, created_at).
 
----
-
-### Phase 4 — Guards (do NOT proceed without these)
-
-- Pinterest publisher: add hard check — refuse to enqueue any `cinematic_v4_jobs` row with `status != 'approved'`
-- V3 dispatcher: leave running for inventory but flag in `pinterest_runtime_settings` `v3_publish_paused=true` so existing V3 jobs are not pushed to Pinterest until V4 lands
-- No new Pinterest pins are created during Phases 1–3 (the orchestrator never calls the Pinterest publisher; it only writes to its own tables)
+Cron daily 04:00 UTC.
 
 ---
 
-### Out of scope (explicit)
-- Deleting V3 videos
-- Touching V5 / Cinematic engines
-- Repairing ElevenLabs key or render-worker heartbeats (separate known issues)
-- Building new Pinterest pin queue entries
+## Phase 3 — Video Quality + Product-Video-First
+
+In `cinematic-ad-validate`:
+- Add `static_video_check`: scene count ≥ 5, scene_change_count ≥ 4, camera_motion_score ≥ 65. Else `reject_video=true`, `v4_reject_reasons += 'static_video'`, auto-requeue (max 2 retries).
+
+In `cinematic-ad-orchestrator` source selection (item 5):
+1. If `product_media` has `media_type='video'` from CJ/supplier → rehost + use directly, skip AI slideshow.
+2. Else if ≥5 photos → photo-driven cinematic.
+3. Else AI cinematic.
+
+Persist `creative_source_tier` on `cinematic_ad_jobs` (`product_video | photos | ai`).
 
 ---
 
-### Technical notes
-- OCR: `tesseract.js` inside the audit edge function (lightweight, English only)
-- Perceptual hash: 8×8 dHash in pure TS — no native deps
-- All edge functions use `corsHeaders` from `npm:@supabase/supabase-js@2/cors`
-- Migrations include GRANTs (authenticated SELECT, service_role ALL) per project standard
-- Frontend lazy-loads both new admin routes
+## Phase 4 — Creative Diversity + Winner Cloner + Cleanup + Dashboard
+
+**Diversity (item 6):** in `pinterest-creative-director`, before accepting a draft, query last 200 published pins' `meta->>headline`. If chosen headline already appears ≥3× → regenerate with rotated hook category (`problem|curiosity|benefit|emotion|comparison|surprise|before_after|urgency`). Stored already in `pinterest_render_attempts`.
+
+**Winner Cloner (item 7):** new `pinterest-winner-cloner` edge function. Reads top 20 winners from `pinterest_creative_winners`, extracts `{ hook_category, headline_pattern, scene_pattern, cta, duration }`, writes `pinterest_winner_templates` table. `pinterest-creative-director` consumes templates with 40% probability when seeding pins for products in same category as a winner.
+
+**Sales mode (item 8):** add `pinterest_runtime_settings.optimization_target = 'sales'`. `pinterest-winner-rollup` reweights composite score: outbound 0.5, sales 0.4, saves 0.08, impressions 0.02.
+
+**Auto cleanup (item 9):** new cron `pinterest-queue-cleanup-daily` (`0 5 * * *`):
+- Delete queue rows with ineligible products, broken URLs (HEAD ≠ 200), duplicate dest URL within 7d.
+- Archive Pinterest pins pointing at OOS products via existing archive endpoint.
+
+**Admin dashboard (item 11):** new page `/admin/pinterest-revenue-v4` + edge function `pinterest-revenue-v4-dashboard` returning:
+- blocked_by_inventory, blocked_by_media, creative_winners, top_ctr_pins, top_sales_pins, oos_pins, replacements_generated_7d, avg_video_quality, avg_media_score, avg_inventory_score.
+
+Lazy-loaded route. Admin RLS via `has_role`.
+
+**Immediate action (item 12):** one-shot edge function `pinterest-revenue-v4-bootstrap` invoked once after deploy:
+1. Run eligibility check on every row in `pinterest_pin_queue` + `pinterest_video_queue` + `cinematic_ad_publish_queue`. Remove failures.
+2. Pick top 25 products by `media_score≥80 AND inventory>0 AND product_winner_scores.score DESC` → enqueue cinematic renders.
+3. Flip `pinterest_runtime_settings.v3_publish_paused=false` to resume auto-publish.
+
+---
+
+## Migrations (single file)
+
+1. `pinterest_eligibility_log` table + GRANT + RLS (admin select, service_role all).
+2. `pinterest_replacement_log` table + GRANT + RLS.
+3. `pinterest_winner_templates` table + GRANT + RLS.
+4. `cinematic_ad_jobs.creative_source_tier text`.
+5. `pinterest_runtime_settings.optimization_target text default 'sales'`.
+
+## Crons (separate insert, not migration)
+
+- `pinterest-winner-replacement` — `0 4 * * *`
+- `pinterest-queue-cleanup-daily` — `0 5 * * *`
+- `pinterest-winner-cloner` — `0 6 * * *`
+
+## Out of scope
+
+- Rewriting Remotion scene composition (already V4).
+- Touching V5 engine.
+- New brand visuals.
+
+## Risk notes
+
+- Eligibility helper runs synchronously inside drain — keep ≤500ms with batched product fetch.
+- HEAD 200 check is rate-limited (max 200/min) and cached 1h to avoid hammering the storefront.
+- All new tables admin-read-only; no anon grants.
+
+Approve and I'll ship Phase 1 + migrations first, then proceed phase-by-phase.
