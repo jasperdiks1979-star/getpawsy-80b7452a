@@ -17,6 +17,9 @@
 export interface AvailabilityProduct {
   stock?: number | null;
   is_active?: boolean | null;
+  us_stock?: number | null;
+  eu_stock?: number | null;
+  cn_stock?: number | null;
 }
 
 export interface AvailabilityResult {
@@ -42,6 +45,23 @@ export function computeAvailability(
 
   if (product.is_active === false) {
     return { isInStock: false, reason: 'Product disabled (is_active=false)' };
+  }
+
+  // Multi-warehouse (Item 14): any warehouse > 0 keeps the product purchasable.
+  // Only sold out when explicit per-warehouse stocks all = 0.
+  const us = product.us_stock;
+  const eu = product.eu_stock;
+  const cn = product.cn_stock;
+  const hasWarehouseData =
+    (us !== undefined && us !== null) ||
+    (eu !== undefined && eu !== null) ||
+    (cn !== undefined && cn !== null);
+  if (hasWarehouseData && variantStock === undefined) {
+    const total = (Number(us) || 0) + (Number(eu) || 0) + (Number(cn) || 0);
+    if (total > 0) {
+      return { isInStock: true, reason: `In stock across warehouses (us=${us ?? 0}, eu=${eu ?? 0}, cn=${cn ?? 0})` };
+    }
+    return { isInStock: false, reason: 'All warehouses empty (us/eu/cn all 0)' };
   }
 
   // Variant stock overrides product stock when provided
