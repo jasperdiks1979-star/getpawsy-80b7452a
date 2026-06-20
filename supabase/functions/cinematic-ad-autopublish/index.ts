@@ -80,6 +80,14 @@ Deno.serve(async (req) => {
     .select("cinematic_v5_enabled")
     .eq("id", true).maybeSingle();
   const v5Enabled = v5Gate?.cinematic_v5_enabled !== false;
+  // Gold Standard gate thresholds
+  const { data: gsGate } = await admin
+    .from("cinematic_ad_settings")
+    .select("gold_standard_enabled, gold_standard_min_score, gold_standard_priority_score")
+    .eq("id", true).maybeSingle();
+  const gsEnabled = gsGate?.gold_standard_enabled !== false;
+  const gsMin = Number(gsGate?.gold_standard_min_score ?? 80);
+  const gsPriority = Number(gsGate?.gold_standard_priority_score ?? 90);
   // V3 PinterestQualityGateV2 — rate/diversity guards. Pulled from settings
   // so admins can tune live without redeploys.
   const { data: gateSettings } = await admin
