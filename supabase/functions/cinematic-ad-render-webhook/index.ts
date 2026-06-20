@@ -53,48 +53,21 @@ const TRIM_FAILURE_EVENTS = new Set([
 ]);
 
 /**
- * Dispatch the trim-cinematic-ad GitHub Actions workflow. The workflow
- * downloads the oversize MP4, runs ffmpeg to clamp to target_seconds,
- * uploads the trimmed asset back to storage, and POSTs a follow-up call
- * to this webhook with duration_auto_trimmed=true.
+ * DEPRECATED 2026-06-20 — the `trim-cinematic-ad` GitHub workflow has been
+ * retired together with the legacy v2 cinematic_ad pipeline. v3+ renders
+ * never overshoot the duration cap. This function is now a no-op that
+ * returns ok=false so the caller falls back to bypass-and-promote on
+ * legacy jobs. Do NOT re-enable without restoring the workflow file.
  */
 async function dispatchTrimWorkflow(
   jobId: string,
-  mp4Url: string,
-  targetSec: number,
-  renderToken: string | null,
+  _mp4Url: string,
+  _targetSec: number,
+  _renderToken: string | null,
   traceId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  if (!GH_PAT || !GH_REPO) {
-    return { ok: false, message: "GH_PAT/GH_REPO not configured — cannot auto-trim" };
-  }
-  const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${TRIM_WORKFLOW_FILE}/dispatches`;
-  const payload = {
-    ref: GH_REF,
-    inputs: {
-      job_id: jobId,
-      mp4_url: mp4Url,
-      target_seconds: String(targetSec),
-      render_token: renderToken ?? "",
-    },
-  };
-  console.log(`[auto-trim] ${traceId} dispatching trim workflow`, { jobId, mp4Url, targetSec });
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${GH_PAT}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    console.error(`[auto-trim] ${traceId} dispatch failed`, { status: res.status, body: txt.slice(0, 400) });
-    return { ok: false, message: `gh dispatch ${res.status}: ${txt.slice(0, 200)}` };
-  }
-  return { ok: true };
+  console.log(`[auto-trim] ${traceId} DEPRECATED no-op for job=${jobId}; caller will bypass & promote`);
+  return { ok: false, message: "trim_workflow_deprecated_2026_06_20" };
 }
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
