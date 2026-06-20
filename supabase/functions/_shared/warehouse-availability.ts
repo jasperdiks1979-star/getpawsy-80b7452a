@@ -84,10 +84,39 @@ export function resolveWarehouse(p: WarehouseProductRow | null | undefined): War
 }
 
 export function fallbackCopyTags(source: WarehouseSource): string[] {
-  if (source === "CN" || source === "EU") {
-    return ["Available Again", "Limited Stock", "Worldwide Shipping"];
-  }
+  if (source === "CN") return ["Back In Stock", "Still Available", "Worldwide Shipping"];
+  if (source === "EU") return ["EU Warehouse", "Fast EU Shipping", "Limited Stock"];
   return [];
+}
+
+export function pickInventoryHook(source: WarehouseSource): string | null {
+  const tags = fallbackCopyTags(source);
+  if (tags.length === 0) return null;
+  return tags[Math.floor(Math.random() * tags.length)];
+}
+
+export function computeInventoryScore(p: WarehouseProductRow | null | undefined): number {
+  if (!p) return 0;
+  const us = Number(p.us_stock ?? 0);
+  const eu = Number(p.eu_stock ?? 0);
+  const cn = Number(p.cn_stock ?? 0);
+  if (us > 50) return 100;
+  if (us >= 20) return 90;
+  if (us >= 1) return 75;
+  if (eu > 0) return 60;
+  if (cn > 0) return 50;
+  return 0;
+}
+
+export function computeInventoryPriority(p: WarehouseProductRow | null | undefined): number {
+  if (!p) return 0;
+  const us = Number(p.us_stock ?? 0);
+  const eu = Number(p.eu_stock ?? 0);
+  const cn = Number(p.cn_stock ?? 0);
+  if (us > 0) return 100;
+  if (eu > 0) return 70;
+  if (cn > 0) return 40;
+  return 0;
 }
 
 export function deriveWarehouseFlags(p: WarehouseProductRow): {
