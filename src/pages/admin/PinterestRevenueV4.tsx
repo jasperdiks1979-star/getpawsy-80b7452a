@@ -7,6 +7,7 @@ import { Loader2, RefreshCcw, Rocket, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import WarehouseInventoryPanel from "@/components/admin/WarehouseInventoryPanel";
 import GoldStandardCreativePanel from "@/components/admin/GoldStandardCreativePanel";
+import PipelineSelfHealingPanel from "@/components/admin/PipelineSelfHealingPanel";
 
 interface DashData {
   blocked_by_inventory: number;
@@ -88,6 +89,7 @@ export default function PinterestRevenueV4() {
         <>
           <WarehouseInventoryPanel />
           <GoldStandardCreativePanel />
+          <PipelineSelfHealingPanel />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Stat label="Blocked by inventory" value={String(data.blocked_by_inventory)} />
             <Stat label="Blocked by media quality" value={String(data.blocked_by_media)} />
