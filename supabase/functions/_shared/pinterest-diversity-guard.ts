@@ -43,6 +43,8 @@ export interface EvalResult {
   reasons: string[];
   replacedFromPool: Partial<Record<PoolType, { from: string; to: string }>>;
   final: DiversityCandidate;
+  /** Soft penalties — informational, do NOT block acceptance. */
+  soft_penalties?: string[];
 }
 
 const STOP = new Set([
@@ -122,11 +124,15 @@ export const DEFAULT_CAPS: DiversityCaps = {
   headlinePer90: 5,
   ctaPer90: 5,
   anglePer90: 5,
-  benefitPer90: 5,
+  // 2026-06-21 — operator raised benefit cap to 15 to unblock acceptance.
+  // Benefit hooks (premium_material, easy_cleaning, space_saving, comfort,
+  // durability, odor_control) now apply a SOFT ranking penalty when the cap
+  // is exceeded instead of hard-rejecting the render. See evaluate().
+  benefitPer90: 15,
   windowLast25Exact: true,
 };
 
-export const HOOK_CAP_PER_90 = 5;
+export const HOOK_CAP_PER_90 = 15;
 export const OVERLAY_CAP_PER_90 = 5;
 
 // Map free-form niche/category labels to the canonical pool category key.
@@ -344,6 +350,7 @@ export class DiversityGuard {
    */
   evaluate(candidate: DiversityCandidate, category: string): EvalResult {
     const reasons: string[] = [];
+    const soft_penalties: string[] = [];
     const replacedFromPool: EvalResult["replacedFromPool"] = {};
     const final: DiversityCandidate = enrich({ ...candidate });
     const catKey = normaliseCategoryKey(category);
@@ -367,6 +374,7 @@ export class DiversityGuard {
       currentValue: string,
       cap: number,
       apply: (next: string) => void,
+      softOnly = false,
     ) => {
       const counts = this.c90[type as keyof Counts] as Map<string, number>;
       const key = norm(currentValue);
@@ -376,6 +384,8 @@ export class DiversityGuard {
       if (next) {
         replacedFromPool[type] = { from: currentValue, to: next };
         apply(next);
+      } else if (softOnly) {
+        soft_penalties.push(`${type}_cap_exceeded:${used}>=${cap}:${currentValue.slice(0, 48)}`);
       } else {
         reasons.push(`${type}_cap_exceeded:${used}>=${cap}:${currentValue.slice(0, 48)}`);
       }
@@ -390,10 +400,11 @@ export class DiversityGuard {
       tryReplace("angle", final.angle, this.caps.anglePer90, (v) => { final.angle = v; });
     }
     if (final.benefit) {
-      tryReplace("benefit", final.benefit, this.caps.benefitPer90, (v) => { final.benefit = v; });
+      // 2026-06-21 — benefit hooks soft-penalize only, never hard-reject.
+      tryReplace("benefit", final.benefit, this.caps.benefitPer90, (v) => { final.benefit = v; }, true);
     }
 
-    return { ok: reasons.length === 0, reasons, replacedFromPool, final };
+    return { ok: reasons.length === 0, reasons, replacedFromPool, final, soft_penalties };
   }
 
   /** Register an accepted candidate so the next call in the same run is aware. */

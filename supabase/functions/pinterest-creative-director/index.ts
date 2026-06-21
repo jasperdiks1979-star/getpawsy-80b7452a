@@ -355,6 +355,7 @@ async function generateBriefs(
     "Each brief must be ONE fully-composed real lifestyle scene with the product naturally placed in a luxury US home.",
     "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
     "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
+    "CREATIVE DIVERSITY MANDATE: across the N briefs in this batch, vary the camera angle (eye-level, low-angle, overhead, three-quarter), the environment (living room, bedroom, kitchen nook, sunlit hallway, outdoor patio, garden), the lighting (golden hour, soft morning, overcast daylight, lamp-lit evening), the season (spring blossoms, summer warmth, autumn neutrals, winter cosy), the color palette (cream, sage, terracotta, dusty blue, warm beige, charcoal accent) and the composition (rule-of-thirds, centered hero, wide negative-space, intimate close-up). Never reuse the same headline sentence structure across briefs in this batch.",
   ].join(" ");
 
   const user = {
@@ -614,10 +615,22 @@ async function renderSceneWithSource(
     `Premium lifestyle photography, warm natural lighting, luxury US home interior, ${dna.light}, mood: ${dna.mood}. ` +
     `Pinterest-native editorial aesthetic. Photorealistic textures, natural shadows, correct perspective, ` +
     `product integrated naturally into the scene as if professionally styled in a real home. ` +
-    `Vertical 2:3 composition (1000x1500) for Pinterest.${overlayDirective} ` +
+    `Vertical 2:3 composition (1000x1500) for Pinterest. ` +
+    // MOBILE SAFE ZONE — keep the focal subject visually centered both ` +
+    // vertically and horizontally so iPhone Pinterest feed cropping never ` +
+    // clips it. NO important product detail in the outer 15% margin. ` +
+    // NO text, captions, CTAs, logos or critical objects in the top 15% or ` +
+    // bottom 20% — those strips are reserved for Pinterest UI chrome. ` +
+    // Leave generous breathing room / negative space around the product. ` +
+    `MOBILE SAFE ZONE: focal subject perfectly centered, no important object or text within the outer 15% margins, ` +
+    `nothing critical in the top 15% or bottom 20% of the frame, generous negative space around the product. ` +
+    // LUXURY POLISH — shallow DoF, realistic reflections + soft shadows, ` +
+    // editorial product advertising look. ` +
+    `LUXURY POLISH: premium product advertising aesthetic, shallow depth of field, realistic soft shadows and reflections, ` +
+    `professional studio-grade lighting, refined materials, restrained color palette, premium home or outdoor interior styling.${overlayDirective} ` +
     `Absolutely NO infographics, NO feature lists, NO comparison graphics, NO discount banners, NO product collages, ` +
     `NO multi-tile layouts, NO split-screen, NO floating product cutouts, NO Canva-template look, NO CTA bars, ` +
-    `NO price tags, NO stock-photo appearance, NO crowded layouts.`;
+    `NO price tags, NO stock-photo appearance, NO crowded layouts, NO clipart, NO text-heavy layouts.`;
 
   // For collage modes, replace the anti-collage clause with the explicit
   // collage contract so the image model isn't given contradictory directives.
