@@ -379,7 +379,17 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
 
 async function callCreativeDirector(slug: string, count: number, usHints?: {
   us_focus?: boolean; us_keywords?: string[]; us_state?: string; niche?: string;
-}): Promise<{ ok: boolean; drafts: number; error?: string }> {
+}): Promise<{
+  ok: boolean;
+  drafts: number;
+  error?: string;
+  rejection_reason?: string;
+  stages?: unknown;
+  product_title?: string;
+  product_id?: string;
+  image_attempts?: number;
+  queue_attempts?: number;
+}> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-creative-director`, {
       method: "POST",
@@ -390,9 +400,40 @@ async function callCreativeDirector(slug: string, count: number, usHints?: {
       body: JSON.stringify({ action: "run_full", slug, count, ...(usHints ?? {}) }),
     });
     const j = await res.json().catch(() => ({}));
-    return { ok: res.ok && (j.ok ?? true), drafts: j.inserted ?? j.accepted ?? 0, error: j.error };
+    const draftsCount: number =
+      typeof j.drafts_count === "number"
+        ? j.drafts_count
+        : Array.isArray(j.drafts)
+        ? j.drafts.length
+        : (j.inserted ?? j.accepted ?? 0);
+    const stages = Array.isArray(j.stages) ? j.stages : [];
+    const imageAttempts = stages.filter(
+      (s: any) => s.stage === "image_generation",
+    ).length;
+    const queueAttempts = stages.filter(
+      (s: any) => s.stage === "queue_insert",
+    ).length;
+    const rejectionReason =
+      draftsCount > 0
+        ? undefined
+        : j.primary_rejection_reason ??
+          j.error ??
+          (Array.isArray(j.rejected) && j.rejected[0]?.reasons?.[0]) ??
+          (res.ok ? "no_drafts_no_reason" : `http_${res.status}`);
+    return {
+      ok: res.ok && (j.ok ?? true) && draftsCount > 0,
+      drafts: draftsCount,
+      error: j.error,
+      rejection_reason: rejectionReason,
+      stages,
+      product_title: j.product_title,
+      product_id: j.product_id,
+      image_attempts: imageAttempts,
+      queue_attempts: queueAttempts,
+    };
   } catch (e) {
-    return { ok: false, drafts: 0, error: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, drafts: 0, error: msg, rejection_reason: `invoke_error:${msg}` };
   }
 }
 
@@ -898,7 +939,18 @@ Deno.serve(async (req) => {
       const usShares = await computeUsShares(sb);
       const selection = await selectProducts(sb, productsPerRun, usShares);
       const products = selection.products;
-      const generation = [] as Array<{ slug: string; ok: boolean; drafts: number; error?: string }>;
+      const generation = [] as Array<{
+        slug: string;
+        ok: boolean;
+        drafts: number;
+        error?: string;
+        rejection_reason?: string;
+        product_title?: string;
+        product_id?: string;
+        image_attempts?: number;
+        queue_attempts?: number;
+        stages?: unknown;
+      }>;
       for (const p of products) {
         const r = await callCreativeDirector(p.slug, variantsPerProduct, {
           us_focus: true,
