@@ -418,6 +418,7 @@ async function callCreativeDirector(slug: string, count: number, usHints?: {
         ? undefined
         : j.primary_rejection_reason ??
           j.error ??
+          j.message ??
           (Array.isArray(j.rejected) && j.rejected[0]?.reasons?.[0]) ??
           (res.ok ? "no_drafts_no_reason" : `http_${res.status}`);
     return {
