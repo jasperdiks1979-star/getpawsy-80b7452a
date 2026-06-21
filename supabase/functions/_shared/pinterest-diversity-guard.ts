@@ -122,11 +122,15 @@ export const DEFAULT_CAPS: DiversityCaps = {
   headlinePer90: 5,
   ctaPer90: 5,
   anglePer90: 5,
-  benefitPer90: 5,
+  // 2026-06-21 — operator raised benefit cap to 15 to unblock acceptance.
+  // Benefit hooks (premium_material, easy_cleaning, space_saving, comfort,
+  // durability, odor_control) now apply a SOFT ranking penalty when the cap
+  // is exceeded instead of hard-rejecting the render. See evaluate().
+  benefitPer90: 15,
   windowLast25Exact: true,
 };
 
-export const HOOK_CAP_PER_90 = 5;
+export const HOOK_CAP_PER_90 = 15;
 export const OVERLAY_CAP_PER_90 = 5;
 
 // Map free-form niche/category labels to the canonical pool category key.
