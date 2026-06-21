@@ -355,6 +355,7 @@ async function generateBriefs(
     "Each brief must be ONE fully-composed real lifestyle scene with the product naturally placed in a luxury US home.",
     "Each brief is locked to ONE provided Pinterest winning pattern AND ONE hook strategy.",
     "Use the provided headline and cta verbatim — they have been chosen by the strategy engine.",
+    "CREATIVE DIVERSITY MANDATE: across the N briefs in this batch, vary the camera angle (eye-level, low-angle, overhead, three-quarter), the environment (living room, bedroom, kitchen nook, sunlit hallway, outdoor patio, garden), the lighting (golden hour, soft morning, overcast daylight, lamp-lit evening), the season (spring blossoms, summer warmth, autumn neutrals, winter cosy), the color palette (cream, sage, terracotta, dusty blue, warm beige, charcoal accent) and the composition (rule-of-thirds, centered hero, wide negative-space, intimate close-up). Never reuse the same headline sentence structure across briefs in this batch.",
   ].join(" ");
 
   const user = {
