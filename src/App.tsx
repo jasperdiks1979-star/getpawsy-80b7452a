@@ -2916,6 +2916,33 @@ const App = () => {
                                 </Suspense>
                               }
                             />
+                            {/* Alias: /admin/pinterest/video-queue */}
+                            <Route
+                              path="pinterest/video-queue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestVideoQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            {/* Alias: /admin/cinematic → control center */}
+                            <Route
+                              path="cinematic"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdsControlCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            {/* Alias: /admin/cinematic/preview/:jobId */}
+                            <Route
+                              path="cinematic/preview/:jobId"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CinematicAdPreviewPage />
+                                </Suspense>
+                              }
+                            />
                             <Route
                               path="pinterest-video-logs"
                               element={
