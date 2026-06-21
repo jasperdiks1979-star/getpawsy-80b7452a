@@ -1349,6 +1349,33 @@ Deno.serve(async (req) => {
 
     if (action === "render_pins" || action === "run_full") {
       const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
+      // ── Stage-by-stage rejection log (2026-06-21) ────────────────────
+      // Records every decision point so the growth-engine response can
+      // surface why a product produced zero drafts.
+      const stages: Array<{
+        stage:
+          | "selected"
+          | "profile_validation"
+          | "brief_generated"
+          | "pre_diversity"
+          | "image_generation"
+          | "quality_gate"
+          | "fidelity_check"
+          | "post_diversity"
+          | "queue_insert";
+        status: "ok" | "rejected" | "error";
+        brief_index?: number;
+        attempt?: number;
+        reason?: string;
+        details?: unknown;
+      }> = [];
+      stages.push({ stage: "selected", status: "ok" });
+      stages.push({
+        stage: "profile_validation",
+        status: product ? "ok" : "rejected",
+        reason: product ? undefined : "missing_product_profile",
+        details: { niche, has_image: !!(product as any)?.image_url },
+      });
       const weights = await loadLearningWeights(supabase, niche);
       const winnerModes = await loadWinnerPinModes(supabase, niche);
       const { exploitRatio, pinModeBoost } = await loadStrategyAndTrends(supabase, niche);
@@ -1370,6 +1397,12 @@ Deno.serve(async (req) => {
         });
       });
       let briefs = await generateBriefs(product, dna, count, undefined, weights, {}, visualPlans);
+      stages.push({
+        stage: "brief_generated",
+        status: briefs.length ? "ok" : "rejected",
+        reason: briefs.length ? undefined : "brief_validation_failed",
+        details: { brief_count: briefs.length, requested: count },
+      });
 
       const drafts: any[] = [];
       const rejected: any[] = [];
@@ -1439,6 +1472,14 @@ Deno.serve(async (req) => {
                 ...(lastReasons ?? []),
                 ...preGuard.reasons.map((r) => `pre_diversity:${r}`),
               ];
+              stages.push({
+                stage: "pre_diversity",
+                status: "rejected",
+                brief_index: i,
+                attempt,
+                reason: "duplicate_guard",
+                details: preGuard.reasons,
+              });
               await logRenderAttempt(supabase, {
                 pin_queue_id: null,
                 product_slug: product.slug,
@@ -1481,6 +1522,13 @@ Deno.serve(async (req) => {
               productImageUrl,
               inImageOverlay,
             );
+            stages.push({
+              stage: "image_generation",
+              status: "ok",
+              brief_index: i,
+              attempt,
+              details: { bytes: bytes?.byteLength ?? 0 },
+            });
             const qc = await qualityCheck(brief, bytes, dna, emergency);
             lastReasons = qc.reasons;
             lastScores = qc.scores as unknown as Record<string, number>;
@@ -1498,6 +1546,14 @@ Deno.serve(async (req) => {
             });
 
             if (!qc.ok) {
+              stages.push({
+                stage: "quality_gate",
+                status: "rejected",
+                brief_index: i,
+                attempt,
+                reason: "quality_gate_failed",
+                details: { reasons: qc.reasons, scores: qc.scores },
+              });
               if (attempt > EFFECTIVE_MAX_RETRIES) break;
               // Regenerate THIS brief with rejection reasons appended.
               const single = await generateBriefs(
@@ -1527,6 +1583,14 @@ Deno.serve(async (req) => {
                 notes: fidelityNotes,
               });
               if (fidelityScore < PRODUCT_FIDELITY_THRESHOLD) {
+                stages.push({
+                  stage: "fidelity_check",
+                  status: "rejected",
+                  brief_index: i,
+                  attempt,
+                  reason: "fidelity_score_too_low",
+                  details: { score: fidelityScore, threshold: PRODUCT_FIDELITY_THRESHOLD, notes: fidelityNotes },
+                });
                 lastReasons = [
                   ...(qc.reasons ?? []),
                   `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
@@ -1562,6 +1626,14 @@ Deno.serve(async (req) => {
                 ...lastReasons,
                 ...guardResult.reasons.map((r) => `diversity:${r}`),
               ];
+              stages.push({
+                stage: "post_diversity",
+                status: "rejected",
+                brief_index: i,
+                attempt,
+                reason: "duplicate_guard",
+                details: guardResult.reasons,
+              });
               rejected.push({
                 brief,
                 reasons: lastReasons,
@@ -1610,6 +1682,13 @@ Deno.serve(async (req) => {
               ...inserted, brief, scores: lastScores, attempts: attempt,
               product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
             });
+            stages.push({
+              stage: "queue_insert",
+              status: "ok",
+              brief_index: i,
+              attempt,
+              details: { pin_queue_id: (inserted as any)?.id ?? null },
+            });
             guard.register(
               { headline: brief.headline, cta: brief.cta, hook: brief.hook_category ?? null, product_id: product.id },
               niche,
@@ -1618,12 +1697,32 @@ Deno.serve(async (req) => {
             break;
           } catch (e) {
             lastReasons = [(e as Error).message];
+            stages.push({
+              stage: "image_generation",
+              status: "error",
+              brief_index: i,
+              attempt,
+              reason: (e as Error).message.startsWith("image_generation_killed")
+                ? "image_generation_disabled"
+                : (e as Error).message,
+              details: { error: (e as Error).message },
+            });
             if (attempt > EFFECTIVE_MAX_RETRIES) break;
           }
         }
 
         if (!accepted) {
+          const lastRejection = [...stages].reverse().find(
+            (s) => s.brief_index === i && (s.status === "rejected" || s.status === "error"),
+          );
           rejected.push({ brief, reasons: lastReasons, scores: lastScores });
+          stages.push({
+            stage: "queue_insert",
+            status: "rejected",
+            brief_index: i,
+            reason: lastRejection?.reason ?? (lastReasons[0] || "max_retries_exceeded"),
+            details: { reasons: lastReasons },
+          });
         }
       }
 
@@ -1634,6 +1733,16 @@ Deno.serve(async (req) => {
         traceId: trace,
         message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
+        product_id: resolvedId,
+        product_slug: product.slug,
+        product_title: product.name,
+        stages,
+        drafts_count: drafts.length,
+        rejected_count: rejected.length,
+        primary_rejection_reason:
+          drafts.length > 0
+            ? null
+            : (stages.filter((s) => s.status !== "ok").slice(-1)[0]?.reason ?? "unknown_rejection"),
         approved_required: true,
         threshold: QUALITY_THRESHOLD,
         product_truth: {
