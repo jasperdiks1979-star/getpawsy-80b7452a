@@ -397,7 +397,7 @@ async function callCreativeDirector(slug: string, count: number, usHints?: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
       },
-      body: JSON.stringify({ action: "run_full", slug, count, ...(usHints ?? {}) }),
+      body: JSON.stringify({ action: "run_full", productSlug: slug, count, ...(usHints ?? {}) }),
     });
     const j = await res.json().catch(() => ({}));
     const draftsCount: number =
