@@ -574,6 +574,27 @@ Deno.serve(async (req) => {
       results.push({ job_id: job.id, ok: false, reason: "validation_not_passed" });
       continue;
     }
+    // ── Narrative QA: refuse to publish if voiceover / overlay copy
+    //   references a different product category than the actual product
+    //   (the legacy litter-box fallback leak). Hard gate, never bypassed.
+    {
+      const { detectNarrativeLeak } = await import("../_shared/cinematic-narrative-guard.ts");
+      const leak = detectNarrativeLeak(
+        { name: job.product_name, slug: job.product_slug, category: job.creative_category },
+        job.vo_script,
+        job.pin_description,
+        job.overlay_hook,
+      );
+      if (leak) {
+        await admin.from("cinematic_ad_jobs").update({
+          status: "creative_rejected",
+          creative_reject_reason: `narrative_leak:${leak}`,
+          publish_blocked_reason: `narrative_leak:${leak}`,
+        }).eq("id", job.id);
+        results.push({ job_id: job.id, ok: false, reason: `narrative_leak:${leak}` });
+        continue;
+      }
+    }
     // ── V4 Creative QA hard gates ────────────────────────────────────
     const dur = Number(job.output_duration_seconds ?? 0);
     if (dur > 15) {
