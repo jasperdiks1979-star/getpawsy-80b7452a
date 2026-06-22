@@ -2917,6 +2917,14 @@ const App = () => {
                                 </Suspense>
                               }
                             />
+                            <Route
+                              path="pinterest-video-autopilot"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestVideoAutopilotDashboard />
+                                </Suspense>
+                              }
+                            />
                             {/* Alias: /admin/pinterest/video-queue */}
                             <Route
                               path="pinterest/video-queue"
