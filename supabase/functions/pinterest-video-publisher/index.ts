@@ -479,7 +479,7 @@ async function publishVideoPin(opts: {
   // Stage 0: canonical guard — reject up-front if the destination URL would
   // collapse into the homepage canonical bucket (Pinterest dedupe → "this
   // site doesn't allow you to save Pins") or carries a numeric-variant slug.
-  const guard = validateCanonicalDestination(queueRow?.destination_url);
+  const guard = await validateCanonicalDestinationWithCatalog(sb, queueRow?.destination_url);
   if (!guard.ok) {
     await logStage(sb, queue_id, "canonical_guard", "fail", {
       destination_url: queueRow?.destination_url,
