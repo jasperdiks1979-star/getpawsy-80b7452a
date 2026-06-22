@@ -55,6 +55,33 @@ Deno.serve(async (req) => {
 
   if (!config) return json({ ok: false, reason: "config_missing" }, 500);
 
+  // Dry run — always available, never consumes credits, works even when engine is disabled.
+  if (mode === "dry_run") {
+    const diag = await computeDryRunDiagnostics(sb, config);
+    // Log a dry_run row (best-effort) for observability
+    const { data: dryRun } = await sb
+      .from("product_intelligence_runs")
+      .insert({
+        trigger_source: trigger,
+        mode: "dry_run",
+        status: "success",
+        started_at: new Date().toISOString(),
+        finished_at: new Date().toISOString(),
+        products_targeted: diag.products_requiring_enrichment,
+        credits_used: 0,
+        report: diag,
+      })
+      .select()
+      .single();
+    return json({
+      ok: true,
+      mode: "dry_run",
+      engine_enabled: !!config.enabled,
+      run_id: dryRun?.id ?? null,
+      ...diag,
+    });
+  }
+
   if (!config.enabled) {
     return json({
       ok: true,
@@ -94,15 +121,6 @@ Deno.serve(async (req) => {
 
   const list = products ?? [];
   await sb.from("product_intelligence_runs").update({ products_targeted: list.length }).eq("id", run.id);
-
-  if (mode === "dry_run") {
-    await sb.from("product_intelligence_runs").update({
-      status: "success",
-      finished_at: new Date().toISOString(),
-      report: { mode: "dry_run", products_would_scan: list.length, estimated_credits: list.length * Number(config.estimated_credits_per_product) },
-    }).eq("id", run.id);
-    return json({ ok: true, mode: "dry_run", run_id: run.id, products_would_scan: list.length, estimated_credits: list.length * Number(config.estimated_credits_per_product) });
-  }
 
   if (!LOVABLE_API_KEY) {
     await sb.from("product_intelligence_runs").update({ status: "failed", error_message: "LOVABLE_API_KEY missing", finished_at: new Date().toISOString() }).eq("id", run.id);
