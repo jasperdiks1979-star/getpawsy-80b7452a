@@ -250,8 +250,8 @@ function Row({ label, value, onChange }: { label: string; value: boolean; onChan
     <div className="flex items-center justify-between"><span className="text-sm">{label}</span><Switch checked={value} onCheckedChange={onChange} /></div>
   );
 }
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
   return (
-    <Card><CardContent className="pt-6"><div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div><div className="text-2xl font-bold mt-1">{value}</div></CardContent></Card>
+    <Card><CardContent className="pt-6"><div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div><div className="text-2xl font-bold mt-1">{value}{suffix ?? ""}</div></CardContent></Card>
   );
 }
