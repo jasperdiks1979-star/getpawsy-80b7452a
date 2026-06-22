@@ -2207,13 +2207,20 @@ export default function PinterestVideoQueuePage() {
               </div>
               <div className="flex flex-col sm:col-span-2">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">Pinterest URL</span>
-                {testPinResult.pin_url ? (
-                  <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all">
-                    {testPinResult.pin_url}
-                  </a>
-                ) : (
-                  <span className="font-mono text-[11px]">—</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {testPinResult.pin_url ? (
+                    <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all flex-1 min-w-0">
+                      {testPinResult.pin_url}
+                    </a>
+                  ) : (
+                    <span className="font-mono text-[11px] flex-1">—</span>
+                  )}
+                  {testPinResult.pin_url && (
+                    <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1 shrink-0" onClick={copyPinUrl} disabled={copiedPinUrl}>
+                      {copiedPinUrl ? <><CheckCircle2 className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy URL</>}
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">asset_id</span>
