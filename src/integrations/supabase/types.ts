@@ -20748,99 +20748,150 @@ export type Database = {
       }
       product_intelligence: {
         Row: {
+          content_hash: string | null
+          conversion_score: number | null
           created_at: string
           feed_fixes: Json
+          feed_issues: Json
           feed_optimization_status: string | null
+          feed_recommendations: Json
           google_category_confidence: number | null
+          google_category_path: string | null
           google_product_category: string | null
           google_product_category_id: number | null
           id: string
           intelligence_version: number
+          intent_confidence: number | null
           intent_score: number | null
           intent_type: string | null
           keyword_score: number | null
           last_scanned_at: string | null
           long_tail_keywords: Json
+          merchant_feed_quality_score: number | null
           opportunity_factors: Json
           opportunity_score: number | null
           opportunity_tier: string | null
+          pinterest_audience: Json
           pinterest_description: string | null
+          pinterest_interests: Json
+          pinterest_keywords: Json
+          pinterest_title: string | null
           pinterest_topics: Json
           primary_board: string | null
           primary_keyword: string | null
+          primary_keywords: Json
+          priority_level: string | null
           product_id: string
           product_tags: Json
+          recommended_boards: Json
           scan_error: string | null
           scan_status: string
+          seasonality: Json
           secondary_boards: Json
           secondary_keywords: Json
           seo_description: string | null
           seo_title: string | null
           topic_confidence: number | null
+          trend_reason: string | null
+          trend_score: number | null
           updated_at: string
         }
         Insert: {
+          content_hash?: string | null
+          conversion_score?: number | null
           created_at?: string
           feed_fixes?: Json
+          feed_issues?: Json
           feed_optimization_status?: string | null
+          feed_recommendations?: Json
           google_category_confidence?: number | null
+          google_category_path?: string | null
           google_product_category?: string | null
           google_product_category_id?: number | null
           id?: string
           intelligence_version?: number
+          intent_confidence?: number | null
           intent_score?: number | null
           intent_type?: string | null
           keyword_score?: number | null
           last_scanned_at?: string | null
           long_tail_keywords?: Json
+          merchant_feed_quality_score?: number | null
           opportunity_factors?: Json
           opportunity_score?: number | null
           opportunity_tier?: string | null
+          pinterest_audience?: Json
           pinterest_description?: string | null
+          pinterest_interests?: Json
+          pinterest_keywords?: Json
+          pinterest_title?: string | null
           pinterest_topics?: Json
           primary_board?: string | null
           primary_keyword?: string | null
+          primary_keywords?: Json
+          priority_level?: string | null
           product_id: string
           product_tags?: Json
+          recommended_boards?: Json
           scan_error?: string | null
           scan_status?: string
+          seasonality?: Json
           secondary_boards?: Json
           secondary_keywords?: Json
           seo_description?: string | null
           seo_title?: string | null
           topic_confidence?: number | null
+          trend_reason?: string | null
+          trend_score?: number | null
           updated_at?: string
         }
         Update: {
+          content_hash?: string | null
+          conversion_score?: number | null
           created_at?: string
           feed_fixes?: Json
+          feed_issues?: Json
           feed_optimization_status?: string | null
+          feed_recommendations?: Json
           google_category_confidence?: number | null
+          google_category_path?: string | null
           google_product_category?: string | null
           google_product_category_id?: number | null
           id?: string
           intelligence_version?: number
+          intent_confidence?: number | null
           intent_score?: number | null
           intent_type?: string | null
           keyword_score?: number | null
           last_scanned_at?: string | null
           long_tail_keywords?: Json
+          merchant_feed_quality_score?: number | null
           opportunity_factors?: Json
           opportunity_score?: number | null
           opportunity_tier?: string | null
+          pinterest_audience?: Json
           pinterest_description?: string | null
+          pinterest_interests?: Json
+          pinterest_keywords?: Json
+          pinterest_title?: string | null
           pinterest_topics?: Json
           primary_board?: string | null
           primary_keyword?: string | null
+          primary_keywords?: Json
+          priority_level?: string | null
           product_id?: string
           product_tags?: Json
+          recommended_boards?: Json
           scan_error?: string | null
           scan_status?: string
+          seasonality?: Json
           secondary_boards?: Json
           secondary_keywords?: Json
           seo_description?: string | null
           seo_title?: string | null
           topic_confidence?: number | null
+          trend_reason?: string | null
+          trend_score?: number | null
           updated_at?: string
         }
         Relationships: []
