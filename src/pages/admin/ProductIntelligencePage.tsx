@@ -76,6 +76,21 @@ export default function ProductIntelligencePage() {
     void load();
   };
 
+  const exportCsv = async () => {
+    const { data } = await supabase
+      .from("product_intelligence")
+      .select("product_id,priority_level,opportunity_score,conversion_score,trend_score,merchant_feed_quality_score,intent_type,primary_board,seo_title,pinterest_title,feed_optimization_status");
+    const rows = (data ?? []) as Record<string, unknown>[];
+    if (rows.length === 0) { toast.info("No intelligence rows yet"); return; }
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? "")).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `product-intelligence-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
