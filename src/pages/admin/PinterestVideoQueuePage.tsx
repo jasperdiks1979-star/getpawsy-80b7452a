@@ -285,7 +285,16 @@ export default function PinterestVideoQueuePage() {
     pin_url?: string | null;
     error?: string | null;
     queue_id?: string | null;
+    asset_id?: string | null;
+    product_id?: string | null;
+    canonical_slug?: string | null;
+    duplicate_reason?: string | null;
   } | null>(null);
+  // Single-asset publish panel state.
+  const [singleAssetId, setSingleAssetId] = useState("");
+  const [publishingSingle, setPublishingSingle] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
@@ -976,6 +985,73 @@ export default function PinterestVideoQueuePage() {
       setPublishingTest(false);
     }
   }, [ranked, pushTrace, load]);
+
+  // Single-asset publisher — operator picks an asset_id and gets back
+  // pin_id + pin_url (or the precise rejection reason) immediately.
+  const publishSingleAsset = useCallback(async (assetIdArg?: string) => {
+    const id = (assetIdArg ?? singleAssetId).trim();
+    if (!id) {
+      toast({ title: "asset_id required", description: "Paste a pinterest_video_assets.id first.", variant: "destructive" });
+      return;
+    }
+    setPublishingSingle(true);
+    setTestPinResult(null);
+    try {
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "publish_asset", asset_id: id });
+      const data: any = ev.response || {};
+      const success = !ev.error && !!data?.ok;
+      const result = {
+        ok: success,
+        pin_id: data?.pin_id || null,
+        title: data?.title || null,
+        media_url: data?.media_url || null,
+        board: data?.board || null,
+        pin_url: data?.pin_url || data?.external_url || null,
+        error: success ? null : (data?.code ? `${data.code}: ${data.message || ""}` : (ev.error || "unknown")),
+        queue_id: data?.queue_id || null,
+        asset_id: data?.asset_id || id,
+        product_id: data?.product_id || null,
+        canonical_slug: data?.canonical_slug || null,
+        duplicate_reason: data?.duplicate_reason || null,
+      };
+      setTestPinResult(result);
+      if (data?.traceId) pushTrace({
+        step: `Publish single asset ${id.slice(0, 6)}…`,
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: success,
+        message: success ? "ok" : (result.error || "failed"),
+      });
+      toast({
+        title: success ? "Asset published" : "Publish failed",
+        description: success ? `pin_id=${result.pin_id} · ${result.pin_url || ""}` : (result.error || "see Debug Console"),
+        variant: success ? "default" : "destructive",
+      });
+      await load();
+    } catch (e) {
+      setTestPinResult({ ok: false, error: (e as Error).message, asset_id: id });
+    } finally {
+      setPublishingSingle(false);
+    }
+  }, [singleAssetId, invokeDebug, pushTrace, load]);
+
+  // One-click auto-repair for the failed-queue backlog.
+  const repairFailedQueue = useCallback(async () => {
+    setRepairing(true);
+    try {
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "repair_failed", limit: 200 });
+      const data: any = ev.response || {};
+      if (data?.ok) {
+        setRepairSummary({ scanned: data.scanned ?? 0, repaired: data.repaired ?? 0, skipped: data.skipped ?? 0 });
+        toast({ title: "Repair complete", description: `Scanned ${data.scanned} · repaired ${data.repaired} · skipped ${data.skipped}` });
+      } else {
+        toast({ title: "Repair failed", description: data?.message || ev.error || "see Debug Console", variant: "destructive" });
+      }
+      await load();
+    } finally {
+      setRepairing(false);
+    }
+  }, [invokeDebug, load]);
 
   // ───────────────── Per-step rerun helpers ─────────────────
   const setStep = useCallback((key: VerifyStepKey, patch: Partial<VerifyStep>) => {
@@ -2028,7 +2104,56 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing test pin…</>
             : <><Send className="h-4 w-4 mr-1" /> Publish 1 Test Video Pin</>}
         </Button>
+        <Button
+          variant="outline"
+          onClick={repairFailedQueue}
+          disabled={repairing}
+          className="h-11"
+          size="sm"
+          title="Resolve UUID slugs and rebuild destination URLs on all failed queue rows, then reset them to draft."
+        >
+          {repairing ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Repairing…</> : <><Wand2 className="h-4 w-4 mr-1" /> Auto-repair failed queue</>}
+        </Button>
       </div>
+
+      {/* ── Publish single asset panel ───────────────────────────── */}
+      <Card className="p-3 mb-3 border-primary/30 bg-primary/5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Publish single asset</p>
+            <p className="text-[11px] text-muted-foreground">
+              Paste a <code className="font-mono">pinterest_video_assets.id</code>. Resolves UUID → canonical slug,
+              creates a draft if needed, publishes, and shows <code>pin_id</code> + <code>pin_url</code>.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Input
+              value={singleAssetId}
+              onChange={(e) => setSingleAssetId(e.target.value)}
+              placeholder="asset_id (uuid)"
+              className="h-10 font-mono text-xs sm:w-[320px]"
+              spellCheck={false}
+            />
+            <Button
+              onClick={() => publishSingleAsset()}
+              disabled={publishingSingle || !singleAssetId.trim()}
+              className="h-10"
+              size="sm"
+            >
+              {publishingSingle
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing…</>
+                : <><Send className="h-4 w-4 mr-1" /> Publish single asset</>}
+            </Button>
+          </div>
+        </div>
+        {repairSummary && (
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Last repair: scanned <strong>{repairSummary.scanned}</strong> · repaired{" "}
+            <strong className="text-emerald-700">{repairSummary.repaired}</strong> · skipped{" "}
+            <strong>{repairSummary.skipped}</strong>
+          </p>
+        )}
+      </Card>
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
@@ -2077,6 +2202,22 @@ export default function PinterestVideoQueuePage() {
                   <span className="font-mono text-[11px]">—</span>
                 )}
               </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">asset_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.asset_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">product_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.product_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">canonical_slug</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.canonical_slug || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">duplicate_reason</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.duplicate_reason || "—"}</code>
+              </div>
             </div>
           ) : (
             <div className="text-xs text-destructive">
@@ -2084,6 +2225,11 @@ export default function PinterestVideoQueuePage() {
               {testPinResult.queue_id && (
                 <p className="text-muted-foreground mt-1">queue_id: <code className="font-mono">{testPinResult.queue_id}</code></p>
               )}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-[11px]">
+                <div><span className="text-muted-foreground">asset_id:</span> <code className="font-mono">{testPinResult.asset_id || "—"}</code></div>
+                <div><span className="text-muted-foreground">product_id:</span> <code className="font-mono">{testPinResult.product_id || "—"}</code></div>
+                <div className="col-span-2"><span className="text-muted-foreground">canonical_slug:</span> <code className="font-mono">{testPinResult.canonical_slug || "—"}</code></div>
+              </div>
             </div>
           )}
         </Card>

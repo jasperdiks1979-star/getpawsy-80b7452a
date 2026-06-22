@@ -33,7 +33,12 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
 // Rejects publish if the destination URL would resolve to the homepage
 // canonical bucket, is missing/invalid, or carries a numeric-variant slug
 // (`-2`, `-3`, …) that Pinterest's dedupe always rejects.
-const DUPLICATE_SLUG_RE = /-(?:[2-9]|\d{2,})$/;
+// NOTE: real product slugs in this catalog often end in a numeric SKU suffix
+// (e.g. `dog-puzzle-toys-...-9901`). Only a single trailing digit 2-9 is the
+// classic Pinterest "duplicate variant" pattern — anything longer is a real
+// product id and must NOT be blocked. The DB lookup in
+// `resolveCanonicalProductSlug` is the authoritative duplicate check.
+const DUPLICATE_SLUG_RE = /-[2-9]$/;
 export function validateCanonicalDestination(rawUrl: string | null | undefined):
   | { ok: true; slug: string; canonical: string }
   | { ok: false; code: string; message: string } {
@@ -51,6 +56,42 @@ export function validateCanonicalDestination(rawUrl: string | null | undefined):
   return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
 }
 
+// UUID v4-ish detector — `pinterest_video_assets.product_slug` historically
+// stored UUIDs that point at `products.id`. The resolver below converts them
+// back to canonical slugs before any downstream consumer (destination URL,
+// canonical guard, integrity guard) runs.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function looksLikeUuid(s: string | null | undefined): boolean {
+  return !!s && UUID_RE.test(String(s).trim());
+}
+
+// Resolve the canonical /products/{slug} for a value that may be either a
+// product slug, product id (UUID), product name, or empty. Returns the row
+// from `products` plus the canonical slug. Never throws.
+export async function resolveCanonicalProductSlug(
+  sb: any,
+  value: string | null | undefined,
+): Promise<{ ok: true; id: string; slug: string; row: Record<string, any> } | { ok: false; reason: string }>
+{
+  const v = (value || "").trim();
+  if (!v) return { ok: false, reason: "empty_input" };
+  const cols = "id, slug, name, category, benefit_angle, primary_keyword, seo_keywords, us_stock, eu_stock, cn_stock, stock, is_active";
+  try {
+    if (looksLikeUuid(v)) {
+      const { data } = await sb.from("products").select(cols).eq("id", v).maybeSingle();
+      if (data?.slug) return { ok: true, id: data.id, slug: data.slug, row: data };
+      return { ok: false, reason: "uuid_not_in_products" };
+    }
+    const bySlug = await sb.from("products").select(cols).eq("slug", v).maybeSingle();
+    if (bySlug.data?.slug) return { ok: true, id: bySlug.data.id, slug: bySlug.data.slug, row: bySlug.data };
+    const byName = await sb.from("products").select(cols).ilike("name", v).maybeSingle();
+    if (byName.data?.slug) return { ok: true, id: byName.data.id, slug: byName.data.slug, row: byName.data };
+    return { ok: false, reason: "not_found" };
+  } catch (e) {
+    return { ok: false, reason: `lookup_error:${(e as Error).message}` };
+  }
+}
+
 // Test/fixture slugs must never reach the live publisher.
 export function isTestFixtureSlug(slug: string | null | undefined): boolean {
   if (!slug) return false;
@@ -63,10 +104,9 @@ async function loadProductContext(sb: any, slug: string | null | undefined): Pro
   const s = (slug || "").trim();
   if (!s) return undefined;
   try {
-    const { data } = await sb.from("products")
-      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords, us_stock, eu_stock, cn_stock, stock, is_active")
-      .eq("slug", s).maybeSingle();
-    if (!data) return { slug: s };
+    const resolved = await resolveCanonicalProductSlug(sb, s);
+    if (!resolved.ok) return { slug: s };
+    const data = resolved.row;
     const warehouse = resolveWarehouse(data as any);
     return {
       slug: data.slug,
@@ -340,6 +380,64 @@ async function publishVideoPin(opts: {
 }): Promise<{ ok: true; pin_id: string; external_url: string } | { ok: false; code: string; message: string }> {
   const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
   const apiBase = await getPinterestApiBase(sb);
+
+  // ── Slug normalization (UUID → canonical) ────────────────────────
+  // If the asset/queue references a product UUID instead of a slug, rewrite
+  // both rows to the canonical slug + canonical destination_url before any
+  // downstream guard runs. Logged as `slug_normalized` for diagnostics.
+  try {
+    const raw = String(asset?.product_slug ?? queueRow?.product_slug ?? "").trim();
+    if (raw && looksLikeUuid(raw)) {
+      const r = await resolveCanonicalProductSlug(sb, raw);
+      if (r.ok) {
+        await sb.from("pinterest_video_assets").update({ product_slug: r.slug, product_id: r.id }).eq("id", asset.id);
+        asset.product_slug = r.slug;
+        (asset as any).product_id = r.id;
+        const newDest = buildDestinationUrl(r.slug);
+        await sb.from("pinterest_video_queue").update({ destination_url: newDest, product_slug: r.slug }).eq("id", queue_id);
+        queueRow.destination_url = newDest;
+        (queueRow as any).product_slug = r.slug;
+        await logStage(sb, queue_id, "slug_normalized", "ok",
+          { from_uuid: raw, to_slug: r.slug, product_id: r.id }, trace_id);
+      } else {
+        await logStage(sb, queue_id, "slug_normalize_failed", "fail",
+          { input: raw, reason: r.reason }, trace_id);
+        return { ok: false, code: "PRODUCT_UUID_UNRESOLVED", message: `cannot resolve product UUID ${raw}: ${r.reason}` };
+      }
+    }
+  } catch (e) {
+    console.warn(`[pvp ${trace_id}] slug normalization crashed`, (e as Error).message);
+  }
+
+  // ── Reuse already-published pin for this asset ───────────────────
+  // If a previous queue row for the same asset already produced a pin_id, do
+  // not republish — surface the existing pin so the operator sees a green
+  // result with the canonical duplicate_reason.
+  try {
+    const { data: prior } = await sb.from("pinterest_video_queue")
+      .select("id, pin_id, external_url")
+      .eq("asset_id", asset.id)
+      .eq("status", "published")
+      .not("pin_id", "is", null)
+      .neq("id", queue_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prior?.pin_id) {
+      await logStage(sb, queue_id, "duplicate_pin_reused", "ok", {
+        existing_queue_id: prior.id,
+        existing_pin_id: prior.pin_id,
+        existing_pin_url: prior.external_url,
+      }, trace_id);
+      await sb.from("pinterest_video_queue").update({
+        status: "published",
+        pin_id: prior.pin_id,
+        external_url: prior.external_url,
+        error_message: null,
+      }).eq("id", queue_id);
+      return { ok: true, pin_id: prior.pin_id, external_url: prior.external_url || `https://www.pinterest.com/pin/${prior.pin_id}/` };
+    }
+  } catch (_e) { /* non-fatal */ }
 
   // Multi-warehouse (Item 14): hydrate warehouse source so copy injection
   // appends fallback tags / strips banned "out of stock" wording.
@@ -661,7 +759,8 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
-      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry" | "__health_check__";
+      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry"
+      | "publish_asset" | "repair_failed" | "__health_check__";
     await log.info("action received", { action, queue_id: body.queue_id ?? null }, { queue_id: body.queue_id ?? null });
     if (action === "__health_check__") {
       const token = await getPinterestToken(sb);
@@ -897,7 +996,159 @@ serve(async (req) => {
       }
     }
 
-    return ok({ ok: false, code: "UNKNOWN_ACTION", traceId: trace_id });
+    // ── publish_asset ───────────────────────────────────────────────
+    // Single-button publish flow for the admin "Publish single asset"
+    // panel. Takes asset_id, normalizes the slug (UUID → canonical),
+    // ensures a draft queue row exists, then publishes it. Always
+    // returns a {code, message} pair on failure so the UI can render
+    // a precise rejection reason.
+    if (action === "publish_asset") {
+      const asset_id = String(body.asset_id || "").trim();
+      if (!asset_id) return ok({ ok: false, code: "MISSING_ASSET_ID", traceId: trace_id, message: "asset_id is required" });
+      const { data: asset } = await sb.from("pinterest_video_assets").select("*").eq("id", asset_id).maybeSingle();
+      if (!asset) return ok({ ok: false, code: "ASSET_NOT_FOUND", traceId: trace_id, message: `no pinterest_video_assets row for id=${asset_id}` });
+
+      // Diagnostics: resolve canonical slug up-front and surface it.
+      const resolved = await resolveCanonicalProductSlug(sb, asset.product_slug);
+      const canonical_slug = resolved.ok ? resolved.slug : null;
+      const product_id = resolved.ok ? resolved.id : (looksLikeUuid(asset.product_slug) ? asset.product_slug : null);
+      if (resolved.ok && resolved.slug !== asset.product_slug) {
+        await sb.from("pinterest_video_assets").update({ product_slug: resolved.slug, product_id: resolved.id }).eq("id", asset_id);
+        asset.product_slug = resolved.slug;
+      }
+      // Already published? Reuse pin.
+      const { data: existing } = await sb.from("pinterest_video_queue")
+        .select("id, pin_id, external_url")
+        .eq("asset_id", asset_id)
+        .eq("status", "published")
+        .not("pin_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing?.pin_id) {
+        return ok({
+          ok: true, traceId: trace_id, reused: true,
+          duplicate_reason: "asset_already_published",
+          asset_id, product_id, canonical_slug,
+          queue_id: existing.id, pin_id: existing.pin_id, pin_url: existing.external_url,
+          external_url: existing.external_url, message: "reused_existing_pin",
+        });
+      }
+      // Find or create a draft queue row.
+      let { data: draft } = await sb.from("pinterest_video_queue")
+        .select("*").eq("asset_id", asset_id)
+        .not("status", "in", "(published,publishing)")
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!draft) {
+        const product = await loadProductContext(sb, asset.product_slug);
+        const meta = generateVideoMeta({ asset_id, hook: asset.hook_type as VideoHook, attempt: 0, product });
+        const destination_url = buildDestinationUrl(asset.product_slug);
+        const ins = await sb.from("pinterest_video_queue").insert({
+          asset_id, status: "draft", title: meta.title, description: meta.description,
+          hashtags: meta.hashtags, cta_text: meta.cta_text, destination_url,
+          variation_hash: meta.variation_hash, hook_variant: meta.hook_variant,
+          copy_variant: meta.copy_variant, cta_variant: meta.cta_variant,
+        }).select("*").maybeSingle();
+        draft = ins.data;
+        if (!draft) return ok({ ok: false, code: "DRAFT_INSERT_FAILED", traceId: trace_id, message: ins.error?.message || "could not create draft" });
+      } else {
+        // Refresh destination on the existing draft in case the slug was a UUID before.
+        const dest = buildDestinationUrl(asset.product_slug);
+        if (draft.destination_url !== dest) {
+          await sb.from("pinterest_video_queue").update({ destination_url: dest }).eq("id", draft.id);
+          draft.destination_url = dest;
+        }
+      }
+      const queue_id = draft.id as string;
+      const allowed = await assertPublishAllowed(sb, draft, queue_id, trace_id);
+      if (!allowed.ok) {
+        return ok({ ok: false, traceId: trace_id, code: allowed.code, message: allowed.message,
+          asset_id, product_id, canonical_slug, queue_id });
+      }
+      const token = await getPinterestToken(sb);
+      if (!token) return ok({ ok: false, code: "PINTEREST_NOT_CONNECTED", traceId: trace_id, message: "no active Pinterest connection", asset_id, product_id, canonical_slug, queue_id });
+      const board_id = draft.board_id || await resolveBoardId(sb, token);
+      if (!board_id) return ok({ ok: false, code: "NO_BOARD", traceId: trace_id, message: "no eligible Pinterest board", asset_id, product_id, canonical_slug, queue_id });
+      await sb.from("pinterest_video_queue").update({
+        status: "publishing", board_id, attempt_count: (draft.attempt_count || 0) + 1,
+      }).eq("id", queue_id);
+      const result = await publishWithRetry({ sb, queue_id, asset, queueRow: { ...draft, board_id }, token, trace_id });
+      if (result.ok) {
+        await sb.from("pinterest_video_queue").update({
+          status: "published", pin_id: result.pin_id, external_url: result.external_url, error_message: null,
+        }).eq("id", queue_id);
+        await sb.from("pinterest_video_assets").update({
+          last_publish_at: new Date().toISOString(), publish_count: (asset.publish_count || 0) + 1,
+        }).eq("id", asset.id);
+        return ok({
+          ok: true, traceId: trace_id, asset_id, product_id, canonical_slug,
+          queue_id, pin_id: result.pin_id, pin_url: result.external_url, external_url: result.external_url,
+          title: draft.title, media_url: asset.public_url, board: board_id,
+        });
+      }
+      await sb.from("pinterest_video_queue").update({
+        status: "failed", error_message: `${result.code}: ${result.message}`,
+      }).eq("id", queue_id);
+      await recordFinalFailure(sb, queue_id, asset, result.code, result.message, result.attempts);
+      return ok({
+        ok: false, traceId: trace_id, code: result.code, message: result.message,
+        attempts: result.attempts, asset_id, product_id, canonical_slug, queue_id,
+      });
+    }
+
+    // ── repair_failed ───────────────────────────────────────────────
+    // Walks `failed` / `publish_blocked` / `creative_rejected` queue rows
+    // and fixes the two known root causes:
+    //   1. asset.product_slug is a UUID → rewrite to canonical slug
+    //   2. destination_url carries a stale UUID → rebuild from canonical
+    // Then resets the row to `draft` so the cron worker (or the operator)
+    // can republish without manual intervention. Pure repair — never calls
+    // Pinterest, never consumes media credits.
+    if (action === "repair_failed") {
+      const limit = Math.min(Number(body.limit ?? 200), 500);
+      const statuses = ["failed", "publish_blocked", "creative_rejected"];
+      const { data: rows } = await sb.from("pinterest_video_queue")
+        .select("id, asset_id, status, destination_url, error_message")
+        .in("status", statuses)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      const repairs: any[] = [];
+      for (const row of rows ?? []) {
+        const { data: asset } = await sb.from("pinterest_video_assets")
+          .select("id, product_slug").eq("id", row.asset_id).maybeSingle();
+        if (!asset) { repairs.push({ queue_id: row.id, repaired: false, reason: "asset_missing" }); continue; }
+        const resolved = await resolveCanonicalProductSlug(sb, asset.product_slug);
+        if (!resolved.ok) {
+          repairs.push({ queue_id: row.id, asset_id: asset.id, repaired: false, reason: `unresolved:${resolved.reason}`, product_slug: asset.product_slug });
+          continue;
+        }
+        const slugChanged = resolved.slug !== asset.product_slug;
+        if (slugChanged) {
+          await sb.from("pinterest_video_assets").update({ product_slug: resolved.slug, product_id: resolved.id }).eq("id", asset.id);
+        }
+        const newDest = buildDestinationUrl(resolved.slug);
+        await sb.from("pinterest_video_queue").update({
+          destination_url: newDest, status: "draft", error_message: null,
+        }).eq("id", row.id);
+        await logStage(sb, row.id, "repair_failed", "ok", {
+          asset_id: asset.id, product_id: resolved.id, canonical_slug: resolved.slug,
+          slug_changed: slugChanged, previous_destination: row.destination_url, new_destination: newDest,
+          previous_error: row.error_message,
+        }, trace_id);
+        repairs.push({
+          queue_id: row.id, asset_id: asset.id, repaired: true,
+          product_id: resolved.id, canonical_slug: resolved.slug,
+          slug_changed: slugChanged, new_destination: newDest,
+        });
+      }
+      const repaired = repairs.filter((r) => r.repaired).length;
+      return ok({
+        ok: true, traceId: trace_id, scanned: rows?.length ?? 0,
+        repaired, skipped: (rows?.length ?? 0) - repaired, repairs,
+      });
+    }
+
+    return ok({ ok: false, code: "UNKNOWN_ACTION", traceId: trace_id, message: `action '${action}' is not recognized` });
   } catch (e) {
     console.error(`[pvp ${trace_id}] fatal`, e);
     try { await log.error("fatal", { message: (e as Error)?.message, stack: (e as Error)?.stack?.slice(0, 800) }); } catch (_) {}
