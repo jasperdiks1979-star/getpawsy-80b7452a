@@ -16,7 +16,7 @@ import type { PinModeKey } from "./pinterest-pin-modes.ts";
 // Defaults match the "Balanced" rollout: reject below 70, retry once, log
 // a score on every render.
 export const QUALITY_THRESHOLD = 70;
-export const MAX_RETRIES = 1;
+export const MAX_RETRIES = 3;
 
 export type QualityBand = "elite" | "strong" | "acceptable" | "weak" | "reject";
 

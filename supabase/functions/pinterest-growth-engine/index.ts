@@ -46,7 +46,10 @@ const DEFAULTS = {
   productsPerRun: 8,
   variantsPerProduct: 3,
   perBoardDailyCap: 2, // V2: tightened from 3 → 2 to prevent board saturation.
-  autoApproveScoreThreshold: 78,
+  // Phase 7 — autopilot: approve everything that clears the production
+  // quality bar (≥70). Anything below has already been hard-rejected by the
+  // scorer; raising this above 70 just blocks the autopilot.
+  autoApproveScoreThreshold: 70,
   minMarginPct: 0.25,
   maxCategoryShare: 0.25, // V2: no single category may exceed 25% of a run.
 };

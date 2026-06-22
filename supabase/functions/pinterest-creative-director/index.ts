@@ -126,7 +126,9 @@ const TEXT_MODEL =
 // 2026-06-17 cost hardening: cap to exactly ONE image render per brief.
 // Any guard failure (diversity / quality / fidelity) rejects the candidate
 // instead of regenerating — regeneration was the dominant credit leak.
-const EFFECTIVE_MAX_RETRIES = 0;
+// Phase 6 — credit protection: total render attempts = EFFECTIVE_MAX_RETRIES + 1.
+// Hard-capped at 3 to prevent endless render loops on a single product.
+const EFFECTIVE_MAX_RETRIES = 2;
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
