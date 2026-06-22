@@ -297,6 +297,7 @@ export default function PinterestVideoQueuePage() {
   const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
   const [copiedPinUrl, setCopiedPinUrl] = useState(false);
   const [copiedPinId, setCopiedPinId] = useState(false);
+  const [copiedPinData, setCopiedPinData] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
@@ -1060,6 +1061,24 @@ export default function PinterestVideoQueuePage() {
       toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
     }
   }, [testPinResult?.pin_id]);
+
+  const copyPinData = useCallback(async () => {
+    if (!testPinResult) return;
+    const payload = {
+      pin_id: testPinResult.pin_id ?? null,
+      pin_url: testPinResult.pin_url ?? null,
+      asset_id: testPinResult.asset_id ?? null,
+      product_id: testPinResult.product_id ?? null,
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      setCopiedPinData(true);
+      setTimeout(() => setCopiedPinData(false), 2000);
+      toast({ title: "Copied", description: "Pin data copied to clipboard as JSON" });
+    } catch {
+      toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
+    }
+  }, [testPinResult]);
 
   // One-click auto-repair for the failed-queue backlog.
   const repairFailedQueue = useCallback(async () => {
@@ -2186,17 +2205,24 @@ export default function PinterestVideoQueuePage() {
 
       {testPinResult && (
         <Card className={`p-3 mb-3 ${testPinResult.ok ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <p className={`text-xs font-semibold uppercase tracking-wide ${testPinResult.ok ? "text-emerald-700" : "text-destructive"}`}>
               {testPinResult.ok ? "✅ Test pin published" : "❌ Test publish failed"}
             </p>
-            <button
-              type="button"
-              onClick={() => setTestPinResult(null)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Dismiss
-            </button>
+            <div className="flex items-center gap-2">
+              {testPinResult.ok && (
+                <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={copyPinData} disabled={copiedPinData}>
+                  {copiedPinData ? <><CheckCircle2 className="h-3 w-3" /> Copied</> : <><ClipboardCopy className="h-3 w-3" /> Copy pin-data</>}
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={() => setTestPinResult(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
           {testPinResult.ok ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
