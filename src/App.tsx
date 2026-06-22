@@ -505,6 +505,7 @@ const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueRepor
 const PinterestIntegrityPage = lazyWithRetry(() => import("./pages/admin/PinterestIntegrityPage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
 const PinterestVideoQueuePage = lazyWithRetry(() => import("./pages/admin/PinterestVideoQueuePage"));
+const PinterestVideoAutopilotDashboard = lazyWithRetry(() => import("./pages/admin/PinterestVideoAutopilotDashboard"));
 const PinterestVideoLogsPage = lazyWithRetry(() => import("./pages/admin/PinterestVideoLogsPage"));
 const PinterestPatternsPage = lazyWithRetry(() => import("./pages/admin/PinterestPatternsPage"));
 const PinterestIntelligence = lazyWithRetry(() => import("./pages/admin/PinterestIntelligence"));
@@ -2913,6 +2914,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestVideoQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-video-autopilot"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestVideoAutopilotDashboard />
                                 </Suspense>
                               }
                             />

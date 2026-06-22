@@ -3609,6 +3609,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cinematic_product_match_qa_log: {
+        Row: {
+          asset_id: string | null
+          caption_match_score: number | null
+          created_at: string
+          id: string
+          passed: boolean
+          product_id: string | null
+          product_slug: string | null
+          reasons: Json
+          reject_score: number
+          scene_match_score: number | null
+          script_match_score: number | null
+          voiceover_match_score: number | null
+        }
+        Insert: {
+          asset_id?: string | null
+          caption_match_score?: number | null
+          created_at?: string
+          id?: string
+          passed?: boolean
+          product_id?: string | null
+          product_slug?: string | null
+          reasons?: Json
+          reject_score?: number
+          scene_match_score?: number | null
+          script_match_score?: number | null
+          voiceover_match_score?: number | null
+        }
+        Update: {
+          asset_id?: string | null
+          caption_match_score?: number | null
+          created_at?: string
+          id?: string
+          passed?: boolean
+          product_id?: string | null
+          product_slug?: string | null
+          reasons?: Json
+          reject_score?: number
+          scene_match_score?: number | null
+          script_match_score?: number | null
+          voiceover_match_score?: number | null
+        }
+        Relationships: []
+      }
       cinematic_quarantine_patterns: {
         Row: {
           created_at: string
@@ -3714,6 +3759,54 @@ export type Database = {
           updated_at?: string
           voiceover_duration_s?: number | null
           voiceover_url?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_scene_environments: {
+        Row: {
+          active: boolean
+          allowed_categories: string[]
+          allowed_species: string[]
+          created_at: string
+          display_name: string
+          id: string
+          last_used_at: string | null
+          mood: string | null
+          prompt_snippet: string
+          scene_group: string
+          seasonal: boolean
+          slug: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          allowed_categories?: string[]
+          allowed_species?: string[]
+          created_at?: string
+          display_name: string
+          id?: string
+          last_used_at?: string | null
+          mood?: string | null
+          prompt_snippet: string
+          scene_group: string
+          seasonal?: boolean
+          slug: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          allowed_categories?: string[]
+          allowed_species?: string[]
+          created_at?: string
+          display_name?: string
+          id?: string
+          last_used_at?: string | null
+          mood?: string | null
+          prompt_snippet?: string
+          scene_group?: string
+          seasonal?: boolean
+          slug?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -4348,6 +4441,30 @@ export type Database = {
           tone?: string
           voice_id?: string
           weight?: number
+        }
+        Relationships: []
+      }
+      cinematic_voice_rotation_state: {
+        Row: {
+          category: string
+          consecutive_count: number
+          last_voice: string | null
+          recent_voices: Json
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          consecutive_count?: number
+          last_voice?: string | null
+          recent_voices?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          consecutive_count?: number
+          last_voice?: string | null
+          recent_voices?: Json
+          updated_at?: string
         }
         Relationships: []
       }
@@ -19348,6 +19465,7 @@ export type Database = {
           enabled: boolean
           id: number
           max_per_day: number
+          min_publish_gap_minutes: number
           mode: string
           preferred_hook_types: string[]
           updated_at: string
@@ -19356,6 +19474,7 @@ export type Database = {
           enabled?: boolean
           id?: number
           max_per_day?: number
+          min_publish_gap_minutes?: number
           mode?: string
           preferred_hook_types?: string[]
           updated_at?: string
@@ -19364,6 +19483,7 @@ export type Database = {
           enabled?: boolean
           id?: number
           max_per_day?: number
+          min_publish_gap_minutes?: number
           mode?: string
           preferred_hook_types?: string[]
           updated_at?: string
@@ -25860,6 +25980,16 @@ export type Database = {
           reset_at?: never
           seconds_until_reset?: never
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cinematic_voice_performance_v: {
+        Row: {
+          avg_ctr_30d: number | null
+          clicks_30d: number | null
+          impressions_30d: number | null
+          picks_30d: number | null
+          voice_name: string | null
         }
         Relationships: []
       }

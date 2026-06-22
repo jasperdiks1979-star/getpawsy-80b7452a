@@ -1,39 +1,52 @@
 // Voice Diversity Engine pool + selector.
-// V4 roster: 7 named voices (4 female + 3 male) with 80/20 gender share.
-// pickVoice() enforces: no >3 consecutive (any same voice in last 3 picks),
-// no >20% share of last 100, and biases weights so female:male trends toward 80:20.
+// V5 roster: 8 named voices split across 4 tiers (35/35/20/10) — no voice may
+// repeat back-to-back (2-consecutive ban) and the engine multiplies in learned
+// CTR weights so higher-performing voices auto-uplift over time.
+
+export type VoiceTier = "female_a" | "female_b" | "male" | "premium_experimental";
 
 export type VoiceEntry = {
   voice_name: string;        // canonical id, snake_case
   display_name: string;      // human label
   voice_type: "female" | "male";
-  voice_style: "friendly" | "premium" | "energetic" | "storytelling" | "trustworthy";
+  voice_tier: VoiceTier;
+  voice_style: "friendly" | "premium" | "energetic" | "storytelling" | "trustworthy" | "editorial" | "warm" | "playful";
   elevenlabs_voice_id: string;
 };
 
-// V4 roster — Jessica/Emma/Sophie/Olivia (female) + James/Ryan/Michael (male).
-// Only Jessica's ElevenLabs ID is canonical; the others are seeded from the
-// existing approved roster so the engine works out of the box. Overwrite via
+// V5 roster (8 voices in 4 tiers). ElevenLabs IDs are seeded — overwrite via
 // `cinematic_voice_profiles.voice_id` to swap in real IDs without code changes.
 export const VOICE_POOL: VoiceEntry[] = [
-  { voice_name: "jessica", display_name: "Jessica", voice_type: "female", voice_style: "energetic",    elevenlabs_voice_id: "cgSgspJ2msm6clMCkdW9" }, // canonical
-  { voice_name: "emma",    display_name: "Emma",    voice_type: "female", voice_style: "friendly",     elevenlabs_voice_id: "EXAVITQu4vr4xnSDxMaL" }, // seeded from Sarah
-  { voice_name: "sophie",  display_name: "Sophie",  voice_type: "female", voice_style: "premium",      elevenlabs_voice_id: "XrExE9yKIg1WjnnlVkGX" }, // seeded from Matilda
-  { voice_name: "olivia",  display_name: "Olivia",  voice_type: "female", voice_style: "storytelling", elevenlabs_voice_id: "FGY2WhTYpPnrIDTdsKH5" }, // seeded from Laura
-  { voice_name: "james",   display_name: "James",   voice_type: "male",   voice_style: "friendly",     elevenlabs_voice_id: "TX3LPaxmHKxFdv7VOQHJ" }, // seeded from Liam
-  { voice_name: "ryan",    display_name: "Ryan",    voice_type: "male",   voice_style: "premium",      elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb" }, // seeded from George
-  { voice_name: "michael", display_name: "Michael", voice_type: "male",   voice_style: "trustworthy",  elevenlabs_voice_id: "onwK4e9ZLuTAKqWW03F9" }, // seeded from Daniel
+  // Tier 1 — primary female (35% target, 2 voices → 17.5% each)
+  { voice_name: "jessica",   display_name: "Jessica",   voice_type: "female", voice_tier: "female_a", voice_style: "energetic",    elevenlabs_voice_id: "cgSgspJ2msm6clMCkdW9" },
+  { voice_name: "emma",      display_name: "Emma",      voice_type: "female", voice_tier: "female_a", voice_style: "friendly",     elevenlabs_voice_id: "EXAVITQu4vr4xnSDxMaL" },
+  // Tier 2 — secondary female (35% target, 2 voices → 17.5% each)
+  { voice_name: "sophie",    display_name: "Sophie",    voice_type: "female", voice_tier: "female_b", voice_style: "premium",      elevenlabs_voice_id: "XrExE9yKIg1WjnnlVkGX" },
+  { voice_name: "olivia",    display_name: "Olivia",    voice_type: "female", voice_tier: "female_b", voice_style: "storytelling", elevenlabs_voice_id: "FGY2WhTYpPnrIDTdsKH5" },
+  // Tier 3 — male (20% target, 2 voices → 10% each)
+  { voice_name: "james",     display_name: "James",     voice_type: "male",   voice_tier: "male",     voice_style: "friendly",     elevenlabs_voice_id: "TX3LPaxmHKxFdv7VOQHJ" },
+  { voice_name: "ryan",      display_name: "Ryan",      voice_type: "male",   voice_tier: "male",     voice_style: "trustworthy",  elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb" },
+  // Tier 4 — premium experimental (10% target, 2 voices → 5% each)
+  { voice_name: "charlotte", display_name: "Charlotte", voice_type: "female", voice_tier: "premium_experimental", voice_style: "editorial", elevenlabs_voice_id: "XB0fDUnXU5powFXDhCwa" },
+  { voice_name: "brian",     display_name: "Brian",     voice_type: "male",   voice_tier: "premium_experimental", voice_style: "warm",      elevenlabs_voice_id: "nPczCjzI2devNBz1zQrb" },
 ];
 
-// V4 rotation rules.
+// V5 rotation rules.
 export const ROTATION_RULES = {
-  /** Block when this voice was used for the last N picks in a row in the category. */
-  CONSECUTIVE_BAN_AT: 3,
+  /** Block when this voice was used for the last N picks in a row in the category (2 = never twice in a row). */
+  CONSECUTIVE_BAN_AT: 2,
   /** Global cap: no single voice may exceed this share of the last 100 picks. */
-  GLOBAL_CAP_PCT: 0.20,
-  /** Target gender share applied as a weight bias. */
-  FEMALE_TARGET_SHARE: 0.80,
-  MALE_TARGET_SHARE: 0.20,
+  GLOBAL_CAP_PCT: 0.25,
+  /** Target tier shares applied as a weight bias. */
+  TIER_TARGET_SHARE: {
+    female_a: 0.35,
+    female_b: 0.35,
+    male: 0.20,
+    premium_experimental: 0.10,
+  } as Record<VoiceTier, number>,
+  /** Performance uplift: CTR multiplier clamped to this range. */
+  PERF_WEIGHT_MIN: 0.5,
+  PERF_WEIGHT_MAX: 2.5,
 } as const;
 
 export function getVoiceByName(name: string): VoiceEntry | undefined {
@@ -58,11 +71,17 @@ export type PickVoiceResult = {
   candidates: { voice_name: string; weight: number; blocked?: string }[];
 };
 
-const { GLOBAL_CAP_PCT, CONSECUTIVE_BAN_AT, FEMALE_TARGET_SHARE, MALE_TARGET_SHARE } = ROTATION_RULES;
-const FEMALE_COUNT = VOICE_POOL.filter((v) => v.voice_type === "female").length;
-const MALE_COUNT = VOICE_POOL.filter((v) => v.voice_type === "male").length;
-const PER_FEMALE_BIAS = FEMALE_COUNT > 0 ? FEMALE_TARGET_SHARE / FEMALE_COUNT : 0;
-const PER_MALE_BIAS = MALE_COUNT > 0 ? MALE_TARGET_SHARE / MALE_COUNT : 0;
+const { GLOBAL_CAP_PCT, CONSECUTIVE_BAN_AT, TIER_TARGET_SHARE } = ROTATION_RULES;
+const TIER_COUNTS: Record<VoiceTier, number> = {
+  female_a: VOICE_POOL.filter((v) => v.voice_tier === "female_a").length,
+  female_b: VOICE_POOL.filter((v) => v.voice_tier === "female_b").length,
+  male: VOICE_POOL.filter((v) => v.voice_tier === "male").length,
+  premium_experimental: VOICE_POOL.filter((v) => v.voice_tier === "premium_experimental").length,
+};
+function tierBias(tier: VoiceTier): number {
+  const n = TIER_COUNTS[tier] || 1;
+  return TIER_TARGET_SHARE[tier] / n;
+}
 
 function rng(seed?: number): () => number {
   if (seed === undefined) return Math.random;
@@ -85,14 +104,15 @@ export function pickVoice(args: PickVoiceArgs): PickVoiceResult {
 
   const candidates = VOICE_POOL.map((v) => {
     let blocked: string | undefined;
-    if (consecutiveBan && v.voice_name === consecutiveBan) blocked = "consecutive_repeat_3";
+    if (consecutiveBan && v.voice_name === consecutiveBan) blocked = `consecutive_repeat_${CONSECUTIVE_BAN_AT}`;
     const share = (globalCount[v.voice_name] || 0) / totalGlobal;
     if (!blocked && totalGlobal >= 20 && share >= GLOBAL_CAP_PCT) blocked = "global_cap_20pct";
-    // Gender-share bias drives weight toward 80/20 female:male over time.
-    const genderBias = v.voice_type === "female" ? PER_FEMALE_BIAS : PER_MALE_BIAS;
-    const baseWeight = performanceWeights[v.voice_name] ?? 1.0;
-    const recencyPenalty = recentCategoryVoices[0] === v.voice_name ? 0.5 : 1.0;
-    const weight = blocked ? 0 : Math.max(0.05, baseWeight) * recencyPenalty * Math.max(0.05, genderBias);
+    // Tier-share bias drives the 35/35/20/10 mix over time.
+    const bias = tierBias(v.voice_tier);
+    const rawPerf = performanceWeights[v.voice_name] ?? 1.0;
+    const perfWeight = Math.min(ROTATION_RULES.PERF_WEIGHT_MAX, Math.max(ROTATION_RULES.PERF_WEIGHT_MIN, rawPerf));
+    const recencyPenalty = recentCategoryVoices[0] === v.voice_name ? 0.3 : 1.0;
+    const weight = blocked ? 0 : perfWeight * recencyPenalty * Math.max(0.05, bias);
     return { voice_name: v.voice_name, weight, blocked };
   });
 
