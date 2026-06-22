@@ -28,9 +28,16 @@ const log = (level, msg, extra = {}) => {
 };
 
 // ---------- env validation ----------
+// Plain-text boot banner — printed BEFORE any JSON logs so Render's log
+// viewer shows an unmistakable marker even if structured logging is filtered
+// or the process crashes during env validation. If this line is missing from
+// Render logs, the service is running the wrong image (e.g. the root nginx
+// Dockerfile) — see render.yaml for the correct dockerfilePath.
+console.log(`[RENDER WORKER] booting service=getpawsy-render-worker node=${process.version} pid=${process.pid} safeMode=${process.env.WORKER_SAFE_MODE !== "0"}`);
 const REQUIRED = ["SUPABASE_URL", "RENDER_WORKER_SECRET"];
 const missing = REQUIRED.filter(k => !process.env[k]);
 if (missing.length) {
+  console.error(`[RENDER WORKER] FATAL missing env: ${missing.join(", ")}`);
   log("fatal", "missing required env", { missing });
   // Crash-loop guard: write fatal log, sleep so Render doesn't fast-restart.
   try {
@@ -40,8 +47,20 @@ if (missing.length) {
     }, null, 2));
   } catch {}
   await new Promise(r => setTimeout(r, 30_000));
-  process.exit(2);
+  process.exit(1);
 }
+console.log(`[RENDER WORKER] env ok (${REQUIRED.join(", ")} present)`);
+
+// Top-level safety nets — print stack traces so Render logs surface the real
+// cause instead of the generic "exited with status 128".
+process.on("uncaughtException", (err) => {
+  console.error("[RENDER WORKER] uncaughtException:", err?.stack || err);
+  try { log("fatal", "uncaughtException", { err: String(err?.message ?? err) }); } catch {}
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[RENDER WORKER] unhandledRejection:", reason?.stack || reason);
+  try { log("fatal", "unhandledRejection", { err: String(reason?.message ?? reason) }); } catch {}
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(__dirname, "..", "remotion", "scripts", "render-cinematic-ad.mjs");
