@@ -6,56 +6,85 @@
 // certificates, manuals, factory imagery, or AliExpress / CJ-style graphics.
 // Detected pins MUST be flagged status=rejected, reason=QUALITY_GATE_BLOCKED.
 
+// Each term is matched as a *whole word* against normalized text. Short tokens
+// (ce/fcc/rohs/sku) MUST be word-bounded — never substring — to avoid matching
+// inside UUIDs, storage filenames, or English words.
 export const PINTEREST_SUPPLIER_BANNED_TERMS: readonly string[] = [
   "certificate",
+  "certificates",
   "conformity",
   "certification",
-  " ce ",
-  "(ce)",
   "ce mark",
-  "fcc",
+  "ce marking",
+  "fcc certified",
+  "fcc approved",
   "rohs",
   "test report",
-  "approval",
-  "compliance",
+  "test reports",
   "user manual",
-  "instruction",
-  "instructions",
+  "user instructions",
+  "instruction manual",
   "package contents",
-  "specification",
-  "specifications",
-  "dimensions",
+  "package content",
+  "product specification",
+  "product specifications",
   "warehouse photo",
   "warehouse picture",
   "supplier presentation",
   "factory image",
   "factory photo",
+  "factory picture",
   "aliexpress",
   "cjdropshipping",
   "cj dropshipping",
   "cj-dropshipping",
   "product sku",
-  "sku:",
-  // CJK ranges flagged by code-point sweep below; this entry exists so the
-  // term shows up in human reports.
+  "sku code",
   "chinese characters",
 ] as const;
 
 const CJK_RE = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/;
 
-function normalize(value: unknown): string {
-  return ` ${String(value ?? "").toLowerCase().replace(/[_\-\/.+]/g, " ").replace(/\s+/g, " ").trim()} `;
+// Compiled once per process: each term becomes a word-boundary regex.
+const TERM_RES: ReadonlyArray<{ term: string; re: RegExp }> = PINTEREST_SUPPLIER_BANNED_TERMS.map(
+  (t) => ({ term: t, re: new RegExp(`(?:^|[^a-z0-9])${escapeRe(t)}(?:[^a-z0-9]|$)`, "i") }),
+);
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Hosts that store our own rehosted media (UUID filenames may contain "fcc"
+// etc.) — never scan their path/query for banned substrings, only their HTML
+// metadata via separate fields.
+const SAFE_HOSTS = [
+  "supabase.co",
+  "supabase.in",
+  "getpawsy.pet",
+  "getpawsy.lovable.app",
+];
+
+function isSafeHostUrl(value: unknown): boolean {
+  const s = String(value ?? "");
+  if (!/^https?:\/\//i.test(s)) return false;
+  try {
+    const host = new URL(s).hostname.toLowerCase();
+    return SAFE_HOSTS.some((h) => host === h || host.endsWith("." + h));
+  } catch {
+    return false;
+  }
 }
 
 export type SupplierBannedHit = { field: string; term: string; sample: string };
 
 export function containsSupplierBanned(value: unknown): string | null {
   const raw = String(value ?? "");
+  if (!raw) return null;
   if (CJK_RE.test(raw)) return "chinese characters";
-  const text = normalize(raw);
-  if (!text.trim()) return null;
-  for (const term of PINTEREST_SUPPLIER_BANNED_TERMS) {
-    if (text.includes(term)) return term.trim();
+  // URL-shaped strings on our own infra: skip — opaque storage paths.
+  if (isSafeHostUrl(raw)) return null;
+  for (const { term, re } of TERM_RES) {
+    if (re.test(raw)) return term;
   }
   return null;
 }
