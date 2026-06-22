@@ -1,6 +1,7 @@
 // Voice Diversity Engine pool + selector.
-// 8 named voices, ElevenLabs IDs from approved roster.
-// pickVoice() enforces: no >2 consecutive in same category, no >20% share of last 100.
+// V4 roster: 7 named voices (4 female + 3 male) with 80/20 gender share.
+// pickVoice() enforces: no >3 consecutive (any same voice in last 3 picks),
+// no >20% share of last 100, and biases weights so female:male trends toward 80:20.
 
 export type VoiceEntry = {
   voice_name: string;        // canonical id, snake_case
@@ -10,16 +11,30 @@ export type VoiceEntry = {
   elevenlabs_voice_id: string;
 };
 
+// V4 roster — Jessica/Emma/Sophie/Olivia (female) + James/Ryan/Michael (male).
+// Only Jessica's ElevenLabs ID is canonical; the others are seeded from the
+// existing approved roster so the engine works out of the box. Overwrite via
+// `cinematic_voice_profiles.voice_id` to swap in real IDs without code changes.
 export const VOICE_POOL: VoiceEntry[] = [
-  { voice_name: "female_friendly",     display_name: "Female Friendly",     voice_type: "female", voice_style: "friendly",     elevenlabs_voice_id: "EXAVITQu4vr4xnSDxMaL" }, // Sarah
-  { voice_name: "female_premium",      display_name: "Female Premium",      voice_type: "female", voice_style: "premium",      elevenlabs_voice_id: "XrExE9yKIg1WjnnlVkGX" }, // Matilda
-  { voice_name: "female_energetic",    display_name: "Female Energetic",    voice_type: "female", voice_style: "energetic",    elevenlabs_voice_id: "Xb7hH8MSUJpSbSDYk0k2" }, // Alice
-  { voice_name: "female_storytelling", display_name: "Female Storytelling", voice_type: "female", voice_style: "storytelling", elevenlabs_voice_id: "FGY2WhTYpPnrIDTdsKH5" }, // Laura
-  { voice_name: "male_friendly",       display_name: "Male Friendly",       voice_type: "male",   voice_style: "friendly",     elevenlabs_voice_id: "TX3LPaxmHKxFdv7VOQHJ" }, // Liam
-  { voice_name: "male_premium",        display_name: "Male Premium",        voice_type: "male",   voice_style: "premium",      elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb" }, // George
-  { voice_name: "male_energetic",      display_name: "Male Energetic",      voice_type: "male",   voice_style: "energetic",    elevenlabs_voice_id: "bIHbv24MWmeRgasZH58o" }, // Will
-  { voice_name: "male_trustworthy",    display_name: "Male Trustworthy",    voice_type: "male",   voice_style: "trustworthy",  elevenlabs_voice_id: "onwK4e9ZLuTAKqWW03F9" }, // Daniel
+  { voice_name: "jessica", display_name: "Jessica", voice_type: "female", voice_style: "energetic",    elevenlabs_voice_id: "cgSgspJ2msm6clMCkdW9" }, // canonical
+  { voice_name: "emma",    display_name: "Emma",    voice_type: "female", voice_style: "friendly",     elevenlabs_voice_id: "EXAVITQu4vr4xnSDxMaL" }, // seeded from Sarah
+  { voice_name: "sophie",  display_name: "Sophie",  voice_type: "female", voice_style: "premium",      elevenlabs_voice_id: "XrExE9yKIg1WjnnlVkGX" }, // seeded from Matilda
+  { voice_name: "olivia",  display_name: "Olivia",  voice_type: "female", voice_style: "storytelling", elevenlabs_voice_id: "FGY2WhTYpPnrIDTdsKH5" }, // seeded from Laura
+  { voice_name: "james",   display_name: "James",   voice_type: "male",   voice_style: "friendly",     elevenlabs_voice_id: "TX3LPaxmHKxFdv7VOQHJ" }, // seeded from Liam
+  { voice_name: "ryan",    display_name: "Ryan",    voice_type: "male",   voice_style: "premium",      elevenlabs_voice_id: "JBFqnCBsd6RMkjVDRZzb" }, // seeded from George
+  { voice_name: "michael", display_name: "Michael", voice_type: "male",   voice_style: "trustworthy",  elevenlabs_voice_id: "onwK4e9ZLuTAKqWW03F9" }, // seeded from Daniel
 ];
+
+// V4 rotation rules.
+export const ROTATION_RULES = {
+  /** Block when this voice was used for the last N picks in a row in the category. */
+  CONSECUTIVE_BAN_AT: 3,
+  /** Global cap: no single voice may exceed this share of the last 100 picks. */
+  GLOBAL_CAP_PCT: 0.20,
+  /** Target gender share applied as a weight bias. */
+  FEMALE_TARGET_SHARE: 0.80,
+  MALE_TARGET_SHARE: 0.20,
+} as const;
 
 export function getVoiceByName(name: string): VoiceEntry | undefined {
   return VOICE_POOL.find((v) => v.voice_name === name);
@@ -43,7 +58,11 @@ export type PickVoiceResult = {
   candidates: { voice_name: string; weight: number; blocked?: string }[];
 };
 
-const GLOBAL_CAP_PCT = 0.20;
+const { GLOBAL_CAP_PCT, CONSECUTIVE_BAN_AT, FEMALE_TARGET_SHARE, MALE_TARGET_SHARE } = ROTATION_RULES;
+const FEMALE_COUNT = VOICE_POOL.filter((v) => v.voice_type === "female").length;
+const MALE_COUNT = VOICE_POOL.filter((v) => v.voice_type === "male").length;
+const PER_FEMALE_BIAS = FEMALE_COUNT > 0 ? FEMALE_TARGET_SHARE / FEMALE_COUNT : 0;
+const PER_MALE_BIAS = MALE_COUNT > 0 ? MALE_TARGET_SHARE / MALE_COUNT : 0;
 
 function rng(seed?: number): () => number {
   if (seed === undefined) return Math.random;
@@ -56,23 +75,24 @@ function rng(seed?: number): () => number {
 
 export function pickVoice(args: PickVoiceArgs): PickVoiceResult {
   const { category, recentCategoryVoices, recentGlobalVoices, performanceWeights = {}, seed } = args;
-  const last2 = recentCategoryVoices.slice(0, 2);
-  const consecutiveBan = last2.length === 2 && last2[0] === last2[1] ? last2[0] : null;
+  // 3-consecutive ban: block the voice if the last 3 picks in this category were all the same.
+  const lastN = recentCategoryVoices.slice(0, CONSECUTIVE_BAN_AT);
+  const consecutiveBan =
+    lastN.length === CONSECUTIVE_BAN_AT && lastN.every((v) => v === lastN[0]) ? lastN[0] : null;
   const totalGlobal = Math.max(recentGlobalVoices.length, 1);
   const globalCount: Record<string, number> = {};
   for (const v of recentGlobalVoices) globalCount[v] = (globalCount[v] || 0) + 1;
 
   const candidates = VOICE_POOL.map((v) => {
     let blocked: string | undefined;
-    if (consecutiveBan && v.voice_name === consecutiveBan) blocked = "consecutive_repeat";
+    if (consecutiveBan && v.voice_name === consecutiveBan) blocked = "consecutive_repeat_3";
     const share = (globalCount[v.voice_name] || 0) / totalGlobal;
     if (!blocked && totalGlobal >= 20 && share >= GLOBAL_CAP_PCT) blocked = "global_cap_20pct";
-    if (!blocked && last2[0] === v.voice_name) {
-      // Soft penalty for last used (still allowed unless consecutive ban above)
-    }
+    // Gender-share bias drives weight toward 80/20 female:male over time.
+    const genderBias = v.voice_type === "female" ? PER_FEMALE_BIAS : PER_MALE_BIAS;
     const baseWeight = performanceWeights[v.voice_name] ?? 1.0;
-    const recencyPenalty = last2[0] === v.voice_name ? 0.5 : 1.0;
-    const weight = blocked ? 0 : Math.max(0.05, baseWeight) * recencyPenalty;
+    const recencyPenalty = recentCategoryVoices[0] === v.voice_name ? 0.5 : 1.0;
+    const weight = blocked ? 0 : Math.max(0.05, baseWeight) * recencyPenalty * Math.max(0.05, genderBias);
     return { voice_name: v.voice_name, weight, blocked };
   });
 
