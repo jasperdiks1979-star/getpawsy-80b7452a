@@ -327,11 +327,13 @@ Deno.serve(async (req) => {
         }
         const dispatch = await dispatchTrimWorkflow(jobId, incomingMp4, targetDuration, job.render_token ?? null, traceId);
         if (!dispatch.ok) {
-          // Trim dispatch itself failed — only now do we hard-fail.
+          // Trim workflow retired — route to the recovery worker instead of
+          // burning the job. Recovery regenerates voiceover/captions and
+          // requeues via the v4 cinematic pipeline.
           const attempts = (job.render_attempts ?? 0);
-          patch.status = "failed";
-          patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
-          patch.status_message = `auto-trim could not be scheduled (${dispatch.message})`;
+          patch.status = "needs_scene_regen";
+          patch.error_message = `route_to_recovery:${dispatch.message}`;
+          patch.status_message = `trim retired — routed to cinematic-recovery-worker (${dispatch.message})`;
           patch.original_duration_seconds = reportedDuration;
           patch.trim_attempted_at = new Date().toISOString();
           patch.output_mp4_url = incomingMp4;
@@ -339,8 +341,8 @@ Deno.serve(async (req) => {
           patch.duration_valid = false;
           patch.validation_passed = false;
           await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
-          console.error(`[auto-trim] ${traceId} dispatch failed; marking job failed`, { jobId, attempts });
-          return json({ ok: false, traceId, message: patch.status_message, rejected: true }, 500);
+          console.warn(`[auto-trim] ${traceId} retired path — routed to recovery worker`, { jobId, attempts });
+          return json({ ok: true, traceId, message: patch.status_message, rerouted: "cinematic-recovery-worker" });
         }
         // Dispatched OK — park the job in 'trimming' until the callback fires.
         patch.status = "trimming";
