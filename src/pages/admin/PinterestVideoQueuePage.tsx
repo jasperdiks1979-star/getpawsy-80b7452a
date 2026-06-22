@@ -285,7 +285,16 @@ export default function PinterestVideoQueuePage() {
     pin_url?: string | null;
     error?: string | null;
     queue_id?: string | null;
+    asset_id?: string | null;
+    product_id?: string | null;
+    canonical_slug?: string | null;
+    duplicate_reason?: string | null;
   } | null>(null);
+  // Single-asset publish panel state.
+  const [singleAssetId, setSingleAssetId] = useState("");
+  const [publishingSingle, setPublishingSingle] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
