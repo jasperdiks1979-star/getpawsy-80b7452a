@@ -27,6 +27,8 @@ on:
       - "render-worker/**"
       - "remotion/**"
       - ".github/workflows/build-render-worker-image.yml"
+      - ".github/workflows/render-worker-deploy.yml"
+      - "render.yaml"
   workflow_dispatch:
     inputs:
       reason:
