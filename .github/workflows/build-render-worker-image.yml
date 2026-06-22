@@ -13,6 +13,10 @@ name: Build Render Worker Image (GHCR)
 # build pipeline minutes are consumed — only GitHub Actions minutes,
 # which are a separate quota.
 #
+# Resync nudge: 2026-06-22T09:05:04Z — force GitHub Actions to pick up
+# the latest render-worker/start.mjs banner + uncaughtException handlers
+# after a Lovable→GitHub sync delay. Safe no-op for the build itself.
+#
 # Permissions: this workflow uses the built-in GITHUB_TOKEN with
 # `packages: write` to push to GHCR; no PAT or extra secret needed.
 
