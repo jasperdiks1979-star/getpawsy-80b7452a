@@ -244,8 +244,17 @@ export const DEFAULT_SCENES = (productName: string): Scene[] => {
   return scenes;
 };
 
-const DEFAULT_VO = (productName: string) =>
-  `Tired of scooping every day? Meet ${productName}. Extra large. Fully enclosed. Designed to keep odors and litter inside, where they belong. Premium materials. Effortless cleaning. Your cat will love it. You will too. Get yours today at GetPawsy dot pet.`;
+import { buildSafeFallbackVO, detectNarrativeLeak, type ProductLike } from "../_shared/cinematic-narrative-guard.ts";
+
+/**
+ * Product-aware fallback used only when AI copy generation fails. The
+ * legacy hardcoded litter-box template was the root cause of cross-
+ * category narrative leakage (cat trees and car-seat covers receiving
+ * "Tired of scooping every day…"). Routed through the shared narrative
+ * guard so it can never re-introduce litter copy on non-litter products.
+ */
+const DEFAULT_VO = (productName: string, product?: ProductLike) =>
+  buildSafeFallbackVO({ name: productName, ...(product ?? {}) });
 
 /**
  * Generate a per-product voiceover script + 6 scene captions from product
