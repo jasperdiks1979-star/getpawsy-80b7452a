@@ -15818,6 +15818,213 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_lifestyle_concepts: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          concept_index: number
+          created_at: string
+          credits_spent: number
+          generated_image_path: string | null
+          generated_image_url: string | null
+          id: string
+          image_model: string | null
+          image_prompt: string
+          last_error: string | null
+          product_id: string
+          product_slug: string | null
+          quality_class: string | null
+          rejection_reason: string | null
+          run_id: string | null
+          scene_brief: string
+          source_image_url: string | null
+          status: string
+          updated_at: string
+          vision_model: string | null
+          vision_reason: string | null
+          vision_score: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          concept_index: number
+          created_at?: string
+          credits_spent?: number
+          generated_image_path?: string | null
+          generated_image_url?: string | null
+          id?: string
+          image_model?: string | null
+          image_prompt: string
+          last_error?: string | null
+          product_id: string
+          product_slug?: string | null
+          quality_class?: string | null
+          rejection_reason?: string | null
+          run_id?: string | null
+          scene_brief: string
+          source_image_url?: string | null
+          status?: string
+          updated_at?: string
+          vision_model?: string | null
+          vision_reason?: string | null
+          vision_score?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          concept_index?: number
+          created_at?: string
+          credits_spent?: number
+          generated_image_path?: string | null
+          generated_image_url?: string | null
+          id?: string
+          image_model?: string | null
+          image_prompt?: string
+          last_error?: string | null
+          product_id?: string
+          product_slug?: string | null
+          quality_class?: string | null
+          rejection_reason?: string | null
+          run_id?: string | null
+          scene_brief?: string
+          source_image_url?: string | null
+          status?: string
+          updated_at?: string
+          vision_model?: string | null
+          vision_reason?: string | null
+          vision_score?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_lifestyle_engine_config: {
+        Row: {
+          concepts_per_product: number
+          daily_credit_budget: number
+          enabled: boolean
+          estimated_credits_per_image: number
+          estimated_credits_per_vision: number
+          id: number
+          image_model: string
+          image_quality: string
+          image_size: string
+          max_attempts_per_concept: number
+          min_accepted_class: string
+          notes: string | null
+          pilot_product_limit: number
+          target_a_share: number
+          updated_at: string
+          updated_by: string | null
+          vision_model: string
+        }
+        Insert: {
+          concepts_per_product?: number
+          daily_credit_budget?: number
+          enabled?: boolean
+          estimated_credits_per_image?: number
+          estimated_credits_per_vision?: number
+          id?: number
+          image_model?: string
+          image_quality?: string
+          image_size?: string
+          max_attempts_per_concept?: number
+          min_accepted_class?: string
+          notes?: string | null
+          pilot_product_limit?: number
+          target_a_share?: number
+          updated_at?: string
+          updated_by?: string | null
+          vision_model?: string
+        }
+        Update: {
+          concepts_per_product?: number
+          daily_credit_budget?: number
+          enabled?: boolean
+          estimated_credits_per_image?: number
+          estimated_credits_per_vision?: number
+          id?: number
+          image_model?: string
+          image_quality?: string
+          image_size?: string
+          max_attempts_per_concept?: number
+          min_accepted_class?: string
+          notes?: string | null
+          pilot_product_limit?: number
+          target_a_share?: number
+          updated_at?: string
+          updated_by?: string | null
+          vision_model?: string
+        }
+        Relationships: []
+      }
+      pinterest_lifestyle_runs: {
+        Row: {
+          class_a_count: number
+          class_b_count: number
+          class_c_count: number
+          completed_at: string | null
+          concepts_accepted: number
+          concepts_attempted: number
+          concepts_planned: number
+          concepts_rejected: number
+          config_snapshot: Json | null
+          created_at: string
+          credits_budget: number | null
+          credits_spent: number
+          error_message: string | null
+          id: string
+          mode: string
+          product_ids: string[]
+          started_at: string | null
+          status: string
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_a_count?: number
+          class_b_count?: number
+          class_c_count?: number
+          completed_at?: string | null
+          concepts_accepted?: number
+          concepts_attempted?: number
+          concepts_planned?: number
+          concepts_rejected?: number
+          config_snapshot?: Json | null
+          created_at?: string
+          credits_budget?: number | null
+          credits_spent?: number
+          error_message?: string | null
+          id?: string
+          mode?: string
+          product_ids?: string[]
+          started_at?: string | null
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_a_count?: number
+          class_b_count?: number
+          class_c_count?: number
+          completed_at?: string | null
+          concepts_accepted?: number
+          concepts_attempted?: number
+          concepts_planned?: number
+          concepts_rejected?: number
+          config_snapshot?: Json | null
+          created_at?: string
+          credits_budget?: number | null
+          credits_spent?: number
+          error_message?: string | null
+          id?: string
+          mode?: string
+          product_ids?: string[]
+          started_at?: string | null
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_lifestyle_scenes: {
         Row: {
           active: boolean

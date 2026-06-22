@@ -454,6 +454,7 @@ const CinematicPerformanceMetricsPage = lazyWithRetry(() => import("./pages/admi
 const CinematicMotionForensicsPage = lazyWithRetry(() => import("./pages/admin/CinematicMotionForensicsPage"));
 const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/PinterestCleanupPage"));
 const PinterestQualityPage = lazyWithRetry(() => import("./pages/admin/PinterestQualityPage"));
+const LifestyleEngineV3Page = lazyWithRetry(() => import("./pages/admin/LifestyleEngineV3Page"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2411,6 +2412,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestQualityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="lifestyle-engine-v3"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LifestyleEngineV3Page />
                                 </Suspense>
                               }
                             />
