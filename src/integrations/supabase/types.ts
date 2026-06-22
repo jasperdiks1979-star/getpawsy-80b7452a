@@ -20746,6 +20746,210 @@ export type Database = {
         }
         Relationships: []
       }
+      product_intelligence: {
+        Row: {
+          created_at: string
+          feed_fixes: Json
+          feed_optimization_status: string | null
+          google_category_confidence: number | null
+          google_product_category: string | null
+          google_product_category_id: number | null
+          id: string
+          intelligence_version: number
+          intent_score: number | null
+          intent_type: string | null
+          keyword_score: number | null
+          last_scanned_at: string | null
+          long_tail_keywords: Json
+          opportunity_factors: Json
+          opportunity_score: number | null
+          opportunity_tier: string | null
+          pinterest_description: string | null
+          pinterest_topics: Json
+          primary_board: string | null
+          primary_keyword: string | null
+          product_id: string
+          product_tags: Json
+          scan_error: string | null
+          scan_status: string
+          secondary_boards: Json
+          secondary_keywords: Json
+          seo_description: string | null
+          seo_title: string | null
+          topic_confidence: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feed_fixes?: Json
+          feed_optimization_status?: string | null
+          google_category_confidence?: number | null
+          google_product_category?: string | null
+          google_product_category_id?: number | null
+          id?: string
+          intelligence_version?: number
+          intent_score?: number | null
+          intent_type?: string | null
+          keyword_score?: number | null
+          last_scanned_at?: string | null
+          long_tail_keywords?: Json
+          opportunity_factors?: Json
+          opportunity_score?: number | null
+          opportunity_tier?: string | null
+          pinterest_description?: string | null
+          pinterest_topics?: Json
+          primary_board?: string | null
+          primary_keyword?: string | null
+          product_id: string
+          product_tags?: Json
+          scan_error?: string | null
+          scan_status?: string
+          secondary_boards?: Json
+          secondary_keywords?: Json
+          seo_description?: string | null
+          seo_title?: string | null
+          topic_confidence?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feed_fixes?: Json
+          feed_optimization_status?: string | null
+          google_category_confidence?: number | null
+          google_product_category?: string | null
+          google_product_category_id?: number | null
+          id?: string
+          intelligence_version?: number
+          intent_score?: number | null
+          intent_type?: string | null
+          keyword_score?: number | null
+          last_scanned_at?: string | null
+          long_tail_keywords?: Json
+          opportunity_factors?: Json
+          opportunity_score?: number | null
+          opportunity_tier?: string | null
+          pinterest_description?: string | null
+          pinterest_topics?: Json
+          primary_board?: string | null
+          primary_keyword?: string | null
+          product_id?: string
+          product_tags?: Json
+          scan_error?: string | null
+          scan_status?: string
+          secondary_boards?: Json
+          secondary_keywords?: Json
+          seo_description?: string | null
+          seo_title?: string | null
+          topic_confidence?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_intelligence_config: {
+        Row: {
+          auto_mode: boolean
+          batch_size: number
+          created_at: string
+          daily_credit_cap: number
+          enabled: boolean
+          estimated_credits_per_product: number
+          id: number
+          immediate_new_product_scan: boolean
+          incremental_scan_enabled: boolean
+          intelligence_version: number
+          max_products_per_run: number
+          model: string
+          nightly_scan_enabled: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_mode?: boolean
+          batch_size?: number
+          created_at?: string
+          daily_credit_cap?: number
+          enabled?: boolean
+          estimated_credits_per_product?: number
+          id?: number
+          immediate_new_product_scan?: boolean
+          incremental_scan_enabled?: boolean
+          intelligence_version?: number
+          max_products_per_run?: number
+          model?: string
+          nightly_scan_enabled?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_mode?: boolean
+          batch_size?: number
+          created_at?: string
+          daily_credit_cap?: number
+          enabled?: boolean
+          estimated_credits_per_product?: number
+          id?: number
+          immediate_new_product_scan?: boolean
+          incremental_scan_enabled?: boolean
+          intelligence_version?: number
+          max_products_per_run?: number
+          model?: string
+          nightly_scan_enabled?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_intelligence_runs: {
+        Row: {
+          created_at: string
+          credits_used: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          products_failed: number
+          products_scanned: number
+          products_targeted: number
+          report: Json
+          started_at: string | null
+          status: string
+          trigger_source: string
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          products_failed?: number
+          products_scanned?: number
+          products_targeted?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          products_failed?: number
+          products_scanned?: number
+          products_targeted?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       product_matches: {
         Row: {
           competitor_product_id: string
