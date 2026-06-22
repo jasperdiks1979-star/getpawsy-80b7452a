@@ -2104,7 +2104,56 @@ export default function PinterestVideoQueuePage() {
             ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing test pin…</>
             : <><Send className="h-4 w-4 mr-1" /> Publish 1 Test Video Pin</>}
         </Button>
+        <Button
+          variant="outline"
+          onClick={repairFailedQueue}
+          disabled={repairing}
+          className="h-11"
+          size="sm"
+          title="Resolve UUID slugs and rebuild destination URLs on all failed queue rows, then reset them to draft."
+        >
+          {repairing ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Repairing…</> : <><Wand2 className="h-4 w-4 mr-1" /> Auto-repair failed queue</>}
+        </Button>
       </div>
+
+      {/* ── Publish single asset panel ───────────────────────────── */}
+      <Card className="p-3 mb-3 border-primary/30 bg-primary/5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Publish single asset</p>
+            <p className="text-[11px] text-muted-foreground">
+              Paste a <code className="font-mono">pinterest_video_assets.id</code>. Resolves UUID → canonical slug,
+              creates a draft if needed, publishes, and shows <code>pin_id</code> + <code>pin_url</code>.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Input
+              value={singleAssetId}
+              onChange={(e) => setSingleAssetId(e.target.value)}
+              placeholder="asset_id (uuid)"
+              className="h-10 font-mono text-xs sm:w-[320px]"
+              spellCheck={false}
+            />
+            <Button
+              onClick={() => publishSingleAsset()}
+              disabled={publishingSingle || !singleAssetId.trim()}
+              className="h-10"
+              size="sm"
+            >
+              {publishingSingle
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Publishing…</>
+                : <><Send className="h-4 w-4 mr-1" /> Publish single asset</>}
+            </Button>
+          </div>
+        </div>
+        {repairSummary && (
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Last repair: scanned <strong>{repairSummary.scanned}</strong> · repaired{" "}
+            <strong className="text-emerald-700">{repairSummary.repaired}</strong> · skipped{" "}
+            <strong>{repairSummary.skipped}</strong>
+          </p>
+        )}
+      </Card>
       <p className="text-xs text-muted-foreground mb-3">
         Allowed: {ALLOWED_VIDEO_EXT.join(", ")} · Max {formatBytes(MAX_VIDEO_BYTES)} per file.
       </p>
