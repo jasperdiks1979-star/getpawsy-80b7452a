@@ -53,11 +53,11 @@ const TRIM_FAILURE_EVENTS = new Set([
 ]);
 
 /**
- * DEPRECATED 2026-06-20 — the `trim-cinematic-ad` GitHub workflow has been
- * retired together with the legacy v2 cinematic_ad pipeline. v3+ renders
- * never overshoot the duration cap. This function is now a no-op that
- * returns ok=false so the caller falls back to bypass-and-promote on
- * legacy jobs. Do NOT re-enable without restoring the workflow file.
+ * The legacy `trim-cinematic-ad` GitHub workflow was retired with the v2
+ * cinematic_ad pipeline. v3+ renders never overshoot the duration cap, so
+ * trim is no longer required. This function now signals callers to route
+ * the job into the active cinematic recovery worker for regeneration
+ * instead of hard-failing with "trim_workflow_deprecated_2026_*".
  */
 async function dispatchTrimWorkflow(
   jobId: string,
@@ -66,8 +66,8 @@ async function dispatchTrimWorkflow(
   _renderToken: string | null,
   traceId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  console.log(`[auto-trim] ${traceId} DEPRECATED no-op for job=${jobId}; caller will bypass & promote`);
-  return { ok: false, message: "trim_workflow_deprecated_2026_06_20" };
+  console.log(`[auto-trim] ${traceId} retired no-op for job=${jobId}; caller will route to recovery worker`);
+  return { ok: false, message: "trim_retired_route_to_recovery_worker" };
 }
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
@@ -327,11 +327,13 @@ Deno.serve(async (req) => {
         }
         const dispatch = await dispatchTrimWorkflow(jobId, incomingMp4, targetDuration, job.render_token ?? null, traceId);
         if (!dispatch.ok) {
-          // Trim dispatch itself failed — only now do we hard-fail.
+          // Trim workflow retired — route to the recovery worker instead of
+          // burning the job. Recovery regenerates voiceover/captions and
+          // requeues via the v4 cinematic pipeline.
           const attempts = (job.render_attempts ?? 0);
-          patch.status = "failed";
-          patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
-          patch.status_message = `auto-trim could not be scheduled (${dispatch.message})`;
+          patch.status = "needs_scene_regen";
+          patch.error_message = `route_to_recovery:${dispatch.message}`;
+          patch.status_message = `trim retired — routed to cinematic-recovery-worker (${dispatch.message})`;
           patch.original_duration_seconds = reportedDuration;
           patch.trim_attempted_at = new Date().toISOString();
           patch.output_mp4_url = incomingMp4;
@@ -339,8 +341,8 @@ Deno.serve(async (req) => {
           patch.duration_valid = false;
           patch.validation_passed = false;
           await admin.from("cinematic_ad_jobs").update(patch).eq("id", jobId);
-          console.error(`[auto-trim] ${traceId} dispatch failed; marking job failed`, { jobId, attempts });
-          return json({ ok: false, traceId, message: patch.status_message, rejected: true }, 500);
+          console.warn(`[auto-trim] ${traceId} retired path — routed to recovery worker`, { jobId, attempts });
+          return json({ ok: true, traceId, message: patch.status_message, rerouted: "cinematic-recovery-worker" });
         }
         // Dispatched OK — park the job in 'trimming' until the callback fires.
         patch.status = "trimming";
@@ -482,14 +484,11 @@ Deno.serve(async (req) => {
             patch.status_message = `auto-trim retry ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS} dispatched`;
             console.log(`[trim-retry] ${traceId} re-dispatched`, { jobId, attempt: trimAttempts + 1 });
           } else {
-            // GH dispatch itself failed — count the attempt and let the
-            // watchdog try again on its next tick.
-            patch.status = "trimming";
-            patch.trim_attempts = trimAttempts + 1;
-            patch.trim_attempted_at = new Date().toISOString();
-            patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
-            patch.status_message = `trim re-dispatch failed (attempt ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS}): ${dispatch.message}`;
-            console.error(`[trim-retry] ${traceId} dispatch failed`, { jobId, attempt: trimAttempts + 1, msg: dispatch.message });
+            // Trim is retired — route to recovery worker rather than retry.
+            patch.status = "needs_scene_regen";
+            patch.error_message = `route_to_recovery:${dispatch.message}`;
+            patch.status_message = `trim retired — routed to cinematic-recovery-worker (${dispatch.message})`;
+            console.warn(`[trim-retry] ${traceId} retired path — routed to recovery worker`, { jobId, msg: dispatch.message });
           }
         }
       } else {

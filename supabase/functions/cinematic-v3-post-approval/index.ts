@@ -2,6 +2,7 @@
 // and enqueue them into the Pinterest video pipeline (pinterest_video_assets +
 // pinterest_video_queue). Idempotent — safe for trigger calls AND backfill runs.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { detectNarrativeLeak } from "../_shared/cinematic-narrative-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,6 +155,23 @@ async function processJob(supa: any, job: any): Promise<Result> {
   const rawTitle = (product.name || slug || "Pet Product").toString();
   const title = truncatePinTitle(rawTitle, 38);
   const description = (product.description || `Discover ${title} at GetPawsy.`).toString().slice(0, 500);
+
+  // ── Narrative QA: refuse to enqueue if the v3 voiceover script /
+  //   transcript references a different product category than the
+  //   actual product. Stops cross-category leakage at the queue boundary.
+  {
+    const leak = detectNarrativeLeak(
+      { name: product.name, slug, description: product.description },
+      job.voiceover_transcript,
+      typeof job.script === "object" ? JSON.stringify(job.script ?? {}) : (job.script ?? null),
+    );
+    if (leak) {
+      res.skipped = `narrative_leak:${leak}`;
+      console.warn(`[cv3-post-approval] blocked job=${job.id} slug="${slug}" — ${res.skipped}`);
+      return res;
+    }
+  }
+
   const destination_url = `${SITE_URL}/products/${slug}`;
   const checksum = `cinematic_v3:${job.id}`;
 
