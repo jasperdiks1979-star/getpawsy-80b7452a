@@ -27,7 +27,7 @@ serve(async (req) => {
     const { data: settings } = await sb.from("pinterest_video_autopilot_settings").select("*").limit(1).maybeSingle();
     if (!settings?.enabled) return ok({ ok: true, skipped: "autopilot_disabled", traceId });
 
-    const DAILY_CAP = Number(settings.max_pins_per_day ?? 30);
+    const DAILY_CAP = Number(settings.max_per_day ?? 30);
     const GAP_MIN = Number(settings.min_publish_gap_minutes ?? 90);
 
     // 2) Daily cap
