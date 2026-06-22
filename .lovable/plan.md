@@ -1,69 +1,54 @@
-# GetPawsy Production Recovery + Revenue Engine Master Audit
+# Pinterest Video Autopilot V4
 
-This is a large, evidence-based audit. I want to confirm scope and a few rules before executing — the wrong assumption here can take down publishing, promotion, or orders.
+This is a large, multi-system change. Before I start editing 10+ edge functions and writing migrations, I want to confirm scope so we don't ship something half-wired.
 
-## Scope (9 phases)
+## What I'll build if you approve
 
-1. **System inventory** — every cron job, GH workflow, edge function, queue, worker. Status + last run + failure %.
-2. **Pinterest audit** — connection, token, boards, pins (24h/7d/30d), duplicates, broken URLs.
-3. **Video pipeline audit** — v3 / v4 / v5 job counts, success %, bottlenecks.
-4. **Revenue Engine audit** — winner_products, scoring, top 50 promoted with revenue.
-5. **Catalog health** — active/inactive/OOS/discontinued, restorability.
-6. **Traffic audit** — GA4 / Pinterest / Stripe / server, funnel dropoff.
-7. **Credit consumption audit** — where Lovable credits go, identify waste.
-8. **Auto-healing** — repair broken crons, stuck queues, zombie systems. **Do NOT touch:** Stripe webhook, orders, customer data.
-9. **Proof** — every claim cited with table + row counts + timestamps.
+### 1. Recovery worker (one-shot, callable from admin)
+New edge function `pinterest-video-autopilot-repair`:
+- Scans `pinterest_video_queue`, `pinterest_video_assets`, `cinematic_v3_jobs`, `cinematic_ad_jobs`, `cinematic_ad_publish_queue` for statuses: `failed`, `creative_rejected`, `publish_blocked`, `needs_scene_regen`, `draft`, `quarantined`.
+- Per record: re-resolves canonical slug via `products.slug` (with UUID→slug fallback already added last turn), rebuilds destination URL `/products/{slug}` with UTM, rehydrates product context (title, description, category, tags, features), regenerates missing voiceover/captions/Pinterest metadata by calling the existing prepare + narrative-guard functions, and re-queues.
+- Returns `{repaired, regenerated, ready_for_publish, discarded}`.
 
-## How I'll execute
+### 2. Mode + autopilot flags (single migration / inserts)
+- `cinematic_ad_settings.auto_publish_enabled = true`
+- `pinterest_video_autopilot_settings.enabled = true`
+- `pinterest_pipeline_settings.current_mode = 'normal'`, `emergency_mode_enabled = false`
 
-Read-only first across DB + edge logs + GH workflow state, then apply repairs **only where evidence is unambiguous**. Each repair logged to memory.
+### 3. Video quality gate (hard reject static/zoom-only)
+Extend `cinematic-ad-validate` v4 rules:
+- Reject when `scene_change_count < 4` OR `camera_motion_score < 70` OR engine is single-image Ken-Burns.
+- Reason codes: `static_image`, `slow_pan`, `slow_zoom`, `slideshow_only`.
 
-Method per phase:
-- Phase 1: SQL on `cron_job_logs`, `job_runs`, `pinterest_pipeline_health_snapshots`, `cinematic_worker_heartbeats` + filesystem scan of `.github/workflows` + `supabase/functions`.
-- Phase 2: SQL on `pinterest_connection`, `pinterest_boards`, `pinterest_pin_queue`, `pinterest_pins`, `pinterest_video_publish_log`, `pinterest_analytics_daily`. Live HEAD against destination URLs for sampled pins.
-- Phase 3: SQL on `cinematic_v3_jobs`, `cinematic_v4_jobs`, `cv5_storyboards`, `cinematic_ad_jobs`. Stuck = status in (rendering/trimming/queued) > 2h.
-- Phase 4: SQL on `winner_products`, `pinterest_revenue_attribution_v3`, `revenue_ai_pin_performance`, `orders`.
-- Phase 5: SQL on `products`, `discontinued_products`, `product_global_inventory`.
-- Phase 6: `pinterest_funnel_events`, `checkout_funnel_events`, `orders`, `gi_traffic_sessions`.
-- Phase 7: `pinterest_credit_events`, `pinterest_credit_state`, `cron_job_logs` failure rates.
-- Phase 8: Targeted repairs (see Auto-repair allowlist).
-- Phase 9: Every number in the final report linked to its SQL.
+### 4. Scene rotation registry
+New table `cinematic_scene_environments` seeded with the cat/dog/other lists from your brief. `cinematic-ad-prepare` picks a non-repeating environment per product (rolling window of 5).
 
-## Auto-repair allowlist (safe, will execute without asking)
+### 5. Voiceover rotation
+New table `cinematic_voice_rotation_state` tracking last-used voice + consecutive count. ElevenLabs voice pool: Jessica, Emma, Sophie, Olivia, James, Ryan, Michael with 40/40/20 weights and ≤3 consecutive rule. Wired into `cinematic-voiceover-*`.
 
-- Mark `cinematic_*_jobs` stuck in `rendering`/`trimming` > 6h as `failed` with reason `watchdog_stale`.
-- Mark `pinterest_pin_queue` rows stuck in `processing` > 2h as `failed`.
-- Deactivate products in `discontinued_products` that still have `is_active=true`.
-- Archive `pinterest_pin_queue` drafts pointing to inactive products / 404 destinations.
-- Clear `pinterest_video_queue` rows for assets whose source MP4 returns 404.
-- Disable cron jobs with **100% failure rate over last 14 days AND > 50 attempts** (legacy zombies only). Will list before disabling.
+### 6. Script + hook rotation
+Hook bank stored in `cinematic_hook_variants` (already exists). Add hook archetypes: problem, benefit, transformation, curiosity, question, lifestyle, pet_happiness, owner_frustration. Banned-phrase list extended ("Tired of scooping every day", etc.). Narrative-guard rejects on match.
 
-## NOT auto-repaired (will only report, ask before changing)
+### 7. Caption engine
+Hard cap 7 words; safe-zone enforced by existing `AutoFitText` + `SafeZoneFrame`. Add lint in validate step.
 
-- Stripe webhook + orders + customer data — never touched.
-- Disabling any cron with <100% failure or with recent success.
-- Deleting any product, pin, or SEO URL.
-- Changing Revenue AI scoring weights or budgets.
-- Changing publish-gate thresholds.
-- Rotating any API token.
+### 8. Product-match QA
+New shared module `_shared/product-match-qa.ts`: compares voiceover/script/scene tags/category/species against product. Any mismatch → `mismatch_score > 0` → reject + requeue regen. Wired into autopublish gate.
 
-## Deliverable
+### 9. Pinterest metadata generator
+SEO title, description, keywords, board, hashtag cluster, CTA — picked from rotation pool. CTA bank seeded: Shop Now, See Why Pet Parents Love It, Discover The Difference, Upgrade Your Pet's Daily Routine, Give Your Pet More Comfort.
 
-Single final report with:
-- Health Score 0–100 + 6 sub-scores
-- Top 10 issues / quick wins / revenue opportunities
-- Direct answers to the 8 closing questions
-- Every claim cited to a SQL row count + timestamp
-- Full list of repairs applied with before/after counts
+### 10. Autonomous loop
+Cron (every 10 min): `pinterest-video-autopilot-tick` — pulls next ready asset, runs QA, publishes via existing `pinterest-video-publisher`, logs, advances. Respects daily cap (30 target) and 90-min gap.
 
-## Out of scope
+### Admin UI
+Add "Run Autopilot Recovery" button on `/admin/pinterest-video-queue` returning the 4 counters (repaired / regenerated / ready / discarded).
 
-- Building new dashboards or UI for this audit.
-- New edge functions or schema migrations (unless required to repair a confirmed broken queue).
-- Anything Pinterest video Gold Reference related (still waiting on pin URL from prior turn).
+## What I'm NOT doing automatically
+- I will NOT change the rendering engine itself (Remotion v4/v5 stays). The "TikTok ad quality" target requires real video generation (Runway/Veo) — that pipeline already exists in `cinematic_runway_jobs`. I'll route through it but won't rebuild it.
+- I will NOT delete existing failed rows; they get repaired in place or marked `discarded` with a reason.
 
-## Confirm before I start
-
-1. **Auto-repair allowlist above OK?** Especially: deactivating discontinued products that snuck back to active, and disabling 100%-failure crons.
-2. **Time budget**: this audit is roughly 15–25 tool calls of SQL + log reading. Proceed in one pass, or want it phase-by-phase with checkpoints?
-3. **Credit consumption (Phase 7)**: only the workspace billing admin can see Lovable credit usage. If `credits--get_credit_balance` returns permission denied for this role, I'll report Lovable-side credit proxies (Pinterest credit_state, render minutes, AI calls) instead — OK?
+## Questions before I start
+1. **Scope of this turn**: this is realistically 8–12 hours of work and ~15 file changes + 2 migrations. Do you want me to ship it all in one go, or land it in phases (Phase A = recovery + flags + UI button; Phase B = rotation engines; Phase C = QA + cron)?
+2. **ElevenLabs voice IDs**: you listed names (Jessica, Emma, etc.). Do you already have voice IDs mapped in `cinematic_voice_profiles`, or should I seed defaults from the ElevenLabs public library?
+3. **Daily publish cap**: brief says "30+ pins/day" but existing `max_pins_per_day=6` and US-quality memory caps at 10. Override to 30, or keep the safety cap and let it ramp?
