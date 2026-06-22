@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
   let q = sb.from("products").select(productCols).eq("is_active", true).limit(config.max_products_per_run);
   if (mode === "scan_one" && body.product_id) {
     q = sb.from("products").select(productCols).eq("id", body.product_id).limit(1);
+  } else if (mode === "scan_one") {
+    q = sb.from("products").select(productCols).eq("is_active", true).limit(1);
   } else if (mode === "scan_all" || mode === "force_rebuild") {
     q = sb.from("products").select(productCols).eq("is_active", true).limit(5000);
   }
