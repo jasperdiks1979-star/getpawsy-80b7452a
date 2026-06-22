@@ -19465,6 +19465,7 @@ export type Database = {
           enabled: boolean
           id: number
           max_per_day: number
+          min_publish_gap_minutes: number
           mode: string
           preferred_hook_types: string[]
           updated_at: string
@@ -19473,6 +19474,7 @@ export type Database = {
           enabled?: boolean
           id?: number
           max_per_day?: number
+          min_publish_gap_minutes?: number
           mode?: string
           preferred_hook_types?: string[]
           updated_at?: string
@@ -19481,6 +19483,7 @@ export type Database = {
           enabled?: boolean
           id?: number
           max_per_day?: number
+          min_publish_gap_minutes?: number
           mode?: string
           preferred_hook_types?: string[]
           updated_at?: string
