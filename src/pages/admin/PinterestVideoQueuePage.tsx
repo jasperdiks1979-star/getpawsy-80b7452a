@@ -986,6 +986,73 @@ export default function PinterestVideoQueuePage() {
     }
   }, [ranked, pushTrace, load]);
 
+  // Single-asset publisher — operator picks an asset_id and gets back
+  // pin_id + pin_url (or the precise rejection reason) immediately.
+  const publishSingleAsset = useCallback(async (assetIdArg?: string) => {
+    const id = (assetIdArg ?? singleAssetId).trim();
+    if (!id) {
+      toast({ title: "asset_id required", description: "Paste a pinterest_video_assets.id first.", variant: "destructive" });
+      return;
+    }
+    setPublishingSingle(true);
+    setTestPinResult(null);
+    try {
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "publish_asset", asset_id: id });
+      const data: any = ev.response || {};
+      const success = !ev.error && !!data?.ok;
+      const result = {
+        ok: success,
+        pin_id: data?.pin_id || null,
+        title: data?.title || null,
+        media_url: data?.media_url || null,
+        board: data?.board || null,
+        pin_url: data?.pin_url || data?.external_url || null,
+        error: success ? null : (data?.code ? `${data.code}: ${data.message || ""}` : (ev.error || "unknown")),
+        queue_id: data?.queue_id || null,
+        asset_id: data?.asset_id || id,
+        product_id: data?.product_id || null,
+        canonical_slug: data?.canonical_slug || null,
+        duplicate_reason: data?.duplicate_reason || null,
+      };
+      setTestPinResult(result);
+      if (data?.traceId) pushTrace({
+        step: `Publish single asset ${id.slice(0, 6)}…`,
+        fn: "pinterest-video-publisher",
+        traceId: data.traceId,
+        ok: success,
+        message: success ? "ok" : (result.error || "failed"),
+      });
+      toast({
+        title: success ? "Asset published" : "Publish failed",
+        description: success ? `pin_id=${result.pin_id} · ${result.pin_url || ""}` : (result.error || "see Debug Console"),
+        variant: success ? "default" : "destructive",
+      });
+      await load();
+    } catch (e) {
+      setTestPinResult({ ok: false, error: (e as Error).message, asset_id: id });
+    } finally {
+      setPublishingSingle(false);
+    }
+  }, [singleAssetId, invokeDebug, pushTrace, load]);
+
+  // One-click auto-repair for the failed-queue backlog.
+  const repairFailedQueue = useCallback(async () => {
+    setRepairing(true);
+    try {
+      const ev = await invokeDebug("pinterest-video-publisher", { action: "repair_failed", limit: 200 });
+      const data: any = ev.response || {};
+      if (data?.ok) {
+        setRepairSummary({ scanned: data.scanned ?? 0, repaired: data.repaired ?? 0, skipped: data.skipped ?? 0 });
+        toast({ title: "Repair complete", description: `Scanned ${data.scanned} · repaired ${data.repaired} · skipped ${data.skipped}` });
+      } else {
+        toast({ title: "Repair failed", description: data?.message || ev.error || "see Debug Console", variant: "destructive" });
+      }
+      await load();
+    } finally {
+      setRepairing(false);
+    }
+  }, [invokeDebug, load]);
+
   // ───────────────── Per-step rerun helpers ─────────────────
   const setStep = useCallback((key: VerifyStepKey, patch: Partial<VerifyStep>) => {
     setVerifySteps((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
