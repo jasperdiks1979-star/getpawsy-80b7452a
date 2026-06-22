@@ -24,12 +24,39 @@ interface Config {
 
 interface RunRow { id: string; mode: string; status: string; products_scanned: number; products_failed: number; credits_used: number; created_at: string; }
 
+interface DryRunResult {
+  total_active_products: number;
+  already_enriched: number;
+  already_complete: number;
+  products_requiring_enrichment: number;
+  missing_google_category: number;
+  missing_pinterest_mapping: number;
+  missing_seo_title: number;
+  missing_seo_description: number;
+  missing_keywords: number;
+  missing_board_assignments: number;
+  feed_issues: number;
+  requires_rebuild: number;
+  estimated_credits: number;
+  credits_per_product: number;
+  estimated_runtime_seconds: number;
+  engine_enabled: boolean;
+  coverage: {
+    catalog_health_pct: number;
+    seo_coverage_pct: number;
+    pinterest_coverage_pct: number;
+    google_category_coverage_pct: number;
+    feed_quality_pct: number;
+  };
+}
+
 export default function ProductIntelligencePage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [coverage, setCoverage] = useState<{ total: number; scanned: number; ok: number; failed: number; high: number; veryHigh: number; feedIssues: number; trending: number; converters: number }>({ total: 0, scanned: 0, ok: 0, failed: 0, high: 0, veryHigh: 0, feedIssues: 0, trending: 0, converters: 0 });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [dryRun, setDryRun] = useState<DryRunResult | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -71,8 +98,14 @@ export default function ProductIntelligencePage() {
     const { data, error } = await supabase.functions.invoke("product-intelligence-orchestrator", { body: { mode, trigger_source: "manual" } });
     setBusy(null);
     if (error) return toast.error(error.message);
-    if ((data as { killed?: boolean })?.killed) toast.warning((data as { message?: string }).message ?? "Engine disabled");
-    else toast.success(`${label} complete`);
+    if (mode === "dry_run" && data && (data as DryRunResult).total_active_products !== undefined) {
+      setDryRun(data as DryRunResult);
+      toast.success(`Dry run complete — ${(data as DryRunResult).estimated_credits} credits estimated`);
+    } else if ((data as { killed?: boolean })?.killed) {
+      toast.warning((data as { message?: string }).message ?? "Engine disabled");
+    } else {
+      toast.success(`${label} complete`);
+    }
     void load();
   };
 
@@ -146,6 +179,47 @@ export default function ProductIntelligencePage() {
             <Button onClick={exportCsv} variant="outline">Export CSV</Button>
           </CardContent>
         </Card>
+
+        {dryRun && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Dry Run Results</span>
+                <Badge variant={dryRun.engine_enabled ? "default" : "secondary"}>
+                  {dryRun.engine_enabled ? "Engine ON" : "Engine OFF · 0 credits used"}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Stat label="Catalog health" value={dryRun.coverage.catalog_health_pct} suffix="%" />
+                <Stat label="SEO coverage" value={dryRun.coverage.seo_coverage_pct} suffix="%" />
+                <Stat label="Pinterest coverage" value={dryRun.coverage.pinterest_coverage_pct} suffix="%" />
+                <Stat label="Google category" value={dryRun.coverage.google_category_coverage_pct} suffix="%" />
+                <Stat label="Feed quality" value={dryRun.coverage.feed_quality_pct} suffix="%" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Stat label="Estimated cost (credits)" value={dryRun.estimated_credits} />
+                <Stat label="Est. runtime (sec)" value={dryRun.estimated_runtime_seconds} />
+                <Stat label="Requiring enrichment" value={dryRun.products_requiring_enrichment} />
+                <Stat label="Already complete" value={dryRun.already_complete} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Stat label="Missing Google cat." value={dryRun.missing_google_category} />
+                <Stat label="Missing Pinterest map" value={dryRun.missing_pinterest_mapping} />
+                <Stat label="Missing SEO title" value={dryRun.missing_seo_title} />
+                <Stat label="Missing SEO desc." value={dryRun.missing_seo_description} />
+                <Stat label="Missing keywords" value={dryRun.missing_keywords} />
+                <Stat label="Missing board assign." value={dryRun.missing_board_assignments} />
+                <Stat label="Feed issues" value={dryRun.feed_issues} />
+                <Stat label="Requires rebuild" value={dryRun.requires_rebuild} />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Dry run is always free. {dryRun.products_requiring_enrichment} products × {dryRun.credits_per_product} cr/product = {dryRun.estimated_credits} credits to fully enrich.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle>Recent runs</CardTitle></CardHeader>
