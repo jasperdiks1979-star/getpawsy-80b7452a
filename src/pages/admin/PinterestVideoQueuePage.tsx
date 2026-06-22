@@ -296,6 +296,7 @@ export default function PinterestVideoQueuePage() {
   const [repairing, setRepairing] = useState(false);
   const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
   const [copiedPinUrl, setCopiedPinUrl] = useState(false);
+  const [copiedPinId, setCopiedPinId] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
@@ -1047,6 +1048,18 @@ export default function PinterestVideoQueuePage() {
       toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
     }
   }, [testPinResult?.pin_url]);
+
+  const copyPinId = useCallback(async () => {
+    if (!testPinResult?.pin_id) return;
+    try {
+      await navigator.clipboard.writeText(testPinResult.pin_id);
+      setCopiedPinId(true);
+      setTimeout(() => setCopiedPinId(false), 2000);
+      toast({ title: "Copied", description: "Pin ID copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
+    }
+  }, [testPinResult?.pin_id]);
 
   // One-click auto-repair for the failed-queue backlog.
   const repairFailedQueue = useCallback(async () => {
@@ -2189,7 +2202,14 @@ export default function PinterestVideoQueuePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">pin_id</span>
-                <code className="font-mono text-[11px] break-all">{testPinResult.pin_id || "—"}</code>
+                <div className="flex items-center gap-2">
+                  <code className="font-mono text-[11px] break-all flex-1 min-w-0">{testPinResult.pin_id || "—"}</code>
+                  {testPinResult.pin_id && (
+                    <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1 shrink-0" onClick={copyPinId} disabled={copiedPinId}>
+                      {copiedPinId ? <><CheckCircle2 className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy ID</>}
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">title</span>
