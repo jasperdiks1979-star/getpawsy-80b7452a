@@ -295,6 +295,7 @@ export default function PinterestVideoQueuePage() {
   const [publishingSingle, setPublishingSingle] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
+  const [copiedPinUrl, setCopiedPinUrl] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
