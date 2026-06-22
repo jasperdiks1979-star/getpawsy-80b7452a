@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 interface Config {
   id: number;
@@ -22,7 +23,7 @@ interface Config {
   intelligence_version: number;
 }
 
-interface RunRow { id: string; mode: string; status: string; products_scanned: number; products_failed: number; credits_used: number; created_at: string; }
+interface RunRow { id: string; mode: string; status: string; products_scanned: number; products_failed: number; credits_used: number; created_at: string; report: any; error_message: string | null; }
 
 interface DryRunResult {
   total_active_products: number;
@@ -57,12 +58,14 @@ export default function ProductIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [dryRun, setDryRun] = useState<DryRunResult | null>(null);
+  const [testProductId, setTestProductId] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
 
   const load = async () => {
     setLoading(true);
     const [{ data: cfg }, { data: rs }, { data: pi }, { count: totalCount }] = await Promise.all([
       supabase.from("product_intelligence_config").select("*").eq("id", 1).maybeSingle(),
-      supabase.from("product_intelligence_runs").select("id,mode,status,products_scanned,products_failed,credits_used,created_at").order("created_at", { ascending: false }).limit(20),
+      supabase.from("product_intelligence_runs").select("id,mode,status,products_scanned,products_failed,credits_used,created_at,report,error_message").order("created_at", { ascending: false }).limit(20),
       supabase.from("product_intelligence").select("scan_status,opportunity_score,trend_score,conversion_score,priority_level,feed_optimization_status"),
       supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true),
     ]);
@@ -95,14 +98,24 @@ export default function ProductIntelligencePage() {
 
   const invoke = async (mode: string, label: string) => {
     setBusy(label);
-    const { data, error } = await supabase.functions.invoke("product-intelligence-orchestrator", { body: { mode, trigger_source: "manual" } });
+    const body: Record<string, unknown> = { mode, trigger_source: "manual" };
+    if (mode === "scan_one" && testProductId.trim()) body.product_id = testProductId.trim();
+    const { data, error } = await supabase.functions.invoke("product-intelligence-orchestrator", { body });
     setBusy(null);
     if (error) return toast.error(error.message);
     if (mode === "dry_run" && data && (data as DryRunResult).total_active_products !== undefined) {
       setDryRun(data as DryRunResult);
       toast.success(`Dry run complete — ${(data as DryRunResult).estimated_credits} credits estimated`);
+    } else if (mode === "scan_one") {
+      setTestResult(data);
+      const d = data as any;
+      if (d?.status === "blocked_no_credits") toast.error("Blocked: AI credits exhausted");
+      else if (d?.failed) toast.error("Test product failed — see diagnostics");
+      else toast.success("Test product scanned");
     } else if ((data as { killed?: boolean })?.killed) {
       toast.warning((data as { message?: string }).message ?? "Engine disabled");
+    } else if ((data as any)?.status === "blocked_no_credits") {
+      toast.error("Scan blocked — AI credits exhausted. No products were marked failed.");
     } else {
       toast.success(`${label} complete`);
     }
@@ -177,6 +190,80 @@ export default function ProductIntelligencePage() {
             <Button onClick={() => invoke("rebuild_pinterest", "Rebuild Pinterest")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild Pinterest</Button>
             <Button onClick={() => invoke("rebuild_seo", "Rebuild SEO")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild SEO</Button>
             <Button onClick={exportCsv} variant="outline">Export CSV</Button>
+          </CardContent>
+        </Card>
+
+        {(() => {
+          const lastReal = runs.find((r) => r.mode !== "dry_run");
+          const rep = lastReal?.report ?? null;
+          const blocked = rep?.blocked;
+          const failures: any[] = rep?.failures ?? [];
+          const counts = rep?.counts ?? { scanned_success: 0, scanned_failed: 0, blocked_no_credits: 0, skipped: 0 };
+          if (!lastReal) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Failure Diagnostics</span>
+                  <Badge variant={blocked ? "destructive" : (counts.scanned_failed ? "destructive" : "default")}>
+                    {lastReal.status}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Stat label="Scanned (success)" value={counts.scanned_success ?? 0} />
+                  <Stat label="Scanned (failed)" value={counts.scanned_failed ?? 0} />
+                  <Stat label="Blocked no credits" value={counts.blocked_no_credits ?? 0} />
+                  <Stat label="Skipped" value={counts.skipped ?? 0} />
+                </div>
+                {rep?.root_cause && (
+                  <div className="rounded-md border p-3 bg-muted/40 space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Root cause</div>
+                    <div className="text-sm font-medium">{rep.root_cause}</div>
+                    {rep.proposed_fix && <div className="text-xs text-muted-foreground">Fix: {rep.proposed_fix}</div>}
+                  </div>
+                )}
+                {rep?.first_failing && (
+                  <div className="rounded-md border p-3 space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">First failing product</div>
+                    <div className="text-sm">
+                      <span className="font-mono">{String(rep.first_failing.product_id)}</span>{" "}
+                      — <span className="text-muted-foreground">{String(rep.first_failing.product_name ?? "")}</span>
+                    </div>
+                    <div className="text-xs">HTTP {String(rep.first_failing.http_status)} — {String(rep.first_failing.provider_error ?? "")}</div>
+                    {rep.first_failing.retry_outcome && <div className="text-xs text-muted-foreground">Retry: {String(rep.first_failing.retry_outcome)}</div>}
+                  </div>
+                )}
+                {failures.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground">Show first {failures.length} failure(s)</summary>
+                    <pre className="mt-2 max-h-64 overflow-auto bg-muted/40 p-2 rounded">{JSON.stringify(failures, null, 2)}</pre>
+                  </details>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+        <Card>
+          <CardHeader><CardTitle>Test One Product</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Product UUID (leave blank to pick first active)"
+                value={testProductId}
+                onChange={(e) => setTestProductId(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Button onClick={() => invoke("scan_one", "Test one")} disabled={!!busy || !config?.enabled}>
+                {busy === "Test one" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan 1 product"}
+              </Button>
+            </div>
+            {!config?.enabled && <p className="text-xs text-muted-foreground">Engine is OFF — enable master switch to test.</p>}
+            {testResult && (
+              <pre className="text-xs bg-muted/40 p-3 rounded max-h-80 overflow-auto">{JSON.stringify(testResult, null, 2)}</pre>
+            )}
           </CardContent>
         </Card>
 
