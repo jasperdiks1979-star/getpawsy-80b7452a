@@ -935,7 +935,7 @@ const _handlerInner = async (req: Request): Promise<Response> => {
   if (regenerate === "vo" && body.job_id) {
     try {
       const { data: existing } = await admin.from("cinematic_ad_jobs").select("vo_script").eq("id", jobId).single();
-      const voScript = String(body.vo_script ?? existing?.vo_script ?? DEFAULT_VO(productName));
+      const voScript = String(body.vo_script ?? existing?.vo_script ?? DEFAULT_VO(productName, product));
       const voBytes = await elevenLabsTts(voScript, voice_id, elevenKey, voiceStyle.settings);
       const voPath = `${jobId}/voiceover-${Date.now()}.mp3`;
       await admin.storage.from("cinematic-ads").upload(voPath, voBytes, { contentType: "audio/mpeg", upsert: true });
@@ -1009,10 +1009,10 @@ const _handlerInner = async (req: Request): Promise<Response> => {
         status_message: "prepare-only · fallback template (no AI, no VO, no render)",
         scene_specs: scenes,
         scene_assets: fallbackScenes,
-        vo_script: DEFAULT_VO(productName),
+        vo_script: DEFAULT_VO(productName, product),
         vo_url: null,
         voice_id, voice_style: voiceStyle.id,
-        vo_script_variants: [DEFAULT_VO(productName)],
+        vo_script_variants: [DEFAULT_VO(productName, product)],
         caption_variants: scenes.map((s) => [s.caption]),
         variant_index: 0,
         pin_title: `${productName} — premium for pet parents`,
@@ -1074,7 +1074,7 @@ const _handlerInner = async (req: Request): Promise<Response> => {
           captionVariants = single.captions.map((c) => [c]);
         } else {
           console.warn("[cinematic-ad-prepare]", traceId, "ai-copy fallback to blueprint defaults");
-          voScriptVariants = [DEFAULT_VO(productName)];
+          voScriptVariants = [DEFAULT_VO(productName, product)];
           captionVariants = scenes.map((s) => [s.caption]);
         }
       }
@@ -1093,7 +1093,19 @@ const _handlerInner = async (req: Request): Promise<Response> => {
     );
     const variantIndex = await pickVariantIndex(admin, product_slug, body.variant_index, totalVariants);
 
-    voScript = voScriptVariants[variantIndex] ?? voScriptVariants[0] ?? DEFAULT_VO(productName);
+    voScript = voScriptVariants[variantIndex] ?? voScriptVariants[0] ?? DEFAULT_VO(productName, product);
+
+    // ── Narrative QA: reject cross-category leak before the render burns
+    //   ElevenLabs minutes. If the selected variant happens to leak litter
+    //   copy onto a non-litter product, drop back to the safe fallback.
+    {
+      const leak = detectNarrativeLeak(product as ProductLike, voScript, ...scenes.map((s) => s.caption));
+      if (leak) {
+        console.warn("[cinematic-ad-prepare]", traceId, `narrative_leak_detected:${leak} — replacing with safe fallback`);
+        voScript = DEFAULT_VO(productName, product);
+        for (let i = 0; i < scenes.length; i++) scenes[i].caption = SHOT_BLUEPRINTS[i].caption(productName);
+      }
+    }
     for (let i = 0; i < scenes.length; i++) {
       const row = captionVariants[i] ?? [];
       scenes[i].caption = row[variantIndex] ?? row[0] ?? scenes[i].caption;
