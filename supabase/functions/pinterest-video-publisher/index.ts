@@ -56,6 +56,29 @@ export function validateCanonicalDestination(rawUrl: string | null | undefined):
   return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
 }
 
+// Async variant: if a "-2..-9" suffix is detected, double-check the products
+// table — many real catalog slugs end in a single-digit SKU (`...-4`). Only
+// reject when the slug is NOT a real, active product.
+export async function validateCanonicalDestinationWithCatalog(
+  sb: any,
+  rawUrl: string | null | undefined,
+): Promise<{ ok: true; slug: string; canonical: string } | { ok: false; code: string; message: string }> {
+  const sync = validateCanonicalDestination(rawUrl);
+  if (sync.ok) return sync;
+  if (sync.code !== "CANONICAL_DUPLICATE_SLUG") return sync;
+  try {
+    const m = String(rawUrl || "").match(/\/products\/([a-z0-9][a-z0-9-]*)/i);
+    const slug = (m?.[1] || "").toLowerCase();
+    if (!slug) return sync;
+    const { data } = await sb.from("products").select("slug,is_active").eq("slug", slug).maybeSingle();
+    if (data?.slug) {
+      const u = new URL(rawUrl as string);
+      return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
+    }
+  } catch (_) { /* fall through to original reject */ }
+  return sync;
+}
+
 // UUID v4-ish detector — `pinterest_video_assets.product_slug` historically
 // stored UUIDs that point at `products.id`. The resolver below converts them
 // back to canonical slugs before any downstream consumer (destination URL,
@@ -456,7 +479,7 @@ async function publishVideoPin(opts: {
   // Stage 0: canonical guard — reject up-front if the destination URL would
   // collapse into the homepage canonical bucket (Pinterest dedupe → "this
   // site doesn't allow you to save Pins") or carries a numeric-variant slug.
-  const guard = validateCanonicalDestination(queueRow?.destination_url);
+  const guard = await validateCanonicalDestinationWithCatalog(sb, queueRow?.destination_url);
   if (!guard.ok) {
     await logStage(sb, queue_id, "canonical_guard", "fail", {
       destination_url: queueRow?.destination_url,
