@@ -1,0 +1,54 @@
+# Render.com blueprint — pins each service to the CORRECT Dockerfile.
+#
+# Why this file exists:
+# Without an explicit blueprint, Render auto-detects the repo-root `Dockerfile`
+# (which is the static nginx frontend image). When that image is used for the
+# `getpawsy-render-worker` service, the container has no Node entrypoint —
+# Render injects `WEB_CONCURRENCY=1` and the container exits with status 128.
+#
+# This blueprint makes `getpawsy-render-worker` build from
+# `render-worker/Dockerfile`, whose CMD is `node render-worker/start.mjs`.
+# Pinterest / Supabase / Lovable AI pipeline logic is untouched.
+#
+# After merging this file:
+#   1. In Render → Blueprints → New Blueprint Instance → select this repo,
+#      OR on the existing `getpawsy-render-worker` service:
+#        Settings → Build & Deploy → Dockerfile Path = `render-worker/Dockerfile`
+#        Settings → Build & Deploy → Docker Build Context Directory = `.`
+#   2. Keep all existing env vars (SUPABASE_URL, RENDER_WORKER_SECRET, etc.).
+#   3. Service type must remain `Web Service` because start.mjs exposes a
+#      health server on $PORT (default 10000) at GET /health. Render Web
+#      Services require this; Background Worker would also work but loses
+#      the /health/worker observability the admin UI relies on.
+#   4. Auto Deploy can remain ON.
+
+services:
+  - type: web
+    name: getpawsy-render-worker
+    runtime: image
+    plan: starter
+    region: oregon
+    # Pre-built image published by .github/workflows/build-render-worker-image.yml.
+    # If you prefer Render to build from source instead, replace `image:` with:
+    #   runtime: docker
+    #   dockerfilePath: ./render-worker/Dockerfile
+    #   dockerContext: .
+    image:
+      url: ghcr.io/jasperdiks1979-star/getpawsy-render-worker:latest
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: WORKER_SAFE_MODE
+        value: "1"
+      - key: SUPABASE_URL
+        sync: false
+      - key: RENDER_WORKER_SECRET
+        sync: false
+      - key: RENDER_WORKER_ID
+        sync: false
+      - key: POLL_INTERVAL_MS
+        sync: false
+      - key: EXPECTED_SUPABASE_HOST
+        sync: false
