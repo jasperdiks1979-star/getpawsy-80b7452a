@@ -55,6 +55,33 @@ Deno.serve(async (req) => {
 
   if (!config) return json({ ok: false, reason: "config_missing" }, 500);
 
+  // Dry run — always available, never consumes credits, works even when engine is disabled.
+  if (mode === "dry_run") {
+    const diag = await computeDryRunDiagnostics(sb, config);
+    // Log a dry_run row (best-effort) for observability
+    const { data: dryRun } = await sb
+      .from("product_intelligence_runs")
+      .insert({
+        trigger_source: trigger,
+        mode: "dry_run",
+        status: "success",
+        started_at: new Date().toISOString(),
+        finished_at: new Date().toISOString(),
+        products_targeted: diag.products_requiring_enrichment,
+        credits_used: 0,
+        report: diag,
+      })
+      .select()
+      .single();
+    return json({
+      ok: true,
+      mode: "dry_run",
+      engine_enabled: !!config.enabled,
+      run_id: dryRun?.id ?? null,
+      ...diag,
+    });
+  }
+
   if (!config.enabled) {
     return json({
       ok: true,
@@ -94,15 +121,6 @@ Deno.serve(async (req) => {
 
   const list = products ?? [];
   await sb.from("product_intelligence_runs").update({ products_targeted: list.length }).eq("id", run.id);
-
-  if (mode === "dry_run") {
-    await sb.from("product_intelligence_runs").update({
-      status: "success",
-      finished_at: new Date().toISOString(),
-      report: { mode: "dry_run", products_would_scan: list.length, estimated_credits: list.length * Number(config.estimated_credits_per_product) },
-    }).eq("id", run.id);
-    return json({ ok: true, mode: "dry_run", run_id: run.id, products_would_scan: list.length, estimated_credits: list.length * Number(config.estimated_credits_per_product) });
-  }
 
   if (!LOVABLE_API_KEY) {
     await sb.from("product_intelligence_runs").update({ status: "failed", error_message: "LOVABLE_API_KEY missing", finished_at: new Date().toISOString() }).eq("id", run.id);
@@ -323,4 +341,101 @@ function derivePriorityLevel(opportunity: number, conversion: number, trend: num
   if (composite >= 70) return "High";
   if (composite >= 50) return "Medium";
   return "Low";
+}
+
+// Dry run diagnostics — zero AI, zero credits. Always safe to call.
+async function computeDryRunDiagnostics(sb: any, config: any) {
+  const creditsPerProduct = Number(config.estimated_credits_per_product ?? 0.2);
+  const secondsPerProduct = 2; // conservative estimate per AI call
+
+  // Active products
+  const { data: products } = await sb
+    .from("products")
+    .select("id,name,category,description,images,is_active")
+    .eq("is_active", true)
+    .limit(10000);
+  const productList = (products ?? []) as Array<{
+    id: string; name: string | null; category: string | null;
+    description: string | null; images: unknown;
+  }>;
+  const totalActive = productList.length;
+
+  // Enrichment rows
+  const { data: enriched } = await sb
+    .from("product_intelligence")
+    .select("product_id,intelligence_version,scan_status,google_product_category,primary_board,seo_title,seo_description,primary_keyword,primary_keywords,pinterest_topics,recommended_boards,feed_optimization_status,feed_issues")
+    .limit(10000);
+  const eRows = (enriched ?? []) as Array<Record<string, any>>;
+  const byProduct = new Map<string, Record<string, any>>();
+  for (const r of eRows) byProduct.set(r.product_id, r);
+
+  let alreadyEnriched = 0;
+  let missingGoogleCategory = 0;
+  let missingPinterestMapping = 0;
+  let missingSeoTitle = 0;
+  let missingSeoDescription = 0;
+  let missingKeywords = 0;
+  let missingBoards = 0;
+  let feedIssues = 0;
+  let requiresRebuild = 0;
+  let alreadyComplete = 0;
+
+  const targetVersion = Number(config.intelligence_version ?? 1);
+
+  for (const p of productList) {
+    const r = byProduct.get(p.id);
+    const hasGoogle = !!r?.google_product_category;
+    const hasPin = !!r?.primary_board || (Array.isArray(r?.pinterest_topics) && r!.pinterest_topics.length > 0);
+    const hasSeoTitle = !!r?.seo_title;
+    const hasSeoDesc = !!r?.seo_description;
+    const hasKw = !!r?.primary_keyword || (Array.isArray(r?.primary_keywords) && r!.primary_keywords.length > 0);
+    const hasBoards = Array.isArray(r?.recommended_boards) && r!.recommended_boards.length > 0;
+    const hasFeedIssues = (Array.isArray(r?.feed_issues) && r!.feed_issues.length > 0) || r?.feed_optimization_status === "needs_attention";
+    const versionStale = r ? Number(r.intelligence_version ?? 0) < targetVersion : false;
+
+    if (r && r.scan_status === "ok") alreadyEnriched++;
+    if (!hasGoogle) missingGoogleCategory++;
+    if (!hasPin) missingPinterestMapping++;
+    if (!hasSeoTitle) missingSeoTitle++;
+    if (!hasSeoDesc) missingSeoDescription++;
+    if (!hasKw) missingKeywords++;
+    if (!hasBoards) missingBoards++;
+    if (hasFeedIssues) feedIssues++;
+    if (versionStale || r?.scan_status === "failed") requiresRebuild++;
+
+    if (r && hasGoogle && hasPin && hasSeoTitle && hasSeoDesc && hasKw && hasBoards && !hasFeedIssues && !versionStale) {
+      alreadyComplete++;
+    }
+  }
+
+  const productsRequiringEnrichment = Math.max(0, totalActive - alreadyComplete);
+  const estimatedCredits = +(productsRequiringEnrichment * creditsPerProduct).toFixed(2);
+  const estimatedRuntimeSeconds = productsRequiringEnrichment * secondsPerProduct;
+
+  const pct = (n: number) => (totalActive ? Math.round((n / totalActive) * 100) : 0);
+
+  return {
+    total_active_products: totalActive,
+    already_enriched: alreadyEnriched,
+    already_complete: alreadyComplete,
+    products_requiring_enrichment: productsRequiringEnrichment,
+    missing_google_category: missingGoogleCategory,
+    missing_pinterest_mapping: missingPinterestMapping,
+    missing_seo_title: missingSeoTitle,
+    missing_seo_description: missingSeoDescription,
+    missing_keywords: missingKeywords,
+    missing_board_assignments: missingBoards,
+    feed_issues: feedIssues,
+    requires_rebuild: requiresRebuild,
+    estimated_credits: estimatedCredits,
+    credits_per_product: creditsPerProduct,
+    estimated_runtime_seconds: estimatedRuntimeSeconds,
+    coverage: {
+      catalog_health_pct: pct(alreadyComplete),
+      seo_coverage_pct: pct(totalActive - missingSeoTitle),
+      pinterest_coverage_pct: pct(totalActive - missingPinterestMapping),
+      google_category_coverage_pct: pct(totalActive - missingGoogleCategory),
+      feed_quality_pct: pct(totalActive - feedIssues),
+    },
+  };
 }
