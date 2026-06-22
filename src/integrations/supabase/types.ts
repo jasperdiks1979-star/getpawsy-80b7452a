@@ -19607,6 +19607,8 @@ export type Database = {
       pinterest_video_metrics: {
         Row: {
           asset_id: string | null
+          board_id: string | null
+          category: string | null
           ctr: number | null
           day: string
           engagement_rate: number | null
@@ -19617,9 +19619,13 @@ export type Database = {
           pin_id: string
           pin_quality_score: number | null
           saves: number
+          scene_slug: string | null
+          voice_name: string | null
         }
         Insert: {
           asset_id?: string | null
+          board_id?: string | null
+          category?: string | null
           ctr?: number | null
           day?: string
           engagement_rate?: number | null
@@ -19630,9 +19636,13 @@ export type Database = {
           pin_id: string
           pin_quality_score?: number | null
           saves?: number
+          scene_slug?: string | null
+          voice_name?: string | null
         }
         Update: {
           asset_id?: string | null
+          board_id?: string | null
+          category?: string | null
           ctr?: number | null
           day?: string
           engagement_rate?: number | null
@@ -19643,6 +19653,8 @@ export type Database = {
           pin_id?: string
           pin_quality_score?: number | null
           saves?: number
+          scene_slug?: string | null
+          voice_name?: string | null
         }
         Relationships: [
           {
@@ -26093,6 +26105,55 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_leaderboard_boards: {
+        Row: {
+          board_id: string | null
+          board_name: string | null
+          clicks: number | null
+          ctr_pct: number | null
+          impressions: number | null
+          pins: number | null
+          save_rate_pct: number | null
+          saves: number | null
+        }
+        Relationships: []
+      }
+      pinterest_leaderboard_categories: {
+        Row: {
+          category: string | null
+          clicks: number | null
+          ctr_pct: number | null
+          impressions: number | null
+          pins: number | null
+          save_rate_pct: number | null
+          saves: number | null
+        }
+        Relationships: []
+      }
+      pinterest_leaderboard_scenes: {
+        Row: {
+          clicks: number | null
+          ctr_pct: number | null
+          impressions: number | null
+          pins: number | null
+          save_rate_pct: number | null
+          saves: number | null
+          scene_slug: string | null
+        }
+        Relationships: []
+      }
+      pinterest_leaderboard_voices: {
+        Row: {
+          clicks: number | null
+          ctr_pct: number | null
+          impressions: number | null
+          pins: number | null
+          save_rate_pct: number | null
+          saves: number | null
+          voice_name: string | null
+        }
+        Relationships: []
+      }
       pinterest_product_cooldown_v: {
         Row: {
           last_pushed_at: string | null
@@ -26885,6 +26946,7 @@ export type Database = {
       }
     }
     Functions: {
+      apply_pinterest_perf_weights: { Args: never; Returns: Json }
       apply_pinterest_pin_repair: {
         Args: {
           p_error: string
