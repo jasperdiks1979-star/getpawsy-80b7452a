@@ -381,6 +381,64 @@ async function publishVideoPin(opts: {
   const { sb, queue_id, asset, queueRow, token, trace_id } = opts;
   const apiBase = await getPinterestApiBase(sb);
 
+  // ── Slug normalization (UUID → canonical) ────────────────────────
+  // If the asset/queue references a product UUID instead of a slug, rewrite
+  // both rows to the canonical slug + canonical destination_url before any
+  // downstream guard runs. Logged as `slug_normalized` for diagnostics.
+  try {
+    const raw = String(asset?.product_slug ?? queueRow?.product_slug ?? "").trim();
+    if (raw && looksLikeUuid(raw)) {
+      const r = await resolveCanonicalProductSlug(sb, raw);
+      if (r.ok) {
+        await sb.from("pinterest_video_assets").update({ product_slug: r.slug, product_id: r.id }).eq("id", asset.id);
+        asset.product_slug = r.slug;
+        (asset as any).product_id = r.id;
+        const newDest = buildDestinationUrl(r.slug);
+        await sb.from("pinterest_video_queue").update({ destination_url: newDest, product_slug: r.slug }).eq("id", queue_id);
+        queueRow.destination_url = newDest;
+        (queueRow as any).product_slug = r.slug;
+        await logStage(sb, queue_id, "slug_normalized", "ok",
+          { from_uuid: raw, to_slug: r.slug, product_id: r.id }, trace_id);
+      } else {
+        await logStage(sb, queue_id, "slug_normalize_failed", "fail",
+          { input: raw, reason: r.reason }, trace_id);
+        return { ok: false, code: "PRODUCT_UUID_UNRESOLVED", message: `cannot resolve product UUID ${raw}: ${r.reason}` };
+      }
+    }
+  } catch (e) {
+    console.warn(`[pvp ${trace_id}] slug normalization crashed`, (e as Error).message);
+  }
+
+  // ── Reuse already-published pin for this asset ───────────────────
+  // If a previous queue row for the same asset already produced a pin_id, do
+  // not republish — surface the existing pin so the operator sees a green
+  // result with the canonical duplicate_reason.
+  try {
+    const { data: prior } = await sb.from("pinterest_video_queue")
+      .select("id, pin_id, external_url")
+      .eq("asset_id", asset.id)
+      .eq("status", "published")
+      .not("pin_id", "is", null)
+      .neq("id", queue_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prior?.pin_id) {
+      await logStage(sb, queue_id, "duplicate_pin_reused", "ok", {
+        existing_queue_id: prior.id,
+        existing_pin_id: prior.pin_id,
+        existing_pin_url: prior.external_url,
+      }, trace_id);
+      await sb.from("pinterest_video_queue").update({
+        status: "published",
+        pin_id: prior.pin_id,
+        external_url: prior.external_url,
+        error_message: null,
+      }).eq("id", queue_id);
+      return { ok: true, pin_id: prior.pin_id, external_url: prior.external_url || `https://www.pinterest.com/pin/${prior.pin_id}/` };
+    }
+  } catch (_e) { /* non-fatal */ }
+
   // Multi-warehouse (Item 14): hydrate warehouse source so copy injection
   // appends fallback tags / strips banned "out of stock" wording.
   try {
