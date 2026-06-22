@@ -131,9 +131,14 @@ serve(async (req) => {
     }
 
     // 9) Publish via existing publisher
+    const renderSecret = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
     const pubRes = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-video-publisher`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "x-render-secret": renderSecret,
+      },
       body: JSON.stringify({ action: "publish", queue_id: draft.id, trace_id: traceId }),
     });
     const pubJson = await pubRes.json().catch(() => ({}));
