@@ -2416,6 +2416,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="lifestyle-engine-v3"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LifestyleEngineV3Page />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
