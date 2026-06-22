@@ -1049,6 +1049,18 @@ export default function PinterestVideoQueuePage() {
     }
   }, [testPinResult?.pin_url]);
 
+  const copyPinId = useCallback(async () => {
+    if (!testPinResult?.pin_id) return;
+    try {
+      await navigator.clipboard.writeText(testPinResult.pin_id);
+      setCopiedPinId(true);
+      setTimeout(() => setCopiedPinId(false), 2000);
+      toast({ title: "Copied", description: "Pin ID copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
+    }
+  }, [testPinResult?.pin_id]);
+
   // One-click auto-repair for the failed-queue backlog.
   const repairFailedQueue = useCallback(async () => {
     setRepairing(true);
