@@ -33,7 +33,12 @@ async function logStage(sb: any, queue_id: string | null, stage: string, status:
 // Rejects publish if the destination URL would resolve to the homepage
 // canonical bucket, is missing/invalid, or carries a numeric-variant slug
 // (`-2`, `-3`, …) that Pinterest's dedupe always rejects.
-const DUPLICATE_SLUG_RE = /-(?:[2-9]|\d{2,})$/;
+// NOTE: real product slugs in this catalog often end in a numeric SKU suffix
+// (e.g. `dog-puzzle-toys-...-9901`). Only a single trailing digit 2-9 is the
+// classic Pinterest "duplicate variant" pattern — anything longer is a real
+// product id and must NOT be blocked. The DB lookup in
+// `resolveCanonicalProductSlug` is the authoritative duplicate check.
+const DUPLICATE_SLUG_RE = /-[2-9]$/;
 export function validateCanonicalDestination(rawUrl: string | null | undefined):
   | { ok: true; slug: string; canonical: string }
   | { ok: false; code: string; message: string } {
@@ -51,6 +56,42 @@ export function validateCanonicalDestination(rawUrl: string | null | undefined):
   return { ok: true, slug, canonical: `${u.origin}${u.pathname}` };
 }
 
+// UUID v4-ish detector — `pinterest_video_assets.product_slug` historically
+// stored UUIDs that point at `products.id`. The resolver below converts them
+// back to canonical slugs before any downstream consumer (destination URL,
+// canonical guard, integrity guard) runs.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function looksLikeUuid(s: string | null | undefined): boolean {
+  return !!s && UUID_RE.test(String(s).trim());
+}
+
+// Resolve the canonical /products/{slug} for a value that may be either a
+// product slug, product id (UUID), product name, or empty. Returns the row
+// from `products` plus the canonical slug. Never throws.
+export async function resolveCanonicalProductSlug(
+  sb: any,
+  value: string | null | undefined,
+): Promise<{ ok: true; id: string; slug: string; row: Record<string, any> } | { ok: false; reason: string }>
+{
+  const v = (value || "").trim();
+  if (!v) return { ok: false, reason: "empty_input" };
+  const cols = "id, slug, name, category, benefit_angle, primary_keyword, seo_keywords, us_stock, eu_stock, cn_stock, stock, is_active";
+  try {
+    if (looksLikeUuid(v)) {
+      const { data } = await sb.from("products").select(cols).eq("id", v).maybeSingle();
+      if (data?.slug) return { ok: true, id: data.id, slug: data.slug, row: data };
+      return { ok: false, reason: "uuid_not_in_products" };
+    }
+    const bySlug = await sb.from("products").select(cols).eq("slug", v).maybeSingle();
+    if (bySlug.data?.slug) return { ok: true, id: bySlug.data.id, slug: bySlug.data.slug, row: bySlug.data };
+    const byName = await sb.from("products").select(cols).ilike("name", v).maybeSingle();
+    if (byName.data?.slug) return { ok: true, id: byName.data.id, slug: byName.data.slug, row: byName.data };
+    return { ok: false, reason: "not_found" };
+  } catch (e) {
+    return { ok: false, reason: `lookup_error:${(e as Error).message}` };
+  }
+}
+
 // Test/fixture slugs must never reach the live publisher.
 export function isTestFixtureSlug(slug: string | null | undefined): boolean {
   if (!slug) return false;
@@ -63,10 +104,9 @@ async function loadProductContext(sb: any, slug: string | null | undefined): Pro
   const s = (slug || "").trim();
   if (!s) return undefined;
   try {
-    const { data } = await sb.from("products")
-      .select("slug, name, category, benefit_angle, primary_keyword, seo_keywords, us_stock, eu_stock, cn_stock, stock, is_active")
-      .eq("slug", s).maybeSingle();
-    if (!data) return { slug: s };
+    const resolved = await resolveCanonicalProductSlug(sb, s);
+    if (!resolved.ok) return { slug: s };
+    const data = resolved.row;
     const warehouse = resolveWarehouse(data as any);
     return {
       slug: data.slug,
