@@ -53,11 +53,11 @@ const TRIM_FAILURE_EVENTS = new Set([
 ]);
 
 /**
- * DEPRECATED 2026-06-20 — the `trim-cinematic-ad` GitHub workflow has been
- * retired together with the legacy v2 cinematic_ad pipeline. v3+ renders
- * never overshoot the duration cap. This function is now a no-op that
- * returns ok=false so the caller falls back to bypass-and-promote on
- * legacy jobs. Do NOT re-enable without restoring the workflow file.
+ * The legacy `trim-cinematic-ad` GitHub workflow was retired with the v2
+ * cinematic_ad pipeline. v3+ renders never overshoot the duration cap, so
+ * trim is no longer required. This function now signals callers to route
+ * the job into the active cinematic recovery worker for regeneration
+ * instead of hard-failing with "trim_workflow_deprecated_2026_*".
  */
 async function dispatchTrimWorkflow(
   jobId: string,
@@ -66,8 +66,8 @@ async function dispatchTrimWorkflow(
   _renderToken: string | null,
   traceId: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  console.log(`[auto-trim] ${traceId} DEPRECATED no-op for job=${jobId}; caller will bypass & promote`);
-  return { ok: false, message: "trim_workflow_deprecated_2026_06_20" };
+  console.log(`[auto-trim] ${traceId} retired no-op for job=${jobId}; caller will route to recovery worker`);
+  return { ok: false, message: "trim_retired_route_to_recovery_worker" };
 }
 
 function trace() { return crypto.randomUUID().slice(0, 8); }
