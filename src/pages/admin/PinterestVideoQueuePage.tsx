@@ -2209,12 +2209,48 @@ export default function PinterestVideoQueuePage() {
             <p className={`text-xs font-semibold uppercase tracking-wide ${testPinResult.ok ? "text-emerald-700" : "text-destructive"}`}>
               {testPinResult.ok ? "✅ Test pin published" : "❌ Test publish failed"}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {testPinResult.ok && (
                 <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1" onClick={copyPinData} disabled={copiedPinData}>
                   {copiedPinData ? <><CheckCircle2 className="h-3 w-3" /> Copied</> : <><ClipboardCopy className="h-3 w-3" /> Copy pin-data</>}
                 </Button>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                  const blob = new Blob([JSON.stringify(testPinResult, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `pin-result-${stamp}.json`;
+                  document.body.appendChild(a); a.click(); a.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                <Download className="h-3 w-3" /> JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+                  const esc = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
+                  const header = ["pin_id", "pin_url", "asset_id", "product_id", "canonical_slug", "duplicate_reason", "title", "board", "media_url"].join(",");
+                  const r = testPinResult;
+                  const body = [
+                    r?.pin_id, r?.pin_url, r?.asset_id, r?.product_id, r?.canonical_slug, r?.duplicate_reason, r?.title, r?.board, r?.media_url,
+                  ].map((v) => esc(v ?? "")).join(",");
+                  const blob = new Blob([`${header}\n${body}\n`], { type: "text/csv;charset=utf-8" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = `pin-result-${stamp}.csv`;
+                  document.body.appendChild(a); a.click(); a.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+              >
+                <Download className="h-3 w-3" /> CSV
+              </button>
               <button
                 type="button"
                 onClick={() => setTestPinResult(null)}
