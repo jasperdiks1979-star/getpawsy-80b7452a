@@ -27,7 +27,7 @@ interface RunRow { id: string; mode: string; status: string; products_scanned: n
 export default function ProductIntelligencePage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [runs, setRuns] = useState<RunRow[]>([]);
-  const [coverage, setCoverage] = useState<{ total: number; scanned: number; ok: number; failed: number; high: number }>({ total: 0, scanned: 0, ok: 0, failed: 0, high: 0 });
+  const [coverage, setCoverage] = useState<{ total: number; scanned: number; ok: number; failed: number; high: number; veryHigh: number; feedIssues: number; trending: number; converters: number }>({ total: 0, scanned: 0, ok: 0, failed: 0, high: 0, veryHigh: 0, feedIssues: 0, trending: 0, converters: 0 });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -36,18 +36,22 @@ export default function ProductIntelligencePage() {
     const [{ data: cfg }, { data: rs }, { data: pi }, { count: totalCount }] = await Promise.all([
       supabase.from("product_intelligence_config").select("*").eq("id", 1).maybeSingle(),
       supabase.from("product_intelligence_runs").select("id,mode,status,products_scanned,products_failed,credits_used,created_at").order("created_at", { ascending: false }).limit(20),
-      supabase.from("product_intelligence").select("scan_status,opportunity_score"),
+      supabase.from("product_intelligence").select("scan_status,opportunity_score,trend_score,conversion_score,priority_level,feed_optimization_status"),
       supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true),
     ]);
     setConfig(cfg as Config | null);
     setRuns((rs as RunRow[]) ?? []);
-    const arr = (pi as { scan_status: string; opportunity_score: number | null }[] | null) ?? [];
+    const arr = (pi as { scan_status: string; opportunity_score: number | null; trend_score: number | null; conversion_score: number | null; priority_level: string | null; feed_optimization_status: string | null }[] | null) ?? [];
     setCoverage({
       total: totalCount ?? 0,
       scanned: arr.length,
       ok: arr.filter((r) => r.scan_status === "ok").length,
       failed: arr.filter((r) => r.scan_status === "failed").length,
       high: arr.filter((r) => (r.opportunity_score ?? 0) >= 90).length,
+      veryHigh: arr.filter((r) => r.priority_level === "Very High").length,
+      feedIssues: arr.filter((r) => r.feed_optimization_status === "needs_attention").length,
+      trending: arr.filter((r) => (r.trend_score ?? 0) >= 70).length,
+      converters: arr.filter((r) => (r.conversion_score ?? 0) >= 70).length,
     });
     setLoading(false);
   };
@@ -70,6 +74,21 @@ export default function ProductIntelligencePage() {
     if ((data as { killed?: boolean })?.killed) toast.warning((data as { message?: string }).message ?? "Engine disabled");
     else toast.success(`${label} complete`);
     void load();
+  };
+
+  const exportCsv = async () => {
+    const { data } = await supabase
+      .from("product_intelligence")
+      .select("product_id,priority_level,opportunity_score,conversion_score,trend_score,merchant_feed_quality_score,intent_type,primary_board,seo_title,pinterest_title,feed_optimization_status");
+    const rows = (data ?? []) as Record<string, unknown>[];
+    if (rows.length === 0) { toast.info("No intelligence rows yet"); return; }
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? "")).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `product-intelligence-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -107,7 +126,11 @@ export default function ProductIntelligencePage() {
           <Stat label="Scanned" value={coverage.scanned} />
           <Stat label="OK" value={coverage.ok} />
           <Stat label="Failed" value={coverage.failed} />
-          <Stat label="High priority (≥90)" value={coverage.high} />
+          <Stat label="Very High priority" value={coverage.veryHigh} />
+          <Stat label="Trending (≥70)" value={coverage.trending} />
+          <Stat label="High converters" value={coverage.converters} />
+          <Stat label="Feed issues" value={coverage.feedIssues} />
+          <Stat label="Opportunity ≥90" value={coverage.high} />
         </div>
 
         <Card>
@@ -117,6 +140,10 @@ export default function ProductIntelligencePage() {
             <Button onClick={() => invoke("scan", "Scan batch")} disabled={!!busy || !config?.enabled}>{busy === "Scan batch" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan batch"}</Button>
             <Button onClick={() => invoke("scan_all", "Scan all")} disabled={!!busy || !config?.enabled} variant="secondary">{busy === "Scan all" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan all"}</Button>
             <Button onClick={() => invoke("force_rebuild", "Force rebuild")} disabled={!!busy || !config?.enabled} variant="destructive">{busy === "Force rebuild" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Force rebuild"}</Button>
+            <Button onClick={() => invoke("rebuild_category", "Rebuild category")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild category</Button>
+            <Button onClick={() => invoke("rebuild_pinterest", "Rebuild Pinterest")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild Pinterest</Button>
+            <Button onClick={() => invoke("rebuild_seo", "Rebuild SEO")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild SEO</Button>
+            <Button onClick={exportCsv} variant="outline">Export CSV</Button>
           </CardContent>
         </Card>
 
