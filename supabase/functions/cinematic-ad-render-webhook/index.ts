@@ -484,14 +484,11 @@ Deno.serve(async (req) => {
             patch.status_message = `auto-trim retry ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS} dispatched`;
             console.log(`[trim-retry] ${traceId} re-dispatched`, { jobId, attempt: trimAttempts + 1 });
           } else {
-            // GH dispatch itself failed — count the attempt and let the
-            // watchdog try again on its next tick.
-            patch.status = "trimming";
-            patch.trim_attempts = trimAttempts + 1;
-            patch.trim_attempted_at = new Date().toISOString();
-            patch.error_message = `auto_trim_dispatch_failed:${dispatch.message}`;
-            patch.status_message = `trim re-dispatch failed (attempt ${trimAttempts + 1}/${MAX_TRIM_ATTEMPTS}): ${dispatch.message}`;
-            console.error(`[trim-retry] ${traceId} dispatch failed`, { jobId, attempt: trimAttempts + 1, msg: dispatch.message });
+            // Trim is retired — route to recovery worker rather than retry.
+            patch.status = "needs_scene_regen";
+            patch.error_message = `route_to_recovery:${dispatch.message}`;
+            patch.status_message = `trim retired — routed to cinematic-recovery-worker (${dispatch.message})`;
+            console.warn(`[trim-retry] ${traceId} retired path — routed to recovery worker`, { jobId, msg: dispatch.message });
           }
         }
       } else {
