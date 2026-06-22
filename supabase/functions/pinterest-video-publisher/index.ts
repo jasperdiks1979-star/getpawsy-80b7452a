@@ -759,7 +759,8 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action || "queue_draft") as
-      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry" | "__health_check__";
+      | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry"
+      | "publish_asset" | "repair_failed" | "__health_check__";
     await log.info("action received", { action, queue_id: body.queue_id ?? null }, { queue_id: body.queue_id ?? null });
     if (action === "__health_check__") {
       const token = await getPinterestToken(sb);
