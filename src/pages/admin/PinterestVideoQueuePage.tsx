@@ -2202,6 +2202,22 @@ export default function PinterestVideoQueuePage() {
                   <span className="font-mono text-[11px]">—</span>
                 )}
               </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">asset_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.asset_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">product_id</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.product_id || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">canonical_slug</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.canonical_slug || "—"}</code>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wide">duplicate_reason</span>
+                <code className="font-mono text-[11px] break-all">{testPinResult.duplicate_reason || "—"}</code>
+              </div>
             </div>
           ) : (
             <div className="text-xs text-destructive">
@@ -2209,6 +2225,11 @@ export default function PinterestVideoQueuePage() {
               {testPinResult.queue_id && (
                 <p className="text-muted-foreground mt-1">queue_id: <code className="font-mono">{testPinResult.queue_id}</code></p>
               )}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-[11px]">
+                <div><span className="text-muted-foreground">asset_id:</span> <code className="font-mono">{testPinResult.asset_id || "—"}</code></div>
+                <div><span className="text-muted-foreground">product_id:</span> <code className="font-mono">{testPinResult.product_id || "—"}</code></div>
+                <div className="col-span-2"><span className="text-muted-foreground">canonical_slug:</span> <code className="font-mono">{testPinResult.canonical_slug || "—"}</code></div>
+              </div>
             </div>
           )}
         </Card>
