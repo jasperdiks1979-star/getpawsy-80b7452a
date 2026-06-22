@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
   let q = sb.from("products").select(productCols).eq("is_active", true).limit(config.max_products_per_run);
   if (mode === "scan_one" && body.product_id) {
     q = sb.from("products").select(productCols).eq("id", body.product_id).limit(1);
+  } else if (mode === "scan_one") {
+    q = sb.from("products").select(productCols).eq("is_active", true).limit(1);
   } else if (mode === "scan_all" || mode === "force_rebuild") {
     q = sb.from("products").select(productCols).eq("is_active", true).limit(5000);
   }
@@ -133,16 +135,60 @@ Deno.serve(async (req) => {
 
   let scanned = 0;
   let failed = 0;
+  let skipped = 0;
   let creditsUsed = 0;
+  const failures: Array<Record<string, unknown>> = [];
+  let blocked: { status: number; provider_error: string; product_id: string } | null = null;
+  let firstFailing: Record<string, unknown> | null = null;
 
   for (const p of list) {
-    try {
-      // Phase 2 — Google category (deterministic, free)
-      const gpc = classifyGoogleProductCategory(p.name, p.category, p.description);
+    // Phase 2 — Google category (deterministic, free)
+    const gpc = classifyGoogleProductCategory(p.name, p.category, p.description);
 
-      // Phases 3,5,6,7,8,9,10 — single AI call returning JSON
-      const ai = await callIntelligenceAI(config.model, p, gpc, boardList);
-      creditsUsed += Number(config.estimated_credits_per_product);
+    // Try AI with one retry on non-credit failures.
+    let aiCall = await callIntelligenceAI(config.model, p, gpc, boardList);
+    let retryOutcome: string | null = null;
+    if (!aiCall.ok && aiCall.status !== 402) {
+      const retry = await callIntelligenceAI(config.model, p, gpc, boardList);
+      retryOutcome = retry.ok ? "retry_success" : `retry_failed_${retry.status}`;
+      aiCall = retry;
+    }
+
+    if (!aiCall.ok && aiCall.status === 402) {
+      // Credits exhausted — stop scan immediately, do NOT mark products as failed.
+      blocked = { status: 402, provider_error: aiCall.providerError ?? "payment_required", product_id: p.id };
+      skipped = list.length - scanned - failed - 1; // remaining including this one
+      break;
+    }
+
+    if (!aiCall.ok) {
+      failed++;
+      const diag = {
+        product_id: p.id,
+        product_name: p.name,
+        http_status: aiCall.status,
+        provider_error: aiCall.providerError,
+        gemini_response: aiCall.rawSnippet,
+        stack: aiCall.stack,
+        retry_outcome: retryOutcome,
+        at: new Date().toISOString(),
+      };
+      failures.push(diag);
+      if (!firstFailing) firstFailing = diag;
+      await sb.from("product_intelligence").upsert({
+        product_id: p.id,
+        intelligence_version: config.intelligence_version,
+        last_scanned_at: new Date().toISOString(),
+        scan_status: "failed",
+        scan_error: `http_${aiCall.status}:${(aiCall.providerError ?? "").slice(0, 200)}`,
+      }, { onConflict: "product_id" });
+      continue;
+    }
+
+    const ai = aiCall.parsed ?? {};
+    creditsUsed += Number(config.estimated_credits_per_product);
+
+    try {
 
       // Phase 10 — opportunity score (deterministic blend)
       const opportunity = computeOpportunityScore(p, ai);
@@ -202,29 +248,82 @@ Deno.serve(async (req) => {
       scanned++;
     } catch (e) {
       failed++;
-      await sb.from("product_intelligence").upsert({
+      const err = e as Error;
+      const diag = {
         product_id: p.id,
-        intelligence_version: config.intelligence_version,
-        last_scanned_at: new Date().toISOString(),
-        scan_status: "failed",
-        scan_error: (e as Error).message,
-      }, { onConflict: "product_id" });
+        product_name: p.name,
+        http_status: 0,
+        provider_error: `persist_error:${err.message}`,
+        stack: err.stack ?? null,
+        retry_outcome: retryOutcome,
+        at: new Date().toISOString(),
+      };
+      failures.push(diag);
+      if (!firstFailing) firstFailing = diag;
     }
   }
 
+  const status = blocked ? "blocked_no_credits" : "success";
+  const rootCause = blocked
+    ? `AI credits exhausted (HTTP 402) on product ${blocked.product_id}. ${blocked.provider_error}`
+    : firstFailing
+      ? `${failed} product(s) failed. First: HTTP ${firstFailing.http_status} — ${firstFailing.provider_error}`
+      : null;
+  const proposedFix = blocked
+    ? "Top up the Lovable AI workspace credits, then re-run the scan. No products were marked failed."
+    : firstFailing
+      ? "Inspect failing product diagnostics below. Common fixes: shorter description, retry after a few minutes, switch model."
+      : null;
+
   await sb.from("product_intelligence_runs").update({
-    status: "success",
+    status,
+    error_message: blocked ? "blocked_no_credits" : (firstFailing ? String(firstFailing.provider_error ?? "") : null),
     products_scanned: scanned,
     products_failed: failed,
     credits_used: creditsUsed,
     finished_at: new Date().toISOString(),
-    report: { mode, scanned, failed, credits_used: creditsUsed },
+    report: {
+      mode,
+      counts: {
+        scanned_success: scanned,
+        scanned_failed: failed,
+        blocked_no_credits: blocked ? 1 : 0,
+        skipped,
+      },
+      credits_used: creditsUsed,
+      blocked,
+      first_failing: firstFailing,
+      failures: failures.slice(0, 25),
+      root_cause: rootCause,
+      proposed_fix: proposedFix,
+    },
   }).eq("id", run.id);
 
-  return json({ ok: true, run_id: run.id, scanned, failed, credits_used: creditsUsed });
+  return json({
+    ok: true,
+    run_id: run.id,
+    status,
+    scanned,
+    failed,
+    skipped,
+    blocked,
+    first_failing: firstFailing,
+    root_cause: rootCause,
+    proposed_fix: proposedFix,
+    credits_used: creditsUsed,
+  });
 });
 
-async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string; description: string }[]) {
+interface AiCallResult {
+  ok: boolean;
+  status: number;
+  providerError?: string;
+  rawSnippet?: string;
+  parsed?: any;
+  stack?: string;
+}
+
+async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string; description: string }[]): Promise<AiCallResult> {
   const boardNames = boards.map((b) => b.name).slice(0, 40);
   const system = `You are a Pinterest + SEO product intelligence engine for a US pet supplies brand.
 Return STRICT JSON only. No prose. No markdown.`;
@@ -261,22 +360,38 @@ Return JSON with this exact shape:
   "feed_fixes": [string, ...]
 }`;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-  if (!res.ok) throw new Error(`ai_${res.status}`);
-  const j = await res.json();
-  const content = j?.choices?.[0]?.message?.content ?? "{}";
-  try { return JSON.parse(content); } catch { return {}; }
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    const raw = await res.text();
+    if (!res.ok) {
+      let providerError = raw.slice(0, 500);
+      try {
+        const j = JSON.parse(raw);
+        providerError = j?.error?.message ?? j?.message ?? providerError;
+      } catch { /* keep raw */ }
+      return { ok: false, status: res.status, providerError, rawSnippet: raw.slice(0, 800) };
+    }
+    let j: any = {};
+    try { j = JSON.parse(raw); } catch { /* */ }
+    const content = j?.choices?.[0]?.message?.content ?? "{}";
+    let parsed: any = {};
+    try { parsed = JSON.parse(content); } catch { parsed = {}; }
+    return { ok: true, status: res.status, parsed, rawSnippet: content.slice(0, 800) };
+  } catch (e) {
+    const err = e as Error;
+    return { ok: false, status: 0, providerError: `network:${err.message}`, stack: err.stack };
+  }
 }
 
 function computeOpportunityScore(p: any, ai: any): { score: number; tier: string; factors: Record<string, number> } {
