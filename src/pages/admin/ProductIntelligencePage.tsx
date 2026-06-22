@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { AiCostBreakdown } from "@/components/admin/AiCostBreakdown";
+import { ConfirmAiCostDialog } from "@/components/admin/ConfirmAiCostDialog";
+import { assessCost, fetchAiBalance, type AiBalance, type CostAssessment } from "@/lib/aiPricing";
 
 interface Config {
   id: number;
@@ -60,17 +63,21 @@ export default function ProductIntelligencePage() {
   const [dryRun, setDryRun] = useState<DryRunResult | null>(null);
   const [testProductId, setTestProductId] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
+  const [balance, setBalance] = useState<AiBalance>({ credits_remaining: null, is_live: false, source: "unknown" });
+  const [pendingAction, setPendingAction] = useState<null | { mode: string; label: string; productCount: number; assessment: CostAssessment }>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: cfg }, { data: rs }, { data: pi }, { count: totalCount }] = await Promise.all([
+    const [{ data: cfg }, { data: rs }, { data: pi }, { count: totalCount }, bal] = await Promise.all([
       supabase.from("product_intelligence_config").select("*").eq("id", 1).maybeSingle(),
       supabase.from("product_intelligence_runs").select("id,mode,status,products_scanned,products_failed,credits_used,created_at,report,error_message").order("created_at", { ascending: false }).limit(20),
       supabase.from("product_intelligence").select("scan_status,opportunity_score,trend_score,conversion_score,priority_level,feed_optimization_status"),
       supabase.from("products").select("*", { count: "exact", head: true }).eq("is_active", true),
+      fetchAiBalance(),
     ]);
     setConfig(cfg as Config | null);
     setRuns((rs as RunRow[]) ?? []);
+    setBalance(bal);
     const arr = (pi as { scan_status: string; opportunity_score: number | null; trend_score: number | null; conversion_score: number | null; priority_level: string | null; feed_optimization_status: string | null }[] | null) ?? [];
     setCoverage({
       total: totalCount ?? 0,
@@ -120,6 +127,27 @@ export default function ProductIntelligencePage() {
       toast.success(`${label} complete`);
     }
     void load();
+  };
+
+  /** Wrap credit-spending actions in a confirm dialog showing credits + USD + EUR. */
+  const requestRun = async (mode: string, label: string) => {
+    // Determine product count + per-product cost for this action.
+    const perProduct = config?.estimated_credits_per_product ?? 0.2;
+    let productCount = 0;
+    if (mode === "scan_all" || mode === "force_rebuild") {
+      productCount = coverage.total;
+    } else if (mode === "scan") {
+      productCount = Math.min(config?.max_products_per_run ?? 50, dryRun?.products_requiring_enrichment ?? coverage.total);
+    } else if (mode.startsWith("rebuild_")) {
+      productCount = coverage.total;
+    } else {
+      productCount = config?.max_products_per_run ?? 50;
+    }
+    const requiredCredits = Math.max(0, productCount * perProduct);
+    const fresh = await fetchAiBalance();
+    setBalance(fresh);
+    const assessment = assessCost(requiredCredits, fresh);
+    setPendingAction({ mode, label, productCount, assessment });
   };
 
   const exportCsv = async () => {
@@ -183,15 +211,37 @@ export default function ProductIntelligencePage() {
           <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button onClick={() => invoke("dry_run", "Dry run")} disabled={!!busy} variant="outline">{busy === "Dry run" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Dry run"}</Button>
-            <Button onClick={() => invoke("scan", "Scan batch")} disabled={!!busy || !config?.enabled}>{busy === "Scan batch" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan batch"}</Button>
-            <Button onClick={() => invoke("scan_all", "Scan all")} disabled={!!busy || !config?.enabled} variant="secondary">{busy === "Scan all" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan all"}</Button>
-            <Button onClick={() => invoke("force_rebuild", "Force rebuild")} disabled={!!busy || !config?.enabled} variant="destructive">{busy === "Force rebuild" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Force rebuild"}</Button>
-            <Button onClick={() => invoke("rebuild_category", "Rebuild category")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild category</Button>
-            <Button onClick={() => invoke("rebuild_pinterest", "Rebuild Pinterest")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild Pinterest</Button>
-            <Button onClick={() => invoke("rebuild_seo", "Rebuild SEO")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild SEO</Button>
+            <Button onClick={() => requestRun("scan", "Scan batch")} disabled={!!busy || !config?.enabled}>{busy === "Scan batch" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan batch"}</Button>
+            <Button onClick={() => requestRun("scan_all", "Scan all")} disabled={!!busy || !config?.enabled} variant="secondary">{busy === "Scan all" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Scan all"}</Button>
+            <Button onClick={() => requestRun("force_rebuild", "Force rebuild")} disabled={!!busy || !config?.enabled} variant="destructive">{busy === "Force rebuild" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Force rebuild"}</Button>
+            <Button onClick={() => requestRun("rebuild_category", "Rebuild category")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild category</Button>
+            <Button onClick={() => requestRun("rebuild_pinterest", "Rebuild Pinterest")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild Pinterest</Button>
+            <Button onClick={() => requestRun("rebuild_seo", "Rebuild SEO")} disabled={!!busy || !config?.enabled} variant="outline">Rebuild SEO</Button>
             <Button onClick={exportCsv} variant="outline">Export CSV</Button>
           </CardContent>
         </Card>
+
+        {dryRun && (
+          <AiCostBreakdown
+            scopeLabel={`${dryRun.products_requiring_enrichment} products to enrich`}
+            assessment={assessCost(dryRun.estimated_credits, balance)}
+          />
+        )}
+
+        <ConfirmAiCostDialog
+          open={!!pendingAction}
+          onOpenChange={(v) => { if (!v) setPendingAction(null); }}
+          title={pendingAction ? `Confirm: ${pendingAction.label}` : ""}
+          productCount={pendingAction?.productCount ?? 0}
+          assessment={pendingAction?.assessment ?? assessCost(0, balance)}
+          onConfirm={() => {
+            if (!pendingAction) return;
+            const p = pendingAction;
+            setPendingAction(null);
+            void invoke(p.mode, p.label);
+          }}
+          confirmLabel="Run now"
+        />
 
         {(() => {
           const lastReal = runs.find((r) => r.mode !== "dry_run");
