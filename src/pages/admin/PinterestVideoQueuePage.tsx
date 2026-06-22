@@ -295,6 +295,7 @@ export default function PinterestVideoQueuePage() {
   const [publishingSingle, setPublishingSingle] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [repairSummary, setRepairSummary] = useState<{ scanned: number; repaired: number; skipped: number } | null>(null);
+  const [copiedPinUrl, setCopiedPinUrl] = useState(false);
   type StepTrace = { step: string; traceId: string; fn: string; ok: boolean; message?: string };
   const [stepTraces, setStepTraces] = useState<StepTrace[]>([]);
   // Snapshot of the queue IDs used in the last publish run, so the user can
@@ -1034,6 +1035,18 @@ export default function PinterestVideoQueuePage() {
       setPublishingSingle(false);
     }
   }, [singleAssetId, invokeDebug, pushTrace, load]);
+
+  const copyPinUrl = useCallback(async () => {
+    if (!testPinResult?.pin_url) return;
+    try {
+      await navigator.clipboard.writeText(testPinResult.pin_url);
+      setCopiedPinUrl(true);
+      setTimeout(() => setCopiedPinUrl(false), 2000);
+      toast({ title: "Copied", description: "Pin URL copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", description: "Could not copy to clipboard", variant: "destructive" });
+    }
+  }, [testPinResult?.pin_url]);
 
   // One-click auto-repair for the failed-queue backlog.
   const repairFailedQueue = useCallback(async () => {
@@ -2194,13 +2207,20 @@ export default function PinterestVideoQueuePage() {
               </div>
               <div className="flex flex-col sm:col-span-2">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">Pinterest URL</span>
-                {testPinResult.pin_url ? (
-                  <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all">
-                    {testPinResult.pin_url}
-                  </a>
-                ) : (
-                  <span className="font-mono text-[11px]">—</span>
-                )}
+                <div className="flex items-center gap-2">
+                  {testPinResult.pin_url ? (
+                    <a href={testPinResult.pin_url} target="_blank" rel="noopener noreferrer" className="text-primary underline font-mono text-[11px] break-all flex-1 min-w-0">
+                      {testPinResult.pin_url}
+                    </a>
+                  ) : (
+                    <span className="font-mono text-[11px] flex-1">—</span>
+                  )}
+                  {testPinResult.pin_url && (
+                    <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] gap-1 shrink-0" onClick={copyPinUrl} disabled={copiedPinUrl}>
+                      {copiedPinUrl ? <><CheckCircle2 className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy URL</>}
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-[10px] uppercase tracking-wide">asset_id</span>
