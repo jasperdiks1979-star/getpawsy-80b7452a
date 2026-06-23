@@ -30,6 +30,7 @@ interface Product {
   sku: string | null;
   name: string;
   stock: number | null;
+  cj_variant_id?: string | null;
 }
 
 // Stock result type to distinguish confirmed vs error
