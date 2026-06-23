@@ -59,6 +59,52 @@ async function countRemainingActiveProducts(sb: any): Promise<number> {
   return (products ?? []).filter((p: any) => !done.has(p.id)).length;
 }
 
+const SUPA_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SELF_URL = `${SUPABASE_URL}/functions/v1/product-intelligence-orchestrator`;
+
+// Fire-and-forget POST to self to start the next batch on a fresh runtime.
+async function fireSelfChain(runId: string) {
+  try {
+    // No await on the promise body — we just want to hand off the HTTP call.
+    const p = fetch(SELF_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPA_ANON}`,
+        apikey: SUPA_ANON,
+      },
+      body: JSON.stringify({
+        mode: "scan_all",
+        trigger_source: "self_chain",
+        continuation: true,
+        existing_run_id: runId,
+        background: true,
+      }),
+    });
+    // Don't await — we want the current invocation to exit ASAP.
+    p.then((r) => r.text()).catch((e) => console.error("[self-chain]", e));
+  } catch (e) {
+    console.error("[self-chain] dispatch failed", e);
+  }
+}
+
+// Used by the supervisor cron when no active scan_all exists.
+async function launchScanAll(sb: any): Promise<{ id: string } | null> {
+  const { data: created } = await sb
+    .from("product_intelligence_runs")
+    .insert({
+      trigger_source: "supervisor",
+      mode: "scan_all",
+      status: "running",
+      started_at: new Date().toISOString(),
+      report: { heartbeat_at: new Date().toISOString(), mode: "scan_all", scanned: 0, failed: 0, credits_used: 0, launched_by: "supervisor" },
+    })
+    .select().single();
+  if (!created) return null;
+  await fireSelfChain(created.id);
+  return { id: created.id };
+}
+
 interface Body {
   mode?:
     | "dry_run"
