@@ -28,6 +28,7 @@ import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
 import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 const BASE_URL = 'https://getpawsy.pet';
 
