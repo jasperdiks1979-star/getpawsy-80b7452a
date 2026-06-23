@@ -1,54 +1,98 @@
-# Pinterest Video Autopilot V4
 
-This is a large, multi-system change. Before I start editing 10+ edge functions and writing migrations, I want to confirm scope so we don't ship something half-wired.
+# Revenue Priority V2 + Full Export System
 
-## What I'll build if you approve
+This is a large, multi-system change. I want approval on scope and sequencing before writing any code, because Phase 4 (system integration) and Phase 6 (backfill of all 553 products) are irreversible without rollback work, and the audit explicitly said "wait for approval before activating."
 
-### 1. Recovery worker (one-shot, callable from admin)
-New edge function `pinterest-video-autopilot-repair`:
-- Scans `pinterest_video_queue`, `pinterest_video_assets`, `cinematic_v3_jobs`, `cinematic_ad_jobs`, `cinematic_ad_publish_queue` for statuses: `failed`, `creative_rejected`, `publish_blocked`, `needs_scene_regen`, `draft`, `quarantined`.
-- Per record: re-resolves canonical slug via `products.slug` (with UUID→slug fallback already added last turn), rebuilds destination URL `/products/{slug}` with UTM, rehydrates product context (title, description, category, tags, features), regenerates missing voiceover/captions/Pinterest metadata by calling the existing prepare + narrative-guard functions, and re-queues.
-- Returns `{repaired, regenerated, ready_for_publish, discarded}`.
+## Phase 1 — Schema & Scoring Engine
 
-### 2. Mode + autopilot flags (single migration / inserts)
-- `cinematic_ad_settings.auto_publish_enabled = true`
-- `pinterest_video_autopilot_settings.enabled = true`
-- `pinterest_pipeline_settings.current_mode = 'normal'`, `emergency_mode_enabled = false`
+**Migration:**
+- `product_intelligence.revenue_priority_score_v2 numeric` (0–100)
+- `product_intelligence.revenue_tier text` (A/B/C/D)
+- `product_intelligence.pinterest_momentum_score numeric`
+- `product_intelligence.score_components_v2 jsonb` (full breakdown for audit)
+- `products.margin_percent numeric` (derived & persisted)
 
-### 3. Video quality gate (hard reject static/zoom-only)
-Extend `cinematic-ad-validate` v4 rules:
-- Reject when `scene_change_count < 4` OR `camera_motion_score < 70` OR engine is single-image Ken-Burns.
-- Reason codes: `static_image`, `slow_pan`, `slow_zoom`, `slideshow_only`.
+**New edge function `revenue-priority-v2`** (service-role, admin-only). Actions:
+- `compute_all` — recomputes V2 for full active catalog with population-wide normalization
+- `compute_one` — single product recompute
+- `diversify` — applies category caps (Top 25/50/100/250)
+- `validate` — produces old-vs-new comparison report
+- `report` — assembles full report payload for PDF
 
-### 4. Scene rotation registry
-New table `cinematic_scene_environments` seeded with the cat/dog/other lists from your brief. `cinematic-ad-prepare` picks a non-repeating environment per product (rolling window of 5).
+**Score formula (exact weights from spec):**
+```
+Pinterest 30 + Conversion 20 + Margin 20 + Opportunity 10
++ Inventory 10 + Age 5 + Video 3 + SEO 2 = 100
+```
 
-### 5. Voiceover rotation
-New table `cinematic_voice_rotation_state` tracking last-used voice + consecutive count. ElevenLabs voice pool: Jessica, Emma, Sophie, Olivia, James, Ryan, Michael with 40/40/20 weights and ≤3 consecutive rule. Wired into `cinematic-voiceover-*`.
+All sub-scores min/max normalized across the active 553-product population.
 
-### 6. Script + hook rotation
-Hook bank stored in `cinematic_hook_variants` (already exists). Add hook archetypes: problem, benefit, transformation, curiosity, question, lifestyle, pet_happiness, owner_frustration. Banned-phrase list extended ("Tired of scooping every day", etc.). Narrative-guard rejects on match.
+**Pinterest Momentum (30d window):** weighted blend of impressions, outbound clicks, saves, CTR, engagement rate from `pinterest_pin_performance` / `pinterest_pin_metrics`, with recency decay.
 
-### 7. Caption engine
-Hard cap 7 words; safe-zone enforced by existing `AutoFitText` + `SafeZoneFrame`. Add lint in validate step.
+**Margin:** `(price - cost_price) / price`. If `cost_price` missing, fall back to CJ supplier cost from `supplier_products` / `cj_us_winners`.
 
-### 8. Product-match QA
-New shared module `_shared/product-match-qa.ts`: compares voiceover/script/scene tags/category/species against product. Any mismatch → `mismatch_score > 0` → reject + requeue regen. Wired into autopublish gate.
+**Inventory:** weighted by US stock, EU stock, variant breadth, OOS penalty.
 
-### 9. Pinterest metadata generator
-SEO title, description, keywords, board, hashtag cluster, CTA — picked from rotation pool. CTA bank seeded: Shop Now, See Why Pet Parents Love It, Discover The Difference, Upgrade Your Pet's Daily Routine, Give Your Pet More Comfort.
+**Age:** rewards products 30–180 days old; penalizes <14 days (no data) and stale >365d without recent traction.
 
-### 10. Autonomous loop
-Cron (every 10 min): `pinterest-video-autopilot-tick` — pulls next ready asset, runs QA, publishes via existing `pinterest-video-publisher`, logs, advances. Respects daily cap (30 target) and 90-min gap.
+**Video:** boolean coverage across cinematic V3 / Pinterest video / CJ video assets.
 
-### Admin UI
-Add "Run Autopilot Recovery" button on `/admin/pinterest-video-queue` returning the 4 counters (repaired / regenerated / ready / discarded).
+**SEO:** clamped to ≤2% influence.
 
-## What I'm NOT doing automatically
-- I will NOT change the rendering engine itself (Remotion v4/v5 stays). The "TikTok ad quality" target requires real video generation (Runway/Veo) — that pipeline already exists in `cinematic_runway_jobs`. I'll route through it but won't rebuild it.
-- I will NOT delete existing failed rows; they get repaired in place or marked `discarded` with a reason.
+## Phase 2 — Category Diversification
 
-## Questions before I start
-1. **Scope of this turn**: this is realistically 8–12 hours of work and ~15 file changes + 2 migrations. Do you want me to ship it all in one go, or land it in phases (Phase A = recovery + flags + UI button; Phase B = rotation engines; Phase C = QA + cron)?
-2. **ElevenLabs voice IDs**: you listed names (Jessica, Emma, etc.). Do you already have voice IDs mapped in `cinematic_voice_profiles`, or should I seed defaults from the ElevenLabs public library?
-3. **Daily publish cap**: brief says "30+ pins/day" but existing `max_pins_per_day=6` and US-quality memory caps at 10. Override to 30, or keep the safety cap and let it ramp?
+Applied as a post-rank pass inside `revenue-priority-v2`. Limits enforced in Top 25/50/100/250. Promotions logged to `score_components_v2.diversification`.
+
+## Phase 3 — Revenue Tiers
+
+Percentile-based: A=top 5%, B=15%, C=30%, D=50%. Persisted on `product_intelligence.revenue_tier`.
+
+## Phase 4 — System Integration (BREAKING CHANGES — needs explicit go-ahead)
+
+Replace legacy score reads with `revenue_priority_score_v2` (with `revenue_tier` as secondary sort) in:
+1. `pinterest-autopilot` (score action)
+2. `export-merchant-feed` / feed prioritizer
+3. Homepage Featured + Trending Products queries
+4. `/admin` Product Intelligence dashboard
+5. `pinterest-creative-director` queue selection
+6. `cinematic-v3-dispatch` queue ordering
+7. `pinterest-revenue-brain` auto-promote gate
+
+Each integration shipped behind a single feature flag `app_config.revenue_priority_v2_active` so we can flip back instantly if validation regresses.
+
+## Phase 5 — Export System
+
+**New page** `/admin/revenue-priority-report` with Generate / Download PDF / CSV / JSON buttons.
+
+**New edge function `revenue-priority-export`** returns:
+- JSON: full report payload
+- CSV: per-product rows (rank, scores, tier, category, flags)
+- PDF: assembled client-side with `pdf-lib` or `jspdf` (already in project for traffic report)
+
+**PDF sections** (landscape, paginated, branded):
+Executive Summary · Catalog Stats · Old vs New Distribution · Category Distribution · Top 50 · Top 100 · Bottom 100 · Most Improved · Most Declined · Pinterest Winners/Losers · Inventory Risks · Margin Leaders · Missing Videos · Missing Pinterest Data · Missing Cost Data · Diversification Report · Tier Distribution · Recommended Actions · Timestamp / Version / Store.
+
+Charts rendered with existing chart util (recharts → canvas → PNG embed) for histograms, distribution, category breakdown.
+
+## Phase 6 — Backfill
+
+`revenue-priority-v2 / compute_all` run once. Writes V2 score + tier + components for all active products. No legacy fields modified.
+
+## Phase 7 — Validation
+
+`validate` action produces the comparison report (Top 50 old vs new, rank deltas, distribution, balance, influence breakdown per factor). Surfaced on the report page. **Feature flag stays OFF until you approve the validation output.**
+
+## Sequencing & approval gates
+
+1. I build Phases 1, 2, 3, 5, 7 (schema, engine, diversification, tiers, export UI/PDF, validation) — flag OFF, zero production impact.
+2. I run the backfill (Phase 6) and generate the validation report + downloadable PDF for you to review.
+3. **You approve** → I flip the flag and ship Phase 4 integrations in a single follow-up.
+
+## Open questions before I start
+
+1. **Cost fallback:** when neither `products.cost_price` nor CJ cost is available, should the product get margin score = 0 (penalized) or population median (neutral)? Penalizing surfaces the data gap; neutral avoids false demotion.
+2. **Pinterest momentum source of truth:** use `pinterest_pin_performance` (per-pin) aggregated to product, or `gi_pinterest_pin_metrics` (daily)? I'll default to `pinterest_pin_performance` joined via `pinterest_pin_queue.product_id` unless you prefer otherwise.
+3. **PDF engine:** reuse the existing `jspdf` setup from `trafficReportPdf` / `adminManualPdf` (faster, consistent branding) — confirm OK.
+4. **Active catalog definition:** "active" = `products.is_active = true AND feed_optimization_status != 'discontinued'`?
+
+Approve the plan (and answer the 4 questions, or say "your defaults") and I'll build Phases 1–3, 5, 7 in the next turn.
