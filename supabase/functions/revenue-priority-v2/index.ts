@@ -67,7 +67,7 @@ async function gatherCatalog() {
   // products
   const { data: products, error: pErr } = await admin
     .from("products")
-    .select("id, slug, name, category, price, cost_price, margin_percent, stock, us_stock, eu_stock, variant_stock, created_at")
+    .select("id, slug, name, category, price, cost_price, margin_percent, stock, effective_stock, us_stock, eu_stock, variant_stock, created_at, image_url, images, description, pinterest_ready, pinterest_eligible, pinterest_status, pinterest_disabled, pinterest_category, is_duplicate, dedupe_key, stock_sync_status")
     .eq("is_active", true)
     .limit(2000);
   if (pErr) throw pErr;
@@ -743,6 +743,223 @@ function buildReport(scored: any[], diversificationLog: any[], medianMargin: num
   };
 }
 
+// ───────────────────────────────────────────────────────── V2.1 remediation
+function sigOfName(name: any): string {
+  return String(name ?? "").toLowerCase().replace(/[^a-z0-9 ]+/g, "").split(/\s+/).slice(0, 6).join(" ");
+}
+
+function pinterestReadiness(p: any, intel: any, hasPin: boolean, hasVideo: boolean) {
+  const reasons: string[] = [];
+  let score = 0;
+  // Eligibility (35)
+  if (p.pinterest_disabled) reasons.push("disabled");
+  else if (p.pinterest_eligible || p.pinterest_ready) score += 35;
+  else reasons.push("not_eligible_flag");
+  // Asset (20)
+  const hasImg = !!(p.image_url || (Array.isArray(p.images) && p.images.length));
+  if (hasImg) score += 20; else reasons.push("no_image");
+  // Board / category mapping (10)
+  if (p.pinterest_category || intel?.primary_board) score += 10; else reasons.push("no_board_mapping");
+  // Copy (10)
+  if (intel?.pinterest_topics?.length || intel?.seo_title) score += 10; else reasons.push("no_copy");
+  // Stock (10)
+  const stock = Number(p.effective_stock ?? p.stock ?? 0) > 0 || Number(p.us_stock ?? 0) > 0 || Number(p.eu_stock ?? 0) > 0 || p.stock_sync_status === "ok";
+  if (stock) score += 10; else reasons.push("out_of_stock");
+  // Proven traction (10)
+  if (hasPin) score += 10; else reasons.push("no_pinterest_traction");
+  // Video bonus (5)
+  if (hasVideo) score += 5;
+  return { score: Math.min(100, score), blockers: reasons };
+}
+
+function creativeReadiness(p: any, intel: any, hasVideo: boolean) {
+  const reasons: string[] = [];
+  let score = 0;
+  // Image (25)
+  const imgs = Array.isArray(p.images) ? p.images.length : 0;
+  if (p.image_url) score += 15; else reasons.push("no_image");
+  if (imgs >= 3) score += 10; else if (imgs >= 1) score += 5; else reasons.push("few_images");
+  // Description (20)
+  const desc = String(p.description ?? "");
+  if (desc.length >= 400) score += 20;
+  else if (desc.length >= 120) score += 10;
+  else reasons.push("thin_description");
+  // SEO copy (15)
+  const seo = seoRaw(intel);
+  if (seo >= 70) score += 15; else if (seo >= 40) score += 8; else reasons.push("weak_seo_copy");
+  // Video (25)
+  if (hasVideo) score += 25; else reasons.push("no_video_asset");
+  // Pinterest copy (10)
+  if (intel?.pinterest_topics?.length || intel?.pinterest_description) score += 10; else reasons.push("no_pinterest_copy");
+  // Category clarity (5)
+  if (p.category && !["pet-supplies","misc","uncategorized","other","general"].includes(String(p.category).toLowerCase())) score += 5; else reasons.push("generic_category");
+  return { score: Math.min(100, score), missing: reasons };
+}
+
+function buildRemediationReport(ctx: Awaited<ReturnType<typeof gatherCatalog>>, v21Scored: any[]) {
+  const { products, intelMap, pinAgg, videoSet } = ctx;
+  const scoreByPid = new Map(v21Scored.map((r) => [r.product_id, r]));
+
+  // 1. Out-of-stock products (full list)
+  const oos = products
+    .filter((p: any) => inventoryRaw(p) <= 0)
+    .map((p: any) => {
+      const s = scoreByPid.get(p.id);
+      return {
+        product_id: p.id, slug: p.slug, name: p.name, category: p.category,
+        price: p.price, us_stock: p.us_stock ?? 0, eu_stock: p.eu_stock ?? 0,
+        effective_stock: p.effective_stock ?? p.stock ?? 0,
+        stock_sync_status: p.stock_sync_status, last_sync: (p as any).last_stock_sync_at ?? null,
+        v21_score: s?.score ?? null, v21_tier: s?.tier ?? null,
+        recommended_action: p.stock_sync_status === "discontinued"
+          ? "Mark inactive / replace"
+          : p.stock_sync_status === "no_data" ? "Trigger CJ stock sync"
+          : "Verify supplier inventory",
+      };
+    });
+
+  // 2. Duplicate clusters
+  const sigGroups = new Map<string, any[]>();
+  for (const p of products) {
+    const s = sigOfName(p.name);
+    if (!s) continue;
+    const arr = sigGroups.get(s) ?? [];
+    arr.push(p);
+    sigGroups.set(s, arr);
+  }
+  const duplicate_clusters = [...sigGroups.entries()]
+    .filter(([, arr]) => arr.length > 1)
+    .map(([signature, arr]) => {
+      const enriched = arr.map((p: any) => {
+        const s = scoreByPid.get(p.id);
+        return {
+          product_id: p.id, slug: p.slug, name: p.name, category: p.category,
+          price: p.price, dedupe_key: p.dedupe_key, is_duplicate: p.is_duplicate,
+          v21_score: s?.score ?? null,
+        };
+      }).sort((a, b) => (b.v21_score ?? 0) - (a.v21_score ?? 0));
+      return {
+        signature,
+        cluster_size: enriched.length,
+        keep_candidate: enriched[0]?.slug ?? null,
+        members: enriched,
+      };
+    })
+    .sort((a, b) => b.cluster_size - a.cluster_size);
+
+  // 3 + 4 + 5. Per-product readiness
+  const per_product = products.map((p: any) => {
+    const intel = intelMap.get(p.id);
+    const hasPin = !!pinAgg.get(String(p.id));
+    const hasVideo = videoSet.has(String(p.id));
+    const pin = pinterestReadiness(p, intel, hasPin, hasVideo);
+    const cre = creativeReadiness(p, intel, hasVideo);
+    const s = scoreByPid.get(p.id);
+    return {
+      product_id: p.id, slug: p.slug, name: p.name, category: p.category,
+      pinterest_readiness: pin.score, pinterest_blockers: pin.blockers,
+      creative_readiness: cre.score, creative_missing: cre.missing,
+      activation_ready: pin.score >= 70 && cre.score >= 70,
+      v21_score: s?.score ?? null, v21_tier: s?.tier ?? null,
+      has_pinterest_data: hasPin, has_video: hasVideo,
+    };
+  });
+
+  // creative_ready diagnosis: V2.1 boost requires raw_video AND raw_seo >= 60
+  const creative_ready_diag = per_product.map((r, i) => {
+    const p: any = products[i];
+    const intel = intelMap.get(p.id);
+    const seo = seoRaw(intel);
+    return {
+      slug: r.slug, name: r.name,
+      has_video: r.has_video, seo_raw: Math.round(seo),
+      reason: !r.has_video && seo < 60 ? "no_video_and_weak_seo"
+        : !r.has_video ? "missing_video"
+        : seo < 60 ? "weak_seo"
+        : "qualifies",
+    };
+  });
+  const qualifies = creative_ready_diag.filter((d) => d.reason === "qualifies").length;
+
+  // 6. Activation dashboard
+  const total = per_product.length;
+  const pinReady = per_product.filter((r) => r.pinterest_readiness >= 70).length;
+  const creReady = per_product.filter((r) => r.creative_readiness >= 70).length;
+  const both = per_product.filter((r) => r.activation_ready).length;
+
+  const tierCounts = { A: 0, B: 0, C: 0, D: 0 };
+  for (const r of v21Scored) (tierCounts as any)[r.tier] += 1;
+
+  return {
+    generated_at: new Date().toISOString(),
+    version: "RPS_V2.1_REMEDIATION",
+    persist: false,
+    catalog_size: total,
+
+    out_of_stock: {
+      total: oos.length,
+      by_status: oos.reduce((acc: any, r) => { acc[r.stock_sync_status || "unknown"] = (acc[r.stock_sync_status || "unknown"] || 0) + 1; return acc; }, {}),
+      products: oos,
+    },
+
+    duplicate_clusters: {
+      total_clusters: duplicate_clusters.length,
+      total_products_in_clusters: duplicate_clusters.reduce((a, c) => a + c.cluster_size, 0),
+      clusters: duplicate_clusters,
+    },
+
+    creative_ready_diagnosis: {
+      qualifies,
+      missing_video: creative_ready_diag.filter((d) => d.reason === "missing_video").length,
+      weak_seo: creative_ready_diag.filter((d) => d.reason === "weak_seo").length,
+      both_missing: creative_ready_diag.filter((d) => d.reason === "no_video_and_weak_seo").length,
+      detail: creative_ready_diag.slice(0, 200),
+      root_cause: qualifies === 0
+        ? "V2.1 'creative_ready' boost requires has_video AND raw_seo>=60 simultaneously. Either video coverage is too sparse or SEO scoring threshold is too high relative to current copy quality."
+        : "Boost is firing for at least some products.",
+    },
+
+    pinterest_readiness: {
+      ready: pinReady,
+      not_ready: total - pinReady,
+      avg_score: Math.round(per_product.reduce((a, r) => a + r.pinterest_readiness, 0) / Math.max(1, total)),
+      top_blockers: tallyReasons(per_product.flatMap((r) => r.pinterest_blockers)),
+      products: per_product.map((r) => ({ slug: r.slug, name: r.name, score: r.pinterest_readiness, blockers: r.pinterest_blockers })),
+    },
+
+    creative_readiness: {
+      ready: creReady,
+      not_ready: total - creReady,
+      avg_score: Math.round(per_product.reduce((a, r) => a + r.creative_readiness, 0) / Math.max(1, total)),
+      top_missing: tallyReasons(per_product.flatMap((r) => r.creative_missing)),
+      products: per_product.map((r) => ({ slug: r.slug, name: r.name, score: r.creative_readiness, missing: r.creative_missing })),
+    },
+
+    activation_dashboard: {
+      catalog: total,
+      pinterest_ready_pct: Math.round((pinReady / Math.max(1, total)) * 100),
+      creative_ready_pct: Math.round((creReady / Math.max(1, total)) * 100),
+      fully_activation_ready: both,
+      fully_activation_ready_pct: Math.round((both / Math.max(1, total)) * 100),
+      v21_tier_distribution: tierCounts,
+      go_no_go: both >= Math.floor(total * 0.10)
+        ? "GO — enough activation-ready inventory to flip flag safely."
+        : "NO-GO — fewer than 10% of catalog is activation-ready. Close gaps before flipping revenue_priority_v2_active.",
+      blocking_issues: [
+        oos.length > 0 ? `${oos.length} out-of-stock products in active catalog` : null,
+        duplicate_clusters.length > 0 ? `${duplicate_clusters.length} duplicate name clusters` : null,
+        qualifies === 0 ? "creative_ready boost never fires (no product passes video + seo gate)" : null,
+      ].filter(Boolean),
+    },
+  };
+}
+
+function tallyReasons(arr: string[]) {
+  const m = new Map<string, number>();
+  for (const x of arr) m.set(x, (m.get(x) ?? 0) + 1);
+  return [...m.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+}
+
 // ───────────────────────────────────────────────────────── handler
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -784,6 +1001,12 @@ Deno.serve(async (req) => {
       const v2Report = buildReport(scored, diversificationLog, medianMargin);
       const compare = buildCompareReport(scored, v21.scored);
       return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), report: { compare, v2: v2Report, v21: v21Report } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "remediation_report") {
+      const v21 = computeAllV21(ctx);
+      const report = buildRemediationReport(ctx, v21.scored);
+      return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), report }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ ok: false, message: `Unknown action: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

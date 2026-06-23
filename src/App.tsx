@@ -459,6 +459,7 @@ const ProductIntelligencePage = lazyWithRetry(() => import("./pages/admin/Produc
 const FeedIssuesQueuePage = lazyWithRetry(() => import("./pages/admin/FeedIssuesQueuePage"));
 const ScoreCalibrationPage = lazyWithRetry(() => import("./pages/admin/ScoreCalibrationPage"));
 const RevenuePriorityReportPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityReportPage"));
+const RevenuePriorityRemediationPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityRemediationPage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2456,6 +2457,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenuePriorityReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="revenue-priority-remediation"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenuePriorityRemediationPage />
                                 </Suspense>
                               }
                             />
