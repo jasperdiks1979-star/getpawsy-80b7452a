@@ -241,7 +241,7 @@ export default function LockdownClusterArticle() {
                 <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-4">{section.heading}</h2>
                 <div
                   className="prose prose-sm md:prose-base max-w-none text-muted-foreground [&_a]:text-primary [&_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: section.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }}
                 />
               </section>
             ))}

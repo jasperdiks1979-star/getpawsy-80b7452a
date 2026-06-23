@@ -787,7 +787,7 @@ export function EmailCampaignManager({ onNavigateToSubscribers }: EmailCampaignM
               <h2 className="text-xl font-semibold mb-4">{selectedCampaign?.subject}</h2>
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: selectedCampaign?.content || "" }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedCampaign?.content || "") }}
               />
             </div>
           </div>
