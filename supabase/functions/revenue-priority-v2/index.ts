@@ -966,6 +966,10 @@ Deno.serve(async (req) => {
 
   // Auth: require an authenticated admin
   try {
+    // Internal service-to-service bypass
+    const internalSecret = req.headers.get("x-internal-secret");
+    const isInternal = internalSecret && internalSecret === Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    if (!isInternal) {
     const auth = req.headers.get("Authorization") ?? "";
     const token = auth.replace(/^Bearer\s+/i, "");
     if (!token) return new Response(JSON.stringify({ ok: false, message: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -974,6 +978,7 @@ Deno.serve(async (req) => {
     if (!user) return new Response(JSON.stringify({ ok: false, message: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) return new Response(JSON.stringify({ ok: false, message: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = body.action ?? new URL(req.url).searchParams.get("action") ?? "report";
