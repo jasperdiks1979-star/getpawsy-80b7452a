@@ -376,6 +376,10 @@ export default function RevenuePriorityReportPage() {
             {loading === "compare" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
             Compare V2 vs V2.1
           </Button>
+          <Button onClick={handlePersistV21} disabled={!!loading} variant="default">
+            {loading === "compute_v21" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+            Persist V2.1 (write to DB)
+          </Button>
           <Button onClick={() => report && generatePdf(report)} disabled={!report || !!loading} variant="outline">
             <FileText className="h-4 w-4 mr-2" /> Download PDF
           </Button>
