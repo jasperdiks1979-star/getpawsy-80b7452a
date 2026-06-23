@@ -10,6 +10,31 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
+// Background task helper (Supabase Edge Runtime). Falls back to no-op detach if unavailable.
+// deno-lint-ignore no-explicit-any
+const _ER: any = (globalThis as any).EdgeRuntime;
+function background(p: Promise<unknown>) {
+  if (_ER && typeof _ER.waitUntil === "function") {
+    try { _ER.waitUntil(p); return; } catch { /* fall through */ }
+  }
+  // Detach — caller already returned; let it run best-effort.
+  p.catch((e) => console.error("[bg]", e));
+}
+
+// Mark stale "running" rows as failed (timeout reaper).
+async function reapStaleRuns(sb: any) {
+  const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  await sb
+    .from("product_intelligence_runs")
+    .update({
+      status: "failed",
+      error_message: "timeout_or_killed (no progress for >5min)",
+      finished_at: new Date().toISOString(),
+    })
+    .eq("status", "running")
+    .lt("started_at", cutoff);
+}
+
 interface Body {
   mode?:
     | "dry_run"
@@ -33,6 +58,9 @@ Deno.serve(async (req) => {
   const body: Body = await req.json().catch(() => ({}));
   const mode = body.mode ?? "scan";
   const trigger = body.trigger_source ?? "manual";
+
+  // Always reap stale runs first so the dashboard reflects reality.
+  await reapStaleRuns(sb);
 
   // Auth: require admin caller for manual triggers
   if (trigger === "manual") {
@@ -133,15 +161,22 @@ Deno.serve(async (req) => {
   const { data: boards } = await sb.from("pinterest_boards").select("id,name,description").limit(200);
   const boardList = (boards ?? []).map((b: any) => ({ name: b.name, description: b.description ?? "" }));
 
-  let scanned = 0;
-  let failed = 0;
-  let skipped = 0;
-  let creditsUsed = 0;
-  const failures: Array<Record<string, unknown>> = [];
-  let blocked: { status: number; provider_error: string; product_id: string } | null = null;
-  let firstFailing: Record<string, unknown> | null = null;
+  // For scan_one, run synchronously and return full diagnostics. For everything
+  // else, kick off the loop in the background so the edge function returns immediately
+  // and the request does not hit the wall-time limit on large batches.
+  const runLoop = async () => {
+    console.log(`[run ${run.id}] loop start, products=${list.length}`);
+    let scanned = 0;
+    let failed = 0;
+    let skipped = 0;
+    let creditsUsed = 0;
+    const failures: Array<Record<string, unknown>> = [];
+    let blocked: { status: number; provider_error: string; product_id: string } | null = null;
+    let firstFailing: Record<string, unknown> | null = null;
+    let lastProgressAt = 0;
 
-  for (const p of list) {
+    for (const p of list) {
+    console.log(`[run ${run.id}] -> ${p.id} ${String(p.name).slice(0,40)}`);
     // Phase 2 — Google category (deterministic, free)
     const gpc = classifyGoogleProductCategory(p.name, p.category, p.description);
 
@@ -182,6 +217,14 @@ Deno.serve(async (req) => {
         scan_status: "failed",
         scan_error: `http_${aiCall.status}:${(aiCall.providerError ?? "").slice(0, 200)}`,
       }, { onConflict: "product_id" });
+      // Progress checkpoint
+      if (Date.now() - lastProgressAt > 3000) {
+        await sb.from("product_intelligence_runs").update({
+          products_scanned: scanned, products_failed: failed,
+          error_message: firstFailing ? String((firstFailing as any).provider_error ?? "") : null,
+        }).eq("id", run.id);
+        lastProgressAt = Date.now();
+      }
       continue;
     }
 
@@ -246,6 +289,12 @@ Deno.serve(async (req) => {
         feed_fixes: ai.feed_fixes ?? [],
       }, { onConflict: "product_id" });
       scanned++;
+      if (Date.now() - lastProgressAt > 3000) {
+        await sb.from("product_intelligence_runs").update({
+          products_scanned: scanned, products_failed: failed, credits_used: creditsUsed,
+        }).eq("id", run.id);
+        lastProgressAt = Date.now();
+      }
     } catch (e) {
       failed++;
       const err = e as Error;
@@ -261,9 +310,9 @@ Deno.serve(async (req) => {
       failures.push(diag);
       if (!firstFailing) firstFailing = diag;
     }
-  }
+    }
 
-  const status = blocked ? "blocked_no_credits" : "success";
+    const status = blocked ? "blocked_no_credits" : "success";
   const rootCause = blocked
     ? `AI credits exhausted (HTTP 402) on product ${blocked.product_id}. ${blocked.provider_error}`
     : firstFailing
@@ -298,19 +347,42 @@ Deno.serve(async (req) => {
       proposed_fix: proposedFix,
     },
   }).eq("id", run.id);
+    return { status, scanned, failed, skipped, blocked, firstFailing, rootCause, proposedFix, creditsUsed };
+  };
+
+  if (mode === "scan_one") {
+    const r = await runLoop();
+    return json({
+      ok: true,
+      run_id: run.id,
+      status: r.status,
+      scanned: r.scanned,
+      failed: r.failed,
+      skipped: r.skipped,
+      blocked: r.blocked,
+      first_failing: r.firstFailing,
+      root_cause: r.rootCause,
+      proposed_fix: r.proposedFix,
+      credits_used: r.creditsUsed,
+    });
+  }
+
+  // Background execution for batch modes — return immediately with run_id.
+  background(runLoop().catch(async (e) => {
+    const err = e as Error;
+    await sb.from("product_intelligence_runs").update({
+      status: "failed",
+      error_message: `loop_crash:${err.message}`,
+      finished_at: new Date().toISOString(),
+    }).eq("id", run.id);
+  }));
 
   return json({
     ok: true,
     run_id: run.id,
-    status,
-    scanned,
-    failed,
-    skipped,
-    blocked,
-    first_failing: firstFailing,
-    root_cause: rootCause,
-    proposed_fix: proposedFix,
-    credits_used: creditsUsed,
+    status: "running",
+    queued_products: list.length,
+    message: "Scan started in background. Poll product_intelligence_runs for progress.",
   });
 });
 
@@ -361,6 +433,8 @@ Return JSON with this exact shape:
 }`;
 
   try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25_000);
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
@@ -372,7 +446,9 @@ Return JSON with this exact shape:
         ],
         response_format: { type: "json_object" },
       }),
+      signal: ctrl.signal,
     });
+    clearTimeout(timer);
     const raw = await res.text();
     if (!res.ok) {
       let providerError = raw.slice(0, 500);
