@@ -10,7 +10,8 @@ Deno.serve(async (req) => {
   try {
     // One-off internal backfill endpoint. Will be deleted after run.
     const body = await req.json();
-    const updates: Array<{ id: string; t: string; d: string }> = body.updates || [];
+    const updates: Array<Record<string, any>> = body.updates || [];
+    const mode: string = body.mode || "seo"; // "seo" | "v2"
     if (!Array.isArray(updates) || updates.length === 0) {
       return new Response(JSON.stringify({ ok: false, error: "no updates" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
     }
@@ -22,10 +23,18 @@ Deno.serve(async (req) => {
     for (let i = 0; i < updates.length; i += chunk) {
       const batch = updates.slice(i, i + chunk);
       await Promise.all(batch.map(async (u) => {
-        const { error } = await supabase
-          .from("products")
-          .update({ seo_title: u.t, seo_meta_description: u.d, updated_at: new Date().toISOString() })
-          .eq("id", u.id);
+        let payload: Record<string, any> = {};
+        if (mode === "seo") {
+          payload = { seo_title: u.t, seo_meta_description: u.d, updated_at: new Date().toISOString() };
+        } else if (mode === "v2") {
+          payload = {
+            revenue_priority_score_v2: u.score,
+            revenue_tier: u.tier,
+            score_components_v2: u.components,
+            revenue_priority_v2_updated_at: new Date().toISOString(),
+          };
+        }
+        const { error } = await supabase.from("products").update(payload).eq("id", u.id);
         if (error) { fail++; if (errors.length < 5) errors.push(error.message); } else ok++;
       }));
     }
