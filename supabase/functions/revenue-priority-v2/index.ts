@@ -786,6 +786,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), report: { compare, v2: v2Report, v21: v21Report } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "remediation_report") {
+      const v21 = computeAllV21(ctx);
+      const report = buildRemediationReport(ctx, v21.scored);
+      return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), report }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ ok: false, message: `Unknown action: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e: any) {
     console.error("revenue-priority-v2 error:", e);
