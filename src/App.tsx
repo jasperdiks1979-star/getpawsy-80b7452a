@@ -2434,6 +2434,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="feed-issues-queue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FeedIssuesQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
