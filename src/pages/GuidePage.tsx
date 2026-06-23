@@ -480,7 +480,7 @@ const GuidePage = () => {
       }
     }
     
-    return result;
+    return sanitizeHtml(result);
   };
 
   // Updated year badge
