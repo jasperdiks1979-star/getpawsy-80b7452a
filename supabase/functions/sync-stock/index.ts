@@ -381,6 +381,18 @@ async function syncBatch(
     if (result.confirmed && result.stock !== null) {
       // CJ confirmed the stock value — update it
       updateData.stock = result.stock;
+      // Also write per-warehouse columns so the generated `effective_stock`,
+      // `inventory_score`, and `inventory_priority` resolve correctly.
+      // Only overwrite the warehouse that CJ confirmed; leave the others NULL
+      // so we never falsely zero-out a warehouse we have no data for.
+      if (result.warehouse === 'US') updateData.us_stock = result.stock;
+      else if (result.warehouse === 'EU') updateData.eu_stock = result.stock;
+      else if (result.warehouse === 'CN') updateData.cn_stock = result.stock;
+      else if (result.warehouse === 'none' || result.status === 'discontinued') {
+        updateData.us_stock = 0;
+        updateData.eu_stock = 0;
+        updateData.cn_stock = 0;
+      }
       updateData.stock_sync_status = result.status === 'discontinued' ? 'discontinued' : 'ok';
       updateData.stock_sync_error = null;
       console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock=${result.stock} (${result.warehouse})`);
