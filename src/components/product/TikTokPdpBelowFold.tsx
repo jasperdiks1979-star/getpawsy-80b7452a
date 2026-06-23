@@ -1,3 +1,5 @@
+import { sanitizeHtml } from '@/lib/sanitize';
+
 /**
  * Below-the-fold details for the TikTok PDP variant. Loaded lazily so the
  * initial paint contains only the hero + buy box.
@@ -21,8 +23,8 @@ export default function TikTokPdpBelowFold({ product }: { product: Product }) {
           {descriptionHasHtml ? (
             <div
               className="prose prose-sm max-w-none"
-              // Description HTML originates from the trusted product CMS; sanitized upstream.
-              dangerouslySetInnerHTML={{ __html: product.description }}
+              // Description HTML originates from third-party suppliers (CJ); sanitize defensively.
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
             />
           ) : (
             <p className="whitespace-pre-line">{product.description}</p>
