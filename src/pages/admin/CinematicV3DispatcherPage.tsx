@@ -7,6 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Play, AlertTriangle, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ConfirmAiCostDialog } from "@/components/admin/ConfirmAiCostDialog";
+import { AiCostBreakdown } from "@/components/admin/AiCostBreakdown";
+import { assessCostAsync, estimatePipelineCredits, type CostAssessment } from "@/lib/aiPricing";
 
 type Config = {
   enabled: boolean;
@@ -86,6 +89,15 @@ export default function CinematicV3DispatcherPage() {
   const [lastPolled, setLastPolled] = useState<Date | null>(null);
   const [handoff, setHandoff] = useState<{ approved: number; attached: number; queued: number; uploading: number; published: number; failed: number } | null>(null);
   const [draining, setDraining] = useState(false);
+  const [costAssessment, setCostAssessment] = useState<CostAssessment | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  async function refreshAssessment() {
+    const a = await assessCostAsync(estimatePipelineCredits("cinematic_v3", 1));
+    setCostAssessment(a);
+  }
+
+  useEffect(() => { void refreshAssessment(); }, []);
 
   async function load() {
     setLoading(true);
@@ -146,6 +158,11 @@ export default function CinematicV3DispatcherPage() {
     setRefilling(false);
   }
 
+  async function requestDispatch() {
+    await refreshAssessment();
+    setConfirmOpen(true);
+  }
+
   async function triggerDispatch() {
     setDispatching(true);
     const { data, error } = await supabase.functions.invoke("cinematic-v3-auto-dispatcher", { body: {} });
@@ -193,7 +210,7 @@ export default function CinematicV3DispatcherPage() {
           <Button variant="outline" size="sm" onClick={triggerRefill} disabled={refilling}>
             {refilling ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Activity className="h-4 w-4 mr-1" />} Refill queue
           </Button>
-          <Button size="sm" onClick={triggerDispatch} disabled={dispatching}>
+          <Button size="sm" onClick={requestDispatch} disabled={dispatching}>
             {dispatching ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1" />} Dispatch now
           </Button>
           <Button variant="outline" size="sm" onClick={triggerDrain} disabled={draining}>
@@ -201,6 +218,10 @@ export default function CinematicV3DispatcherPage() {
           </Button>
         </div>
       </header>
+
+      {costAssessment && (
+        <AiCostBreakdown assessment={costAssessment} scopeLabel="per dispatch (1 video render)" />
+      )}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="p-4">
@@ -326,6 +347,18 @@ export default function CinematicV3DispatcherPage() {
           </table>
         </div>
       </Card>
+
+      {costAssessment && (
+        <ConfirmAiCostDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Dispatch next cinematic V3 render"
+          productCount={1}
+          assessment={costAssessment}
+          confirmLabel="Dispatch"
+          onConfirm={() => { setConfirmOpen(false); void triggerDispatch(); }}
+        />
+      )}
     </div>
   );
 }
