@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { 
   Send, 
   Plus, 
@@ -786,7 +787,7 @@ export function EmailCampaignManager({ onNavigateToSubscribers }: EmailCampaignM
               <h2 className="text-xl font-semibold mb-4">{selectedCampaign?.subject}</h2>
               <div 
                 className="prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: selectedCampaign?.content || "" }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedCampaign?.content || "") }}
               />
             </div>
           </div>

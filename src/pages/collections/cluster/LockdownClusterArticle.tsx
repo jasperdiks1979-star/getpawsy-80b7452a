@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Home, ArrowRight } from 'lucide-react';
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList,
@@ -240,7 +241,7 @@ export default function LockdownClusterArticle() {
                 <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-4">{section.heading}</h2>
                 <div
                   className="prose prose-sm md:prose-base max-w-none text-muted-foreground [&_a]:text-primary [&_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: section.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }}
                 />
               </section>
             ))}

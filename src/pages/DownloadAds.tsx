@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import {
@@ -886,7 +887,7 @@ const DownloadAds = () => {
                               >
                                 {previewSearch && cell?.toLowerCase().includes(previewSearch.toLowerCase()) ? (
                                   <span dangerouslySetInnerHTML={{
-                                    __html: cell.replace(
+                                    __html: sanitizeHtml(cell).replace(
                                       new RegExp(`(${previewSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
                                       '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>'
                                     )
