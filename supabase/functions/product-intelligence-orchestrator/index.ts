@@ -23,16 +23,40 @@ function background(p: Promise<unknown>) {
 
 // Mark stale "running" rows as failed (timeout reaper).
 async function reapStaleRuns(sb: any) {
-  const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-  await sb
+  const cutoffMs = Date.now() - 5 * 60 * 1000;
+  const { data: latestWrite } = await sb
+    .from("product_intelligence")
+    .select("updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestWriteMs = Date.parse(latestWrite?.updated_at ?? "");
+  const { data: running } = await sb
     .from("product_intelligence_runs")
-    .update({
-      status: "failed",
-      error_message: "timeout_or_killed (no progress for >5min)",
-      finished_at: new Date().toISOString(),
-    })
-    .eq("status", "running")
-    .lt("started_at", cutoff);
+    .select("id,started_at,report")
+    .eq("status", "running");
+
+  for (const run of running ?? []) {
+    const heartbeat = typeof run?.report?.heartbeat_at === "string" ? run.report.heartbeat_at : run.started_at;
+    const observedProgressMs = Math.max(Date.parse(heartbeat), Number.isFinite(latestWriteMs) ? latestWriteMs : 0);
+    if (observedProgressMs < cutoffMs) {
+      await sb
+        .from("product_intelligence_runs")
+        .update({
+          status: "failed",
+          error_message: "timeout_or_killed (no progress for >5min)",
+          finished_at: new Date().toISOString(),
+        })
+        .eq("id", run.id);
+    }
+  }
+}
+
+async function countRemainingActiveProducts(sb: any): Promise<number> {
+  const { data: products } = await sb.from("products").select("id").eq("is_active", true).limit(10000);
+  const { data: enriched } = await sb.from("product_intelligence").select("product_id").limit(10000);
+  const done = new Set((enriched ?? []).map((r: any) => r.product_id));
+  return (products ?? []).filter((p: any) => !done.has(p.id)).length;
 }
 
 interface Body {
@@ -119,6 +143,27 @@ Deno.serve(async (req) => {
       reason: "engine_disabled",
       message: "product_intelligence_config.enabled = false. No products were scanned. Zero credits used.",
     });
+  }
+
+  // Duplicate guard: a resume request must reuse an actually-live scan_all run.
+  if (mode === "scan_all") {
+    const { data: activeRun } = await sb
+      .from("product_intelligence_runs")
+      .select("id,products_targeted,products_scanned,products_failed,credits_used,started_at,report")
+      .eq("mode", "scan_all")
+      .eq("status", "running")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeRun) {
+      return json({
+        ok: true,
+        run_id: activeRun.id,
+        status: "running",
+        queued_products: await countRemainingActiveProducts(sb),
+        message: "Existing scan_all is already running. Reusing active run; no duplicate started.",
+      });
+    }
   }
 
   // Create run row
@@ -240,6 +285,7 @@ Deno.serve(async (req) => {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed,
           error_message: firstFailing ? String((firstFailing as any).provider_error ?? "") : null,
+          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
@@ -310,6 +356,7 @@ Deno.serve(async (req) => {
       if (Date.now() - lastProgressAt > 3000) {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed, credits_used: creditsUsed,
+          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
