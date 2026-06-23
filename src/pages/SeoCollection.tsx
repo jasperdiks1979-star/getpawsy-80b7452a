@@ -867,13 +867,13 @@ const SeoCollection = () => {
                   <div 
                     className="text-muted-foreground text-base leading-relaxed max-w-4xl prose prose-headings:text-foreground prose-headings:font-display prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-2 prose-p:mb-4 prose-a:text-primary prose-a:underline prose-strong:text-foreground"
                     dangerouslySetInnerHTML={{ 
-                      __html: collection.seo_intro
+                      __html: sanitizeHtml(collection.seo_intro
                         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
                         .replace(/^## (.+)$/gm, '<h2>$1</h2>')
                         .replace(/\n\n/g, '</p><p>')
                         .replace(/^(?!<[h|s])(.+)/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
-                        .replace(/<p><\/p>/g, '')
+                        .replace(/<p><\/p>/g, ''))
                     }}
                   />
                   {/* Secondary Keywords as Tags */}
