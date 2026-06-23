@@ -123,3 +123,26 @@ export async function assessCostAsync(requiredCredits: number): Promise<CostAsse
   const balance = await fetchAiBalance();
   return assessCost(requiredCredits, balance);
 }
+
+/**
+ * Canonical credits-per-operation estimates for AI-powered admin pipelines.
+ * Update here whenever a pipeline's average AI usage changes — every UI then
+ * stays in sync. Numbers are conservative upper bounds so confirm dialogs
+ * never undersell cost.
+ */
+export const PIPELINE_CREDITS = {
+  /** Product Intelligence Engine (Gemini Flash, copy-only). */
+  product_intelligence: 0.2,
+  /** Pinterest Creative Director: AI image + copy per product. */
+  pinterest_creative_director: 2,
+  /** Pinterest warmup / regen: AI hooks + image per product. */
+  pinterest_regeneration: 2,
+  /** Cinematic V3 dispatch: full video render (image gen + scene compose). */
+  cinematic_v3: 15,
+} as const;
+
+export type PipelineKey = keyof typeof PIPELINE_CREDITS;
+
+export function estimatePipelineCredits(pipeline: PipelineKey, productCount: number): number {
+  return PIPELINE_CREDITS[pipeline] * Math.max(0, productCount);
+}
