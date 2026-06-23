@@ -11,7 +11,7 @@ import autoTable from "jspdf-autotable";
 
 type Report = any;
 
-async function callFn(action: "report" | "compute_all" | "validate" | "report_v21" | "compare_v21"): Promise<Report> {
+async function callFn(action: "report" | "compute_all" | "compute_all_v21" | "validate" | "report_v21" | "compare_v21"): Promise<Report> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/revenue-priority-v2`;
@@ -232,7 +232,7 @@ export default function RevenuePriorityReportPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [v21, setV21] = useState<Report | null>(null);
   const [compare, setCompare] = useState<Report | null>(null);
-  const [loading, setLoading] = useState<"" | "report" | "compute" | "v21" | "compare">("");
+  const [loading, setLoading] = useState<"" | "report" | "compute" | "compute_v21" | "v21" | "compare">("");
 
   async function handle(action: "report" | "compute") {
     setLoading(action);
@@ -245,6 +245,16 @@ export default function RevenuePriorityReportPage() {
     } finally {
       setLoading("");
     }
+  }
+
+  async function handlePersistV21() {
+    setLoading("compute_v21");
+    try {
+      const r = await callFn("compute_all_v21");
+      setV21(r);
+      toast.success(`Persisted V2.1 scores for ${r.catalog.active_products} products`);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+    finally { setLoading(""); }
   }
 
   async function handleV21() {
@@ -365,6 +375,10 @@ export default function RevenuePriorityReportPage() {
           <Button onClick={handleCompare} disabled={!!loading} variant="secondary">
             {loading === "compare" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
             Compare V2 vs V2.1
+          </Button>
+          <Button onClick={handlePersistV21} disabled={!!loading} variant="default">
+            {loading === "compute_v21" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+            Persist V2.1 (write to DB)
           </Button>
           <Button onClick={() => report && generatePdf(report)} disabled={!report || !!loading} variant="outline">
             <FileText className="h-4 w-4 mr-2" /> Download PDF
