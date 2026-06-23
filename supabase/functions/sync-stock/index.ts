@@ -214,6 +214,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
     
     let totalStock = 0;
     let warehouse = 'unknown';
+    let firstVid: string | null = null;
 
     if (inventoryList.length > 0) {
       let usStock = 0;
@@ -221,6 +222,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       let hasUs = false;
 
       for (const inv of inventoryList) {
+        if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
         if (inv.countryCode === 'US') {
           usStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
           hasUs = true;
@@ -258,6 +260,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       warehouse,
       status: 'ok',
       message: `Stock confirmed: ${totalStock} (${warehouse})`,
+      vid: firstVid,
     };
   } catch (err) {
     return {
