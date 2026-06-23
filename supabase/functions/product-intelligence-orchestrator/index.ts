@@ -24,6 +24,13 @@ function background(p: Promise<unknown>) {
 // Mark stale "running" rows as failed (timeout reaper).
 async function reapStaleRuns(sb: any) {
   const cutoffMs = Date.now() - 5 * 60 * 1000;
+  const { data: latestWrite } = await sb
+    .from("product_intelligence")
+    .select("updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latestWriteMs = Date.parse(latestWrite?.updated_at ?? "");
   const { data: running } = await sb
     .from("product_intelligence_runs")
     .eq("status", "running")
@@ -31,7 +38,8 @@ async function reapStaleRuns(sb: any) {
 
   for (const run of running ?? []) {
     const heartbeat = typeof run?.report?.heartbeat_at === "string" ? run.report.heartbeat_at : run.started_at;
-    if (Date.parse(heartbeat) < cutoffMs) {
+    const observedProgressMs = Math.max(Date.parse(heartbeat), Number.isFinite(latestWriteMs) ? latestWriteMs : 0);
+    if (observedProgressMs < cutoffMs) {
       await sb
         .from("product_intelligence_runs")
         .update({
