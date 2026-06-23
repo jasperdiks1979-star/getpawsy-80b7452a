@@ -2452,6 +2452,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="revenue-priority-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenuePriorityReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
