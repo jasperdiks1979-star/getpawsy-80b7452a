@@ -21955,6 +21955,10 @@ export type Database = {
           product_type: string | null
           quality_flags: string[] | null
           quality_score: number | null
+          revenue_priority_score_v2: number | null
+          revenue_priority_v2_updated_at: string | null
+          revenue_tier: string | null
+          score_components_v2: Json | null
           seo_keywords: string[] | null
           seo_meta_description: string | null
           seo_tier: string
@@ -22094,6 +22098,10 @@ export type Database = {
           product_type?: string | null
           quality_flags?: string[] | null
           quality_score?: number | null
+          revenue_priority_score_v2?: number | null
+          revenue_priority_v2_updated_at?: string | null
+          revenue_tier?: string | null
+          score_components_v2?: Json | null
           seo_keywords?: string[] | null
           seo_meta_description?: string | null
           seo_tier?: string
@@ -22233,6 +22241,10 @@ export type Database = {
           product_type?: string | null
           quality_flags?: string[] | null
           quality_score?: number | null
+          revenue_priority_score_v2?: number | null
+          revenue_priority_v2_updated_at?: string | null
+          revenue_tier?: string | null
+          score_components_v2?: Json | null
           seo_keywords?: string[] | null
           seo_meta_description?: string | null
           seo_tier?: string
