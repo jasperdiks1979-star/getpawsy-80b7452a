@@ -18,6 +18,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmAiCostDialog } from "@/components/admin/ConfirmAiCostDialog";
+import { AiCostBreakdown } from "@/components/admin/AiCostBreakdown";
+import { assessCostAsync, estimatePipelineCredits, type CostAssessment } from "@/lib/aiPricing";
 
 type Row = {
   id: string;
@@ -55,6 +58,9 @@ export default function PinterestWarmupPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [imgInfo, setImgInfo] = useState<Record<string, ImgInfo>>({});
   const [regenProgress, setRegenProgress] = useState<{ done: number; total: number } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingScope, setPendingScope] = useState<"all" | "overused" | null>(null);
+  const [assessment, setAssessment] = useState<CostAssessment | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -187,12 +193,20 @@ export default function PinterestWarmupPage() {
       toast.info("No overused hooks (>3) found");
       return;
     }
-    return runRegenerate("overused");
+    return openConfirm("overused", overused.length);
   };
 
   const regenerateAll = () => {
-    if (!confirm("Regenerate ALL warmup drafts with AI hooks + images? This calls the Creative Director for every product and may take several minutes.")) return;
-    return runRegenerate("all");
+    const distinctProducts = new Set(rows.map((r) => r.product_id)).size;
+    return openConfirm("all", distinctProducts);
+  };
+
+  const openConfirm = async (scope: "all" | "overused", count: number) => {
+    const credits = estimatePipelineCredits("pinterest_regeneration", count);
+    const a = await assessCostAsync(credits);
+    setAssessment(a);
+    setPendingScope(scope);
+    setConfirmOpen(true);
   };
 
   // ---------- partitions ----------
@@ -242,6 +256,27 @@ export default function PinterestWarmupPage() {
           </Button>
         </div>
       </header>
+
+      {assessment && pendingScope && (
+        <AiCostBreakdown assessment={assessment} scopeLabel={`Pinterest regeneration · ${pendingScope}`} />
+      )}
+
+      {assessment && pendingScope && (
+        <ConfirmAiCostDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={pendingScope === "all" ? "Regenerate ALL warmup drafts" : "Regenerate overused hooks"}
+          productCount={Math.round(assessment.required.credits / 2)}
+          assessment={assessment}
+          confirmLabel="Regenerate"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            const scope = pendingScope;
+            setPendingScope(null);
+            if (scope) void runRegenerate(scope);
+          }}
+        />
+      )}
 
       {regenProgress && (
         <Card>

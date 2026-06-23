@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmAiCostDialog } from "@/components/admin/ConfirmAiCostDialog";
+import { assessCostAsync, estimatePipelineCredits, type CostAssessment } from "@/lib/aiPricing";
 
 type Decision = {
   product_id: string;
@@ -23,6 +25,9 @@ export default function PinterestProducts() {
   const [rows, setRows] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [assessment, setAssessment] = useState<CostAssessment | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -44,6 +49,13 @@ export default function PinterestProducts() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const requestPromote = async (productId: string) => {
+    const a = await assessCostAsync(estimatePipelineCredits("pinterest_creative_director", 1));
+    setAssessment(a);
+    setPendingId(productId);
+    setConfirmOpen(true);
+  };
 
   const promote = async (productId: string) => {
     setRunning(true);
@@ -113,7 +125,7 @@ export default function PinterestProducts() {
                     </Badge>
                   </td>
                   <td className="p-2 text-right">
-                    <Button size="sm" variant="ghost" disabled={running} onClick={() => promote(d.product_id)}>
+                    <Button size="sm" variant="ghost" disabled={running} onClick={() => requestPromote(d.product_id)}>
                       <Sparkles className="h-3 w-3 mr-1" /> Promote
                     </Button>
                   </td>
@@ -123,6 +135,20 @@ export default function PinterestProducts() {
           </table>
         </CardContent>
       </Card>
+      {assessment && (
+        <ConfirmAiCostDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Promote product to Pinterest Creative Director"
+          productCount={1}
+          assessment={assessment}
+          confirmLabel="Promote"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            if (pendingId) void promote(pendingId);
+          }}
+        />
+      )}
     </div>
   );
 }
