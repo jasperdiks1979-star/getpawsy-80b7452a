@@ -30,6 +30,7 @@ interface Product {
   sku: string | null;
   name: string;
   stock: number | null;
+  cj_variant_id?: string | null;
 }
 
 // Stock result type to distinguish confirmed vs error
@@ -40,6 +41,8 @@ interface StockResult {
   status: 'ok' | 'discontinued' | 'no_data' | 'error';
   message: string;
   rawResponse?: unknown;
+  /** First variant id seen in CJ inventory payload (used to backfill cj_variant_id). */
+  vid?: string | null;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -212,6 +215,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
     
     let totalStock = 0;
     let warehouse = 'unknown';
+    let firstVid: string | null = null;
 
     if (inventoryList.length > 0) {
       let usStock = 0;
@@ -219,6 +223,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       let hasUs = false;
 
       for (const inv of inventoryList) {
+        if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
         if (inv.countryCode === 'US') {
           usStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
           hasUs = true;
@@ -256,6 +261,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       warehouse,
       status: 'ok',
       message: `Stock confirmed: ${totalStock} (${warehouse})`,
+      vid: firstVid,
     };
   } catch (err) {
     return {
@@ -311,7 +317,7 @@ async function syncBatch(
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
-    .select('id, cj_product_id, sku, name, stock')
+    .select('id, cj_product_id, cj_variant_id, sku, name, stock')
     .not('cj_product_id', 'is', null)
     .order('id', { ascending: true });
 
@@ -381,8 +387,24 @@ async function syncBatch(
     if (result.confirmed && result.stock !== null) {
       // CJ confirmed the stock value — update it
       updateData.stock = result.stock;
+      // Also write per-warehouse columns so the generated `effective_stock`,
+      // `inventory_score`, and `inventory_priority` resolve correctly.
+      // Only overwrite the warehouse that CJ confirmed; leave the others NULL
+      // so we never falsely zero-out a warehouse we have no data for.
+      if (result.warehouse === 'US') updateData.us_stock = result.stock;
+      else if (result.warehouse === 'EU') updateData.eu_stock = result.stock;
+      else if (result.warehouse === 'CN') updateData.cn_stock = result.stock;
+      else if (result.warehouse === 'none' || result.status === 'discontinued') {
+        updateData.us_stock = 0;
+        updateData.eu_stock = 0;
+        updateData.cn_stock = 0;
+      }
       updateData.stock_sync_status = result.status === 'discontinued' ? 'discontinued' : 'ok';
       updateData.stock_sync_error = null;
+      // Variant repair: capture the first CJ variant id we ever see for this product.
+      if (!product.cj_variant_id && result.vid) {
+        updateData.cj_variant_id = result.vid;
+      }
       console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock=${result.stock} (${result.warehouse})`);
       batchSynced++;
     } else if (result.status === 'no_data') {
