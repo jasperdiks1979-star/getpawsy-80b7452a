@@ -1,0 +1,1 @@
+UPDATE public.products SET is_active = false, last_inventory_sync_status = 'cj_removed_from_shelves', last_inventory_sync_at = now() WHERE is_active = true AND cj_variant_id IS NULL AND cj_product_id IS NOT NULL;

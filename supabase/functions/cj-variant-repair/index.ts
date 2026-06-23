@@ -27,6 +27,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RENDER_WORKER_SECRET = Deno.env.get("RENDER_WORKER_SECRET") ?? "";
+const INTERNAL_FUNCTION_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -179,11 +180,15 @@ Deno.serve(async (req) => {
           headers: {
             "apikey": SERVICE_KEY,
             "Authorization": `Bearer ${SERVICE_KEY}`,
+            ...(INTERNAL_FUNCTION_SECRET ? { "x-internal-secret": INTERNAL_FUNCTION_SECRET } : {}),
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ action: "get-product-details", productId: cjProductId, countryCode: "US" }),
         });
-        if (!r.ok) return null;
+        if (!r.ok) {
+          const txt = await r.text().catch(() => "");
+          return { _error: `cj_http_${r.status}`, _body: txt.slice(0, 200) } as any;
+        }
         const j = await r.json();
         // get-product-details returns the raw CJ payload at j.data
         if (j?.data && typeof j.data === "object") return { data: j.data, variants: (j.data as any).variants };
@@ -197,9 +202,27 @@ Deno.serve(async (req) => {
       const cjId = productRow.cj_product_id;
       if (!cjId) return { product_id: productRow.id, ok: false, reason: "no_cj_product_id" };
       const details = await fetchCjDetails(cjId);
-      const variants: CjVariant[] | undefined = details?.variants ?? details?.data?.variants;
+      if (details && (details as any)._error) {
+        return { product_id: productRow.id, cj_product_id: cjId, ok: false, reason: (details as any)._error, body: (details as any)._body };
+      }
+      let variants: CjVariant[] | undefined = details?.variants ?? details?.data?.variants;
+      // Single-SKU CJ products return variants=[]. Synthesize a single variant
+      // from the product-level fields so we can persist a primary cj_variant_id.
       if (!Array.isArray(variants) || variants.length === 0) {
-        return { product_id: productRow.id, cj_product_id: cjId, ok: false, reason: "cj_returned_no_variants" };
+        const d: any = details?.data ?? {};
+        console.log("[variant-repair] synth check", { cjId, hasData: !!d, productSku: d?.productSku, pid: d?.pid });
+        if (d?.productSku || d?.pid) {
+          variants = [{
+            vid: String(d.productSku ?? d.pid),
+            variantSku: d.productSku ?? null,
+            variantNameEn: d.productNameEn ?? d.productName ?? null,
+            variantImage: d.bigImage ?? undefined,
+            variantSellPrice: d.sellPrice ?? null,
+            inventories: [],
+          } as CjVariant];
+        } else {
+          return { product_id: productRow.id, cj_product_id: cjId, ok: false, reason: "cj_returned_no_variants" };
+        }
       }
       const normalized = variants.map((v) => {
         const { color, size } = extractColorSize(v);
@@ -222,12 +245,17 @@ Deno.serve(async (req) => {
         else if (n.cj_vid) variantStock[String(n.cj_vid)] = n.stock;
       }
       const totalStock = normalized.reduce((acc, n) => acc + (Number(n.stock) || 0), 0);
+      // Pick primary variant id: prefer the first in-stock variant, fall back to the first variant.
+      const primary = normalized.find((n) => Number(n.stock) > 0) ?? normalized[0];
+      const primaryVid: string | null = primary?.cj_vid ? String(primary.cj_vid) : null;
       const { error: upErr } = await admin
         .from("products")
         .update({
           variants: normalized,
           variant_stock: variantStock,
           stock: totalStock > 0 ? totalStock : productRow.stock,
+          // Only set cj_variant_id when missing; never overwrite an existing mapping.
+          ...(productRow.cj_variant_id ? {} : (primaryVid ? { cj_variant_id: primaryVid } : {})),
           last_inventory_sync_at: new Date().toISOString(),
           last_inventory_sync_status: "variant_repair_ok",
           last_inventory_sync_error: null,
@@ -242,6 +270,7 @@ Deno.serve(async (req) => {
         ok: true,
         variants_written: normalized.length,
         total_stock: totalStock,
+        cj_variant_id: primaryVid,
         sample: normalized.slice(0, 3),
       };
     }
@@ -251,7 +280,7 @@ Deno.serve(async (req) => {
       if (!productId) return json({ ok: false, traceId, message: "product_id required" }, 400);
       const { data: row, error } = await admin
         .from("products")
-        .select("id, name, slug, stock, cj_product_id, variants, variant_stock")
+        .select("id, name, slug, stock, cj_product_id, cj_variant_id, variants, variant_stock")
         .eq("id", productId).maybeSingle();
       if (error || !row) return json({ ok: false, traceId, message: "product_not_found" }, 404);
       await upsertRun({
@@ -280,11 +309,12 @@ Deno.serve(async (req) => {
       const limit = Math.min(Math.max(Number(body?.limit ?? 25), 1), 200);
       const { data: list, error } = await admin
         .from("products")
-        .select("id, name, slug, stock, cj_product_id, variants, variant_stock")
+        .select("id, name, slug, stock, cj_product_id, cj_variant_id, variants, variant_stock")
         .not("cj_product_id", "is", null)
+        .is("cj_variant_id", null)
         .limit(2000);
       if (error) return json({ ok: false, traceId, message: error.message }, 500);
-      const candidates = (list ?? []).filter((r: any) => !Array.isArray(r.variants) || r.variants.length === 0).slice(0, limit);
+      const candidates = (list ?? []).slice(0, limit);
       await upsertRun({
         status: "running",
         total: candidates.length,
