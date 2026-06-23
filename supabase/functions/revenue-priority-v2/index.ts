@@ -27,6 +27,29 @@ function pct(arr: number[], values: number[]): number[] {
   });
 }
 
+// Percentile-rank normalization (0..100). Stable for skewed distributions.
+function percentileRank(arr: number[], values: number[]): number[] {
+  const sorted = arr.filter((v) => Number.isFinite(v)).slice().sort((a, b) => a - b);
+  if (!sorted.length) return values.map(() => 50);
+  return values.map((v) => {
+    if (!Number.isFinite(v)) return 50;
+    // binary search lower bound
+    let lo = 0, hi = sorted.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sorted[mid] < v) lo = mid + 1; else hi = mid;
+    }
+    let hi2 = sorted.length;
+    let lo2 = lo;
+    while (lo2 < hi2) {
+      const mid = (lo2 + hi2) >>> 1;
+      if (sorted[mid] <= v) lo2 = mid + 1; else hi2 = mid;
+    }
+    const rank = (lo + lo2) / 2;
+    return Math.max(0, Math.min(100, (rank / sorted.length) * 100));
+  });
+}
+
 function tierOf(rank: number, total: number): "A" | "B" | "C" | "D" {
   const p = rank / Math.max(total, 1);
   if (p < 0.05) return "A";
@@ -314,6 +337,284 @@ function computeAll(ctx: Awaited<ReturnType<typeof gatherCatalog>>) {
   });
 
   return { scored, diversificationLog, medianMargin };
+}
+
+// ───────────────────────────────────────────────────────── V2.1 calibration
+const PRIORITY_CATEGORIES = [
+  "cat-litter-box","litter-box","cat-litter-boxes",
+  "cat-tree","cat-trees",
+  "dog-bed","dog-beds","orthopedic-dog-bed",
+  "pet-fountain","pet-fountains","water-fountain",
+];
+const GENERIC_BUCKETS = ["pet-supplies","misc","uncategorized","other","general"];
+const GENERIC_NAME_RX = /\b(pet|dog|cat)\s+(supplies|accessor|product|item|stuff|gear)\b/i;
+
+function isPriorityCat(cat: any): boolean {
+  const c = String(cat ?? "").toLowerCase().trim();
+  if (!c) return false;
+  return PRIORITY_CATEGORIES.some((p) => c === p || c.includes(p));
+}
+function isGenericBucket(cat: any): boolean {
+  const c = String(cat ?? "").toLowerCase().trim();
+  return !c || GENERIC_BUCKETS.includes(c);
+}
+function isGenericName(name: any): boolean {
+  const n = String(name ?? "").trim();
+  if (!n || n.length < 12) return true;
+  if (GENERIC_NAME_RX.test(n)) return true;
+  const words = n.split(/\s+/).length;
+  if (words < 3) return true;
+  return false;
+}
+
+function computeAllV21(ctx: Awaited<ReturnType<typeof gatherCatalog>>) {
+  const { products, intelMap, pinAgg, videoSet } = ctx;
+
+  const raws = products.map((p: any) => {
+    const intel: any = intelMap.get(p.id) ?? null;
+    const pin = pinAgg.get(String(p.id));
+    return {
+      p, intel,
+      raw_pin: pinterestRaw(pin),
+      raw_conv_present: intel?.conversion_score !== null && intel?.conversion_score !== undefined,
+      raw_conv: Number(intel?.conversion_score ?? 0),
+      raw_margin: marginRaw(p, 0),
+      raw_opp_present: intel?.opportunity_score !== null && intel?.opportunity_score !== undefined,
+      raw_opp: Number(intel?.opportunity_score ?? 0),
+      raw_inv: inventoryRaw(p),
+      raw_age: ageRaw(p),
+      raw_video: videoSet.has(String(p.id)),
+      raw_seo: seoRaw(intel),
+      has_pinterest_data: !!(pin && pin.n > 0),
+    };
+  });
+
+  const marginValues = raws.map((r) => r.raw_margin).filter((v): v is number => v !== null);
+  marginValues.sort((a, b) => a - b);
+  const medianMargin = marginValues.length ? marginValues[Math.floor(marginValues.length / 2)] : 30;
+  for (const r of raws) if (r.raw_margin === null) r.raw_margin = medianMargin;
+
+  // Percentile normalize over present-only populations (so missing = neutral 50, not hard 0)
+  const pinPresent = raws.filter((r) => r.has_pinterest_data).map((r) => r.raw_pin);
+  const convPresent = raws.filter((r) => r.raw_conv_present && r.raw_conv > 0).map((r) => r.raw_conv);
+  const oppPresent = raws.filter((r) => r.raw_opp_present && r.raw_opp > 0).map((r) => r.raw_opp);
+  const marginPop = raws.map((r) => r.raw_margin as number);
+  const invPop = raws.map((r) => r.raw_inv);
+  const agePop = raws.map((r) => r.raw_age);
+  const seoPop = raws.map((r) => r.raw_seo);
+
+  const n_pin = raws.map((r) =>
+    r.has_pinterest_data ? percentileRank(pinPresent, [r.raw_pin])[0] : 50,
+  );
+  const n_conv = raws.map((r) =>
+    r.raw_conv_present && r.raw_conv > 0 ? percentileRank(convPresent, [r.raw_conv])[0] : 50,
+  );
+  const n_opp = raws.map((r) =>
+    r.raw_opp_present && r.raw_opp > 0 ? percentileRank(oppPresent, [r.raw_opp])[0] : 50,
+  );
+  const n_margin = percentileRank(marginPop, marginPop);
+  const n_inv = percentileRank(invPop, invPop);
+  const n_age = percentileRank(agePop, agePop);
+  const n_seo = percentileRank(seoPop, seoPop);
+  const n_video = raws.map((r) => (r.raw_video ? 80 : 50)); // neutral when missing
+  // content readiness = blend(seo, age)
+  const n_content = raws.map((_, i) => Math.round(n_seo[i] * 0.6 + n_age[i] * 0.4));
+  // PMF / evergreen = blend(opportunity, age) + priority cat boost downstream
+  const n_pmf = raws.map((r, i) => Math.round(n_opp[i] * 0.6 + n_age[i] * 0.4));
+
+  // duplicate detection by normalized first-6-words name signature
+  const sigCount = new Map<string, number>();
+  const sigOf = (name: string) =>
+    String(name ?? "").toLowerCase().replace(/[^a-z0-9 ]+/g, "").split(/\s+/).slice(0, 6).join(" ");
+  for (const r of raws) {
+    const s = sigOf(r.p.name);
+    if (s) sigCount.set(s, (sigCount.get(s) ?? 0) + 1);
+  }
+
+  const scored = raws.map((r, i) => {
+    const components = {
+      pinterest: n_pin[i],
+      conversion: n_conv[i],
+      margin: n_margin[i],
+      inventory: n_inv[i],
+      pmf: n_pmf[i],
+      content: n_content[i],
+      video: n_video[i],
+    };
+    // V2.1 weights: 20/20/20/15/10/10/5
+    let score =
+      components.pinterest * 0.20 +
+      components.conversion * 0.20 +
+      components.margin * 0.20 +
+      components.inventory * 0.15 +
+      components.pmf * 0.10 +
+      components.content * 0.10 +
+      components.video * 0.05;
+
+    // ── penalties
+    const penalties: string[] = [];
+    const genericName = isGenericName(r.p.name);
+    const genericCat = isGenericBucket(r.p.category);
+    const oos = r.raw_inv <= 0;
+    const dup = (sigCount.get(sigOf(r.p.name)) ?? 0) > 1;
+    if (genericName) { score -= 8; penalties.push("generic_name"); }
+    if (genericCat)  { score -= 6; penalties.push("generic_category"); }
+    if (oos)         { score -= 20; penalties.push("out_of_stock"); }
+    if (dup)         { score -= 4; penalties.push("duplicate_signature"); }
+
+    // ── boosts
+    const boosts: string[] = [];
+    if (r.has_pinterest_data && n_pin[i] >= 70) { score += 6; boosts.push("proven_pinterest"); }
+    if (isPriorityCat(r.p.category))            { score += 8; boosts.push("priority_niche"); }
+    const price = Number(r.p.price ?? 0);
+    if (price >= 60 && r.raw_inv > 0 && n_inv[i] >= 50) { score += 4; boosts.push("high_ticket_in_stock"); }
+    if (r.raw_video && r.raw_seo >= 60)         { score += 3; boosts.push("creative_ready"); }
+
+    score = Math.max(0, Math.min(100, score));
+
+    // data confidence: fraction of strong signals present
+    const signals = [r.has_pinterest_data, r.raw_conv_present && r.raw_conv > 0, Number(r.p.cost_price ?? 0) > 0, r.raw_video, r.raw_opp_present && r.raw_opp > 0, r.raw_seo > 0];
+    const confidence = Math.round((signals.filter(Boolean).length / signals.length) * 100);
+
+    return {
+      product_id: r.p.id,
+      slug: r.p.slug,
+      name: r.p.name,
+      category: r.p.category,
+      price: r.p.price,
+      cost_price: r.p.cost_price,
+      margin_percent: r.raw_margin,
+      score: Math.round(score * 100) / 100,
+      data_confidence: confidence,
+      components: Object.fromEntries(Object.entries(components).map(([k, v]) => [k, Math.round(v * 10) / 10])),
+      penalties, boosts,
+      has_pinterest_data: r.has_pinterest_data,
+      has_video: r.raw_video,
+      has_cost: Number(r.p.cost_price ?? 0) > 0,
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const total = scored.length;
+  scored.forEach((r: any, idx: number) => { r.rank = idx + 1; r.tier = tierOf(idx, total); });
+
+  return { scored, medianMargin };
+}
+
+function buildV21Report(scored: any[], medianMargin: number) {
+  const total = scored.length;
+  const dist = { A: 0, B: 0, C: 0, D: 0 };
+  for (const r of scored) (dist as any)[r.tier] += 1;
+
+  const histo = new Array(10).fill(0);
+  for (const r of scored) histo[Math.min(9, Math.floor(r.score / 10))] += 1;
+
+  const bands = {
+    "80-100": scored.filter((r) => r.score >= 80).length,
+    "60-79":  scored.filter((r) => r.score >= 60 && r.score < 80).length,
+    "40-59":  scored.filter((r) => r.score >= 40 && r.score < 60).length,
+    "0-39":   scored.filter((r) => r.score < 40).length,
+  };
+
+  const catMap = new Map<string, number>();
+  for (const r of scored) {
+    const c = String(r.category ?? "uncategorized");
+    catMap.set(c, (catMap.get(c) ?? 0) + 1);
+  }
+
+  const slim = (r: any) => ({
+    rank: r.rank, slug: r.slug, name: r.name, category: r.category,
+    score: r.score, tier: r.tier, data_confidence: r.data_confidence,
+    pinterest: r.components.pinterest, conversion: r.components.conversion,
+    margin: r.components.margin, inventory: r.components.inventory,
+    pmf: r.components.pmf, content: r.components.content, video: r.components.video,
+    penalties: r.penalties, boosts: r.boosts,
+    margin_percent: r.margin_percent, price: r.price,
+    has_pinterest_data: r.has_pinterest_data, has_video: r.has_video, has_cost: r.has_cost,
+  });
+
+  return {
+    generated_at: new Date().toISOString(),
+    version: "RPS_V2.1.0-preview",
+    store: "GetPawsy",
+    catalog: { active_products: total, median_margin_pct: Math.round(medianMargin * 10) / 10 },
+    tier_distribution: dist,
+    score_bands: bands,
+    score_histogram: histo.map((count, i) => ({ bucket: `${i * 10}-${i * 10 + 9}`, count })),
+    category_distribution: [...catMap.entries()].map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count),
+    top_50: scored.slice(0, 50).map(slim),
+    bottom_50: scored.slice(-50).map(slim),
+    missing_pinterest_data: scored.filter((r) => !r.has_pinterest_data).length,
+    missing_videos: scored.filter((r) => !r.has_video).length,
+    missing_cost_data: scored.filter((r) => !r.has_cost).length,
+    penalty_counts: {
+      generic_name: scored.filter((r) => r.penalties.includes("generic_name")).length,
+      generic_category: scored.filter((r) => r.penalties.includes("generic_category")).length,
+      out_of_stock: scored.filter((r) => r.penalties.includes("out_of_stock")).length,
+      duplicate_signature: scored.filter((r) => r.penalties.includes("duplicate_signature")).length,
+    },
+    boost_counts: {
+      proven_pinterest: scored.filter((r) => r.boosts.includes("proven_pinterest")).length,
+      priority_niche: scored.filter((r) => r.boosts.includes("priority_niche")).length,
+      high_ticket_in_stock: scored.filter((r) => r.boosts.includes("high_ticket_in_stock")).length,
+      creative_ready: scored.filter((r) => r.boosts.includes("creative_ready")).length,
+    },
+  };
+}
+
+function buildCompareReport(v2Scored: any[], v21Scored: any[]) {
+  const v2Rank = new Map(v2Scored.map((r, i) => [r.product_id, i + 1]));
+  const v21Rank = new Map(v21Scored.map((r, i) => [r.product_id, i + 1]));
+
+  const merged = v21Scored.map((r: any) => {
+    const v2r = v2Rank.get(r.product_id);
+    const old = v2Scored.find((x) => x.product_id === r.product_id);
+    return {
+      slug: r.slug, name: r.name, category: r.category,
+      v2_rank: v2r ?? null, v2_score: old?.score ?? null,
+      v21_rank: r.rank, v21_score: r.score, v21_tier: r.tier,
+      delta_rank: (v2r ?? r.rank) - r.rank,
+      delta_score: Math.round(((r.score - (old?.score ?? 0)) * 10)) / 10,
+      penalties: r.penalties, boosts: r.boosts,
+    };
+  });
+
+  const movers_up = [...merged].sort((a, b) => b.delta_rank - a.delta_rank).slice(0, 25);
+  const movers_down = [...merged].sort((a, b) => a.delta_rank - b.delta_rank).slice(0, 25);
+
+  // distribution targets
+  const total = v21Scored.length;
+  const got = {
+    a: v21Scored.filter((r) => r.score >= 80).length / total,
+    b: v21Scored.filter((r) => r.score >= 60 && r.score < 80).length / total,
+    c: v21Scored.filter((r) => r.score >= 40 && r.score < 60).length / total,
+    d: v21Scored.filter((r) => r.score < 40).length / total,
+  };
+  const target = { a: 0.05, b: 0.15, c: 0.30, d: 0.50 };
+  const within = (a: number, b: number, tol = 0.07) => Math.abs(a - b) <= tol;
+  const ok =
+    within(got.a, target.a) && within(got.b, target.b) &&
+    within(got.c, target.c, 0.10) && within(got.d, target.d, 0.10);
+
+  const recommendation = ok
+    ? "SAFE TO ACTIVATE — distribution within tolerance of target shape."
+    : "HOLD — distribution still drifts from target; review penalties/boosts before activation.";
+
+  return {
+    generated_at: new Date().toISOString(),
+    version: "RPS_COMPARE_V2_vs_V2.1",
+    distribution_target: target,
+    distribution_actual: got,
+    distribution_pass: ok,
+    movers_up, movers_down,
+    top_50_v21: v21Scored.slice(0, 50).map((r) => ({
+      rank: r.rank, slug: r.slug, name: r.name, category: r.category, score: r.score, tier: r.tier,
+    })),
+    bottom_50_v21: v21Scored.slice(-50).map((r) => ({
+      rank: r.rank, slug: r.slug, name: r.name, category: r.category, score: r.score, tier: r.tier,
+    })),
+    recommendation,
+  };
 }
 
 async function persist(scored: any[]) {
