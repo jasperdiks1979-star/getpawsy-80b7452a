@@ -986,6 +986,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), persisted: scored.length, report: buildReport(scored, diversificationLog, medianMargin) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "compute_all_v21") {
+      const v21 = computeAllV21(ctx);
+      await persist(v21.scored);
+      return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), persisted: v21.scored.length, report: buildV21Report(v21.scored, v21.medianMargin) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "validate" || action === "report") {
       return new Response(JSON.stringify({ ok: true, traceId: crypto.randomUUID(), report: buildReport(scored, diversificationLog, medianMargin) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
