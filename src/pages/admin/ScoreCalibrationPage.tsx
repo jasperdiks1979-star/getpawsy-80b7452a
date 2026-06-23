@@ -160,7 +160,7 @@ async function fetchRows(): Promise<Row[]> {
       shopping_priority_score: p.shopping_priority_score ?? null,
       feed_readiness_score: p.feed_readiness_score ?? null,
       content_readiness_score: p.content_readiness_score ?? null,
-      pinterest_priority: p.pinterest_priority ?? null,
+      pinterest_priority: p.pinterest_priority == null ? null : Number(p.pinterest_priority),
       opportunity_score: i?.opportunity_score ?? null,
       trend_score: i?.trend_score ?? null,
       conversion_score: i?.conversion_score ?? null,
