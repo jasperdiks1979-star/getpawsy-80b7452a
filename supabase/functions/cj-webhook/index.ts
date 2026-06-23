@@ -136,7 +136,14 @@ serve(async (req) => {
     // or an HMAC-SHA256 signature. Reject when the expected secret is set
     // but the request does not present it.
     const expectedSecret = Deno.env.get("CJ_WEBHOOK_SECRET");
-    if (expectedSecret) {
+    if (!expectedSecret) {
+      console.error("[CJ-WEBHOOK] CJ_WEBHOOK_SECRET not configured — rejecting request");
+      return new Response(
+        JSON.stringify({ success: false, error: "Webhook secret not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    {
       const provided =
         req.headers.get("x-cj-secret") ??
         req.headers.get("x-webhook-secret") ??
@@ -175,8 +182,6 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-    } else {
-      console.warn("[CJ-WEBHOOK] CJ_WEBHOOK_SECRET not configured; accepting webhook without verification");
     }
 
     // Check if request has a body
