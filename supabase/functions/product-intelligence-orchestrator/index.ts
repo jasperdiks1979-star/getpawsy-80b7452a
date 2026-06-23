@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
   const body: Body = await req.json().catch(() => ({}));
   const mode = body.mode ?? "scan";
   const trigger = body.trigger_source ?? "manual";
+  console.log(`[req] mode=${mode} trigger=${trigger} action=${body.action ?? "-"} continuation=${body.continuation ?? false} runId=${body.existing_run_id ?? "-"}`);
 
   // Always reap stale runs first so the dashboard reflects reality.
   await reapStaleRuns(sb);
