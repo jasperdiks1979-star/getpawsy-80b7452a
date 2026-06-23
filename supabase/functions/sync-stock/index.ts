@@ -40,6 +40,8 @@ interface StockResult {
   status: 'ok' | 'discontinued' | 'no_data' | 'error';
   message: string;
   rawResponse?: unknown;
+  /** First variant id seen in CJ inventory payload (used to backfill cj_variant_id). */
+  vid?: string | null;
 }
 
 function sleep(ms: number): Promise<void> {
