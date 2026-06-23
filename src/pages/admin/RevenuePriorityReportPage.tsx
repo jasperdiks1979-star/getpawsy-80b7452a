@@ -11,7 +11,7 @@ import autoTable from "jspdf-autotable";
 
 type Report = any;
 
-async function callFn(action: "report" | "compute_all" | "validate"): Promise<Report> {
+async function callFn(action: "report" | "compute_all" | "validate" | "report_v21" | "compare_v21"): Promise<Report> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/revenue-priority-v2`;
@@ -230,7 +230,9 @@ function generatePdf(report: Report) {
 
 export default function RevenuePriorityReportPage() {
   const [report, setReport] = useState<Report | null>(null);
-  const [loading, setLoading] = useState<"" | "report" | "compute" | "pdf" | "csv" | "json">("");
+  const [v21, setV21] = useState<Report | null>(null);
+  const [compare, setCompare] = useState<Report | null>(null);
+  const [loading, setLoading] = useState<"" | "report" | "compute" | "v21" | "compare">("");
 
   async function handle(action: "report" | "compute") {
     setLoading(action);
@@ -243,6 +245,90 @@ export default function RevenuePriorityReportPage() {
     } finally {
       setLoading("");
     }
+  }
+
+  async function handleV21() {
+    setLoading("v21");
+    try {
+      const r = await callFn("report_v21");
+      setV21(r);
+      toast.success(`V2.1 preview generated · ${r.catalog.active_products} products`);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+    finally { setLoading(""); }
+  }
+
+  async function handleCompare() {
+    setLoading("compare");
+    try {
+      const r = await callFn("compare_v21");
+      setCompare(r);
+      setReport(r.v2); setV21(r.v21);
+      toast.success(`Comparison generated · ${r.compare.distribution_pass ? "SAFE" : "HOLD"}`);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+    finally { setLoading(""); }
+  }
+
+  function downloadCompare(format: "pdf" | "csv" | "json") {
+    if (!compare) return;
+    const ts = new Date().toISOString().slice(0, 10);
+    if (format === "json") {
+      downloadBlob(`rps-v2-vs-v21_${ts}.json`, new Blob([JSON.stringify(compare, null, 2)], { type: "application/json" }));
+      return;
+    }
+    if (format === "csv") {
+      const rows = [
+        ["v21_rank","v2_rank","delta_rank","v21_score","v2_score","delta_score","tier","slug","category","name","penalties","boosts"].join(","),
+        ...compare.compare.movers_up.concat(compare.compare.movers_down).map((r: any) => [
+          r.v21_rank, r.v2_rank ?? "", r.delta_rank, r.v21_score, r.v2_score ?? "", r.delta_score,
+          r.v21_tier, r.slug, r.category ?? "", JSON.stringify(r.name ?? ""),
+          (r.penalties ?? []).join("|"), (r.boosts ?? []).join("|"),
+        ].join(",")),
+      ];
+      downloadBlob(`rps-v2-vs-v21_${ts}.csv`, new Blob([rows.join("\n")], { type: "text/csv" }));
+      return;
+    }
+    // PDF
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const W = doc.internal.pageSize.getWidth();
+    doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, 60, "F");
+    doc.setTextColor(255, 255, 255); doc.setFontSize(20);
+    doc.text("Revenue Priority V2 vs V2.1 — Calibration Report", 40, 35);
+    doc.setFontSize(10);
+    doc.text(`GetPawsy · ${compare.compare.version} · ${new Date(compare.compare.generated_at).toLocaleString()}`, 40, 52);
+    doc.setTextColor(0, 0, 0);
+
+    let y = 90;
+    doc.setFontSize(14); doc.text("Recommendation", 40, y); y += 18;
+    doc.setFontSize(11);
+    doc.setTextColor(compare.compare.distribution_pass ? 22 : 180, compare.compare.distribution_pass ? 163 : 50, compare.compare.distribution_pass ? 74 : 50);
+    doc.text(compare.compare.recommendation, 40, y); y += 24;
+    doc.setTextColor(0, 0, 0); doc.setFontSize(10);
+
+    const t = compare.compare.distribution_target, g = compare.compare.distribution_actual;
+    const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+    doc.text(`Target  A=${pct(t.a)}  B=${pct(t.b)}  C=${pct(t.c)}  D=${pct(t.d)}`, 40, y); y += 14;
+    doc.text(`Actual  A=${pct(g.a)}  B=${pct(g.b)}  C=${pct(g.c)}  D=${pct(g.d)}`, 40, y); y += 22;
+
+    autoTable(doc, { startY: y, head: [["Penalty","Count"]], body: Object.entries(compare.v21.penalty_counts).map(([k,v]) => [k, v as any]), styles: { fontSize: 9 }, headStyles: { fillColor: [15,23,42] }, margin: { left: 40 }, tableWidth: 220 });
+    autoTable(doc, { startY: y, head: [["Boost","Count"]], body: Object.entries(compare.v21.boost_counts).map(([k,v]) => [k, v as any]), styles: { fontSize: 9 }, headStyles: { fillColor: [15,23,42] }, margin: { left: 300 }, tableWidth: 220 });
+
+    doc.addPage();
+    doc.setFontSize(14); doc.text("Top 50 (V2.1)", 40, 50);
+    autoTable(doc, { startY: 60, head: [["#","Slug","Cat","Tier","Score"]], body: compare.compare.top_50_v21.map((r: any) => [r.rank, r.slug, r.category ?? "", r.tier, r.score?.toFixed?.(1)]), styles: { fontSize: 7 }, headStyles: { fillColor: [15,23,42] } });
+
+    doc.addPage();
+    doc.setFontSize(14); doc.text("Bottom 50 (V2.1)", 40, 50);
+    autoTable(doc, { startY: 60, head: [["#","Slug","Cat","Tier","Score"]], body: compare.compare.bottom_50_v21.map((r: any) => [r.rank, r.slug, r.category ?? "", r.tier, r.score?.toFixed?.(1)]), styles: { fontSize: 7 }, headStyles: { fillColor: [15,23,42] } });
+
+    doc.addPage();
+    doc.setFontSize(14); doc.text("Biggest Movers Up (V2 → V2.1)", 40, 50);
+    autoTable(doc, { startY: 60, head: [["Δ rank","V2 rank","V2.1 rank","V2 score","V2.1 score","Slug","Boosts"]], body: compare.compare.movers_up.map((r: any) => [r.delta_rank, r.v2_rank ?? "—", r.v21_rank, r.v2_score?.toFixed?.(1) ?? "—", r.v21_score?.toFixed?.(1), r.slug, (r.boosts ?? []).join(", ")]), styles: { fontSize: 7 }, headStyles: { fillColor: [15,23,42] } });
+
+    doc.addPage();
+    doc.setFontSize(14); doc.text("Biggest Movers Down", 40, 50);
+    autoTable(doc, { startY: 60, head: [["Δ rank","V2 rank","V2.1 rank","V2 score","V2.1 score","Slug","Penalties"]], body: compare.compare.movers_down.map((r: any) => [r.delta_rank, r.v2_rank ?? "—", r.v21_rank, r.v2_score?.toFixed?.(1) ?? "—", r.v21_score?.toFixed?.(1), r.slug, (r.penalties ?? []).join(", ")]), styles: { fontSize: 7 }, headStyles: { fillColor: [15,23,42] } });
+
+    doc.save(`rps-v2-vs-v21_${ts}.pdf`);
   }
 
   return (
@@ -272,6 +358,14 @@ export default function RevenuePriorityReportPage() {
             {loading === "compute" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
             Compute & Persist V2 Scores
           </Button>
+          <Button onClick={handleV21} disabled={!!loading} variant="outline">
+            {loading === "v21" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+            V2.1 Preview (dry-run)
+          </Button>
+          <Button onClick={handleCompare} disabled={!!loading} variant="secondary">
+            {loading === "compare" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
+            Compare V2 vs V2.1
+          </Button>
           <Button onClick={() => report && generatePdf(report)} disabled={!report || !!loading} variant="outline">
             <FileText className="h-4 w-4 mr-2" /> Download PDF
           </Button>
@@ -281,8 +375,96 @@ export default function RevenuePriorityReportPage() {
           <Button onClick={() => report && downloadBlob(`rps-v2_${Date.now()}.json`, new Blob([JSON.stringify(report, null, 2)], { type: "application/json" }))} disabled={!report} variant="outline">
             <FileJson className="h-4 w-4 mr-2" /> Download JSON
           </Button>
+          <Button onClick={() => downloadCompare("pdf")} disabled={!compare} variant="outline">
+            <FileText className="h-4 w-4 mr-2" /> Compare PDF
+          </Button>
+          <Button onClick={() => downloadCompare("csv")} disabled={!compare} variant="outline">
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Compare CSV
+          </Button>
+          <Button onClick={() => downloadCompare("json")} disabled={!compare} variant="outline">
+            <FileJson className="h-4 w-4 mr-2" /> Compare JSON
+          </Button>
         </CardContent>
       </Card>
+
+      {compare && (
+        <Card className={compare.compare.distribution_pass ? "border-emerald-400" : "border-amber-400"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              V2.1 Activation Recommendation
+              <Badge variant={compare.compare.distribution_pass ? "default" : "destructive"}>
+                {compare.compare.distribution_pass ? "SAFE TO ACTIVATE" : "HOLD"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2">
+            <div>{compare.compare.recommendation}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+              {(["a","b","c","d"] as const).map((k) => (
+                <div key={k} className="rounded border p-2">
+                  <div className="text-xs text-muted-foreground uppercase">Band {k}</div>
+                  <div className="text-sm">target {(compare.compare.distribution_target[k]*100).toFixed(1)}%</div>
+                  <div className="text-sm font-mono">actual {(compare.compare.distribution_actual[k]*100).toFixed(1)}%</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {v21 && (
+        <Card>
+          <CardHeader><CardTitle>V2.1 Preview · score bands & gates</CardTitle></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.entries(v21.score_bands).map(([band, count]) => (
+                <div key={band} className="rounded border p-2">
+                  <div className="text-xs text-muted-foreground">Score {band}</div>
+                  <div className="text-2xl font-bold">{count as any}</div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.entries(v21.penalty_counts).map(([k, v]) => (
+                <div key={k} className="rounded border border-red-200 p-2">
+                  <div className="text-xs text-red-600">penalty · {k}</div>
+                  <div className="text-lg font-semibold">{v as any}</div>
+                </div>
+              ))}
+              {Object.entries(v21.boost_counts).map(([k, v]) => (
+                <div key={k} className="rounded border border-emerald-200 p-2">
+                  <div className="text-xs text-emerald-700">boost · {k}</div>
+                  <div className="text-lg font-semibold">{v as any}</div>
+                </div>
+              ))}
+            </div>
+            <div className="overflow-x-auto">
+              <div className="font-medium mb-1">V2.1 Top 25</div>
+              <table className="w-full text-sm">
+                <thead><tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-2 pr-2">#</th><th className="pr-2">Product</th><th className="pr-2">Cat</th>
+                  <th className="pr-2">Tier</th><th className="pr-2">Score</th><th className="pr-2">Conf</th>
+                  <th className="pr-2">Boosts</th><th>Penalties</th>
+                </tr></thead>
+                <tbody>
+                  {v21.top_50.slice(0, 25).map((r: any) => (
+                    <tr key={r.slug} className="border-b align-top">
+                      <td className="py-1.5 pr-2">{r.rank}</td>
+                      <td className="pr-2">{r.name}</td>
+                      <td className="pr-2 text-xs text-muted-foreground">{r.category}</td>
+                      <td className="pr-2"><Badge variant="outline">{r.tier}</Badge></td>
+                      <td className="pr-2 font-mono">{r.score.toFixed(1)}</td>
+                      <td className="pr-2">{r.data_confidence}</td>
+                      <td className="pr-2 text-xs text-emerald-700">{(r.boosts ?? []).join(", ") || "—"}</td>
+                      <td className="text-xs text-red-600">{(r.penalties ?? []).join(", ") || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {report && (
         <>
