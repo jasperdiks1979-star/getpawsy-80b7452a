@@ -14,7 +14,7 @@ function toCsv(rows: any[]): string {
     const s = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c])).join(","))].join("\n");
+  return [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c as string])).join(","))].join("\n");
 }
 
 function download(filename: string, content: string, mime: string) {
