@@ -457,6 +457,7 @@ const PinterestQualityPage = lazyWithRetry(() => import("./pages/admin/Pinterest
 const LifestyleEngineV3Page = lazyWithRetry(() => import("./pages/admin/LifestyleEngineV3Page"));
 const ProductIntelligencePage = lazyWithRetry(() => import("./pages/admin/ProductIntelligencePage"));
 const FeedIssuesQueuePage = lazyWithRetry(() => import("./pages/admin/FeedIssuesQueuePage"));
+const ScoreCalibrationPage = lazyWithRetry(() => import("./pages/admin/ScoreCalibrationPage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
