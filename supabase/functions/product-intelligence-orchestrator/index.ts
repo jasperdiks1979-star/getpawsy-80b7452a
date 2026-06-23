@@ -155,7 +155,19 @@ Deno.serve(async (req) => {
     return json({ ok: false, reason: pErr.message }, 500);
   }
 
-  const list = products ?? [];
+  let list = products ?? [];
+
+  // Resume support: for scan_all (NOT force_rebuild), skip products already enriched
+  // so we don't restart from product 1 and don't burn credits re-analyzing winners.
+  if (mode === "scan_all") {
+    const { data: already } = await sb
+      .from("product_intelligence")
+      .select("product_id")
+      .limit(10000);
+    const done = new Set((already ?? []).map((r: any) => r.product_id));
+    list = list.filter((p: any) => !done.has(p.id));
+    console.log(`[run ${run.id}] resume: ${done.size} already enriched, ${list.length} remaining`);
+  }
   await sb.from("product_intelligence_runs").update({ products_targeted: list.length }).eq("id", run.id);
 
   if (!LOVABLE_API_KEY) {
