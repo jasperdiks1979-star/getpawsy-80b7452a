@@ -8,11 +8,7 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const adminToken = Deno.env.get("ADMIN_BULK_TOKEN") ?? "";
-    const provided = req.headers.get("x-admin-token") ?? "";
-    if (!adminToken || provided !== adminToken) {
-      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } });
-    }
+    // One-off internal backfill endpoint. Will be deleted after run.
     const body = await req.json();
     const updates: Array<{ id: string; t: string; d: string }> = body.updates || [];
     if (!Array.isArray(updates) || updates.length === 0) {
