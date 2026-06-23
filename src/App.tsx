@@ -2443,6 +2443,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="score-calibration"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ScoreCalibrationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
