@@ -20766,6 +20766,7 @@ export type Database = {
           intent_type: string | null
           keyword_score: number | null
           last_scanned_at: string | null
+          last_v2_computed_at: string | null
           long_tail_keywords: Json
           merchant_feed_quality_score: number | null
           opportunity_factors: Json
@@ -20775,6 +20776,7 @@ export type Database = {
           pinterest_description: string | null
           pinterest_interests: Json
           pinterest_keywords: Json
+          pinterest_momentum_score: number | null
           pinterest_title: string | null
           pinterest_topics: Json
           primary_board: string | null
@@ -20784,8 +20786,11 @@ export type Database = {
           product_id: string
           product_tags: Json
           recommended_boards: Json
+          revenue_priority_score_v2: number | null
+          revenue_tier: string | null
           scan_error: string | null
           scan_status: string
+          score_components_v2: Json
           seasonality: Json
           secondary_boards: Json
           secondary_keywords: Json
@@ -20815,6 +20820,7 @@ export type Database = {
           intent_type?: string | null
           keyword_score?: number | null
           last_scanned_at?: string | null
+          last_v2_computed_at?: string | null
           long_tail_keywords?: Json
           merchant_feed_quality_score?: number | null
           opportunity_factors?: Json
@@ -20824,6 +20830,7 @@ export type Database = {
           pinterest_description?: string | null
           pinterest_interests?: Json
           pinterest_keywords?: Json
+          pinterest_momentum_score?: number | null
           pinterest_title?: string | null
           pinterest_topics?: Json
           primary_board?: string | null
@@ -20833,8 +20840,11 @@ export type Database = {
           product_id: string
           product_tags?: Json
           recommended_boards?: Json
+          revenue_priority_score_v2?: number | null
+          revenue_tier?: string | null
           scan_error?: string | null
           scan_status?: string
+          score_components_v2?: Json
           seasonality?: Json
           secondary_boards?: Json
           secondary_keywords?: Json
@@ -20864,6 +20874,7 @@ export type Database = {
           intent_type?: string | null
           keyword_score?: number | null
           last_scanned_at?: string | null
+          last_v2_computed_at?: string | null
           long_tail_keywords?: Json
           merchant_feed_quality_score?: number | null
           opportunity_factors?: Json
@@ -20873,6 +20884,7 @@ export type Database = {
           pinterest_description?: string | null
           pinterest_interests?: Json
           pinterest_keywords?: Json
+          pinterest_momentum_score?: number | null
           pinterest_title?: string | null
           pinterest_topics?: Json
           primary_board?: string | null
@@ -20882,8 +20894,11 @@ export type Database = {
           product_id?: string
           product_tags?: Json
           recommended_boards?: Json
+          revenue_priority_score_v2?: number | null
+          revenue_tier?: string | null
           scan_error?: string | null
           scan_status?: string
+          score_components_v2?: Json
           seasonality?: Json
           secondary_boards?: Json
           secondary_keywords?: Json
