@@ -47,6 +47,8 @@ interface Body {
     | "rebuild_seo";
   product_id?: string;
   trigger_source?: string;
+  limit?: number;
+  background?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -135,13 +137,17 @@ Deno.serve(async (req) => {
 
   // Select products
   const productCols = "id,name,slug,category,description,price,images";
-  let q = sb.from("products").select(productCols).eq("is_active", true).limit(config.max_products_per_run);
+  const effectiveLimit = Math.min(
+    Math.max(1, Number(body.limit ?? config.max_products_per_run ?? 25)),
+    mode === "scan_all" || mode === "force_rebuild" ? 5000 : 200,
+  );
+  let q = sb.from("products").select(productCols).eq("is_active", true).limit(effectiveLimit);
   if (mode === "scan_one" && body.product_id) {
     q = sb.from("products").select(productCols).eq("id", body.product_id).limit(1);
   } else if (mode === "scan_one") {
     q = sb.from("products").select(productCols).eq("is_active", true).limit(1);
   } else if (mode === "scan_all" || mode === "force_rebuild") {
-    q = sb.from("products").select(productCols).eq("is_active", true).limit(5000);
+    q = sb.from("products").select(productCols).eq("is_active", true).limit(effectiveLimit);
   }
   const { data: products, error: pErr } = await q;
   if (pErr) {
@@ -350,7 +356,9 @@ Deno.serve(async (req) => {
     return { status, scanned, failed, skipped, blocked, firstFailing, rootCause, proposedFix, creditsUsed };
   };
 
-  if (mode === "scan_one") {
+  // Synchronous when explicitly requested or for small scans; background otherwise.
+  const runSync = mode === "scan_one" || (body.background === false) || (list.length <= 15 && body.background !== true);
+  if (runSync) {
     const r = await runLoop();
     return json({
       ok: true,
