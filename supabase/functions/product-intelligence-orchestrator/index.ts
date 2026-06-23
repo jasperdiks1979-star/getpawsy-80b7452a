@@ -59,6 +59,52 @@ async function countRemainingActiveProducts(sb: any): Promise<number> {
   return (products ?? []).filter((p: any) => !done.has(p.id)).length;
 }
 
+const SUPA_ANON = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+const SELF_URL = `${SUPABASE_URL}/functions/v1/product-intelligence-orchestrator`;
+
+// Fire-and-forget POST to self to start the next batch on a fresh runtime.
+async function fireSelfChain(runId: string) {
+  try {
+    // No await on the promise body — we just want to hand off the HTTP call.
+    const p = fetch(SELF_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPA_ANON}`,
+        apikey: SUPA_ANON,
+      },
+      body: JSON.stringify({
+        mode: "scan_all",
+        trigger_source: "self_chain",
+        continuation: true,
+        existing_run_id: runId,
+        background: true,
+      }),
+    });
+    // Don't await — we want the current invocation to exit ASAP.
+    p.then((r) => r.text()).catch((e) => console.error("[self-chain]", e));
+  } catch (e) {
+    console.error("[self-chain] dispatch failed", e);
+  }
+}
+
+// Used by the supervisor cron when no active scan_all exists.
+async function launchScanAll(sb: any): Promise<{ id: string } | null> {
+  const { data: created } = await sb
+    .from("product_intelligence_runs")
+    .insert({
+      trigger_source: "supervisor",
+      mode: "scan_all",
+      status: "running",
+      started_at: new Date().toISOString(),
+      report: { heartbeat_at: new Date().toISOString(), mode: "scan_all", scanned: 0, failed: 0, credits_used: 0, launched_by: "supervisor" },
+    })
+    .select().single();
+  if (!created) return null;
+  await fireSelfChain(created.id);
+  return { id: created.id };
+}
+
 interface Body {
   mode?:
     | "dry_run"
@@ -73,6 +119,9 @@ interface Body {
   trigger_source?: string;
   limit?: number;
   background?: boolean;
+  action?: "supervisor" | "reap_stale";
+  continuation?: boolean;
+  existing_run_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -84,12 +133,17 @@ Deno.serve(async (req) => {
   const body: Body = await req.json().catch(() => ({}));
   const mode = body.mode ?? "scan";
   const trigger = body.trigger_source ?? "manual";
+  console.log(`[req] mode=${mode} trigger=${trigger} action=${body.action ?? "-"} continuation=${body.continuation ?? false} runId=${body.existing_run_id ?? "-"}`);
 
   // Always reap stale runs first so the dashboard reflects reality.
   await reapStaleRuns(sb);
 
+  // Internal continuations and cron-supervisor traffic skip admin auth.
+  const internalTrigger =
+    trigger === "cron" || trigger === "self_chain" || trigger === "supervisor";
+
   // Auth: require admin caller for manual triggers
-  if (trigger === "manual") {
+  if (!internalTrigger) {
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
@@ -98,6 +152,33 @@ Deno.serve(async (req) => {
     if (!u?.user) return json({ ok: false, reason: "unauthorized" }, 401);
     const { data: isAdmin } = await sb.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
     if (!isAdmin) return json({ ok: false, reason: "forbidden" }, 403);
+  }
+
+  // Supervisor action — called by cron. Reaps stale runs and (if eligible) launches a resume scan.
+  if (body.action === "supervisor" || body.action === "reap_stale") {
+    const { data: cfg } = await sb
+      .from("product_intelligence_config").select("*").eq("id", 1).maybeSingle();
+    const remaining = await countRemainingActiveProducts(sb);
+    const { data: active } = await sb
+      .from("product_intelligence_runs")
+      .select("id,started_at,report")
+      .eq("mode", "scan_all").eq("status", "running")
+      .order("started_at", { ascending: false }).limit(1).maybeSingle();
+    let launched: string | null = null;
+    const eligible = !!(cfg?.enabled && cfg?.auto_mode && remaining > 0 && !active);
+    if (eligible && body.action === "supervisor") {
+      const r = await launchScanAll(sb);
+      launched = r?.id ?? null;
+    }
+    return json({
+      ok: true,
+      action: body.action,
+      remaining_active_products: remaining,
+      active_run_id: active?.id ?? null,
+      launched_run_id: launched,
+      engine_enabled: !!cfg?.enabled,
+      auto_mode: !!cfg?.auto_mode,
+    });
   }
 
   // Load config
@@ -146,7 +227,8 @@ Deno.serve(async (req) => {
   }
 
   // Duplicate guard: a resume request must reuse an actually-live scan_all run.
-  if (mode === "scan_all") {
+  // Skipped when this invocation is itself a self-chain continuation of that run.
+  if (mode === "scan_all" && !(body.continuation && body.existing_run_id)) {
     const { data: activeRun } = await sb
       .from("product_intelligence_runs")
       .select("id,products_targeted,products_scanned,products_failed,credits_used,started_at,report")
@@ -166,32 +248,66 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Create run row
-  const { data: run, error: runErr } = await sb
-    .from("product_intelligence_runs")
-    .insert({
-      trigger_source: trigger,
-      mode,
-      status: "running",
-      started_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  // Create or reuse run row. Continuations reuse the existing scan_all run so the
+  // checkpoint chain stays contiguous across edge-runtime hops.
+  let run: any;
+  if (mode === "scan_all" && body.continuation && body.existing_run_id) {
+    const { data: existing } = await sb.from("product_intelligence_runs")
+      .select("*").eq("id", body.existing_run_id).maybeSingle();
+    if (!existing) return json({ ok: false, reason: "continuation_run_missing" }, 404);
+    if (existing.status !== "running") {
+      // Run was reaped or completed; do not resurrect zombies.
+      return json({ ok: true, run_id: existing.id, status: existing.status, message: "run no longer running" });
+    }
+    run = existing;
+  } else {
+    const { data: created, error: runErr } = await sb
+      .from("product_intelligence_runs")
+      .insert({
+        trigger_source: trigger,
+        mode,
+        status: "running",
+        started_at: new Date().toISOString(),
+        report: { heartbeat_at: new Date().toISOString(), mode, scanned: 0, failed: 0, credits_used: 0 },
+      })
+      .select().single();
+    if (runErr || !created) return json({ ok: false, reason: "run_insert_failed", error: runErr?.message }, 500);
+    run = created;
+  }
 
-  if (runErr || !run) return json({ ok: false, reason: "run_insert_failed", error: runErr?.message }, 500);
-
-  // Select products
+  // Select products — for scan_all use a bounded batch so each invocation stays
+  // well under the edge-runtime wall clock. The orchestrator self-chains until
+  // the queue drains or credits are exhausted.
   const productCols = "id,name,slug,category,description,price,images";
-  const effectiveLimit = Math.min(
-    Math.max(1, Number(body.limit ?? config.max_products_per_run ?? 25)),
-    mode === "scan_all" || mode === "force_rebuild" ? 5000 : 200,
+  const batchSize = Math.max(
+    1,
+    Number(body.limit ?? (mode === "scan_all" || mode === "force_rebuild" ? (config.batch_size ?? 20) : config.max_products_per_run ?? 25)),
   );
+  const effectiveLimit = mode === "scan_all" || mode === "force_rebuild"
+    ? Math.min(batchSize, 50)
+    : Math.min(batchSize, 200);
   let q = sb.from("products").select(productCols).eq("is_active", true).limit(effectiveLimit);
   if (mode === "scan_one" && body.product_id) {
     q = sb.from("products").select(productCols).eq("id", body.product_id).limit(1);
   } else if (mode === "scan_one") {
     q = sb.from("products").select(productCols).eq("is_active", true).limit(1);
-  } else if (mode === "scan_all" || mode === "force_rebuild") {
+  } else if (mode === "scan_all") {
+    // resume — pull a SMALL batch of unenriched ids first to avoid scanning 10k rows
+    const { data: already } = await sb.from("product_intelligence").select("product_id").limit(10000);
+    const done = new Set((already ?? []).map((r: any) => r.product_id));
+    const { data: allActive } = await sb.from("products").select("id").eq("is_active", true).limit(10000);
+    const todoIds = (allActive ?? []).map((r: any) => r.id).filter((id: string) => !done.has(id)).slice(0, effectiveLimit);
+    if (todoIds.length === 0) {
+      // queue empty — mark success and stop chain
+      await sb.from("product_intelligence_runs").update({
+        status: "success",
+        finished_at: new Date().toISOString(),
+        report: { ...(run.report ?? {}), completed_at: new Date().toISOString(), reason: "queue_empty" },
+      }).eq("id", run.id);
+      return json({ ok: true, run_id: run.id, status: "success", queued_products: 0, message: "All active products enriched." });
+    }
+    q = sb.from("products").select(productCols).in("id", todoIds);
+  } else if (mode === "force_rebuild") {
     q = sb.from("products").select(productCols).eq("is_active", true).limit(effectiveLimit);
   }
   const { data: products, error: pErr } = await q;
@@ -201,19 +317,15 @@ Deno.serve(async (req) => {
   }
 
   let list = products ?? [];
-
-  // Resume support: for scan_all (NOT force_rebuild), skip products already enriched
-  // so we don't restart from product 1 and don't burn credits re-analyzing winners.
+  // For scan_all, products_targeted should reflect the total queue, not just this batch.
   if (mode === "scan_all") {
-    const { data: already } = await sb
-      .from("product_intelligence")
-      .select("product_id")
-      .limit(10000);
-    const done = new Set((already ?? []).map((r: any) => r.product_id));
-    list = list.filter((p: any) => !done.has(p.id));
-    console.log(`[run ${run.id}] resume: ${done.size} already enriched, ${list.length} remaining`);
+    const remainingTotal = await countRemainingActiveProducts(sb);
+    await sb.from("product_intelligence_runs").update({
+      products_targeted: (run.products_scanned ?? 0) + remainingTotal,
+    }).eq("id", run.id);
+  } else {
+    await sb.from("product_intelligence_runs").update({ products_targeted: list.length }).eq("id", run.id);
   }
-  await sb.from("product_intelligence_runs").update({ products_targeted: list.length }).eq("id", run.id);
 
   if (!LOVABLE_API_KEY) {
     await sb.from("product_intelligence_runs").update({ status: "failed", error_message: "LOVABLE_API_KEY missing", finished_at: new Date().toISOString() }).eq("id", run.id);
@@ -229,14 +341,18 @@ Deno.serve(async (req) => {
   // and the request does not hit the wall-time limit on large batches.
   const runLoop = async () => {
     console.log(`[run ${run.id}] loop start, products=${list.length}`);
-    let scanned = 0;
-    let failed = 0;
-    let skipped = 0;
-    let creditsUsed = 0;
+    // Continuations: keep aggregated counters across hops.
+    let scanned = Number(run.products_scanned ?? 0);
+    let failed = Number(run.products_failed ?? 0);
+    let skipped = Number(run.report?.counts?.skipped ?? 0);
+    let creditsUsed = Number(run.credits_used ?? 0);
+    let batchScanned = 0;
+    let batchFailed = 0;
     const failures: Array<Record<string, unknown>> = [];
     let blocked: { status: number; provider_error: string; product_id: string } | null = null;
     let firstFailing: Record<string, unknown> | null = null;
     let lastProgressAt = 0;
+    let lastProductId: string | null = run.report?.last_product_id ?? null;
 
     for (const p of list) {
     console.log(`[run ${run.id}] -> ${p.id} ${String(p.name).slice(0,40)}`);
@@ -255,12 +371,13 @@ Deno.serve(async (req) => {
     if (!aiCall.ok && aiCall.status === 402) {
       // Credits exhausted — stop scan immediately, do NOT mark products as failed.
       blocked = { status: 402, provider_error: aiCall.providerError ?? "payment_required", product_id: p.id };
-      skipped = list.length - scanned - failed - 1; // remaining including this one
+      skipped += list.length - batchScanned - batchFailed; // remaining in THIS batch including this one
       break;
     }
 
     if (!aiCall.ok) {
       failed++;
+      batchFailed++;
       const diag = {
         product_id: p.id,
         product_name: p.name,
@@ -280,12 +397,12 @@ Deno.serve(async (req) => {
         scan_status: "failed",
         scan_error: `http_${aiCall.status}:${(aiCall.providerError ?? "").slice(0, 200)}`,
       }, { onConflict: "product_id" });
-      // Progress checkpoint
+      lastProductId = p.id;
       if (Date.now() - lastProgressAt > 3000) {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed,
           error_message: firstFailing ? String((firstFailing as any).provider_error ?? "") : null,
-          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
+          report: { ...(run.report ?? {}), heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed, last_product_id: lastProductId, counts: { scanned_success: scanned, scanned_failed: failed, skipped } },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
@@ -353,15 +470,18 @@ Deno.serve(async (req) => {
         feed_fixes: ai.feed_fixes ?? [],
       }, { onConflict: "product_id" });
       scanned++;
+      batchScanned++;
+      lastProductId = p.id;
       if (Date.now() - lastProgressAt > 3000) {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed, credits_used: creditsUsed,
-          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
+          report: { ...(run.report ?? {}), heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed, last_product_id: lastProductId, counts: { scanned_success: scanned, scanned_failed: failed, skipped } },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
     } catch (e) {
       failed++;
+      batchFailed++;
       const err = e as Error;
       const diag = {
         product_id: p.id,
@@ -377,7 +497,11 @@ Deno.serve(async (req) => {
     }
     }
 
-    const status = blocked ? "blocked_no_credits" : "success";
+    // For scan_all: if more work remains and we are NOT blocked, keep the run
+    // "running" and self-chain. Otherwise finalize.
+    const remainingAfter = mode === "scan_all" ? await countRemainingActiveProducts(sb) : 0;
+    const shouldChain = mode === "scan_all" && !blocked && remainingAfter > 0;
+    const status = blocked ? "blocked_no_credits" : (shouldChain ? "running" : "success");
   const rootCause = blocked
     ? `AI credits exhausted (HTTP 402) on product ${blocked.product_id}. ${blocked.provider_error}`
     : firstFailing
@@ -395,9 +519,13 @@ Deno.serve(async (req) => {
     products_scanned: scanned,
     products_failed: failed,
     credits_used: creditsUsed,
-    finished_at: new Date().toISOString(),
+    finished_at: shouldChain ? null : new Date().toISOString(),
     report: {
+      ...(run.report ?? {}),
       mode,
+      heartbeat_at: new Date().toISOString(),
+      last_product_id: lastProductId,
+      remaining_after_batch: remainingAfter,
       counts: {
         scanned_success: scanned,
         scanned_failed: failed,
@@ -412,6 +540,12 @@ Deno.serve(async (req) => {
       proposed_fix: proposedFix,
     },
   }).eq("id", run.id);
+
+  // Self-chain: fire next batch on a fresh edge invocation so the runtime
+  // wall-clock resets. No await — the current invocation can exit cleanly.
+  if (shouldChain) {
+    fireSelfChain(run.id).catch((e) => console.error("[self-chain]", e));
+  }
     return { status, scanned, failed, skipped, blocked, firstFailing, rootCause, proposedFix, creditsUsed };
   };
 
