@@ -33,8 +33,8 @@ async function reapStaleRuns(sb: any) {
   const latestWriteMs = Date.parse(latestWrite?.updated_at ?? "");
   const { data: running } = await sb
     .from("product_intelligence_runs")
-    .eq("status", "running")
-    .select("id,started_at,report");
+    .select("id,started_at,report")
+    .eq("status", "running");
 
   for (const run of running ?? []) {
     const heartbeat = typeof run?.report?.heartbeat_at === "string" ? run.report.heartbeat_at : run.started_at;
