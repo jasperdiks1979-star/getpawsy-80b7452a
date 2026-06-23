@@ -401,6 +401,10 @@ async function syncBatch(
       }
       updateData.stock_sync_status = result.status === 'discontinued' ? 'discontinued' : 'ok';
       updateData.stock_sync_error = null;
+      // Variant repair: capture the first CJ variant id we ever see for this product.
+      if (!product.cj_variant_id && result.vid) {
+        updateData.cj_variant_id = result.vid;
+      }
       console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock=${result.stock} (${result.warehouse})`);
       batchSynced++;
     } else if (result.status === 'no_data') {
