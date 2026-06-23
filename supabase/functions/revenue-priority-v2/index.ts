@@ -67,7 +67,7 @@ async function gatherCatalog() {
   // products
   const { data: products, error: pErr } = await admin
     .from("products")
-    .select("id, slug, name, category, price, cost_price, margin_percent, stock, us_stock, eu_stock, variant_stock, created_at")
+    .select("id, slug, name, category, price, cost_price, margin_percent, stock, effective_stock, us_stock, eu_stock, variant_stock, created_at, image_url, images, description, pinterest_ready, pinterest_eligible, pinterest_status, pinterest_disabled, pinterest_category, is_duplicate, dedupe_key, stock_sync_status")
     .eq("is_active", true)
     .limit(2000);
   if (pErr) throw pErr;
