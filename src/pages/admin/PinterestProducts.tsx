@@ -125,7 +125,6 @@ export default function PinterestProducts() {
                     </Badge>
                   </td>
                   <td className="p-2 text-right">
-                    <Button size="sm" variant="ghost" disabled={running} onClick={() => promote(d.product_id)}>
                     <Button size="sm" variant="ghost" disabled={running} onClick={() => requestPromote(d.product_id)}>
                       <Sparkles className="h-3 w-3 mr-1" /> Promote
                     </Button>
@@ -136,6 +135,20 @@ export default function PinterestProducts() {
           </table>
         </CardContent>
       </Card>
+      {assessment && (
+        <ConfirmAiCostDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title="Promote product to Pinterest Creative Director"
+          productCount={1}
+          assessment={assessment}
+          confirmLabel="Promote"
+          onConfirm={() => {
+            setConfirmOpen(false);
+            if (pendingId) void promote(pendingId);
+          }}
+        />
+      )}
     </div>
   );
 }
