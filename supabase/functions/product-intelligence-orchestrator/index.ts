@@ -277,6 +277,7 @@ Deno.serve(async (req) => {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed,
           error_message: firstFailing ? String((firstFailing as any).provider_error ?? "") : null,
+          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
@@ -347,6 +348,7 @@ Deno.serve(async (req) => {
       if (Date.now() - lastProgressAt > 3000) {
         await sb.from("product_intelligence_runs").update({
           products_scanned: scanned, products_failed: failed, credits_used: creditsUsed,
+          report: { heartbeat_at: new Date().toISOString(), mode, scanned, failed, credits_used: creditsUsed },
         }).eq("id", run.id);
         lastProgressAt = Date.now();
       }
