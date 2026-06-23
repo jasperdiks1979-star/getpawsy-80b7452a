@@ -456,6 +456,7 @@ const PinterestCleanupPage = lazyWithRetry(() => import("./pages/admin/Pinterest
 const PinterestQualityPage = lazyWithRetry(() => import("./pages/admin/PinterestQualityPage"));
 const LifestyleEngineV3Page = lazyWithRetry(() => import("./pages/admin/LifestyleEngineV3Page"));
 const ProductIntelligencePage = lazyWithRetry(() => import("./pages/admin/ProductIntelligencePage"));
+const FeedIssuesQueuePage = lazyWithRetry(() => import("./pages/admin/FeedIssuesQueuePage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2429,6 +2430,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ProductIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="feed-issues-queue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FeedIssuesQueuePage />
                                 </Suspense>
                               }
                             />
