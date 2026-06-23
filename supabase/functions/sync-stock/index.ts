@@ -317,7 +317,7 @@ async function syncBatch(
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
-    .select('id, cj_product_id, sku, name, stock')
+    .select('id, cj_product_id, cj_variant_id, sku, name, stock')
     .not('cj_product_id', 'is', null)
     .order('id', { ascending: true });
 
