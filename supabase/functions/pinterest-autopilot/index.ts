@@ -236,21 +236,26 @@ async function handler(req: Request): Promise<Response> {
   try {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Verify caller is admin
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ ok: false, traceId, message: "missing auth" }, 401);
-    const { data: userData } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", ""),
-    );
-    const userId = userData.user?.id;
-    if (!userId) return json({ ok: false, traceId, message: "invalid user" }, 401);
-    const { data: roleRow } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleRow) return json({ ok: false, traceId, message: "admin only" }, 403);
+    // Verify caller is admin (or internal service-to-service)
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedInternal = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const isInternal = !!(internalSecret && expectedInternal && internalSecret === expectedInternal);
+    if (!isInternal) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) return json({ ok: false, traceId, message: "missing auth" }, 401);
+      const { data: userData } = await supabase.auth.getUser(
+        authHeader.replace("Bearer ", ""),
+      );
+      const userId = userData.user?.id;
+      if (!userId) return json({ ok: false, traceId, message: "invalid user" }, 401);
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!roleRow) return json({ ok: false, traceId, message: "admin only" }, 403);
+    }
 
     const body = (await req.json().catch(() => ({}))) as {
       action?: "score" | "select";
