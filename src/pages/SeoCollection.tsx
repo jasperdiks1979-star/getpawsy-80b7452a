@@ -13,6 +13,7 @@ import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { Layout } from '@/components/layout/Layout';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { SectionErrorBoundary } from '@/components/error/SectionErrorBoundary';
 import { CrossCollectionLinks } from '@/components/seo/CrossCollectionLinks';
 import { ProductCard } from '@/components/products/ProductCard';
