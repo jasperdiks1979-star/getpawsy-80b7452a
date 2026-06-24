@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     .from("products")
     .select("id, slug, image_url, images")
     .eq("is_active", true)
-    .ilike("image_url", "%cjdropshipping%")
+    .or("image_url.ilike.%cjdropshipping%,image_url.ilike.%cjpacket%,image_url.ilike.%alicdn%,images.cs.{x}")
     .order("id")
     .limit(limit);
 
