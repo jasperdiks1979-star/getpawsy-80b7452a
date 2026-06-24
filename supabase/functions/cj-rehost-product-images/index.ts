@@ -86,17 +86,21 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const limit = Math.min(Math.max(Number(body.limit) || 25, 1), 100);
   const dryRun = body.dryRun === true;
+  const productIds: string[] | undefined = Array.isArray(body.productIds) ? body.productIds.slice(0, 100) : undefined;
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
   // Pull next batch of products with any CJ-hosted image
-  const { data: products, error } = await supabase
+  let query = supabase
     .from("products")
     .select("id, slug, image_url, images")
-    .eq("is_active", true)
-    .ilike("image_url", "%cjdropshipping%")
-    .order("id")
-    .limit(limit);
+    .eq("is_active", true);
+  if (productIds && productIds.length) {
+    query = query.in("id", productIds);
+  } else {
+    query = query.ilike("image_url", "%cjdropshipping%").order("id").limit(limit);
+  }
+  const { data: products, error } = await query;
 
   if (error) {
     return new Response(JSON.stringify({ ok: false, error: error.message }), {
