@@ -31,19 +31,22 @@ Deno.serve(async (req) => {
       const body = await r.text();
       results.push({ step: fn, ok: r.ok, ms: Date.now() - start, status: r.status, body: body.slice(0, 200) });
       if (!r.ok) {
-        await supabase.from("monitoring_alerts").insert({
-          severity: "warning",
+        await supabase.from("monitoring_alerts").upsert({
+          alert_key: `growth-orchestrator:${fn}`,
+          severity: "P2",
+          category: "growth_intelligence",
           title: `Growth orchestrator step failed: ${fn}`,
-          message: body.slice(0, 500),
-          source: "growth-intelligence-orchestrator",
-        });
+          description: body.slice(0, 500),
+        }, { onConflict: "alert_key" });
       }
     } catch (e) {
       results.push({ step: fn, ok: false, error: String(e) });
-      await supabase.from("monitoring_alerts").insert({
-        severity: "error", title: `Growth orchestrator exception: ${fn}`,
-        message: String(e), source: "growth-intelligence-orchestrator",
-      }).then(() => {}).catch(() => {});
+      await supabase.from("monitoring_alerts").upsert({
+        alert_key: `growth-orchestrator-exc:${fn}`,
+        severity: "P1", category: "growth_intelligence",
+        title: `Growth orchestrator exception: ${fn}`,
+        description: String(e).slice(0, 500),
+      }, { onConflict: "alert_key" }).then(() => {}).catch(() => {});
     }
   }
 
