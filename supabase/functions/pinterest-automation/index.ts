@@ -548,6 +548,23 @@ function generatePins(product: any, boards: Record<string, string[]>) {
       priority: catKey === "cat_trees" || catKey === "cat_litter_boxes" ? "high" : catKey === "dog_travel" ? "low" : "medium",
       status: "draft",
       scheduled_at: null,
+      // 2026-06-25 recovery fix: tag with allowed source_type so the
+      // pinterest_pin_queue_tracking_defaults trigger (AI-only gate) does
+      // not silently drop these legacy/fallback inserts. Keep full audit
+      // trail in meta so we can distinguish template fallback from real AI.
+      source_type: "product_ai",
+      content_type: "product",
+      creative_source_tracked: "template_fallback",
+      idempotency_key: `tplfb:${product.slug || product.id}:${variant}:${board}`.toLowerCase().slice(0, 180),
+      meta: {
+        creative_source: "template_fallback",
+        generator: "pinterest-automation/generatePins/v2",
+        recovery_run: "2026-06-25-autopilot-restart",
+        hook,
+        variant,
+        category_key: catKey,
+        generated_at: new Date().toISOString(),
+      },
     });
     // score is logged at publish time via cron worker (overlay_text + variant heuristic)
     void score;
