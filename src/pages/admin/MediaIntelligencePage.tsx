@@ -34,14 +34,20 @@ export default function MediaIntelligencePage() {
 
   async function load() {
     setLoading(true);
-    const [runsRes, assetsRes, pendingRes, failedRes, eligibleRes, activeRes] = await Promise.all([
-      supabase.from("cj_media_sync_runs").select("*").order("started_at", { ascending: false }).limit(10),
-      supabase.from("cj_media_asset_registry").select("*", { count: "exact", head: true }),
-      supabase.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq("status", "failed"),
-      supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "active").eq("pinterest_eligible", true),
-      supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "active"),
-    ]);
+    const sb = supabase as unknown as {
+      from: (t: string) => {
+        select: (cols: string, opts?: Record<string, unknown>) => {
+          order?: (c: string, o: Record<string, unknown>) => { limit: (n: number) => Promise<{ data: unknown; count: number | null }> };
+          eq?: (c: string, v: unknown) => { eq?: (c: string, v: unknown) => Promise<{ count: number | null }>; } & Promise<{ count: number | null }>;
+        } & Promise<{ count: number | null; data: unknown }>;
+      };
+    };
+    const runsRes = await sb.from("cj_media_sync_runs").select("*").order!("started_at", { ascending: false }).limit(10);
+    const assetsRes = await sb.from("cj_media_asset_registry").select("*", { count: "exact", head: true });
+    const pendingRes = await sb.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq!("status", "pending");
+    const failedRes = await sb.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq!("status", "failed");
+    const eligibleRes = await sb.from("products").select("*", { count: "exact", head: true }).eq!("status", "active").eq!("pinterest_eligible", true);
+    const activeRes = await sb.from("products").select("*", { count: "exact", head: true }).eq!("status", "active");
     setRuns((runsRes.data ?? []) as Run[]);
     setStats({
       registryAssets: assetsRes.count ?? 0,
