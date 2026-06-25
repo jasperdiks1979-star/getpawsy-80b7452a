@@ -86,6 +86,16 @@ export default function AutonomousGrowthPage() {
     setLoading(false);
   }
 
+  async function runWave3(dry = true, maxEnhance = 6) {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("agp-wave3-enhance-qa", {
+      body: { dry_run: dry, maxEnhance },
+    });
+    if (error) toast.error(error.message);
+    else { toast.success(`Wave 3 ${dry ? "(dry)" : `live x${maxEnhance}`}: ${JSON.stringify((data as any)?.counts ?? {})}`); load(); }
+    setLoading(false);
+  }
+
   const cost24h = runs.filter(r => new Date(r.started_at).getTime() > Date.now() - 86_400_000).reduce((a, r) => a + Number(r.ai_cost_usd ?? 0), 0);
 
   return (
@@ -93,7 +103,7 @@ export default function AutonomousGrowthPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Autonomous Growth Platform</h1>
-          <p className="text-sm text-muted-foreground">Waves 1–2 — Foundations, observability, media pipeline. All auto-modes default OFF.</p>
+          <p className="text-sm text-muted-foreground">Waves 1–3 — Foundations, media pipeline, enhancement + QA. All auto-modes default OFF.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => runWatcher(true)} disabled={loading}>Dry-run watcher</Button>
@@ -111,6 +121,20 @@ export default function AutonomousGrowthPage() {
           <Button size="sm" variant="secondary" onClick={() => runWave2(false, "full")} disabled={loading}>Run full sweep (20 batches)</Button>
           <span className="text-xs text-muted-foreground ml-2">
             Rehosts CJ images & videos, drains derivative queue, runs integrity scan.
+          </span>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Wave 3 — Enhancement + QA loop</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2 items-center">
+          <Button size="sm" variant="outline" onClick={() => runWave3(true)} disabled={loading}>Dry-run snapshot</Button>
+          <Button size="sm" onClick={() => runWave3(false, 6)} disabled={loading}>Run small (6 imgs)</Button>
+          <Button size="sm" variant="secondary" onClick={() => runWave3(false, 20)} disabled={loading}>Run batch (20 imgs)</Button>
+          <span className="text-xs text-muted-foreground ml-2">
+            Enqueues + enhances product images via Gemini-3.1-flash-image (~$0.05/img), then grades pending creative_assets.
           </span>
         </CardContent>
       </Card>
