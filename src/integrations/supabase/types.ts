@@ -16360,6 +16360,754 @@ export type Database = {
         }
         Relationships: []
       }
+      pe_ads_ad_groups: {
+        Row: {
+          ad_account_id: string
+          ad_group_id: string
+          audience_size: number | null
+          bid_strategy: string | null
+          budget_cents: number | null
+          campaign_id: string
+          id: string
+          name: string | null
+          raw: Json | null
+          status: string | null
+          synced_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          ad_group_id: string
+          audience_size?: number | null
+          bid_strategy?: string | null
+          budget_cents?: number | null
+          campaign_id: string
+          id?: string
+          name?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          ad_group_id?: string
+          audience_size?: number | null
+          bid_strategy?: string | null
+          budget_cents?: number | null
+          campaign_id?: string
+          id?: string
+          name?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      pe_ads_ads: {
+        Row: {
+          ad_account_id: string
+          ad_group_id: string
+          ad_id: string
+          approval_state: string | null
+          id: string
+          pin_id: string | null
+          raw: Json | null
+          status: string | null
+          synced_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          ad_group_id: string
+          ad_id: string
+          approval_state?: string | null
+          id?: string
+          pin_id?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          ad_group_id?: string
+          ad_id?: string
+          approval_state?: string | null
+          id?: string
+          pin_id?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      pe_ads_campaigns: {
+        Row: {
+          ad_account_id: string
+          budget_cents: number | null
+          campaign_id: string
+          clicks: number | null
+          conversions: number | null
+          delivery_blocker: string | null
+          delivery_status: string | null
+          end_time: string | null
+          id: string
+          impressions: number | null
+          name: string | null
+          objective: string | null
+          raw: Json | null
+          roas: number | null
+          spend_cents: number | null
+          start_time: string | null
+          status: string | null
+          synced_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          budget_cents?: number | null
+          campaign_id: string
+          clicks?: number | null
+          conversions?: number | null
+          delivery_blocker?: string | null
+          delivery_status?: string | null
+          end_time?: string | null
+          id?: string
+          impressions?: number | null
+          name?: string | null
+          objective?: string | null
+          raw?: Json | null
+          roas?: number | null
+          spend_cents?: number | null
+          start_time?: string | null
+          status?: string | null
+          synced_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          budget_cents?: number | null
+          campaign_id?: string
+          clicks?: number | null
+          conversions?: number | null
+          delivery_blocker?: string | null
+          delivery_status?: string | null
+          end_time?: string | null
+          id?: string
+          impressions?: number | null
+          name?: string | null
+          objective?: string | null
+          raw?: Json | null
+          roas?: number | null
+          spend_cents?: number | null
+          start_time?: string | null
+          status?: string | null
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      pe_ads_delivery_diagnostics: {
+        Row: {
+          ad_account_id: string
+          blocker: string | null
+          captured_at: string
+          details: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          status: string | null
+        }
+        Insert: {
+          ad_account_id: string
+          blocker?: string | null
+          captured_at?: string
+          details?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          status?: string | null
+        }
+        Update: {
+          ad_account_id?: string
+          blocker?: string | null
+          captured_at?: string
+          details?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      pe_ai_recommendations: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          evidence: Json | null
+          expected_impact: string | null
+          id: string
+          optimizer: string
+          recommendation: string
+          required_action: string | null
+          safe_to_auto_apply: boolean | null
+          status: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          optimizer: string
+          recommendation: string
+          required_action?: string | null
+          safe_to_auto_apply?: boolean | null
+          status?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          optimizer?: string
+          recommendation?: string
+          required_action?: string | null
+          safe_to_auto_apply?: boolean | null
+          status?: string
+        }
+        Relationships: []
+      }
+      pe_auto_fix_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          issue_id: string | null
+          outcome: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          issue_id?: string | null
+          outcome: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          issue_id?: string | null
+          outcome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pe_auto_fix_log_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "pe_issue_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pe_capi_events: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          event_name: string
+          http_code: number | null
+          id: string
+          payload: Json | null
+          response: Json | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          event_name: string
+          http_code?: number | null
+          id?: string
+          payload?: Json | null
+          response?: Json | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          event_name?: string
+          http_code?: number | null
+          id?: string
+          payload?: Json | null
+          response?: Json | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      pe_catalog_health: {
+        Row: {
+          approved_count: number | null
+          captured_at: string
+          catalog_id: string | null
+          feed_status: string | null
+          id: string
+          issues: Json | null
+          pending_count: number | null
+          raw: Json | null
+          rejected_count: number | null
+        }
+        Insert: {
+          approved_count?: number | null
+          captured_at?: string
+          catalog_id?: string | null
+          feed_status?: string | null
+          id?: string
+          issues?: Json | null
+          pending_count?: number | null
+          raw?: Json | null
+          rejected_count?: number | null
+        }
+        Update: {
+          approved_count?: number | null
+          captured_at?: string
+          catalog_id?: string | null
+          feed_status?: string | null
+          id?: string
+          issues?: Json | null
+          pending_count?: number | null
+          raw?: Json | null
+          rejected_count?: number | null
+        }
+        Relationships: []
+      }
+      pe_conversion_funnel: {
+        Row: {
+          add_to_carts: number | null
+          best_products: Json | null
+          captured_at: string
+          checkouts: number | null
+          drop_offs: Json | null
+          id: string
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+          window_days: number
+          worst_products: Json | null
+        }
+        Insert: {
+          add_to_carts?: number | null
+          best_products?: Json | null
+          captured_at?: string
+          checkouts?: number | null
+          drop_offs?: Json | null
+          id?: string
+          product_views?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions?: number | null
+          window_days?: number
+          worst_products?: Json | null
+        }
+        Update: {
+          add_to_carts?: number | null
+          best_products?: Json | null
+          captured_at?: string
+          checkouts?: number | null
+          drop_offs?: Json | null
+          id?: string
+          product_views?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          sessions?: number | null
+          window_days?: number
+          worst_products?: Json | null
+        }
+        Relationships: []
+      }
+      pe_daily_reports: {
+        Row: {
+          created_at: string
+          id: string
+          json_path: string | null
+          payload: Json
+          pdf_path: string | null
+          report_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          json_path?: string | null
+          payload?: Json
+          pdf_path?: string | null
+          report_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          json_path?: string | null
+          payload?: Json
+          pdf_path?: string | null
+          report_date?: string
+        }
+        Relationships: []
+      }
+      pe_endpoint_checks: {
+        Row: {
+          area: string
+          auto_fixable: boolean | null
+          checked_at: string
+          endpoint: string
+          fix: string | null
+          http_code: number | null
+          id: string
+          missing_scope: string | null
+          ok: boolean
+          raw: Json | null
+          required_scope: string | null
+          root_cause: string | null
+        }
+        Insert: {
+          area: string
+          auto_fixable?: boolean | null
+          checked_at?: string
+          endpoint: string
+          fix?: string | null
+          http_code?: number | null
+          id?: string
+          missing_scope?: string | null
+          ok?: boolean
+          raw?: Json | null
+          required_scope?: string | null
+          root_cause?: string | null
+        }
+        Update: {
+          area?: string
+          auto_fixable?: boolean | null
+          checked_at?: string
+          endpoint?: string
+          fix?: string | null
+          http_code?: number | null
+          id?: string
+          missing_scope?: string | null
+          ok?: boolean
+          raw?: Json | null
+          required_scope?: string | null
+          root_cause?: string | null
+        }
+        Relationships: []
+      }
+      pe_health_snapshots: {
+        Row: {
+          ads_health: string | null
+          alert_count: number | null
+          billing_health: string | null
+          captured_at: string
+          catalog_health: string | null
+          full_access: boolean
+          id: string
+          oauth_status: string | null
+          organic_health: string | null
+          raw: Json | null
+          scopes_granted: string[] | null
+          scopes_missing: string[] | null
+          token_expires_at: string | null
+          tracking_health: string | null
+        }
+        Insert: {
+          ads_health?: string | null
+          alert_count?: number | null
+          billing_health?: string | null
+          captured_at?: string
+          catalog_health?: string | null
+          full_access?: boolean
+          id?: string
+          oauth_status?: string | null
+          organic_health?: string | null
+          raw?: Json | null
+          scopes_granted?: string[] | null
+          scopes_missing?: string[] | null
+          token_expires_at?: string | null
+          tracking_health?: string | null
+        }
+        Update: {
+          ads_health?: string | null
+          alert_count?: number | null
+          billing_health?: string | null
+          captured_at?: string
+          catalog_health?: string | null
+          full_access?: boolean
+          id?: string
+          oauth_status?: string | null
+          organic_health?: string | null
+          raw?: Json | null
+          scopes_granted?: string[] | null
+          scopes_missing?: string[] | null
+          token_expires_at?: string | null
+          tracking_health?: string | null
+        }
+        Relationships: []
+      }
+      pe_issue_log: {
+        Row: {
+          affected_entity_id: string | null
+          affected_entity_type: string | null
+          api_response: Json | null
+          area: string
+          auto_fixable: boolean | null
+          created_at: string
+          evidence: Json | null
+          expected_impact: string | null
+          id: string
+          manual_action: string | null
+          recommended_fix: string | null
+          root_cause: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          api_response?: Json | null
+          area: string
+          auto_fixable?: boolean | null
+          created_at?: string
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          manual_action?: string | null
+          recommended_fix?: string | null
+          root_cause?: string | null
+          severity: string
+          status?: string
+        }
+        Update: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          api_response?: Json | null
+          area?: string
+          auto_fixable?: boolean | null
+          created_at?: string
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          manual_action?: string | null
+          recommended_fix?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pe_manual_approval_queue: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          execution_result: Json | null
+          expected_benefit: string | null
+          id: string
+          issue_id: string | null
+          payload: Json | null
+          proposed_action: string
+          reason: string | null
+          risk: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          execution_result?: Json | null
+          expected_benefit?: string | null
+          id?: string
+          issue_id?: string | null
+          payload?: Json | null
+          proposed_action: string
+          reason?: string | null
+          risk?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          execution_result?: Json | null
+          expected_benefit?: string | null
+          id?: string
+          issue_id?: string | null
+          payload?: Json | null
+          proposed_action?: string
+          reason?: string | null
+          risk?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pe_manual_approval_queue_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "pe_issue_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pe_oauth_intents: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          granted_scopes: string[] | null
+          id: string
+          requested_scopes: string[]
+          state: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          granted_scopes?: string[] | null
+          id?: string
+          requested_scopes?: string[]
+          state: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          granted_scopes?: string[] | null
+          id?: string
+          requested_scopes?: string[]
+          state?: string
+        }
+        Relationships: []
+      }
+      pe_operator_runs: {
+        Row: {
+          auto_fixed: number | null
+          details: Json | null
+          finished_at: string | null
+          id: string
+          issues_found: number | null
+          queued: number | null
+          started_at: string
+          trigger: string | null
+        }
+        Insert: {
+          auto_fixed?: number | null
+          details?: Json | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          queued?: number | null
+          started_at?: string
+          trigger?: string | null
+        }
+        Update: {
+          auto_fixed?: number | null
+          details?: Json | null
+          finished_at?: string | null
+          id?: string
+          issues_found?: number | null
+          queued?: number | null
+          started_at?: string
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      pe_product_group_health: {
+        Row: {
+          captured_at: string
+          catalog_id: string | null
+          id: string
+          name: string | null
+          product_group_id: string | null
+          raw: Json | null
+          status: string | null
+        }
+        Insert: {
+          captured_at?: string
+          catalog_id?: string | null
+          id?: string
+          name?: string | null
+          product_group_id?: string | null
+          raw?: Json | null
+          status?: string | null
+        }
+        Update: {
+          captured_at?: string
+          catalog_id?: string | null
+          id?: string
+          name?: string | null
+          product_group_id?: string | null
+          raw?: Json | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      pe_scope_status: {
+        Row: {
+          checked_at: string
+          granted: boolean
+          id: string
+          note: string | null
+          required: boolean
+          scope: string
+        }
+        Insert: {
+          checked_at?: string
+          granted: boolean
+          id?: string
+          note?: string | null
+          required?: boolean
+          scope: string
+        }
+        Update: {
+          checked_at?: string
+          granted?: boolean
+          id?: string
+          note?: string | null
+          required?: boolean
+          scope?: string
+        }
+        Relationships: []
+      }
+      pe_tracking_health: {
+        Row: {
+          capi_status: string | null
+          captured_at: string
+          consent_gate_ok: boolean | null
+          dedup_rate: number | null
+          details: Json | null
+          failed_events_24h: number | null
+          id: string
+          last_event_at: string | null
+          match_quality: number | null
+          tag_loaded: boolean | null
+          tag_present: boolean | null
+        }
+        Insert: {
+          capi_status?: string | null
+          captured_at?: string
+          consent_gate_ok?: boolean | null
+          dedup_rate?: number | null
+          details?: Json | null
+          failed_events_24h?: number | null
+          id?: string
+          last_event_at?: string | null
+          match_quality?: number | null
+          tag_loaded?: boolean | null
+          tag_present?: boolean | null
+        }
+        Update: {
+          capi_status?: string | null
+          captured_at?: string
+          consent_gate_ok?: boolean | null
+          dedup_rate?: number | null
+          details?: Json | null
+          failed_events_24h?: number | null
+          id?: string
+          last_event_at?: string | null
+          match_quality?: number | null
+          tag_loaded?: boolean | null
+          tag_present?: boolean | null
+        }
+        Relationships: []
+      }
       performance_alerts: {
         Row: {
           created_at: string
