@@ -1,5 +1,15 @@
 [
   {
+    "slug": "2026-06-25-pinterest-creative-wave2",
+    "title": "Pinterest Creative Engine — Wave 2 (Retroactive Audit + Archive + Regeneration Queue)",
+    "date": "2026-06-25",
+    "run_id": "99c383ab-a5ce-4699-a3c3-9d389207dcc2",
+    "status": "shipped",
+    "score": 2,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.json"
+  },
+  {
     "slug": "2026-06-25-pinterest-creative-wave1",
     "title": "Pinterest Creative Engine \u2014 Wave 1 (Steps 1+2+3+8)",
     "date": "2026-06-25",
