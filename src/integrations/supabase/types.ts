@@ -6885,6 +6885,508 @@ export type Database = {
           },
         ]
       }
+      cmdr_audit_log: {
+        Row: {
+          action: string
+          actor: string
+          confidence: number | null
+          created_at: string
+          estimated_cost_cents: number | null
+          expected_roi: number | null
+          id: string
+          payload: Json
+          reasoning: string | null
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_cents?: number | null
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          reasoning?: string | null
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string
+          confidence?: number | null
+          created_at?: string
+          estimated_cost_cents?: number | null
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          reasoning?: string | null
+          target?: string | null
+        }
+        Relationships: []
+      }
+      cmdr_budget_ledger: {
+        Row: {
+          breached: boolean | null
+          budget_cents: number | null
+          category: string
+          id: string
+          period: string
+          period_start: string
+          remaining_cents: number | null
+          spent_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          breached?: boolean | null
+          budget_cents?: number | null
+          category: string
+          id?: string
+          period: string
+          period_start: string
+          remaining_cents?: number | null
+          spent_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          breached?: boolean | null
+          budget_cents?: number | null
+          category?: string
+          id?: string
+          period?: string
+          period_start?: string
+          remaining_cents?: number | null
+          spent_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cmdr_decisions: {
+        Row: {
+          action: string
+          confidence: number | null
+          created_at: string
+          decided_at: string | null
+          estimated_cost_cents: number | null
+          execution_history: Json
+          expected_roi: number | null
+          id: string
+          payload: Json
+          priority: number | null
+          reasoning: string | null
+          run_id: string | null
+          status: string
+          target_engine: string
+        }
+        Insert: {
+          action: string
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          estimated_cost_cents?: number | null
+          execution_history?: Json
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          priority?: number | null
+          reasoning?: string | null
+          run_id?: string | null
+          status?: string
+          target_engine: string
+        }
+        Update: {
+          action?: string
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          estimated_cost_cents?: number | null
+          execution_history?: Json
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          priority?: number | null
+          reasoning?: string | null
+          run_id?: string | null
+          status?: string
+          target_engine?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmdr_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cmdr_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmdr_goals: {
+        Row: {
+          created_at: string
+          horizon: string
+          id: string
+          metric: string
+          name: string
+          notes: string | null
+          status: string
+          target_value: number | null
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          horizon?: string
+          id?: string
+          metric: string
+          name: string
+          notes?: string | null
+          status?: string
+          target_value?: number | null
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          horizon?: string
+          id?: string
+          metric?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          target_value?: number | null
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      cmdr_health_signals: {
+        Row: {
+          details: Json
+          engine: string
+          error_rate: number | null
+          id: string
+          lag_seconds: number | null
+          last_run_at: string | null
+          observed_at: string
+          status: string
+        }
+        Insert: {
+          details?: Json
+          engine: string
+          error_rate?: number | null
+          id?: string
+          lag_seconds?: number | null
+          last_run_at?: string | null
+          observed_at?: string
+          status?: string
+        }
+        Update: {
+          details?: Json
+          engine?: string
+          error_rate?: number | null
+          id?: string
+          lag_seconds?: number | null
+          last_run_at?: string | null
+          observed_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      cmdr_memory: {
+        Row: {
+          entity_key: string
+          entity_type: string
+          evidence: Json
+          id: string
+          occurred_at: string
+          outcome: string
+          score: number | null
+        }
+        Insert: {
+          entity_key: string
+          entity_type: string
+          evidence?: Json
+          id?: string
+          occurred_at?: string
+          outcome: string
+          score?: number | null
+        }
+        Update: {
+          entity_key?: string
+          entity_type?: string
+          evidence?: Json
+          id?: string
+          occurred_at?: string
+          outcome?: string
+          score?: number | null
+        }
+        Relationships: []
+      }
+      cmdr_model_route_log: {
+        Row: {
+          candidates: Json
+          chosen_model: string
+          cost_cents: number | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          reason: string | null
+          run_id: string | null
+          success: boolean | null
+          task: string
+        }
+        Insert: {
+          candidates?: Json
+          chosen_model: string
+          cost_cents?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          reason?: string | null
+          run_id?: string | null
+          success?: boolean | null
+          task: string
+        }
+        Update: {
+          candidates?: Json
+          chosen_model?: string
+          cost_cents?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          reason?: string | null
+          run_id?: string | null
+          success?: boolean | null
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmdr_model_route_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cmdr_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmdr_resource_plan: {
+        Row: {
+          created_at: string
+          engine: string
+          expected_calls: number | null
+          expected_cost_cents: number | null
+          id: string
+          notes: string | null
+          plan_date: string
+          priority: number | null
+          run_id: string | null
+          scheduled_for: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          engine: string
+          expected_calls?: number | null
+          expected_cost_cents?: number | null
+          id?: string
+          notes?: string | null
+          plan_date?: string
+          priority?: number | null
+          run_id?: string | null
+          scheduled_for?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          engine?: string
+          expected_calls?: number | null
+          expected_cost_cents?: number | null
+          id?: string
+          notes?: string | null
+          plan_date?: string
+          priority?: number | null
+          run_id?: string | null
+          scheduled_for?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmdr_resource_plan_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cmdr_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmdr_run_steps: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          output: Json
+          run_id: string
+          started_at: string
+          status: string
+          step: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          output?: Json
+          run_id: string
+          started_at?: string
+          status?: string
+          step: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          output?: Json
+          run_id?: string
+          started_at?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmdr_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cmdr_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmdr_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
+      cmdr_settings: {
+        Row: {
+          autonomy_level: number
+          config: Json
+          daily_ads_budget_cents: number
+          daily_ai_budget_cents: number
+          daily_cloud_budget_cents: number
+          daily_pinterest_budget_cents: number
+          default_model: string
+          id: string
+          kill_switch: boolean
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          autonomy_level?: number
+          config?: Json
+          daily_ads_budget_cents?: number
+          daily_ai_budget_cents?: number
+          daily_cloud_budget_cents?: number
+          daily_pinterest_budget_cents?: number
+          default_model?: string
+          id?: string
+          kill_switch?: boolean
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          autonomy_level?: number
+          config?: Json
+          daily_ads_budget_cents?: number
+          daily_ai_budget_cents?: number
+          daily_cloud_budget_cents?: number
+          daily_pinterest_budget_cents?: number
+          default_model?: string
+          id?: string
+          kill_switch?: boolean
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cmdr_simulations: {
+        Row: {
+          created_at: string
+          decision_id: string | null
+          expected_ai_cost_cents: number | null
+          expected_clicks: number | null
+          expected_cloud_cost_cents: number | null
+          expected_conversions: number | null
+          expected_revenue_cents: number | null
+          expected_roi: number | null
+          id: string
+          passed: boolean | null
+          rationale: string | null
+          threshold: number | null
+        }
+        Insert: {
+          created_at?: string
+          decision_id?: string | null
+          expected_ai_cost_cents?: number | null
+          expected_clicks?: number | null
+          expected_cloud_cost_cents?: number | null
+          expected_conversions?: number | null
+          expected_revenue_cents?: number | null
+          expected_roi?: number | null
+          id?: string
+          passed?: boolean | null
+          rationale?: string | null
+          threshold?: number | null
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string | null
+          expected_ai_cost_cents?: number | null
+          expected_clicks?: number | null
+          expected_cloud_cost_cents?: number | null
+          expected_conversions?: number | null
+          expected_revenue_cents?: number | null
+          expected_roi?: number | null
+          id?: string
+          passed?: boolean | null
+          rationale?: string | null
+          threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmdr_simulations_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "cmdr_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohort_copy_pin_history: {
         Row: {
           action: string

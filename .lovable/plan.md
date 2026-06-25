@@ -1,117 +1,81 @@
+# Wave 6 — Autonomous Commander AI
 
-# Wave 5X — Autonomous Commerce Intelligence (ACI)
+The Commander sits **above** every existing AGP/ACI/Pinterest/Cinematic/CPE engine. It does not replace them — it decides which one runs, when, on which model, with which budget, and validates the outcome. Default mode is `simulation` so nothing autonomous reaches production until you flip the switch.
 
-Builds the commercial brain on top of Waves 1–4A+. Nothing existing is replaced; ACI consumes Signal Lake, Growth Scores, Product Opportunity, CJ Media, Pinterest, Cinematic V3, QA, and AI Enhancement outputs and decides what happens next.
+## Architecture (one orchestrator, many decisions)
 
-The scope is huge, so it ships in 5 stages so each is verifiable, idempotent, observable and reversible. You approve once; I run them in order in a single autonomous loop and ship one consolidated PDF + JSON report at the end (plus a per-stage JSON checkpoint).
+```text
+                       ┌────────────────────────────┐
+                       │  Commander AI (this wave)  │
+                       │  - goal engine             │
+                       │  - model router            │
+                       │  - budget engine           │
+                       │  - resource scheduler      │
+                       │  - decision engine         │
+                       │  - simulation engine       │
+                       │  - self-healing            │
+                       │  - business memory         │
+                       └─────────────┬──────────────┘
+                                     │ supervises + decides
+   ┌─────────────────────────────────┼─────────────────────────────────┐
+   ▼                                 ▼                                 ▼
+AGP (4A/4A+)     ACI (5X)     Pinterest engines     CPE / Media     Cinematic V3
+Growth/Forecast  Opportunity  Autopilot/Scaling     Enhancer/QA     Renderer
+SEO / Content    Recs/Tasks   Catalog/Boards        CJ Pipeline     Voiceover
+Revenue Intel    Forecasts    Pin Repair            Image Compliance
+```
 
-────────────────────────────────────
+Commander never bypasses existing guardrails (ACI kill switch, Pinterest credit governor, CPE budget caps, cinematic dispatch). It calls each engine's documented entrypoint and respects its `simulation/auto/approval` modes.
 
-## Stage 5X-A — Foundations, Operator Controls, Kill Switches
+## 5-stage rollout
 
-**Schema (1 migration, admin-only RLS + service_role grants):**
-- `aci_settings` — kill_switch, mode (`auto`/`approval`/`simulation`/`dry_run`), daily_ai_budget_usd, daily_cloud_budget_usd, max_tasks_per_day, autonomy_level (0–5).
-- `aci_runs`, `aci_run_steps` — per-engine run log (mirrors agp_runs shape).
-- `aci_audit_log` — every autonomous decision (actor, engine, action, payload, before/after, reversible_token).
-- `aci_budget_ledger` — daily ai_usd / cloud_usd spend per engine, hard-capped from settings.
-- `aci_approvals` — pending operator approvals (task_id, risk, expected_revenue, expires_at).
-- `aci_rollbacks` — reversible action snapshots.
+| Stage | Scope | Mode |
+|---|---|---|
+| **6A — Foundations + War Room** *(this turn)* | Schema, orchestrator skeleton (8 modules), `/admin/commander`, kill switch, cron, simulation run, report | simulation |
+| **6B — Model Router + Budget Engine** | Score & route LOVABLE_AI model choice per task by quality/cost/latency history; daily/hourly/weekly/monthly budget ledger across AI/cloud/Pinterest/ads; auto-pause on breach | simulation |
+| **6C — Goal Engine + Decision Engine + Simulation** | Operator-defined goals (revenue, ROI, AOV, cost reduction); recommendation evaluator (execute/approve/delay/cancel/retry/escalate); ROI simulation gate before expensive jobs | approval |
+| **6D — Self-Healing + Business Memory** | Stalled-cron/edge-fn/RLS/Pinterest/CJ detectors with auto-retry & rollback; long-term memory of winning products/titles/images/prompts/models | approval → auto |
+| **6E — Digital Board Meeting + Master Report** | Daily 06:00 UTC CEO PDF (executive/revenue/growth/Pinterest/ads/SEO/media/inventory/trend/competitor/risk + action plan); full Wave-6 master PDF | auto |
 
-**Edge function:** `aci-guardrails` — single source of truth: every other ACI function calls `check(engine, est_cost_usd)` before executing; returns `allow`/`deny`/`require_approval`. Enforces kill switch, budget, mode.
+Each stage ends with its own PDF+JSON in `public/admin-reports/ai-implementation/` and a manifest entry.
 
-**UI:** `/admin/autonomous-commerce` skeleton + Operator Controls panel (kill switch, mode selector, budget sliders, autonomy slider, emergency stop, rollback list, audit log viewer).
+## Stage 6A — what ships this turn
 
-────────────────────────────────────
+**Database (new tables, RLS admin-read / service-role-write):**
 
-## Stage 5X-B — Intelligence Engines (read-only signal layer)
+- `cmdr_settings` — kill_switch, mode, autonomy_level, default model, budget caps, goal pointers
+- `cmdr_goals` — operator goals (metric, target, horizon, weight, status)
+- `cmdr_runs` / `cmdr_run_steps` — execution log per Commander tick
+- `cmdr_decisions` — every decision with reasoning, confidence, expected ROI, cost estimate, target engine, status, execution history
+- `cmdr_resource_plan` — daily plan: which engine, when, how many calls, expected cost
+- `cmdr_model_route_log` — model-router choices (task, candidates, chosen, reason, latency, cost)
+- `cmdr_budget_ledger` — multi-period (hour/day/week/month/year) spend by category
+- `cmdr_health_signals` — per-engine health snapshots (status, last_run, lag, error_rate)
+- `cmdr_simulations` — pre-execution simulation outputs (expected ROI vs threshold)
+- `cmdr_memory` — long-term wins/losses keyed by entity (product, title, image, prompt, model)
+- `cmdr_audit_log` — append-only audit of every autonomous or operator action
 
-All write to new tables only. No mutation of products/Pinterest/SEO yet.
+**Edge function:** `cmdr-orchestrator` (single function, 8 internal modules: health-scan → goal-eval → resource-plan → model-router → budget-check → decision-engine → simulation → self-healing). Modes: `manual`, `semi`, `auto`, `autonomous`, `experimental`, `dry_run`, `emergency_stop`. Default `simulation`.
 
-**Schema:**
-- `aci_market_signals` — source, signal_type (trend/keyword/category/product), entity, score, velocity, confidence, expected_lifetime_days, seasonality, payload, captured_at.
-- `aci_competitors` — domain, niche, discovered_at, threat_score, last_scanned_at.
-- `aci_competitor_snapshots` — daily diff per competitor: prices, new_products, top_pages, media_quality, seo_score, pinterest_visibility.
-- `aci_competitor_gaps` — per (competitor, axis): price/media/seo/content/trust/conversion/overall.
-- `aci_product_opportunity_v2` — extends Wave 4A+ opportunity with 18 components incl. trend_score, demand_score, competition_score, seasonality, media_gap, seo_gap, expected_revenue_increase_cents, expected_ctr_delta_pct, expected_pinterest_delta_pct, expected_seo_delta_pct, investment_priority, expected_roi.
-- `aci_revenue_intelligence` — per product per day: profit_cents, margin_pct, shipping_cost_cents, conversion_pct, refund_risk, ad_roi, ltv_cents, dead_inventory_flag, lost_revenue_cents.
-- `aci_forecasts` — horizon (7/30/90/180/365), metric (category/keyword/pinterest/traffic/sales/revenue), entity, predicted, low, high, confidence, model_version.
+**Cron:** daily 04:00 UTC (after AGP 02:00/02:30/02:45 and ACI 03:30).
 
-**Edge functions (8, service-role, all gated by `aci-guardrails`):**
-1. `aci-market-intel` — Firecrawl v2 + Google Trends (via existing connector), Pinterest Trends, Amazon/Chewy/Etsy/Temu/Ali/TikTok/Instagram/YouTube/Reddit/pet-blogs/vet-news scrapers (rate-limited, cached 24h). 25 sources max/run, hard cap 200 signals/run.
-2. `aci-competitor-discovery` — Semrush competitive_analysis + Firecrawl map to auto-discover competitors; writes `aci_competitors`.
-3. `aci-competitor-monitor` — daily snapshot per competitor (price/media/SEO/Pinterest/shopping); writes snapshots + gap scores.
-4. `aci-opportunity-v2` — joins everything (Growth Score, Pinterest, GA4, GSC, CJ, inventory, margins, price, CTR, CVR, revenue, media quality, AI enhancement, reviews, trends, demand, competition, seasonality) → `aci_product_opportunity_v2`.
-5. `aci-revenue-intel` — profit, margin, shipping, conversion, refund risk, ad ROI, LTV, monthly/quarter/annual forecast, lost-revenue + profit-leak + dead-inventory detection.
-6. `aci-trend-forecaster` — EWMA + linear regression + seasonal decomposition over 90d signals for 7/30/90/180/365 horizons.
-7. `aci-learning-engine` — replays operator approvals/rejections + downstream outcomes; updates `aci_score_weights` (bounded ±5%/day per axis), writes `aci_learning_events`.
-8. `aci-intelligence-orchestrator` — runs 1→7 in order, idempotent per day.
+**UI:** `/admin/commander` — Executive War Room with live tiles (Business Health, Revenue, Profit, Forecast, AI/Cloud Spend, ROI, Growth, Pending Decisions, Running Jobs, Budgets, Forecast Accuracy, Model Performance, Operator Overrides, System Health) + tabs for Decisions, Resource Plan, Goals, Model Routing, Budgets, Health Signals, Memory, Audit. Operator controls for mode + kill switch + autonomy level.
 
-**AI:** Lovable AI Gateway, `google/gemini-3-flash-preview` only, ≤ 8 calls/orchestrator run (~$0.10/day cap).
+**Reporting:** PDF + JSON report describing Stage 6A; manifest updated.
 
-────────────────────────────────────
+**Safety defaults:**
 
-## Stage 5X-C — Recommendation + Task Generator (decision layer)
+- mode = `simulation` (no engine is invoked; only plans + audit rows written)
+- autonomy_level = 1 (every non-trivial decision requires approval once mode advances)
+- All daily budgets = $0.01 AI / $0.01 cloud for Commander itself (it doesn't spend; downstream engines retain their own budgets)
+- Kill switch primed in UI; flipping it blocks the orchestrator and all auto-execution
 
-**Schema:**
-- `aci_recommendations` — engine, recommendation_type, entity, expected_revenue_cents, expected_profit_cents, confidence, priority (critical/high/medium/low/ignore), risk, ai_cost_usd, cloud_cost_usd, completion_minutes, dependencies jsonb, status.
-- `aci_tasks` — task_type (enhance_image/cinematic_video/pinterest_publish/seo_rewrite/blog/title/description/price_change/faq/collection/ab_test), payload, status, requires_approval, recommendation_id, run_id, output jsonb.
+**Non-goals for 6A:** no real engine invocation, no model fan-out, no autonomous Pinterest/ads spend, no rollback execution — those land in 6B/6C/6D under approval mode.
 
-**Edge functions:**
-- `aci-recommender` — turns Stage B outputs into typed recommendations; auto-classifies priority via expected revenue × confidence / cost.
-- `aci-task-generator` — converts approved/auto-eligible recommendations into executable `aci_tasks` and dispatches to existing engines (CPE image enhancer, Cinematic V3, Pinterest Autopilot, SEO writer, copy engine). Honors mode: `approval` queues to `aci_approvals`, `auto` dispatches immediately, `simulation`/`dry_run` writes intent only.
+## Validation for 6A
 
-**Critical safety:** every dispatch is wrapped in `aci_rollbacks` snapshot first; price changes always require approval regardless of autonomy level.
+- Run `cmdr-orchestrator` once in simulation; expect 8 ok steps, 0 cost, plans + decisions written, no downstream side effects.
+- War Room renders all panels with live data.
+- Report PDF + JSON exist; manifest contains the new entry.
 
-────────────────────────────────────
-
-## Stage 5X-D — Executive Dashboard + UI (`/admin/autonomous-commerce`)
-
-11 panels (lazy-loaded, virtualized tables, all data fetched from new tables):
-1. Executive Score + Business Health hero
-2. Revenue Forecast (7/30/90/180/365)
-3. Opportunity Queue (top 50, sortable)
-4. Highest ROI Tasks
-5. Competitor Alerts + threat map
-6. Trending Products / Categories / Keywords
-7. Market Signals stream
-8. Recommendations inbox with approve/reject
-9. Cost & ROI (AI + cloud spend vs budget)
-10. Pipeline + Learning status (engines, last run, confidence)
-11. Operator Controls + Audit Log + Rollback
-
-Reuses existing `Wave4PlusIntelligencePanel` patterns; adds `Wave5XCommerceBrainPanel.tsx` + 11 sub-components.
-
-────────────────────────────────────
-
-## Stage 5X-E — Cron, End-to-End Validation, Reports
-
-**Cron (via supabase--insert, single job):**
-`03:30 UTC` daily → `aci-intelligence-orchestrator` → `aci-recommender` → `aci-task-generator` (mode-aware) → `aci-learning-engine`.
-
-**Validation:**
-- Dry-run full pipeline → live run with `mode='simulation'` → assert every new table has today rows.
-- Playwright screenshots of all 11 panels at 1280×1800.
-- Verify guardrails: trip kill switch → assert all engines refuse; trip budget → assert recommender denies.
-
-**Reports (per standing rule, all under `public/admin-reports/ai-implementation/`):**
-- `2026-06-25-wave-5x-aci.pdf` + `.json` — full implementation report (exec summary, files, DB, APIs, AI/cloud cost, security, scorecard).
-- Sub-reports embedded as appendix sections: Architecture · Database · Cron · API · Cost Projection · Risk Analysis · Business Value Projection · Deployment · Production Readiness.
-- `manifest.json` prepended.
-
-────────────────────────────────────
-
-## Cost & safety summary
-- AI: ≤ $0.10/day at default settings; hard-capped by `aci_budget_ledger`.
-- Cloud: scrapers cached 24h, Firecrawl cap 25 URLs/run, Semrush ≤ 5 calls/run.
-- No price mutations without explicit approval. No Pinterest publishes from this wave directly — only via existing autopilot which already has its own guardrails.
-- All new tables admin-only; service_role for edge functions; no anon access.
-- Default mode on first deploy: `simulation` (writes intents, dispatches nothing) so you can review before flipping to `auto`.
-
-## Deliverables checklist
-- 1 migration (≈ 15 tables + grants + RLS + cron)
-- 11 edge functions
-- 1 dashboard page + 11 panels + Operator Controls
-- Live validation (simulation mode) + screenshots
-- Implementation PDF + JSON + manifest entry
-
-Approve to execute Stages A→E end-to-end in one autonomous run. Default mode will be `simulation`; flipping to `auto` is a one-click toggle in Operator Controls afterwards.
+Approve and I'll execute 6A in this turn, then await your go-ahead for 6B.
