@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2, CheckCircle2, AlertTriangle, RefreshCw, Link2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { jsPDF } from "jspdf";
 
 type Kpi = {
   sessions: number;
@@ -76,6 +77,97 @@ export default function PinterestHealth() {
       toast({ title: "Reconnect failed", description: e?.message ?? "Failed", variant: "destructive" });
       setBusy(null);
     }
+  }
+
+  async function reconnectFullAccess() {
+    setBusy("reconnect_full");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: {
+          extra_scopes: [
+            "ads:read", "ads:write",
+            "catalogs:read", "catalogs:write",
+            "billing:read", "billing:write",
+            "user_accounts:write",
+            "boards:read_secret", "boards:write_secret",
+            "pins:read_secret", "pins:write_secret",
+            "biz_access:read", "biz_access:write",
+          ],
+          auto_sync_catalog: true,
+        },
+      });
+      if (error) throw error;
+      const authUrl = (data as any)?.auth_url;
+      if (!authUrl) throw new Error("No auth_url returned");
+      sessionStorage.setItem("pinterest_ads_reconnect_pending", "1");
+      window.location.href = authUrl;
+    } catch (e: any) {
+      toast({ title: "Full Access reconnect failed", description: e?.message ?? "Failed", variant: "destructive" });
+      setBusy(null);
+    }
+  }
+
+  function downloadJson() {
+    if (!adsDiag) return;
+    const blob = new Blob([JSON.stringify(adsDiag, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pinterest-full-access-diagnostic-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadPdf() {
+    if (!adsDiag) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const W = 555;
+    let y = 40;
+    const line = (t: string, size = 10, bold = false) => {
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      const wrapped = doc.splitTextToSize(t, W);
+      for (const w of wrapped) {
+        if (y > 800) { doc.addPage(); y = 40; }
+        doc.text(w, 30, y);
+        y += size + 4;
+      }
+    };
+    line("Pinterest Full Access Diagnostic", 16, true);
+    line(`Generated: ${adsDiag.generated_at ?? new Date().toISOString()}`);
+    line(`Ad Account: ${adsDiag.ad_account_id ?? ""}`);
+    line(`Full Access: ${adsDiag.scope_check?.full_access ? "YES" : "NO"}`, 12, true);
+    y += 6; line("Granted scopes", 12, true);
+    line((adsDiag.scope_check?.granted || []).join(", ") || "(none)");
+    y += 4; line("Missing scopes (required)", 12, true);
+    line((adsDiag.scope_check?.missing || []).join(", ") || "(none)");
+    y += 4; line("Missing scopes (full-access target)", 12, true);
+    line((adsDiag.scope_check?.missing_full_access || []).join(", ") || "(none)");
+    y += 6; line("Endpoint verification", 12, true);
+    Object.entries(adsDiag.endpoints || {}).forEach(([n, r]: any) => {
+      line(`• ${n}: HTTP ${r.status}${r.ok ? " OK" : " FAIL"} ${(r.body?.message ?? "")}`);
+    });
+    if ((adsDiag.verification?.failed || []).length) {
+      y += 6; line("Manual actions required", 12, true);
+      for (const f of adsDiag.verification.failed) {
+        line(`- ${f.name} (${f.status}): ${f.manual_action?.action ?? "Reconnect and re-test."}`);
+      }
+    }
+    if (adsDiag.capabilities) {
+      y += 6; line("What Lovable can control today", 12, true);
+      for (const [k, v] of Object.entries(adsDiag.capabilities)) line(`• ${k}: ${v ? "YES" : "NO"}`);
+    }
+    if ((adsDiag.requires_pinterest_approval || []).length) {
+      y += 6; line("Still requires Pinterest approval", 12, true);
+      for (const r of adsDiag.requires_pinterest_approval) line(`- ${r}`);
+    }
+    if ((adsDiag.root_cause_summary || []).length) {
+      y += 6; line("Campaign delivery diagnostics", 12, true);
+      for (const c of adsDiag.root_cause_summary) {
+        line(`• ${c.name} [${c.status}] impr7d=${c.impressions_7d} — ${c.root_cause}`);
+      }
+    }
+    doc.save(`pinterest-full-access-diagnostic-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   async function loadCatalog() {
@@ -282,15 +374,27 @@ export default function PinterestHealth() {
               size="sm"
               variant="default"
               disabled={busy !== null}
+              onClick={reconnectFullAccess}
+              title="Reconnect Pinterest and request every supported scope: organic + ads + catalogs + billing + secret boards + business access"
+            >
+              {busy === "reconnect_full" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
+              Reconnect Pinterest Full Access
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy !== null}
               onClick={reconnectWithAdsScopes}
               title="Reconnect Pinterest with full Ads + Billing + Catalogs scopes"
             >
               {busy === "reconnect_ads" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
-              Reconnect Pinterest Ads
+              Ads-only reconnect
             </Button>
             <Button size="sm" variant="outline" disabled={adsDiagBusy} onClick={runAdsDiagnostic}>
               <RefreshCw className={`h-3 w-3 mr-1 ${adsDiagBusy ? "animate-spin" : ""}`} />Run diagnostic
             </Button>
+            <Button size="sm" variant="outline" disabled={!adsDiag} onClick={downloadJson}>JSON</Button>
+            <Button size="sm" variant="outline" disabled={!adsDiag} onClick={downloadPdf}>PDF</Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
