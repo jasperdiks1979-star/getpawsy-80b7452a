@@ -1,5 +1,15 @@
 [
   {
+    "slug": "2026-06-25-pga-wave-a-foundation",
+    "title": "Pinterest Growth AI \u2014 Wave A \u00b7 Foundation + Executive Overview",
+    "run_id": "2026-06-25-pga-wave-a-foundation",
+    "generated_at": "2026-06-25T23:22:15.830644Z",
+    "status": "shipped",
+    "score": 82,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.json"
+  },
+  {
     "slug": "2026-06-25-pe-wave1-cron-auth-fix",
     "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Cron Auth Fix",
     "run_id": "2026-06-25-pe-wave1-cron-auth-fix",

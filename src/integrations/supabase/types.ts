@@ -17174,6 +17174,153 @@ export type Database = {
         }
         Relationships: []
       }
+      pga_executive_snapshots: {
+        Row: {
+          add_to_cart: number
+          ai_opportunities: Json
+          conversion_rate: number
+          created_at: string
+          ctr: number
+          growth_score: number
+          id: string
+          losing_products: Json
+          organic_reach: number
+          outbound_clicks: number
+          paid_reach: number
+          purchases: number
+          revenue_cents: number
+          roas: number
+          sessions: number
+          snapshot_date: string
+          source_breakdown: Json
+          trending_products: Json
+          window_days: number
+        }
+        Insert: {
+          add_to_cart?: number
+          ai_opportunities?: Json
+          conversion_rate?: number
+          created_at?: string
+          ctr?: number
+          growth_score?: number
+          id?: string
+          losing_products?: Json
+          organic_reach?: number
+          outbound_clicks?: number
+          paid_reach?: number
+          purchases?: number
+          revenue_cents?: number
+          roas?: number
+          sessions?: number
+          snapshot_date?: string
+          source_breakdown?: Json
+          trending_products?: Json
+          window_days?: number
+        }
+        Update: {
+          add_to_cart?: number
+          ai_opportunities?: Json
+          conversion_rate?: number
+          created_at?: string
+          ctr?: number
+          growth_score?: number
+          id?: string
+          losing_products?: Json
+          organic_reach?: number
+          outbound_clicks?: number
+          paid_reach?: number
+          purchases?: number
+          revenue_cents?: number
+          roas?: number
+          sessions?: number
+          snapshot_date?: string
+          source_breakdown?: Json
+          trending_products?: Json
+          window_days?: number
+        }
+        Relationships: []
+      }
+      pga_growth_scores_daily: {
+        Row: {
+          created_at: string
+          day: string
+          details: Json
+          id: string
+          score: number
+          section: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          details?: Json
+          id?: string
+          score?: number
+          section: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          details?: Json
+          id?: string
+          score?: number
+          section?: string
+        }
+        Relationships: []
+      }
+      pga_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      pga_timeline_events: {
+        Row: {
+          actor: string
+          category: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          severity: string
+          summary: string
+        }
+        Insert: {
+          actor?: string
+          category?: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          severity?: string
+          summary: string
+        }
+        Update: {
+          actor?: string
+          category?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          severity?: string
+          summary?: string
+        }
+        Relationships: []
+      }
       pin_ab_experiments: {
         Row: {
           created_at: string

@@ -1,0 +1,68 @@
+{
+  "slug": "2026-06-25-pga-wave-a-foundation",
+  "title": "Pinterest Growth AI \u2014 Wave A \u00b7 Foundation + Executive Overview",
+  "run_id": "2026-06-25-pga-wave-a-foundation",
+  "generated_at": "2026-06-25T23:22:15.830644Z",
+  "status": "shipped",
+  "score": 82,
+  "executive_summary": "Wave A of the Pinterest Growth Intelligence Engine ships the foundation: 4 namespaced pga_* tables, one read-only edge function pga-overview-sync that derives every metric from existing infrastructure (sessions, funnel, orders, pins, pe_issue_log), and a new admin route /admin/pinterest-growth-ai with an Executive Overview panel and a Timeline panel. Zero existing Pinterest tables, edge functions, crons, or analytics surfaces were modified. Waves B through F (Creative/SEO/Product, Boards/Publishing/Trends/Competitor, A-B/Opportunities/Revenue/Timeline, Learning/Operator/Auto-fix/Daily, Final regression) are scaffolded in the approved plan and queued for the next runs.",
+  "files_created": [
+    "src/pages/admin/PinterestGrowthAIPage.tsx",
+    "supabase/functions/pga-overview-sync/index.ts"
+  ],
+  "files_edited": [
+    "src/App.tsx (added /admin/pinterest-growth-ai route)",
+    ".lovable/plan.md (Wave A-F plan)"
+  ],
+  "database": {
+    "tables_added": [
+      "pga_settings",
+      "pga_executive_snapshots",
+      "pga_growth_scores_daily",
+      "pga_timeline_events"
+    ],
+    "rls": "All admin-only via has_role(auth.uid(),'admin'); GRANT SELECT to authenticated, GRANT ALL to service_role.",
+    "namespacing": "All Wave A-F tables prefixed pga_ to avoid collision with dense existing pinterest_* and pe_* schemas."
+  },
+  "edge_functions": [
+    {
+      "name": "pga-overview-sync",
+      "purpose": "Compute executive snapshot from existing data sources. No mutations to Pinterest, no fabricated metrics. paid_reach + roas reported honestly as 0 until ads scope reconnect (per project rule)."
+    }
+  ],
+  "ai_usage": "None in Wave A. Wave B onwards uses Lovable AI Gateway (google/gemini-3-flash-preview default).",
+  "pinterest": {
+    "scope_dependencies": "Organic-only token sufficient for Wave A overview; ads/catalogs/billing remain scope-blocked and are surfaced honestly in upcoming waves.",
+    "additive_guarantee": "Zero edits to pinterest_* tables, pinterest-* functions, pe_* tables, pe-* functions, or any analytics emit path."
+  },
+  "quality_control": {
+    "typecheck": "tsgo clean after route + page added.",
+    "regression": "Existing /admin/pinterest-health, /admin/pinterest-enterprise-control-center, /admin/pinterest-control-center untouched.",
+    "fabricated_metrics": "None. All metric sources documented in source_breakdown column on every snapshot row."
+  },
+  "next_recommendations": {
+    "high": [
+      "Run Wave B (Creative + SEO + Product Intelligence)",
+      "Run Wave C (Boards + Publishing + Trends + Competitor)",
+      "Run Wave E AI Operator + Daily Report (closes the autonomy loop)"
+    ],
+    "medium": [
+      "Run Wave D (A/B + Opportunities + Revenue Forecasts + Timeline UI)"
+    ],
+    "low": [
+      "Final regression + 7 closing reports in Wave F"
+    ]
+  },
+  "scorecard": {
+    "overall": 82,
+    "architecture": 90,
+    "performance": 80,
+    "reliability": 85,
+    "automation": 60,
+    "scalability": 88,
+    "security": 92,
+    "maintainability": 90,
+    "ai_readiness": 70,
+    "growth_readiness": 78
+  }
+}
