@@ -49,7 +49,10 @@ Rules: premium tone, no fluff, no "vet-approved", "eco-friendly", "stop scooping
     if (!passesCompliance(text)) { await finishJob(sb, j.id, false, "banned_phrase"); continue; }
     await sb.from("creative_assets").insert({
       product_id, status: "draft", qa_status: "pending", creative_type: "copy",
-      copy_payload: out,
+      headline: String(out?.seo_title ?? "").slice(0, 200),
+      hook: String((out?.hooks?.[0]) ?? "").slice(0, 200),
+      cta: String((out?.ctas?.[0]) ?? "").slice(0, 100),
+      meta: out,
     } as any);
     made++;
     await finishJob(sb, j.id, true);
