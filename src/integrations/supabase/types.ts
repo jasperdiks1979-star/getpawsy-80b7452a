@@ -16426,6 +16426,276 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_ab_experiments: {
+        Row: {
+          created_at: string
+          golden_batch_id: string | null
+          headline: string | null
+          hook_bucket: string | null
+          hook_text: string | null
+          id: string
+          pin_id: string | null
+          product_id: string
+          retired_at: string | null
+          scene_template: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          golden_batch_id?: string | null
+          headline?: string | null
+          hook_bucket?: string | null
+          hook_text?: string | null
+          id?: string
+          pin_id?: string | null
+          product_id: string
+          retired_at?: string | null
+          scene_template?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          golden_batch_id?: string | null
+          headline?: string | null
+          hook_bucket?: string | null
+          hook_text?: string | null
+          id?: string
+          pin_id?: string | null
+          product_id?: string
+          retired_at?: string | null
+          scene_template?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pin_ab_outcomes: {
+        Row: {
+          closeups: number
+          conversions: number
+          created_at: string
+          ctr: number | null
+          experiment_id: string
+          id: string
+          impressions: number
+          outbound_clicks: number
+          revenue: number
+          saves: number
+          verdict: string | null
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          closeups?: number
+          conversions?: number
+          created_at?: string
+          ctr?: number | null
+          experiment_id: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          revenue?: number
+          saves?: number
+          verdict?: string | null
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          closeups?: number
+          conversions?: number
+          created_at?: string
+          ctr?: number | null
+          experiment_id?: string
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          revenue?: number
+          saves?: number
+          verdict?: string | null
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      pin_creative_scores: {
+        Row: {
+          attempt_id: string
+          board_score: number | null
+          conversion_prediction: number | null
+          created_at: string
+          ctr_prediction: number | null
+          headline: string | null
+          hook_id: string | null
+          hook_score: number | null
+          hook_text: string | null
+          id: string
+          image_url: string | null
+          landing_score: number | null
+          overall: number | null
+          passed_gate: boolean
+          product_id: string
+          product_match: number | null
+          raw_response: Json | null
+          rejection_reasons: string[]
+          scorer_model: string | null
+          species_score: number | null
+          visual_realism: number | null
+        }
+        Insert: {
+          attempt_id: string
+          board_score?: number | null
+          conversion_prediction?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          headline?: string | null
+          hook_id?: string | null
+          hook_score?: number | null
+          hook_text?: string | null
+          id?: string
+          image_url?: string | null
+          landing_score?: number | null
+          overall?: number | null
+          passed_gate?: boolean
+          product_id: string
+          product_match?: number | null
+          raw_response?: Json | null
+          rejection_reasons?: string[]
+          scorer_model?: string | null
+          species_score?: number | null
+          visual_realism?: number | null
+        }
+        Update: {
+          attempt_id?: string
+          board_score?: number | null
+          conversion_prediction?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          headline?: string | null
+          hook_id?: string | null
+          hook_score?: number | null
+          hook_text?: string | null
+          id?: string
+          image_url?: string | null
+          landing_score?: number | null
+          overall?: number | null
+          passed_gate?: boolean
+          product_id?: string
+          product_match?: number | null
+          raw_response?: Json | null
+          rejection_reasons?: string[]
+          scorer_model?: string | null
+          species_score?: number | null
+          visual_realism?: number | null
+        }
+        Relationships: []
+      }
+      pin_golden_batch: {
+        Row: {
+          conv_prediction: number | null
+          created_at: string
+          ctr_prediction: number | null
+          description: string | null
+          headline: string | null
+          hook_bucket: string | null
+          hook_text: string | null
+          id: string
+          image_url: string | null
+          meta: Json
+          overall_score: number | null
+          product_id: string
+          product_slug: string
+          retries_used: number
+          run_id: string
+          status: string
+          updated_at: string
+          variants_generated: number
+          variants_passed: number
+          winner_score_id: string | null
+        }
+        Insert: {
+          conv_prediction?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          description?: string | null
+          headline?: string | null
+          hook_bucket?: string | null
+          hook_text?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          overall_score?: number | null
+          product_id: string
+          product_slug: string
+          retries_used?: number
+          run_id: string
+          status?: string
+          updated_at?: string
+          variants_generated?: number
+          variants_passed?: number
+          winner_score_id?: string | null
+        }
+        Update: {
+          conv_prediction?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          description?: string | null
+          headline?: string | null
+          hook_bucket?: string | null
+          hook_text?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          overall_score?: number | null
+          product_id?: string
+          product_slug?: string
+          retries_used?: number
+          run_id?: string
+          status?: string
+          updated_at?: string
+          variants_generated?: number
+          variants_passed?: number
+          winner_score_id?: string | null
+        }
+        Relationships: []
+      }
+      pin_headline_bank: {
+        Row: {
+          banned_phrases_found: string[]
+          bucket: string | null
+          created_at: string
+          headline: string
+          headline_hash: string
+          id: string
+          performance_score: number
+          product_id: string
+          used_count: number
+        }
+        Insert: {
+          banned_phrases_found?: string[]
+          bucket?: string | null
+          created_at?: string
+          headline: string
+          headline_hash: string
+          id?: string
+          performance_score?: number
+          product_id: string
+          used_count?: number
+        }
+        Update: {
+          banned_phrases_found?: string[]
+          bucket?: string | null
+          created_at?: string
+          headline?: string
+          headline_hash?: string
+          id?: string
+          performance_score?: number
+          product_id?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       pin_hook_library: {
         Row: {
           created_at: string
@@ -16462,6 +16732,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_hook_library_v2: {
+        Row: {
+          banned_for: string[]
+          bucket: string
+          category_scope: string[]
+          created_at: string
+          hook_text: string
+          id: string
+          retired: boolean
+          species_scope: string[]
+          updated_at: string
+          usage_count: number
+          weight: number
+          win_rate: number
+        }
+        Insert: {
+          banned_for?: string[]
+          bucket: string
+          category_scope?: string[]
+          created_at?: string
+          hook_text: string
+          id?: string
+          retired?: boolean
+          species_scope?: string[]
+          updated_at?: string
+          usage_count?: number
+          weight?: number
+          win_rate?: number
+        }
+        Update: {
+          banned_for?: string[]
+          bucket?: string
+          category_scope?: string[]
+          created_at?: string
+          hook_text?: string
+          id?: string
+          retired?: boolean
+          species_scope?: string[]
+          updated_at?: string
+          usage_count?: number
+          weight?: number
+          win_rate?: number
+        }
+        Relationships: []
+      }
       pin_hook_restrictions: {
         Row: {
           created_at: string
@@ -16486,6 +16801,45 @@ export type Database = {
           reason?: string | null
           rule_type?: string
           taxonomy?: string
+        }
+        Relationships: []
+      }
+      pin_landing_validations: {
+        Row: {
+          checked_at: string
+          checks: Json
+          created_at: string
+          failed_reasons: string[]
+          http_status: number | null
+          id: string
+          landing_url: string
+          passed: boolean
+          product_id: string
+          product_slug: string
+        }
+        Insert: {
+          checked_at?: string
+          checks?: Json
+          created_at?: string
+          failed_reasons?: string[]
+          http_status?: number | null
+          id?: string
+          landing_url: string
+          passed?: boolean
+          product_id: string
+          product_slug: string
+        }
+        Update: {
+          checked_at?: string
+          checks?: Json
+          created_at?: string
+          failed_reasons?: string[]
+          http_status?: number | null
+          id?: string
+          landing_url?: string
+          passed?: boolean
+          product_id?: string
+          product_slug?: string
         }
         Relationships: []
       }
@@ -16550,6 +16904,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pin_product_intelligence: {
+        Row: {
+          audience: string | null
+          buying_intent: string | null
+          category: string | null
+          confidence: number
+          created_at: string
+          emotional_trigger: string | null
+          id: string
+          landing_url: string
+          lifestyle_context: string | null
+          model_used: string | null
+          pinterest_board_id: string | null
+          price_tier: string | null
+          product_id: string
+          product_slug: string
+          raw_response: Json | null
+          seasonality: string | null
+          species: string | null
+          updated_at: string
+          usp_hierarchy: Json
+          version: number
+          visual_style: string | null
+        }
+        Insert: {
+          audience?: string | null
+          buying_intent?: string | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          emotional_trigger?: string | null
+          id?: string
+          landing_url: string
+          lifestyle_context?: string | null
+          model_used?: string | null
+          pinterest_board_id?: string | null
+          price_tier?: string | null
+          product_id: string
+          product_slug: string
+          raw_response?: Json | null
+          seasonality?: string | null
+          species?: string | null
+          updated_at?: string
+          usp_hierarchy?: Json
+          version?: number
+          visual_style?: string | null
+        }
+        Update: {
+          audience?: string | null
+          buying_intent?: string | null
+          category?: string | null
+          confidence?: number
+          created_at?: string
+          emotional_trigger?: string | null
+          id?: string
+          landing_url?: string
+          lifestyle_context?: string | null
+          model_used?: string | null
+          pinterest_board_id?: string | null
+          price_tier?: string | null
+          product_id?: string
+          product_slug?: string
+          raw_response?: Json | null
+          seasonality?: string | null
+          species?: string | null
+          updated_at?: string
+          usp_hierarchy?: Json
+          version?: number
+          visual_style?: string | null
+        }
+        Relationships: []
       }
       pin_product_understanding: {
         Row: {
@@ -16738,6 +17164,93 @@ export type Database = {
           total_failed?: number
           total_passed?: number
           total_replacements_queued?: number
+        }
+        Relationships: []
+      }
+      pin_wave3_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          started_at: string
+          status: string
+          totals: Json
+          wave: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          wave: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          wave?: string
+        }
+        Relationships: []
+      }
+      pin_wave3_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      pin_wave3_steps: {
+        Row: {
+          completed_at: string | null
+          error: string | null
+          id: string
+          meta: Json
+          run_id: string
+          started_at: string
+          status: string
+          step_name: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error?: string | null
+          id?: string
+          meta?: Json
+          run_id: string
+          started_at?: string
+          status?: string
+          step_name: string
+        }
+        Update: {
+          completed_at?: string | null
+          error?: string | null
+          id?: string
+          meta?: Json
+          run_id?: string
+          started_at?: string
+          status?: string
+          step_name?: string
         }
         Relationships: []
       }
