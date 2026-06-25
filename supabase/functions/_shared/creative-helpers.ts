@@ -52,10 +52,9 @@ export interface EligibleProduct {
 }
 
 export async function fetchEligibleProducts(sb: ReturnType<typeof admin>, limit = 500): Promise<EligibleProduct[]> {
-  // Use a permissive query — products table has many columns; we tolerate missing ones.
   const { data, error } = await sb
     .from("products")
-    .select("id,title,slug,price,category_slug,image_url,effective_stock,is_active")
+    .select("id,name,slug,price,category,image_url,effective_stock,is_active")
     .eq("is_active", true)
     .gt("price", 0)
     .not("slug", "is", null)
@@ -63,13 +62,13 @@ export async function fetchEligibleProducts(sb: ReturnType<typeof admin>, limit 
     .limit(limit);
   if (error) throw error;
   return (data ?? [])
-    .filter((p: any) => isLocalImage(p.image_url) && (p.effective_stock ?? 1) > 0 && p.category_slug)
+    .filter((p: any) => isLocalImage(p.image_url) && (p.effective_stock ?? 1) > 0 && p.category)
     .map((p: any) => ({
       id: p.id,
-      title: p.title ?? "Product",
+      title: p.name ?? "Product",
       slug: p.slug,
       price: Number(p.price ?? 0),
-      category_slug: p.category_slug,
+      category_slug: p.category,
       hero_image: p.image_url,
       in_stock: true,
     }));
