@@ -537,6 +537,195 @@ export type Database = {
         }
         Relationships: []
       }
+      agp_action_priorities: {
+        Row: {
+          ai_cost_usd: number | null
+          cloud_cost_usd: number | null
+          confidence: number | null
+          conversion_impact: number | null
+          created_at: string
+          day: string
+          description: string | null
+          difficulty: number | null
+          exec_minutes: number | null
+          id: string
+          pinterest_impact: number | null
+          priority_score: number | null
+          profit_impact: number | null
+          revenue_impact: number | null
+          seo_impact: number | null
+          source: string
+          source_id: string | null
+          status: string
+          title: string
+          traffic_impact: number | null
+        }
+        Insert: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          confidence?: number | null
+          conversion_impact?: number | null
+          created_at?: string
+          day: string
+          description?: string | null
+          difficulty?: number | null
+          exec_minutes?: number | null
+          id?: string
+          pinterest_impact?: number | null
+          priority_score?: number | null
+          profit_impact?: number | null
+          revenue_impact?: number | null
+          seo_impact?: number | null
+          source: string
+          source_id?: string | null
+          status?: string
+          title: string
+          traffic_impact?: number | null
+        }
+        Update: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          confidence?: number | null
+          conversion_impact?: number | null
+          created_at?: string
+          day?: string
+          description?: string | null
+          difficulty?: number | null
+          exec_minutes?: number | null
+          id?: string
+          pinterest_impact?: number | null
+          priority_score?: number | null
+          profit_impact?: number | null
+          revenue_impact?: number | null
+          seo_impact?: number | null
+          source?: string
+          source_id?: string | null
+          status?: string
+          title?: string
+          traffic_impact?: number | null
+        }
+        Relationships: []
+      }
+      agp_business_explanations: {
+        Row: {
+          created_at: string
+          day: string
+          expected_score_after: number | null
+          id: string
+          narrative_md: string | null
+          subscore: string
+          suggested_actions: Json | null
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          expected_score_after?: number | null
+          id?: string
+          narrative_md?: string | null
+          subscore: string
+          suggested_actions?: Json | null
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          expected_score_after?: number | null
+          id?: string
+          narrative_md?: string | null
+          subscore?: string
+          suggested_actions?: Json | null
+        }
+        Relationships: []
+      }
+      agp_daily_insights: {
+        Row: {
+          biggest_opportunity: Json | null
+          biggest_threat: Json | null
+          created_at: string
+          day: string
+          fastest_category: Json | null
+          id: string
+          most_profitable_product: Json | null
+          top_board: Json | null
+          top_campaign: Json | null
+          top_creative_style: Json | null
+          top_problems: Json | null
+          top_prompt: Json | null
+          top_wins: Json | null
+          worst_category: Json | null
+        }
+        Insert: {
+          biggest_opportunity?: Json | null
+          biggest_threat?: Json | null
+          created_at?: string
+          day: string
+          fastest_category?: Json | null
+          id?: string
+          most_profitable_product?: Json | null
+          top_board?: Json | null
+          top_campaign?: Json | null
+          top_creative_style?: Json | null
+          top_problems?: Json | null
+          top_prompt?: Json | null
+          top_wins?: Json | null
+          worst_category?: Json | null
+        }
+        Update: {
+          biggest_opportunity?: Json | null
+          biggest_threat?: Json | null
+          created_at?: string
+          day?: string
+          fastest_category?: Json | null
+          id?: string
+          most_profitable_product?: Json | null
+          top_board?: Json | null
+          top_campaign?: Json | null
+          top_creative_style?: Json | null
+          top_problems?: Json | null
+          top_prompt?: Json | null
+          top_wins?: Json | null
+          worst_category?: Json | null
+        }
+        Relationships: []
+      }
+      agp_forecasts: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          day: string
+          high: number | null
+          horizon_days: number
+          id: string
+          low: number | null
+          metric: string
+          model: string | null
+          predicted: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          day: string
+          high?: number | null
+          horizon_days: number
+          id?: string
+          low?: number | null
+          metric: string
+          model?: string | null
+          predicted?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          day?: string
+          high?: number | null
+          horizon_days?: number
+          id?: string
+          low?: number | null
+          metric?: string
+          model?: string | null
+          predicted?: number | null
+        }
+        Relationships: []
+      }
       agp_growth_scores: {
         Row: {
           ai_efficiency: number | null
@@ -612,6 +801,48 @@ export type Database = {
         }
         Relationships: []
       }
+      agp_prediction_accuracy: {
+        Row: {
+          abs_error: number | null
+          actual: number | null
+          created_at: string
+          day: string
+          horizon_days: number
+          id: string
+          mape_30d: number | null
+          metric: string
+          pct_error: number | null
+          predicted: number | null
+          weight_adjustment: number | null
+        }
+        Insert: {
+          abs_error?: number | null
+          actual?: number | null
+          created_at?: string
+          day: string
+          horizon_days: number
+          id?: string
+          mape_30d?: number | null
+          metric: string
+          pct_error?: number | null
+          predicted?: number | null
+          weight_adjustment?: number | null
+        }
+        Update: {
+          abs_error?: number | null
+          actual?: number | null
+          created_at?: string
+          day?: string
+          horizon_days?: number
+          id?: string
+          mape_30d?: number | null
+          metric?: string
+          pct_error?: number | null
+          predicted?: number | null
+          weight_adjustment?: number | null
+        }
+        Relationships: []
+      }
       agp_product_health: {
         Row: {
           computed_at: string
@@ -669,6 +900,75 @@ export type Database = {
           seo_ready?: number | null
           traffic_30d?: number | null
           video_avail?: boolean | null
+        }
+        Relationships: []
+      }
+      agp_product_opportunity: {
+        Row: {
+          cj_quality: number | null
+          competition_risk: number | null
+          created_at: string
+          day: string
+          expected_annual_rev_cents: number | null
+          expected_monthly_rev_cents: number | null
+          expected_roi: number | null
+          historical_conversion: number | null
+          historical_ctr: number | null
+          id: string
+          inventory_health: number | null
+          media_quality: number | null
+          overall_score: number | null
+          pinterest_potential: number | null
+          product_id: string
+          profit_potential: number | null
+          rank: number | null
+          revenue_potential: number | null
+          seo_potential: number | null
+          trend_score: number | null
+        }
+        Insert: {
+          cj_quality?: number | null
+          competition_risk?: number | null
+          created_at?: string
+          day: string
+          expected_annual_rev_cents?: number | null
+          expected_monthly_rev_cents?: number | null
+          expected_roi?: number | null
+          historical_conversion?: number | null
+          historical_ctr?: number | null
+          id?: string
+          inventory_health?: number | null
+          media_quality?: number | null
+          overall_score?: number | null
+          pinterest_potential?: number | null
+          product_id: string
+          profit_potential?: number | null
+          rank?: number | null
+          revenue_potential?: number | null
+          seo_potential?: number | null
+          trend_score?: number | null
+        }
+        Update: {
+          cj_quality?: number | null
+          competition_risk?: number | null
+          created_at?: string
+          day?: string
+          expected_annual_rev_cents?: number | null
+          expected_monthly_rev_cents?: number | null
+          expected_roi?: number | null
+          historical_conversion?: number | null
+          historical_ctr?: number | null
+          id?: string
+          inventory_health?: number | null
+          media_quality?: number | null
+          overall_score?: number | null
+          pinterest_potential?: number | null
+          product_id?: string
+          profit_potential?: number | null
+          rank?: number | null
+          revenue_potential?: number | null
+          seo_potential?: number | null
+          trend_score?: number | null
         }
         Relationships: []
       }
@@ -758,6 +1058,78 @@ export type Database = {
           started_at?: string
           status?: string
           trigger?: string | null
+        }
+        Relationships: []
+      }
+      agp_score_explanations: {
+        Row: {
+          abs_delta: number | null
+          business_impact: string | null
+          confidence: number | null
+          created_at: string
+          curr_value: number | null
+          day: string
+          expected_trend: string | null
+          id: string
+          pct_delta: number | null
+          prev_value: number | null
+          reason: string | null
+          root_cause: string | null
+          subscore: string
+        }
+        Insert: {
+          abs_delta?: number | null
+          business_impact?: string | null
+          confidence?: number | null
+          created_at?: string
+          curr_value?: number | null
+          day: string
+          expected_trend?: string | null
+          id?: string
+          pct_delta?: number | null
+          prev_value?: number | null
+          reason?: string | null
+          root_cause?: string | null
+          subscore: string
+        }
+        Update: {
+          abs_delta?: number | null
+          business_impact?: string | null
+          confidence?: number | null
+          created_at?: string
+          curr_value?: number | null
+          day?: string
+          expected_trend?: string | null
+          id?: string
+          pct_delta?: number | null
+          prev_value?: number | null
+          reason?: string | null
+          root_cause?: string | null
+          subscore?: string
+        }
+        Relationships: []
+      }
+      agp_score_weights: {
+        Row: {
+          created_at: string
+          effective_day: string
+          id: string
+          reason: string | null
+          weights: Json
+        }
+        Insert: {
+          created_at?: string
+          effective_day: string
+          id?: string
+          reason?: string | null
+          weights: Json
+        }
+        Update: {
+          created_at?: string
+          effective_day?: string
+          id?: string
+          reason?: string | null
+          weights?: Json
         }
         Relationships: []
       }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Wave4PlusIntelligencePanel } from "@/components/admin/agp/Wave4PlusIntelligencePanel";
 
 type Settings = {
   kill_switch: boolean;
@@ -220,6 +221,12 @@ export default function AutonomousGrowthPage() {
           KILL SWITCH ACTIVE — all autonomous engines paused.
         </div>
       )}
+
+      <Wave4PlusIntelligencePanel loading={loading} onRun={async (dry: boolean) => {
+        const { data, error } = await supabase.functions.invoke("agp-intelligence-orchestrator", { body: { dry_run: dry } });
+        if (error) toast.error(error.message);
+        else toast.success(`Intelligence ${dry ? "(dry)" : "live"}: ${JSON.stringify((data as any)?.counts ?? {})}`);
+      }} />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Growth score</CardTitle></CardHeader><CardContent className="text-2xl">{overview.growth_score ?? 0}</CardContent></Card>
