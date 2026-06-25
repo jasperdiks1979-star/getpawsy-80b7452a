@@ -4,12 +4,12 @@ import { isInternalAuthed } from "../_shared/cpe-helpers.ts";
 function runChecks(asset: any): { pass: boolean; reasons: string[]; checks: Record<string, boolean>; score: number } {
   const checks: Record<string, boolean> = {};
   const reasons: string[] = [];
-  const text = JSON.stringify(asset.copy_payload ?? asset.headline ?? asset.hook ?? "").toLowerCase();
+  const text = JSON.stringify(asset.meta ?? asset.headline ?? asset.hook ?? "").toLowerCase();
 
   checks.banned_phrase = !BANNED_PHRASES.some((p) => text.includes(p));
   if (!checks.banned_phrase) reasons.push("banned_phrase");
 
-  checks.has_source = Boolean(asset.source_url ?? asset.enhanced_image_id ?? asset.lifestyle_scene_id ?? asset.creative_type === "copy");
+  checks.has_source = Boolean(asset.image_url ?? asset.enhanced_image_id ?? asset.lifestyle_scene_id ?? asset.creative_type === "copy");
   if (!checks.has_source) reasons.push("missing_source");
 
   checks.product_linked = Boolean(asset.product_id);
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
   const { data: pending } = await sb
     .from("creative_assets")
-    .select("id,product_id,creative_type,copy_payload,source_url,enhanced_image_id,lifestyle_scene_id,headline,hook")
+    .select("id,product_id,creative_type,meta,image_url,enhanced_image_id,lifestyle_scene_id,headline,hook")
     .eq("qa_status", "pending")
     .limit(limit);
 
