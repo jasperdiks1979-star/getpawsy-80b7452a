@@ -3,7 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
+type DecodedError = {
+  http_code: number | null;
+  pinterest_code: number | null;
+  message: string | null;
+  hint: string | null;
+};
 
 type Status = {
   secrets: { PINTEREST_CONVERSION_TOKEN: boolean; PINTEREST_AD_ACCOUNT_ID: boolean };
@@ -11,10 +19,56 @@ type Status = {
   totals: { queued: number; sent: number; failed: number };
   per_event: Record<string, { queued: number; sent: number; failed: number }>;
   response_codes: Record<string, number>;
-  recent_errors: { event_name: string; last_error: string; created_at: string }[];
+  recent_errors: { event_name: string; last_error: string; created_at: string; decoded_error: DecodedError }[];
+  duplicate_event_ids: number;
   last_sent: { event_name: string; sent_at: string }[];
   readiness_score: number;
   window_hours: number;
+};
+
+type LookupResult = {
+  event_id: string;
+  verdict: "delivered" | "delivered_with_duplicates" | "failed" | "pending" | "not_found";
+  delivered: boolean;
+  duplicate_inserts: number;
+  counts: { total: number; sent: number; failed: number; pending: number };
+  first_seen: string | null;
+  last_sent_at: string | null;
+  next_action: string;
+  rows: Array<{
+    id: string;
+    event_name: string;
+    status: string;
+    attempts: number;
+    sent_at: string | null;
+    created_at: string;
+    last_error: string | null;
+    decoded_error: DecodedError;
+  }>;
+};
+
+type RecentAtc = {
+  total_unique_event_ids: number;
+  duplicate_event_ids: number;
+  events: Array<{
+    event_id: string;
+    occurrences: number;
+    status: string;
+    attempts: number;
+    first_seen: string;
+    last_sent_at: string | null;
+    value: number | null;
+    currency: string | null;
+    decoded_error: DecodedError;
+  }>;
+};
+
+const verdictBadge: Record<LookupResult["verdict"], { label: string; cls: string }> = {
+  delivered: { label: "Delivered", cls: "bg-emerald-600" },
+  delivered_with_duplicates: { label: "Delivered (duplicates)", cls: "bg-amber-600" },
+  failed: { label: "Failed", cls: "bg-destructive" },
+  pending: { label: "Pending", cls: "bg-blue-600" },
+  not_found: { label: "Not found", cls: "bg-zinc-600" },
 };
 
 export default function PinterestCapiHealthPage() {
@@ -22,6 +76,11 @@ export default function PinterestCapiHealthPage() {
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<unknown>(null);
+  const [eventIdQuery, setEventIdQuery] = useState("");
+  const [lookup, setLookup] = useState<LookupResult | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [recent, setRecent] = useState<RecentAtc | null>(null);
+  const [recentLoading, setRecentLoading] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -58,10 +117,53 @@ export default function PinterestCapiHealthPage() {
     }
   }
 
+  async function runLookup() {
+    const id = eventIdQuery.trim();
+    if (id.length < 4) {
+      toast.error("Enter a full event_id (min 4 chars)");
+      return;
+    }
+    setLookupLoading(true);
+    setLookup(null);
+    try {
+      const { data: res, error } = await supabase.functions.invoke(
+        "pinterest-capi-health",
+        { body: { action: "lookup", event_id: id } },
+      );
+      if (error) throw error;
+      setLookup((res as { data: LookupResult }).data);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  async function loadRecent() {
+    setRecentLoading(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke(
+        "pinterest-capi-health",
+        { body: { action: "recent_atc", limit: 25 } },
+      );
+      if (error) throw error;
+      setRecent((res as { data: RecentAtc }).data);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRecentLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadRecent();
     const t = setInterval(load, 60_000);
-    return () => clearInterval(t);
+    const tr = setInterval(loadRecent, 60_000);
+    return () => {
+      clearInterval(t);
+      clearInterval(tr);
+    };
   }, []);
 
   const secretsOk =
