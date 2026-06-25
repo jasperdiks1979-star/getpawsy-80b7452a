@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-agp-wave-3-small-live",
+      "title": "Autonomous Growth Platform — Wave 3 Small Live Run (Enhancement)",
+      "run_id": "agp-wave-3-small-live",
+      "generated_at": "2026-06-25T08:30:00Z",
+      "status": "success",
+      "score": 84,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.json"
+    },
+    {
       "slug": "2026-06-25-agp-wave-3-enhance-qa",
       "title": "Autonomous Growth Platform \u2014 Wave 3 (Enhancement + QA loop)",
       "run_id": "agp-wave-3-enhance-qa",
