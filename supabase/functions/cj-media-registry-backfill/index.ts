@@ -53,16 +53,31 @@ Deno.serve(async (req) => {
   }
 
   let inserted = 0;
+  let errors = 0;
+  let lastError: string | null = null;
   // upsert in chunks
   for (let i = 0; i < rows.length; i += 200) {
     const chunk = rows.slice(i, i + 200);
-    const { error: upErr, count } = await supabase
+    const { data, error: upErr } = await supabase
       .from("cj_media_asset_registry")
-      .upsert(chunk, { onConflict: "product_id,checksum", ignoreDuplicates: true, count: "exact" });
-    if (!upErr) inserted += count ?? chunk.length;
+      .insert(chunk)
+      .select("id");
+    if (upErr) {
+      errors++;
+      lastError = upErr.message;
+    } else {
+      inserted += data?.length ?? 0;
+    }
   }
 
-  return new Response(JSON.stringify({ ok: true, products: products?.length ?? 0, candidate_rows: rows.length, inserted }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    products: products?.length ?? 0,
+    candidate_rows: rows.length,
+    inserted,
+    chunk_errors: errors,
+    last_error: lastError,
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
