@@ -16426,6 +16426,235 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_hook_library: {
+        Row: {
+          created_at: string
+          forbidden_attributes: Json
+          hook_id: string
+          is_active: boolean
+          required_attributes: Json
+          taxonomy: string
+          template: string
+          title: string
+          tone: string | null
+        }
+        Insert: {
+          created_at?: string
+          forbidden_attributes?: Json
+          hook_id: string
+          is_active?: boolean
+          required_attributes?: Json
+          taxonomy: string
+          template: string
+          title: string
+          tone?: string | null
+        }
+        Update: {
+          created_at?: string
+          forbidden_attributes?: Json
+          hook_id?: string
+          is_active?: boolean
+          required_attributes?: Json
+          taxonomy?: string
+          template?: string
+          title?: string
+          tone?: string | null
+        }
+        Relationships: []
+      }
+      pin_hook_restrictions: {
+        Row: {
+          created_at: string
+          id: string
+          pattern: string
+          reason: string | null
+          rule_type: string
+          taxonomy: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pattern: string
+          reason?: string | null
+          rule_type: string
+          taxonomy: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pattern?: string
+          reason?: string | null
+          rule_type?: string
+          taxonomy?: string
+        }
+        Relationships: []
+      }
+      pin_product_classification: {
+        Row: {
+          allowed_hook_ids: string[]
+          banned_hook_ids: string[]
+          confidence: number
+          product_id: string
+          rationale: string | null
+          subtaxonomy: string | null
+          taxonomy: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_hook_ids?: string[]
+          banned_hook_ids?: string[]
+          confidence?: number
+          product_id: string
+          rationale?: string | null
+          subtaxonomy?: string | null
+          taxonomy: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_hook_ids?: string[]
+          banned_hook_ids?: string[]
+          confidence?: number
+          product_id?: string
+          rationale?: string | null
+          subtaxonomy?: string | null
+          taxonomy?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pin_product_understanding: {
+        Row: {
+          audience: string | null
+          confidence: number
+          key_attributes: Json
+          primary_species: string | null
+          product_id: string
+          product_type: string | null
+          source: string
+          updated_at: string
+          use_case: string | null
+        }
+        Insert: {
+          audience?: string | null
+          confidence?: number
+          key_attributes?: Json
+          primary_species?: string | null
+          product_id: string
+          product_type?: string | null
+          source?: string
+          updated_at?: string
+          use_case?: string | null
+        }
+        Update: {
+          audience?: string | null
+          confidence?: number
+          key_attributes?: Json
+          primary_species?: string | null
+          product_id?: string
+          product_type?: string | null
+          source?: string
+          updated_at?: string
+          use_case?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pin_wave1_runs: {
+        Row: {
+          finished_at: string | null
+          hooks_registered: number
+          id: string
+          products_classified: number
+          products_failed: number
+          products_total: number
+          restrictions_registered: number
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          finished_at?: string | null
+          hooks_registered?: number
+          id?: string
+          products_classified?: number
+          products_failed?: number
+          products_total?: number
+          restrictions_registered?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          finished_at?: string | null
+          hooks_registered?: number
+          id?: string
+          products_classified?: number
+          products_failed?: number
+          products_total?: number
+          restrictions_registered?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
       pinterest_ai_backdrops: {
         Row: {
           created_at: string
