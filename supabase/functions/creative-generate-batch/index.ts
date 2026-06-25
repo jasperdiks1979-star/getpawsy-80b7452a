@@ -1,5 +1,4 @@
-import { admin, cors, jsonResp, fetchEligibleProducts, loadBudget, loadRules, sha1, HOOK_TEMPLATES, buildUtm } from "../_shared/creative-helpers.ts";
-import { checkCandidate } from "../creative-diversity-guard/index.ts";
+import { admin, cors, jsonResp, fetchEligibleProducts, loadBudget, loadRules, HOOK_TEMPLATES, buildUtm, checkCandidate } from "../_shared/creative-helpers.ts";
 
 function pretty(slug: string | null) {
   if (!slug) return "pets";
