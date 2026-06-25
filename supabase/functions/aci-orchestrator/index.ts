@@ -35,7 +35,6 @@ async function guardrail(engine: string, est_ai = 0, est_cloud = 0) {
 
 async function bookCost(engine: string, ai = 0, cloud = 0) {
   const today = new Date().toISOString().slice(0, 10);
-  await sb.rpc("noop").catch(() => {});
   const { data: existing } = await sb.from("aci_budget_ledger").select("id, ai_cost_usd, cloud_cost_usd, request_count").eq("day", today).eq("engine", engine).maybeSingle();
   if (existing) {
     await sb.from("aci_budget_ledger").update({
