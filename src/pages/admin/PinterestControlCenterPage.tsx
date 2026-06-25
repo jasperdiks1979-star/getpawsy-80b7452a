@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Wave3BProgressPanel from "@/components/admin/Wave3BProgressPanel";
 
 type Snapshot = {
   credits: { today: number; month: number; events: number };
@@ -119,6 +120,8 @@ export default function PinterestControlCenterPage() {
       </header>
 
       {err && <Card><CardContent className="pt-6 text-destructive">{err}</CardContent></Card>}
+
+      <Wave3BProgressPanel />
 
       {snap && (
         <>
