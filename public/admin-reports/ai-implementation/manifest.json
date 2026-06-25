@@ -1,5 +1,15 @@
 [
   {
+    "slug": "2026-06-25-pinterest-metadata-repair",
+    "title": "Pinterest Metadata Repair — In-place repair of 939 published pins (blocked by pin_edit scope)",
+    "date": "2026-06-25",
+    "run_id": "8baa726d-c677-4375-be4b-64d1a7f18ce1",
+    "status": "blocked_external_api_scope",
+    "score": 65,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.json"
+  },
+  {
     "slug": "2026-06-25-pinterest-creative-wave2",
     "title": "Pinterest Creative Engine — Wave 2 (Retroactive Audit + Archive + Regeneration Queue)",
     "date": "2026-06-25",
