@@ -34,6 +34,9 @@ export default function AutonomousGrowthPage() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [overview, setOverview] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [growth, setGrowth] = useState<any | null>(null);
+  const [tierCounts, setTierCounts] = useState<Record<string, number>>({});
+  const [topProducts, setTopProducts] = useState<any[]>([]);
 
   async function load() {
     const [s, r, st, cpe, cj, pinQ, cinV3, scorecard] = await Promise.all([
@@ -46,6 +49,15 @@ export default function AutonomousGrowthPage() {
       supabase.from("cinematic_v3_jobs").select("id", { count: "exact", head: true }).in("status", ["pending", "running"]),
       supabase.from("growth_daily_scorecard").select("*").order("date", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    const [g, ph] = await Promise.all([
+      supabase.from("agp_growth_scores").select("*").order("day", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("agp_product_health").select("product_id,overall,priority_tier,recommended_actions").order("overall", { ascending: false }).limit(20),
+    ]);
+    setGrowth(g.data ?? null);
+    setTopProducts((ph.data as any[]) ?? []);
+    const tc: Record<string, number> = {};
+    for (const r of (ph.data as any[]) ?? []) tc[r.priority_tier] = (tc[r.priority_tier] ?? 0) + 1;
+    setTierCounts(tc);
     setSettings((s.data as Settings) ?? null);
     setRuns((r.data as Run[]) ?? []);
     setSteps((st.data as Step[]) ?? []);
@@ -96,6 +108,17 @@ export default function AutonomousGrowthPage() {
     setLoading(false);
   }
 
+  async function runWave4(dry = true) {
+    setLoading(true);
+    const sig = await supabase.functions.invoke("agp-signal-collector", { body: { dry_run: dry } });
+    if (sig.error) { toast.error(`signals: ${sig.error.message}`); setLoading(false); return; }
+    const sc = await supabase.functions.invoke("agp-growth-scorer", { body: { dry_run: dry } });
+    if (sc.error) toast.error(`scorer: ${sc.error.message}`);
+    else toast.success(`Wave 4 ${dry ? "(dry)" : "live"}: score=${(sc.data as any)?.score?.overall?.toFixed?.(1) ?? "?"}`);
+    setLoading(false);
+    load();
+  }
+
   const cost24h = runs.filter(r => new Date(r.started_at).getTime() > Date.now() - 86_400_000).reduce((a, r) => a + Number(r.ai_cost_usd ?? 0), 0);
 
   return (
@@ -136,6 +159,59 @@ export default function AutonomousGrowthPage() {
           <span className="text-xs text-muted-foreground ml-2">
             Enqueues + enhances product images via Gemini-3.1-flash-image (~$0.05/img), then grades pending creative_assets.
           </span>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Wave 4A — Signal Lake + Growth Score</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button size="sm" variant="outline" onClick={() => runWave4(true)} disabled={loading}>Dry-run</Button>
+            <Button size="sm" onClick={() => runWave4(false)} disabled={loading}>Collect signals + score</Button>
+            <span className="text-xs text-muted-foreground ml-2">
+              Aggregates Pinterest/GSC/GA4/CJ/CPE/Cinematic into agp_signals_daily, computes 13 subscores and per-product priority tiers.
+            </span>
+          </div>
+          {growth && (
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs">
+              <div className="col-span-2 md:col-span-1 bg-primary/10 rounded p-2">
+                <div className="text-muted-foreground">Overall</div>
+                <div className="text-2xl font-bold">{Number(growth.overall).toFixed(1)}</div>
+                <div className="text-[10px] text-muted-foreground">Δ7d {Number(growth.delta_7d ?? 0).toFixed(1)}</div>
+              </div>
+              {(["seo","pinterest","media","creative","conversion","performance","product_quality","catalog_health","traffic","revenue","automation","ai_efficiency","trend_direction"] as const).map(k => (
+                <div key={k} className="bg-muted/40 rounded p-2">
+                  <div className="text-muted-foreground">{k}</div>
+                  <div className="text-base font-semibold">{Number((growth as any)[k] ?? 0).toFixed(0)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {Object.keys(tierCounts).length > 0 && (
+            <div className="flex gap-2 flex-wrap text-xs">
+              {(["S","A","B","C","D"] as const).map(t => (
+                <Badge key={t} variant={t==="S"?"default":t==="D"?"destructive":"secondary"}>Tier {t}: {tierCounts[t] ?? 0}</Badge>
+              ))}
+            </div>
+          )}
+          {topProducts.length > 0 && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground">Top 20 products by health</summary>
+              <table className="w-full mt-2">
+                <thead><tr className="text-left"><th>Product</th><th>Score</th><th>Tier</th><th>Recommended</th></tr></thead>
+                <tbody>{topProducts.map(p => (
+                  <tr key={p.product_id} className="border-t">
+                    <td className="py-1 font-mono text-[10px]">{p.product_id.slice(0,8)}</td>
+                    <td>{Number(p.overall).toFixed(1)}</td>
+                    <td>{p.priority_tier}</td>
+                    <td className="text-[10px]">{(p.recommended_actions ?? []).slice(0,3).join(", ")}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </details>
+          )}
         </CardContent>
       </Card>
 

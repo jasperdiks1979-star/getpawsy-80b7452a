@@ -1,79 +1,63 @@
-## Why this isn't a one-shot build
+# AGP Wave 4 — Autonomous Marketing Brain V1
 
-The 15 engines you listed describe ~6–9 months of engineering and a recurring AI bill in the **thousands of USD/month** if run on the full 445-product catalog (lifestyle + video + 20 creatives per product = ~10k AI image calls + ~4k video renders per refresh cycle). Doing it in a single autonomous run would:
+Wave 4 is the central intelligence layer that sits **on top of** AGP Waves 1–3, CPE, Pinterest Engine, Cinematic V3, CJ Media Pipeline, GSC, GA4, and Growth Intelligence. It does not rebuild any of them. It reads their signals, scores them, generates ranked recommendations, and (only for safe actions) auto-executes through existing engines.
 
-- Burn the Lovable AI credit pool inside the first hour (we already hit `payment_required` on the last Pinterest autopilot run).
-- Risk corrupting the live Pinterest queue, catalog, and Cinematic V3 pipeline that are currently producing revenue.
-- Produce un-reviewable output — 8,000+ assets generated before any human or QA loop has graded a single one.
+Given the scope, I am proposing Wave 4 as **four shippable sub-waves**. Each sub-wave is independently usable, leaves the system in a working state, and produces a PDF+JSON report per the standing rule. I will not try to ship all of it in one run — that would create unverified, half-wired code, which violates the "no placeholder, no TODO, production-ready" requirement in your brief.
 
-Instead I'll extend the engines you already have (CPE v1, CJ Media Intelligence, Pinterest Autopilot, Growth Intelligence, Cinematic V3) into the autonomous loop, wave by wave, with budget gates and dry-run defaults between each wave.
+## Sub-wave 4A — Signal Lake + Growth Score (foundation)
 
-## Wave plan
+Goal: one canonical place every brain decision reads from.
 
-```text
-Wave 1  Foundations & observability   (safe, no AI spend)
-Wave 2  Media pipeline completion     (low spend, deterministic)
-Wave 3  Enhancement + QA loop         (metered AI spend)
-Wave 4  Lifestyle + creative variation (highest spend — gated)
-Wave 5  Video factory extension       (gated, per-tier)
-Wave 6  Self-learning + advisor       (analytics only)
-Wave 7  Autonomous publishing + healing (flip switches)
-```
+- New tables (all RLS-locked, admin/service_role only):
+  - `agp_signals_daily` — per-day rollup of: Pinterest (impressions, saves, CTR, revenue), GSC (clicks, impressions, CTR, position), GA4 (sessions, ATC, checkouts, purchases, revenue), CJ (in-stock %, OOS count), Catalog (active count, creative_ready %, media coverage %), CPE (jobs run, $ spent, QA pass rate), Cinematic V3 (renders, success rate).
+  - `agp_growth_scores` — daily 0–100 overall + 13 subscores (SEO, Pinterest, Media, Creative, Conversion, Performance, Product Quality, Catalog Health, Traffic, Revenue, Automation, AI Efficiency, Trend Direction) + deltas vs 1d/7d/30d/90d.
+  - `agp_product_health` — per-product score: media_quality, pinterest_ready, seo_ready, creative_quality, video_avail, lifestyle_avail, qa_score, ctr, cvr, revenue_30d, priority_tier (S/A/B/C/D), recommended_actions[].
+- New edge function `agp-signal-collector` (cron 02:00 UTC) — pulls from existing tables only (no new external API calls in 4A); writes the three tables above.
+- New edge function `agp-growth-scorer` (cron 02:30 UTC) — computes scores from `agp_signals_daily` + `product_intelligence` + `creative_assets` + `pinterest_*` tables.
+- UI: extend `/admin/autonomous-growth` with a "Growth Score" hero card + 13 subscore sparklines + per-product health leaderboard.
+- Report: PDF/JSON to `public/admin-reports/ai-implementation/`.
 
-Each wave ends with a dry-run report. You explicitly approve moving to the next wave.
+## Sub-wave 4B — Recommendation Engine + Task Generator
 
-### Wave 1 — Foundations (this turn, if you approve)
-Maps onto Engines 13, 14, 15 partially.
-- Unified `agp_runs` + `agp_run_steps` tables for cross-engine observability (idempotent, resumable, versioned).
-- `agp_settings` with global kill-switch, per-engine budgets, and per-engine `auto_*` flags (all default OFF except enhance).
-- `/admin/autonomous-growth` command center page that aggregates: CPE pipeline, CJ media sync, Pinterest queue depth, Cinematic V3, Growth scorecard, cron health, error feed. Read-only first; one-click actions added in Wave 7.
-- Self-healing watcher cron (hourly) that scans for: stuck jobs >2h, missing storage objects, broken image URLs, orphaned queue rows. Logs to `agp_run_steps`; no auto-repair yet.
+Goal: turn signals into ranked, costed, reversible tasks.
 
-### Wave 2 — Media pipeline completion
-Extends `cj-media-orchestrator` + `cj_media_asset_registry`.
-- Capture 360 media, manuals, spec sheets, dimensions, feature graphics from CJ payloads (currently we only register images/videos).
-- Nightly delta sync: hash compare → mark `updated/removed/broken`, queue derivative regen.
-- Variant set per asset: `original`, `optimized` (existing WebP), `premium` (1600px Q90), `ai_enhanced` (pointer only, generated in Wave 3).
+- New tables:
+  - `agp_recommendations` — id, source_signal, action_type (enhance_image, gen_lifestyle, gen_pin, gen_cinematic, rewrite_title, rewrite_desc, gen_faq, etc.), target (product_id / collection / page), priority (0–100), expected_revenue_cents, expected_traffic, est_ai_credits, est_cloud_usd, confidence (0–1), risk (low/med/high), expected_roi, eta_minutes, status (proposed/approved/queued/running/done/failed/skipped), reversible (bool), undo_ref jsonb, created_at, decided_by.
+  - `agp_decision_log` — every auto/manual decision with reasoning jsonb.
+- New edge function `agp-recommender` (cron 03:00 UTC) — reads `agp_product_health` + `agp_signals_daily`, emits recommendations using a deterministic rule engine + Gemini-3-flash for natural-language reasoning summaries. Hard cap: 200 recs/run.
+- Auto-execution rule: only `confidence ≥ 0.8 AND risk = low AND est_ai_credits ≤ agp_settings.auto_credit_cap AND positive expected_roi` → enqueue into existing `cpe_creative_jobs` or `pinterest_publish_queue`. Everything else → status=`proposed`, waits for approval.
+- UI: `/admin/autonomous-growth` gets a "Recommendations" tab — table with filters, approve/reject/snooze, bulk-approve safe ones, undo button (uses `undo_ref`).
+- Report: PDF/JSON.
 
-### Wave 3 — Enhancement + QA loop
-Extends `cpe-image-enhancer` + `cpe-qa-engine`.
-- Batch enhancer with banned-content removal (Chinese text, CJ branding, watermarks) using Gemini 3 Pro Image edit mode.
-- Quality scorer (lighting/focus/composition/text-overlap/safe-zones) writes `cpe_qa_results.score`; <0.7 auto-requeues once, then dead-letters.
-- Budget cap: $5/day default, raise via `agp_settings`.
+## Sub-wave 4C — Self-Learning Memory + Budget Intelligence
 
-### Wave 4 — Lifestyle + creative variation
-Extends `cpe-lifestyle-generator` + `cpe-creative-multiformat`.
-- 21-scene scene library you listed, rotation tracked in `cpe_lifestyle_scenes.scene_key` to prevent repeats.
-- Per-product target: 6 lifestyle + 12 platform creatives (not 20 — the marginal CTR gain past 12 is < the cost based on existing pin analytics). Configurable per tier.
-- Tier-gated: Tier A all formats, Tier B Pinterest+Meta+Email, Tier C Pinterest only, Tier D excluded.
+Goal: brain gets smarter over time, never overspends.
 
-### Wave 5 — Video factory
-Extends Cinematic V3 + `pinterest_video_queue`.
-- New formats: Reel (9:16 15s), Short (9:16 30s), Showcase (1:1 20s). Cinematic + UGC already exist.
-- Strict per-tier daily caps; reuses existing render-worker GHCR pipeline (no new infra).
+- New tables:
+  - `agp_learning_memory` — dimension (e.g. `pin_hook`, `pin_color`, `cta_copy`, `image_model`, `enhance_preset`, `board_id`, `category`), value, n_observations, n_wins, win_rate, revenue_per_impression, last_updated. Updated nightly by `agp-learner` from `pinterest_pin_performance`, `gi_creative_performance_daily`, `cpe_qa_results`, `creative_performance_snapshots`.
+  - `agp_budget_ledger` — daily AI credits spent per engine (cpe, cinematic, recommender, pinterest), cap, projected month-end.
+- New edge function `agp-learner` (cron 04:00 UTC) — EWMA update on win rates; promotes/demotes patterns; feeds back into recommender via `agp_learning_memory` lookups (the recommender in 4B reads memory if present).
+- New edge function `agp-budget-guard` (runs before every auto-exec) — blocks execution if projected month spend > `agp_settings.monthly_ai_budget_usd`; downgrades model selection (gpt-5 → gemini-3-flash) when ROI allows.
+- UI: Budget panel on `/admin/autonomous-growth` (daily/monthly spend, projection, kill switch); Learning panel (top patterns by win rate per dimension).
+- Report: PDF/JSON.
 
-### Wave 6 — Self-learning + advisor
-Extends `growth-intelligence-orchestrator` + `cpe-performance-learner`.
-- Daily aggregator over Pinterest/GA4/orders → updates `cpe_performance_weights` dimensions (color, hook, scene, CTA, voice, time-of-day).
-- Morning advisor: writes top 10 recommendations to `gi_growth_decisions` with one-click `execute_action` payload.
-- Competitor intel: extends existing `pinterest_competitor_*` tables; daily learn-don't-copy summary into `mi_recommendations`.
+## Sub-wave 4D — Self-Healing + Operator Manual + End-to-End Validation
 
-### Wave 7 — Autonomous publishing + healing
-- Flip `auto_enhance`, `auto_lifestyle`, `auto_video`, `auto_publish` one at a time, with 48h observation between each.
-- Self-healing escalates from log-only to auto-repair for safe classes (re-enqueue stuck job, regenerate broken derivative, refresh expired signed URL).
-- Final end-to-end validation run: pick one new CJ product, drive it through all 17 of your acceptance steps, produce the deployment report.
+Goal: brain detects its own failures and ships a manual.
 
-## What I will NOT do without explicit approval
-- Generate the full 445-product creative backlog in one run.
-- Flip any `auto_publish` flag.
-- Touch production Pinterest, Cinematic V3, or Growth Intelligence cron schedules until Wave 7.
-- Add a new AI provider or new external secret.
+- Extend existing `agp-self-healing-watcher` with new checks: stuck `agp_recommendations` (running > 60m), broken creative_assets URLs (HEAD check), missing pinterest_url on done pins, expired secrets (probe-only), GSC token health, Cinematic V3 stuck jobs.
+- Smoke-test edge function `agp-wave4-smoke` — exercises signal collector, scorer, recommender, learner, budget guard in dry-run; asserts row counts and schema.
+- Operator manual at `public/admin-reports/agp/operator-manual.pdf` — covers daily/weekly/monthly checks, kill switches, approval workflow, budget tuning, escalation runbook.
+- Final Wave 4 PDF report with architecture diagram (ASCII in PDF), cost breakdown, KPI baseline snapshot, and "next wave" recommendation.
 
-## Technical notes
-- All new tables: admin-RLS only, `service_role` GRANT for workers, `INTERNAL_FUNCTION_SECRET` for service-to-service.
-- All new edge functions: dry-run default, budget check via `cpe-helpers.ts` (extended), idempotent on `(product_id, run_id, step_key)`.
-- No changes to `src/integrations/supabase/client.ts`, `supabase/config.toml`, or any production cron until Wave 7.
-- Cost ceiling enforced at orchestrator entry — function exits early with `over_budget` instead of erroring partway.
+## What I will NOT add in Wave 4 (out of scope, deferred)
 
-## Ask
-Reply **"run wave 1"** to ship Foundations + the command center page now. I'll report back with the dry-run shape of waves 2–7 before touching any AI spend.
+- New external API integrations beyond what's already wired (Meta Ads, Google Ads asset generation, email service provider). The brief lists "Generate Meta creatives / Google Ads assets / email campaign" — those require their own connectors and will be Wave 5+.
+- Replacing any existing engine. Wave 4 only orchestrates.
+- Auto-publishing pins/videos beyond what existing engines already do — Wave 4 only enqueues; existing publish governors stay authoritative.
+
+## Execution order & reporting
+
+I will execute **4A first**, generate its PDF+JSON, and stop. You then say "run wave 4b" to continue. Each sub-wave is ~1 turn of focused work and verifiable on its own.
+
+Reply **"run wave 4a"** to start, or tell me to compress/reorder.
