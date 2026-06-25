@@ -386,3 +386,18 @@ verify_jwt = false
 
 [functions.cj-media-registry-backfill]
 verify_jwt = false
+
+[functions.creative-score-engine]
+verify_jwt = false
+
+[functions.creative-generation-planner]
+verify_jwt = false
+
+[functions.creative-generate-batch]
+verify_jwt = false
+
+[functions.creative-diversity-guard]
+verify_jwt = false
+
+[functions.creative-performance-snapshot]
+verify_jwt = false
