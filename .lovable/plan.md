@@ -1,102 +1,90 @@
-## Wave 3 — Pinterest Creative Intelligence Rebuild
+## Wave 3 — Continued (with mandatory additions)
 
-Scope is too large to ship in one autonomous run safely (12 steps, new schema, new AI pipelines, new validators, Golden Batch, A/B loop, autonomous publisher). Doing it in one pass guarantees the same outcome Wave 2 exposed: unverifiable "all green" claims. I'll execute in 4 sub-waves. **Publishing stays paused throughout Wave 3A–3C.** Only Wave 3D unpauses, and only if the Golden Batch hits the >99% gates you defined.
+Continuing the existing Wave 3 implementation. Wave 3A (Foundation) already shipped: 428/428 product intelligence, 403/428 landing validations green, 10 new V2 tables, foundation edge function deployed. Publishing remains paused.
 
-**Guiding rule:** every step ends with real DB evidence + PDF/JSON report. No simulated success.
-
----
-
-### Wave 3A — Foundation: Intelligence + Validators (Steps 1, 2, 11)
-
-Replaces the brittle parts of the old pipeline before any new creative is generated.
-
-1. **Schema (new tables, admin-only RLS, service_role grants):**
-   - `pin_product_intelligence` — full Step 1 profile per active product (species, category, emotion, intent, lifestyle, season, visual_style, audience, price_tier, usp_rank[], board_id, landing_url, confidence). Permanent store, versioned.
-   - `pin_landing_validations` — last validator run per product (13 checks from Step 2 + pass/fail + reasons + checked_at).
-   - `pin_hook_library_v2` — 15 buckets, target 500+ hooks, with `species_scope`, `category_scope`, `banned_for[]`, `embedding`, usage_count.
-   - `pin_headline_bank` — 20 headlines per product, uniqueness-hashed.
-   - `pin_creative_scores` — Step 7 multi-axis scores per attempt.
-   - `pin_golden_batch` — Step 8 winner selection log.
-   - `pin_ab_experiments` + `pin_ab_outcomes` — Step 9 learning loop.
-   - `pin_wave3_runs` / `pin_wave3_steps` — orchestration.
-
-2. **Edge functions:**
-   - `pin-intelligence-builder` — profiles every active product via Gemini 2.5 Pro (multimodal: name + images + description), writes `pin_product_intelligence`.
-   - `pin-landing-validator` — runs 13 checks (DB + HEAD fetch + sitemap/canonical check + stock + price). Hard veto for downstream.
-
-3. **Root cause fixes (Step 11) baked into the new schema:**
-   - hook_not_allowed → `banned_for[]` enforced at SELECT time.
-   - board mismatch → board comes from intelligence row, not heuristic.
-   - slug/species mismatch → validator must pass before any draft row.
-   - utm missing → URL stamped in a single shared util.
-   - banned phrases → centralized linter shared by hook/headline/description.
-   - inactive products → validator hard-fail.
-
-**Deliverable:** `wave3a-foundation.pdf` + JSON. Intelligence built for 100% active products, validator green for X / red for Y with reasons.
+The 7 mandatory additions are folded into the remaining sub-waves below — no rewrite, no scope reset.
 
 ---
 
-### Wave 3B — Creative Brain: Hooks, Headlines, Scene Engine (Steps 3, 4, 5)
+### Addition 1 — Pinterest Potential Score (0–100) — hard gate ≥70
 
-1. **Hook Engine V2** — seed 500+ curated hooks across the 15 buckets, embed them, expose `pick_hook(product_id, bucket?)` with dedupe + cooldown.
-2. **Headline AI** — generate exactly 20 headlines per active product via Gemini 3 Flash, banned-phrase linted, uniqueness-hashed against `pin_headline_bank`.
-3. **Scene Engine** — replaces director prompts. Output is editorial Pinterest scenes only (lifestyle, owner interaction, modern US home). Hard ban on white bg / floating product / catalogue / collage / AI-artifact prompts (already in `pinterest-style-dna`, re-enforced + scored).
-4. **Description bank** — 10 per product, banned-phrase linted.
+Lives in `pin_product_intelligence.potential_score` (new column). Composite of:
+- landing validator pass rate
+- intelligence confidence
+- margin_percent
+- effective_stock health
+- category demand signal (from `pinterest_category_benchmarks`)
+- image quality signal (from existing `cj_media_asset_registry`)
 
-**Deliverable:** `wave3b-creative-brain.pdf` + JSON. Coverage matrix per product, dedupe stats.
+Computed in a new step at the end of Wave 3A+ (`pin-potential-scorer`). Every downstream step (hooks, headlines, scene, golden batch, publishing) MUST filter `potential_score >= 70`. Products below 70 get an audit row + reason and never enter the creative pipeline.
+
+### Addition 2 — Scene Engine: 15 visual style families
+
+`pin_scene_style_families` seed table with: Luxury, Scandinavian, Modern Home, Cozy, Outdoor, Minimal, Emotional, Funny, Family, Macro, Lifestyle, POV, Before/After, Premium, Seasonal. Each family has: palette guidance, camera guidance, lighting guidance, banned cliches, allowed pet contexts. Scene Engine in Wave 3B must draw from these families with even rotation per product (≥3 distinct families per product across 10 variants).
+
+### Addition 3 — Diversity validator (8 axes)
+
+New `pin-diversity-validator` step inside the visual scorer. Per axis 0–100, plus pairwise similarity across the 10 variants of a product:
+- camera angle, lighting, composition, background, interior, pet breed, color palette, framing
+
+Stored on `pin_creative_scores.diversity_axes` (jsonb). Any pair with mean axis similarity > 0.82 → one variant rejected and regenerated.
+
+### Addition 4 — Adaptive retry logic
+
+`pin_wave3_settings`:
+- `retry_min = 3`
+- `retry_max = 15`
+- early-exit: stop the moment all gates (visual quality, diversity, landing, hook, headline, potential) all > 0.99
+- circuit breaker: hard credit cap per run from `pin_wave3_settings.credit_cap_usd`, default $25/run
+
+### Addition 5 — Golden Batch: top 100 × 10 = 1,000 renders
+
+Ranked by `potential_score * confidence * margin_health`. Filtered to `potential_score >= 70`. Each product → 10 variants across ≥3 style families. Winner persisted in `pin_golden_batch`. Losers archived with reasons. Live credit telemetry in the Control Center.
+
+### Addition 6 — Nightly self-learning engine
+
+`pin-self-learning-engine` edge function + nightly cron (03:30 UTC). Reads:
+- `pinterest_analytics_daily` (impressions, saves, outbound, closeup)
+- GA4 (`gi_ga4_events`, `gi_traffic_sessions`)
+- `pinterest_revenue_attribution_v3`
+
+Writes back:
+- `pin_hook_library_v2.weight`
+- `pin_headline_bank.weight` (new column)
+- `pin_scene_style_families.weight` (new column)
+- `pinterest_runtime_settings.publish_pacing_per_hour` (clamped 1–3)
+
+All updates capped per cycle to avoid runaway swings (max ±25% per cycle).
+
+### Addition 7 — Pinterest Control Center
+
+New route `/admin/pinterest-control-center` reading from existing tables (no new persisted state beyond a 5-min snapshot view). Panels:
+- Credits (today, this month, projected month-end) — from `pinterest_credit_events`
+- Render queue depth + age — from `pinterest_pin_queue`
+- Live quality score histogram — from `pin_creative_scores`
+- Golden Batch progress bar — from `pin_golden_batch`
+- CTR / saves / outbound / conversions / revenue (24h, 7d, 30d) — from `pinterest_analytics_daily` + `pinterest_revenue_attribution_v3`
+- Top 10 best / worst pins (last 7d)
+- Active alerts — from `monitoring_alerts` + `pinterest_health_incidents`
+- 30s auto-refresh, admin-only.
 
 ---
 
-### Wave 3C — Quality Gates + Golden Batch (Steps 6, 7, 8)
+### Updated sub-wave order
 
-1. **Visual validator** — Gemini 2.5 Flash multimodal scorer with the 12 checks in Step 6. Returns per-axis 0–100 + overall.
-2. **Pinterest Quality Score** — composite of visual realism, product match, landing, species, board, hook, CTR predict, conv predict. **Publish gate = all axes ≥ thresholds in Step 7.** Otherwise auto-regenerate (cap retries at 5 per product — "unlimited" without a cap burns credits and never converges; the cap can be lifted per run).
-3. **Golden Batch:** pick top 25 products by `pin_product_intelligence.confidence * margin * stock_health`. For each: 10 scenes × 10 hooks × 10 headlines × 10 descriptions, scored, **single winner persisted**. All losers archived with rejection reasons.
+1. **Wave 3A+ (now)** — add `potential_score` column + `pin-potential-scorer` + 15 style families seed + adaptive retry settings.
+2. **Wave 3B** — Hooks (500+), Headlines (20/product, only for `potential_score>=70`), Scene Engine v2 using 15 families + diversity hooks, Descriptions (10/product).
+3. **Wave 3C** — Visual + Diversity validators, adaptive retry 3–15, **Golden Batch top 100 × 10 = 1,000 renders**, hard credit cap, winners persisted.
+4. **Wave 3D** — Autonomous publishing + A/B loop (requires explicit second go-ahead after gate passes).
+5. **Self-learning cron** shipped with 3D.
+6. **Pinterest Control Center** shipped alongside 3C so you can watch the Golden Batch live.
+7. **Step 12** — Final executive PDF.
 
-**Deliverable:** `wave3c-golden-batch.pdf` + JSON with confidence histogram, example winners, cost/credits used, average score per axis.
+### Gates unchanged
+Golden Batch confidence ≥99%, all visual + diversity + landing + potential ≥ threshold, zero mismatch → only then 3D is even offered. I will NOT auto-unpause publishing.
 
-**HARD GATE before Wave 3D:** Golden Batch average confidence ≥99%, CTR prediction ≥98%, landing validator 100%, zero mismatch. Otherwise stop and report.
+### Cost note
+Golden Batch jumps from 250 → up to 1,000 image renders (+ up to 15× retries per slot, capped by credit cap). I'll enforce the per-run USD cap and stop early once gates pass to keep this sane.
 
----
-
-### Wave 3D — Autonomous Publishing + A/B Loop (Steps 9, 10)
-
-Only runs if 3C gate passes.
-
-1. Unpause `pinterest_runtime_settings`, set pacing to **2 pins/hour**, hard cap 48/day.
-2. Publisher reads winners from `pin_golden_batch`, stamps UTM, posts via existing Pinterest pipeline.
-3. `pin-ab-learner` cron — every 6h, pull Pinterest analytics (impr/save/closeup/outbound) + GA4 conv + revenue → write to `pin_ab_outcomes` → update `pin_hook_library_v2.weight` and scene template weights (epsilon-greedy).
-4. Auto-pause if rolling 24h CTR drops below baseline or conv < threshold.
-
-**Deliverable:** `wave3d-publishing.pdf` + JSON: pins live, per-pin scores, first-24h metrics, auto-pause triggers if any.
-
----
-
-### Step 12 — Final Executive Report
-
-After 3D (or after 3C if gate fails), generate the full `2026-06-25-pinterest-wave3-executive.pdf` with every section you listed (architecture, before/after, regenerated counts, hooks/headlines generated, landing fixes, estimated lift, readiness, risks, cost, credits, runtime, confidence histogram, example creatives, Wave 4 roadmap). Manifest updated.
-
----
-
-### Technical notes
-- All new tables: admin-only RLS + `service_role` grants (per project policy).
-- All AI through Lovable AI Gateway (no GEMINI_API_KEY). Models: `google/gemini-2.5-pro` for intelligence profiling, `google/gemini-3-flash-preview` for hooks/headlines, `google/gemini-3-pro-image` for scene render, `google/gemini-2.5-flash` (multimodal) for visual validator.
-- Retry cap = 5 (configurable in `pin_wave3_settings`). Unlimited is unsafe without circuit breakers.
-- Old Wave 1/2 tables (`pin_product_classification`, `pin_hook_library`, `pin_hook_restrictions`) are kept read-only for diff/audit, replaced functionally by V2 tables.
-- Wave 3D requires explicit go-ahead from you in addition to the automated gate — I will not auto-unpause publishing in the same turn 3C finishes.
-
-### Estimated cost / time per sub-wave
-- 3A: ~445 Gemini Pro multimodal calls + 445 HEAD fetches. ~15 min runtime, modest credits.
-- 3B: ~445 × (1 headline batch + 1 description batch) + hook seeding (one-shot). ~30 min.
-- 3C: Golden Batch = 25 × 10 image renders × up to 5 retries = max ~1,250 image renders. **This is the expensive step.** Gemini 3 Pro Image is high-cost; I'll log credit burn live and stop if a guardrail is hit.
-- 3D: ongoing, 2 pins/h.
-
----
-
-### What I need from you
-1. **Approve Wave 3A to start now**, or change order.
-2. Confirm retry cap of 5 for Step 7 (or set your own number).
-3. Confirm Golden Batch size of 25 products × 10 variants (or change).
-4. Confirm: Wave 3D requires a second explicit go-ahead from you after the 3C gate passes — yes/no.
-
-After approval I'll execute Wave 3A and ship the report before touching 3B.
+### Next action after approval
+Execute Wave 3A+ (potential scorer + style families + retry settings), then Wave 3B in one continuous run. Report back with DB evidence before touching 3C.
