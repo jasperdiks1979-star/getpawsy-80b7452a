@@ -8,14 +8,33 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    // One-off internal backfill endpoint. Will be deleted after run.
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Require admin JWT — this endpoint mutates product data with the service role.
+    const SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const internalOk = !!SECRET && req.headers.get("x-internal-secret") === SECRET;
+    if (!internalOk) {
+      const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+      if (!token) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } });
+      }
+      const { data: userData } = await supabase.auth.getUser(token);
+      const user = userData?.user;
+      if (!user) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } });
+      }
+      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      if (!role) {
+        return new Response(JSON.stringify({ ok: false, error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "content-type": "application/json" } });
+      }
+    }
+
     const body = await req.json();
     const updates: Array<Record<string, any>> = body.updates || [];
     const mode: string = body.mode || "seo"; // "seo" | "v2"
     if (!Array.isArray(updates) || updates.length === 0) {
       return new Response(JSON.stringify({ ok: false, error: "no updates" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
     }
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     let ok = 0, fail = 0;
     const errors: string[] = [];
     // Chunk to keep individual requests bounded

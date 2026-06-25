@@ -414,6 +414,24 @@ async function runLearning(): Promise<StepOut> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Auth guard: internal secret OR admin JWT
+  {
+    const SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const internalOk = !!SECRET && req.headers.get("x-internal-secret") === SECRET;
+    if (!internalOk) {
+      const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+      let ok = false;
+      if (token && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
+        const { data: u } = await sb.auth.getUser(token);
+        if (u?.user) {
+          const { data: role } = await sb.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+          ok = !!role;
+        }
+      }
+      if (!ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  }
+
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }
   const onlyStep = body?.only as string | undefined;

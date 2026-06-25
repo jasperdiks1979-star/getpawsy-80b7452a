@@ -28,10 +28,17 @@ const SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
 function admin() { return createClient(SUPABASE_URL, SERVICE_KEY); }
 
-function isAuthed(req: Request) {
-  if (!SECRET) return true;
-  const auth = req.headers.get("authorization") ?? "";
-  return req.headers.get("x-internal-secret") === SECRET || auth.includes(SECRET);
+async function isAuthed(req: Request): Promise<boolean> {
+  if (SECRET && req.headers.get("x-internal-secret") === SECRET) return true;
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  if (!token) return false;
+  try {
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data: { user } } = await sb.auth.getUser(token);
+    if (!user) return false;
+    const { data: role } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    return !!role;
+  } catch { return false; }
 }
 
 async function invoke(name: string, body: unknown) {
@@ -63,7 +70,7 @@ async function sha256Hex(s: string): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (!isAuthed(req) && !req.headers.get("authorization")) {
+  if (!(await isAuthed(req))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...cors, "content-type": "application/json" },
     });

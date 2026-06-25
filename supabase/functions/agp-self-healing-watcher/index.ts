@@ -9,10 +9,18 @@ function admin() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
-function isAuthed(req: Request) {
+async function isAuthed(req: Request): Promise<boolean> {
   const secret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
-  if (!secret) return true;
-  return req.headers.get("x-internal-secret") === secret || req.headers.get("authorization")?.includes(secret);
+  if (secret && req.headers.get("x-internal-secret") === secret) return true;
+  const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+  if (!token) return false;
+  try {
+    const sb = admin();
+    const { data: { user } } = await sb.auth.getUser(token);
+    if (!user) return false;
+    const { data: role } = await sb.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    return !!role;
+  } catch { return false; }
 }
 
 Deno.serve(async (req) => {
@@ -21,7 +29,7 @@ Deno.serve(async (req) => {
   const sb = admin();
   let body: any = {}; try { body = await req.json(); } catch {}
   const dry = body?.dry_run ?? true;
-  if (!isAuthed(req) && !req.headers.get("authorization")) {
+  if (!(await isAuthed(req))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...cors, "content-type": "application/json" } });
   }
 
