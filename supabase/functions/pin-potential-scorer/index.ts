@@ -63,12 +63,15 @@ async function run(limit?: number) {
   const limited = typeof limit === "number" ? intel.slice(0, limit) : intel;
   const productIds = limited.map((r) => r.product_id);
 
-  const [{ data: prods }, { data: vals }, demand, imgq] = await Promise.all([
-    supa.from("products").select("id, margin_percent, effective_stock, category").in("id", productIds),
-    supa.from("pin_landing_validations").select("product_id, passed, checks").in("product_id", productIds),
+  // Fetch ALL in one shot (avoid huge .in() URLs); filter in memory.
+  const [{ data: prodsAll }, { data: valsAll }, demand, imgq] = await Promise.all([
+    supa.from("products").select("id, margin_percent, effective_stock, category").eq("is_active", true).limit(5000),
+    supa.from("pin_landing_validations").select("product_id, passed, checks").limit(5000),
     loadCategoryDemand(),
     loadImageQuality(productIds),
   ]);
+  const prods = prodsAll ?? [];
+  const vals = valsAll ?? [];
 
   const pById = new Map((prods ?? []).map((p: any) => [p.id, p]));
   const vById = new Map((vals ?? []).map((v: any) => [v.product_id, v]));
