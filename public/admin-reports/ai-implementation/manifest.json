@@ -1,44 +1,50 @@
-{
-  "reports": [
-    {
-      "slug": "2026-06-25-revenue-recovery-wave-a",
-      "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
-      "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
-      "generated_at": "2026-06-25T16:35:00Z",
-      "status": "shipped",
-      "score": 52,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
-    },
-    {
-      "slug": "2026-06-25-growth-incident-deep-dive",
-      "title": "Priority-1 Growth Incident \u00b7 Deep-Dive (ATC funnel collapse)",
-      "run_id": "incident-2026-06-25-deep",
-      "generated_at": "2026-06-25T15:30:00Z",
-      "status": "mitigated",
-      "score": 42,
-      "pdf": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.pdf",
-      "json": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.json"
-    },
-    {
-      "slug": "2026-06-25-growth-incident",
-      "title": "Priority-1 Growth Incident Report",
-      "run_id": "incident-2026-06-25",
-      "generated_at": "2026-06-25T00:00:00Z",
-      "status": "mitigated",
-      "score": 48,
-      "pdf": "/admin-reports/incident/2026-06-25-growth-incident-report.pdf",
-      "json": "/admin-reports/incident/2026-06-25-growth-incident-report.json"
-    },
-    {
-      "slug": "2026-06-25-commander-wave-6a-foundation",
-      "title": "Autonomous Commander \u00b7 Foundation (Wave 6A)",
-      "run_id": "cmdr-6a",
-      "generated_at": "2026-06-25T00:00:00Z",
-      "status": "shipped",
-      "score": 48,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
-    }
-  ]
-}
+[
+  {
+    "id": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+    "title": "Revenue Recovery \u2014 Wave A.2: ATC Root Cause",
+    "date": "2026-06-25",
+    "wave": "Revenue Recovery A.2",
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.json"
+  },
+  {
+    "slug": "2026-06-25-revenue-recovery-wave-a",
+    "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
+    "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
+    "generated_at": "2026-06-25T16:35:00Z",
+    "status": "shipped",
+    "score": 52,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
+  },
+  {
+    "slug": "2026-06-25-growth-incident-deep-dive",
+    "title": "Priority-1 Growth Incident \u00b7 Deep-Dive (ATC funnel collapse)",
+    "run_id": "incident-2026-06-25-deep",
+    "generated_at": "2026-06-25T15:30:00Z",
+    "status": "mitigated",
+    "score": 42,
+    "pdf": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.pdf",
+    "json": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.json"
+  },
+  {
+    "slug": "2026-06-25-growth-incident",
+    "title": "Priority-1 Growth Incident Report",
+    "run_id": "incident-2026-06-25",
+    "generated_at": "2026-06-25T00:00:00Z",
+    "status": "mitigated",
+    "score": 48,
+    "pdf": "/admin-reports/incident/2026-06-25-growth-incident-report.pdf",
+    "json": "/admin-reports/incident/2026-06-25-growth-incident-report.json"
+  },
+  {
+    "slug": "2026-06-25-commander-wave-6a-foundation",
+    "title": "Autonomous Commander \u00b7 Foundation (Wave 6A)",
+    "run_id": "cmdr-6a",
+    "generated_at": "2026-06-25T00:00:00Z",
+    "status": "shipped",
+    "score": 48,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
+  }
+]

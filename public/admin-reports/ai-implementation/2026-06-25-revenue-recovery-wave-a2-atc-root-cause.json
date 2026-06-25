@@ -1,0 +1,62 @@
+{
+  "id": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+  "title": "Revenue Recovery \u2014 Wave A.2: ATC Root Cause",
+  "date": "2026-06-25",
+  "wave": "A.2",
+  "executive_summary": "The reported 0-ATC catastrophe was a false positive. Real cart events ARE being recorded \u2014 under activity_type='cart'. Roughly 10 readers across the platform query for 'add_to_cart' instead, including the Wave A funnel validator. Playwright crawl of 5 PDPs on mobile + desktop confirmed Add To Cart fires successfully end-to-end and writes to visitor_activity. After patching the validator, the funnel now reads 2 green / 3 yellow / 3 red.",
+  "findings": [
+    {
+      "severity": "high",
+      "title": "Activity-type contract drift: cart vs add_to_cart",
+      "detail": "src/contexts/CartContext.tsx writes activity_type='cart'. The following readers query for 'add_to_cart' and silently report 0: supabase/functions/rr-funnel-validator, supabase/functions/monitoring-conversion-tracker, supabase/functions/monitoring-landing-page-scores, supabase/functions/monitoring-ads-health-map, src/components/admin/CRODashboard.tsx, src/components/admin/GrowthAnalyticsDashboard.tsx, src/lib/ab-test-analytics.ts, src/lib/commerce-intelligence/pricing-intelligence.ts, src/lib/commerce-intelligence/demand-prediction.ts, src/pages/admin/ProfitSystemDashboard.tsx. The real wire value is 'cart' and has been for the full history window \u2014 do NOT migrate the emitter.",
+      "fix": "Patched rr-funnel-validator to query .in('activity_type', ['cart','add_to_cart']). The other ~10 readers will report false 0s until each is patched the same way. Recommend a follow-up sweep before activating ARO so its profit math isn't poisoned."
+    },
+    {
+      "severity": "medium",
+      "title": "PDP renders 9\u201313 duplicate Add to Cart buttons (mobile)",
+      "detail": "Per-PDP DOM contains 9\u201313 buttons with text matching 'Add to Cart'. All but one (the visible sticky bar button at top\u2248780, 185\u2013204\u00d756) collapse to 0\u00d70. The visible button works on click. The duplicates are wasteful and confuse automated testing and accessibility readers.",
+      "fix": "Out of scope for Wave A.2 (not blocking conversion). Schedule cleanup in Wave C alongside the regression test suite."
+    },
+    {
+      "severity": "medium",
+      "title": "Two overlapping sticky bottom bars on PDP mobile",
+      "detail": "ProductDetail.tsx inline sticky CTA (z-50, bottom-0) and components/products/PdpStickyAtc.tsx (z-40, bottom-0) both render simultaneously on mobile PDPs. z-50 wins visually so users still see one bar, but the duplicate burns paint cycles and complicates click targeting in tests.",
+      "fix": "Pick one as canonical; remove the other. Out of scope for Wave A.2."
+    },
+    {
+      "severity": "low",
+      "title": "Sitemap emits /product/ (singular) URLs",
+      "detail": "sitemap-products-1.xml lists URLs as https://getpawsy.pet/product/<slug> (singular). The canonical project rule is /products/ (plural). Both URLs return HTTP 200 so there is no redirect chain, but Pinterest pin destinations and GSC click attribution may fragment between the two shapes.",
+      "fix": "Generate the sitemap from the same slug helper used by &lt;link rel=canonical&gt;. Verify the renderer in scripts/sitemap-utils.mjs or scripts/validate-sitemaps.mjs."
+    }
+  ],
+  "funnel_after_patch": {
+    "visitor_arrival_24h": "green (1365 browsing rows)",
+    "product_views_24h": "green (250)",
+    "add_to_cart_24h": "yellow (5 / 250 = 2.0% \u2014 was reported as red 0)",
+    "begin_checkout_24h": "red (0)",
+    "stripe_paid_orders_14d": "yellow (1/14 = 7.1%)",
+    "pinterest_capi_7d": "red (outbox empty)",
+    "pinterest_attribution_7d": "yellow (47 sessions)",
+    "pinterest_pins_published_24h": "red (0)"
+  },
+  "evidence": {
+    "playwright_runs": 2,
+    "pdps_crawled": 5,
+    "successful_atc_clicks": 7,
+    "test_atc_events_persisted_to_db": 5,
+    "test_artifacts_dir": "/tmp/browser/atc-audit"
+  },
+  "code_changes": [
+    "supabase/functions/rr-funnel-validator/index.ts \u2014 accept both 'cart' and 'add_to_cart' activity_type values"
+  ],
+  "edge_functions_deployed": [
+    "rr-funnel-validator"
+  ],
+  "recommended_next": [
+    "Wave A.3: sweep the other ~10 readers to use the correct activity_type",
+    "Wave B: Pinterest CAPI outbox empty + 0 pins published 24h \u2014 diagnose publisher + attribution",
+    "Wave C: regression test for ATC + cleanup duplicate ATC buttons + dedupe sticky bars",
+    "Wave D: real Stripe E2E (confirm test-mode vs live-mode first)"
+  ]
+}

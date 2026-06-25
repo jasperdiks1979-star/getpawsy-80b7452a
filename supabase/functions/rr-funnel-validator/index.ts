@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
     const { count, error } = await supabase
       .from("visitor_activity")
       .select("id", { count: "exact", head: true })
-      .eq("activity_type", "add_to_cart")
+      // CartContext.tsx emits `activity_type='cart'`. ~10 other modules
+      // (CRO dashboards, monitoring, AB tests, pricing intel, V2.1 scorer)
+      // incorrectly query for 'add_to_cart' and report false 0s. The wire
+      // value is 'cart'. Do NOT change the emitter — historical data is here.
+      .in("activity_type", ["cart", "add_to_cart"])
       .gte("created_at", sinceISO(1));
     atc24h = count ?? 0;
     // ATC rate vs product views — red if <1%, yellow <4%.
