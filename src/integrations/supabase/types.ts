@@ -16671,6 +16671,7 @@ export type Database = {
           performance_score: number
           product_id: string
           used_count: number
+          weight: number
         }
         Insert: {
           banned_phrases_found?: string[]
@@ -16682,6 +16683,7 @@ export type Database = {
           performance_score?: number
           product_id: string
           used_count?: number
+          weight?: number
         }
         Update: {
           banned_phrases_found?: string[]
@@ -16693,6 +16695,7 @@ export type Database = {
           performance_score?: number
           product_id?: string
           used_count?: number
+          weight?: number
         }
         Relationships: []
       }
@@ -16843,6 +16846,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_potential_audit: {
+        Row: {
+          id: string
+          potential_score: number
+          product_id: string
+          reasons: Json
+          scored_at: string
+        }
+        Insert: {
+          id?: string
+          potential_score: number
+          product_id: string
+          reasons: Json
+          scored_at?: string
+        }
+        Update: {
+          id?: string
+          potential_score?: number
+          product_id?: string
+          reasons?: Json
+          scored_at?: string
+        }
+        Relationships: []
+      }
       pin_product_classification: {
         Row: {
           allowed_hook_ids: string[]
@@ -16918,6 +16945,9 @@ export type Database = {
           lifestyle_context: string | null
           model_used: string | null
           pinterest_board_id: string | null
+          potential_breakdown: Json | null
+          potential_score: number | null
+          potential_scored_at: string | null
           price_tier: string | null
           product_id: string
           product_slug: string
@@ -16941,6 +16971,9 @@ export type Database = {
           lifestyle_context?: string | null
           model_used?: string | null
           pinterest_board_id?: string | null
+          potential_breakdown?: Json | null
+          potential_score?: number | null
+          potential_scored_at?: string | null
           price_tier?: string | null
           product_id: string
           product_slug: string
@@ -16964,6 +16997,9 @@ export type Database = {
           lifestyle_context?: string | null
           model_used?: string | null
           pinterest_board_id?: string | null
+          potential_breakdown?: Json | null
+          potential_score?: number | null
+          potential_scored_at?: string | null
           price_tier?: string | null
           product_id?: string
           product_slug?: string
@@ -17041,6 +17077,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pin_scene_style_families: {
+        Row: {
+          allowed_pet_contexts: string[]
+          banned_cliches: string[]
+          camera_guidance: string
+          composition_guidance: string
+          created_at: string
+          id: string
+          lighting_guidance: string
+          name: string
+          palette_guidance: string
+          slug: string
+          updated_at: string
+          usage_count: number
+          weight: number
+        }
+        Insert: {
+          allowed_pet_contexts?: string[]
+          banned_cliches?: string[]
+          camera_guidance: string
+          composition_guidance: string
+          created_at?: string
+          id?: string
+          lighting_guidance: string
+          name: string
+          palette_guidance: string
+          slug: string
+          updated_at?: string
+          usage_count?: number
+          weight?: number
+        }
+        Update: {
+          allowed_pet_contexts?: string[]
+          banned_cliches?: string[]
+          camera_guidance?: string
+          composition_guidance?: string
+          created_at?: string
+          id?: string
+          lighting_guidance?: string
+          name?: string
+          palette_guidance?: string
+          slug?: string
+          updated_at?: string
+          usage_count?: number
+          weight?: number
+        }
+        Relationships: []
       }
       pin_wave1_runs: {
         Row: {
