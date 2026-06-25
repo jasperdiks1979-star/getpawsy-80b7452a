@@ -1,0 +1,48 @@
+{
+  "incident_id": "2026-06-25-growth-p1-deep-dive",
+  "generated_at": "2026-06-25T15:12:09.367283Z",
+  "severity": "P1",
+  "status": "mitigated",
+  "verdict": "Traffic is healthy (~6.7k sessions/wk). Real P1 is add_to_cart event chain broken since 17 Jun: 0 ATC events vs 1,243 sticky-ATC impressions. Pinterest publishing partially restored via paused-queue release.",
+  "funnel_30d": {
+    "lp_view": 551,
+    "view_item": 5379,
+    "pdp_view": 4738,
+    "sticky_atc_visible": 1243,
+    "add_to_cart": 43,
+    "begin_checkout": 41,
+    "payment_success": 3,
+    "paid_orders_db": 1
+  },
+  "traffic_7d": {
+    "direct": 6634,
+    "social": 82,
+    "other": 7,
+    "organic": 2,
+    "google": 1,
+    "unique_sessions": 6725
+  },
+  "pinterest": {
+    "posted_today": 7,
+    "posted_7d": 14,
+    "queued_after": 66,
+    "paused_released": 86,
+    "rejected_7d": 58,
+    "connection": "healthy"
+  },
+  "actions_executed": [
+    "released_86_paused_pins_staggered",
+    "invoked_pinterest_pipeline_drain",
+    "invoked_pinterest_cron_worker",
+    "verified_connection_and_credits",
+    "incident_pdf_json_persisted"
+  ],
+  "human_approval_required": [
+    "fix_add_to_cart_event_handler_p1",
+    "stripe_checkout_webhook_audit_p1",
+    "utm_attribution_pipeline_fix_p1",
+    "pinterest_creative_director_board_mapping_p2",
+    "gsc_indexing_resubmission_p2",
+    "oos_catalog_cleanup_85_skus_p3"
+  ]
+}
