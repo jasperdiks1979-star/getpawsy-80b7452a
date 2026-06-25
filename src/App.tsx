@@ -3212,6 +3212,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-enterprise-control-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestEnterpriseControlCenter />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-revenue-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
