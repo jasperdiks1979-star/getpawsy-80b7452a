@@ -404,3 +404,6 @@ verify_jwt = false
 
 [functions.aci-orchestrator]
 verify_jwt = false
+
+[functions.cmdr-orchestrator]
+verify_jwt = false
