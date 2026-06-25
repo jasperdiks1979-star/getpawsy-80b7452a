@@ -25982,6 +25982,174 @@ export type Database = {
         }
         Relationships: []
       }
+      prie_brain_snapshots: {
+        Row: {
+          ai_confidence: number
+          automation_score: number
+          bottleneck: string | null
+          captured_at: string
+          created_at: string
+          creative_score: number
+          growth_score: number
+          health_score: number
+          id: string
+          inputs: Json
+          revenue_score: number
+          seo_score: number
+          top_action: string | null
+          why_not_grow: string | null
+        }
+        Insert: {
+          ai_confidence?: number
+          automation_score?: number
+          bottleneck?: string | null
+          captured_at?: string
+          created_at?: string
+          creative_score?: number
+          growth_score?: number
+          health_score?: number
+          id?: string
+          inputs?: Json
+          revenue_score?: number
+          seo_score?: number
+          top_action?: string | null
+          why_not_grow?: string | null
+        }
+        Update: {
+          ai_confidence?: number
+          automation_score?: number
+          bottleneck?: string | null
+          captured_at?: string
+          created_at?: string
+          creative_score?: number
+          growth_score?: number
+          health_score?: number
+          id?: string
+          inputs?: Json
+          revenue_score?: number
+          seo_score?: number
+          top_action?: string | null
+          why_not_grow?: string | null
+        }
+        Relationships: []
+      }
+      prie_revenue_predictions: {
+        Row: {
+          computed_at: string
+          confidence: number
+          expected_annual_revenue_cents: number
+          expected_atc: number
+          expected_closeups: number
+          expected_impressions: number
+          expected_monthly_revenue_cents: number
+          expected_outbound_clicks: number
+          expected_purchases: number
+          expected_revenue_cents: number
+          expected_saves: number
+          horizon_days: number
+          id: string
+          inputs: Json
+          product_id: string
+          product_slug: string | null
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number
+          expected_annual_revenue_cents?: number
+          expected_atc?: number
+          expected_closeups?: number
+          expected_impressions?: number
+          expected_monthly_revenue_cents?: number
+          expected_outbound_clicks?: number
+          expected_purchases?: number
+          expected_revenue_cents?: number
+          expected_saves?: number
+          horizon_days?: number
+          id?: string
+          inputs?: Json
+          product_id: string
+          product_slug?: string | null
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number
+          expected_annual_revenue_cents?: number
+          expected_atc?: number
+          expected_closeups?: number
+          expected_impressions?: number
+          expected_monthly_revenue_cents?: number
+          expected_outbound_clicks?: number
+          expected_purchases?: number
+          expected_revenue_cents?: number
+          expected_saves?: number
+          horizon_days?: number
+          id?: string
+          inputs?: Json
+          product_id?: string
+          product_slug?: string | null
+        }
+        Relationships: []
+      }
+      prie_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      prie_timeline_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          kind: string
+          meta: Json
+          occurred_at: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind: string
+          meta?: Json
+          occurred_at?: string
+          severity?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          kind?: string
+          meta?: Json
+          occurred_at?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       product_aliases: {
         Row: {
           alias: string
