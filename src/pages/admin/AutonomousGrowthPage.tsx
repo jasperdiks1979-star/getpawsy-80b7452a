@@ -76,6 +76,16 @@ export default function AutonomousGrowthPage() {
     setLoading(false);
   }
 
+  async function runWave2(dry = true, mode: "delta" | "full" = "delta") {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("agp-wave2-media-pipeline", {
+      body: { dry_run: dry, mode },
+    });
+    if (error) toast.error(error.message);
+    else { toast.success(`Wave 2 ${dry ? "(dry)" : mode}: ${JSON.stringify((data as any)?.counts ?? {})}`); load(); }
+    setLoading(false);
+  }
+
   const cost24h = runs.filter(r => new Date(r.started_at).getTime() > Date.now() - 86_400_000).reduce((a, r) => a + Number(r.ai_cost_usd ?? 0), 0);
 
   return (
@@ -83,13 +93,27 @@ export default function AutonomousGrowthPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Autonomous Growth Platform</h1>
-          <p className="text-sm text-muted-foreground">Wave 1 — Foundations & observability. All auto-modes default OFF.</p>
+          <p className="text-sm text-muted-foreground">Waves 1–2 — Foundations, observability, media pipeline. All auto-modes default OFF.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => runWatcher(true)} disabled={loading}>Dry-run watcher</Button>
           <Button onClick={() => runWatcher(false)} disabled={loading}>Run self-healing watcher</Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Wave 2 — CJ Media Pipeline</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2 items-center">
+          <Button size="sm" variant="outline" onClick={() => runWave2(true)} disabled={loading}>Dry-run snapshot</Button>
+          <Button size="sm" onClick={() => runWave2(false, "delta")} disabled={loading}>Run delta (4 batches)</Button>
+          <Button size="sm" variant="secondary" onClick={() => runWave2(false, "full")} disabled={loading}>Run full sweep (20 batches)</Button>
+          <span className="text-xs text-muted-foreground ml-2">
+            Rehosts CJ images & videos, drains derivative queue, runs integrity scan.
+          </span>
+        </CardContent>
+      </Card>
 
       {settings?.kill_switch && (
         <div className="border-2 border-destructive bg-destructive/10 text-destructive p-3 rounded font-semibold">
