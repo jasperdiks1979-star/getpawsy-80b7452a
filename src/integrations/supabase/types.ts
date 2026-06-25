@@ -53,6 +53,818 @@ export type Database = {
         }
         Relationships: []
       }
+      aci_approvals: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          expected_cost_usd: number | null
+          expected_revenue_cents: number | null
+          expires_at: string | null
+          id: string
+          payload: Json | null
+          recommendation_id: string | null
+          risk: string
+          status: string
+          task_id: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          expected_cost_usd?: number | null
+          expected_revenue_cents?: number | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          recommendation_id?: string | null
+          risk?: string
+          status?: string
+          task_id?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          expected_cost_usd?: number | null
+          expected_revenue_cents?: number | null
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          recommendation_id?: string | null
+          risk?: string
+          status?: string
+          task_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      aci_audit_log: {
+        Row: {
+          action: string
+          actor: string
+          after_state: Json | null
+          before_state: Json | null
+          engine: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          payload: Json | null
+          reversible_token: string | null
+          ts: string
+        }
+        Insert: {
+          action: string
+          actor?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          engine?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json | null
+          reversible_token?: string | null
+          ts?: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          engine?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          payload?: Json | null
+          reversible_token?: string | null
+          ts?: string
+        }
+        Relationships: []
+      }
+      aci_budget_ledger: {
+        Row: {
+          ai_cost_usd: number
+          cloud_cost_usd: number
+          day: string
+          engine: string
+          id: string
+          request_count: number
+          updated_at: string
+        }
+        Insert: {
+          ai_cost_usd?: number
+          cloud_cost_usd?: number
+          day?: string
+          engine: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_cost_usd?: number
+          cloud_cost_usd?: number
+          day?: string
+          engine?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aci_competitor_gaps: {
+        Row: {
+          competitor_id: string | null
+          computed_at: string
+          content_gap: number | null
+          conversion_gap: number | null
+          id: string
+          media_gap: number | null
+          notes: string | null
+          overall_threat: number | null
+          price_gap: number | null
+          seo_gap: number | null
+          trust_gap: number | null
+        }
+        Insert: {
+          competitor_id?: string | null
+          computed_at?: string
+          content_gap?: number | null
+          conversion_gap?: number | null
+          id?: string
+          media_gap?: number | null
+          notes?: string | null
+          overall_threat?: number | null
+          price_gap?: number | null
+          seo_gap?: number | null
+          trust_gap?: number | null
+        }
+        Update: {
+          competitor_id?: string | null
+          computed_at?: string
+          content_gap?: number | null
+          conversion_gap?: number | null
+          id?: string
+          media_gap?: number | null
+          notes?: string | null
+          overall_threat?: number | null
+          price_gap?: number | null
+          seo_gap?: number | null
+          trust_gap?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aci_competitor_gaps_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "aci_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aci_competitor_snapshots: {
+        Row: {
+          competitor_id: string | null
+          created_at: string
+          id: string
+          media_quality: number | null
+          new_products: Json | null
+          payload: Json | null
+          pinterest_visibility: number | null
+          prices_summary: Json | null
+          seo_score: number | null
+          shopping_visibility: number | null
+          snapshot_date: string
+          top_pages: Json | null
+        }
+        Insert: {
+          competitor_id?: string | null
+          created_at?: string
+          id?: string
+          media_quality?: number | null
+          new_products?: Json | null
+          payload?: Json | null
+          pinterest_visibility?: number | null
+          prices_summary?: Json | null
+          seo_score?: number | null
+          shopping_visibility?: number | null
+          snapshot_date?: string
+          top_pages?: Json | null
+        }
+        Update: {
+          competitor_id?: string | null
+          created_at?: string
+          id?: string
+          media_quality?: number | null
+          new_products?: Json | null
+          payload?: Json | null
+          pinterest_visibility?: number | null
+          prices_summary?: Json | null
+          seo_score?: number | null
+          shopping_visibility?: number | null
+          snapshot_date?: string
+          top_pages?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aci_competitor_snapshots_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "aci_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aci_competitors: {
+        Row: {
+          discovered_at: string
+          domain: string
+          id: string
+          last_scanned_at: string | null
+          metadata: Json | null
+          niche: string | null
+          threat_score: number | null
+        }
+        Insert: {
+          discovered_at?: string
+          domain: string
+          id?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          niche?: string | null
+          threat_score?: number | null
+        }
+        Update: {
+          discovered_at?: string
+          domain?: string
+          id?: string
+          last_scanned_at?: string | null
+          metadata?: Json | null
+          niche?: string | null
+          threat_score?: number | null
+        }
+        Relationships: []
+      }
+      aci_forecasts: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          entity: string | null
+          high: number | null
+          horizon_days: number
+          id: string
+          low: number | null
+          metric: string
+          model_version: string | null
+          predicted: number | null
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          entity?: string | null
+          high?: number | null
+          horizon_days: number
+          id?: string
+          low?: number | null
+          metric: string
+          model_version?: string | null
+          predicted?: number | null
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          entity?: string | null
+          high?: number | null
+          horizon_days?: number
+          id?: string
+          low?: number | null
+          metric?: string
+          model_version?: string | null
+          predicted?: number | null
+        }
+        Relationships: []
+      }
+      aci_learning_events: {
+        Row: {
+          axis: string | null
+          delta: number | null
+          event_type: string
+          id: string
+          outcome: string | null
+          payload: Json | null
+          ts: string
+        }
+        Insert: {
+          axis?: string | null
+          delta?: number | null
+          event_type: string
+          id?: string
+          outcome?: string | null
+          payload?: Json | null
+          ts?: string
+        }
+        Update: {
+          axis?: string | null
+          delta?: number | null
+          event_type?: string
+          id?: string
+          outcome?: string | null
+          payload?: Json | null
+          ts?: string
+        }
+        Relationships: []
+      }
+      aci_market_signals: {
+        Row: {
+          captured_at: string
+          category: string | null
+          confidence: number | null
+          entity: string
+          expected_lifetime_days: number | null
+          id: string
+          payload: Json | null
+          score: number | null
+          seasonality: Json | null
+          signal_type: string
+          source: string
+          velocity: number | null
+        }
+        Insert: {
+          captured_at?: string
+          category?: string | null
+          confidence?: number | null
+          entity: string
+          expected_lifetime_days?: number | null
+          id?: string
+          payload?: Json | null
+          score?: number | null
+          seasonality?: Json | null
+          signal_type: string
+          source: string
+          velocity?: number | null
+        }
+        Update: {
+          captured_at?: string
+          category?: string | null
+          confidence?: number | null
+          entity?: string
+          expected_lifetime_days?: number | null
+          id?: string
+          payload?: Json | null
+          score?: number | null
+          seasonality?: Json | null
+          signal_type?: string
+          source?: string
+          velocity?: number | null
+        }
+        Relationships: []
+      }
+      aci_product_opportunity_v2: {
+        Row: {
+          competition_score: number | null
+          computed_at: string
+          ctr_score: number | null
+          cvr_score: number | null
+          demand_score: number | null
+          expected_ctr_delta_pct: number | null
+          expected_pinterest_delta_pct: number | null
+          expected_revenue_increase_cents: number | null
+          expected_roi: number | null
+          expected_seo_delta_pct: number | null
+          ga4_score: number | null
+          growth_score: number | null
+          gsc_score: number | null
+          id: string
+          inventory_score: number | null
+          investment_priority: string | null
+          margin_score: number | null
+          media_score: number | null
+          overall_score: number | null
+          pinterest_score: number | null
+          price_score: number | null
+          product_id: string
+          rank: number | null
+          revenue_score: number | null
+          reviews_score: number | null
+          seasonality_score: number | null
+          trend_score: number | null
+        }
+        Insert: {
+          competition_score?: number | null
+          computed_at?: string
+          ctr_score?: number | null
+          cvr_score?: number | null
+          demand_score?: number | null
+          expected_ctr_delta_pct?: number | null
+          expected_pinterest_delta_pct?: number | null
+          expected_revenue_increase_cents?: number | null
+          expected_roi?: number | null
+          expected_seo_delta_pct?: number | null
+          ga4_score?: number | null
+          growth_score?: number | null
+          gsc_score?: number | null
+          id?: string
+          inventory_score?: number | null
+          investment_priority?: string | null
+          margin_score?: number | null
+          media_score?: number | null
+          overall_score?: number | null
+          pinterest_score?: number | null
+          price_score?: number | null
+          product_id: string
+          rank?: number | null
+          revenue_score?: number | null
+          reviews_score?: number | null
+          seasonality_score?: number | null
+          trend_score?: number | null
+        }
+        Update: {
+          competition_score?: number | null
+          computed_at?: string
+          ctr_score?: number | null
+          cvr_score?: number | null
+          demand_score?: number | null
+          expected_ctr_delta_pct?: number | null
+          expected_pinterest_delta_pct?: number | null
+          expected_revenue_increase_cents?: number | null
+          expected_roi?: number | null
+          expected_seo_delta_pct?: number | null
+          ga4_score?: number | null
+          growth_score?: number | null
+          gsc_score?: number | null
+          id?: string
+          inventory_score?: number | null
+          investment_priority?: string | null
+          margin_score?: number | null
+          media_score?: number | null
+          overall_score?: number | null
+          pinterest_score?: number | null
+          price_score?: number | null
+          product_id?: string
+          rank?: number | null
+          revenue_score?: number | null
+          reviews_score?: number | null
+          seasonality_score?: number | null
+          trend_score?: number | null
+        }
+        Relationships: []
+      }
+      aci_recommendations: {
+        Row: {
+          ai_cost_usd: number | null
+          cloud_cost_usd: number | null
+          completion_minutes: number | null
+          confidence: number | null
+          created_at: string
+          dependencies: Json | null
+          engine: string
+          entity_id: string | null
+          entity_type: string | null
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          id: string
+          payload: Json | null
+          priority: string
+          rationale: string | null
+          recommendation_type: string
+          risk: string
+          status: string
+          title: string
+        }
+        Insert: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          completion_minutes?: number | null
+          confidence?: number | null
+          created_at?: string
+          dependencies?: Json | null
+          engine: string
+          entity_id?: string | null
+          entity_type?: string | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          payload?: Json | null
+          priority?: string
+          rationale?: string | null
+          recommendation_type: string
+          risk?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          completion_minutes?: number | null
+          confidence?: number | null
+          created_at?: string
+          dependencies?: Json | null
+          engine?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          payload?: Json | null
+          priority?: string
+          rationale?: string | null
+          recommendation_type?: string
+          risk?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      aci_revenue_intelligence: {
+        Row: {
+          ad_roi: number | null
+          conversion_pct: number | null
+          day: string
+          dead_inventory: boolean | null
+          id: string
+          lost_revenue_cents: number | null
+          ltv_cents: number | null
+          margin_pct: number | null
+          notes: string | null
+          product_id: string
+          profit_cents: number | null
+          refund_risk: number | null
+          shipping_cost_cents: number | null
+        }
+        Insert: {
+          ad_roi?: number | null
+          conversion_pct?: number | null
+          day?: string
+          dead_inventory?: boolean | null
+          id?: string
+          lost_revenue_cents?: number | null
+          ltv_cents?: number | null
+          margin_pct?: number | null
+          notes?: string | null
+          product_id: string
+          profit_cents?: number | null
+          refund_risk?: number | null
+          shipping_cost_cents?: number | null
+        }
+        Update: {
+          ad_roi?: number | null
+          conversion_pct?: number | null
+          day?: string
+          dead_inventory?: boolean | null
+          id?: string
+          lost_revenue_cents?: number | null
+          ltv_cents?: number | null
+          margin_pct?: number | null
+          notes?: string | null
+          product_id?: string
+          profit_cents?: number | null
+          refund_risk?: number | null
+          shipping_cost_cents?: number | null
+        }
+        Relationships: []
+      }
+      aci_rollbacks: {
+        Row: {
+          applied_at: string
+          engine: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          reversible_token: string
+          reverted_at: string | null
+          snapshot: Json
+          status: string
+        }
+        Insert: {
+          applied_at?: string
+          engine: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          reversible_token?: string
+          reverted_at?: string | null
+          snapshot: Json
+          status?: string
+        }
+        Update: {
+          applied_at?: string
+          engine?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          reversible_token?: string
+          reverted_at?: string | null
+          snapshot?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      aci_run_steps: {
+        Row: {
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          payload: Json | null
+          run_id: string | null
+          started_at: string | null
+          status: string
+          step: string
+        }
+        Insert: {
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          payload?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status: string
+          step: string
+        }
+        Update: {
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          payload?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aci_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aci_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aci_runs: {
+        Row: {
+          ai_cost_usd: number | null
+          cloud_cost_usd: number | null
+          duration_ms: number | null
+          engine: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          metrics: Json | null
+          mode: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          duration_ms?: number | null
+          engine: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metrics?: Json | null
+          mode?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          ai_cost_usd?: number | null
+          cloud_cost_usd?: number | null
+          duration_ms?: number | null
+          engine?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metrics?: Json | null
+          mode?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      aci_score_weights: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          version: number
+          weights: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          version?: number
+          weights: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          version?: number
+          weights?: Json
+        }
+        Relationships: []
+      }
+      aci_settings: {
+        Row: {
+          autonomy_level: number
+          created_at: string
+          daily_ai_budget_usd: number
+          daily_cloud_budget_usd: number
+          id: string
+          kill_switch: boolean
+          max_tasks_per_day: number
+          mode: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          autonomy_level?: number
+          created_at?: string
+          daily_ai_budget_usd?: number
+          daily_cloud_budget_usd?: number
+          id?: string
+          kill_switch?: boolean
+          max_tasks_per_day?: number
+          mode?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          autonomy_level?: number
+          created_at?: string
+          daily_ai_budget_usd?: number
+          daily_cloud_budget_usd?: number
+          id?: string
+          kill_switch?: boolean
+          max_tasks_per_day?: number
+          mode?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aci_tasks: {
+        Row: {
+          created_at: string
+          dispatched_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          output: Json | null
+          payload: Json | null
+          recommendation_id: string | null
+          requires_approval: boolean | null
+          status: string
+          task_type: string
+        }
+        Insert: {
+          created_at?: string
+          dispatched_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          payload?: Json | null
+          recommendation_id?: string | null
+          requires_approval?: boolean | null
+          status?: string
+          task_type: string
+        }
+        Update: {
+          created_at?: string
+          dispatched_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          payload?: Json | null
+          recommendation_id?: string | null
+          requires_approval?: boolean | null
+          status?: string
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aci_tasks_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "aci_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_spend_entries: {
         Row: {
           add_to_cart: number
