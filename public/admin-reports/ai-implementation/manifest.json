@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-cmdr-wave-6a-foundations",
+      "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
+      "run_id": "ca4f54dd-7209-486b-a7d2-51c1af7f2c03",
+      "generated_at": "2026-06-25T11:00:00Z",
+      "status": "success",
+      "score": 90,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.json"
+    },
+    {
       "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
       "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
       "run_id": "aci-wave-5x",
