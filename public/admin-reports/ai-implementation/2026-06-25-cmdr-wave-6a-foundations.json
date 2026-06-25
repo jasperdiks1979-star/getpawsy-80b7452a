@@ -1,0 +1,54 @@
+{
+  "slug": "2026-06-25-cmdr-wave-6a-foundations",
+  "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
+  "wave": "6A",
+  "generated_at": "2026-06-25T10:59:59.842353Z",
+  "status": "success",
+  "score": 90,
+  "mode": "simulation",
+  "run_validation": {
+    "ok": true,
+    "steps": 8,
+    "engines_scanned": 16,
+    "engines_ok": 8,
+    "engines_lagging": 2,
+    "engines_stale": 4,
+    "engines_unknown": 2,
+    "decisions_created": 0,
+    "simulations_run": 0,
+    "issues_detected": 8,
+    "auto_actions": 0,
+    "cost_usd": 0.0
+  },
+  "schema": [
+    "cmdr_settings",
+    "cmdr_goals",
+    "cmdr_runs",
+    "cmdr_run_steps",
+    "cmdr_decisions",
+    "cmdr_resource_plan",
+    "cmdr_model_route_log",
+    "cmdr_budget_ledger",
+    "cmdr_health_signals",
+    "cmdr_simulations",
+    "cmdr_memory",
+    "cmdr_audit_log"
+  ],
+  "edge_functions": [
+    "cmdr-orchestrator"
+  ],
+  "cron": "0 4 * * * (UTC, daily \u2014 after AGP & ACI)",
+  "ui": "/admin/commander",
+  "next_stages": [
+    "6B Model Router + Budget Engine (simulation)",
+    "6C Goal Engine + Decision Engine + Simulation gate (approval)",
+    "6D Self-Healing + Business Memory (approval \u2192 auto)",
+    "6E Digital Board Meeting + Master Report (auto)"
+  ],
+  "safety": {
+    "default_mode": "simulation",
+    "autonomy_level": 1,
+    "kill_switch": "primed_off",
+    "downstream_engines_invoked": false
+  }
+}
