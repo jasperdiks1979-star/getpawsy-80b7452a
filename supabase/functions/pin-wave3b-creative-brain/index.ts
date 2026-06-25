@@ -212,7 +212,7 @@ async function run(opts: { limit?: number; productId?: string; dryRun?: boolean 
   const startedAt = new Date().toISOString();
   const { data: runRow } = await supa
     .from("pin_wave3_runs")
-    .insert({ status: "running", phase: "wave3b", started_at: startedAt, meta: opts })
+    .insert({ wave: "wave3b", status: "running", started_at: startedAt, totals: { opts } })
     .select()
     .maybeSingle();
   const runId = runRow?.id ?? null;
@@ -284,7 +284,11 @@ async function run(opts: { limit?: number; productId?: string; dryRun?: boolean 
 
   if (runId) {
     await supa.from("pin_wave3_runs")
-      .update({ status: failed > 0 && succeeded === 0 ? "failed" : "completed", finished_at: new Date().toISOString(), result })
+      .update({
+        status: failed > 0 && succeeded === 0 ? "failed" : "completed",
+        completed_at: new Date().toISOString(),
+        totals: result,
+      })
       .eq("id", runId);
   }
   return result;
