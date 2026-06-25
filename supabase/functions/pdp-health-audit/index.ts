@@ -20,18 +20,18 @@ function auditProduct(p: any, cwv: number): Audit {
   const title_score = titleLen >= 30 && titleLen <= 70 ? 100 : titleLen > 0 ? 60 : 0;
   if (title_score < 100) { issues.push("Title length not optimal"); suggestions.push("Aim for 30-70 chars in product name"); }
 
-  const trust_score = (p.cost_price ? 25 : 0) + (p.images?.length >= 3 ? 25 : 0) + (p.warranty_info ? 25 : 0) + (p.shipping_info ? 25 : 0);
-  if (trust_score < 75) { issues.push("Missing trust signals"); suggestions.push("Add warranty/shipping info & 3+ images"); }
+  const imgCount = Array.isArray(p.images) ? p.images.length : 0;
+  const trust_score = (p.cost_price ? 25 : 0) + (imgCount >= 3 ? 25 : 0) + (p.is_fast_shipping ? 25 : 0) + (p.shipping_days_max ? 25 : 0);
+  if (trust_score < 75) { issues.push("Missing trust signals"); suggestions.push("Add 3+ images & shipping data"); }
 
-  const mobile_score = (p.images?.length > 0 ? 50 : 0) + (p.image_url ? 50 : 0);
+  const mobile_score = (imgCount > 0 ? 50 : 0) + (p.image_url ? 50 : 0);
 
-  const urgency_score = (p.stock_quantity != null && p.stock_quantity < 20 ? 100 : 50);
-  const cta_score = p.is_active && p.stock_quantity > 0 ? 100 : 40;
-  const reviews_score = (p.review_count ?? 0) >= 3 ? 100 : (p.review_count ?? 0) > 0 ? 60 : 20;
-  if (reviews_score < 60) { issues.push("Low review count"); suggestions.push("Solicit reviews or import verified ones"); }
+  const stock = Number(p.effective_stock ?? p.stock ?? 0);
+  const urgency_score = stock > 0 && stock < 20 ? 100 : stock >= 20 ? 70 : 30;
+  const cta_score = p.is_active && stock > 0 ? 100 : 40;
+  const reviews_score = 50; // placeholder until reviews table joined
 
-  const faq_score = p.faqs && Array.isArray(p.faqs) && p.faqs.length >= 3 ? 100 : 30;
-  if (faq_score < 60) { issues.push("Missing FAQ"); suggestions.push("Add at least 3 FAQ entries"); }
+  const faq_score = 50; // PDP renders shared FAQ; per-product FAQ optional
 
   const seo_score = (p.meta_title ? 30 : 0) + (p.meta_description ? 30 : 0) + (p.seo_keywords ? 20 : 0) + (p.image_alt_text ? 20 : 0);
   if (seo_score < 80) { issues.push("Incomplete SEO metadata"); suggestions.push("Fill meta_title, meta_description, alt text"); }
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const limit = mode === "full" ? 1000 : 100;
 
     let q = supabase.from("products")
-      .select("id, name, image_url, images, cost_price, warranty_info, shipping_info, stock_quantity, review_count, faqs, meta_title, meta_description, seo_keywords, image_alt_text, is_active, revenue_priority_score_v2")
+      .select("id, name, image_url, images, cost_price, is_fast_shipping, shipping_days_max, effective_stock, stock, meta_title, meta_description, seo_keywords, image_alt_text, is_active, revenue_priority_score_v2")
       .eq("is_active", true)
       .order("revenue_priority_score_v2", { ascending: false, nullsFirst: false })
       .limit(limit);
