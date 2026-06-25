@@ -1,3 +1,87 @@
+# AGP Wave 6 — AGP Commander (Autonomous AI CEO)
+
+Wave 6 is the **executive orchestration layer** above every existing engine: AGP 1–5, CPE, Pinterest Engine, Cinematic V3, CJ Media Pipeline, ARO, Growth Intelligence, Signal Lake, Recommender, Pricing/Promotions/Budget/Forecaster, Self-Healing Watcher. It does not rebuild any of them — it observes their state, scores every candidate action on one weighted priority, allocates AI/cloud/queue budget, and dispatches into the existing engines it already has.
+
+Per the same delivery rule used for Waves 4 and 5, Wave 6 ships as **four sub-waves**. Each is independently usable, leaves the platform working, and produces a PDF + JSON report.
+
+## Sub-wave 6A — Unified Business State + Master Priority Engine (foundation)
+
+Goal: one canonical hourly snapshot of the entire business + one weighted score every action is ranked by.
+
+- New tables (RLS-locked, admin/service_role only):
+  - `commander_business_state` — hourly row: scores for revenue, profit, marketing, pinterest, seo, infra, ai, cloud, inventory, forecast_confidence, plus raw KPIs joined from `agp_growth_scores`, `aro_business_kpis_daily`, `aro_channel_economics_daily`, `pinterest_*`, `gsc_*`, `ga4_daily_snapshots`, `monitoring_*`. One unified `business_health_score` (0–100).
+  - `commander_action_candidates` — every actionable item pulled from `agp_recommendations`, `aro_pricing_recommendations`, `aro_promotions`, `aro_budget_allocations`, `pinterest_publish_queue`, `cpe_creative_jobs`, `cinematic_v3_dispatch_queue`, `seo_actions_queue`. Columns: source_engine, action_type, target, revenue_impact, profit_impact, traffic_impact, conversion_impact, seo_impact, pinterest_impact, customer_impact, complexity, ai_cost, cloud_cost, eta_minutes, risk, confidence, strategic_weight, long_term_value, **priority_score** (0–100), status (proposed/queued/running/done/failed/skipped/blocked), reason.
+  - `commander_settings` (singleton) — autonomous mode flags per engine, hourly/daily/monthly AI + cloud budget caps, min business_health_score to auto-execute, approval thresholds, kill switch.
+- Edge functions:
+  - `commander-state-collector` (cron `0 * * * *`) — assembles `commander_business_state` purely by reading existing tables (no new external API calls).
+  - `commander-priority-scorer` (cron `5 * * * *`) — gathers candidates from the eight upstream queues above, normalises impact estimates, applies weighted score `0.30·profit + 0.20·revenue + 0.10·traffic + 0.10·conversion + 0.10·strategic + 0.10·long_term + 0.10·(1-risk)·confidence − cost_penalty`, writes `commander_action_candidates`.
+- UI: new **AGP Commander** dashboard at `/admin/agp-commander` — hero with `business_health_score` + 11 sub-scores, "Top 50 Next Actions" priority queue with engine badge, expected impact, cost, and one-click Approve/Skip/Defer.
+- Report: PDF + JSON to `public/admin-reports/ai-implementation/`.
+
+## Sub-wave 6B — Resource Allocator + Intelligent Orchestrator + AI Model Router
+
+Goal: turn the priority queue into safe, budget-aware dispatches across existing engines.
+
+- New tables:
+  - `commander_resource_pools` — pool (ai_budget_usd, cloud_budget_usd, render_slots, pinterest_slots, video_slots, image_slots, seo_slots, queue_workers), capacity, in_use, reserved, reset_window (hour/day/month).
+  - `commander_dispatch_log` — every dispatch: candidate_id, target_engine, target_function, payload jsonb, started_at, finished_at, status, actual_ai_cost, actual_cloud_cost, observed_impact jsonb, rollback_ref.
+  - `commander_model_routing` — task_type (simple_text, structured_extract, reasoning, image_gen, image_edit, video_gen, embeddings), candidate_models[], cost_per_unit, quality_score, last_used, win_rate.
+  - `commander_playbooks` — trigger (pinterest_drop / seo_drop / cvr_drop / supplier_update / oos_risk / margin_erosion / creative_fatigue), ordered action_sequence jsonb, dry_run_only bool.
+- Edge functions:
+  - `commander-allocator` (`*/15 * * * *`) — reads `commander_resource_pools` + open candidates, enforces per-engine + global caps, marks candidates `queued` only if budget exists, otherwise `blocked` with reason.
+  - `commander-orchestrator` (`*/10 * * * *`) — pops the highest-priority queued candidates within autonomous-mode caps, dispatches to the right existing edge function (`cpe-image-enhancer`, `cinematic-ad-autopublish`, `pinterest-growth-engine`, `aro-pricing-engine`, `seo-action-engine`, etc.), writes `commander_dispatch_log`. Triggers playbooks when `commander_business_state` deltas match a `commander_playbooks.trigger`.
+  - `commander-model-router` — small library + edge function used by other functions to pick a model based on `commander_model_routing` (e.g. simple_text → `google/gemini-3.1-flash-lite`, reasoning → `openai/gpt-5.4`, image_gen → `google/gemini-3.1-flash-image`). Falls back to next-cheapest on `429`/`402`.
+- UI: **Resources**, **Playbooks**, **Dispatch Log** tabs on `/admin/agp-commander` — pool utilisation bars, playbook firing history, last 200 dispatches with rollback button (uses `rollback_ref` against the dispatching engine's existing undo path).
+- Report: PDF + JSON.
+
+## Sub-wave 6C — Business Memory + Predictive Intelligence + Self-Healing Hardening
+
+Goal: long-term knowledge base + forecasting + extended auto-repair.
+
+- New tables:
+  - `commander_memory` — dimension (winning_creative_style, winning_pin_hook, winning_product, winning_prompt, winning_model, supplier_reliability, seasonality_window, campaign_outcome), key, value jsonb, n_obs, win_rate, revenue_per_obs, ewma_score, last_updated. Extends — does not replace — `agp_learning_memory`, `aro_learning_memory`, `pinterest_winner_dna`, `revenue_ai_winner_dna`, `cinematic_creative_dna`. Memory rows reference upstream IDs.
+  - `commander_forecasts` — metric (revenue, orders, profit, pinterest_impressions, organic_traffic, ads_roas, oos_risk, ai_spend, cloud_spend), horizon_days, value, ci_low, ci_high, generated_at. (Reuses `aro_forecaster` outputs and adds Pinterest/SEO/infra forecasts on top.)
+  - `commander_anomalies` — type (budget_overrun_pred / oos_pred / cvr_drop_pred / supplier_risk / trend_shift / holiday_demand / secret_expiring / db_slow_query / queue_stall / storage_failure), severity, evidence jsonb, recommended_playbook_id, status, alerted_at.
+- Edge functions:
+  - `commander-memory-writer` (cron `30 4 * * *`) — distils every `commander_dispatch_log` row from the past 24 h into `commander_memory` EWMA updates per dimension; promotes/demotes patterns.
+  - `commander-forecaster` (cron `15 5 * * *`) — produces 7/30/90-day forecasts with 80 % CIs, logs prediction-vs-actual against past forecasts.
+  - `commander-anomaly-detector` (cron `*/20 * * * *`) — combines forecast deltas + Wave-1 self-healing watcher + ARO `aro_risk_signals` to populate `commander_anomalies` and (when severity = high) auto-fire the matching playbook from 6B.
+  - Extends `agp-self-healing-watcher` with: failed AI generations sweep (`cpe_creative_jobs.status='failed' > 1 h`), duplicate-asset detection via `cj_media_asset_registry` checksum, missing-asset detection on `creative_assets`, storage HEAD probe on a sample, secret-expiry probe (no value reads), slow-query check via `supabase--slow_queries`, queue-stall checks for `pinterest_publish_queue`, `cinematic_v3_dispatch_queue`, `cpe_creative_jobs`.
+- UI: **Memory**, **Forecasts**, **Anomalies** tabs on `/admin/agp-commander` — top patterns by win rate, forecast charts with CI ribbons + accuracy histogram, anomaly inbox with one-click "Run playbook" / "Suppress".
+- Report: PDF + JSON.
+
+## Sub-wave 6D — Executive Briefings + Continuous Optimisation + End-to-End Validation + Handbook
+
+Goal: close the loop with executive-grade reporting, daily self-improvement, and the final validation gate.
+
+- New tables:
+  - `commander_briefings` — cadence (daily/weekly/monthly), period_start, period_end, summary jsonb, pdf_path, json_path, generated_at.
+  - `commander_optimization_log` — target (prompt / schedule / allocation / queue / creative_diversity), before jsonb, after jsonb, evidence, applied_by ('auto' or operator id), reverted_at.
+  - `commander_validation_runs` — phase (orchestration_e2e, one_week_sim, stress_test, ai_efficiency, cloud_efficiency, autoresolve_safe_issues, perf_optimize), status, evidence jsonb, started_at, finished_at.
+- Edge functions:
+  - `commander-briefing` — generates daily (cron `45 5 * * *`), weekly (`50 5 * * 1`), monthly (`55 5 1 * *`) executive PDFs to `public/admin-reports/executive/commander/{daily|weekly|monthly}/YYYY-MM-DD.pdf` and indexes them in the existing manifest.
+  - `commander-self-improver` (cron `0 6 * * *`) — uses `commander_memory` + dispatch outcomes to propose updates to: AI prompts (CPE / Pinterest / cinematic), cron schedules, resource-pool weights, queue concurrency, creative-diversity quotas. Writes proposals to `commander_optimization_log` with `applied_by='auto'` only when guardrails pass; everything else stays as a proposed row for operator approval.
+  - `commander-validate` — runs the seven validation phases in sequence: end-to-end orchestration dry-run, 7-day simulated operation against historical signals, concurrency stress test on queues/workers, AI-efficiency benchmark (cost-per-impact across last 30 days), cloud-efficiency benchmark, safe auto-resolve sweep, performance optimisation pass. Refuses to mark Wave 6 complete until every phase returns `ok`.
+- UI: **Briefings**, **Optimisations**, **Validation** tabs on `/admin/agp-commander`; subscribe-by-email toggle for daily/weekly/monthly briefings (uses existing email infra, no new ESP integration).
+- One-time deliverables: `public/admin-reports/agp-commander/technical-architecture.pdf` (with ASCII architecture diagram inside the PDF), `public/admin-reports/agp-commander/operator-handbook.pdf`, `public/admin-reports/agp-commander/executive-implementation.pdf`, `public/admin-reports/agp-commander/roadmap-next.pdf`.
+
+## What I will NOT add in Wave 6 (out of scope, deferred)
+
+- New external API integrations beyond what's already wired (Meta Ads management API, Google Ads management API, dedicated ESP). The Commander reads spend/perf from existing tables and dispatches into engines we already own.
+- Replacing any AGP 1–5 engine. Wave 6 only observes, ranks, allocates, and dispatches.
+- Storefront pricing/policy changes beyond what ARO + `src/config/pricing-policy.ts` already permit.
+- Autonomous publishing beyond what existing publish governors (Pinterest, Cinematic V3, ARO) already allow.
+
+## Execution order & reporting
+
+I will execute **6A first**, generate its PDF + JSON, and stop. You then say **"run wave 6b"** to continue. Each sub-wave is ~1 turn of focused work and verifiable on its own.
+
+Reply **"run wave 6a"** to start, or tell me to compress/reorder.
+
+---
+
+## Previous wave plan (for reference)
+
 # AGP Wave 5 — Autonomous Revenue Optimizer (ARO)
 
 Wave 5 is the **commercial intelligence layer** on top of AGP Waves 1–4, CPE, Pinterest Engine, Cinematic V3, CJ Media Pipeline, GSC, GA4, Growth Intelligence, and the Wave 4 Signal Lake / Growth Scorer / Recommender. It does not rebuild any of them. It reads their signals, computes profit-aware decisions, and (only for safe actions) auto-executes through existing engines.
