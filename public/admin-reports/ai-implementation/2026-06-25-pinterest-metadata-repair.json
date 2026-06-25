@@ -1,0 +1,53 @@
+{
+  "run_id": "8baa726d-c677-4375-be4b-64d1a7f18ce1",
+  "date": "2026-06-25",
+  "status": "blocked_external_api_scope",
+  "scope": "In-place metadata repair of 939 published Pinterest pins (no recreation, no archive, no delete).",
+  "summary": {
+    "scanned": 939,
+    "live_on_pinterest": 256,
+    "already_correct": 231,
+    "deleted_from_pinterest": 683,
+    "needs_repair": 25,
+    "successfully_updated": 0,
+    "blocked_pin_edit_scope": 25,
+    "manual_review": 0,
+    "verification_passes": 0
+  },
+  "engine": {
+    "edge_function": "pinterest-metadata-repair",
+    "ai_model": "google/gemini-2.5-flash",
+    "mismatch_signals": [
+      "species_mismatch",
+      "banned_phrase:litter box",
+      "banned_phrase:self-cleaning",
+      "banned_phrase:stop scooping",
+      "no_product_keyword",
+      "title_too_short"
+    ],
+    "preserved": [
+      "pin_id",
+      "image",
+      "destination_link"
+    ],
+    "updated_fields": [
+      "title",
+      "description",
+      "alt_text",
+      "hashtags (in description tail)"
+    ],
+    "verification": "GET /v5/pins/{id} re-read after PATCH; title equality check."
+  },
+  "blocker": {
+    "pinterest_error_code": 3,
+    "pinterest_error_message": "Your application does not have access to this restricted feature: pin_edit",
+    "http_status": 401,
+    "remediation": [
+      "Request 'pin_edit' / 'pins:write' restricted scope upgrade from Pinterest Developer support (currently Standard Access).",
+      "Once granted, re-run this engine: POST /functions/v1/pinterest-metadata-repair {action:'run', limit:50}. The same logic and identical generated titles/descriptions will be sent unchanged."
+    ]
+  },
+  "pending_repairs": [],
+  "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.pdf",
+  "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.json"
+}
