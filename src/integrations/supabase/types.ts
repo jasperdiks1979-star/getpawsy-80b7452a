@@ -20061,6 +20061,137 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_metadata_repair_log: {
+        Row: {
+          after_alt_text: string | null
+          after_description: string | null
+          after_link: string | null
+          after_title: string | null
+          api_error: string | null
+          api_status: number | null
+          before_alt_text: string | null
+          before_description: string | null
+          before_link: string | null
+          before_title: string | null
+          created_at: string
+          id: string
+          mismatch_reasons: string[] | null
+          outcome: string
+          pin_id: string
+          product_id: string | null
+          product_slug: string | null
+          queue_row_id: string | null
+          run_id: string
+          verification_error: string | null
+          verified: boolean
+        }
+        Insert: {
+          after_alt_text?: string | null
+          after_description?: string | null
+          after_link?: string | null
+          after_title?: string | null
+          api_error?: string | null
+          api_status?: number | null
+          before_alt_text?: string | null
+          before_description?: string | null
+          before_link?: string | null
+          before_title?: string | null
+          created_at?: string
+          id?: string
+          mismatch_reasons?: string[] | null
+          outcome: string
+          pin_id: string
+          product_id?: string | null
+          product_slug?: string | null
+          queue_row_id?: string | null
+          run_id: string
+          verification_error?: string | null
+          verified?: boolean
+        }
+        Update: {
+          after_alt_text?: string | null
+          after_description?: string | null
+          after_link?: string | null
+          after_title?: string | null
+          api_error?: string | null
+          api_status?: number | null
+          before_alt_text?: string | null
+          before_description?: string | null
+          before_link?: string | null
+          before_title?: string | null
+          created_at?: string
+          id?: string
+          mismatch_reasons?: string[] | null
+          outcome?: string
+          pin_id?: string
+          product_id?: string | null
+          product_slug?: string | null
+          queue_row_id?: string | null
+          run_id?: string
+          verification_error?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_metadata_repair_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_metadata_repair_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_metadata_repair_runs: {
+        Row: {
+          created_at: string
+          failed: number
+          finished_at: string | null
+          id: string
+          manual_review: number
+          notes: Json
+          scanned: number
+          skipped: number
+          started_at: string
+          status: string
+          total_targets: number
+          updated: number
+          updated_at: string
+          verified: number
+        }
+        Insert: {
+          created_at?: string
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          manual_review?: number
+          notes?: Json
+          scanned?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+          total_targets?: number
+          updated?: number
+          updated_at?: string
+          verified?: number
+        }
+        Update: {
+          created_at?: string
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          manual_review?: number
+          notes?: Json
+          scanned?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+          total_targets?: number
+          updated?: number
+          updated_at?: string
+          verified?: number
+        }
+        Relationships: []
+      }
       pinterest_niche_coverage_snapshots: {
         Row: {
           created_at: string
