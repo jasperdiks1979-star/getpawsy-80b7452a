@@ -1,6 +1,15 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-agp-master-report",
+      "title": "AGP Master Implementation Report \u2014 25 June 2026",
+      "run_id": "agp-master-report",
+      "generated_at": "2026-06-25T09:30:00Z",
+      "status": "success",
+      "score": 95,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf"
+    },
+    {
       "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
       "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
       "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
