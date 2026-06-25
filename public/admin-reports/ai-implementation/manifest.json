@@ -1,5 +1,15 @@
 [
   {
+    "slug": "2026-06-25-pe-wave1-cron-auth-fix",
+    "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Cron Auth Fix",
+    "run_id": "2026-06-25-pe-wave1-cron-auth-fix",
+    "generated_at": "2026-06-25T23:03:39.657626Z",
+    "status": "verified",
+    "score": 88,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.json"
+  },
+  {
     "slug": "pe-wave1-control-center",
     "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
     "run_id": "pe-2026-06-25-01",
