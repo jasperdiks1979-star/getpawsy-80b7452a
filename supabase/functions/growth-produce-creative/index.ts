@@ -115,6 +115,22 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // Wave 3A+ Pinterest Potential gate — only produce creatives for ≥70 products.
+        const { data: intel } = await sb
+          .from("pin_product_intelligence")
+          .select("potential_score")
+          .eq("product_id", product.id)
+          .maybeSingle();
+        const ps = Number(intel?.potential_score ?? 0);
+        if (!intel || ps < 70) {
+          results.push({
+            decision_id: d.id,
+            ok: false,
+            message: `below_potential_gate (score=${ps}, gate=70)`,
+          });
+          continue;
+        }
+
         // Avoid duplicate active job for the same slug (unique index)
         const { data: existing } = await sb
           .from("cinematic_ad_jobs")
