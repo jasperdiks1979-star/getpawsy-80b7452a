@@ -101,6 +101,13 @@ Deno.serve(async (req) => {
       .gte("day", since7);
     const excluded = new Set((recent ?? []).map((r) => r.product_id).filter(Boolean));
 
+    // Wave 3A+ Pinterest Potential gate — exclude products scoring <70.
+    const { data: intelRows } = await sb
+      .from("pin_product_intelligence")
+      .select("product_id, potential_score")
+      .gte("potential_score", 70);
+    const eligibleIds = new Set(((intelRows ?? []) as Array<{ product_id: string }>).map((r) => r.product_id));
+
     const eligible: Array<typeof scores[number] & { adjusted: number; bias: number; bias_meta: Record<string, number> }> = [];
     for (const s of scores) {
       const p = pmap.get(s.product_id);
@@ -108,6 +115,7 @@ Deno.serve(async (req) => {
       if (!p.is_active) continue;
       if (!p.image_url) continue;
       if (excluded.has(s.product_id)) continue;
+      if (!eligibleIds.has(s.product_id)) continue;
       if (whitelist.length > 0 && !whitelist.some((w) => (p.category ?? "").toLowerCase().includes(w.toLowerCase()))) continue;
       const { bias, meta } = biasFor(s.recommended_angle as string | null, p.category);
       const adjusted = Number(s.opportunity_score) + bias;
