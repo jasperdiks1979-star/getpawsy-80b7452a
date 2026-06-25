@@ -1,0 +1,14 @@
+{
+  "reports": [
+    {
+      "slug": "2026-06-25-agp-wave-1-foundations",
+      "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
+      "run_id": "agp-wave-1-foundations",
+      "generated_at": "2026-06-25T07:38:24.840733Z",
+      "status": "success",
+      "score": 92,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.json"
+    }
+  ]
+}
