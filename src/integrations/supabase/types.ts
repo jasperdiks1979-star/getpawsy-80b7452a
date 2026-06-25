@@ -33480,6 +33480,7 @@ export type Database = {
             }
             Returns: string
           }
+      pe_reschedule_crons: { Args: { p_secret: string }; Returns: Json }
       pinterest_canonical_category: { Args: { _raw: string }; Returns: string }
       pinterest_category_imbalance: {
         Args: { _days?: number }
