@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
   const ALLOWED_EXTRA = new Set([
     "catalogs:read",
     "catalogs:write",
+    "ads:read",
+    "ads:write",
+    "billing:read",
   ]);
   const sanitizedExtra = extraScopes.filter((s) => ALLOWED_EXTRA.has(s));
   const scopes = Array.from(new Set([...baseScopes, ...sanitizedExtra])).join(",");
