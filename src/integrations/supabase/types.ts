@@ -537,6 +537,137 @@ export type Database = {
         }
         Relationships: []
       }
+      agp_run_steps: {
+        Row: {
+          created_at: string
+          details: Json
+          engine: string
+          id: string
+          message: string | null
+          product_id: string | null
+          run_id: string | null
+          severity: string
+          status: string
+          step_key: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          engine: string
+          id?: string
+          message?: string | null
+          product_id?: string | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          step_key: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          engine?: string
+          id?: string
+          message?: string | null
+          product_id?: string | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          step_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agp_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agp_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agp_runs: {
+        Row: {
+          ai_cost_usd: number
+          counts: Json
+          created_at: string
+          dry_run: boolean
+          engine: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          trigger: string | null
+        }
+        Insert: {
+          ai_cost_usd?: number
+          counts?: Json
+          created_at?: string
+          dry_run?: boolean
+          engine: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Update: {
+          ai_cost_usd?: number
+          counts?: Json
+          created_at?: string
+          dry_run?: boolean
+          engine?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      agp_settings: {
+        Row: {
+          auto_enhance: boolean
+          auto_lifestyle: boolean
+          auto_publish: boolean
+          auto_repair: boolean
+          auto_video: boolean
+          daily_budget_usd: number
+          engine_budgets: Json
+          id: number
+          kill_switch: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_enhance?: boolean
+          auto_lifestyle?: boolean
+          auto_publish?: boolean
+          auto_repair?: boolean
+          auto_video?: boolean
+          daily_budget_usd?: number
+          engine_budgets?: Json
+          id?: number
+          kill_switch?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_enhance?: boolean
+          auto_lifestyle?: boolean
+          auto_publish?: boolean
+          auto_repair?: boolean
+          auto_video?: boolean
+          daily_budget_usd?: number
+          engine_budgets?: Json
+          id?: number
+          kill_switch?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_content_drafts: {
         Row: {
           created_at: string
