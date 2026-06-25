@@ -1,0 +1,1 @@
+UPDATE public.cpe_creative_jobs SET status='pending', attempts=0, last_error=NULL, locked_by=NULL, locked_at=NULL WHERE kind='enhance' AND status='failed';
