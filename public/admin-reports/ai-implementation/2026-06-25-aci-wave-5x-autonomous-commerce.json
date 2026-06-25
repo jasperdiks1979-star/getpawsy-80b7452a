@@ -1,0 +1,141 @@
+{
+  "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
+  "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
+  "run_id": "aci-wave-5x",
+  "generated_at": "2026-06-25T10:39:43.974564+00:00",
+  "status": "success",
+  "score": 90,
+  "mission": "Transform GetPawsy into a self-learning ecommerce company that continuously discovers new revenue opportunities with minimal human intervention.",
+  "architecture": {
+    "edge_functions": [
+      "aci-orchestrator (8-stage)"
+    ],
+    "tables": [
+      "aci_settings",
+      "aci_runs",
+      "aci_run_steps",
+      "aci_audit_log",
+      "aci_budget_ledger",
+      "aci_approvals",
+      "aci_rollbacks",
+      "aci_market_signals",
+      "aci_competitors",
+      "aci_competitor_snapshots",
+      "aci_competitor_gaps",
+      "aci_product_opportunity_v2",
+      "aci_revenue_intelligence",
+      "aci_forecasts",
+      "aci_recommendations",
+      "aci_tasks",
+      "aci_learning_events",
+      "aci_score_weights"
+    ],
+    "cron": [
+      {
+        "job": "aci-orchestrator-daily",
+        "schedule": "30 3 * * * UTC"
+      }
+    ],
+    "ui": [
+      "/admin/autonomous-commerce"
+    ]
+  },
+  "live_run": {
+    "mode": "simulation",
+    "steps": [
+      {
+        "step": "market_intel",
+        "status": "ok",
+        "metrics": {
+          "signals": 50
+        }
+      },
+      {
+        "step": "competitor_intel",
+        "status": "ok",
+        "metrics": {
+          "discovered": 0,
+          "snapshots": 0
+        }
+      },
+      {
+        "step": "opportunity_v2",
+        "status": "ok",
+        "metrics": {
+          "products": 428
+        }
+      },
+      {
+        "step": "revenue_intel",
+        "status": "ok",
+        "metrics": {
+          "products": 428
+        }
+      },
+      {
+        "step": "forecaster",
+        "status": "ok",
+        "metrics": {
+          "forecasts": 0
+        }
+      },
+      {
+        "step": "recommender",
+        "status": "ok",
+        "metrics": {
+          "recommendations": 20
+        }
+      },
+      {
+        "step": "task_generator",
+        "status": "ok",
+        "metrics": {
+          "tasks": 20,
+          "approvals": 20,
+          "mode": "simulation"
+        }
+      },
+      {
+        "step": "learning",
+        "status": "ok",
+        "metrics": {
+          "approved": 0,
+          "rejected": 0
+        }
+      }
+    ],
+    "ai_cost_usd": 0.0,
+    "cloud_cost_usd": 0.0
+  },
+  "guardrails": {
+    "mode_default": "simulation",
+    "kill_switch": false,
+    "daily_ai_budget_usd": 1.0,
+    "daily_cloud_budget_usd": 2.0,
+    "max_tasks_per_day": 50,
+    "autonomy_level": 1
+  },
+  "engines": [
+    "Market Intelligence (GSC, Pinterest trends, market trends)",
+    "Competitor Intelligence (discovery, snapshots, gaps)",
+    "Product Opportunity v2 (16 sub-scores, ranked)",
+    "Revenue Intelligence (profit, margin, dead inventory)",
+    "Trend Forecast (7/30/90/180/365 days, EWMA+linear)",
+    "Recommendation Engine (ROI-prioritised)",
+    "Task Generator (mode-aware, approval-gated)",
+    "Learning Engine (approval feedback loop)"
+  ],
+  "production_readiness": {
+    "idempotent": true,
+    "observable": true,
+    "operator_controlled": true,
+    "rollbackable": true,
+    "rls_locked": true,
+    "default_mode_safe": true
+  },
+  "notes": [
+    "Mode initialised to 'simulation'. No production writes are performed without operator opt-in.",
+    "Forecaster needs \u22655 days of agp_signals_daily to emit values.",
+    "Competitor discovery seeded from competitor_products; live scraping deferred to follow-up wave."
+  ]
+}

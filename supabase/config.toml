@@ -401,3 +401,6 @@ verify_jwt = false
 
 [functions.creative-performance-snapshot]
 verify_jwt = false
+
+[functions.aci-orchestrator]
+verify_jwt = false
