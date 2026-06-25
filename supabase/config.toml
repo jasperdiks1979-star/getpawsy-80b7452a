@@ -410,3 +410,6 @@ verify_jwt = false
 
 [functions.pin-wave3b-creative-brain]
 verify_jwt = false
+
+[functions.pe-cron-bootstrap]
+verify_jwt = false
