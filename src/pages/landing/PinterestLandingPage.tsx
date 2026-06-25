@@ -61,7 +61,6 @@ const PinterestLandingPage = () => {
       price: sellingPrice,
       image: product.image_url || '',
     });
-    trackAddToCart(product.id, product.name, sellingPrice, 1);
     toast.success('Added to cart!');
   };
 

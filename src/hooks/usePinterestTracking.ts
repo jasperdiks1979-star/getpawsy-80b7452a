@@ -194,10 +194,12 @@ export const usePinterestTracking = () => {
     price: number;
     category?: string;
     quantity?: number;
+    event_id?: string;
   }) => {
     trackPinterestEvent('addtocart', {
+      event_id: product.event_id,
       value: product.price * (product.quantity || 1),
-      currency: 'EUR',
+      currency: 'USD',
       order_quantity: product.quantity || 1,
       product_name: product.name,
       product_id: product.id,
@@ -228,7 +230,7 @@ export const usePinterestTracking = () => {
     trackPinterestEvent('checkout', {
       event_id: order.orderId,
       value: order.value,
-      currency: 'EUR',
+      currency: 'USD',
       order_quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
       line_items: order.items.map(item => ({
         product_name: item.name,

@@ -136,8 +136,6 @@ export const ProductCard = memo(
         price: cardPrice,
         image: product.image_url || "/placeholder.svg",
       });
-
-      trackAddToCart(product.id, displayName(product), cardPrice, 1);
       toast.success("Added to cart");
     };
 

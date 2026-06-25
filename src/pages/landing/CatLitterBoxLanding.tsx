@@ -70,7 +70,6 @@ const CatLitterBoxLanding = () => {
   const handleAddToCart = () => {
     if (!product) return;
     addItem({ id: product.id, slug: product.slug ?? undefined, name: product.name, price: sellingPrice, image: product.image_url || '' });
-    trackAddToCart(product.id, product.name, sellingPrice, 1);
     toast.success('Added to cart!');
   };
 

@@ -64,10 +64,6 @@ const LitterBoxFunnel = () => {
         image: product.image_url || '',
       });
     }
-    const unitPrice = bundle.discount > 0
-      ? Math.round((price * (1 - bundle.discount / 100)) * 100) / 100
-      : price;
-    trackAddToCart(product.id, product.name, unitPrice, bundle.qty);
     toast.success(`${bundle.qty}x added to cart!`);
     navigate('/checkout');
   };

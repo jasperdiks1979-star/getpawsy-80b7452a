@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 // ⚡ Analytics deferred — not needed for initial render
-const trackAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
-  import('@/lib/analytics').then(m => m.trackAddToCart(productId, productName, price, qty));
+const trackAddToCart = (
+  productId: string,
+  productName: string,
+  price: number,
+  qty: number | undefined,
+  options: { category?: string | null; variant?: string | null; slug?: string | null; event_id?: string | null } = {},
+) => import('@/lib/analytics').then(m => m.trackAddToCart(productId, productName, price, qty, options));
 const trackRemoveFromCart = (productId: string, productName: string, price: number, qty?: number) =>
   import('@/lib/analytics').then(m => m.trackRemoveFromCart(productId, productName, price, qty));
 const trackGoogleAdsAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
@@ -30,6 +35,7 @@ export interface CartItem {
   image: string;
   quantity: number;
   variant?: string;
+  category?: string;
 }
 
 interface CartContextType {
@@ -230,6 +236,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
+    // Single shared event_id — links GA4, Pinterest browser tag and Pinterest CAPI
+    // so server-side & browser-side hits dedupe to the same conversion.
+    const event_id =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `atc_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
     setItems(prev => {
       const existing = prev.find(item => item.id === newItem.id);
       if (existing) {
@@ -260,7 +273,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })).catch(() => {});
     
     // GA4 Add to Cart
-    trackAddToCart(newItem.id, newItem.name, newItem.price, 1);
+    trackAddToCart(newItem.id, newItem.name, newItem.price, 1, {
+      category: newItem.category ?? null,
+      variant: newItem.variant ?? null,
+      slug: newItem.slug ?? null,
+      event_id,
+    });
 
     // Pinterest funnel mirror — fire-and-forget, no-op if session not Pinterest
     import('@/lib/pinterestTracker')
@@ -278,6 +296,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         value: newItem.price,
         currency: 'USD',
         custom_data: { product_slug: newItem.slug ?? null },
+        event_id,
       }))
       .catch(() => {});
     
@@ -307,17 +326,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getFireMarketingAsync().then(fn => fn('pinterest-addtocart', async () => {
       const { trackPinterestEvent } = await import('@/hooks/usePinterestTracking');
       trackPinterestEvent('addtocart', {
+        event_id,
         value: newItem.price,
         currency: 'USD',
         order_quantity: 1,
         product_name: newItem.name,
         product_id: newItem.id,
+        product_category: newItem.category,
         product_price: newItem.price,
         line_items: [{
           product_name: newItem.name,
           product_id: newItem.id,
           product_price: newItem.price,
           product_quantity: 1,
+          product_category: newItem.category,
         }],
       });
     }, 'pinterest')).catch(() => {});
