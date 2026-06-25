@@ -537,6 +537,141 @@ export type Database = {
         }
         Relationships: []
       }
+      agp_growth_scores: {
+        Row: {
+          ai_efficiency: number | null
+          automation: number | null
+          catalog_health: number | null
+          conversion: number | null
+          created_at: string
+          creative: number | null
+          day: string
+          delta_1d: number | null
+          delta_30d: number | null
+          delta_7d: number | null
+          delta_90d: number | null
+          details: Json | null
+          id: string
+          media: number | null
+          overall: number
+          performance: number | null
+          pinterest: number | null
+          product_quality: number | null
+          revenue: number | null
+          seo: number | null
+          traffic: number | null
+          trend_direction: number | null
+        }
+        Insert: {
+          ai_efficiency?: number | null
+          automation?: number | null
+          catalog_health?: number | null
+          conversion?: number | null
+          created_at?: string
+          creative?: number | null
+          day: string
+          delta_1d?: number | null
+          delta_30d?: number | null
+          delta_7d?: number | null
+          delta_90d?: number | null
+          details?: Json | null
+          id?: string
+          media?: number | null
+          overall?: number
+          performance?: number | null
+          pinterest?: number | null
+          product_quality?: number | null
+          revenue?: number | null
+          seo?: number | null
+          traffic?: number | null
+          trend_direction?: number | null
+        }
+        Update: {
+          ai_efficiency?: number | null
+          automation?: number | null
+          catalog_health?: number | null
+          conversion?: number | null
+          created_at?: string
+          creative?: number | null
+          day?: string
+          delta_1d?: number | null
+          delta_30d?: number | null
+          delta_7d?: number | null
+          delta_90d?: number | null
+          details?: Json | null
+          id?: string
+          media?: number | null
+          overall?: number
+          performance?: number | null
+          pinterest?: number | null
+          product_quality?: number | null
+          revenue?: number | null
+          seo?: number | null
+          traffic?: number | null
+          trend_direction?: number | null
+        }
+        Relationships: []
+      }
+      agp_product_health: {
+        Row: {
+          computed_at: string
+          creative_quality: number | null
+          ctr: number | null
+          cvr: number | null
+          details: Json | null
+          lifestyle_avail: boolean | null
+          media_quality: number | null
+          overall: number
+          pinterest_ready: number | null
+          priority_tier: string | null
+          product_id: string
+          qa_score: number | null
+          recommended_actions: Json | null
+          revenue_30d_cents: number | null
+          seo_ready: number | null
+          traffic_30d: number | null
+          video_avail: boolean | null
+        }
+        Insert: {
+          computed_at?: string
+          creative_quality?: number | null
+          ctr?: number | null
+          cvr?: number | null
+          details?: Json | null
+          lifestyle_avail?: boolean | null
+          media_quality?: number | null
+          overall?: number
+          pinterest_ready?: number | null
+          priority_tier?: string | null
+          product_id: string
+          qa_score?: number | null
+          recommended_actions?: Json | null
+          revenue_30d_cents?: number | null
+          seo_ready?: number | null
+          traffic_30d?: number | null
+          video_avail?: boolean | null
+        }
+        Update: {
+          computed_at?: string
+          creative_quality?: number | null
+          ctr?: number | null
+          cvr?: number | null
+          details?: Json | null
+          lifestyle_avail?: boolean | null
+          media_quality?: number | null
+          overall?: number
+          pinterest_ready?: number | null
+          priority_tier?: string | null
+          product_id?: string
+          qa_score?: number | null
+          recommended_actions?: Json | null
+          revenue_30d_cents?: number | null
+          seo_ready?: number | null
+          traffic_30d?: number | null
+          video_avail?: boolean | null
+        }
+        Relationships: []
+      }
       agp_run_steps: {
         Row: {
           created_at: string
@@ -664,6 +799,105 @@ export type Database = {
           id?: number
           kill_switch?: boolean
           notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agp_signals_daily: {
+        Row: {
+          catalog_active: number | null
+          catalog_creative_ready_pct: number | null
+          catalog_media_coverage_pct: number | null
+          cj_in_stock_pct: number | null
+          cj_oos_count: number | null
+          cpe_jobs_run: number | null
+          cpe_qa_pass_pct: number | null
+          cpe_spend_usd: number | null
+          created_at: string
+          cv3_renders: number | null
+          cv3_success_pct: number | null
+          day: string
+          ga_atc: number | null
+          ga_checkouts: number | null
+          ga_purchases: number | null
+          ga_revenue_cents: number | null
+          ga_sessions: number | null
+          gsc_avg_position: number | null
+          gsc_clicks: number | null
+          gsc_ctr: number | null
+          gsc_impressions: number | null
+          id: string
+          pin_clicks: number | null
+          pin_ctr: number | null
+          pin_impressions: number | null
+          pin_revenue_cents: number | null
+          pin_saves: number | null
+          pins_published: number | null
+          raw: Json | null
+          updated_at: string
+        }
+        Insert: {
+          catalog_active?: number | null
+          catalog_creative_ready_pct?: number | null
+          catalog_media_coverage_pct?: number | null
+          cj_in_stock_pct?: number | null
+          cj_oos_count?: number | null
+          cpe_jobs_run?: number | null
+          cpe_qa_pass_pct?: number | null
+          cpe_spend_usd?: number | null
+          created_at?: string
+          cv3_renders?: number | null
+          cv3_success_pct?: number | null
+          day: string
+          ga_atc?: number | null
+          ga_checkouts?: number | null
+          ga_purchases?: number | null
+          ga_revenue_cents?: number | null
+          ga_sessions?: number | null
+          gsc_avg_position?: number | null
+          gsc_clicks?: number | null
+          gsc_ctr?: number | null
+          gsc_impressions?: number | null
+          id?: string
+          pin_clicks?: number | null
+          pin_ctr?: number | null
+          pin_impressions?: number | null
+          pin_revenue_cents?: number | null
+          pin_saves?: number | null
+          pins_published?: number | null
+          raw?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          catalog_active?: number | null
+          catalog_creative_ready_pct?: number | null
+          catalog_media_coverage_pct?: number | null
+          cj_in_stock_pct?: number | null
+          cj_oos_count?: number | null
+          cpe_jobs_run?: number | null
+          cpe_qa_pass_pct?: number | null
+          cpe_spend_usd?: number | null
+          created_at?: string
+          cv3_renders?: number | null
+          cv3_success_pct?: number | null
+          day?: string
+          ga_atc?: number | null
+          ga_checkouts?: number | null
+          ga_purchases?: number | null
+          ga_revenue_cents?: number | null
+          ga_sessions?: number | null
+          gsc_avg_position?: number | null
+          gsc_clicks?: number | null
+          gsc_ctr?: number | null
+          gsc_impressions?: number | null
+          id?: string
+          pin_clicks?: number | null
+          pin_ctr?: number | null
+          pin_impressions?: number | null
+          pin_revenue_cents?: number | null
+          pin_saves?: number | null
+          pins_published?: number | null
+          raw?: Json | null
           updated_at?: string
         }
         Relationships: []
