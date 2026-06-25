@@ -4635,10 +4635,12 @@ export type Database = {
           bytes: number | null
           checksum: string | null
           created_at: string
+          current_version_id: string | null
           derived_from: string | null
           height: number | null
           id: string
           kind: string
+          last_delta_check_at: string | null
           metadata: Json
           product_id: string
           public_url: string | null
@@ -4653,10 +4655,12 @@ export type Database = {
           bytes?: number | null
           checksum?: string | null
           created_at?: string
+          current_version_id?: string | null
           derived_from?: string | null
           height?: number | null
           id?: string
           kind: string
+          last_delta_check_at?: string | null
           metadata?: Json
           product_id: string
           public_url?: string | null
@@ -4671,10 +4675,12 @@ export type Database = {
           bytes?: number | null
           checksum?: string | null
           created_at?: string
+          current_version_id?: string | null
           derived_from?: string | null
           height?: number | null
           id?: string
           kind?: string
+          last_delta_check_at?: string | null
           metadata?: Json
           product_id?: string
           public_url?: string | null
@@ -5810,6 +5816,333 @@ export type Database = {
           },
         ]
       }
+      cpe_asset_versions: {
+        Row: {
+          asset_id: string | null
+          bytes: number | null
+          detected_at: string
+          height: number | null
+          id: string
+          is_current: boolean
+          product_id: string | null
+          sha256: string | null
+          source: string | null
+          source_url: string
+          supersedes_id: string | null
+          width: number | null
+        }
+        Insert: {
+          asset_id?: string | null
+          bytes?: number | null
+          detected_at?: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          product_id?: string | null
+          sha256?: string | null
+          source?: string | null
+          source_url: string
+          supersedes_id?: string | null
+          width?: number | null
+        }
+        Update: {
+          asset_id?: string | null
+          bytes?: number | null
+          detected_at?: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          product_id?: string | null
+          sha256?: string | null
+          source?: string | null
+          source_url?: string
+          supersedes_id?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
+      cpe_creative_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          dedupe_key: string
+          finished_at: string | null
+          id: string
+          kind: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          payload: Json
+          run_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          dedupe_key: string
+          finished_at?: string | null
+          id?: string
+          kind: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          payload?: Json
+          run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          dedupe_key?: string
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          payload?: Json
+          run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cpe_enhanced_images: {
+        Row: {
+          asset_id: string | null
+          cost_usd: number | null
+          created_at: string
+          enhanced_url: string | null
+          id: string
+          model: string | null
+          notes: Json | null
+          original_url: string
+          premium_url: string | null
+          product_id: string | null
+          quality_score: number | null
+          scored_at: string | null
+          status: string
+        }
+        Insert: {
+          asset_id?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          enhanced_url?: string | null
+          id?: string
+          model?: string | null
+          notes?: Json | null
+          original_url: string
+          premium_url?: string | null
+          product_id?: string | null
+          quality_score?: number | null
+          scored_at?: string | null
+          status?: string
+        }
+        Update: {
+          asset_id?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          enhanced_url?: string | null
+          id?: string
+          model?: string | null
+          notes?: Json | null
+          original_url?: string
+          premium_url?: string | null
+          product_id?: string | null
+          quality_score?: number | null
+          scored_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      cpe_lifestyle_scenes: {
+        Row: {
+          anatomy_score: number | null
+          cost_usd: number | null
+          created_at: string
+          id: string
+          image_url: string | null
+          model: string | null
+          product_id: string
+          prompt: string | null
+          prompt_hash: string | null
+          quality_score: number | null
+          scene_family: string
+          status: string
+        }
+        Insert: {
+          anatomy_score?: number | null
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          model?: string | null
+          product_id: string
+          prompt?: string | null
+          prompt_hash?: string | null
+          quality_score?: number | null
+          scene_family: string
+          status?: string
+        }
+        Update: {
+          anatomy_score?: number | null
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          model?: string | null
+          product_id?: string
+          prompt?: string | null
+          prompt_hash?: string | null
+          quality_score?: number | null
+          scene_family?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      cpe_performance_weights: {
+        Row: {
+          dimension: string
+          id: string
+          sample_n: number
+          updated_at: string
+          value: string
+          weight: number
+          win_rate: number | null
+        }
+        Insert: {
+          dimension: string
+          id?: string
+          sample_n?: number
+          updated_at?: string
+          value: string
+          weight?: number
+          win_rate?: number | null
+        }
+        Update: {
+          dimension?: string
+          id?: string
+          sample_n?: number
+          updated_at?: string
+          value?: string
+          weight?: number
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
+      cpe_pipeline_runs: {
+        Row: {
+          ai_cost_usd: number
+          counts: Json
+          dry_run: boolean
+          errors: Json
+          finished_at: string | null
+          id: string
+          phases_run: Json
+          started_at: string
+          status: string
+          trigger: string | null
+        }
+        Insert: {
+          ai_cost_usd?: number
+          counts?: Json
+          dry_run?: boolean
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          phases_run?: Json
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Update: {
+          ai_cost_usd?: number
+          counts?: Json
+          dry_run?: boolean
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          phases_run?: Json
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      cpe_qa_results: {
+        Row: {
+          checks: Json
+          created_at: string
+          id: string
+          pass: boolean
+          product_id: string | null
+          reasons: string[]
+          score: number | null
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          checks?: Json
+          created_at?: string
+          id?: string
+          pass?: boolean
+          product_id?: string | null
+          reasons?: string[]
+          score?: number | null
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          id?: string
+          pass?: boolean
+          product_id?: string | null
+          reasons?: string[]
+          score?: number | null
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: []
+      }
+      cpe_settings: {
+        Row: {
+          auto_enhance: boolean
+          auto_lifestyle: boolean
+          auto_publish: boolean
+          auto_video: boolean
+          daily_ai_budget_usd: number
+          id: number
+          max_lifestyle_per_product: number
+          max_pinterest_per_product: number
+          updated_at: string
+        }
+        Insert: {
+          auto_enhance?: boolean
+          auto_lifestyle?: boolean
+          auto_publish?: boolean
+          auto_video?: boolean
+          daily_ai_budget_usd?: number
+          id?: number
+          max_lifestyle_per_product?: number
+          max_pinterest_per_product?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_enhance?: boolean
+          auto_lifestyle?: boolean
+          auto_publish?: boolean
+          auto_video?: boolean
+          daily_ai_budget_usd?: number
+          id?: number
+          max_lifestyle_per_product?: number
+          max_pinterest_per_product?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crawler_sampling_decisions: {
         Row: {
           always_log: boolean
@@ -5919,12 +6252,14 @@ export type Database = {
           creative_type: string
           cta: string | null
           diversity_score: number | null
+          enhanced_image_id: string | null
           generation_model: string | null
           headline: string | null
           hook: string | null
           hook_hash: string | null
           id: string
           image_url: string | null
+          lifestyle_scene_id: string | null
           media_hash: string | null
           meta: Json
           overlay_text: string | null
@@ -5932,6 +6267,7 @@ export type Database = {
           priority_score: number | null
           product_id: string | null
           product_title: string | null
+          qa_status: string | null
           quality_score: number | null
           rejection_reason: string | null
           routed_ref: string | null
@@ -5944,6 +6280,7 @@ export type Database = {
           updated_at: string
           utm_url: string | null
           video_url: string | null
+          winner_weight: number | null
         }
         Insert: {
           ai_cost_credits?: number | null
@@ -5957,12 +6294,14 @@ export type Database = {
           creative_type: string
           cta?: string | null
           diversity_score?: number | null
+          enhanced_image_id?: string | null
           generation_model?: string | null
           headline?: string | null
           hook?: string | null
           hook_hash?: string | null
           id?: string
           image_url?: string | null
+          lifestyle_scene_id?: string | null
           media_hash?: string | null
           meta?: Json
           overlay_text?: string | null
@@ -5970,6 +6309,7 @@ export type Database = {
           priority_score?: number | null
           product_id?: string | null
           product_title?: string | null
+          qa_status?: string | null
           quality_score?: number | null
           rejection_reason?: string | null
           routed_ref?: string | null
@@ -5982,6 +6322,7 @@ export type Database = {
           updated_at?: string
           utm_url?: string | null
           video_url?: string | null
+          winner_weight?: number | null
         }
         Update: {
           ai_cost_credits?: number | null
@@ -5995,12 +6336,14 @@ export type Database = {
           creative_type?: string
           cta?: string | null
           diversity_score?: number | null
+          enhanced_image_id?: string | null
           generation_model?: string | null
           headline?: string | null
           hook?: string | null
           hook_hash?: string | null
           id?: string
           image_url?: string | null
+          lifestyle_scene_id?: string | null
           media_hash?: string | null
           meta?: Json
           overlay_text?: string | null
@@ -6008,6 +6351,7 @@ export type Database = {
           priority_score?: number | null
           product_id?: string | null
           product_title?: string | null
+          qa_status?: string | null
           quality_score?: number | null
           rejection_reason?: string | null
           routed_ref?: string | null
@@ -6020,6 +6364,7 @@ export type Database = {
           updated_at?: string
           utm_url?: string | null
           video_url?: string | null
+          winner_weight?: number | null
         }
         Relationships: [
           {
