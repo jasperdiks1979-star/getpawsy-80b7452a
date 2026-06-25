@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
       const cols: Record<string, any> = {
         product_id, status: "draft", qa_status: "pending",
         creative_type: "pinterest_static",
-        format: format ?? "2:3",
-        source_url: source_url ?? null,
+        image_url: source_url ?? null,
+        meta: { format: format ?? "2:3", source_kind, source_id },
       };
       if (source_kind === "enhanced") cols.enhanced_image_id = source_id;
       if (source_kind === "lifestyle") cols.lifestyle_scene_id = source_id;
