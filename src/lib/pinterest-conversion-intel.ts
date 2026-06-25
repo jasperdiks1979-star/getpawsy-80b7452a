@@ -135,6 +135,7 @@ export async function enqueueCapiEvent(
     value?: number | null;
     currency?: string | null;
     custom_data?: Record<string, unknown>;
+    event_id?: string | null;
   } = {},
 ): Promise<void> {
   try {
@@ -142,7 +143,7 @@ export async function enqueueCapiEvent(
     const session = readCookie(SESSION_COOKIE);
     if (!session) return; // not a tracked Pinterest visit
 
-    const event_id =
+    const event_id = payload.event_id ??
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `${event_name}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
