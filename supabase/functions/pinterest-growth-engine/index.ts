@@ -311,7 +311,7 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
     .limit(5000);
   const recentlyUsed = new Set<string>((recent ?? []).map((r: { product_id: string }) => r.product_id).filter(Boolean));
 
-  const scored = products
+  const scored = productsForRanking
     .filter((p) => !excluded.has(p.id))
     .filter((p) => forcePromote.has(p.id) || !recentlyUsed.has(p.id))
     .map((p) => ({
