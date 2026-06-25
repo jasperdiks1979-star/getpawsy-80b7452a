@@ -2149,6 +2149,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="commander-foundation"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CommanderFoundationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="market-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
