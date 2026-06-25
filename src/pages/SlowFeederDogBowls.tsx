@@ -110,7 +110,6 @@ export default function SlowFeederDogBowls() {
         image: product.image_url || '/placeholder.svg',
       });
     }
-    trackAddToCart(product.id, product.name, effectivePrice * quantity, quantity);
     toast.success(`Added ${quantity > 1 ? `${quantity}x ` : ''}to cart!`);
   };
 

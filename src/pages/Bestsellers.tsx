@@ -96,12 +96,6 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       price: canonicalPrice,
       image: bestseller.product.image_url || '/placeholder.svg',
     });
-    trackAddToCart(
-      bestseller.product.id,
-      bestseller.product.name,
-      canonicalPrice,
-      1
-    );
     toast.success('Added to cart!');
   };
 
