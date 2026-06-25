@@ -536,6 +536,7 @@ const RejectedSpamEventsPage = lazyWithRetry(() => import("./pages/admin/Rejecte
 const BotTrafficDrilldownPage = lazyWithRetry(() => import("./pages/admin/BotTrafficDrilldownPage"));
 const PinterestBackdropPreviewPage = lazyWithRetry(() => import("./pages/admin/PinterestBackdropPreviewPage"));
 const PinterestHealth = lazyWithRetry(() => import("./pages/admin/PinterestHealth"));
+const PinterestEnterpriseControlCenter = lazyWithRetry(() => import("./pages/admin/PinterestEnterpriseControlCenter"));
 const PinterestRevenueEngine = lazyWithRetry(() => import("./pages/admin/PinterestRevenueEngine"));
 const RevenueAiPage = lazyWithRetry(() => import("./pages/admin/RevenueAiPage"));
 const PinterestLivePinRepair = lazyWithRetry(() => import("./pages/admin/PinterestLivePinRepair"));
@@ -3207,6 +3208,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestHealth />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-enterprise-control-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestEnterpriseControlCenter />
                                 </Suspense>
                               }
                             />

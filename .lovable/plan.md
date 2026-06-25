@@ -1,90 +1,84 @@
-## Wave 3 — Continued (with mandatory additions)
+# Pinterest Enterprise Control Center — Build Plan
 
-Continuing the existing Wave 3 implementation. Wave 3A (Foundation) already shipped: 428/428 product intelligence, 403/428 landing validations green, 10 new V2 tables, foundation edge function deployed. Publishing remains paused.
+## Scope
+Single new admin surface at `/admin/pinterest-enterprise-control-center` plus supporting edge functions, tables, crons, and reports. Five waves executed sequentially in autonomous mode; each wave ends with regression checks, safe auto-fix sweep, PDF + JSON report under `public/admin-reports/ai-implementation/`, and a hard stop only on critical failure.
 
-The 7 mandatory additions are folded into the remaining sub-waves below — no rewrite, no scope reset.
+Current token is organic-only (ads/catalogs/billing endpoints return 401). All Ads/Catalog/Billing panels will render honestly: status badges show "scope blocked" with reconnect CTA, never fabricated numbers. Wave 1 ships the reconnect button; Waves 2+ light up automatically once the token has the scopes.
 
----
+## Truth & safety rules (enforced in every wave)
+- Endpoint marked green only on live HTTP 200.
+- No campaign activation, budget edit, billing edit, bid change, or paid-ad publish without manual approval — these go to the approval queue.
+- Safe auto-fix list (auto-executes): UTM repair, landing-URL fix, duplicate-draft purge, wrong-board reassignment when confidence ≥ 0.9, broken-queue-item pause, rejected-creative regenerate-as-draft, missing product metadata backfill from source, re-run validations, retry failed API calls, refresh analytics/token/cache. Everything else queued.
+- Existing Pinterest tables, edge functions, and crons preserved. New tables namespaced `pe_*` to avoid collisions with the dense existing `pinterest_*` schema.
+- All new tables: admin-only RLS via `has_role(auth.uid(), 'admin')`, plus `GRANT ... TO authenticated, service_role`.
+- No persisted scores or campaign mutations during Wave 1–3; mutations gated until Wave 4 approval engine is live.
 
-### Addition 1 — Pinterest Potential Score (0–100) — hard gate ≥70
+## Wave 1 — Full Access Connection + Endpoint Verification + Global Health shell
+**Edge functions**
+- `pe-oauth-reconnect-start` — wraps existing `pinterest-oauth-start` requesting full scope set: `boards:read|write`, `boards:read_secret|write_secret`, `pins:read|write`, `pins:read_secret|write_secret`, `user_accounts:read|write`, `ads:read|write`, `catalogs:read|write`, `billing:read`, `biz_access:read|write`. Stores expected-scope set in `pe_oauth_intents`.
+- `pe-endpoint-matrix` — runs 25+ live probes (organic, ads, catalog, billing, tracking), records HTTP code, granted/missing scope, root cause, fix, auto-fixable flag. Persists to `pe_endpoint_checks`. Emits global health rollup to `pe_health_snapshots`.
+- `pe-scope-verify` — calls `/v5/user_account` + introspection, diffs granted vs required, writes `pe_scope_status`.
 
-Lives in `pin_product_intelligence.potential_score` (new column). Composite of:
-- landing validator pass rate
-- intelligence confidence
-- margin_percent
-- effective_stock health
-- category demand signal (from `pinterest_category_benchmarks`)
-- image quality signal (from existing `cj_media_asset_registry`)
+**Tables**
+- `pe_health_snapshots`, `pe_scope_status`, `pe_endpoint_checks`, `pe_oauth_intents`, `pe_issue_log`, `pe_auto_fix_log`, `pe_manual_approval_queue`, `pe_daily_reports`.
 
-Computed in a new step at the end of Wave 3A+ (`pin-potential-scorer`). Every downstream step (hooks, headlines, scene, golden batch, publishing) MUST filter `potential_score >= 70`. Products below 70 get an audit row + reason and never enter the creative pipeline.
+**UI**
+- New route `/admin/pinterest-enterprise-control-center` with section A (Global Health) live. Buttons: Reconnect Full Access, Verify Scopes, Run Full Diagnostic, Download PDF, Download JSON. Sections B–F render as scope-gated placeholders with reconnect CTA.
 
-### Addition 2 — Scene Engine: 15 visual style families
+**Wave 1 exit**: PDF + JSON report (`2026-06-25-pe-wave1.{pdf,json}`), manifest update, regression on existing `/admin/pinterest-health`.
 
-`pin_scene_style_families` seed table with: Luxury, Scandinavian, Modern Home, Cozy, Outdoor, Minimal, Emotional, Funny, Family, Macro, Lifestyle, POV, Before/After, Premium, Seasonal. Each family has: palette guidance, camera guidance, lighting guidance, banned cliches, allowed pet contexts. Scene Engine in Wave 3B must draw from these families with even rotation per product (≥3 distinct families per product across 10 variants).
+## Wave 2 — Organic + Ads + Catalog panels
+**Edge functions**
+- `pe-organic-sync` — live pins/boards/drafts/failed/rejected, per-pin metrics (impressions, saves, closeups, outbound, CTR). Top/worst/broken/needs-repair lists.
+- `pe-ads-sync` — per-campaign / ad-group / ad walk: status, approval, delivery, budget, schedule, bid, audience size, spend, impressions, clicks, CPC, CTR, conversions, ROAS, delivery/policy/billing blockers. Tables: `pe_ads_campaigns`, `pe_ads_ad_groups`, `pe_ads_ads`, `pe_ads_delivery_diagnostics`.
+- `pe-catalog-sync` — catalog/product-feed/product-group status, approved/rejected/pending counts, missing-data / broken-image / broken-URL / stock / price / GTIN issue lists. Tables: `pe_catalog_health`, `pe_product_group_health`.
 
-### Addition 3 — Diversity validator (8 axes)
+**UI**: Sections B/C/D fully wired with live data when scopes present, scope-blocked state otherwise.
 
-New `pin-diversity-validator` step inside the visual scorer. Per axis 0–100, plus pairwise similarity across the 10 variants of a product:
-- camera angle, lighting, composition, background, interior, pet breed, color palette, framing
+**Wave 2 exit**: Wave-2 report, regression on Pinterest Health + Control Center + Wave 3B Progress Panel.
 
-Stored on `pin_creative_scores.diversity_axes` (jsonb). Any pair with mean axis similarity > 0.82 → one variant rejected and regenerated.
+## Wave 3 — Pixel/CAPI + Conversion Monitor
+**Edge functions**
+- `pe-tracking-health` — Pinterest Tag presence + load + last event time + event_id dedup + EMQ + consent-gating, server CAPI status, failed events, GDPR posture. Table: `pe_tracking_health`, `pe_capi_events`.
+- `pe-conversion-funnel` — Pinterest sessions → product views → ATC → checkout → purchase → revenue; best/worst converting products; PDP blockers. Table: `pe_conversion_funnel`.
 
-### Addition 4 — Adaptive retry logic
+**UI**: Sections E + F live. Reuses existing `pinterest_funnel_events` and `pinterest_attribution_sessions` as source of truth.
 
-`pin_wave3_settings`:
-- `retry_min = 3`
-- `retry_max = 15`
-- early-exit: stop the moment all gates (visual quality, diversity, landing, hook, headline, potential) all > 0.99
-- circuit breaker: hard credit cap per run from `pin_wave3_settings.credit_cap_usd`, default $25/run
+**Wave 3 exit**: Wave-3 report + regression on `usePinterestTracking` and `SafePinterestTag` (must not change behavior).
 
-### Addition 5 — Golden Batch: top 100 × 10 = 1,000 renders
+## Wave 4 — AI Operator + Diagnosis Engine + Safe Auto-Fix + Approval Queue
+**Edge functions**
+- `pe-ai-operator` — continuous scan covering all 24 listed signals (zero impressions, rejected ads, broken landing, wrong board, pixel/CAPI failure, token expiry, scope loss, billing block, sudden CTR/CPC/ROAS movement, stalled queue, etc.). Produces structured diagnoses to `pe_issue_log`.
+- `pe-auto-fix` — executes safe-list automatically, logs to `pe_auto_fix_log`. Restricted fixes posted to `pe_manual_approval_queue` with proposed_action, reason, risk, expected_benefit.
+- `pe-approval-execute` — admin-only RPC that runs an approved queue item end-to-end with rollback metadata.
 
-Ranked by `potential_score * confidence * margin_health`. Filtered to `potential_score >= 70`. Each product → 10 variants across ≥3 style families. Winner persisted in `pin_golden_batch`. Losers archived with reasons. Live credit telemetry in the Control Center.
+**UI**: Section G (AI Operator feed) + dedicated Approval Queue panel with Approve / Reject buttons.
 
-### Addition 6 — Nightly self-learning engine
+**Wave 4 exit**: Wave-4 report + safe-fix sweep dry-run results.
 
-`pin-self-learning-engine` edge function + nightly cron (03:30 UTC). Reads:
-- `pinterest_analytics_daily` (impressions, saves, outbound, closeup)
-- GA4 (`gi_ga4_events`, `gi_traffic_sessions`)
-- `pinterest_revenue_attribution_v3`
+## Wave 5 — Optimizers, crons, daily reports
+**Edge functions** (all recommendation-mode by default, never auto-apply paid changes)
+- `pe-optimizer-campaign`, `pe-optimizer-budget`, `pe-optimizer-audience`, `pe-optimizer-creative`, `pe-optimizer-product`, `pe-pin-repair`, `pe-broken-link-repair`, `pe-impression-recovery`, `pe-ranking-recovery`, `pe-pin-refresh`, `pe-trend-detector`, `pe-competitor-monitor`, `pe-seasonal-generator`. Each writes to `pe_ai_recommendations` with `{recommendation, evidence, confidence, expected_impact, required_action, safe_to_auto_apply}`.
 
-Writes back:
-- `pin_hook_library_v2.weight`
-- `pin_headline_bank.weight` (new column)
-- `pin_scene_style_families.weight` (new column)
-- `pinterest_runtime_settings.publish_pacing_per_hour` (clamped 1–3)
+**Crons** (pg_cron + pg_net)
+- Every 15 min: `pe-endpoint-matrix` + `pe-ai-operator` (health + alerts).
+- Hourly: `pe-organic-sync` + `pe-ads-sync` + `pe-tracking-health` + `pe-conversion-funnel`.
+- Daily 04:00 UTC: `pe-daily-report` → executive PDF + JSON to `pe_daily_reports` and `public/admin-reports/`.
 
-All updates capped per cycle to avoid runaway swings (max ±25% per cycle).
+**Reports surface in `/admin/reports` via manifest.json append.**
 
-### Addition 7 — Pinterest Control Center
+**Wave 5 exit**: Final consolidated report listing scope matrix, endpoint matrix, current blockers, what Lovable controls today, what still needs Pinterest approval, next recommended action.
 
-New route `/admin/pinterest-control-center` reading from existing tables (no new persisted state beyond a 5-min snapshot view). Panels:
-- Credits (today, this month, projected month-end) — from `pinterest_credit_events`
-- Render queue depth + age — from `pinterest_pin_queue`
-- Live quality score histogram — from `pin_creative_scores`
-- Golden Batch progress bar — from `pin_golden_batch`
-- CTR / saves / outbound / conversions / revenue (24h, 7d, 30d) — from `pinterest_analytics_daily` + `pinterest_revenue_attribution_v3`
-- Top 10 best / worst pins (last 7d)
-- Active alerts — from `monitoring_alerts` + `pinterest_health_incidents`
-- 30s auto-refresh, admin-only.
+## Backward compatibility
+- Zero changes to existing `pinterest_*` tables/policies/edge functions/crons.
+- Existing `/admin/pinterest-health` and `/admin/pinterest-control-center` remain untouched. New route is additive.
+- No edits to `usePinterestTracking`, `SafePinterestTag`, `CartContext`, or any analytics surface in Waves 1–3 (Wave 3 is read-only diagnostic).
 
----
+## Regression gates between waves
+After each wave: `tsgo` clean, all new routes render, existing Pinterest dashboards still load, scope/endpoint matrix delta logged, PDF + JSON written, manifest updated, hard stop only if endpoint matrix shows a previously-green check turning red.
 
-### Updated sub-wave order
+## Out of scope (explicit)
+- Activating campaigns, mutating budgets, mutating billing, launching new paid campaigns, deleting paid entities — queued only.
+- Pinterest features requiring Standard/Advanced Access we don't already have (e.g. `commerce_integration` for billing writes) — surfaced as manual-action items, not auto-requested.
 
-1. **Wave 3A+ (now)** — add `potential_score` column + `pin-potential-scorer` + 15 style families seed + adaptive retry settings.
-2. **Wave 3B** — Hooks (500+), Headlines (20/product, only for `potential_score>=70`), Scene Engine v2 using 15 families + diversity hooks, Descriptions (10/product).
-3. **Wave 3C** — Visual + Diversity validators, adaptive retry 3–15, **Golden Batch top 100 × 10 = 1,000 renders**, hard credit cap, winners persisted.
-4. **Wave 3D** — Autonomous publishing + A/B loop (requires explicit second go-ahead after gate passes).
-5. **Self-learning cron** shipped with 3D.
-6. **Pinterest Control Center** shipped alongside 3C so you can watch the Golden Batch live.
-7. **Step 12** — Final executive PDF.
-
-### Gates unchanged
-Golden Batch confidence ≥99%, all visual + diversity + landing + potential ≥ threshold, zero mismatch → only then 3D is even offered. I will NOT auto-unpause publishing.
-
-### Cost note
-Golden Batch jumps from 250 → up to 1,000 image renders (+ up to 15× retries per slot, capped by credit cap). I'll enforce the per-run USD cap and stop early once gates pass to keep this sane.
-
-### Next action after approval
-Execute Wave 3A+ (potential scorer + style families + retry settings), then Wave 3B in one continuous run. Report back with DB evidence before touching 3C.
+Approve to start Wave 1 immediately; the system will then chain Waves 2 → 5 autonomously, stopping only on critical regression.
