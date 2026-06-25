@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: conn } = await sb.from("pinterest_connection")
-      .select("access_token, refresh_token, scopes, expires_at, ad_account_id")
+      .select("access_token, refresh_token, scopes, token_expires_at, account_id, status")
       .limit(1).maybeSingle();
     const token = (conn as { access_token?: string } | null)?.access_token;
     if (!token) {
@@ -57,7 +57,12 @@ Deno.serve(async (req) => {
     const out: Record<string, unknown> = {
       ok: true, traceId, ad_account_id: AD_ACCOUNT,
       generated_at: new Date().toISOString(),
-      connection: { scopes: (conn as any)?.scopes, expires_at: (conn as any)?.expires_at, db_ad_account_id: (conn as any)?.ad_account_id },
+      connection: {
+        scopes: (conn as any)?.scopes,
+        token_expires_at: (conn as any)?.token_expires_at,
+        account_id: (conn as any)?.account_id,
+        status: (conn as any)?.status,
+      },
     };
 
     // 1. Ad account
