@@ -16655,6 +16655,92 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_wave2_audits: {
+        Row: {
+          archived: boolean
+          confidence: number
+          created_at: string
+          details: Json
+          id: string
+          mismatch_types: string[]
+          passed: boolean
+          pin_id: string
+          product_id: string | null
+          replacement_pin_id: string | null
+          run_id: string
+        }
+        Insert: {
+          archived?: boolean
+          confidence?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          mismatch_types?: string[]
+          passed?: boolean
+          pin_id: string
+          product_id?: string | null
+          replacement_pin_id?: string | null
+          run_id: string
+        }
+        Update: {
+          archived?: boolean
+          confidence?: number
+          created_at?: string
+          details?: Json
+          id?: string
+          mismatch_types?: string[]
+          passed?: boolean
+          pin_id?: string
+          product_id?: string | null
+          replacement_pin_id?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_wave2_audits_pin_id_fkey"
+            columns: ["pin_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pin_wave2_runs: {
+        Row: {
+          finished_at: string | null
+          id: string
+          metrics: Json
+          started_at: string
+          total_archived: number
+          total_audited: number
+          total_failed: number
+          total_passed: number
+          total_replacements_queued: number
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          metrics?: Json
+          started_at?: string
+          total_archived?: number
+          total_audited?: number
+          total_failed?: number
+          total_passed?: number
+          total_replacements_queued?: number
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          metrics?: Json
+          started_at?: string
+          total_archived?: number
+          total_audited?: number
+          total_failed?: number
+          total_passed?: number
+          total_replacements_queued?: number
+        }
+        Relationships: []
+      }
       pinterest_ai_backdrops: {
         Row: {
           created_at: string
