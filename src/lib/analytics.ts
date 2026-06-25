@@ -219,14 +219,25 @@ export const trackAddToCart = (
   productId: string,
   productName: string,
   productPrice: number,
-  quantity: number = 1
+  quantity: number = 1,
+  options: {
+    category?: string | null;
+    brand?: string | null;
+    variant?: string | null;
+    slug?: string | null;
+    event_id?: string | null;
+  } = {},
 ): void => {
   trackEvent('add_to_cart', withPersistedUtm({
     currency: 'USD',
     value: productPrice * quantity,
+    event_id: options.event_id ?? undefined,
     items: [{
       item_id: productId,
       item_name: productName,
+      item_brand: options.brand ?? 'GetPawsy',
+      item_category: options.category ?? undefined,
+      item_variant: options.variant ?? undefined,
       price: productPrice,
       quantity,
     }],
