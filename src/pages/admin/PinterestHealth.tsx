@@ -265,6 +265,108 @@ export default function PinterestHealth() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2">
+            Pinterest Ads API
+            {adsDiag?.verification?.all_endpoints_200 ? (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />All endpoints 200</Badge>
+            ) : adsDiag ? (
+              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Endpoints failing</Badge>
+            ) : (
+              <Badge variant="outline">Not verified</Badge>
+            )}
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              disabled={busy !== null}
+              onClick={reconnectWithAdsScopes}
+              title="Reconnect Pinterest with full Ads + Billing + Catalogs scopes"
+            >
+              {busy === "reconnect_ads" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
+              Reconnect Pinterest Ads
+            </Button>
+            <Button size="sm" variant="outline" disabled={adsDiagBusy} onClick={runAdsDiagnostic}>
+              <RefreshCw className={`h-3 w-3 mr-1 ${adsDiagBusy ? "animate-spin" : ""}`} />Run diagnostic
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {!adsDiag ? (
+            <p className="text-muted-foreground text-xs">Click <em>Run diagnostic</em> to verify all Pinterest Ads endpoints, or <em>Reconnect Pinterest Ads</em> to grant missing scopes.</p>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-1">Scopes</div>
+                <div className="flex flex-wrap gap-1">
+                  {(adsDiag.scope_check?.required || []).map((s: string) => {
+                    const granted = (adsDiag.scope_check?.granted || []).includes(s);
+                    return (
+                      <Badge key={s} variant={granted ? "secondary" : "destructive"} className="text-[10px]">
+                        {granted ? "✓ " : "✗ "}{s}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-1">Endpoints</div>
+                <table className="w-full text-xs">
+                  <tbody>
+                    {Object.entries(adsDiag.endpoints || {}).map(([name, r]: [string, any]) => (
+                      <tr key={name} className="border-t">
+                        <td className="p-1 font-mono">{name}</td>
+                        <td className="p-1 text-right">
+                          <Badge variant={r.ok ? "secondary" : "destructive"}>{r.status}</Badge>
+                        </td>
+                        <td className="p-1 text-muted-foreground truncate max-w-[60%]">{(r.body as any)?.message || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {(adsDiag.campaigns || []).length > 0 && (
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground mb-1">Campaigns ({adsDiag.campaigns.length})</div>
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/40">
+                      <tr>
+                        <th className="text-left p-1">Name</th>
+                        <th className="text-left p-1">Status</th>
+                        <th className="text-right p-1">Impr. 7d</th>
+                        <th className="text-left p-1">Root cause</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(adsDiag.root_cause_summary || []).map((c: any) => (
+                        <tr key={c.id} className="border-t">
+                          <td className="p-1">{c.name}</td>
+                          <td className="p-1">{c.status}</td>
+                          <td className="p-1 text-right">{c.impressions_7d}</td>
+                          <td className="p-1">{c.root_cause}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {adsDiag.verification?.failed?.length > 0 && (
+                <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs">
+                  <strong>Blocked.</strong> The following endpoints still return 401/403. Click <em>Reconnect Pinterest Ads</em> and on the Pinterest consent screen approve every requested scope. If <code>billing:read</code> stays unavailable, the Pinterest app (1567611) needs Standard Access for the <code>commerce_integration</code> feature — request via Pinterest developer support.
+                  <ul className="list-disc ml-4 mt-1">
+                    {adsDiag.verification.failed.map((f: any) => (
+                      <li key={f.name}><code>{f.name}</code> → {f.status} {f.message ? `· ${f.message}` : ""}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: "Sessions", value: kpi.sessions, icon: Activity },
