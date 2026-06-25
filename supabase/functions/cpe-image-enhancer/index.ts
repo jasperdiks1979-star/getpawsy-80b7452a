@@ -1,13 +1,11 @@
 import { admin, jsonResp, cors } from "../_shared/creative-helpers.ts";
 import { claimJobs, finishJob, withinBudget, isInternalAuthed } from "../_shared/cpe-helpers.ts";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/images/generations";
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const VISION = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const RESTORE_PROMPT = "Restore this product image to premium e-commerce quality. Sharpen edges, denoise compression artifacts, balance white balance, neutralize any tinted background, repair clipped highlights, remove any Chinese text overlays or supplier watermarks if present. Keep the product identical in shape, color, and proportions. Do not invent new objects.";
+const RESTORE_PROMPT = "Edit this product photo for a premium e-commerce listing: place it on a clean pure-white studio background, improve sharpness and lighting, and keep the product itself exactly the same in shape, color, and proportions. Output the edited image.";
 
-async function enhance(srcUrl: string, apiKey: string): Promise<string | null> {
-  // We can't pass a source image with images.generations directly across all models;
-  // use Gemini image editing via OpenRouter-style chat-completions image shape.
+async function enhance(srcUrl: string, apiKey: string): Promise<{ url: string | null; err: string | null }> {
   try {
     const r = await fetch(GATEWAY, {
       method: "POST",
@@ -24,11 +22,17 @@ async function enhance(srcUrl: string, apiKey: string): Promise<string | null> {
         modalities: ["image", "text"],
       }),
     });
-    if (!r.ok) return null;
-    const j = await r.json();
+    const text = await r.text();
+    if (!r.ok) return { url: null, err: `gateway_${r.status}: ${text.slice(0, 200)}` };
+    let j: any = {}; try { j = JSON.parse(text); } catch { return { url: null, err: "bad_json" }; }
+    const msg = j?.choices?.[0]?.message;
+    const fromImages = msg?.images?.[0]?.image_url?.url;
+    if (fromImages) return { url: fromImages, err: null };
+    // fall back to data.[0].b64_json shape
     const b64 = j?.data?.[0]?.b64_json;
-    return b64 ? `data:image/png;base64,${b64}` : null;
-  } catch { return null; }
+    if (b64) return { url: `data:image/png;base64,${b64}`, err: null };
+    return { url: null, err: `no_image: ${JSON.stringify(j).slice(0, 1500)}` };
+  } catch (e) { return { url: null, err: `exc: ${(e as Error).message}` }; }
 }
 
 async function scoreQuality(url: string, apiKey: string): Promise<number> {
@@ -80,11 +84,18 @@ Deno.serve(async (req) => {
       processed++; succeeded++; continue;
     }
 
-    const dataUrl = await enhance(source_url, apiKey);
-    if (!dataUrl) { await finishJob(sb, j.id, false, "enhance_failed"); processed++; continue; }
-    // Upload to cpe-enhanced bucket
-    const b64 = dataUrl.split(",")[1];
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const { url: outUrl, err } = await enhance(source_url, apiKey);
+    if (!outUrl) { await finishJob(sb, j.id, false, err ?? "enhance_failed"); processed++; continue; }
+    // Materialize bytes from data URL or remote URL
+    let bytes: Uint8Array;
+    if (outUrl.startsWith("data:")) {
+      const b64 = outUrl.split(",")[1];
+      bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    } else {
+      const r2 = await fetch(outUrl);
+      if (!r2.ok) { await finishJob(sb, j.id, false, `fetch_${r2.status}`); processed++; continue; }
+      bytes = new Uint8Array(await r2.arrayBuffer());
+    }
     const path = `${product_id}/${Date.now()}.png`;
     const up = await sb.storage.from("cpe-enhanced").upload(path, bytes, { contentType: "image/png", upsert: false });
     if (up.error) { await finishJob(sb, j.id, false, up.error.message); processed++; continue; }

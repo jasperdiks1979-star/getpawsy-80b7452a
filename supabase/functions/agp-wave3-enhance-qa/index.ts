@@ -128,8 +128,9 @@ Deno.serve(async (req) => {
       // 1) Enqueue enhance jobs for products with no enhanced image yet
       const { data: candidates } = await sb
         .from("products")
-        .select("id,featured_image,image_url")
+        .select("id,image_url")
         .eq("is_active", true)
+        .not("image_url", "is", null)
         .limit(maxEnqueue * 4);
       const { data: already } = await sb
         .from("cpe_enhanced_images")
@@ -137,11 +138,11 @@ Deno.serve(async (req) => {
         .eq("status", "succeeded");
       const have = new Set((already ?? []).map((r: any) => r.product_id));
       const toEnqueue = (candidates ?? [])
-        .filter((p: any) => !have.has(p.id) && (p.featured_image || p.image_url))
+        .filter((p: any) => !have.has(p.id) && p.image_url)
         .slice(0, maxEnqueue);
 
       for (const p of toEnqueue) {
-        const payload = { product_id: p.id, source_url: p.featured_image ?? p.image_url };
+        const payload = { product_id: p.id, source_url: p.image_url };
         const dedupe_key = await sha256Hex(`enhance::${JSON.stringify(payload)}`);
         const { data: ins } = await sb.from("cpe_creative_jobs")
           .upsert({ kind: "enhance", payload, dedupe_key, status: "pending" },
