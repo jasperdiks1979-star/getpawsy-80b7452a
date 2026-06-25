@@ -31,7 +31,7 @@ async function enhance(srcUrl: string, apiKey: string): Promise<{ url: string | 
     // fall back to data.[0].b64_json shape
     const b64 = j?.data?.[0]?.b64_json;
     if (b64) return { url: `data:image/png;base64,${b64}`, err: null };
-    return { url: null, err: `no_image: ${JSON.stringify(j).slice(0, 200)}` };
+    return { url: null, err: `no_image: ${JSON.stringify(j).slice(0, 1500)}` };
   } catch (e) { return { url: null, err: `exc: ${(e as Error).message}` }; }
 }
 
