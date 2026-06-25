@@ -23,6 +23,36 @@ const REQUIRED_SCOPES = [
   "user_accounts:read",
 ];
 
+// Broader "full access" set used when the operator clicks Reconnect Full Access.
+// These are scopes Pinterest exposes for Standard Access apps. `biz_access:*` and
+// `billing:write` may require Advanced Access / commerce_integration approval.
+const FULL_ACCESS_SCOPES = [
+  ...REQUIRED_SCOPES,
+  "billing:write",
+  "user_accounts:write",
+  "boards:read_secret",
+  "boards:write_secret",
+  "pins:read_secret",
+  "pins:write_secret",
+  "biz_access:read",
+  "biz_access:write",
+];
+
+// Map endpoint name -> manual action shown to the operator when it fails.
+const ENDPOINT_MANUAL_ACTION: Record<string, { scope: string; access: string; action: string }> = {
+  ad_account:        { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
+  campaigns:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
+  ad_groups:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
+  ads:               { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
+  billing_profiles:  { scope: "billing:read",   access: "Advanced (commerce_integration)", action: "Request commerce_integration / Advanced Access for app 1567611 via Pinterest developer support, then reconnect." },
+  catalogs:          { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
+  product_groups:    { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
+  conversion_tags:   { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
+  pin_edit_probe:    { scope: "pins:write",     access: "Advanced (pin_edit)",  action: "Pin PATCH requires the restricted pin_edit feature on app 1567611. Request via Pinterest developer support." },
+  user_account:      { scope: "user_accounts:read", access: "Standard", action: "Reconnect and approve user_accounts:read." },
+  boards:            { scope: "boards:read",    access: "Standard", action: "Reconnect and approve boards:read." },
+};
+
 async function isAuthed(req: Request): Promise<boolean> {
   const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET");
   if (internal && req.headers.get("x-internal-secret") === internal) return true;
@@ -69,6 +99,7 @@ Deno.serve(async (req) => {
     const grantedScopes = String((conn as any)?.scopes ?? "")
       .split(/[\s,]+/).map((s: string) => s.trim().toLowerCase()).filter(Boolean);
     const missingScopes = REQUIRED_SCOPES.filter((s) => !grantedScopes.includes(s));
+    const missingFullAccess = FULL_ACCESS_SCOPES.filter((s) => !grantedScopes.includes(s));
 
     const out: Record<string, unknown> = {
       ok: true, traceId, ad_account_id: AD_ACCOUNT,
@@ -81,19 +112,29 @@ Deno.serve(async (req) => {
       },
       scope_check: {
         required: REQUIRED_SCOPES,
+        full_access_target: FULL_ACCESS_SCOPES,
         granted: grantedScopes,
         missing: missingScopes,
+        missing_full_access: missingFullAccess,
         all_granted: missingScopes.length === 0,
+        full_access: missingFullAccess.length === 0,
       },
     };
 
     const endpoints: Record<string, { status: number; ok: boolean; body: unknown }> = {};
+    endpoints.user_account = await pin(`/user_account`, token);
+    endpoints.boards = await pin(`/boards?page_size=25`, token);
     endpoints.ad_account = await pin(`/ad_accounts/${AD_ACCOUNT}`, token);
     endpoints.campaigns = await pin(`/ad_accounts/${AD_ACCOUNT}/campaigns?page_size=100`, token);
     endpoints.ad_groups = await pin(`/ad_accounts/${AD_ACCOUNT}/ad_groups?page_size=100`, token);
     endpoints.ads = await pin(`/ad_accounts/${AD_ACCOUNT}/ads?page_size=100`, token);
     endpoints.billing_profiles = await pin(`/ad_accounts/${AD_ACCOUNT}/billing_profiles`, token);
     endpoints.catalogs = await pin(`/catalogs`, token);
+    // Product groups: requires a catalog id; we attempt against the first catalog returned.
+    const firstCatalogId = (endpoints.catalogs.body as any)?.items?.[0]?.id;
+    if (firstCatalogId) {
+      endpoints.product_groups = await pin(`/catalogs/product_groups?catalog_id=${firstCatalogId}&page_size=25`, token);
+    }
     endpoints.conversion_tags = await pin(`/ad_accounts/${AD_ACCOUNT}/conversion_tags`, token);
     out.endpoints = endpoints;
 
@@ -104,11 +145,27 @@ Deno.serve(async (req) => {
         status: r.status,
         code: (r.body as any)?.code ?? null,
         message: (r.body as any)?.message ?? null,
+        manual_action: ENDPOINT_MANUAL_ACTION[name] ?? null,
       }));
     out.verification = {
       all_endpoints_200: failedEndpoints.length === 0,
       failed: failedEndpoints,
     };
+
+    out.capabilities = {
+      can_read_organic: endpoints.boards?.ok && endpoints.user_account?.ok,
+      can_publish_pins: grantedScopes.includes("pins:write"),
+      can_read_ads: endpoints.ad_account?.ok === true,
+      can_manage_ads: grantedScopes.includes("ads:write") && endpoints.ad_account?.ok === true,
+      can_manage_catalogs: grantedScopes.includes("catalogs:write") && endpoints.catalogs?.ok === true,
+      can_read_billing: endpoints.billing_profiles?.ok === true,
+      can_edit_pins_patch: false, // requires pin_edit restricted feature; verified separately
+    };
+    out.requires_pinterest_approval = [
+      ...(endpoints.billing_profiles?.ok ? [] : ["commerce_integration (Advanced Access) for billing reads"]),
+      "pin_edit restricted feature for in-place pin PATCH",
+      ...(grantedScopes.includes("biz_access:read") ? [] : ["biz_access:* (business manager access)"]),
+    ];
 
     const campaignsRes = endpoints.campaigns;
 
