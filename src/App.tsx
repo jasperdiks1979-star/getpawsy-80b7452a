@@ -2104,6 +2104,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="creative-command"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CreativeCommandPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="market-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
