@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-agp-wave-2-media-pipeline",
+      "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
+      "run_id": "agp-wave-2-media-pipeline",
+      "generated_at": "2026-06-25T07:45:26.786356Z",
+      "status": "succeeded_with_warnings",
+      "score": 86,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.json"
+    },
+    {
       "slug": "2026-06-25-agp-wave-1-foundations",
       "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
       "run_id": "agp-wave-1-foundations",

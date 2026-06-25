@@ -1,0 +1,185 @@
+{
+  "report_version": "1.0",
+  "run_id": "agp-wave-2-media-pipeline",
+  "slug": "2026-06-25-agp-wave-2-media-pipeline",
+  "generated_at": "2026-06-25T07:45:26.786356Z",
+  "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
+  "executive_summary": {
+    "date": "2026-06-25",
+    "start_time": "2026-06-25T07:41:24Z",
+    "end_time": "2026-06-25T07:44:01Z",
+    "total_runtime_minutes": 2.6,
+    "status": "succeeded_with_warnings",
+    "overall_health_score": 86
+  },
+  "implementation_summary": {
+    "what": "Wave 2 ships an AGP-aware media-pipeline orchestrator (agp-wave2-media-pipeline) that chains cj-media-orchestrator, cj-rehost-existing-videos, and media-integrity-scan, records a single agp_runs row, and writes per-step counters to agp_run_steps. Added a Wave 2 control card to /admin/autonomous-growth with dry-run, delta, and full-sweep buttons.",
+    "why": "Give operators a single command to import and store every CJ image/video/derivative for the active 428-product catalog, with telemetry feeding the AGP command center.",
+    "extended": [
+      "cj-media-orchestrator",
+      "cj-rehost-existing-videos",
+      "media-integrity-scan",
+      "cj-media-derivative-worker",
+      "agp_runs / agp_run_steps schema from Wave 1"
+    ],
+    "untouched": [
+      "Product schema",
+      "Checkout / orders",
+      "Pinterest publishing",
+      "Cinematic rendering"
+    ],
+    "expected_impact": "Catalog already fully ingested (4,223 assets across 428 active products, 0 pending derivatives). Wave 2 wraps that flow in a single auditable run and unlocks future enhancement/lifestyle waves."
+  },
+  "files": [
+    {
+      "path": "supabase/functions/agp-wave2-media-pipeline/index.ts",
+      "type": "created",
+      "reason": "Wave 2 orchestrator wrapping the existing CJ media stack with AGP telemetry"
+    },
+    {
+      "path": "src/pages/admin/AutonomousGrowthPage.tsx",
+      "type": "modified",
+      "reason": "Added Wave 2 media-pipeline control card (dry-run / delta / full)"
+    }
+  ],
+  "database": {
+    "tables_created": [],
+    "tables_modified": [],
+    "indexes": [],
+    "policies": [],
+    "triggers": [],
+    "functions": [],
+    "views": [],
+    "storage_buckets": [],
+    "storage_policies": [],
+    "migration_files": [],
+    "data_changes": [
+      "1 row updated in agp_runs (close out wrapper-timeout run)",
+      "3 rows inserted into agp_run_steps"
+    ]
+  },
+  "api_changes": {
+    "edge_functions": [
+      {
+        "name": "agp-wave2-media-pipeline",
+        "mode": "orchestrator",
+        "auth": "INTERNAL_FUNCTION_SECRET",
+        "delegates": [
+          "cj-media-orchestrator",
+          "cj-rehost-existing-videos",
+          "media-integrity-scan"
+        ]
+      }
+    ],
+    "cron_jobs": [],
+    "queue_workers": [],
+    "background_jobs": [],
+    "storage_workers": [],
+    "webhooks": [],
+    "endpoints": []
+  },
+  "ai_usage": {
+    "providers": [],
+    "total_credits": 0,
+    "total_usd": 0.0,
+    "total_eur": 0.0,
+    "notes": "Wave 2 is media-only (rehost + transcode). No AI calls made."
+  },
+  "cloud_usage": {
+    "storage_used_mb": 0,
+    "bandwidth_mb": 0,
+    "function_executions": 4,
+    "db_operations_est": 30,
+    "images_generated": 0,
+    "videos_generated": 0,
+    "transcoding_minutes": 0,
+    "estimated_cloud_cost_usd": 0.01
+  },
+  "media": {
+    "images_imported": 0,
+    "videos_imported": 0,
+    "images_enhanced": 0,
+    "videos_enhanced": 0,
+    "lifestyle_images_generated": 0,
+    "pinterest_creatives_generated": 0,
+    "rejected_creatives": 0,
+    "duplicates_removed": 0,
+    "broken_assets_repaired": 0,
+    "assets_registered_total": 4223,
+    "active_products_covered": 428,
+    "derivatives_pending": 0
+  },
+  "pinterest": {
+    "pins_generated": 0,
+    "pins_scheduled": 0,
+    "pins_published": 0,
+    "boards_updated": 0,
+    "creative_diversity_score": null
+  },
+  "quality_control": {
+    "warnings": 1,
+    "errors": 0,
+    "auto_repaired": 0,
+    "remaining_issues": [
+      "Wrapper edge function hit 150s idle timeout while waiting on the orchestrator (which still completed). Mitigation: future runs should call cj-media-orchestrator with maxBatches \u2264 4 OR move the chain to background using EdgeRuntime.waitUntil."
+    ]
+  },
+  "performance": {
+    "execution_time_seconds": 157,
+    "slowest": "cj-media-orchestrator (\u2248155s end-to-end)",
+    "fastest": "post_run_snapshot (~80ms)",
+    "memory": "n/a (delegated)",
+    "db_usage": "low (~30 ops)",
+    "queue_performance": "0 pending derivatives \u2014 queue idle"
+  },
+  "security": {
+    "secrets_accessed": [
+      "INTERNAL_FUNCTION_SECRET",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ],
+    "permissions_changed": [],
+    "rls_changes": [],
+    "auth_changes": []
+  },
+  "next_recommendations": {
+    "high": [
+      {
+        "item": "Refactor wrapper to use EdgeRuntime.waitUntil so long sweeps run in background and return a run_id immediately",
+        "ai_cost_usd": 0,
+        "cloud_cost_usd": 0,
+        "runtime_minutes": 20,
+        "impact": "Eliminates 150s timeouts on full sweeps"
+      }
+    ],
+    "medium": [
+      {
+        "item": "Schedule wave2 delta nightly via pg_cron",
+        "ai_cost_usd": 0,
+        "cloud_cost_usd": 0.05,
+        "runtime_minutes": 10,
+        "impact": "Catches new CJ assets without manual trigger"
+      }
+    ],
+    "low": [
+      {
+        "item": "Add per-product asset coverage panel to /admin/autonomous-growth",
+        "ai_cost_usd": 0,
+        "cloud_cost_usd": 0,
+        "runtime_minutes": 30,
+        "impact": "Operator visibility into gaps"
+      }
+    ]
+  },
+  "scorecard": {
+    "overall": 86,
+    "architecture": 90,
+    "performance": 78,
+    "reliability": 84,
+    "automation": 80,
+    "scalability": 88,
+    "security": 94,
+    "maintainability": 92,
+    "ai_readiness": 88,
+    "growth_readiness": 84
+  }
+}
