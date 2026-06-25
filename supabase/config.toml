@@ -407,3 +407,6 @@ verify_jwt = false
 
 [functions.cmdr-orchestrator]
 verify_jwt = false
+
+[functions.pin-wave3b-creative-brain]
+verify_jwt = false
