@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 // ⚡ Analytics deferred — not needed for initial render
-const trackAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
-  import('@/lib/analytics').then(m => m.trackAddToCart(productId, productName, price, qty));
+const trackAddToCart = (
+  productId: string,
+  productName: string,
+  price: number,
+  qty: number | undefined,
+  options: { category?: string | null; variant?: string | null; slug?: string | null; event_id?: string | null } = {},
+) => import('@/lib/analytics').then(m => m.trackAddToCart(productId, productName, price, qty, options));
 const trackRemoveFromCart = (productId: string, productName: string, price: number, qty?: number) =>
   import('@/lib/analytics').then(m => m.trackRemoveFromCart(productId, productName, price, qty));
 const trackGoogleAdsAddToCart = (productId: string, productName: string, price: number, qty?: number) =>
@@ -30,6 +35,7 @@ export interface CartItem {
   image: string;
   quantity: number;
   variant?: string;
+  category?: string;
 }
 
 interface CartContextType {
