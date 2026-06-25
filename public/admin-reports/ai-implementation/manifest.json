@@ -1,7 +1,17 @@
 [
   {
+    "slug": "pe-wave1-control-center",
+    "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
+    "run_id": "pe-2026-06-25-01",
+    "generated_at": "2026-06-25T22:45:14.647791Z",
+    "status": "shipped",
+    "score": 78,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.json"
+  },
+  {
     "slug": "2026-06-25-pinterest-metadata-repair",
-    "title": "Pinterest Metadata Repair — In-place repair of 939 published pins (blocked by pin_edit scope)",
+    "title": "Pinterest Metadata Repair \u2014 In-place repair of 939 published pins (blocked by pin_edit scope)",
     "date": "2026-06-25",
     "run_id": "8baa726d-c677-4375-be4b-64d1a7f18ce1",
     "status": "blocked_external_api_scope",
@@ -11,7 +21,7 @@
   },
   {
     "slug": "2026-06-25-pinterest-creative-wave2",
-    "title": "Pinterest Creative Engine — Wave 2 (Retroactive Audit + Archive + Regeneration Queue)",
+    "title": "Pinterest Creative Engine \u2014 Wave 2 (Retroactive Audit + Archive + Regeneration Queue)",
     "date": "2026-06-25",
     "run_id": "99c383ab-a5ce-4699-a3c3-9d389207dcc2",
     "status": "shipped",
