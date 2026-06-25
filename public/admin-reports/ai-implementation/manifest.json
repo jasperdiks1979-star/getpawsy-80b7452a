@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-growth-incident-deep-dive",
+      "title": "Priority-1 Growth Incident · Deep-Dive (ATC funnel collapse)",
+      "run_id": "incident-2026-06-25-deep",
+      "generated_at": "2026-06-25T15:30:00Z",
+      "status": "mitigated",
+      "score": 42,
+      "pdf": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.pdf",
+      "json": "/admin-reports/incident/2026-06-25-growth-incident-deep-dive.json"
+    },
+    {
       "slug": "2026-06-25-growth-incident",
       "title": "Priority-1 Growth Incident Report",
       "run_id": "incident-2026-06-25",
