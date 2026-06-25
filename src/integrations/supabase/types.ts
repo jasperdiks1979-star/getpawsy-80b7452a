@@ -8015,6 +8015,51 @@ export type Database = {
           },
         ]
       }
+      growth_daily_scorecard: {
+        Row: {
+          alerts: Json
+          components: Json
+          conversion_score: number
+          created_at: string
+          day: string
+          growth_score: number
+          highlights: Json
+          id: string
+          inventory_score: number
+          pinterest_score: number
+          revenue_score: number
+          seo_score: number
+        }
+        Insert: {
+          alerts?: Json
+          components?: Json
+          conversion_score?: number
+          created_at?: string
+          day: string
+          growth_score?: number
+          highlights?: Json
+          id?: string
+          inventory_score?: number
+          pinterest_score?: number
+          revenue_score?: number
+          seo_score?: number
+        }
+        Update: {
+          alerts?: Json
+          components?: Json
+          conversion_score?: number
+          created_at?: string
+          day?: string
+          growth_score?: number
+          highlights?: Json
+          id?: string
+          inventory_score?: number
+          pinterest_score?: number
+          revenue_score?: number
+          seo_score?: number
+        }
+        Relationships: []
+      }
       growth_decision_metrics: {
         Row: {
           clicks: number
@@ -12815,6 +12860,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pdp_health_audits: {
+        Row: {
+          audited_at: string
+          created_at: string
+          cta_score: number
+          cwv_score: number
+          faq_score: number
+          id: string
+          issues: Json
+          mobile_score: number
+          overall_score: number
+          product_id: string
+          reviews_score: number
+          seo_score: number
+          suggestions: Json
+          title_score: number
+          trust_score: number
+          urgency_score: number
+        }
+        Insert: {
+          audited_at?: string
+          created_at?: string
+          cta_score?: number
+          cwv_score?: number
+          faq_score?: number
+          id?: string
+          issues?: Json
+          mobile_score?: number
+          overall_score?: number
+          product_id: string
+          reviews_score?: number
+          seo_score?: number
+          suggestions?: Json
+          title_score?: number
+          trust_score?: number
+          urgency_score?: number
+        }
+        Update: {
+          audited_at?: string
+          created_at?: string
+          cta_score?: number
+          cwv_score?: number
+          faq_score?: number
+          id?: string
+          issues?: Json
+          mobile_score?: number
+          overall_score?: number
+          product_id?: string
+          reviews_score?: number
+          seo_score?: number
+          suggestions?: Json
+          title_score?: number
+          trust_score?: number
+          urgency_score?: number
+        }
+        Relationships: []
+      }
       performance_alerts: {
         Row: {
           created_at: string
@@ -13689,6 +13791,51 @@ export type Database = {
           started_at?: string
           summary?: Json
           winners_amplified?: number
+        }
+        Relationships: []
+      }
+      pinterest_campaign_recommendations: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          metrics: Json
+          priority: string
+          rationale: string | null
+          recommendation: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          scope: string
+          scope_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          metrics?: Json
+          priority?: string
+          rationale?: string | null
+          recommendation: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope: string
+          scope_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          metrics?: Json
+          priority?: string
+          rationale?: string | null
+          recommendation?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          scope?: string
+          scope_id?: string | null
+          status?: string
         }
         Relationships: []
       }

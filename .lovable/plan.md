@@ -1,98 +1,61 @@
 
-# Revenue Priority V2 + Full Export System
+# Autonomous Growth Intelligence Engine V1
 
-This is a large, multi-system change. I want approval on scope and sequencing before writing any code, because Phase 4 (system integration) and Phase 6 (backfill of all 553 products) are irreversible without rollback work, and the audit explicitly said "wait for approval before activating."
+Your project already has ~80% of this built. Tables like `gi_*`, `growth_*`, `pinterest_pin_performance`, `pinterest_pin_verdicts`, `pinterest_loser_blocklist`, `pinterest_creative_winners`, `revenue_ai_*`, `pinterest_category_rotation`, `pinterest_posting_windows`, `monitoring_alerts`, plus 20+ panels in `/admin/growth-intelligence`, `/admin/pinterest-intelligence`, `/admin/revenue-ai` already cover 12 of your 15 modules.
 
-## Phase 1 — Schema & Scoring Engine
+Before I write thousands of lines duplicating existing infra, I need to confirm scope.
 
-**Migration:**
-- `product_intelligence.revenue_priority_score_v2 numeric` (0–100)
-- `product_intelligence.revenue_tier text` (A/B/C/D)
-- `product_intelligence.pinterest_momentum_score numeric`
-- `product_intelligence.score_components_v2 jsonb` (full breakdown for audit)
-- `products.margin_percent numeric` (derived & persisted)
+## What already exists (do NOT rebuild)
 
-**New edge function `revenue-priority-v2`** (service-role, admin-only). Actions:
-- `compute_all` — recomputes V2 for full active catalog with population-wide normalization
-- `compute_one` — single product recompute
-- `diversify` — applies category caps (Top 25/50/100/250)
-- `validate` — produces old-vs-new comparison report
-- `report` — assembles full report payload for PDF
+| Module | Existing system |
+|---|---|
+| M1 Daily Performance | `gi_*` tables, `pinterest_analytics_daily`, `ga4_daily_snapshots`, cron syncs |
+| M2 Winner Detection | `revenue_ai_winner_dna`, `pinterest_pin_verdicts`, `pinterest_loser_blocklist`, `revenue-ai-winner-detect` |
+| M3 Pin Quality | `pinterest_pin_dimensions`, `cinematicQaAudit`, Gold Standard ≥80 gate |
+| M4 A/B Tests | `cta_variant_config`, `pinterest_creative_variants`, `mi_experiments` |
+| M6 Discovery | `revenue_priority_score_v2`, `hot_product_scores`, `growth_product_scores` |
+| M7 Category Balancer | `pinterest_category_rotation`, Diversity Governor |
+| M8 Content Planner | `pinterest_autopilot_schedule`, `pinterest-creative-director` |
+| M9 Fatigue | `pinterest_creative_intents`, `cinematic-style-bias`, hook fatigue tracking |
+| M11 Dashboard | `/admin/growth-intelligence`, `/admin/pinterest-intelligence`, `/admin/revenue-ai` |
+| M12 Alerts | `monitoring_alerts`, `monitoring_realtime_alerts`, `revenue_alert_log`, `sms_alert_logs` |
+| M13 Learning | `growth_strategy_scores`, `revenue_ai_winner_dna`, `cinematic_creative_dna` |
+| M14/M15 Safety/Perf | `pinterest_publish_governor`, `pinterest_credit_state`, idempotency keys |
 
-**Score formula (exact weights from spec):**
-```
-Pinterest 30 + Conversion 20 + Margin 20 + Opportunity 10
-+ Inventory 10 + Age 5 + Video 3 + SEO 2 = 100
-```
+## What is genuinely missing (worth building)
 
-All sub-scores min/max normalized across the active 553-product population.
+1. **Unified Growth Score (0–100)** — one composite KPI rolled up daily into a new `growth_daily_scorecard` table, blending Pinterest health + SEO health + conversion + revenue trend.
+2. **M5 Landing Page Analyzer** — no per-PDP audit table exists. Add `pdp_health_audits` + an edge function that runs Lighthouse-lite checks (title, mobile, trust badges, reviews, FAQ, schema, CWV from `web_vitals`) rule-based, zero AI.
+3. **M10 Campaign Advisor (recommend-only)** — `pinterest_campaign_recommendations` table + edge function that reads ads spend/ROAS and emits suggestions; never auto-mutates budgets.
+4. **Executive Overview page** — single `/admin/growth-command` route that stitches the existing panels + new scorecard + landing-page health + campaign advisor into one dashboard. Existing pages stay.
+5. **Orchestrator cron** — `growth-intelligence-orchestrator` nightly job that chains the existing engines in correct order and writes one summary into `growth_daily_scorecard`.
 
-**Pinterest Momentum (30d window):** weighted blend of impressions, outbound clicks, saves, CTR, engagement rate from `pinterest_pin_performance` / `pinterest_pin_metrics`, with recency decay.
+## What I will NOT do (per your standing rules)
 
-**Margin:** `(price - cost_price) / price`. If `cost_price` missing, fall back to CJ supplier cost from `supplier_products` / `cj_us_winners`.
+- No AI image/video generation
+- No duplicate tables (will reuse `gi_*`, `growth_*`, `pinterest_*`)
+- No auto-budget changes on ads (advisor only)
+- No teardown of existing dashboards/engines
 
-**Inventory:** weighted by US stock, EU stock, variant breadth, OOS penalty.
+## Deliverables (3 phases)
 
-**Age:** rewards products 30–180 days old; penalizes <14 days (no data) and stale >365d without recent traction.
+**Phase 1 — Schema & data layer**
+- Migration: `growth_daily_scorecard`, `pdp_health_audits`, `pinterest_campaign_recommendations` (+ GRANTs, RLS admin-read).
 
-**Video:** boolean coverage across cinematic V3 / Pinterest video / CJ video assets.
+**Phase 2 — Edge functions (all hourly/nightly crons, zero AI credits)**
+- `growth-scorecard-compute` (nightly 03:00 UTC) → composite score from existing tables
+- `pdp-health-audit` (nightly 04:00 UTC) → rule-based PDP scan over active products
+- `pinterest-campaign-advisor` (daily 05:00 UTC) → reads spend/ROAS, writes recommendations
+- `growth-intelligence-orchestrator` (nightly 02:00 UTC) → invokes the 6 existing nightly engines + the 3 new ones in order, logs to `growth_decisions`
 
-**SEO:** clamped to ≤2% influence.
-
-## Phase 2 — Category Diversification
-
-Applied as a post-rank pass inside `revenue-priority-v2`. Limits enforced in Top 25/50/100/250. Promotions logged to `score_components_v2.diversification`.
-
-## Phase 3 — Revenue Tiers
-
-Percentile-based: A=top 5%, B=15%, C=30%, D=50%. Persisted on `product_intelligence.revenue_tier`.
-
-## Phase 4 — System Integration (BREAKING CHANGES — needs explicit go-ahead)
-
-Replace legacy score reads with `revenue_priority_score_v2` (with `revenue_tier` as secondary sort) in:
-1. `pinterest-autopilot` (score action)
-2. `export-merchant-feed` / feed prioritizer
-3. Homepage Featured + Trending Products queries
-4. `/admin` Product Intelligence dashboard
-5. `pinterest-creative-director` queue selection
-6. `cinematic-v3-dispatch` queue ordering
-7. `pinterest-revenue-brain` auto-promote gate
-
-Each integration shipped behind a single feature flag `app_config.revenue_priority_v2_active` so we can flip back instantly if validation regresses.
-
-## Phase 5 — Export System
-
-**New page** `/admin/revenue-priority-report` with Generate / Download PDF / CSV / JSON buttons.
-
-**New edge function `revenue-priority-export`** returns:
-- JSON: full report payload
-- CSV: per-product rows (rank, scores, tier, category, flags)
-- PDF: assembled client-side with `pdf-lib` or `jspdf` (already in project for traffic report)
-
-**PDF sections** (landscape, paginated, branded):
-Executive Summary · Catalog Stats · Old vs New Distribution · Category Distribution · Top 50 · Top 100 · Bottom 100 · Most Improved · Most Declined · Pinterest Winners/Losers · Inventory Risks · Margin Leaders · Missing Videos · Missing Pinterest Data · Missing Cost Data · Diversification Report · Tier Distribution · Recommended Actions · Timestamp / Version / Store.
-
-Charts rendered with existing chart util (recharts → canvas → PNG embed) for histograms, distribution, category breakdown.
-
-## Phase 6 — Backfill
-
-`revenue-priority-v2 / compute_all` run once. Writes V2 score + tier + components for all active products. No legacy fields modified.
-
-## Phase 7 — Validation
-
-`validate` action produces the comparison report (Top 50 old vs new, rank deltas, distribution, balance, influence breakdown per factor). Surfaced on the report page. **Feature flag stays OFF until you approve the validation output.**
-
-## Sequencing & approval gates
-
-1. I build Phases 1, 2, 3, 5, 7 (schema, engine, diversification, tiers, export UI/PDF, validation) — flag OFF, zero production impact.
-2. I run the backfill (Phase 6) and generate the validation report + downloadable PDF for you to review.
-3. **You approve** → I flip the flag and ship Phase 4 integrations in a single follow-up.
+**Phase 3 — UI**
+- New `/admin/growth-command` page with 4 sections: Daily Growth Score, PDP Health, Campaign Advisor, Orchestrator status. Embeds existing panels via existing components.
 
 ## Open questions before I start
 
-1. **Cost fallback:** when neither `products.cost_price` nor CJ cost is available, should the product get margin score = 0 (penalized) or population median (neutral)? Penalizing surfaces the data gap; neutral avoids false demotion.
-2. **Pinterest momentum source of truth:** use `pinterest_pin_performance` (per-pin) aggregated to product, or `gi_pinterest_pin_metrics` (daily)? I'll default to `pinterest_pin_performance` joined via `pinterest_pin_queue.product_id` unless you prefer otherwise.
-3. **PDF engine:** reuse the existing `jspdf` setup from `trafficReportPdf` / `adminManualPdf` (faster, consistent branding) — confirm OK.
-4. **Active catalog definition:** "active" = `products.is_active = true AND feed_optimization_status != 'discontinued'`?
+1. **Scorecard weights:** default to `Revenue 35 + Pinterest health 25 + Conversion 20 + SEO 10 + Inventory 10`. OK?
+2. **PDP audit frequency:** all 428 active products nightly, or top 100 by RPS v2 daily + full sweep weekly? (full nightly = ~5min function time, no AI)
+3. **Campaign Advisor data source:** you don't currently sync Pinterest Ads spend into `ad_spend_entries` for Pinterest specifically — should the advisor run on `pinterest_pin_performance` + `pinterest_revenue_attribution_v3` only until ads sync is wired, or do you want me to also build the ads sync now?
+4. **Orchestrator on-failure behavior:** continue with remaining steps + alert via `monitoring_alerts`, or halt + alert? Default: continue + alert.
 
-Approve the plan (and answer the 4 questions, or say "your defaults") and I'll build Phases 1–3, 5, 7 in the next turn.
+Answer the 4 questions (or say "your defaults") and I'll ship Phase 1–3 in one pass.
