@@ -1,0 +1,90 @@
+{
+  "wave": "Pinterest Creative Engine \u2014 Wave 1",
+  "date": "2026-06-25",
+  "scope": [
+    "Step 1: Product Understanding",
+    "Step 2: Classification",
+    "Step 3: Hook Restrictions",
+    "Step 8: Hook Library"
+  ],
+  "run_id": "9e7802d8-4879-4119-ae6b-ac561d087ea4",
+  "publishing_paused": true,
+  "metrics": {
+    "products_total": 428,
+    "classified": 428,
+    "failed": 0,
+    "low_confidence": 5
+  },
+  "taxonomy_distribution": {
+    "dog.feeder": 44,
+    "small_pet.bed": 12,
+    "dog.bed": 155,
+    "bird.feeder": 1,
+    "cat.litter": 5,
+    "cat.bed": 134,
+    "cat.scratcher": 18,
+    "dog.toy": 16,
+    "dog.harness": 11,
+    "cat.feeder": 11,
+    "dog.carrier": 4,
+    "small_pet.other": 3,
+    "cat.toy": 3,
+    "dog.grooming": 7,
+    "bird.other": 1,
+    "small_pet.feeder": 1,
+    "fish.tank_gear": 1,
+    "dog.other": 1
+  },
+  "low_confidence_sample": [
+    {
+      "id": "33b63649-7ab4-4076-bdb7-8d301d8bc6bf",
+      "name": "Wooden Hamster Cage Habitat 48 In Clear Mice Rodents Small Animals Cage",
+      "taxonomy": "small_pet.other",
+      "confidence": 0.6
+    },
+    {
+      "id": "7e163cf4-5097-44d2-82de-f6ce8475d4eb",
+      "name": "Outdoor Rabbit Hutch \u2013 Bunny Enclosure with Openable, Waterproof Roof",
+      "taxonomy": "small_pet.other",
+      "confidence": 0.6
+    },
+    {
+      "id": "ec39a6e9-cdc2-4300-ab29-211b81c83eb9",
+      "name": " Wooden Chicken Coop with Nesting Box, Pull-Out Tray, Waterproof Roof, 39\" Chicken House for 4-6 Chickens, Rabbits",
+      "taxonomy": "bird.other",
+      "confidence": 0.6
+    },
+    {
+      "id": "530a4583-ce42-49d7-8d56-64aa0914256f",
+      "name": "Waterproof Dog Car Seat Cover \u2013 Non-Slip Hammock for Back Seat",
+      "taxonomy": "dog.other",
+      "confidence": 0.6
+    },
+    {
+      "id": "db3342b2-b864-4db8-ac5f-c1bc022da293",
+      "name": "Wooden Hamster Cage Habitat 32 In Clear Mice Rodents Small Animals Cage",
+      "taxonomy": "small_pet.other",
+      "confidence": 0.6
+    }
+  ],
+  "tables_created": [
+    "pin_product_understanding",
+    "pin_product_classification",
+    "pin_hook_library",
+    "pin_hook_restrictions",
+    "pin_wave1_runs"
+  ],
+  "edge_functions": [
+    "pinterest-creative-wave1"
+  ],
+  "next_waves": [
+    "Wave 2: Image/Text/AI confidence validators",
+    "Wave 3: Landing page + retroactive audit",
+    "Wave 4: Self-learning + 5 PDF reports"
+  ],
+  "decisions_pending": [
+    "Retroactive scope (Step 10): all 382 posted pins or last 30 days?",
+    "Archival mode: auto-delete on Pinterest, or DB-only 'archived' with approval?",
+    "Stripe Wave D: live-mode or test-mode purchase?"
+  ]
+}
