@@ -1,81 +1,45 @@
-# Wave 6 — Autonomous Commander AI
+## Revenue Recovery Program V1 — Staged Plan
 
-The Commander sits **above** every existing AGP/ACI/Pinterest/Cinematic/CPE engine. It does not replace them — it decides which one runs, when, on which model, with which budget, and validates the outcome. Default mode is `simulation` so nothing autonomous reaches production until you flip the switch.
+Scope is too large for one autonomous run (10 phases, infra + UI + edge functions + Stripe + Pinterest + tests + reports). I'll execute in 4 controlled waves, each ending with PDF/JSON report + dashboard you can inspect before approving the next. This avoids shipping unverifiable "all green" claims.
 
-## Architecture (one orchestrator, many decisions)
+**Guiding rule:** every step must produce real evidence (DB rows, screenshots, Stripe IDs). No simulated "healthy" verdicts.
 
-```text
-                       ┌────────────────────────────┐
-                       │  Commander AI (this wave)  │
-                       │  - goal engine             │
-                       │  - model router            │
-                       │  - budget engine           │
-                       │  - resource scheduler      │
-                       │  - decision engine         │
-                       │  - simulation engine       │
-                       │  - self-healing            │
-                       │  - business memory         │
-                       └─────────────┬──────────────┘
-                                     │ supervises + decides
-   ┌─────────────────────────────────┼─────────────────────────────────┐
-   ▼                                 ▼                                 ▼
-AGP (4A/4A+)     ACI (5X)     Pinterest engines     CPE / Media     Cinematic V3
-Growth/Forecast  Opportunity  Autopilot/Scaling     Enhancer/QA     Renderer
-SEO / Content    Recs/Tasks   Catalog/Boards        CJ Pipeline     Voiceover
-Revenue Intel    Forecasts    Pin Repair            Image Compliance
-```
+---
 
-Commander never bypasses existing guardrails (ACI kill switch, Pinterest credit governor, CPE budget caps, cinematic dispatch). It calls each engine's documented entrypoint and respects its `simulation/auto/approval` modes.
+### Wave A — Diagnose & Stop the Bleeding (Phases 1, 2, 6 partial)
+Goal: prove where the funnel actually breaks today, then fix the top blocker.
 
-## 5-stage rollout
+1. **Funnel Validator edge function** (`rr-funnel-validator`) — runs synthetic + real-data checks for each step (landing→PDP→ATC fire→checkout session→webhook→order→GA4 event→Pinterest CAPI). Writes to new `rr_funnel_checks` table. Cron every 15 min.
+2. **ATC deep audit** — Playwright suite on `/products/<top-10-slugs>` across mobile+desktop, capture console/network, assert `add_to_cart` GA4 event + CAPI outbox row fire. Output: per-product red/green matrix.
+3. **Stripe checkout audit** — query last 30 days of `checkout_funnel_events` + Stripe sessions, classify failure reasons, surface in dashboard.
+4. **Revenue Recovery dashboard v1** at `/admin/revenue-recovery` showing funnel validator status + ATC matrix + Stripe failure reasons.
+5. Auto-repair the #1 blocker found (likely ATC handler regression or webhook routing).
 
-| Stage | Scope | Mode |
-|---|---|---|
-| **6A — Foundations + War Room** *(this turn)* | Schema, orchestrator skeleton (8 modules), `/admin/commander`, kill switch, cron, simulation run, report | simulation |
-| **6B — Model Router + Budget Engine** | Score & route LOVABLE_AI model choice per task by quality/cost/latency history; daily/hourly/weekly/monthly budget ledger across AI/cloud/Pinterest/ads; auto-pause on breach | simulation |
-| **6C — Goal Engine + Decision Engine + Simulation** | Operator-defined goals (revenue, ROI, AOV, cost reduction); recommendation evaluator (execute/approve/delay/cancel/retry/escalate); ROI simulation gate before expensive jobs | approval |
-| **6D — Self-Healing + Business Memory** | Stalled-cron/edge-fn/RLS/Pinterest/CJ detectors with auto-retry & rollback; long-term memory of winning products/titles/images/prompts/models | approval → auto |
-| **6E — Digital Board Meeting + Master Report** | Daily 06:00 UTC CEO PDF (executive/revenue/growth/Pinterest/ads/SEO/media/inventory/trend/competitor/risk + action plan); full Wave-6 master PDF | auto |
+### Wave B — Attribution + Board Routing (Phases 4, 5)
+1. Audit current Pinterest pin URLs in `pinterest_pin_queue` + live `pinterest_pins`, find pins missing utm/pin_id, backfill via `pinterest-link-stamping`.
+2. Rebuild board scoring in `pinterest-creative-director` using taxonomy + keyword embeddings + historical board CTR/saves; add confidence score + fallback rules. Add regression test that no >40% of pins route to a single board.
+3. Attribution health panel in dashboard.
 
-Each stage ends with its own PDF+JSON in `public/admin-reports/ai-implementation/` and a manifest entry.
+### Wave C — Live Replay + Self-Healing (Phases 3, 9)
+1. Lightweight session replay using existing `visitor_activity` + new `rr_session_events` (rage-click, dead-click, ATC-fail markers). No third-party rrweb (cost). Replay UI in admin.
+2. Self-healing worker `rr-self-healer` covering the concrete cases we've actually seen: stuck pin queue, expired locks, stale crons, failed webhook redelivery. Approval gate for destructive actions.
 
-## Stage 6A — what ships this turn
+### Wave D — Real Purchase E2E + Final Report (Phases 7, 8, 10)
+1. Controlled real Stripe purchase (test mode by default; live mode behind explicit env flag + your confirmation) end-to-end with refund.
+2. Revenue Command Center extension (channel/board/campaign/pin revenue) on top of existing `RevenueCommandCenterPage`.
+3. Final `2026-06-25-revenue-recovery-program-v1.pdf` + JSON.
 
-**Database (new tables, RLS admin-read / service-role-write):**
+---
 
-- `cmdr_settings` — kill_switch, mode, autonomy_level, default model, budget caps, goal pointers
-- `cmdr_goals` — operator goals (metric, target, horizon, weight, status)
-- `cmdr_runs` / `cmdr_run_steps` — execution log per Commander tick
-- `cmdr_decisions` — every decision with reasoning, confidence, expected ROI, cost estimate, target engine, status, execution history
-- `cmdr_resource_plan` — daily plan: which engine, when, how many calls, expected cost
-- `cmdr_model_route_log` — model-router choices (task, candidates, chosen, reason, latency, cost)
-- `cmdr_budget_ledger` — multi-period (hour/day/week/month/year) spend by category
-- `cmdr_health_signals` — per-engine health snapshots (status, last_run, lag, error_rate)
-- `cmdr_simulations` — pre-execution simulation outputs (expected ROI vs threshold)
-- `cmdr_memory` — long-term wins/losses keyed by entity (product, title, image, prompt, model)
-- `cmdr_audit_log` — append-only audit of every autonomous or operator action
+### Technical notes
+- New tables: `rr_funnel_checks`, `rr_atc_audit`, `rr_stripe_failures`, `rr_session_events`, `rr_self_heal_log` — all admin-only RLS + service_role grants.
+- New edge functions: `rr-funnel-validator`, `rr-atc-audit-runner`, `rr-stripe-auditor`, `rr-self-healer`, `rr-purchase-e2e`.
+- Reuses existing: `CartContext` event_id work, `pinterest_capi_outbox`, `checkout_funnel_events`, `revenue-command-center`.
+- Live Stripe test purchases need `STRIPE_LIVE_E2E_ALLOWED=true` secret + explicit chat approval per run.
 
-**Edge function:** `cmdr-orchestrator` (single function, 8 internal modules: health-scan → goal-eval → resource-plan → model-router → budget-check → decision-engine → simulation → self-healing). Modes: `manual`, `semi`, `auto`, `autonomous`, `experimental`, `dry_run`, `emergency_stop`. Default `simulation`.
+### What I need from you
+1. **Approve Wave A to start now**, or change order.
+2. Confirm: live-mode Stripe test purchases allowed in Wave D, or test-mode only?
+3. Any phases to drop (e.g. session replay if you'd rather keep using Clarity)?
 
-**Cron:** daily 04:00 UTC (after AGP 02:00/02:30/02:45 and ACI 03:30).
-
-**UI:** `/admin/commander` — Executive War Room with live tiles (Business Health, Revenue, Profit, Forecast, AI/Cloud Spend, ROI, Growth, Pending Decisions, Running Jobs, Budgets, Forecast Accuracy, Model Performance, Operator Overrides, System Health) + tabs for Decisions, Resource Plan, Goals, Model Routing, Budgets, Health Signals, Memory, Audit. Operator controls for mode + kill switch + autonomy level.
-
-**Reporting:** PDF + JSON report describing Stage 6A; manifest updated.
-
-**Safety defaults:**
-
-- mode = `simulation` (no engine is invoked; only plans + audit rows written)
-- autonomy_level = 1 (every non-trivial decision requires approval once mode advances)
-- All daily budgets = $0.01 AI / $0.01 cloud for Commander itself (it doesn't spend; downstream engines retain their own budgets)
-- Kill switch primed in UI; flipping it blocks the orchestrator and all auto-execution
-
-**Non-goals for 6A:** no real engine invocation, no model fan-out, no autonomous Pinterest/ads spend, no rollback execution — those land in 6B/6C/6D under approval mode.
-
-## Validation for 6A
-
-- Run `cmdr-orchestrator` once in simulation; expect 8 ok steps, 0 cost, plans + decisions written, no downstream side effects.
-- War Room renders all panels with live data.
-- Report PDF + JSON exist; manifest contains the new entry.
-
-Approve and I'll execute 6A in this turn, then await your go-ahead for 6B.
+After your approval I'll execute Wave A and ship the report before touching Wave B.

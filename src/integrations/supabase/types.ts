@@ -27312,6 +27312,153 @@ export type Database = {
           },
         ]
       }
+      rr_atc_audit: {
+        Row: {
+          atc_clickable: boolean | null
+          atc_event_fired: boolean | null
+          browser: string
+          capi_row_id: string | null
+          console_errors: Json | null
+          created_at: string
+          device: string
+          ga4_event_id: string | null
+          id: string
+          network_errors: Json | null
+          notes: string | null
+          product_slug: string
+          run_id: string
+          status: string
+        }
+        Insert: {
+          atc_clickable?: boolean | null
+          atc_event_fired?: boolean | null
+          browser: string
+          capi_row_id?: string | null
+          console_errors?: Json | null
+          created_at?: string
+          device: string
+          ga4_event_id?: string | null
+          id?: string
+          network_errors?: Json | null
+          notes?: string | null
+          product_slug: string
+          run_id: string
+          status: string
+        }
+        Update: {
+          atc_clickable?: boolean | null
+          atc_event_fired?: boolean | null
+          browser?: string
+          capi_row_id?: string | null
+          console_errors?: Json | null
+          created_at?: string
+          device?: string
+          ga4_event_id?: string | null
+          id?: string
+          network_errors?: Json | null
+          notes?: string | null
+          product_slug?: string
+          run_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      rr_funnel_checks: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          evidence: Json | null
+          id: string
+          latency_ms: number | null
+          run_id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          evidence?: Json | null
+          id?: string
+          latency_ms?: number | null
+          run_id: string
+          status: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          evidence?: Json | null
+          id?: string
+          latency_ms?: number | null
+          run_id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: []
+      }
+      rr_self_heal_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          outcome: string
+          target: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          outcome: string
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          outcome?: string
+          target?: string | null
+        }
+        Relationships: []
+      }
+      rr_stripe_failures: {
+        Row: {
+          amount_cents: number | null
+          currency: string | null
+          customer_email: string | null
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          reason_code: string
+          reason_detail: string | null
+          session_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          currency?: string | null
+          customer_email?: string | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          reason_code: string
+          reason_detail?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          currency?: string | null
+          customer_email?: string | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          reason_code?: string
+          reason_detail?: string | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       saved_google_ads: {
         Row: {
           created_at: string
