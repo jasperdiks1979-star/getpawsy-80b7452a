@@ -1,45 +1,102 @@
-## Revenue Recovery Program V1 — Staged Plan
+## Wave 3 — Pinterest Creative Intelligence Rebuild
 
-Scope is too large for one autonomous run (10 phases, infra + UI + edge functions + Stripe + Pinterest + tests + reports). I'll execute in 4 controlled waves, each ending with PDF/JSON report + dashboard you can inspect before approving the next. This avoids shipping unverifiable "all green" claims.
+Scope is too large to ship in one autonomous run safely (12 steps, new schema, new AI pipelines, new validators, Golden Batch, A/B loop, autonomous publisher). Doing it in one pass guarantees the same outcome Wave 2 exposed: unverifiable "all green" claims. I'll execute in 4 sub-waves. **Publishing stays paused throughout Wave 3A–3C.** Only Wave 3D unpauses, and only if the Golden Batch hits the >99% gates you defined.
 
-**Guiding rule:** every step must produce real evidence (DB rows, screenshots, Stripe IDs). No simulated "healthy" verdicts.
+**Guiding rule:** every step ends with real DB evidence + PDF/JSON report. No simulated success.
 
 ---
 
-### Wave A — Diagnose & Stop the Bleeding (Phases 1, 2, 6 partial)
-Goal: prove where the funnel actually breaks today, then fix the top blocker.
+### Wave 3A — Foundation: Intelligence + Validators (Steps 1, 2, 11)
 
-1. **Funnel Validator edge function** (`rr-funnel-validator`) — runs synthetic + real-data checks for each step (landing→PDP→ATC fire→checkout session→webhook→order→GA4 event→Pinterest CAPI). Writes to new `rr_funnel_checks` table. Cron every 15 min.
-2. **ATC deep audit** — Playwright suite on `/products/<top-10-slugs>` across mobile+desktop, capture console/network, assert `add_to_cart` GA4 event + CAPI outbox row fire. Output: per-product red/green matrix.
-3. **Stripe checkout audit** — query last 30 days of `checkout_funnel_events` + Stripe sessions, classify failure reasons, surface in dashboard.
-4. **Revenue Recovery dashboard v1** at `/admin/revenue-recovery` showing funnel validator status + ATC matrix + Stripe failure reasons.
-5. Auto-repair the #1 blocker found (likely ATC handler regression or webhook routing).
+Replaces the brittle parts of the old pipeline before any new creative is generated.
 
-### Wave B — Attribution + Board Routing (Phases 4, 5)
-1. Audit current Pinterest pin URLs in `pinterest_pin_queue` + live `pinterest_pins`, find pins missing utm/pin_id, backfill via `pinterest-link-stamping`.
-2. Rebuild board scoring in `pinterest-creative-director` using taxonomy + keyword embeddings + historical board CTR/saves; add confidence score + fallback rules. Add regression test that no >40% of pins route to a single board.
-3. Attribution health panel in dashboard.
+1. **Schema (new tables, admin-only RLS, service_role grants):**
+   - `pin_product_intelligence` — full Step 1 profile per active product (species, category, emotion, intent, lifestyle, season, visual_style, audience, price_tier, usp_rank[], board_id, landing_url, confidence). Permanent store, versioned.
+   - `pin_landing_validations` — last validator run per product (13 checks from Step 2 + pass/fail + reasons + checked_at).
+   - `pin_hook_library_v2` — 15 buckets, target 500+ hooks, with `species_scope`, `category_scope`, `banned_for[]`, `embedding`, usage_count.
+   - `pin_headline_bank` — 20 headlines per product, uniqueness-hashed.
+   - `pin_creative_scores` — Step 7 multi-axis scores per attempt.
+   - `pin_golden_batch` — Step 8 winner selection log.
+   - `pin_ab_experiments` + `pin_ab_outcomes` — Step 9 learning loop.
+   - `pin_wave3_runs` / `pin_wave3_steps` — orchestration.
 
-### Wave C — Live Replay + Self-Healing (Phases 3, 9)
-1. Lightweight session replay using existing `visitor_activity` + new `rr_session_events` (rage-click, dead-click, ATC-fail markers). No third-party rrweb (cost). Replay UI in admin.
-2. Self-healing worker `rr-self-healer` covering the concrete cases we've actually seen: stuck pin queue, expired locks, stale crons, failed webhook redelivery. Approval gate for destructive actions.
+2. **Edge functions:**
+   - `pin-intelligence-builder` — profiles every active product via Gemini 2.5 Pro (multimodal: name + images + description), writes `pin_product_intelligence`.
+   - `pin-landing-validator` — runs 13 checks (DB + HEAD fetch + sitemap/canonical check + stock + price). Hard veto for downstream.
 
-### Wave D — Real Purchase E2E + Final Report (Phases 7, 8, 10)
-1. Controlled real Stripe purchase (test mode by default; live mode behind explicit env flag + your confirmation) end-to-end with refund.
-2. Revenue Command Center extension (channel/board/campaign/pin revenue) on top of existing `RevenueCommandCenterPage`.
-3. Final `2026-06-25-revenue-recovery-program-v1.pdf` + JSON.
+3. **Root cause fixes (Step 11) baked into the new schema:**
+   - hook_not_allowed → `banned_for[]` enforced at SELECT time.
+   - board mismatch → board comes from intelligence row, not heuristic.
+   - slug/species mismatch → validator must pass before any draft row.
+   - utm missing → URL stamped in a single shared util.
+   - banned phrases → centralized linter shared by hook/headline/description.
+   - inactive products → validator hard-fail.
+
+**Deliverable:** `wave3a-foundation.pdf` + JSON. Intelligence built for 100% active products, validator green for X / red for Y with reasons.
+
+---
+
+### Wave 3B — Creative Brain: Hooks, Headlines, Scene Engine (Steps 3, 4, 5)
+
+1. **Hook Engine V2** — seed 500+ curated hooks across the 15 buckets, embed them, expose `pick_hook(product_id, bucket?)` with dedupe + cooldown.
+2. **Headline AI** — generate exactly 20 headlines per active product via Gemini 3 Flash, banned-phrase linted, uniqueness-hashed against `pin_headline_bank`.
+3. **Scene Engine** — replaces director prompts. Output is editorial Pinterest scenes only (lifestyle, owner interaction, modern US home). Hard ban on white bg / floating product / catalogue / collage / AI-artifact prompts (already in `pinterest-style-dna`, re-enforced + scored).
+4. **Description bank** — 10 per product, banned-phrase linted.
+
+**Deliverable:** `wave3b-creative-brain.pdf` + JSON. Coverage matrix per product, dedupe stats.
+
+---
+
+### Wave 3C — Quality Gates + Golden Batch (Steps 6, 7, 8)
+
+1. **Visual validator** — Gemini 2.5 Flash multimodal scorer with the 12 checks in Step 6. Returns per-axis 0–100 + overall.
+2. **Pinterest Quality Score** — composite of visual realism, product match, landing, species, board, hook, CTR predict, conv predict. **Publish gate = all axes ≥ thresholds in Step 7.** Otherwise auto-regenerate (cap retries at 5 per product — "unlimited" without a cap burns credits and never converges; the cap can be lifted per run).
+3. **Golden Batch:** pick top 25 products by `pin_product_intelligence.confidence * margin * stock_health`. For each: 10 scenes × 10 hooks × 10 headlines × 10 descriptions, scored, **single winner persisted**. All losers archived with rejection reasons.
+
+**Deliverable:** `wave3c-golden-batch.pdf` + JSON with confidence histogram, example winners, cost/credits used, average score per axis.
+
+**HARD GATE before Wave 3D:** Golden Batch average confidence ≥99%, CTR prediction ≥98%, landing validator 100%, zero mismatch. Otherwise stop and report.
+
+---
+
+### Wave 3D — Autonomous Publishing + A/B Loop (Steps 9, 10)
+
+Only runs if 3C gate passes.
+
+1. Unpause `pinterest_runtime_settings`, set pacing to **2 pins/hour**, hard cap 48/day.
+2. Publisher reads winners from `pin_golden_batch`, stamps UTM, posts via existing Pinterest pipeline.
+3. `pin-ab-learner` cron — every 6h, pull Pinterest analytics (impr/save/closeup/outbound) + GA4 conv + revenue → write to `pin_ab_outcomes` → update `pin_hook_library_v2.weight` and scene template weights (epsilon-greedy).
+4. Auto-pause if rolling 24h CTR drops below baseline or conv < threshold.
+
+**Deliverable:** `wave3d-publishing.pdf` + JSON: pins live, per-pin scores, first-24h metrics, auto-pause triggers if any.
+
+---
+
+### Step 12 — Final Executive Report
+
+After 3D (or after 3C if gate fails), generate the full `2026-06-25-pinterest-wave3-executive.pdf` with every section you listed (architecture, before/after, regenerated counts, hooks/headlines generated, landing fixes, estimated lift, readiness, risks, cost, credits, runtime, confidence histogram, example creatives, Wave 4 roadmap). Manifest updated.
 
 ---
 
 ### Technical notes
-- New tables: `rr_funnel_checks`, `rr_atc_audit`, `rr_stripe_failures`, `rr_session_events`, `rr_self_heal_log` — all admin-only RLS + service_role grants.
-- New edge functions: `rr-funnel-validator`, `rr-atc-audit-runner`, `rr-stripe-auditor`, `rr-self-healer`, `rr-purchase-e2e`.
-- Reuses existing: `CartContext` event_id work, `pinterest_capi_outbox`, `checkout_funnel_events`, `revenue-command-center`.
-- Live Stripe test purchases need `STRIPE_LIVE_E2E_ALLOWED=true` secret + explicit chat approval per run.
+- All new tables: admin-only RLS + `service_role` grants (per project policy).
+- All AI through Lovable AI Gateway (no GEMINI_API_KEY). Models: `google/gemini-2.5-pro` for intelligence profiling, `google/gemini-3-flash-preview` for hooks/headlines, `google/gemini-3-pro-image` for scene render, `google/gemini-2.5-flash` (multimodal) for visual validator.
+- Retry cap = 5 (configurable in `pin_wave3_settings`). Unlimited is unsafe without circuit breakers.
+- Old Wave 1/2 tables (`pin_product_classification`, `pin_hook_library`, `pin_hook_restrictions`) are kept read-only for diff/audit, replaced functionally by V2 tables.
+- Wave 3D requires explicit go-ahead from you in addition to the automated gate — I will not auto-unpause publishing in the same turn 3C finishes.
+
+### Estimated cost / time per sub-wave
+- 3A: ~445 Gemini Pro multimodal calls + 445 HEAD fetches. ~15 min runtime, modest credits.
+- 3B: ~445 × (1 headline batch + 1 description batch) + hook seeding (one-shot). ~30 min.
+- 3C: Golden Batch = 25 × 10 image renders × up to 5 retries = max ~1,250 image renders. **This is the expensive step.** Gemini 3 Pro Image is high-cost; I'll log credit burn live and stop if a guardrail is hit.
+- 3D: ongoing, 2 pins/h.
+
+---
 
 ### What I need from you
-1. **Approve Wave A to start now**, or change order.
-2. Confirm: live-mode Stripe test purchases allowed in Wave D, or test-mode only?
-3. Any phases to drop (e.g. session replay if you'd rather keep using Clarity)?
+1. **Approve Wave 3A to start now**, or change order.
+2. Confirm retry cap of 5 for Step 7 (or set your own number).
+3. Confirm Golden Batch size of 25 products × 10 variants (or change).
+4. Confirm: Wave 3D requires a second explicit go-ahead from you after the 3C gate passes — yes/no.
 
-After your approval I'll execute Wave A and ship the report before touching Wave B.
+After approval I'll execute Wave 3A and ship the report before touching 3B.
