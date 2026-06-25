@@ -71,6 +71,25 @@ function stddev(series: number[]): number {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const sb = admin();
+
+  // Auth guard: internal secret OR admin JWT
+  {
+    const SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET");
+    const internalOk = !!SECRET && req.headers.get("x-internal-secret") === SECRET;
+    if (!internalOk) {
+      const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+      let ok = false;
+      if (token && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
+        const { data: u } = await sb.auth.getUser(token);
+        if (u?.user) {
+          const { data: role } = await sb.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+          ok = !!role;
+        }
+      }
+      if (!ok) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...cors, "content-type": "application/json" } });
+    }
+  }
+
   let body: any = {}; try { body = await req.json(); } catch {}
   const dry = !!body?.dry_run;
   const backfillDays = Number(body?.backfill ?? 0);
