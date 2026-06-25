@@ -1,0 +1,56 @@
+{
+  "wave": "6A",
+  "title": "Autonomous Commander \u00b7 Foundation",
+  "date": "2026-06-25",
+  "mode": "observation-only",
+  "tables_created": [
+    "commander_runs",
+    "commander_engine_health",
+    "commander_recommendations",
+    "commander_decisions",
+    "commander_budget_ledger",
+    "commander_alerts",
+    "commander_daily_reports"
+  ],
+  "edge_functions_deployed": [
+    "commander-orchestrator"
+  ],
+  "cron": {
+    "name": "commander-orchestrator-daily",
+    "schedule": "30 5 * * *"
+  },
+  "routes": [
+    "/admin/commander-foundation"
+  ],
+  "initial_run": {
+    "engines": 15,
+    "alerts": 12,
+    "recommendations": 12,
+    "executive_health_score": 48,
+    "ledgers": [
+      {
+        "channel": "pinterest_credits",
+        "units": 0,
+        "spend_usd": 0
+      },
+      {
+        "channel": "ai_creative",
+        "units": 0,
+        "spend_usd": 0
+      },
+      {
+        "channel": "cinematic",
+        "units": 0,
+        "spend_usd": 0
+      }
+    ]
+  },
+  "approval_model": "pending \u2192 approved/dismissed (manual only)",
+  "safety": [
+    "no destructive writes",
+    "no campaign publishing",
+    "no AI spend",
+    "idempotent",
+    "audited"
+  ]
+}
