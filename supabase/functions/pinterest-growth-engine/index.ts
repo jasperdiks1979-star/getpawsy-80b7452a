@@ -238,6 +238,18 @@ async function selectProducts(sb: ReturnType<typeof createClient>, limit: number
 
   const products = ((data ?? []) as unknown as Product[]).filter((p) => !p.is_duplicate);
 
+  // Wave 3A+ gate — exclude products below the Pinterest Potential threshold (70).
+  const { data: intelRows } = await sb
+    .from("pin_product_intelligence")
+    .select("product_id, potential_score")
+    .gte("potential_score", 70);
+  const eligibleIds = new Set(((intelRows ?? []) as Array<{ product_id: string }>).map((r) => r.product_id));
+  const gatedProducts = products.filter((p) => eligibleIds.has(p.id));
+  if (gatedProducts.length === 0 && products.length > 0) {
+    console.warn("[growth-engine] potential gate excluded 100% of products; aborting selection");
+  }
+  const productsForRanking = gatedProducts;
+
   // Performance boost — products that already earned saves/clicks in last 14d
   const since = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
   const { data: perf } = await sb
