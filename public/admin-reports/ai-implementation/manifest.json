@@ -10,6 +10,16 @@
       "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf"
     },
     {
+      "slug": "2026-06-25-agp-wave-4a-plus-intelligence",
+      "title": "AGP Wave 4A+ \u2014 Growth Intelligence Layer",
+      "run_id": "ba910e61-6d21-49c6-8ebf-5e8287ac55e5",
+      "generated_at": "2026-06-25T09:48:05Z",
+      "status": "succeeded",
+      "score": 90,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.json"
+    },
+    {
       "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
       "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
       "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
