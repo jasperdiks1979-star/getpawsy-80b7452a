@@ -1351,6 +1351,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Wave 3A+ Pinterest Potential gate — refuse generation for products below 70.
+    if (!force) {
+      const { data: intel } = await supabase
+        .from("pin_product_intelligence")
+        .select("potential_score")
+        .eq("product_id", resolvedId)
+        .maybeSingle();
+      const ps = Number(intel?.potential_score ?? 0);
+      if (!intel || ps < 70) {
+        return ok({
+          traceId: trace,
+          skipped: true,
+          reason: "below_potential_gate",
+          potential_score: ps,
+          gate: 70,
+        });
+      }
+    }
+
     if (action === "profile_product") {
       const { niche, dna, cached } = await loadOrBuildProfile(supabase, resolvedId, force);
       return ok({ traceId: trace, niche, cached, dna });
