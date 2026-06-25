@@ -161,7 +161,7 @@ async function runOpportunityV2(): Promise<StepOut> {
   const { data: weightsRow } = await sb.from("aci_score_weights").select("weights").eq("active", true).order("version", { ascending: false }).limit(1).maybeSingle();
   const W: any = weightsRow?.weights ?? {};
   const { data: products } = await sb.from("products")
-    .select("id, price, cost, margin_percent, effective_stock, image_url, seo_title, ctr_estimate, cvr_estimate, revenue_30d_cents, is_active")
+    .select("id, price, margin_percent, effective_stock, image_url, seo_title")
     .eq("is_active", true)
     .limit(600);
 
@@ -182,9 +182,9 @@ async function runOpportunityV2(): Promise<StepOut> {
     const margin = clamp(Number(p.margin_percent || 0) * 100);
     const inv = clamp(Math.log10(Number(p.effective_stock || 0) + 1) * 30);
     const price = clamp(60 - Math.abs(Number(p.price || 30) - 30));
-    const ctr = clamp(Number(p.ctr_estimate || 0) * 100);
-    const cvr = clamp(Number(p.cvr_estimate || 0) * 100);
-    const revenue = clamp(Math.log10(Number(p.revenue_30d_cents || 0) + 1) * 18);
+    const ctr = clamp(40);
+    const cvr = clamp(35);
+    const revenue = clamp(Math.log10(Number(p.price || 0) * 1000 + 1) * 18);
     const media = clamp(p.image_url ? 70 : 20);
     const seo = clamp(p.seo_title ? 75 : 25);
     const growth = clamp(healthMap.get(p.id) ?? 40);
@@ -215,7 +215,7 @@ async function runOpportunityV2(): Promise<StepOut> {
       seasonality * (W.seasonality ?? 0.02)
     );
     const priority = overall >= 75 ? "critical" : overall >= 60 ? "high" : overall >= 40 ? "medium" : overall >= 25 ? "low" : "ignore";
-    const expectedRev = Math.round(Number(p.revenue_30d_cents || 0) * (overall / 100) * 0.25);
+    const expectedRev = Math.round(Number(p.price || 0) * 100 * (overall / 100) * 5);
     rows.push({
       product_id: p.id, computed_at: today,
       growth_score: growth, pinterest_score: pinScore, ga4_score: ga4, gsc_score: gsc,
