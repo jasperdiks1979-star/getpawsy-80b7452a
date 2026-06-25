@@ -377,3 +377,12 @@ verify_jwt = false
 
 [functions.render-diagnose]
 verify_jwt = false
+
+[functions.cj-media-orchestrator]
+verify_jwt = false
+
+[functions.cj-media-derivative-worker]
+verify_jwt = false
+
+[functions.cj-media-registry-backfill]
+verify_jwt = false
