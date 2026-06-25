@@ -353,6 +353,7 @@ const PinterestRevenueControlPage = lazyWithRetry(() => import("./pages/admin/Pi
 const ProductWinnerDiscoveryPage = lazyWithRetry(() => import("./pages/admin/ProductWinnerDiscoveryPage"));
 const PinterestScalingPage = lazyWithRetry(() => import("./pages/admin/PinterestScalingPage"));
 const RevenueCommandCenterPage = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenterPage"));
+const TrafficCommandCenter = lazyWithRetry(() => import("./pages/admin/TrafficCommandCenter"));
 const AdminPaymentsPage = lazyWithRetry(() => import("./pages/admin/AdminPaymentsPage"));
 const WebhookHealthPage = lazyWithRetry(() => import("./pages/admin/WebhookHealthPage"));
 const AdminSmokeTestEventsPage = lazyWithRetry(() => import("./pages/admin/AdminSmokeTestEventsPage"));
@@ -1649,6 +1650,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenueCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="traffic-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TrafficCommandCenter />
                                 </Suspense>
                               }
                             />

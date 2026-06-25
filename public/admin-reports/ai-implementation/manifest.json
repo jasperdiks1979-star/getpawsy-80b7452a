@@ -1,10 +1,24 @@
-[
-  {
-    "date": "2026-06-25",
-    "wave": "6A",
-    "title": "Autonomous Commander \u00b7 Foundation",
-    "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
-    "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json",
-    "summary": "Read-only executive layer: 15 engines observed, 12 recommendations queued, health 48/100."
-  }
-]
+{
+  "reports": [
+    {
+      "slug": "2026-06-25-growth-incident",
+      "title": "Priority-1 Growth Incident Report",
+      "run_id": "incident-2026-06-25",
+      "generated_at": "2026-06-25T00:00:00Z",
+      "status": "mitigated",
+      "score": 48,
+      "pdf": "/admin-reports/incident/2026-06-25-growth-incident-report.pdf",
+      "json": "/admin-reports/incident/2026-06-25-growth-incident-report.json"
+    },
+    {
+      "slug": "2026-06-25-commander-wave-6a-foundation",
+      "title": "Autonomous Commander · Foundation (Wave 6A)",
+      "run_id": "cmdr-6a",
+      "generated_at": "2026-06-25T00:00:00Z",
+      "status": "shipped",
+      "score": 48,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
+    }
+  ]
+}

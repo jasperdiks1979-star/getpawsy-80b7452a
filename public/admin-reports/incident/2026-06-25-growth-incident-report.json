@@ -1,0 +1,138 @@
+{
+  "incident_id": "2026-06-25-growth-p1",
+  "generated_at": "2026-06-25T00:00:00Z",
+  "severity": "P1",
+  "status": "mitigated",
+  "executive_summary": "Pinterest publishing pipeline restored via cap raise + manual_pause clear; however the dominant issue is commercial conversion: 0 paid orders in 30 days and 2.1% PDP\u2192ATC rate. Requires PDP/Stripe code fixes.",
+  "funnel_30d": {
+    "lp_view": 552,
+    "view_item": 5360,
+    "view_item_sessions": 1907,
+    "sticky_atc_visible": 1238,
+    "add_to_cart": 43,
+    "begin_checkout": 41,
+    "payment_success": 3,
+    "paid_orders_db": 1
+  },
+  "traffic_sources_7d": {
+    "direct": 6620,
+    "social": 82,
+    "other": 8,
+    "organic": 2
+  },
+  "root_causes": [
+    {
+      "id": 1,
+      "severity": "critical",
+      "title": "Cart funnel collapse",
+      "status": "open"
+    },
+    {
+      "id": 2,
+      "severity": "critical",
+      "title": "Zero paid orders 30d",
+      "status": "open"
+    },
+    {
+      "id": 3,
+      "severity": "high",
+      "title": "Pinterest image cap hit",
+      "status": "fixed"
+    },
+    {
+      "id": 4,
+      "severity": "high",
+      "title": "Creative-director board mis-routing",
+      "status": "open"
+    },
+    {
+      "id": 5,
+      "severity": "high",
+      "title": "Organic traffic floor",
+      "status": "open"
+    },
+    {
+      "id": 6,
+      "severity": "high",
+      "title": "Social referral drop",
+      "status": "mitigated"
+    },
+    {
+      "id": 7,
+      "severity": "medium",
+      "title": "Stripe sessions expiring",
+      "status": "open"
+    },
+    {
+      "id": 8,
+      "severity": "medium",
+      "title": "Trigger drop legacy pins",
+      "status": "fixed"
+    },
+    {
+      "id": 9,
+      "severity": "medium",
+      "title": "Broken cron 160",
+      "status": "fixed"
+    },
+    {
+      "id": 10,
+      "severity": "medium",
+      "title": "Pinterest paused>posted",
+      "status": "mitigated"
+    },
+    {
+      "id": 11,
+      "severity": "medium",
+      "title": "85 OOS active products",
+      "status": "open"
+    },
+    {
+      "id": 12,
+      "severity": "medium",
+      "title": "Low scroll depth on PDP",
+      "status": "open"
+    },
+    {
+      "id": 13,
+      "severity": "low",
+      "title": "High homepage bounce",
+      "status": "open"
+    },
+    {
+      "id": 14,
+      "severity": "low",
+      "title": "Stale manual_pause",
+      "status": "fixed"
+    },
+    {
+      "id": 15,
+      "severity": "low",
+      "title": "Pixel verification",
+      "status": "open"
+    }
+  ],
+  "actions_executed": [
+    "raise_daily_image_credit_cap_5000_7500",
+    "clear_manual_pause",
+    "audit_note_persisted",
+    "traffic_command_center_page_shipped",
+    "incident_pdf_json_published"
+  ],
+  "human_approval_required": [
+    "fix_pinterest_creative_director_board_mapping",
+    "pdp_ux_tracking_audit",
+    "stripe_checkout_ttl_audit",
+    "seo_indexing_resubmission",
+    "oos_catalog_cleanup_85_products"
+  ],
+  "verification": {
+    "pinterest_connection_healthy": true,
+    "image_credit_budget_available": true,
+    "manual_pause_cleared": true,
+    "cron_active": true,
+    "new_pins_published_since_fix": "pending",
+    "paid_orders_resumed": false,
+    "organic_recovery": false
+  }
+}
