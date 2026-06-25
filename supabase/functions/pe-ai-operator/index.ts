@@ -14,7 +14,9 @@ const SAFE_FIX_ACTIONS = new Set([
 
 async function isAuthed(req: Request): Promise<boolean> {
   const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET");
-  if (internal && req.headers.get("x-internal-secret") === internal) return true;
+  const cron = Deno.env.get("PE_CRON_SECRET");
+  const hdr = req.headers.get("x-internal-secret");
+  if (hdr && ((internal && hdr === internal) || (cron && hdr === cron))) return true;
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth.startsWith("Bearer ")) return false;
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
