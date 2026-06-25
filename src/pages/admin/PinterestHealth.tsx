@@ -368,6 +368,11 @@ export default function PinterestHealth() {
             ) : (
               <Badge variant="outline">Not verified</Badge>
             )}
+            {adsDiag?.scope_check && (
+              <Badge variant={adsDiag.scope_check.full_access ? "secondary" : "destructive"}>
+                Full Access: {adsDiag.scope_check.full_access ? "YES" : "NO"}
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex gap-2">
             <Button
