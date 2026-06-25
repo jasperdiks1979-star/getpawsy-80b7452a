@@ -22,32 +22,32 @@ async function loadSnapshot(): Promise<Snapshot> {
   const sinceToday = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString();
 
   const [creditsToday, creditsMonth, queue, quality, golden, perf, potential, alerts] = await Promise.all([
-    supabase.from("pinterest_credit_events").select("amount_usd", { count: "exact" }).gte("created_at", sinceToday),
-    supabase.from("pinterest_credit_events").select("amount_usd").gte("created_at", sinceMonth),
-    supabase.from("pinterest_pin_queue").select("id, status, created_at", { count: "exact" }).in("status", ["queued", "draft", "ready", "pending"]).limit(1000),
-    supabase.from("pin_creative_scores").select("overall_score").gte("created_at", since7).limit(2000),
-    supabase.from("pin_golden_batch").select("id, is_winner", { count: "exact" }).limit(2000),
-    supabase.from("pinterest_analytics_daily").select("impressions, clicks, saves, outbound_clicks, revenue, date").gte("date", since30.slice(0, 10)).limit(5000),
+    supabase.from("pinterest_credit_events").select("credits_used").gte("created_at", sinceToday).limit(5000),
+    supabase.from("pinterest_credit_events").select("credits_used").gte("created_at", sinceMonth).limit(10000),
+    supabase.from("pinterest_pin_queue").select("id, status, created_at").in("status", ["queued", "draft", "ready", "pending"]).limit(1000),
+    supabase.from("pin_creative_scores").select("overall, passed_gate, created_at").gte("created_at", since7).limit(2000),
+    supabase.from("pin_golden_batch").select("id, status, winner_score_id").limit(2000),
+    supabase.from("pinterest_analytics_daily").select("impressions, pin_clicks, outbound_clicks, saves, day").gte("day", since30.slice(0, 10)).limit(5000),
     supabase.from("pin_product_intelligence").select("potential_score").limit(2000),
-    supabase.from("monitoring_alerts").select("id, alert_type, severity, message, created_at").order("created_at", { ascending: false }).limit(10),
+    supabase.from("monitoring_alerts").select("id, alert_key, severity, description, created_at, is_active").eq("is_active", true).order("created_at", { ascending: false }).limit(10),
   ]);
 
-  const todaySum = (creditsToday.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_usd ?? 0), 0);
-  const monthSum = (creditsMonth.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_usd ?? 0), 0);
+  const todaySum = (creditsToday.data ?? []).reduce((s: number, r: any) => s + Number(r.credits_used ?? 0), 0);
+  const monthSum = (creditsMonth.data ?? []).reduce((s: number, r: any) => s + Number(r.credits_used ?? 0), 0);
 
   const qrows = (quality.data ?? []) as any[];
-  const qScores = qrows.map((r) => Number(r.overall_score ?? 0)).filter((n) => n > 0);
+  const qScores = qrows.map((r) => Number(r.overall ?? 0)).filter((n) => n > 0);
   const avg = qScores.length ? qScores.reduce((a, b) => a + b, 0) / qScores.length : 0;
   const pass99 = qScores.filter((s) => s >= 99).length;
 
   const grows = (golden.data ?? []) as any[];
-  const winners = grows.filter((r) => r.is_winner).length;
+  const winners = grows.filter((r: any) => r.winner_score_id || r.status === "winner").length;
 
   const prows = (perf.data ?? []) as any[];
-  const last7 = prows.filter((r: any) => r.date >= since7.slice(0, 10));
+  const last7 = prows.filter((r: any) => r.day >= since7.slice(0, 10));
   const sum = (arr: any[], k: string) => arr.reduce((s, r) => s + Number(r[k] ?? 0), 0);
   const impr7 = sum(last7, "impressions");
-  const clicks7 = sum(last7, "clicks");
+  const clicks7 = sum(last7, "outbound_clicks");
 
   const queueRows = (queue.data ?? []) as any[];
   const oldestMin = queueRows.length
@@ -59,7 +59,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const potBelow = potRows.filter((r) => (r.potential_score ?? 0) < 70).length;
 
   return {
-    credits: { today: Number(todaySum.toFixed(2)), month: Number(monthSum.toFixed(2)), events: creditsToday.count ?? 0 },
+    credits: { today: Number(todaySum.toFixed(2)), month: Number(monthSum.toFixed(2)), events: (creditsToday.data ?? []).length },
     queue: { total: queueRows.length, pending: queueRows.length, oldest_minutes: oldestMin },
     quality: { samples: qScores.length, avg: Number(avg.toFixed(2)), pass99 },
     golden: { total: grows.length, winners },
@@ -67,11 +67,11 @@ async function loadSnapshot(): Promise<Snapshot> {
       ctr_7d: impr7 ? Number(((clicks7 / impr7) * 100).toFixed(2)) : 0,
       saves_7d: sum(last7, "saves"),
       outbound_7d: sum(last7, "outbound_clicks"),
-      revenue_30d: Number(sum(prows, "revenue").toFixed(2)),
+      revenue_30d: 0,
     },
     potential: { eligible: potEligible, below_gate: potBelow },
     alerts: (alerts.data ?? []).map((a: any) => ({
-      id: a.id, kind: a.alert_type, severity: a.severity, message: a.message, created_at: a.created_at,
+      id: a.id, kind: a.alert_key, severity: a.severity, message: a.description ?? "", created_at: a.created_at,
     })),
     top: [],
     worst: [],
