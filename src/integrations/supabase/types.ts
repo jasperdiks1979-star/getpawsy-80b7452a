@@ -7423,6 +7423,352 @@ export type Database = {
         }
         Relationships: []
       }
+      commander_alerts: {
+        Row: {
+          created_at: string
+          dedupe_key: string | null
+          detail: string | null
+          engine_key: string | null
+          id: string
+          meta: Json
+          resolved_at: string | null
+          run_id: string | null
+          severity: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          engine_key?: string | null
+          id?: string
+          meta?: Json
+          resolved_at?: string | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          engine_key?: string | null
+          id?: string
+          meta?: Json
+          resolved_at?: string | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_alerts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "commander_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_budget_ledger: {
+        Row: {
+          channel: string
+          created_at: string
+          day: string
+          details: Json
+          id: string
+          spend_usd: number
+          units: number
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          day: string
+          details?: Json
+          id?: string
+          spend_usd?: number
+          units?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          day?: string
+          details?: Json
+          id?: string
+          spend_usd?: number
+          units?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commander_daily_reports: {
+        Row: {
+          created_at: string
+          executive_health_score: number | null
+          growth_score: number | null
+          highlights: Json
+          id: string
+          json_path: string | null
+          pdf_path: string | null
+          report_date: string
+          run_id: string | null
+          summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          executive_health_score?: number | null
+          growth_score?: number | null
+          highlights?: Json
+          id?: string
+          json_path?: string | null
+          pdf_path?: string | null
+          report_date: string
+          run_id?: string | null
+          summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          executive_health_score?: number | null
+          growth_score?: number | null
+          highlights?: Json
+          id?: string
+          json_path?: string | null
+          pdf_path?: string | null
+          report_date?: string
+          run_id?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_daily_reports_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "commander_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_decisions: {
+        Row: {
+          created_at: string
+          decided_by: string | null
+          decision: string
+          id: string
+          notes: string | null
+          recommendation_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          decided_by?: string | null
+          decision: string
+          id?: string
+          notes?: string | null
+          recommendation_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          decided_by?: string | null
+          decision?: string
+          id?: string
+          notes?: string | null
+          recommendation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_decisions_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "commander_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_engine_health: {
+        Row: {
+          age_minutes: number | null
+          created_at: string
+          engine_key: string
+          engine_label: string
+          failures_24h: number
+          id: string
+          last_run_at: string | null
+          last_success_at: string | null
+          notes: string | null
+          run_id: string | null
+          signals: Json
+          status: string
+          success_rate_24h: number | null
+        }
+        Insert: {
+          age_minutes?: number | null
+          created_at?: string
+          engine_key: string
+          engine_label: string
+          failures_24h?: number
+          id?: string
+          last_run_at?: string | null
+          last_success_at?: string | null
+          notes?: string | null
+          run_id?: string | null
+          signals?: Json
+          status?: string
+          success_rate_24h?: number | null
+        }
+        Update: {
+          age_minutes?: number | null
+          created_at?: string
+          engine_key?: string
+          engine_label?: string
+          failures_24h?: number
+          id?: string
+          last_run_at?: string | null
+          last_success_at?: string | null
+          notes?: string | null
+          run_id?: string | null
+          signals?: Json
+          status?: string
+          success_rate_24h?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_engine_health_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "commander_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_recommendations: {
+        Row: {
+          affected_engine: string
+          confidence_score: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          dedupe_key: string | null
+          estimated_cost_usd: number
+          estimated_roi_usd: number
+          executed_at: string | null
+          id: string
+          payload: Json
+          reason: string
+          risk_level: string
+          run_id: string | null
+          status: string
+          suggested_action: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_engine: string
+          confidence_score?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string | null
+          estimated_cost_usd?: number
+          estimated_roi_usd?: number
+          executed_at?: string | null
+          id?: string
+          payload?: Json
+          reason: string
+          risk_level?: string
+          run_id?: string | null
+          status?: string
+          suggested_action: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_engine?: string
+          confidence_score?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string | null
+          estimated_cost_usd?: number
+          estimated_roi_usd?: number
+          executed_at?: string | null
+          id?: string
+          payload?: Json
+          reason?: string
+          risk_level?: string
+          run_id?: string | null
+          status?: string
+          suggested_action?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "commander_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_runs: {
+        Row: {
+          alerts_raised: number
+          created_at: string
+          duration_ms: number | null
+          engines_scanned: number
+          error: string | null
+          executive_health_score: number | null
+          finished_at: string | null
+          growth_score: number | null
+          id: string
+          mode: string
+          recommendations_created: number
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+        }
+        Insert: {
+          alerts_raised?: number
+          created_at?: string
+          duration_ms?: number | null
+          engines_scanned?: number
+          error?: string | null
+          executive_health_score?: number | null
+          finished_at?: string | null
+          growth_score?: number | null
+          id?: string
+          mode?: string
+          recommendations_created?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Update: {
+          alerts_raised?: number
+          created_at?: string
+          duration_ms?: number | null
+          engines_scanned?: number
+          error?: string | null
+          executive_health_score?: number | null
+          finished_at?: string | null
+          growth_score?: number | null
+          id?: string
+          mode?: string
+          recommendations_created?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
       competitor_alerts: {
         Row: {
           alert_type: string
