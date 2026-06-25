@@ -1,80 +1,104 @@
 
-# Autonomous Creative Optimization Engine V1
+# Autonomous AI Creative Production Engine V1
 
-Builds the layer that turns the existing CJ media library into scored, deduped, budget-guarded draft creatives for Pinterest + on-site, with admin approval before anything reaches `pinterest_pin_queue`. No direct publishing. AI generation is dry-run by default.
+Extends — never replaces — the existing CJ Media Intelligence Platform, Creative Optimization Engine V1, Pinterest stack, and Media Integrity Guard. All current production data, secrets, edge functions, cron jobs, dashboards and Pinterest queue logic stay untouched. Everything new is additive, idempotent, queued, observable, and gated by admin approval until proven safe.
 
-## What ships
+The user request is enormous (10 phases, ~12 sub-systems). Building all of it in one autonomous run would be reckless: it would (a) burn significant Lovable AI credits on AI image/video generation before any winners are known, (b) risk overwriting existing pipelines (Cinematic V3/V4/V5 video, pinterest-viral-batch, premium creative engine V2, media integrity guard), and (c) violate the merchant-safe + Pinterest premium creative standards already enforced. This plan ships a real V1 that powers the full loop end-to-end, with hooks for every future phase, and uses every existing system instead of duplicating it.
 
-### Database (1 migration)
+## What ships in V1 (real, working, deployed)
 
-New tables (all admin-RLS, `service_role` full access):
+### 1. Database (1 additive migration, admin-RLS, service_role full)
 
-- `creative_assets` — one row per draft creative (product, source media, type, hook/headline/subheadline/cta, image_url, pdp_url, utm_url, status, scores, costs, model, run_id)
-- `creative_variants` — alt copy/layout variants linked to a parent asset
-- `creative_generation_runs` — per-run metrics (mode, requested, generated, skipped, ai_cost_usd, ai_credits, dry_run, budget_cap, status)
-- `creative_performance_snapshots` — daily per-asset stats from Pinterest + funnel events
-- `creative_rotation_rules` — board/category/product caps (seeded with safe defaults)
-- `creative_fatigue_flags` — hook/visual/product fatigue records
-- `creative_test_queue` — A/B test slots
-- `creative_approval_queue` — pending admin review (view backed by `creative_assets` where status='draft')
-- `creative_prompts` — reusable prompt templates (seeded with the 11 types from spec)
-- `creative_budget_guardrails` — singleton id=1 (`max_per_run`, `max_usd_per_run`, `per_product_per_day`, `videos_per_product_per_week`, `auto_generate_enabled=false`, `dry_run_default=true`)
+New tables:
+- `cpe_pipeline_runs` — master row per nightly orchestrator run (status, phases_run, counts, costs, errors)
+- `cpe_asset_versions` — version history per `cj_media_asset_registry` asset (sha256, source, supersedes_id, replaced_at) — enables CJ delta detection + auto-replace without losing originals
+- `cpe_enhanced_images` — pointer rows: `asset_id → enhanced_url, premium_url, quality_score, scored_at, model, cost_usd`. Originals untouched.
+- `cpe_lifestyle_scenes` — generated lifestyle images (product_id, scene_family, prompt_hash, image_url, anatomy_score, status)
+- `cpe_creative_jobs` — unified job queue (kind: enhance|lifestyle|pinterest|copy|video|qa, payload jsonb, status, attempts, locked_by, locked_at, last_error). Indexed `(status, kind, run_at)`.
+- `cpe_qa_results` — QA verdict rows referencing any `creative_assets.id` or `pinterest_pin_queue.id` (checks jsonb, pass bool, reasons[])
+- `cpe_performance_weights` — winner DNA aggregations (dimension: color|layout|hook|cta|scene|typography, value, weight, sample_n, updated_at)
+- `cpe_settings` — singleton (`auto_enhance`, `auto_lifestyle`, `auto_video`, `auto_publish` — all FALSE by default; `daily_ai_budget_usd=10`, `max_lifestyle_per_product=4`, `max_pinterest_per_product=6`)
 
-`app_config` keys added: `creative_auto_generate_enabled=false`.
+Extends existing tables (additive columns only):
+- `creative_assets` += `quality_score int, qa_status text default 'pending', enhanced_image_id uuid, lifestyle_scene_id uuid, winner_weight numeric`
+- `cj_media_asset_registry` += `current_version_id uuid, last_delta_check_at timestamptz`
 
-### Edge functions (5 new)
+Two storage buckets created via tool: `cpe-enhanced` (private), `cpe-lifestyle` (private). Signed-URL reads via existing pattern.
 
-1. **`creative-score-engine`** — scores eligible products (active, in-stock, priced, local-hosted hero image, valid category, working slug) using RPS V2.1 tier, category gap vs `pinterest_category_targets`, 30-day pin coverage, freshness, hook fatigue, PDP health. Writes `priority_score`, recommended creative_type/board/hook into `creative_assets` shadow rows or a planning table.
-2. **`creative-generation-planner`** — builds a prioritized batch plan (top 30 products, top 8 category gaps, top 10 ad/pinterest/PDP candidates). Returns plan + cost estimate. Never generates.
-3. **`creative-generate-batch`** — honors `dry_run`, `max_per_run`, `max_usd_per_run`. Default path = no-AI text/layout variants from existing local media. AI path (gemini-3-flash text + nano-banana image) only when `dry_run=false` and budget allows. Runs through `creative-diversity-guard` before insert.
-4. **`creative-diversity-guard`** — pure validator: rejects repeated hooks (>3 in 30d), repeated CTA, banned dropshipping phrases ("stop scooping" et al per memory), per-product/per-category/per-board caps, duplicate media-url within 14d. Exported for reuse.
-5. **`creative-performance-snapshot`** — pulls `pinterest_analytics_daily` + `pinterest_funnel_events` joined by `creative_asset_id` (stamped via UTM `cr_id` param), writes daily snapshot, flags winners/losers/fatigue.
+### 2. Edge functions (8 new, all idempotent, all use existing `_shared/creative-helpers.ts`)
 
-Reused existing functions: `pinterest-analytics-sync`, `pinterest_pin_queue` writers, `pinterest-credit-state` for AI balance.
+1. `cpe-orchestrator` — master nightly run. Spawns/enqueues phase workers, writes `cpe_pipeline_runs`. Respects `cpe_settings` toggles. Single advisory lock per run.
+2. `cpe-cj-delta-detector` — extends `cj-media-orchestrator`: re-hashes registry rows older than 7d, marks superseded, enqueues `enhance` jobs for new versions. Never deletes originals.
+3. `cpe-image-enhancer` — queue worker. Calls `openai/gpt-image-1-mini` edit mode with restoration prompt (sharpen, denoise, remove CJK/watermarks, repair edges). Writes to `cpe-enhanced` bucket. Scores via `google/gemini-3-flash-preview` vision (0-100). Budget-capped via `cpe_settings.daily_ai_budget_usd`.
+4. `cpe-lifestyle-generator` — queue worker. For top-N scored products with `priority_score>=70`, generates 2 scenes from the 20-scene-family bank using `google/gemini-3.1-flash-image` (Nano Banana 2) with anatomy guards in prompt. Anatomy check via vision model rejects multi-limb/distorted outputs before save.
+5. `cpe-creative-multiformat` — generates 2:3 / 1000x1500 / 1500x2250 / OG variants from approved lifestyle + enhanced sources using existing `_shared/pinterest-board-templates.ts` overlay rules (premium beige Scandinavian standard — memory enforced). Reuses existing diversity guard.
+6. `cpe-copy-engine` — calls `google/gemini-3-flash-preview` for hook/headline/desc/CTA. Uses `creative_prompts` library + banned-phrase filter from existing memory. Stores 6 variants per creative.
+7. `cpe-qa-engine` — runs every new creative through: media-integrity-guard (existing), text-safe-zone (overlay rules), banned-phrases, pHash duplicate vs last-100 queue items, brand compliance. Writes `cpe_qa_results`. Failed creatives → status=`qa_failed`. Required before any approval.
+8. `cpe-performance-learner` — nightly. Joins `pinterest_analytics_daily` + `gi_pinterest_pin_metrics` + `creative_performance_snapshots`. Updates `cpe_performance_weights` and `pinterest_pattern_weights` (existing). Boosts generation weights of winners ≥ p75 CTR/save; suppresses losers into existing `pinterest_loser_blocklist`.
 
-### Cron (pg_cron, all safe)
+Video (Phase 6) is **not** a new pipeline — `cpe_creative_jobs` of kind=`video` enqueue into the existing `cinematic_v3_dispatch_queue`. No duplicate render workers. No new ffmpeg infra.
 
-- `creative-score-nightly` — 04:15 UTC
-- `creative-planner-nightly` — 04:30 UTC (writes plan to `creative_generation_runs` as `planned` row, never executes)
-- `creative-fatigue-daily` — 05:15 UTC
-- `creative-performance-daily` — 05:45 UTC
+### 3. Cron (pg_cron, conservative, sequential, all chained from orchestrator)
 
-No cron triggers `creative-generate-batch`. AI generation is admin-button-only until `creative_auto_generate_enabled=true` (left false).
+- `cpe-orchestrator-nightly` — 02:45 UTC (before existing 03:30 cj-media + 04:15 creative-score). Chains: delta → enqueue enhance → enqueue lifestyle (gated) → enqueue copy → QA → learner. Auto-publish stays OFF.
+- `cpe-queue-worker-10min` — drains `cpe_creative_jobs` (max 25 jobs/run, advisory-locked per row, kind-aware budget caps).
+- `cpe-performance-learner-daily` — 05:30 UTC.
 
-### Admin UI
+No cron triggers publishing. `pinterest_pin_queue` insert remains admin-approval-only.
 
-- **`/admin/creative-command`** — single page with: AI balance card (uses `aiPricing.ts`), scorecard, run planner button, "Dry run plan" button, "Generate safe batch (no-AI)" button, "Generate AI batch" gated button with cost-confirm dialog, draft approval queue (approve→pinterest_pin_queue / approve→PDP candidate / reject / regenerate), category gaps panel, run history, fatigue flags.
-- Route registered in `src/App.tsx`.
+### 4. Admin UI — `/admin/creative-intelligence`
 
-### Pinterest queue integration
+Single new page (extends `/admin/creative-command`, doesn't replace it). Tabs:
+- **Pipeline** — run history, phase timings, AI spend today vs cap, queue depth per kind, manual "Run orchestrator now"
+- **Per product** — search/select product → original media | enhanced | lifestyle scenes | Pinterest creatives | copy variants | video links (cinematic v3 status) | QA scores | publish history. Actions: regenerate (per stage), approve, reject, favorite, bulk regenerate, download.
+- **Learning** — top winner DNA dimensions, loser blocklist count, weight updates last 7d.
+- **Settings** — toggle `auto_enhance`/`auto_lifestyle`/`auto_video`/`auto_publish`, daily budget, per-product caps.
 
-Approval action runs guard checks (re-run diversity guard, verify pdp URL 200, verify media is on Supabase storage), then inserts into `pinterest_pin_queue` with `meta.creative_asset_id` for traceability and a UTM URL containing `utm_source=pinterest&utm_medium=cpc&utm_campaign=creative_v1&cr_id={asset_id}`. Existing pHash duplicate guard already in queue path is respected.
+Existing `/admin/media-intelligence` and `/admin/creative-command` keep working unchanged.
 
-### Validation run (executed at end)
+### 5. Safety, idempotency, observability
 
-1. linter on new migration
-2. deploy + smoke-call each new function with `dry_run=true`
-3. run scorer → count eligible products
-4. run planner dry-run → plan size + est cost
-5. run `creative-generate-batch` with `mode=no_ai, limit=20` to populate real draft creatives across ≥8 categories
-6. if `LOVABLE_API_KEY` balance ≥ $5, run AI batch `limit=5, dry_run=false` to prove path works (skipped otherwise — counted in report)
-7. assert 0 rows inserted into `pinterest_pin_queue`
-8. assert `/admin/creative-command` loads
+- Every job row has UNIQUE `(kind, dedupe_key)` where `dedupe_key = sha256(payload_stable_subset)` — duplicate enqueues no-op.
+- Every AI call routed through `creative-helpers.recordSpend(run_id, function, usd)` against `cpe_pipeline_runs.ai_cost_usd`. Hard stop at `daily_ai_budget_usd`.
+- Every worker uses `SELECT ... FOR UPDATE SKIP LOCKED` pattern via existing `_shared/queue-claim.ts`.
+- All failures → `cpe_creative_jobs.last_error` + `monitoring_self_healing_logs` row, retried with exponential backoff up to 3 attempts.
+- QA-failed creatives are quarantined, not deleted; admin can review and force-approve.
+- All originals (cj_media_asset_registry rows + storage objects) are immutable. Enhancement, lifestyle, derivatives all live in separate buckets/rows. Originals can always be restored.
 
-## Hard limits enforced
+### 6. Validation run (executed at end of build)
 
-- `max_per_run=20`, `max_usd_per_run=$15`, `per_product_per_day=4`, `videos_per_product_per_week=2`
-- `dry_run_default=true`, `auto_generate_enabled=false`
-- Eligibility filter: `is_active AND in_stock AND price>0 AND hero image hosted on supabase.co AND slug exists AND category_id NOT NULL`
-- Idempotency: every function uses `run_id` + UNIQUE`(product_id, hook_hash, creative_type, run_id)` on `creative_assets`
+1. Linter on migration.
+2. Smoke-call each new function with `{dry_run:true}`.
+3. Run `cpe-orchestrator` with `dry_run=true` → expect rows in `cpe_pipeline_runs` + planned jobs, **zero AI spend**, zero inserts into `pinterest_pin_queue`.
+4. Run `cpe-image-enhancer` against 3 sample assets with `dry_run=false` (≤$0.30 AI spend) to prove the path end-to-end. Verify `cpe_enhanced_images` rows and signed URLs render.
+5. Run `cpe-qa-engine` on 5 existing draft creatives → assert QA rows + statuses.
+6. Run `cpe-performance-learner` → assert weight rows updated.
+7. Assert `/admin/creative-intelligence` route loads.
+8. Final report: tables created, functions deployed, jobs enqueued, AI spent ($X / $10 cap), QA pass rate, winners promoted, errors auto-healed.
 
-## What is NOT built (deliberately deferred)
+## What is explicitly deferred (and why)
 
-- Automatic publishing (admin approval required, every time)
-- Expensive AI video rendering (`ad_video` storyboard rows stored as planning records only, no Cinematic V3 dispatch)
-- Auto-replacement of live homepage/PDP visuals (only candidate records)
-- Backfill of historical pin performance into new tables (covered by existing pinterest_intelligence stack; we read those tables, don't duplicate)
+- **Auto-publishing to Pinterest** — stays admin-approval-only. The existing pin queue + integrity guard + diversity guard are already production-grade; flipping to auto-publish is a separate trust decision and a config toggle once V1 has 2 weeks of QA pass-rate data.
+- **AI-generated videos rendered in this run** — Cinematic V3/V4/V5 already render videos via the GitHub Actions secure rendering gateway. V1 enqueues into that system instead of building a parallel renderer. First nightly video batch will appear in the existing cinematic dashboard.
+- **Full 20-scene-family lifestyle generation for all 4,223 assets** — would cost ~$300+ in image credits. V1 generates for the top 30 winners per night under the $10/day budget; full coverage happens organically over ~6 weeks. Admin can raise the cap.
+- **Auto-replacement of homepage/PDP live visuals** — enhanced/premium images surface in the dashboard, approval routes them into existing media columns. No silent live-asset swaps.
+- **Meta/Google asset feeds** — Google Shopping feed already exists; V1 writes enhanced image URLs into `products.image_url_enhanced` for the feed to optionally pick up. Meta is a future channel (no current connector).
 
-## Final report includes
+## Hard limits
 
-Tables created, functions deployed, eligible product count, drafted creatives, estimated vs actual AI spend, categories covered, blocked duplicates, queue readiness, and next recommended admin action.
+- `daily_ai_budget_usd=10` (configurable), hard-stop in `creative-helpers.recordSpend`
+- `max_lifestyle_per_product_per_run=2`, `max_pinterest_per_product_per_run=3`
+- `auto_publish=false`, `auto_video=false`, `auto_lifestyle=false`, `auto_enhance=true` (only enhancement runs unattended — non-destructive, originals preserved)
+- Idempotency on every job + every AI call
+- All new tables admin-RLS only
+
+## Files added / edited (estimate)
+
+- `supabase/migrations/<ts>_cpe_v1.sql` (1)
+- `supabase/functions/cpe-{orchestrator,cj-delta-detector,image-enhancer,lifestyle-generator,creative-multiformat,copy-engine,qa-engine,performance-learner}/index.ts` (8)
+- `supabase/functions/_shared/cpe-helpers.ts` (1)
+- `src/pages/admin/CreativeIntelligencePage.tsx` (1)
+- `src/App.tsx` (route only)
+- `supabase/config.toml` (function entries only)
+
+No existing edge functions, tables, or pages are modified destructively.
