@@ -1,81 +1,77 @@
-# Pinterest Growth Intelligence Engine — Build Plan
 
-## Scope & guardrails
-- New route: `/admin/pinterest-growth-ai` (15 sections from the brief).
-- 100% additive on top of existing `pinterest_*` and `pe_*` schemas, edge functions, and crons. Zero edits to Wave 1–2 PE code, `usePinterestTracking`, `SafePinterestTag`, `CartContext`, or any existing analytics surface.
-- All new tables namespaced `pga_*` (Pinterest Growth AI). Admin-only RLS via `has_role(auth.uid(),'admin')` + GRANT to authenticated + service_role.
-- Truth rule: every metric must come from a real source (Pinterest API, Pinterest Ads API, Pinterest Analytics, GA4, existing CAPI/funnel tables, products catalog). Scope-blocked endpoints render "Scope blocked — reconnect" instead of fake numbers — same pattern PE already uses.
-- Auto-fix safe list = exactly the brief's safe-execute list. Everything in the manual-approval list goes to `pe_manual_approval_queue` (reuse existing queue, do not fork).
-- No persisted Pinterest mutations (PATCH/POST to live pins, boards, campaigns) until Wave 5 approval gate. Waves 1–4 are read + compute + recommendation only.
-- All AI calls go through Lovable AI Gateway (`google/gemini-3-flash-preview` default; `gemini-2.5-flash-image` for image regen). No client-exposed keys.
+# Phase G — Pinterest Revenue Intelligence Engine (PRIE)
+
+## Guardrails
+- 100% additive. Zero edits to PGA, PE, Pinterest Brain, Revenue Brain, Revenue AI V5, autopilot, publisher, crons, `usePinterestTracking`, `SafePinterestTag`, `CartContext`.
+- All new tables prefixed `prie_*`. Admin RLS via `has_role(auth.uid(),'admin')` + GRANT to `authenticated`/`service_role`.
+- All AI via Lovable AI Gateway. Default `google/gemini-3-flash-preview`; `google/gemini-3.1-flash-image` for image regen.
+- Truth-only: every metric joins live tables (`pinterest_pins`, `pinterest_funnel_events`, `pinterest_attribution_sessions`, `orders`, `ga4_daily_snapshots`, `pinterest_pdp_conversion_stats`, `pinterest_revenue_*`, `pin_creative_scores`). Scope-blocked endpoints render "Scope blocked — reconnect" (PE pattern).
+- Auto-fix safe list = exact brief list. Spend/budget/bid/billing/campaign/board/catalog deletion → `pe_manual_approval_queue` (reused).
+- No persisted Pinterest mutations until Wave 4 approval gate.
 
 ## Waves
 
-### Wave A — Foundation + Executive Overview (section 1)
-- Tables: `pga_settings`, `pga_executive_snapshots`, `pga_growth_scores_daily`, `pga_timeline_events`.
-- Edge function `pga-overview-sync`: pulls revenue, ATC, purchases, ROAS, conv rate from existing `pinterest_funnel_events`, `pinterest_attribution_sessions`, `orders`, GA4 snapshots. Reach/CTR/outbound from `pinterest_pins` + organic sync (PE Wave 2).
-- Edge function `pga-growth-score`: rolls section scores into one Growth Score (0–100).
-- UI: `PinterestGrowthAIPage.tsx` shell + `ExecutiveOverviewPanel`.
+### Wave 1 — Foundation + Global AI Brain + Revenue Prediction (sections 1, 2, 13)
+- Tables: `prie_settings`, `prie_brain_snapshots` (6 scores + bottleneck + top action + confidence), `prie_revenue_predictions` (per product: impressions/saves/closeups/clicks/atc/purchases/revenue daily/monthly/annual + confidence), `prie_timeline_events`.
+- Edge fns: `prie-brain-sync`, `prie-revenue-predictor` (EWMA over 30d Pinterest traffic + product conv rate from `pinterest_pdp_conversion_stats` + margin from `products`).
+- UI: `PinterestRevenueAiPage.tsx` shell + ExecutiveBrainPanel + RevenuePredictionPanel + TimelinePanel.
 
-### Wave B — Creative + SEO + Product Intelligence (sections 2, 3, 7)
-- Tables: `pga_pin_scores` (creative/engagement/sales/seo/virality/confidence), `pga_pin_recommendations`, `pga_seo_keywords`, `pga_seo_suggestions`, `pga_product_scores`.
-- Edge functions: `pga-creative-scorer`, `pga-seo-intelligence`, `pga-product-intelligence`. All read-only; recommendations land in `pga_pin_recommendations` / `pga_product_recommendations` with `safe_to_auto_apply` flag.
-- Reuses `pin_product_intelligence`, `pin_creative_scores`, `pin_hook_library_v2` already produced by Wave 3 — does not rewrite them, only joins.
-- UI: CreativeIntelligencePanel, SEOIntelligencePanel, ProductIntelligencePanel.
+### Wave 2 — Pin Quality + Creative Evolution + Self-Learning (sections 3, 4, 5, 12 read-only)
+- Tables: `prie_pin_quality_scores` (11 sub-scores + explanation), `prie_creative_generations` (V1–V4, never overwrites originals — references `pinterest_pin_queue` source), `prie_learning_weights` (dim: headline/image/video/board/keyword/time, EWMA confidence ±).
+- Edge fns: `prie-pin-quality-scorer`, `prie-creative-evolver` (queues drafts only — no auto-publish in this wave), `prie-self-learner` (nightly EWMA over outbound clicks/saves/atc/purchases).
+- Reuses `pin_creative_scores`, `pin_hook_library_v2`, `pin_scene_style_families`. Read-only.
+- UI: PinQualityPanel, CreativeEvolutionPanel, LearningPanel.
 
-### Wave C — Boards + Publishing + Trends + Competitor (sections 5, 6, 8, 9)
-- Tables: `pga_board_scores`, `pga_publishing_windows_ai`, `pga_trend_signals_v2`, `pga_competitor_observations`.
-- Edge functions: `pga-board-intelligence`, `pga-publishing-intelligence` (per-board/weekday/category best-time model — EWMA over last 90d of outbound clicks), `pga-trend-intelligence`, `pga-competitor-intelligence` (reuses existing `pinterest_competitor_pins`, never copies copyrighted material — extracts patterns only).
-- UI: BoardsPanel, PublishingPanel, TrendsPanel, CompetitorPanel.
+### Wave 3 — Experimentation + Prioritization + Trends + Competitor + Opportunities (sections 6, 7, 8, 9, 10)
+- Tables: `prie_experiments`, `prie_variants`, `prie_product_priority` (10 sub-scores + class scale/maintain/observe/pause/regenerate), `prie_trend_signals` (Pinterest/Google/seasonal/holiday/breed/weather proxies), `prie_competitor_observations` (patterns only), `prie_opportunities` (13 detection types + expected traffic/revenue/confidence).
+- Edge fns: `prie-experiment-orchestrator` (z-test p<0.05, n≥100/arm, statistically significant winner promotion via queue only), `prie-prioritizer`, `prie-trend-engine`, `prie-competitor-engine` (reuses `pinterest_competitor_pins`), `prie-opportunity-scanner`.
+- UI: ExperimentsPanel, ProductPriorityPanel, TrendsPanel, CompetitorPanel, OpportunitiesPanel.
 
-### Wave D — A/B Testing + Growth Opportunities + Revenue Intelligence + Timeline (sections 4, 10, 11, 12)
-- Tables: `pga_ab_experiments`, `pga_ab_variants`, `pga_opportunities`, `pga_revenue_forecasts`.
-- Edge functions: `pga-ab-orchestrator` (generates variants → queues as drafts only until Wave 5 gate, never auto-publishes paid; statistically significant winner = z-test p<0.05, n≥100 impressions per arm), `pga-opportunity-scanner` (24 signal scan from brief), `pga-revenue-forecaster` (EWMA + linreg over 30d, 7d/30d horizons, 80% CI).
-- UI: ABTestingPanel, OpportunitiesPanel, RevenuePanel, TimelinePanel.
+### Wave 4 — Decision Engine + Autonomous Content Factory + Safe Auto-Fix + Executive Insights (sections 11, 12, 14, 15)
+- Tables: `prie_decisions` (top20 scale/repair/promote/pause/videos/images per 15min cycle), `prie_auto_fix_log`, `prie_executive_reports` (daily 04:30 UTC → PDF+JSON+MD in `public/admin-reports/ai-implementation/`), `prie_memory` (winning headlines/hooks/templates/videos/colors/products/boards/times/keywords/seasons).
+- Edge fns: `prie-decision-engine` (15min), `prie-content-factory` (confidence-gated; calls existing CPE + cinematic + lifestyle engines, never new image/video generators), `prie-auto-fix` (safe-list only: refresh analytics, retry APIs, repair URL/metadata/queue/cache, regenerate creatives, generate images/videos/desc/SEO via existing engines, dedupe pins, repair scheduling), `prie-executive-report`.
+- Crons via `supabase--insert` (PE_CRON_SECRET pattern):
+  - 15min: brain-sync, decision-engine
+  - hourly: pin-quality-scorer, revenue-predictor
+  - 6h: opportunity-scanner, trend-engine, prioritizer
+  - daily 04:30 UTC: executive-report, self-learner
+  - weekly Sun: competitor-engine
+- UI: DecisionPanel, ContentFactoryPanel, AutoFixPanel, ExecutiveInsightsPanel, GrowthKpiPanel.
 
-### Wave E — Learning Engine + Autonomous Operator + Safe Auto-Fix + Daily Report (sections 13, 14, 15)
-- Tables: `pga_learning_weights` (per dimension: headline, image, video, keyword, board, product, hook, style), `pga_operator_runs`, `pga_auto_fix_log`, `pga_daily_reports`.
-- Edge functions:
-  - `pga-learning-engine`: nightly EWMA promote/retire (n≥30 & ≥median → boost; n≥40 & <0.5× median → retire). Writes to `pga_learning_weights`. Existing Wave 3 hook/scene tables are read-only inputs.
-  - `pga-ai-operator`: every 15min "what is preventing growth?" loop. Calls the 12 sub-engines, queues fixes. Reuses `pe_manual_approval_queue` for unsafe items.
-  - `pga-auto-fix`: executes the safe-list only (URL repair, metadata repair, cache refresh, queue repair, missing creative/title/description/lifestyle generation via existing Wave 3B + CPE functions, broken-feed repair, dup-pin repair, scheduling repair, trend cache refresh, API retry).
-  - `pga-daily-report`: 04:30 UTC, generates PDF + JSON + Markdown to `public/admin-reports/ai-implementation/<date>-pga-daily.{pdf,json,md}` and appends manifest.
-- Crons (via insert tool, not migration): 15min operator + safe-fix; hourly overview + creative scorer; 6h SEO + trends + boards; daily 04:30 report + learning engine; weekly Sunday competitor refresh. All use `PE_CRON_SECRET` pattern already proven in Wave 1.
+### Wave 5 — Regression + Reports
+- Reports under `public/admin-reports/ai-implementation/`:
+  - `2026-06-25-prie-architecture.{pdf,json}`
+  - `2026-06-25-prie-performance.{pdf,json}`
+  - `2026-06-25-prie-revenue.{pdf,json}`
+  - `2026-06-25-prie-ai-capability.{pdf,json}`
+  - `2026-06-25-prie-automation.{pdf,json}`
+  - `2026-06-25-prie-regression.{pdf,json}`
+  - `2026-06-25-prie-future-roadmap.{pdf,json}`
+- Regression: `tsgo` clean, all existing Pinterest admin routes render, PDP/cart/checkout green, no PE/PGA endpoint regression. Hard stop on any red.
 
-### Wave F — Final regression + reports
-- Files: `architecture-report.pdf/json`, `endpoint-report.pdf/json`, `automation-report.pdf/json`, `ai-capability-report.pdf/json`, `growth-roadmap.pdf/json`, `pinterest-permissions-remaining.pdf/json`, `regression-report.pdf/json` → all in `public/admin-reports/ai-implementation/` with manifest updates.
-- Regression: `tsgo` clean, `/admin/pinterest-health`, `/admin/pinterest-enterprise-control-center`, `/admin/pinterest-control-center`, `/admin/pinterest-brain`, `/admin/pinterest-intelligence`, `/admin/growth-intelligence`, `/admin/reports`, PDP, cart, checkout — all must render with no new errors. Hard stop if any previously-green PE endpoint goes red.
-
-## Architecture diagram
+## Architecture
 
 ```text
-                   ┌────────────────────────────────────────┐
-                   │   /admin/pinterest-growth-ai (NEW)     │
-                   │   15 panels, read-only by default      │
-                   └───────────────┬────────────────────────┘
-                                   │
-        ┌──────────────────────────┼──────────────────────────┐
-        │                          │                          │
-   pga_* tables           pga-* edge functions       pe_manual_approval_queue
-   (scores, recs,         (scorers, operator,        (reused, no fork)
-    timeline, reports)    daily report, auto-fix)
-        │                          │
-        └──────────────┬───────────┘
-                       │
-        ┌──────────────┴───────────────────────────────┐
-        │  Read-only inputs (NEVER mutated by Growth AI)│
-        │  pinterest_pins, pinterest_pin_queue,        │
-        │  pinterest_funnel_events, pin_product_*,     │
-        │  pin_creative_scores, pin_hook_library_v2,   │
-        │  pe_endpoint_checks, pe_health_snapshots,    │
-        │  products, orders, ga4_daily_snapshots       │
-        └───────────────────────────────────────────────┘
+/admin/pinterest-revenue-ai (NEW)
+   │
+   ├── prie_* tables (snapshots, predictions, quality, generations, learning,
+   │    experiments, priority, trends, opportunities, decisions, memory, reports)
+   │
+   ├── prie-* edge functions (brain, predictor, quality, evolver, learner,
+   │    experiment, prioritizer, trends, competitor, opportunity, decision,
+   │    content-factory, auto-fix, executive-report)
+   │
+   └── reuses (read-only): pinterest_pins, pinterest_pin_queue,
+        pinterest_funnel_events, pinterest_pdp_conversion_stats,
+        pinterest_revenue_*, pin_creative_scores, pin_hook_library_v2,
+        pga_*, pe_*, products, orders, ga4_daily_snapshots
+        + write to pe_manual_approval_queue for unsafe actions
 ```
 
-## Out of scope (explicit)
-- Activating paid campaigns, mutating budgets/bids/billing, deleting any Pinterest entity, copying competitor creative — all manual-approval or never.
-- Rewriting Wave 3 / Wave 3B / PE Wave 1 / PE Wave 2 / autopilot / publisher / cron worker.
-- Touching `usePinterestTracking`, `SafePinterestTag`, `CartContext`, or any analytics emit path.
+## Out of scope
+- Mutating budgets/bids/campaigns/billing/catalog/boards — manual approval only.
+- Rewriting PGA / PE / Wave 3 / Revenue Brain / Revenue AI V5 / autopilot / cron worker.
+- Touching analytics emit paths or tracking hooks.
 
-## What you approve to start
-Approve to begin Wave A immediately. The system will then chain Waves B → F autonomously, stopping only on critical regression. Each wave ends with the standard PDF+JSON report under `public/admin-reports/ai-implementation/` and a manifest update, per the project's reports rule.
+## What to approve
+Approve to begin Wave 1. System then chains Waves 2 → 5 autonomously, with PDF+JSON report after each wave under `public/admin-reports/ai-implementation/` and manifest update. Final activation gate after Wave 5 regression passes.
