@@ -226,6 +226,20 @@ async function run(opts: { limit?: number; productId?: string; dryRun?: boolean 
     .gte("potential_score", 70);
   let intelRows = (intelAll ?? []) as any[];
   if (opts.productId) intelRows = intelRows.filter((r) => r.product_id === opts.productId);
+
+  // Skip products that already have a healthy headline bank — keeps batched runs idempotent.
+  if (!opts.productId) {
+    const { data: existing } = await supa
+      .from("pin_headline_bank")
+      .select("product_id")
+      .in("product_id", intelRows.map((r) => r.product_id));
+    const counts = new Map<string, number>();
+    for (const r of (existing ?? []) as Array<{ product_id: string }>) {
+      counts.set(r.product_id, (counts.get(r.product_id) ?? 0) + 1);
+    }
+    intelRows = intelRows.filter((r) => (counts.get(r.product_id) ?? 0) < 15);
+  }
+
   if (typeof opts.limit === "number") intelRows = intelRows.slice(0, opts.limit);
 
   const intelMap = new Map(intelRows.map((r) => [r.product_id, r]));
