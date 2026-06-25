@@ -30,6 +30,53 @@ export default function PinterestHealth() {
   const [err, setErr] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<any>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [adsDiag, setAdsDiag] = useState<any>(null);
+  const [adsDiagBusy, setAdsDiagBusy] = useState(false);
+
+  async function runAdsDiagnostic() {
+    setAdsDiagBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-ads-diagnostic", { body: {} });
+      if (error) throw error;
+      setAdsDiag(data);
+      const v = (data as any)?.verification;
+      toast({
+        title: v?.all_endpoints_200 ? "Pinterest Ads APIs OK" : "Pinterest Ads APIs failing",
+        description: v?.all_endpoints_200
+          ? "All endpoints returned 200."
+          : `Failed: ${(v?.failed || []).map((f: any) => `${f.name}=${f.status}`).join(", ")}`,
+        variant: v?.all_endpoints_200 ? undefined : "destructive",
+      });
+    } catch (e: any) {
+      toast({ title: "Diagnostic failed", description: e?.message ?? "Failed", variant: "destructive" });
+    } finally {
+      setAdsDiagBusy(false);
+    }
+  }
+
+  async function reconnectWithAdsScopes() {
+    setBusy("reconnect_ads");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: {
+          extra_scopes: [
+            "ads:read", "ads:write",
+            "catalogs:read", "catalogs:write",
+            "billing:read",
+          ],
+          auto_sync_catalog: true, // also lands us back on /admin/pinterest-health
+        },
+      });
+      if (error) throw error;
+      const authUrl = (data as any)?.auth_url;
+      if (!authUrl) throw new Error("No auth_url returned");
+      sessionStorage.setItem("pinterest_ads_reconnect_pending", "1");
+      window.location.href = authUrl;
+    } catch (e: any) {
+      toast({ title: "Reconnect failed", description: e?.message ?? "Failed", variant: "destructive" });
+      setBusy(null);
+    }
+  }
 
   async function loadCatalog() {
     const { data } = await (supabase as any)
@@ -90,6 +137,11 @@ export default function PinterestHealth() {
       // Clean the URL so the toast doesn't fire again on refresh.
       const cleaned = window.location.pathname;
       window.history.replaceState({}, "", cleaned);
+    }
+    // Auto-run Ads diagnostic immediately after an Ads-scope reconnect.
+    if (qs.get("oauth_success") === "true" && sessionStorage.getItem("pinterest_ads_reconnect_pending") === "1") {
+      sessionStorage.removeItem("pinterest_ads_reconnect_pending");
+      runAdsDiagnostic();
     }
   }, []);
 
