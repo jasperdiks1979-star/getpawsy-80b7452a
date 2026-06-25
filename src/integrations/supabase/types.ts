@@ -5906,6 +5906,529 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_assets: {
+        Row: {
+          ai_cost_credits: number | null
+          ai_cost_usd: number | null
+          approved_at: string | null
+          approved_by: string | null
+          board_candidate: string | null
+          category_slug: string | null
+          compliance_score: number | null
+          created_at: string
+          creative_type: string
+          cta: string | null
+          diversity_score: number | null
+          generation_model: string | null
+          headline: string | null
+          hook: string | null
+          hook_hash: string | null
+          id: string
+          image_url: string | null
+          media_hash: string | null
+          meta: Json
+          overlay_text: string | null
+          pdp_url: string | null
+          priority_score: number | null
+          product_id: string | null
+          product_title: string | null
+          quality_score: number | null
+          rejection_reason: string | null
+          routed_ref: string | null
+          routed_to: string | null
+          run_id: string | null
+          source_media_id: string | null
+          status: string
+          subheadline: string | null
+          uniqueness_score: number | null
+          updated_at: string
+          utm_url: string | null
+          video_url: string | null
+        }
+        Insert: {
+          ai_cost_credits?: number | null
+          ai_cost_usd?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          board_candidate?: string | null
+          category_slug?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          creative_type: string
+          cta?: string | null
+          diversity_score?: number | null
+          generation_model?: string | null
+          headline?: string | null
+          hook?: string | null
+          hook_hash?: string | null
+          id?: string
+          image_url?: string | null
+          media_hash?: string | null
+          meta?: Json
+          overlay_text?: string | null
+          pdp_url?: string | null
+          priority_score?: number | null
+          product_id?: string | null
+          product_title?: string | null
+          quality_score?: number | null
+          rejection_reason?: string | null
+          routed_ref?: string | null
+          routed_to?: string | null
+          run_id?: string | null
+          source_media_id?: string | null
+          status?: string
+          subheadline?: string | null
+          uniqueness_score?: number | null
+          updated_at?: string
+          utm_url?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          ai_cost_credits?: number | null
+          ai_cost_usd?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          board_candidate?: string | null
+          category_slug?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          creative_type?: string
+          cta?: string | null
+          diversity_score?: number | null
+          generation_model?: string | null
+          headline?: string | null
+          hook?: string | null
+          hook_hash?: string | null
+          id?: string
+          image_url?: string | null
+          media_hash?: string | null
+          meta?: Json
+          overlay_text?: string | null
+          pdp_url?: string | null
+          priority_score?: number | null
+          product_id?: string | null
+          product_title?: string | null
+          quality_score?: number | null
+          rejection_reason?: string | null
+          routed_ref?: string | null
+          routed_to?: string | null
+          run_id?: string | null
+          source_media_id?: string | null
+          status?: string
+          subheadline?: string | null
+          uniqueness_score?: number | null
+          updated_at?: string
+          utm_url?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_assets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "creative_generation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creative_budget_guardrails: {
+        Row: {
+          auto_generate_enabled: boolean
+          dry_run_default: boolean
+          hard_pause: boolean
+          id: number
+          max_per_run: number
+          max_usd_per_run: number
+          per_product_per_day: number
+          updated_at: string
+          videos_per_product_per_week: number
+        }
+        Insert: {
+          auto_generate_enabled?: boolean
+          dry_run_default?: boolean
+          hard_pause?: boolean
+          id?: number
+          max_per_run?: number
+          max_usd_per_run?: number
+          per_product_per_day?: number
+          updated_at?: string
+          videos_per_product_per_week?: number
+        }
+        Update: {
+          auto_generate_enabled?: boolean
+          dry_run_default?: boolean
+          hard_pause?: boolean
+          id?: number
+          max_per_run?: number
+          max_usd_per_run?: number
+          per_product_per_day?: number
+          updated_at?: string
+          videos_per_product_per_week?: number
+        }
+        Relationships: []
+      }
+      creative_fatigue_flags: {
+        Row: {
+          active: boolean
+          detail: Json
+          detected_at: string
+          expires_at: string | null
+          id: string
+          reason: string | null
+          scope: string
+          scope_key: string
+        }
+        Insert: {
+          active?: boolean
+          detail?: Json
+          detected_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          scope: string
+          scope_key: string
+        }
+        Update: {
+          active?: boolean
+          detail?: Json
+          detected_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          scope?: string
+          scope_key?: string
+        }
+        Relationships: []
+      }
+      creative_generation_runs: {
+        Row: {
+          actual_credits: number
+          actual_usd: number
+          blocked_duplicates: number
+          budget_cap_usd: number
+          created_at: string
+          dry_run: boolean
+          est_credits: number
+          est_usd: number
+          failed: number
+          finished_at: string | null
+          generated: number
+          id: string
+          mode: string
+          notes: Json
+          plan: Json | null
+          requested: number
+          skipped: number
+          started_at: string
+          status: string
+          trigger: string
+          updated_at: string
+        }
+        Insert: {
+          actual_credits?: number
+          actual_usd?: number
+          blocked_duplicates?: number
+          budget_cap_usd?: number
+          created_at?: string
+          dry_run?: boolean
+          est_credits?: number
+          est_usd?: number
+          failed?: number
+          finished_at?: string | null
+          generated?: number
+          id?: string
+          mode?: string
+          notes?: Json
+          plan?: Json | null
+          requested?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_credits?: number
+          actual_usd?: number
+          blocked_duplicates?: number
+          budget_cap_usd?: number
+          created_at?: string
+          dry_run?: boolean
+          est_credits?: number
+          est_usd?: number
+          failed?: number
+          finished_at?: string | null
+          generated?: number
+          id?: string
+          mode?: string
+          notes?: Json
+          plan?: Json | null
+          requested?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creative_performance_snapshots: {
+        Row: {
+          add_to_cart: number | null
+          checkout: number | null
+          clicks: number | null
+          created_at: string
+          creative_asset_id: string | null
+          ctr: number | null
+          id: string
+          impressions: number | null
+          meta: Json
+          outbound_clicks: number | null
+          purchase: number | null
+          saves: number | null
+          snapshot_date: string
+          spend_usd: number | null
+          verdict: string | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          checkout?: number | null
+          clicks?: number | null
+          created_at?: string
+          creative_asset_id?: string | null
+          ctr?: number | null
+          id?: string
+          impressions?: number | null
+          meta?: Json
+          outbound_clicks?: number | null
+          purchase?: number | null
+          saves?: number | null
+          snapshot_date?: string
+          spend_usd?: number | null
+          verdict?: string | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          checkout?: number | null
+          clicks?: number | null
+          created_at?: string
+          creative_asset_id?: string | null
+          ctr?: number | null
+          id?: string
+          impressions?: number | null
+          meta?: Json
+          outbound_clicks?: number | null
+          purchase?: number | null
+          saves?: number | null
+          snapshot_date?: string
+          spend_usd?: number | null
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_performance_snapshots_creative_asset_id_fkey"
+            columns: ["creative_asset_id"]
+            isOneToOne: false
+            referencedRelation: "creative_approval_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_performance_snapshots_creative_asset_id_fkey"
+            columns: ["creative_asset_id"]
+            isOneToOne: false
+            referencedRelation: "creative_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creative_prompts: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          display_name: string
+          guardrails: Json
+          id: string
+          prompt_key: string
+          system_prompt: string
+          updated_at: string
+          user_template: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          display_name: string
+          guardrails?: Json
+          id?: string
+          prompt_key: string
+          system_prompt: string
+          updated_at?: string
+          user_template: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          display_name?: string
+          guardrails?: Json
+          id?: string
+          prompt_key?: string
+          system_prompt?: string
+          updated_at?: string
+          user_template?: string
+        }
+        Relationships: []
+      }
+      creative_rotation_rules: {
+        Row: {
+          banned_phrases: Json
+          id: number
+          max_hook_repeat_30d: number
+          max_per_board_30d: number
+          max_per_category_30d: number
+          max_per_product_30d: number
+          max_per_product_per_day: number
+          max_videos_per_product_per_week: number
+          updated_at: string
+        }
+        Insert: {
+          banned_phrases?: Json
+          id?: number
+          max_hook_repeat_30d?: number
+          max_per_board_30d?: number
+          max_per_category_30d?: number
+          max_per_product_30d?: number
+          max_per_product_per_day?: number
+          max_videos_per_product_per_week?: number
+          updated_at?: string
+        }
+        Update: {
+          banned_phrases?: Json
+          id?: number
+          max_hook_repeat_30d?: number
+          max_per_board_30d?: number
+          max_per_category_30d?: number
+          max_per_product_30d?: number
+          max_per_product_per_day?: number
+          max_videos_per_product_per_week?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creative_test_queue: {
+        Row: {
+          asset_a: string | null
+          asset_b: string | null
+          created_at: string
+          hypothesis: string | null
+          id: string
+          status: string
+          winner: string | null
+        }
+        Insert: {
+          asset_a?: string | null
+          asset_b?: string | null
+          created_at?: string
+          hypothesis?: string | null
+          id?: string
+          status?: string
+          winner?: string | null
+        }
+        Update: {
+          asset_a?: string | null
+          asset_b?: string | null
+          created_at?: string
+          hypothesis?: string | null
+          id?: string
+          status?: string
+          winner?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_test_queue_asset_a_fkey"
+            columns: ["asset_a"]
+            isOneToOne: false
+            referencedRelation: "creative_approval_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_test_queue_asset_a_fkey"
+            columns: ["asset_a"]
+            isOneToOne: false
+            referencedRelation: "creative_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_test_queue_asset_b_fkey"
+            columns: ["asset_b"]
+            isOneToOne: false
+            referencedRelation: "creative_approval_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_test_queue_asset_b_fkey"
+            columns: ["asset_b"]
+            isOneToOne: false
+            referencedRelation: "creative_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creative_variants: {
+        Row: {
+          created_at: string
+          cta: string | null
+          headline: string | null
+          hook: string | null
+          id: string
+          image_url: string | null
+          meta: Json
+          parent_id: string
+          variant_kind: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          parent_id: string
+          variant_kind: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          parent_id?: string
+          variant_kind?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_variants_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "creative_approval_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_variants_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "creative_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credential_health_checks: {
         Row: {
           check_type: string
@@ -26904,6 +27427,51 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           visitor_id: string | null
+        }
+        Relationships: []
+      }
+      creative_approval_queue: {
+        Row: {
+          category_slug: string | null
+          created_at: string | null
+          creative_type: string | null
+          cta: string | null
+          headline: string | null
+          hook: string | null
+          id: string | null
+          image_url: string | null
+          pdp_url: string | null
+          priority_score: number | null
+          product_id: string | null
+          product_title: string | null
+        }
+        Insert: {
+          category_slug?: string | null
+          created_at?: string | null
+          creative_type?: string | null
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string | null
+          image_url?: string | null
+          pdp_url?: string | null
+          priority_score?: number | null
+          product_id?: string | null
+          product_title?: string | null
+        }
+        Update: {
+          category_slug?: string | null
+          created_at?: string | null
+          creative_type?: string | null
+          cta?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string | null
+          image_url?: string | null
+          pdp_url?: string | null
+          priority_score?: number | null
+          product_id?: string | null
+          product_title?: string | null
         }
         Relationships: []
       }

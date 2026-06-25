@@ -1,61 +1,80 @@
-# CJ Media Intelligence Platform — Implementation Plan
 
-## Reality check
+# Autonomous Creative Optimization Engine V1
 
-This project already has ~70% of what's requested:
+Builds the layer that turns the existing CJ media library into scored, deduped, budget-guarded draft creatives for Pinterest + on-site, with admin approval before anything reaches `pinterest_pin_queue`. No direct publishing. AI generation is dry-run by default.
 
-- `cj-rehost-product-images` — downloads CJ images → Supabase Storage
-- `cj-video-ingest-worker` + `pinterest_video_assets` — video rehosting
-- `cj-nightly-product-sync` — nightly CJ diff sync
-- `media-integrity-scan` + `media_audit` — QC (watermarks, CJK text, supplier logos)
-- `media-master-pipeline` — existing orchestrator
-- `product_media`, `product_media_audit`, `product_image_compliance` tables
-- `pinterest-eligible` enforcement via integrity guard
+## What ships
 
-Building a parallel "Media Intelligence Engine" from scratch would duplicate all of this, burn AI/storage credits, and break the existing Pinterest integrity contract. The right move is **extend + unify + dashboard**, not rebuild.
+### Database (1 migration)
 
-## What I will build (additive only)
+New tables (all admin-RLS, `service_role` full access):
 
-### 1. Database (1 migration)
-- `cj_media_sync_runs` — run-level metrics (products scanned, images/videos downloaded, failures, storage delta, duration)
-- `cj_media_asset_registry` — per-asset row: `product_id`, `kind` (image/video), `role` (main/variant/lifestyle/hero/thumb), `source_url`, `storage_path`, `checksum`, `width/height`, `bytes`, `quality_score`, `derived_from`, `created_at`. UNIQUE on `(product_id, checksum)` for dedupe.
-- `cj_media_derivative_jobs` — queue for derivatives (webp/thumb/pinterest/og) with status + retries
-- All admin-only RLS, with `service_role` GRANTs.
+- `creative_assets` — one row per draft creative (product, source media, type, hook/headline/subheadline/cta, image_url, pdp_url, utm_url, status, scores, costs, model, run_id)
+- `creative_variants` — alt copy/layout variants linked to a parent asset
+- `creative_generation_runs` — per-run metrics (mode, requested, generated, skipped, ai_cost_usd, ai_credits, dry_run, budget_cap, status)
+- `creative_performance_snapshots` — daily per-asset stats from Pinterest + funnel events
+- `creative_rotation_rules` — board/category/product caps (seeded with safe defaults)
+- `creative_fatigue_flags` — hook/visual/product fatigue records
+- `creative_test_queue` — A/B test slots
+- `creative_approval_queue` — pending admin review (view backed by `creative_assets` where status='draft')
+- `creative_prompts` — reusable prompt templates (seeded with the 11 types from spec)
+- `creative_budget_guardrails` — singleton id=1 (`max_per_run`, `max_usd_per_run`, `per_product_per_day`, `videos_per_product_per_week`, `auto_generate_enabled=false`, `dry_run_default=true`)
 
-### 2. Edge functions (3 new, extend 1)
-- **`cj-media-orchestrator`** (new) — the "Phase 14" controller. Iterates products in batches of 25, fans out to `cj-rehost-product-images` + `cj-video-ingest-worker`, then enqueues `media-integrity-scan`, then flips `pinterest_eligible` when quality gate passes. Writes one row per run to `cj_media_sync_runs`. Crash-safe via cursor in `app_config`.
-- **`cj-media-derivative-worker`** (new) — consumes `cj_media_derivative_jobs`. Generates **webp + thumbnail + pinterest 2:3 + og 1200x630** using `@jsquash/webp` (Deno-native, no external service). Skips other variants from the wishlist (story/square/landscape/etc.) — they can be added later if actually consumed by a surface. **No video transcoding** (would require ffmpeg infra that doesn't exist here and burns money); we keep the existing rehosted MP4 + extract a poster frame only.
-- **`cj-media-registry-backfill`** (new, one-shot) — walks existing `product_media` + `pinterest_video_assets` and populates `cj_media_asset_registry` so the dashboard has historical data.
-- **Extend `cj-nightly-product-sync`** — after diff sync, call `cj-media-orchestrator` with `mode=delta`.
+`app_config` keys added: `creative_auto_generate_enabled=false`.
 
-### 3. Cron
-- Nightly 03:30 UTC: `cj-media-orchestrator` (mode=delta)
-- Every 15 min: `cj-media-derivative-worker` (drains queue, max 50 jobs/run for credit safety)
+### Edge functions (5 new)
 
-### 4. Admin dashboard
-- New route `/admin/media-intelligence` with: latest run status, products processed, images/videos rehosted, failure count, storage usage, AI-readiness % (= eligible products / total active), retry queue depth, "Run full sync now" button.
+1. **`creative-score-engine`** — scores eligible products (active, in-stock, priced, local-hosted hero image, valid category, working slug) using RPS V2.1 tier, category gap vs `pinterest_category_targets`, 30-day pin coverage, freshness, hook fatigue, PDP health. Writes `priority_score`, recommended creative_type/board/hook into `creative_assets` shadow rows or a planning table.
+2. **`creative-generation-planner`** — builds a prioritized batch plan (top 30 products, top 8 category gaps, top 10 ad/pinterest/PDP candidates). Returns plan + cost estimate. Never generates.
+3. **`creative-generate-batch`** — honors `dry_run`, `max_per_run`, `max_usd_per_run`. Default path = no-AI text/layout variants from existing local media. AI path (gemini-3-flash text + nano-banana image) only when `dry_run=false` and budget allows. Runs through `creative-diversity-guard` before insert.
+4. **`creative-diversity-guard`** — pure validator: rejects repeated hooks (>3 in 30d), repeated CTA, banned dropshipping phrases ("stop scooping" et al per memory), per-product/per-category/per-board caps, duplicate media-url within 14d. Exported for reuse.
+5. **`creative-performance-snapshot`** — pulls `pinterest_analytics_daily` + `pinterest_funnel_events` joined by `creative_asset_id` (stamped via UTM `cr_id` param), writes daily snapshot, flags winners/losers/fatigue.
 
-## What I will NOT build (and why)
+Reused existing functions: `pinterest-analytics-sync`, `pinterest_pin_queue` writers, `pinterest-credit-state` for AI balance.
 
-| Requested | Why skipped |
-|---|---|
-| 20+ image derivative formats (retina, transparent PNG, story, landscape, portrait, banner, etc.) | No surface consumes them. Generating 20 versions × 400 products × multiple images = massive storage + CPU. I'll generate the 4 that are actually used. |
-| Full video transcoding pipeline (1080p/720p/9:16/square/gif) | Requires ffmpeg worker infra (render-worker exists for cinematic ads only). Would cost real money per video. Current pin publisher uses source MP4 fine. |
-| AI alt text / scene / object / pet / room detection for every asset | Per Core memory: **"NO expensive AI jobs"**. Hundreds of products × multiple images via vision model = thousands of credits. Existing `media-integrity-scan` already covers watermark/CJK/logo via Gemini Flash on demand. |
-| New per-product version history table | Existing `product_media_audit` + `cj_variant_repair_runs` cover this. |
-| Parallel ad-hoc worker fleet | Edge functions already run concurrent invocations; orchestrator batches with retry. |
+### Cron (pg_cron, all safe)
 
-If you want any of the above turned on, say which surface will consume the output and I'll wire it.
+- `creative-score-nightly` — 04:15 UTC
+- `creative-planner-nightly` — 04:30 UTC (writes plan to `creative_generation_runs` as `planned` row, never executes)
+- `creative-fatigue-daily` — 05:15 UTC
+- `creative-performance-daily` — 05:45 UTC
 
-## Execution order
+No cron triggers `creative-generate-batch`. AI generation is admin-button-only until `creative_auto_generate_enabled=true` (left false).
 
-1. Migration (await approval)
-2. 3 edge functions + extend nightly sync
-3. Dashboard page + route
-4. Schedule crons
-5. Run `cj-media-registry-backfill` once
-6. Trigger `cj-media-orchestrator` (mode=full) — report run ID + live counts
+### Admin UI
 
-## Open question (one, only if you disagree)
+- **`/admin/creative-command`** — single page with: AI balance card (uses `aiPricing.ts`), scorecard, run planner button, "Dry run plan" button, "Generate safe batch (no-AI)" button, "Generate AI batch" gated button with cost-confirm dialog, draft approval queue (approve→pinterest_pin_queue / approve→PDP candidate / reject / regenerate), category gaps panel, run history, fatigue flags.
+- Route registered in `src/App.tsx`.
 
-The wishlist asks for ~20 image variants and full video transcoding. My plan ships 4 image derivatives and skips video transcoding because nothing consumes the extra variants today and they'd burn storage + credits. **Confirm**: ship the lean version (recommended), or do you want a specific extra variant (e.g. transparent PNG for ads)?
+### Pinterest queue integration
+
+Approval action runs guard checks (re-run diversity guard, verify pdp URL 200, verify media is on Supabase storage), then inserts into `pinterest_pin_queue` with `meta.creative_asset_id` for traceability and a UTM URL containing `utm_source=pinterest&utm_medium=cpc&utm_campaign=creative_v1&cr_id={asset_id}`. Existing pHash duplicate guard already in queue path is respected.
+
+### Validation run (executed at end)
+
+1. linter on new migration
+2. deploy + smoke-call each new function with `dry_run=true`
+3. run scorer → count eligible products
+4. run planner dry-run → plan size + est cost
+5. run `creative-generate-batch` with `mode=no_ai, limit=20` to populate real draft creatives across ≥8 categories
+6. if `LOVABLE_API_KEY` balance ≥ $5, run AI batch `limit=5, dry_run=false` to prove path works (skipped otherwise — counted in report)
+7. assert 0 rows inserted into `pinterest_pin_queue`
+8. assert `/admin/creative-command` loads
+
+## Hard limits enforced
+
+- `max_per_run=20`, `max_usd_per_run=$15`, `per_product_per_day=4`, `videos_per_product_per_week=2`
+- `dry_run_default=true`, `auto_generate_enabled=false`
+- Eligibility filter: `is_active AND in_stock AND price>0 AND hero image hosted on supabase.co AND slug exists AND category_id NOT NULL`
+- Idempotency: every function uses `run_id` + UNIQUE`(product_id, hook_hash, creative_type, run_id)` on `creative_assets`
+
+## What is NOT built (deliberately deferred)
+
+- Automatic publishing (admin approval required, every time)
+- Expensive AI video rendering (`ad_video` storyboard rows stored as planning records only, no Cinematic V3 dispatch)
+- Auto-replacement of live homepage/PDP visuals (only candidate records)
+- Backfill of historical pin performance into new tables (covered by existing pinterest_intelligence stack; we read those tables, don't duplicate)
+
+## Final report includes
+
+Tables created, functions deployed, eligible product count, drafted creatives, estimated vs actual AI spend, categories covered, blocked duplicates, queue readiness, and next recommended admin action.
