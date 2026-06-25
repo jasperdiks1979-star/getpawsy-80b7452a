@@ -2095,6 +2095,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="media-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MediaIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="market-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
