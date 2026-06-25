@@ -1,93 +1,10 @@
-{
-  "reports": [
-    {
-      "slug": "2026-06-25-cmdr-wave-6a-foundations",
-      "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
-      "run_id": "ca4f54dd-7209-486b-a7d2-51c1af7f2c03",
-      "generated_at": "2026-06-25T11:00:00Z",
-      "status": "success",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.json"
-    },
-    {
-      "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
-      "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
-      "run_id": "aci-wave-5x",
-      "generated_at": "2026-06-25T10:45:00Z",
-      "status": "success",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.json"
-    },
-    {
-      "slug": "2026-06-25-agp-master-report",
-      "title": "AGP Master Implementation Report \u2014 25 June 2026",
-      "run_id": "agp-master-report",
-      "generated_at": "2026-06-25T09:30:00Z",
-      "status": "success",
-      "score": 95,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-4a-plus-intelligence",
-      "title": "AGP Wave 4A+ \u2014 Growth Intelligence Layer",
-      "run_id": "ba910e61-6d21-49c6-8ebf-5e8287ac55e5",
-      "generated_at": "2026-06-25T09:48:05Z",
-      "status": "succeeded",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
-      "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
-      "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
-      "generated_at": "2026-06-25T08:46:33.193118Z",
-      "status": "succeeded",
-      "score": 88,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-3-small-live",
-      "title": "Autonomous Growth Platform \u2014 Wave 3 Small Live Run (Enhancement)",
-      "run_id": "agp-wave-3-small-live",
-      "generated_at": "2026-06-25T08:30:00Z",
-      "status": "success",
-      "score": 84,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-3-enhance-qa",
-      "title": "Autonomous Growth Platform \u2014 Wave 3 (Enhancement + QA loop)",
-      "run_id": "agp-wave-3-enhance-qa",
-      "generated_at": "2026-06-25T08:13:52.665545+00:00",
-      "status": "success",
-      "score": 88,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-2-media-pipeline",
-      "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
-      "run_id": "agp-wave-2-media-pipeline",
-      "generated_at": "2026-06-25T07:45:26.786356Z",
-      "status": "succeeded_with_warnings",
-      "score": 86,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-1-foundations",
-      "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
-      "run_id": "agp-wave-1-foundations",
-      "generated_at": "2026-06-25T07:38:24.840733Z",
-      "status": "success",
-      "score": 92,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.json"
-    }
-  ]
-}
+[
+  {
+    "date": "2026-06-25",
+    "wave": "6A",
+    "title": "Autonomous Commander \u00b7 Foundation",
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json",
+    "summary": "Read-only executive layer: 15 engines observed, 12 recommendations queued, health 48/100."
+  }
+]
