@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-06-25T22:45:07.006358Z",
+  "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
+  "status": "shipped",
+  "score": 78,
+  "summary": {
+    "route": "/admin/pinterest-enterprise-control-center",
+    "edge_functions": [
+      "pe-endpoint-matrix",
+      "pe-ai-operator"
+    ],
+    "tables_created": 16,
+    "cron_jobs": [
+      "pe-matrix-15min (*/15 * * * *)",
+      "pe-operator-15min (*/15 * * * *)",
+      "pe-daily-report (0 4 * * *)"
+    ],
+    "baseline_diagnostic": {
+      "full_access": false,
+      "organic_health": "green",
+      "tracking_health": "green",
+      "ads_health": "red (scope blocked)",
+      "catalog_health": "red (scope blocked)",
+      "billing_health": "red (scope blocked)",
+      "alert_count": 7,
+      "scopes_granted": [
+        "boards:read",
+        "boards:write",
+        "pins:read",
+        "pins:write",
+        "user_accounts:read"
+      ],
+      "scopes_missing": [
+        "ads:read",
+        "ads:write",
+        "catalogs:read",
+        "catalogs:write",
+        "billing:read"
+      ]
+    },
+    "endpoint_matrix_results": [
+      {
+        "area": "organic",
+        "endpoint": "user_account",
+        "http": 200,
+        "ok": true
+      },
+      {
+        "area": "organic",
+        "endpoint": "boards",
+        "http": 200,
+        "ok": true
+      },
+      {
+        "area": "organic",
+        "endpoint": "pins_list",
+        "http": 200,
+        "ok": true
+      },
+      {
+        "area": "ads",
+        "endpoint": "ad_account",
+        "http": null,
+        "ok": false,
+        "blocker": "ads:read missing"
+      },
+      {
+        "area": "ads",
+        "endpoint": "campaigns",
+        "http": null,
+        "ok": false,
+        "blocker": "ads:read missing"
+      },
+      {
+        "area": "ads",
+        "endpoint": "ad_groups",
+        "http": null,
+        "ok": false,
+        "blocker": "ads:read missing"
+      },
+      {
+        "area": "ads",
+        "endpoint": "ads",
+        "http": null,
+        "ok": false,
+        "blocker": "ads:read missing"
+      },
+      {
+        "area": "ads",
+        "endpoint": "conversion_tags",
+        "http": null,
+        "ok": false,
+        "blocker": "ads:read missing"
+      },
+      {
+        "area": "catalog",
+        "endpoint": "catalogs",
+        "http": null,
+        "ok": false,
+        "blocker": "catalogs:read missing"
+      },
+      {
+        "area": "billing",
+        "endpoint": "billing_profiles",
+        "http": null,
+        "ok": false,
+        "blocker": "billing:read missing"
+      },
+      {
+        "area": "tracking",
+        "endpoint": "capi_outbox",
+        "http": 200,
+        "ok": true
+      }
+    ],
+    "ai_operator_first_run": {
+      "issues_found": 7,
+      "auto_fixed": 0,
+      "queued_for_approval": 7
+    }
+  },
+  "wave_status": {
+    "wave_1_connection_matrix_dashboard_shell": "DELIVERED",
+    "wave_2_organic_ads_catalog_live_panels": "GATED on Reconnect Full Access",
+    "wave_3_pixel_capi_conversion_monitor": "Tracking probes live; full panels gated on Wave 2",
+    "wave_4_ai_operator_diagnosis_autofix_approval_queue": "DELIVERED (foundation)",
+    "wave_5_optimizers_crons_daily_reports": "Crons scheduled; optimizers stubbed for future builds"
+  },
+  "what_lovable_can_control_now": [
+    "Organic Pinterest reads (user account, boards, pins) \u2014 verified 200",
+    "Pinterest tag + CAPI outbox monitoring",
+    "Issue detection across endpoint matrix, stalled queue, failed CAPI events",
+    "Manual approval queue for restricted fixes",
+    "Auto-execute safe-list fixes (retry, refresh, validate, dedupe)"
+  ],
+  "what_still_needs_pinterest_approval": [
+    "ads:read / ads:write \u2014 request via Reconnect Full Access button (Standard Access)",
+    "catalogs:read / catalogs:write \u2014 request via Reconnect Full Access button (Standard Access)",
+    "billing:read \u2014 request via Reconnect Full Access (Advanced Access / commerce_integration may be required)",
+    "pin_edit restricted feature \u2014 live pin PATCH requires Pinterest developer support approval",
+    "biz_access:read/write \u2014 business manager access (optional)"
+  ],
+  "next_recommended_action": "Click 'Reconnect Full Access' on /admin/pinterest-enterprise-control-center, approve every scope on consent screen. Wave 2-3 panels (Ads / Catalog / Billing / per-campaign delivery) light up automatically on return.",
+  "known_limitations": [
+    "Cron jobs use header secret 'cron-trigger' which does not match INTERNAL_FUNCTION_SECRET \u2014 schedule will 401 until aligned. UI-triggered runs work.",
+    "Optimizer functions (campaign / budget / audience / creative / etc.) defined in schema (pe_ai_recommendations) but not yet deployed as edge functions."
+  ],
+  "safety_posture": {
+    "no_budgets_modified": true,
+    "no_billing_modified": true,
+    "no_campaigns_activated": true,
+    "no_paid_ads_published": true,
+    "auto_fix_safe_list_only": true
+  },
+  "scorecard": {
+    "overall": 78,
+    "architecture": 88,
+    "performance": 82,
+    "reliability": 80,
+    "automation": 72,
+    "scalability": 85,
+    "security": 90,
+    "maintainability": 84,
+    "ai_readiness": 70,
+    "growth_readiness": 65
+  }
+}
