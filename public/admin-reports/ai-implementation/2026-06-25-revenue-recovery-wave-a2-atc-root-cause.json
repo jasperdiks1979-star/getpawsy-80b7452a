@@ -27,7 +27,7 @@
       "severity": "low",
       "title": "Sitemap emits /product/ (singular) URLs",
       "detail": "sitemap-products-1.xml lists URLs as https://getpawsy.pet/product/<slug> (singular). The canonical project rule is /products/ (plural). Both URLs return HTTP 200 so there is no redirect chain, but Pinterest pin destinations and GSC click attribution may fragment between the two shapes.",
-      "fix": "Generate the sitemap from the same slug helper used by <link rel=canonical>. Verify the renderer in scripts/sitemap-utils.mjs or scripts/validate-sitemaps.mjs."
+      "fix": "Generate the sitemap from the same slug helper used by &lt;link rel=canonical&gt;. Verify the renderer in scripts/sitemap-utils.mjs or scripts/validate-sitemaps.mjs."
     }
   ],
   "funnel_after_patch": {
