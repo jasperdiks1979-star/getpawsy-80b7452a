@@ -4630,6 +4630,184 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_media_asset_registry: {
+        Row: {
+          bytes: number | null
+          checksum: string | null
+          created_at: string
+          derived_from: string | null
+          height: number | null
+          id: string
+          kind: string
+          metadata: Json
+          product_id: string
+          public_url: string | null
+          quality_score: number | null
+          role: string | null
+          source_url: string | null
+          storage_path: string
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          bytes?: number | null
+          checksum?: string | null
+          created_at?: string
+          derived_from?: string | null
+          height?: number | null
+          id?: string
+          kind: string
+          metadata?: Json
+          product_id: string
+          public_url?: string | null
+          quality_score?: number | null
+          role?: string | null
+          source_url?: string | null
+          storage_path: string
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          bytes?: number | null
+          checksum?: string | null
+          created_at?: string
+          derived_from?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          product_id?: string
+          public_url?: string | null
+          quality_score?: number | null
+          role?: string | null
+          source_url?: string | null
+          storage_path?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cj_media_asset_registry_derived_from_fkey"
+            columns: ["derived_from"]
+            isOneToOne: false
+            referencedRelation: "cj_media_asset_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cj_media_derivative_jobs: {
+        Row: {
+          asset_id: string | null
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          derivative_kind: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          output_bytes: number | null
+          output_path: string | null
+          output_url: string | null
+          product_id: string
+          source_url: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          derivative_kind: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          output_bytes?: number | null
+          output_path?: string | null
+          output_url?: string | null
+          product_id: string
+          source_url: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          derivative_kind?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          output_bytes?: number | null
+          output_path?: string | null
+          output_url?: string | null
+          product_id?: string
+          source_url?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cj_media_derivative_jobs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "cj_media_asset_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cj_media_sync_runs: {
+        Row: {
+          created_at: string
+          derivatives_enqueued: number
+          failures: number
+          finished_at: string | null
+          id: string
+          images_rehosted: number
+          mode: string
+          notes: Json
+          products_processed: number
+          products_scanned: number
+          started_at: string
+          status: string
+          storage_bytes_added: number
+          videos_rehosted: number
+        }
+        Insert: {
+          created_at?: string
+          derivatives_enqueued?: number
+          failures?: number
+          finished_at?: string | null
+          id?: string
+          images_rehosted?: number
+          mode?: string
+          notes?: Json
+          products_processed?: number
+          products_scanned?: number
+          started_at?: string
+          status?: string
+          storage_bytes_added?: number
+          videos_rehosted?: number
+        }
+        Update: {
+          created_at?: string
+          derivatives_enqueued?: number
+          failures?: number
+          finished_at?: string | null
+          id?: string
+          images_rehosted?: number
+          mode?: string
+          notes?: Json
+          products_processed?: number
+          products_scanned?: number
+          started_at?: string
+          status?: string
+          storage_bytes_added?: number
+          videos_rehosted?: number
+        }
+        Relationships: []
+      }
       cj_product_bookmarks: {
         Row: {
           category_name: string | null

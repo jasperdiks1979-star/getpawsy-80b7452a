@@ -1,61 +1,61 @@
+# CJ Media Intelligence Platform — Implementation Plan
 
-# Autonomous Growth Intelligence Engine V1
+## Reality check
 
-Your project already has ~80% of this built. Tables like `gi_*`, `growth_*`, `pinterest_pin_performance`, `pinterest_pin_verdicts`, `pinterest_loser_blocklist`, `pinterest_creative_winners`, `revenue_ai_*`, `pinterest_category_rotation`, `pinterest_posting_windows`, `monitoring_alerts`, plus 20+ panels in `/admin/growth-intelligence`, `/admin/pinterest-intelligence`, `/admin/revenue-ai` already cover 12 of your 15 modules.
+This project already has ~70% of what's requested:
 
-Before I write thousands of lines duplicating existing infra, I need to confirm scope.
+- `cj-rehost-product-images` — downloads CJ images → Supabase Storage
+- `cj-video-ingest-worker` + `pinterest_video_assets` — video rehosting
+- `cj-nightly-product-sync` — nightly CJ diff sync
+- `media-integrity-scan` + `media_audit` — QC (watermarks, CJK text, supplier logos)
+- `media-master-pipeline` — existing orchestrator
+- `product_media`, `product_media_audit`, `product_image_compliance` tables
+- `pinterest-eligible` enforcement via integrity guard
 
-## What already exists (do NOT rebuild)
+Building a parallel "Media Intelligence Engine" from scratch would duplicate all of this, burn AI/storage credits, and break the existing Pinterest integrity contract. The right move is **extend + unify + dashboard**, not rebuild.
 
-| Module | Existing system |
+## What I will build (additive only)
+
+### 1. Database (1 migration)
+- `cj_media_sync_runs` — run-level metrics (products scanned, images/videos downloaded, failures, storage delta, duration)
+- `cj_media_asset_registry` — per-asset row: `product_id`, `kind` (image/video), `role` (main/variant/lifestyle/hero/thumb), `source_url`, `storage_path`, `checksum`, `width/height`, `bytes`, `quality_score`, `derived_from`, `created_at`. UNIQUE on `(product_id, checksum)` for dedupe.
+- `cj_media_derivative_jobs` — queue for derivatives (webp/thumb/pinterest/og) with status + retries
+- All admin-only RLS, with `service_role` GRANTs.
+
+### 2. Edge functions (3 new, extend 1)
+- **`cj-media-orchestrator`** (new) — the "Phase 14" controller. Iterates products in batches of 25, fans out to `cj-rehost-product-images` + `cj-video-ingest-worker`, then enqueues `media-integrity-scan`, then flips `pinterest_eligible` when quality gate passes. Writes one row per run to `cj_media_sync_runs`. Crash-safe via cursor in `app_config`.
+- **`cj-media-derivative-worker`** (new) — consumes `cj_media_derivative_jobs`. Generates **webp + thumbnail + pinterest 2:3 + og 1200x630** using `@jsquash/webp` (Deno-native, no external service). Skips other variants from the wishlist (story/square/landscape/etc.) — they can be added later if actually consumed by a surface. **No video transcoding** (would require ffmpeg infra that doesn't exist here and burns money); we keep the existing rehosted MP4 + extract a poster frame only.
+- **`cj-media-registry-backfill`** (new, one-shot) — walks existing `product_media` + `pinterest_video_assets` and populates `cj_media_asset_registry` so the dashboard has historical data.
+- **Extend `cj-nightly-product-sync`** — after diff sync, call `cj-media-orchestrator` with `mode=delta`.
+
+### 3. Cron
+- Nightly 03:30 UTC: `cj-media-orchestrator` (mode=delta)
+- Every 15 min: `cj-media-derivative-worker` (drains queue, max 50 jobs/run for credit safety)
+
+### 4. Admin dashboard
+- New route `/admin/media-intelligence` with: latest run status, products processed, images/videos rehosted, failure count, storage usage, AI-readiness % (= eligible products / total active), retry queue depth, "Run full sync now" button.
+
+## What I will NOT build (and why)
+
+| Requested | Why skipped |
 |---|---|
-| M1 Daily Performance | `gi_*` tables, `pinterest_analytics_daily`, `ga4_daily_snapshots`, cron syncs |
-| M2 Winner Detection | `revenue_ai_winner_dna`, `pinterest_pin_verdicts`, `pinterest_loser_blocklist`, `revenue-ai-winner-detect` |
-| M3 Pin Quality | `pinterest_pin_dimensions`, `cinematicQaAudit`, Gold Standard ≥80 gate |
-| M4 A/B Tests | `cta_variant_config`, `pinterest_creative_variants`, `mi_experiments` |
-| M6 Discovery | `revenue_priority_score_v2`, `hot_product_scores`, `growth_product_scores` |
-| M7 Category Balancer | `pinterest_category_rotation`, Diversity Governor |
-| M8 Content Planner | `pinterest_autopilot_schedule`, `pinterest-creative-director` |
-| M9 Fatigue | `pinterest_creative_intents`, `cinematic-style-bias`, hook fatigue tracking |
-| M11 Dashboard | `/admin/growth-intelligence`, `/admin/pinterest-intelligence`, `/admin/revenue-ai` |
-| M12 Alerts | `monitoring_alerts`, `monitoring_realtime_alerts`, `revenue_alert_log`, `sms_alert_logs` |
-| M13 Learning | `growth_strategy_scores`, `revenue_ai_winner_dna`, `cinematic_creative_dna` |
-| M14/M15 Safety/Perf | `pinterest_publish_governor`, `pinterest_credit_state`, idempotency keys |
+| 20+ image derivative formats (retina, transparent PNG, story, landscape, portrait, banner, etc.) | No surface consumes them. Generating 20 versions × 400 products × multiple images = massive storage + CPU. I'll generate the 4 that are actually used. |
+| Full video transcoding pipeline (1080p/720p/9:16/square/gif) | Requires ffmpeg worker infra (render-worker exists for cinematic ads only). Would cost real money per video. Current pin publisher uses source MP4 fine. |
+| AI alt text / scene / object / pet / room detection for every asset | Per Core memory: **"NO expensive AI jobs"**. Hundreds of products × multiple images via vision model = thousands of credits. Existing `media-integrity-scan` already covers watermark/CJK/logo via Gemini Flash on demand. |
+| New per-product version history table | Existing `product_media_audit` + `cj_variant_repair_runs` cover this. |
+| Parallel ad-hoc worker fleet | Edge functions already run concurrent invocations; orchestrator batches with retry. |
 
-## What is genuinely missing (worth building)
+If you want any of the above turned on, say which surface will consume the output and I'll wire it.
 
-1. **Unified Growth Score (0–100)** — one composite KPI rolled up daily into a new `growth_daily_scorecard` table, blending Pinterest health + SEO health + conversion + revenue trend.
-2. **M5 Landing Page Analyzer** — no per-PDP audit table exists. Add `pdp_health_audits` + an edge function that runs Lighthouse-lite checks (title, mobile, trust badges, reviews, FAQ, schema, CWV from `web_vitals`) rule-based, zero AI.
-3. **M10 Campaign Advisor (recommend-only)** — `pinterest_campaign_recommendations` table + edge function that reads ads spend/ROAS and emits suggestions; never auto-mutates budgets.
-4. **Executive Overview page** — single `/admin/growth-command` route that stitches the existing panels + new scorecard + landing-page health + campaign advisor into one dashboard. Existing pages stay.
-5. **Orchestrator cron** — `growth-intelligence-orchestrator` nightly job that chains the existing engines in correct order and writes one summary into `growth_daily_scorecard`.
+## Execution order
 
-## What I will NOT do (per your standing rules)
+1. Migration (await approval)
+2. 3 edge functions + extend nightly sync
+3. Dashboard page + route
+4. Schedule crons
+5. Run `cj-media-registry-backfill` once
+6. Trigger `cj-media-orchestrator` (mode=full) — report run ID + live counts
 
-- No AI image/video generation
-- No duplicate tables (will reuse `gi_*`, `growth_*`, `pinterest_*`)
-- No auto-budget changes on ads (advisor only)
-- No teardown of existing dashboards/engines
+## Open question (one, only if you disagree)
 
-## Deliverables (3 phases)
-
-**Phase 1 — Schema & data layer**
-- Migration: `growth_daily_scorecard`, `pdp_health_audits`, `pinterest_campaign_recommendations` (+ GRANTs, RLS admin-read).
-
-**Phase 2 — Edge functions (all hourly/nightly crons, zero AI credits)**
-- `growth-scorecard-compute` (nightly 03:00 UTC) → composite score from existing tables
-- `pdp-health-audit` (nightly 04:00 UTC) → rule-based PDP scan over active products
-- `pinterest-campaign-advisor` (daily 05:00 UTC) → reads spend/ROAS, writes recommendations
-- `growth-intelligence-orchestrator` (nightly 02:00 UTC) → invokes the 6 existing nightly engines + the 3 new ones in order, logs to `growth_decisions`
-
-**Phase 3 — UI**
-- New `/admin/growth-command` page with 4 sections: Daily Growth Score, PDP Health, Campaign Advisor, Orchestrator status. Embeds existing panels via existing components.
-
-## Open questions before I start
-
-1. **Scorecard weights:** default to `Revenue 35 + Pinterest health 25 + Conversion 20 + SEO 10 + Inventory 10`. OK?
-2. **PDP audit frequency:** all 428 active products nightly, or top 100 by RPS v2 daily + full sweep weekly? (full nightly = ~5min function time, no AI)
-3. **Campaign Advisor data source:** you don't currently sync Pinterest Ads spend into `ad_spend_entries` for Pinterest specifically — should the advisor run on `pinterest_pin_performance` + `pinterest_revenue_attribution_v3` only until ads sync is wired, or do you want me to also build the ads sync now?
-4. **Orchestrator on-failure behavior:** continue with remaining steps + alert via `monitoring_alerts`, or halt + alert? Default: continue + alert.
-
-Answer the 4 questions (or say "your defaults") and I'll ship Phase 1–3 in one pass.
+The wishlist asks for ~20 image variants and full video transcoding. My plan ships 4 image derivatives and skips video transcoding because nothing consumes the extra variants today and they'd burn storage + credits. **Confirm**: ship the lean version (recommended), or do you want a specific extra variant (e.g. transparent PNG for ads)?
