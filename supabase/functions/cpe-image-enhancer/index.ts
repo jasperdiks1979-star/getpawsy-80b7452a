@@ -3,7 +3,7 @@ import { claimJobs, finishJob, withinBudget, isInternalAuthed } from "../_shared
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const VISION = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const RESTORE_PROMPT = "Restore this product image to premium e-commerce quality. Sharpen edges, denoise compression artifacts, balance white balance, neutralize any tinted background, repair clipped highlights, remove any Chinese text overlays or supplier watermarks if present. Keep the product identical in shape, color, and proportions. Do not invent new objects.";
+const RESTORE_PROMPT = "Edit this product photo for a premium e-commerce listing: place it on a clean pure-white studio background, improve sharpness and lighting, and keep the product itself exactly the same in shape, color, and proportions. Output the edited image.";
 
 async function enhance(srcUrl: string, apiKey: string): Promise<{ url: string | null; err: string | null }> {
   try {
