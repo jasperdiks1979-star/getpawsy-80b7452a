@@ -244,17 +244,17 @@ async function runRevenueIntel(): Promise<StepOut> {
   const t = Date.now();
   const today = new Date().toISOString().slice(0, 10);
   const { data: products } = await sb.from("products")
-    .select("id, price, cost, margin_percent, effective_stock, revenue_30d_cents, ctr_estimate, cvr_estimate")
+    .select("id, price, margin_percent, effective_stock")
     .eq("is_active", true)
     .limit(600);
   const rows = (products ?? []).map((p: any) => {
     const price = Number(p.price || 0);
-    const cost = Number(p.cost || price * 0.45);
+    const cost = price * (1 - Number(p.margin_percent || 0.4));
     const profit_cents = Math.round((price - cost) * 100);
     const margin = price > 0 ? (price - cost) / price : 0;
-    const conv = Number(p.cvr_estimate || 0.012);
+    const conv = 0.012;
     const refund_risk = conv < 0.005 ? 0.2 : 0.05;
-    const dead = (Number(p.effective_stock || 0) > 50 && Number(p.revenue_30d_cents || 0) < 1000);
+    const dead = (Number(p.effective_stock || 0) > 80);
     return {
       product_id: p.id, day: today,
       profit_cents,
