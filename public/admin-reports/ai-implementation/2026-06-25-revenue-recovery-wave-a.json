@@ -1,0 +1,111 @@
+{
+  "slug": "2026-06-25-revenue-recovery-wave-a",
+  "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
+  "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
+  "status": "shipped",
+  "score": 52,
+  "generated_at": "2026-06-25T16:35:00Z",
+  "summary": {
+    "green": 2,
+    "yellow": 2,
+    "red": 4
+  },
+  "checks": [
+    {
+      "step": "visitor_arrival_24h",
+      "status": "green",
+      "latency_ms": 217,
+      "evidence": {
+        "browsing_rows_24h": 1320
+      },
+      "error_message": null
+    },
+    {
+      "step": "product_views_24h",
+      "status": "green",
+      "latency_ms": 113,
+      "evidence": {
+        "rows": 229
+      },
+      "error_message": null
+    },
+    {
+      "step": "add_to_cart_24h",
+      "status": "red",
+      "latency_ms": 54,
+      "evidence": {
+        "rows": 0,
+        "product_views": 229,
+        "atc_rate_pct": 0
+      },
+      "error_message": null
+    },
+    {
+      "step": "begin_checkout_24h",
+      "status": "red",
+      "latency_ms": 52,
+      "evidence": {
+        "rows": 0
+      },
+      "error_message": null
+    },
+    {
+      "step": "stripe_paid_orders_14d",
+      "status": "yellow",
+      "latency_ms": 51,
+      "evidence": {
+        "tally": {
+          "paid": 1,
+          "expired": 12,
+          "pending": 1
+        },
+        "paid": 1,
+        "total": 14,
+        "paid_rate_pct": 7.1
+      },
+      "error_message": null
+    },
+    {
+      "step": "pinterest_capi_7d",
+      "status": "red",
+      "latency_ms": 47,
+      "evidence": {
+        "tally": {},
+        "total": 0
+      },
+      "error_message": null
+    },
+    {
+      "step": "pinterest_attribution_7d",
+      "status": "yellow",
+      "latency_ms": 60,
+      "evidence": {
+        "sessions": 47
+      },
+      "error_message": null
+    },
+    {
+      "step": "pinterest_pins_published_24h",
+      "status": "red",
+      "latency_ms": 53,
+      "evidence": {
+        "pins": 0
+      },
+      "error_message": null
+    }
+  ],
+  "scorecard": {
+    "Overall": 52,
+    "Architecture": 78,
+    "Performance": 70,
+    "Reliability": 60,
+    "Automation": 55,
+    "Scalability": 75,
+    "Security": 82,
+    "Maintainability": 80,
+    "AI Readiness": 65,
+    "Growth Readiness": 30
+  },
+  "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
+  "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
+}

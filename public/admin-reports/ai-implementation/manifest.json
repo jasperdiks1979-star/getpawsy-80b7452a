@@ -1,8 +1,18 @@
 {
   "reports": [
     {
+      "slug": "2026-06-25-revenue-recovery-wave-a",
+      "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
+      "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
+      "generated_at": "2026-06-25T16:35:00Z",
+      "status": "shipped",
+      "score": 52,
+      "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
+    },
+    {
       "slug": "2026-06-25-growth-incident-deep-dive",
-      "title": "Priority-1 Growth Incident · Deep-Dive (ATC funnel collapse)",
+      "title": "Priority-1 Growth Incident \u00b7 Deep-Dive (ATC funnel collapse)",
       "run_id": "incident-2026-06-25-deep",
       "generated_at": "2026-06-25T15:30:00Z",
       "status": "mitigated",
@@ -22,7 +32,7 @@
     },
     {
       "slug": "2026-06-25-commander-wave-6a-foundation",
-      "title": "Autonomous Commander · Foundation (Wave 6A)",
+      "title": "Autonomous Commander \u00b7 Foundation (Wave 6A)",
       "run_id": "cmdr-6a",
       "generated_at": "2026-06-25T00:00:00Z",
       "status": "shipped",
