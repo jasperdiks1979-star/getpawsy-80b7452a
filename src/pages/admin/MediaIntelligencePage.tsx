@@ -40,8 +40,8 @@ export default function MediaIntelligencePage() {
     const assetsRes = await sb.from("cj_media_asset_registry").select("*", { count: "exact", head: true });
     const pendingRes = await sb.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq("status", "pending");
     const failedRes = await sb.from("cj_media_derivative_jobs").select("*", { count: "exact", head: true }).eq("status", "failed");
-    const eligibleRes = await sb.from("products").select("*", { count: "exact", head: true }).eq("status", "active").eq("pinterest_eligible", true);
-    const activeRes = await sb.from("products").select("*", { count: "exact", head: true }).eq("status", "active");
+    const eligibleRes = await sb.from("products").select("*", { count: "exact", head: true }).eq("is_active", true).eq("pinterest_eligible", true);
+    const activeRes = await sb.from("products").select("*", { count: "exact", head: true }).eq("is_active", true);
     setRuns((runsRes.data ?? []) as Run[]);
     setStats({
       registryAssets: assetsRes.count ?? 0,

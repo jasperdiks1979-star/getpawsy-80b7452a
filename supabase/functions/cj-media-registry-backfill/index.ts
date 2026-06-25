@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   const { data: products, error } = await supabase
     .from("products")
     .select("id, image_url, images")
-    .eq("status", "active")
+    .eq("is_active", true)
     .limit(limit);
   if (error) {
     return new Response(JSON.stringify({ ok: false, error: error.message }), {
