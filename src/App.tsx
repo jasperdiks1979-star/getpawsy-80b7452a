@@ -2122,6 +2122,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="autonomous-growth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AutonomousGrowthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="market-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
