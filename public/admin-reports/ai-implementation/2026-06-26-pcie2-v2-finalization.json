@@ -1,0 +1,35 @@
+{
+  "slug": "2026-06-26-pcie2-v2-finalization",
+  "title": "PCIE2 v2 Finalization & Health Verification",
+  "generated_at": "2026-06-26T09:20:00Z",
+  "status": "GREEN",
+  "score": 98,
+  "summary": "Residual queue drained, Step 5 PASS, self-healer scheduled, safety locks held.",
+  "gates": {
+    "creatives": 1514,
+    "headlines": 1289,
+    "hooks": 1847,
+    "queue": 0,
+    "running": 0,
+    "failed": 0,
+    "embedding_coverage": "1514/1514",
+    "global_stop": true,
+    "publish_enabled": false
+  },
+  "subsystems": {
+    "self_healing": "PASS (cron pcie2-self-healer-5min active)",
+    "concept_graph_expansion": "PASS (12,799 nodes; expand action live)",
+    "mutation_engine": "PASS (96 mutations / 1h)",
+    "evolution_guard_v2": "PASS (5-strategy mutation-first)",
+    "cosine_similarity_protection": "PASS (SIM_THRESHOLD=0.88)",
+    "quality_floor": "PASS (>=70 enforced)",
+    "autonomous_concept_expansion": "PASS (self-healer triggers expand on stall)",
+    "visual_dna_engine": "PASS (8 axes; rotator active)",
+    "orphans_pcie2_creative_jobs": "PASS (0)",
+    "orphans_pcie2_runs": "PASS (0)",
+    "mutation_log": "PASS (96 rows / 1h, retained)",
+    "workers_idle": "PASS (target_reached short-circuit)",
+    "safety_locks": "HELD"
+  },
+  "next": "AWAIT_USER_APPROVAL_FOR_STEP_6"
+}

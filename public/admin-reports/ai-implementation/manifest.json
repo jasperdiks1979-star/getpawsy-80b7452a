@@ -1,5 +1,14 @@
 [
   {
+    "slug": "2026-06-26-pcie2-v2-finalization",
+    "title": "PCIE2 v2 Finalization & Health Verification",
+    "generated_at": "2026-06-26T09:20:00Z",
+    "status": "GREEN",
+    "score": 98,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-v2-finalization.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-v2-finalization.json"
+  },
+  {
     "id": "2026-06-26-cdn-migration-complete",
     "title": "CDN Asset Migration - Completion & Verification Report",
     "date": "2026-06-26",
