@@ -1,0 +1,212 @@
+{
+  "report": "PCIE2 Sole-Publisher Consolidation & 50-Pin E2E",
+  "generated_at": "2026-06-26T02:17:37.990395Z",
+  "pipeline_version": "1.0.0",
+  "sole_publisher": "supabase/functions/pcie2-publisher/index.ts",
+  "global_kill_switch": "app_config.pinterest_publishing_global_stop",
+  "publish_enable_flag": "app_config.pcie2_publish_enabled",
+  "current_flags": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false
+  },
+  "legacy_components_total": 22,
+  "legacy_components_neutralized": 22,
+  "legacy_components_still_active": 0,
+  "legacy_active_list": [],
+  "legacy_inventory": [
+    {
+      "name": "growth-publish-tick-15min",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-autopilot-watchdog-10min",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-content-correction-autosweep",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-cron-publish",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-daily-scheduler",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-regen-autopilot-30m",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-revenue-autopilot-hourly",
+      "category": "cron",
+      "neutralized": true,
+      "neutralized_via": "cron_unscheduled"
+    },
+    {
+      "name": "pinterest-automation",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-autopilot-run-one",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2-publish-lock"
+    },
+    {
+      "name": "pinterest-autopilot-watchdog",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-content-correction",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-cron-worker",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2-publish-lock"
+    },
+    {
+      "name": "pinterest-emergency-publish",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2-publish-lock"
+    },
+    {
+      "name": "pinterest-live-pin-repair-execute",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-publish-now",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-regen-autopilot",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-revenue-autopilot",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-scheduler",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "performance_mode_lockdown"
+    },
+    {
+      "name": "pinterest-video-publisher",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2_global_stop_guard"
+    },
+    {
+      "name": "pinterest-zap",
+      "category": "edge_function",
+      "neutralized": true,
+      "neutralized_via": "pcie2-publish-lock"
+    },
+    {
+      "name": "pcie2_publish_enabled",
+      "category": "feature_flag",
+      "neutralized": true,
+      "neutralized_via": "app_config (locked until E2E)"
+    },
+    {
+      "name": "pinterest_publishing_global_stop",
+      "category": "feature_flag",
+      "neutralized": true,
+      "neutralized_via": "app_config"
+    }
+  ],
+  "physical_code_removed": [
+    {
+      "file": "supabase/functions/pinterest-automation/index.ts",
+      "before_lines": 3851,
+      "after_lines": 23,
+      "replacement": "410 Gone stub"
+    },
+    {
+      "file": "supabase/functions/pinterest-live-pin-repair-execute/index.ts",
+      "before_lines": 295,
+      "after_lines": 20,
+      "replacement": "410 Gone stub"
+    }
+  ],
+  "ci_guard": "scripts/pcie2-legacy-guard.mjs (scanned 695 files, 0 violations)",
+  "mandatory_gates": [
+    "classification",
+    "headline",
+    "hook",
+    "creative_brief",
+    "similarity_gate",
+    "quality_gate",
+    "publish"
+  ],
+  "sample_size": 50,
+  "distinct_functional_classes": 18,
+  "approved": 17,
+  "rejected": 33,
+  "rejection_breakdown": {
+    "headline_missing": 21,
+    "irrelevant_headline": 7,
+    "wrong_category": 5
+  },
+  "diversity": {
+    "unique_headlines": 27,
+    "unique_hooks": 9,
+    "unique_images": 50,
+    "unique_classes": 18,
+    "unique_image_domains": 2,
+    "no_duplicates": true
+  },
+  "results": [
+    {
+      "product_id": "174f2c69-4c67-46b3-ba5d-6226fb33ca9e",
+      "product_name": "Rabbit Hutch Habitat \u2013 Waterproof Wooden Enclosure for Guinea Pigs & Rabbits",
+      "functional_class": "small_pet_bed",
+      "headline": "Give Your Small Pets a Secure Outdoor Living Space",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/174f2c69-4c67-46b3-ba5d-6226fb33ca9e/ba49a827517ffb83.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "22be12b0b4628539",
+      "prompt_hash": "0d2760835d09",
+      "output_hash": "67255d752502",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "small_pet_bed",
+            "sub_class": "bed",
+            "confidence": 
