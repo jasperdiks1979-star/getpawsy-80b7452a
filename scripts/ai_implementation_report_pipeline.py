@@ -231,59 +231,110 @@ def verify_manifest(manifest: dict[str, Any]) -> list[str]:
 
 
 def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
-    from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.pdfgen import canvas
 
-    styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], fontName="Helvetica", fontSize=20, leading=24, spaceAfter=8))
-    styles.add(ParagraphStyle(name="ReportHeading", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=13, leading=16, spaceBefore=8, spaceAfter=6))
-    styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontName="Helvetica", fontSize=8, leading=10))
-    doc = SimpleDocTemplate(str(path), pagesize=letter, rightMargin=42, leftMargin=42, topMargin=42, bottomMargin=42)
-    story: list[Any] = []
-    story.append(Paragraph("AI Implementation Report System Repair", styles["ReportTitle"]))
-    story.append(Paragraph(f"Generated: {report['generated_at']}", styles["Small"]))
-    story.append(Spacer(1, 12))
+    page_width, page_height = letter
+    left = 54
+    right = page_width - 54
+    y = page_height - 54
+    c = canvas.Canvas(str(path), pagesize=letter)
 
-    for heading, body in [
-        ("Root Cause", report["root_cause"]),
-        ("Permanent Fix", " ".join(report["fixes"])),
-        ("Final Status", report["final_status"]),
-    ]:
-        story.append(Paragraph(heading, styles["ReportHeading"]))
-        story.append(Paragraph(str(body), styles["BodyText"]))
-        story.append(Spacer(1, 8))
+    def new_page() -> None:
+        nonlocal y
+        c.showPage()
+        y = page_height - 54
 
-    story.append(Paragraph("Verification Results", styles["ReportHeading"]))
-    rows = [["Check", "Result"]] + [[k, str(v)] for k, v in report["verification"].items()]
-    table = Table(rows, colWidths=[220, 290])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111827")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-    ]))
-    story.append(table)
-    story.append(Spacer(1, 10))
+    def ensure(space: int = 24) -> None:
+        if y - space < 54:
+            new_page()
 
-    story.append(Paragraph("Files Recovered", styles["ReportHeading"]))
+    def wrap_text(text: str, font: str = "Helvetica", size: int = 10, max_width: float | None = None) -> list[str]:
+        max_width = max_width or (right - left)
+        words = str(text).split()
+        lines: list[str] = []
+        current = ""
+        for word in words:
+            candidate = f"{current} {word}".strip()
+            if c.stringWidth(candidate, font, size) <= max_width:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        return lines or [""]
+
+    def text_block(text: str, font: str = "Helvetica", size: int = 10, leading: int = 13, max_width: float | None = None) -> None:
+        nonlocal y
+        for line in wrap_text(text, font, size, max_width):
+            ensure(leading)
+            c.setFont(font, size)
+            c.drawString(left, y, line)
+            y -= leading
+
+    def heading(label: str) -> None:
+        nonlocal y
+        ensure(30)
+        y -= 10
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(left, y, label)
+        y -= 18
+
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(left, y, "AI Implementation Report System Repair")
+    y -= 18
+    c.setFont("Helvetica", 8)
+    c.drawString(left, y, f"Generated: {report['generated_at']}")
+    y -= 18
+
+    heading("Root Cause")
+    text_block(report["root_cause"])
+    heading("Permanent Fix")
+    for fix in report["fixes"]:
+        text_block(f"• {fix}")
+    heading("Final Status")
+    text_block(report["final_status"], font="Helvetica-Bold", size=11)
+
+    heading("Verification Results")
+    label_w = 190
+    row_h = 16
+    c.setFillColorRGB(0.07, 0.09, 0.14)
+    c.rect(left, y - row_h + 3, right - left, row_h, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(left + 6, y - 8, "Check")
+    c.drawString(left + label_w + 6, y - 8, "Result")
+    c.setFillColorRGB(0, 0, 0)
+    y -= row_h
+    c.setFont("Helvetica", 8)
+    for key, value in report["verification"].items():
+        display = json.dumps(value) if isinstance(value, (list, dict)) else str(value)
+        lines = wrap_text(display, "Helvetica", 8, right - left - label_w - 12)
+        height = max(row_h, 10 * len(lines) + 6)
+        ensure(height + 4)
+        c.setStrokeColorRGB(0.82, 0.86, 0.9)
+        c.rect(left, y - height + 3, right - left, height, fill=0, stroke=1)
+        c.drawString(left + 6, y - 9, key)
+        for index, line in enumerate(lines):
+            c.drawString(left + label_w + 6, y - 9 - (index * 10), line)
+        y -= height
+
+    heading("Files Recovered")
     recovered = report.get("files_recovered") or []
     if recovered:
         for item in recovered:
-            story.append(Paragraph(f"• {item}", styles["Small"]))
+            text_block(f"• {item}", size=9, leading=12)
     else:
-        story.append(Paragraph("No missing JSON files were found during this run.", styles["Small"]))
-    story.append(Spacer(1, 10))
+        text_block("No missing JSON files were found during this run.", size=9, leading=12)
 
-    story.append(Paragraph("Manifest Entries Rebuilt", styles["ReportHeading"]))
-    story.append(Paragraph(f"{report['manifest_entries_rebuilt']} entries rebuilt from filesystem state.", styles["BodyText"]))
+    heading("Manifest Entries Rebuilt")
+    text_block(f"{report['manifest_entries_rebuilt']} entries rebuilt from filesystem state.")
     for slug in report.get("today_pdfs_found", []):
-        story.append(Paragraph(f"• Today's PDF: {slug}", styles["Small"]))
+        text_block(f"• Today's PDF: {slug}", size=9, leading=12)
 
-    doc.build(story)
+    c.save()
 
 
 def generate_repair_report(recovered: list[dict[str, Any]], entries_before: int, failures_before: list[dict[str, Any]]) -> dict[str, Any]:
