@@ -8,8 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-const SAMPLE_SIZE = 25;
-const CATEGORIES_MIN = 5;
+const SAMPLE_SIZE = 50;
+const CATEGORIES_MIN = 10;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
