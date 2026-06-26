@@ -16384,6 +16384,297 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_creatives: {
+        Row: {
+          animal_breed: string | null
+          background: string | null
+          board_id: string | null
+          body_text: string | null
+          brand_visibility_score: number | null
+          camera_angle: string | null
+          category: string | null
+          color_palette: Json | null
+          composition: string | null
+          created_at: string
+          creative_dna: Json
+          cta: string | null
+          embedding_ref: string | null
+          font_size: number | null
+          headline: string | null
+          hook: string | null
+          id: string
+          image_hash: string | null
+          image_url: string | null
+          lighting: string | null
+          negative_prompt: string | null
+          perceptual_hash: string | null
+          performance: Json
+          pinterest_pin_id: string | null
+          primary_emotion: string | null
+          product_id: string
+          product_visibility_score: number | null
+          prompt: string | null
+          retired: boolean
+          safe_zone_score: number | null
+          scores: Json
+          secondary_emotion: string | null
+          status: string
+          story_type: string | null
+          typography: string | null
+          updated_at: string
+          visual_style: string | null
+        }
+        Insert: {
+          animal_breed?: string | null
+          background?: string | null
+          board_id?: string | null
+          body_text?: string | null
+          brand_visibility_score?: number | null
+          camera_angle?: string | null
+          category?: string | null
+          color_palette?: Json | null
+          composition?: string | null
+          created_at?: string
+          creative_dna?: Json
+          cta?: string | null
+          embedding_ref?: string | null
+          font_size?: number | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          lighting?: string | null
+          negative_prompt?: string | null
+          perceptual_hash?: string | null
+          performance?: Json
+          pinterest_pin_id?: string | null
+          primary_emotion?: string | null
+          product_id: string
+          product_visibility_score?: number | null
+          prompt?: string | null
+          retired?: boolean
+          safe_zone_score?: number | null
+          scores?: Json
+          secondary_emotion?: string | null
+          status?: string
+          story_type?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_style?: string | null
+        }
+        Update: {
+          animal_breed?: string | null
+          background?: string | null
+          board_id?: string | null
+          body_text?: string | null
+          brand_visibility_score?: number | null
+          camera_angle?: string | null
+          category?: string | null
+          color_palette?: Json | null
+          composition?: string | null
+          created_at?: string
+          creative_dna?: Json
+          cta?: string | null
+          embedding_ref?: string | null
+          font_size?: number | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          lighting?: string | null
+          negative_prompt?: string | null
+          perceptual_hash?: string | null
+          performance?: Json
+          pinterest_pin_id?: string | null
+          primary_emotion?: string | null
+          product_id?: string
+          product_visibility_score?: number | null
+          prompt?: string | null
+          retired?: boolean
+          safe_zone_score?: number | null
+          scores?: Json
+          secondary_emotion?: string | null
+          status?: string
+          story_type?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_style?: string | null
+        }
+        Relationships: []
+      }
+      pcie2_headline_library: {
+        Row: {
+          created_at: string
+          emotion: string | null
+          functional_class: string
+          headline: string
+          hook_type: string | null
+          id: string
+          last_used_at: string | null
+          ngram_signature: string | null
+          performance_score: number | null
+          retired: boolean
+          source: string
+          sub_class: string | null
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          emotion?: string | null
+          functional_class: string
+          headline: string
+          hook_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          ngram_signature?: string | null
+          performance_score?: number | null
+          retired?: boolean
+          source?: string
+          sub_class?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          emotion?: string | null
+          functional_class?: string
+          headline?: string
+          hook_type?: string | null
+          id?: string
+          last_used_at?: string | null
+          ngram_signature?: string | null
+          performance_score?: number | null
+          retired?: boolean
+          source?: string
+          sub_class?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
+      pcie2_hook_library: {
+        Row: {
+          created_at: string
+          functional_class: string
+          hook: string
+          hook_type: string | null
+          id: string
+          performance_score: number | null
+          rationale: string | null
+          retired: boolean
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          functional_class: string
+          hook: string
+          hook_type?: string | null
+          id?: string
+          performance_score?: number | null
+          rationale?: string | null
+          retired?: boolean
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          functional_class?: string
+          hook?: string
+          hook_type?: string | null
+          id?: string
+          performance_score?: number | null
+          rationale?: string | null
+          retired?: boolean
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
+      pcie2_product_understanding: {
+        Row: {
+          audience: Json
+          banned_hook_patterns: Json
+          classifier_model: string | null
+          confidence: number | null
+          created_at: string
+          functional_class: string
+          id: string
+          pain_points: Json
+          primary_purpose: string | null
+          product_id: string
+          psychology_model: Json
+          sub_class: string | null
+          updated_at: string
+          use_cases: Json
+        }
+        Insert: {
+          audience?: Json
+          banned_hook_patterns?: Json
+          classifier_model?: string | null
+          confidence?: number | null
+          created_at?: string
+          functional_class: string
+          id?: string
+          pain_points?: Json
+          primary_purpose?: string | null
+          product_id: string
+          psychology_model?: Json
+          sub_class?: string | null
+          updated_at?: string
+          use_cases?: Json
+        }
+        Update: {
+          audience?: Json
+          banned_hook_patterns?: Json
+          classifier_model?: string | null
+          confidence?: number | null
+          created_at?: string
+          functional_class?: string
+          id?: string
+          pain_points?: Json
+          primary_purpose?: string | null
+          product_id?: string
+          psychology_model?: Json
+          sub_class?: string | null
+          updated_at?: string
+          use_cases?: Json
+        }
+        Relationships: []
+      }
+      pcie2_runs: {
+        Row: {
+          finished_at: string | null
+          id: string
+          notes: string | null
+          run_type: string
+          started_at: string
+          status: string
+          totals: Json
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          run_type: string
+          started_at?: string
+          status?: string
+          totals?: Json
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          run_type?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+        }
+        Relationships: []
+      }
       pdp_health_audits: {
         Row: {
           audited_at: string
