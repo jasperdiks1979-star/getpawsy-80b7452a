@@ -1,0 +1,304 @@
+{
+  "slug": "2026-06-26-pinterest-traffic-ads-forensic",
+  "title": "Pinterest Traffic & Ads Forensic",
+  "generated_at": "2026-06-26T19:44:02.481954+00:00",
+  "account": "getpawsyshop",
+  "verdict": "RED",
+  "root_cause": {
+    "code": "G",
+    "label": "Campaign budget/bid/targeting issue",
+    "evidence": "All 6 ACTIVE ad groups carry budget_in_micro_currency = 0 EUR. Pinterest campaign analytics for the last 7 days returns []. With zero budget the auction cannot serve impressions, which fully explains 0 ad delivery and 0 outbound clicks."
+  },
+  "secondary_causes": [
+    {
+      "code": "L",
+      "label": "Pinterest Tag/CAPI dormant",
+      "evidence": "Conversion tag 'Pinterest Tag' (id 2612820116727) is ACTIVE but last_fired_time_ms is null. 0 rows in pinterest_capi_outbox last 7d. 0 add_to_cart / purchase events in pinterest_funnel_events."
+    },
+    {
+      "code": "O",
+      "label": "Billing readability blocked",
+      "evidence": "GET /ad_accounts/549770199501/billing_profiles returns 401 commerce_integration restricted feature. Cannot verify payment method via API."
+    },
+    {
+      "code": "H",
+      "label": "Organic publishing paused",
+      "evidence": "0 pins published in last 30d. Publishing kill switches (global_stop=true, pcie2_publish_enabled=false) remain on."
+    },
+    {
+      "code": "J",
+      "label": "Attribution chain idle",
+      "evidence": "0 utm_session_log rows with utm_source=pinterest last 7d, and 0 pin clicks to attribute, which is consistent with cause G."
+    }
+  ],
+  "sections": {
+    "oauth": {
+      "account_connected": true,
+      "account_username": "getpawsyshop",
+      "account_type": "BUSINESS",
+      "business_name": "GetPawsy",
+      "board_count": 30,
+      "pin_count": 188,
+      "token_valid": true,
+      "token_expires_at": "2026-07-26T18:03:52Z",
+      "granted_scopes": [
+        "ads:read",
+        "ads:write",
+        "billing:read",
+        "billing:write",
+        "biz_access:read",
+        "biz_access:write",
+        "boards:read",
+        "boards:read_secret",
+        "boards:write",
+        "boards:write_secret",
+        "catalogs:read",
+        "catalogs:write",
+        "pins:read",
+        "pins:read_secret",
+        "pins:write",
+        "pins:write_secret",
+        "user_accounts:read",
+        "user_accounts:write"
+      ],
+      "missing_scopes": [],
+      "user_account_http": 200,
+      "boards_http": 200,
+      "ad_account_http": 200
+    },
+    "ads_account_health": {
+      "primary_ad_account_id": "549770199501",
+      "name": "GetPawsy",
+      "country": "NL",
+      "currency": "EUR",
+      "permissions": [
+        "OWNER"
+      ],
+      "status": "ACCESSIBLE",
+      "flags": [
+        "currency=EUR while campaign names target US \u2014 confirm intended billing/reporting currency"
+      ]
+    },
+    "billing": {
+      "billing_profile_detected": "UNKNOWN_API_LIMITATION",
+      "payment_method_detected": "UNKNOWN_API_LIMITATION",
+      "outstanding_balance": "UNKNOWN_API_LIMITATION",
+      "unpaid_invoices": "UNKNOWN_API_LIMITATION",
+      "spending_disabled": "UNKNOWN_API_LIMITATION",
+      "api_status": 401,
+      "api_error": "Application does not have access to restricted feature commerce_integration",
+      "manual_check_url": "https://ads.pinterest.com/billing"
+    },
+    "campaign_delivery": {
+      "total_campaigns": 6,
+      "active_campaigns": 6,
+      "paused_campaigns": 0,
+      "draft_campaigns": 0,
+      "total_ads": 5,
+      "ads_active": 5,
+      "ads_approved": 5,
+      "ads_rejected": 0,
+      "total_ad_groups": 6,
+      "ad_groups_with_zero_budget": 6,
+      "analytics_7d": [],
+      "spend_7d_total_eur": 0,
+      "impressions_7d_total": 0,
+      "outbound_7d_total": 0,
+      "campaigns": [
+        {
+          "id": "626758435781",
+          "status": "ACTIVE",
+          "objective": "CONSIDERATION",
+          "name": "Pinterest | Litter Box | US | Cold Traffic | V1",
+          "ads_total": 0,
+          "ad_group_budget_eur": 0
+        },
+        {
+          "id": "626758830631",
+          "status": "ACTIVE",
+          "objective": "CONSIDERATION",
+          "name": "US - Auto Litter Box - Traffic - Jun2026",
+          "ads_total": 1,
+          "ad_group_budget_eur": 0
+        },
+        {
+          "id": "626758844387",
+          "status": "ACTIVE",
+          "objective": "CONSIDERATION",
+          "name": "Overweging | Prospecting",
+          "ads_total": 1,
+          "ad_group_budget_eur": 0
+        },
+        {
+          "id": "626759018617",
+          "status": "ACTIVE",
+          "objective": "CONSIDERATION",
+          "name": "Consideration Campaign | 2026-06-23",
+          "ads_total": 1,
+          "ad_group_budget_eur": 0
+        },
+        {
+          "id": "626759021543",
+          "status": "ACTIVE",
+          "objective": "CATALOG_SALES",
+          "name": "2026 Q2 | Automated Campaign 2026-06-24 05:56",
+          "ads_total": 1,
+          "ad_group_budget_eur": 0
+        },
+        {
+          "id": "626759022955",
+          "status": "ACTIVE",
+          "objective": "CONSIDERATION",
+          "name": "2026 Q2 | Automated Campaign 2026-06-24 08:31",
+          "ads_total": 1,
+          "ad_group_budget_eur": 0
+        }
+      ]
+    },
+    "organic": {
+      "pins_24h": 0,
+      "pins_7d": 0,
+      "pins_30d": 0,
+      "reason": "Publishing globally locked (global_stop=true, pcie2_publish_enabled=false)"
+    },
+    "attribution": {
+      "pinterest_funnel_events_24h": 3,
+      "pinterest_funnel_events_7d": 33,
+      "event_breakdown_7d": {
+        "product_view": 30,
+        "page_view": 3,
+        "add_to_cart": 0,
+        "begin_checkout": 0,
+        "purchase": 0
+      },
+      "utm_pinterest_sessions_7d": 0,
+      "pinterest_attribution_sessions_7d": 44
+    },
+    "tag_capi": {
+      "conversion_tag_id": "2612820116727",
+      "conversion_tag_name": "Pinterest Tag",
+      "conversion_tag_status": "ACTIVE",
+      "last_fired_time_ms": null,
+      "capi_events_7d": 0,
+      "capi_sent_7d": 0,
+      "capi_failed_7d": 0,
+      "tag_installed_in_code": true
+    },
+    "catalog": {
+      "catalogs_count": 1,
+      "catalog": {
+        "id": "4812802272679",
+        "name": "Retail catalog",
+        "country": "US",
+        "catalog_type": "RETAIL",
+        "locale": "en-US",
+        "created_at": "2026-05-29T19:52:19",
+        "updated_at": "2026-06-04T15:44:54"
+      },
+      "feeds_unverified_via_api": true
+    }
+  },
+  "action_plan": [
+    {
+      "priority": "P0",
+      "problem": "All 6 ACTIVE ad groups have 0 EUR budget",
+      "evidence": "budget_in_micro_currency=0 for every ad group; 7d analytics empty",
+      "fix": "Set realistic daily budget on each ad group in Ads Manager (start \u20ac5\u201310/day per ad group)",
+      "lovable_can_fix": false,
+      "manual": true,
+      "risk": "medium",
+      "mutates": true,
+      "effect": "Unblocks ad delivery \u2014 primary lever for traffic"
+    },
+    {
+      "priority": "P0",
+      "problem": "Cannot verify billing via API (commerce_integration restricted)",
+      "evidence": "GET /billing_profiles \u2192 401",
+      "fix": "Open https://ads.pinterest.com/billing and confirm valid payment method, no outstanding balance, spending not disabled",
+      "lovable_can_fix": false,
+      "manual": true,
+      "risk": "low",
+      "mutates": false,
+      "effect": "Ensures ads can actually charge once budgets are set"
+    },
+    {
+      "priority": "P0",
+      "problem": "Campaign 626758435781 has 0 ads",
+      "evidence": "ads filter by campaign_id returns 0 items",
+      "fix": "Create at least one ad for this campaign or pause it",
+      "lovable_can_fix": false,
+      "manual": true,
+      "risk": "low",
+      "mutates": true
+    },
+    {
+      "priority": "P1",
+      "problem": "Pinterest conversion tag has never fired",
+      "evidence": "conversion_tags.last_fired_time_ms = null; 0 CAPI outbox events 7d; 0 add_to_cart/purchase funnel events",
+      "fix": "Confirm SafePinterestTag fires on production domain, then run a $0 test order to validate CAPI relay",
+      "lovable_can_fix": true,
+      "manual": false,
+      "risk": "low",
+      "mutates": false,
+      "effect": "Restores conversion attribution and optimisation signals"
+    },
+    {
+      "priority": "P1",
+      "problem": "0 utm_source=pinterest sessions in 7d",
+      "evidence": "utm_session_log shows 0 rows",
+      "fix": "Once ads start delivering, validate destination URLs include utm_source=pinterest&utm_medium=paid_social&utm_campaign=<campaign_id>",
+      "lovable_can_fix": true,
+      "manual": false,
+      "risk": "low",
+      "mutates": false
+    },
+    {
+      "priority": "P1",
+      "problem": "Ad account currency=EUR while campaigns target US",
+      "evidence": "ad_account.country=NL currency=EUR; campaign names reference 'US Cold Traffic'",
+      "fix": "Confirm this is intentional. A US ad account would simplify reporting and may improve auction performance for US audiences",
+      "lovable_can_fix": false,
+      "manual": true,
+      "risk": "low",
+      "mutates": true
+    },
+    {
+      "priority": "P2",
+      "problem": "Organic publishing paused (0 pins in 30d)",
+      "evidence": "pcie2_publish_enabled=false, global_stop=true",
+      "fix": "After ads deliver and trust score \u226560, unlock canary publishing",
+      "lovable_can_fix": true,
+      "manual": false,
+      "risk": "medium",
+      "mutates": true
+    }
+  ],
+  "manual_action_links": {
+    "ads_billing": "https://ads.pinterest.com/billing",
+    "ads_manager": "https://ads.pinterest.com/",
+    "business_hub": "https://business.pinterest.com/",
+    "catalogs": "https://www.pinterest.com/business/catalogs/",
+    "account_apps": "https://www.pinterest.com/settings/apps/"
+  },
+  "safety": {
+    "mode": "read-only",
+    "mutations": 0,
+    "pins_published": 0,
+    "ads_changed": 0,
+    "budget_changed": 0,
+    "catalog_changed": 0,
+    "oauth_changed": 0
+  },
+  "scorecard": {
+    "overall": 40,
+    "architecture": 70,
+    "performance": 15,
+    "reliability": 50,
+    "automation": 60,
+    "scalability": 60,
+    "security": 85,
+    "maintainability": 75,
+    "ai_readiness": 65,
+    "growth_readiness": 20
+  }
+}
