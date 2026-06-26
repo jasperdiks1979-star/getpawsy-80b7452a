@@ -1,0 +1,57 @@
+{
+  "wave": "Pinterest OAuth Recovery Wave v1",
+  "generated_at": "2026-06-26T15:23:00Z",
+  "verdict": "SPLIT-BRAIN RESOLVED — single source of truth restored",
+  "root_cause": {
+    "summary": "pinterest-recovery-orchestrator selected columns that do not exist on public.pinterest_connection (access_token_expires_at, last_health_check, last_health_status). PostgREST returned an error, conn was null, and the orchestrator therefore reported oauth_unhealthy_or_missing while the actual OAuth token was healthy and verified against Pinterest (account 200, boards 200, 32 boards, expires 2026-07-26).",
+    "secondary": "scopes column is TEXT (space-separated), not array. Array.isArray() always false → missing_scopes:catalogs,ads always reported regardless of grant."
+  },
+  "single_source_of_truth": {
+    "table": "public.pinterest_connection",
+    "rows": 1,
+    "account": "getpawsyshop",
+    "account_id": "getpawsyshop",
+    "status": "connected",
+    "token_prefix": "pina_AEAXX2Y",
+    "token_expires_at": "2026-07-26T01:38:08.199+00:00",
+    "last_account_status": 200,
+    "last_boards_status": 200,
+    "board_count": 32,
+    "granted_scopes": ["boards:read","boards:write","pins:read","pins:write","user_accounts:read"]
+  },
+  "split_brain_audit": {
+    "duplicate_tokens": 0,
+    "duplicate_rows_in_pinterest_connection": 0,
+    "publishers_using_other_token_source": 0,
+    "all_consumers_use": "pinterest_connection.access_token via supabase service-role client"
+  },
+  "auto_repairs": [
+    "Patched supabase/functions/pinterest-recovery-orchestrator/index.ts to read correct columns (token_expires_at, last_account_status, last_boards_status, scopes as text).",
+    "Added oauth_source telemetry to phase_1 output so every future run logs token fingerprint, account, expiry, and live Pinterest API verification status.",
+    "Redeployed pinterest-recovery-orchestrator.",
+    "Re-ran orchestrator end-to-end. Blocker oauth_unhealthy_or_missing cleared."
+  ],
+  "live_pinterest_verification": {
+    "GET /user_account": "200 (cached in last_account_status)",
+    "GET /boards": "200, 32 boards (cached in last_boards_status / board_count)",
+    "token_valid_until": "2026-07-26T01:38:08Z"
+  },
+  "blockers_after_fix": [
+    {
+      "code": "missing_scopes:catalogs:read,catalogs:write,ads:read,ads:write",
+      "auto_repair_possible": false,
+      "reason": "Pinterest requires interactive user consent for new scopes. No server-side API path can grant them."
+    },
+    {
+      "code": "trust_score:36 (< required 60)",
+      "auto_repair_possible": false,
+      "reason": "Trust improves only by publishing new premium pins — gated by missing scopes + safety locks."
+    }
+  ],
+  "guardian": { "color": "green", "publish_gate_open": true, "guardian_oauth": "GREEN", "guardian_oauth_consistency": "GREEN" },
+  "safety_locks_intact": { "pcie2_publish_enabled": false, "pinterest_publishing_global_stop": true, "pinterest_video_auto_publish": false },
+  "human_actions_required": [
+    "Visit /admin/pinterest → Reconnect with Full Access, granting catalogs:* and ads:* scopes during Pinterest consent.",
+    "After re-OAuth, the same row in pinterest_connection is overwritten and the next orchestrator run will auto-clear the missing_scopes blocker."
+  ]
+}
