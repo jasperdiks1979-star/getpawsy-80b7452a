@@ -471,6 +471,7 @@ const ScoreCalibrationPage = lazyWithRetry(() => import("./pages/admin/ScoreCali
 const RevenuePriorityReportPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityReportPage"));
 const RevenuePriorityRemediationPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityRemediationPage"));
 const DeployStatusPage = lazyWithRetry(() => import("./pages/admin/DeployStatusPage"));
+const GuardianDashboardPage = lazyWithRetry(() => import("./pages/admin/GuardianDashboardPage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2571,6 +2572,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <DeployStatusPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="guardian"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GuardianDashboardPage />
                                 </Suspense>
                               }
                             />
