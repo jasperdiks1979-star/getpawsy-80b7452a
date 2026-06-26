@@ -37,9 +37,13 @@ export default function CommandCenter2Page() {
   const [busy, setBusy] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string>("");
+  const [approvals, setApprovals] = useState<Row[]>([]);
+  const [alerts, setAlerts] = useState<Row[]>([]);
+  const [health, setHealth] = useState<Row | null>(null);
+  const [smoke, setSmoke] = useState<Row | null>(null);
 
   async function load() {
-    const [s, w, l, p, d, r, st] = await Promise.all([
+    const [s, w, l, p, d, r, st, ap, al, hs] = await Promise.all([
       supabase.from("acos_product_scores").select("product_id, score, category, computed_at").order("score", { ascending: false }).limit(20),
       supabase.from("acos_winner_signals").select("product_id, signal_type, metric_value, rank, detected_at").order("detected_at", { ascending: false }).limit(30),
       supabase.from("acos_loser_signals").select("product_id, signal_type, recommendation, detected_at").order("detected_at", { ascending: false }).limit(30),
@@ -47,6 +51,9 @@ export default function CommandCenter2Page() {
       supabase.from("acos_decisions").select("engine, action, reason, status, observed_only, created_at").order("created_at", { ascending: false }).limit(30),
       supabase.from("acos_orchestrator_runs").select("cadence, status, started_at, finished_at, duration_ms").order("started_at", { ascending: false }).limit(10),
       supabase.from("acos_settings").select("key, value").order("key"),
+      supabase.from("acos_decisions").select("id, engine, action, reason, risk_score, expected_outcome, created_at").eq("status", "pending_approval").order("created_at", { ascending: false }).limit(50),
+      supabase.from("acos_alerts").select("id, severity, source, title, status, created_at").eq("status", "open").order("created_at", { ascending: false }).limit(20),
+      supabase.from("acos_health_snapshots").select("taken_at, overall_status, engines, queue, dispatcher").order("taken_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     setScores(s.data ?? []);
     setWinners(w.data ?? []);
@@ -55,6 +62,9 @@ export default function CommandCenter2Page() {
     setDecisions(d.data ?? []);
     setRuns(r.data ?? []);
     setSettings(st.data ?? []);
+    setApprovals(ap.data ?? []);
+    setAlerts(al.data ?? []);
+    setHealth(hs.data ?? null);
   }
 
   useEffect(() => {
@@ -108,6 +118,37 @@ export default function CommandCenter2Page() {
 
   const emergencyStop = (settings.find((s) => s.key === "emergency_stop")?.value as unknown) === true;
   const flags = (settings.find((s) => s.key === "feature_flags")?.value as Record<string, boolean>) ?? {};
+  const autonomousOn = (settings.find((s) => s.key === "autonomous_mutations")?.value as unknown) === true;
+  const approvalMode = (settings.find((s) => s.key === "approval_mode")?.value as string) ?? "manual";
+
+  async function decide(id: string, approve: boolean) {
+    const patch = approve
+      ? { status: "approved", approved_at: new Date().toISOString() }
+      : { status: "rejected", rejected_reason: "rejected via Command Center" };
+    const { error } = await supabase.from("acos_decisions").update(patch).eq("id", id);
+    if (error) toast.error(error.message); else { toast.success(approve ? "Approved" : "Rejected"); await load(); }
+  }
+
+  async function runSmoke() {
+    setBusy("smoke");
+    try {
+      const { data, error } = await supabase.functions.invoke("acos-smoke-test", { body: {} });
+      if (error) throw error;
+      setSmoke(data as Row);
+      toast.success(`Smoke: ${(data as { verdict?: string })?.verdict ?? "done"}`);
+      await load();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  }
+
+  async function runWatchdog() {
+    setBusy("watchdog");
+    try {
+      const { data, error } = await supabase.functions.invoke("acos-health-watchdog", { body: {} });
+      if (error) throw error;
+      toast.success(`Health: ${(data as { overall_status?: string })?.overall_status ?? "ok"}`);
+      await load();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -118,10 +159,85 @@ export default function CommandCenter2Page() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {emergencyStop && <Badge variant="destructive">EMERGENCY STOP</Badge>}
+          <Badge variant={autonomousOn ? "default" : "secondary"}>mutations: {autonomousOn ? "ON" : "OFF"}</Badge>
+          <Badge variant="outline">approval: {approvalMode}</Badge>
           <Button disabled={!!busy} onClick={() => runOrchestrator("hourly")}>Run Hourly Loop</Button>
           <Button disabled={!!busy} variant="secondary" onClick={() => runOrchestrator("nightly")}>Run Nightly Loop</Button>
+          <Button disabled={!!busy} variant="outline" onClick={runSmoke}>Smoke Test</Button>
+          <Button disabled={!!busy} variant="outline" onClick={runWatchdog}>Health Probe</Button>
         </div>
       </header>
+
+      {/* Wave B — Health */}
+      <Card>
+        <CardHeader><CardTitle>System Health</CardTitle></CardHeader>
+        <CardContent className="text-sm">
+          {!health ? <p className="text-muted-foreground">No health snapshot yet. Click Health Probe.</p> : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge variant={String(health.overall_status) === "green" ? "default" : "destructive"}>{String(health.overall_status).toUpperCase()}</Badge>
+                <span className="text-muted-foreground text-xs">{new Date(String(health.taken_at)).toLocaleString()}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                {Object.entries((health.engines as Record<string, { ageSec: number | null; stale: boolean }>) ?? {}).map(([eng, v]) => (
+                  <div key={eng} className="rounded border p-2 flex justify-between">
+                    <span className="truncate">{eng.replace("acos-","")}</span>
+                    <Badge variant={v.stale ? "destructive" : "outline"}>{v.ageSec == null ? "never" : `${Math.round(v.ageSec/60)}m`}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Wave B — Approvals */}
+      <Card>
+        <CardHeader><CardTitle>Pending Approvals ({approvals.length})</CardTitle></CardHeader>
+        <CardContent className="text-sm max-h-96 overflow-auto">
+          {approvals.length === 0 ? <p className="text-muted-foreground">No decisions awaiting approval.</p> : (
+            <ul className="space-y-2">
+              {approvals.map((d) => (
+                <li key={String(d.id)} className="rounded border p-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{String(d.engine)}</Badge>
+                  <span className="font-medium">{String(d.action)}</span>
+                  {d.risk_score != null && <Badge variant="secondary">risk {Number(d.risk_score).toFixed(2)}</Badge>}
+                  <span className="text-xs text-muted-foreground flex-1 truncate">{String(d.reason ?? "")}</span>
+                  <Button size="sm" variant="default" onClick={() => decide(String(d.id), true)}>Approve</Button>
+                  <Button size="sm" variant="ghost" onClick={() => decide(String(d.id), false)}>Reject</Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Wave B — Alerts */}
+      <Card>
+        <CardHeader><CardTitle>Open Alerts ({alerts.length})</CardTitle></CardHeader>
+        <CardContent className="text-xs max-h-60 overflow-auto">
+          {alerts.length === 0 ? <p className="text-muted-foreground">No open alerts.</p> : (
+            <ul className="space-y-1">
+              {alerts.map((a) => (
+                <li key={String(a.id)} className="flex justify-between gap-2">
+                  <Badge variant={String(a.severity) === "critical" ? "destructive" : "outline"}>{String(a.severity)}</Badge>
+                  <span className="flex-1 truncate">{String(a.title)}</span>
+                  <span className="text-muted-foreground">{new Date(String(a.created_at)).toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {smoke && (
+        <Card>
+          <CardHeader><CardTitle>Latest Smoke Test — {String((smoke as { verdict?: string }).verdict ?? "?")}</CardTitle></CardHeader>
+          <CardContent>
+            <pre className="text-xs whitespace-pre-wrap bg-muted/30 rounded p-3 max-h-72 overflow-auto">{JSON.stringify(smoke, null, 2)}</pre>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Engines</CardTitle></CardHeader>
