@@ -3,13 +3,12 @@
 // Evolution guard ensures no two near-duplicate briefs for the same product.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { chatJson, embed, pgvector, cosine, CREATIVE_CONCEPTS } from "../_shared/pcie2-ai.ts";
+import { SIM_THRESHOLD, MAX_EVOLUTION_ATTEMPTS } from "../_shared/pcie2-evolution.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const SUPA = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const MODEL = "google/gemini-3-flash-preview";
 const PROMPT_VERSION = "creative.v1";
-const SIM_THRESHOLD = 0.88;
-const MAX_EVOLUTION_ATTEMPTS = 5;
 
 type Body = { product_ids?: string[]; concepts_per_product?: number; max_products?: number; dry_run?: boolean };
 
