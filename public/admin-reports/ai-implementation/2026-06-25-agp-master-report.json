@@ -1,0 +1,18 @@
+{
+  "slug": "2026-06-25-agp-master-report",
+  "title": "AGP Master Report",
+  "run_id": "2026-06-25-agp-master-report",
+  "generated_at": "2026-06-25T23:18:15Z",
+  "status": "recovered_from_pdf",
+  "score": 0,
+  "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf",
+  "json": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.json",
+  "recovery": {
+    "reason": "Matching JSON report was missing while PDF existed on disk.",
+    "source_pdf": "2026-06-25-agp-master-report.pdf",
+    "pdf_status": "readable (22 pages)",
+    "pdf_pages": 22,
+    "text_preview": "GetPawsy · Autonomous Growth Platform Master Implementation Report · 25 June 2026 GetPawsy Autonomous Growth Platform Complete Implementation Report Date · 25 June 2026 Engineering Lead · Lovable AI Agent Classification · Internal — Confidential A unified engineering record of Waves 1 through 4A of the GetPawsy Autonomous Growth Platform — covering observability, media intelligence, AI enhancement, QA, and the signal-lake brain. Page 1 · Confidential — Internal Engineering Report GetPawsy · Auto",
+    "recovered_at": "2026-06-26T00:40:23.790934+00:00"
+  }
+}
