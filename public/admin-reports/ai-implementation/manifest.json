@@ -1,5 +1,12 @@
 [
   {
+    "id": "2026-06-26-cdn-migration-complete",
+    "title": "CDN Asset Migration - Completion & Verification Report",
+    "date": "2026-06-26",
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-cdn-migration-complete.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-cdn-migration-complete.json"
+  },
+  {
     "slug": "2026-06-26-pcie2-autonomous-ecosystem-steps-1-4",
     "title": "PCIE2 Autonomous Ecosystem \u2014 Steps 1\u20134 STOP Report",
     "generated_at": "2026-06-26T07:05:26.545407Z",
