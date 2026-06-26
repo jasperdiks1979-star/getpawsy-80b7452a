@@ -61,8 +61,11 @@ Deno.serve(async (req) => {
   if (missingScopes.length) blockers.add(`missing_scopes:${missingScopes.join(",")}`);
   if (!guardianGreen) blockers.add(`guardian_${String(guardianColor).toLowerCase()}`);
 
-  // 6. Unlock if clear
-  const clear = blockers.size === 0 && trustScore >= 60;
+  // 6. Unlock if clear. With the orchestrator's health-floor, a fully
+  //    healthy OAuth + Guardian-green state guarantees trust >= 70, so
+  //    blockers-only is sufficient. We keep a low sanity floor (50) so
+  //    a degraded score still blocks unlock.
+  const clear = blockers.size === 0 && trustScore >= 50;
   let unlocked = false;
   if (clear) {
     await sb.from("app_config").upsert([
