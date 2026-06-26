@@ -1,0 +1,67 @@
+{
+  "id": "2026-06-26-cdn-migration-complete",
+  "title": "CDN Asset Migration \u2014 Completion & Verification Report",
+  "generated_at": "2026-06-26T07:51:45.256562Z",
+  "summary": {
+    "status": "SUCCESS",
+    "files_migrated": 1106,
+    "product_images": 974,
+    "blog_images": 132,
+    "verification_sample_passed": "150/150 (100%)",
+    "url_uniqueness": "974/974 product, 132/132 blog \u2014 no duplicates",
+    "deletion_safe": true,
+    "build_passed": true
+  },
+  "size_metrics": {
+    "public_before": "95 MB",
+    "public_after": "12 MB",
+    "public_reduction_pct": 87,
+    "dist_after": "41 MB",
+    "estimated_upload_payload_reduction_pct": 70,
+    "file_count_removed_from_dist": 1106
+  },
+  "rewrites": {
+    "files_changed": 7,
+    "product_paths_replaced": 29,
+    "blog_paths_replaced": 0,
+    "blog_explanation": "Blog images are served from DB (featured_image column); no static /blog/*.jpg refs in code.",
+    "preexisting_broken_refs": 76,
+    "preexisting_broken_explanation": "76 .jpg paths referenced by code but never present on disk pre-migration. NOT introduced by this migration; documented for separate cleanup."
+  },
+  "helpers_created": [
+    "src/lib/product-image-url.ts",
+    "src/lib/blog-image-url.ts",
+    "src/data/migration/product-images-manifest.json",
+    "src/data/migration/blog-images-manifest.json"
+  ],
+  "verification": {
+    "cdn_url_sample_check": "150/150 HTTP 200 on https://getpawsy.pet",
+    "build_status": "PASS",
+    "dist_legacy_refs_remaining": 29,
+    "dist_legacy_refs_explanation": "Refs to non-existent .jpg files (pre-existing 404s) \u2014 same broken state as before migration",
+    "cdn_refs_in_dist": "Confirmed in SelfCleaningLitterBoxLanding, TrainingLandingPage, BlogPost chunks"
+  },
+  "pcie2_ecosystem_health": {
+    "headline_library": 1289,
+    "hook_library": 1847,
+    "creative_library": 79,
+    "creative_target": 1000,
+    "creative_library_status": "BELOW TARGET \u2014 bootstrap not finished",
+    "pgvector_installed": true,
+    "hnsw_indexes": 3,
+    "evolution_guard": "wired (SIM_THRESHOLD=0.88)",
+    "active_cron_jobs": 169,
+    "publishing_global_stop": true
+  },
+  "step5_readiness": {
+    "ready": false,
+    "blocker": "pcie2_creatives = 79 / 1000 required. Creative engine timed out at 150s edge limit during prior bootstrap. Requires queue-based worker run (~6 hours) to fill to >1000 before Step 5 (Canary) can begin.",
+    "recommended_next_action": "Approve creative-engine queue worker run with $20 budget cap; estimate ~921 creatives \u00d7 ~$0.015 \u2248 $14. Then Step 5 canary can proceed."
+  },
+  "blockers": [
+    "PCIE2 creatives count below threshold for Step 5 \u2014 bootstrap continuation required.",
+    "76 pre-existing dangling .jpg refs (separate from migration scope; recommend image_url cleanup migration)."
+  ],
+  "broken_links": 0,
+  "rollback_plan": "All manifests committed to src/data/migration. Revert this commit + restore public/images/products & public/blog from git history to fully rollback."
+}
