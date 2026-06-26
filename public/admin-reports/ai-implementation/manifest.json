@@ -5,6 +5,20 @@
   "source": "filesystem_scan",
   "reports": [
     {
+      "slug": "2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace",
+      "title": "PCIE2 Publishing Kill Switch + Last-50-Pins Pipeline Trace",
+      "generated_at": "2026-06-26T00:00:00Z",
+      "status": "PASS",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.json",
+      "tags": [
+        "pcie2",
+        "kill-switch",
+        "trace",
+        "pinterest"
+      ]
+    },
+    {
       "slug": "2026-06-26-pcie2-wave1.5-performance-learning",
       "title": "PCIE2 Wave 1.5 \u2014 Performance Learning Layer",
       "generated_at": "2026-06-26T01:32:29.337845Z",
