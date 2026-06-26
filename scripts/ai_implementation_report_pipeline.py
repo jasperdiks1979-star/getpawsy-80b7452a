@@ -237,10 +237,12 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontSize=8, leading=10))
+    styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], fontName="Helvetica", fontSize=20, leading=24, spaceAfter=8))
+    styles.add(ParagraphStyle(name="ReportHeading", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=13, leading=16, spaceBefore=8, spaceAfter=6))
+    styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontName="Helvetica", fontSize=8, leading=10))
     doc = SimpleDocTemplate(str(path), pagesize=letter, rightMargin=42, leftMargin=42, topMargin=42, bottomMargin=42)
     story: list[Any] = []
-    story.append(Paragraph("AI Report System Repair", styles["Title"]))
+    story.append(Paragraph("AI Implementation Report System Repair", styles["ReportTitle"]))
     story.append(Paragraph(f"Generated: {report['generated_at']}", styles["Small"]))
     story.append(Spacer(1, 12))
 
@@ -249,11 +251,11 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
         ("Permanent Fix", " ".join(report["fixes"])),
         ("Final Status", report["final_status"]),
     ]:
-        story.append(Paragraph(heading, styles["Heading2"]))
+        story.append(Paragraph(heading, styles["ReportHeading"]))
         story.append(Paragraph(str(body), styles["BodyText"]))
         story.append(Spacer(1, 8))
 
-    story.append(Paragraph("Verification Results", styles["Heading2"]))
+    story.append(Paragraph("Verification Results", styles["ReportHeading"]))
     rows = [["Check", "Result"]] + [[k, str(v)] for k, v in report["verification"].items()]
     table = Table(rows, colWidths=[220, 290])
     table.setStyle(TableStyle([
@@ -267,7 +269,7 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     story.append(table)
     story.append(Spacer(1, 10))
 
-    story.append(Paragraph("Files Recovered", styles["Heading2"]))
+    story.append(Paragraph("Files Recovered", styles["ReportHeading"]))
     recovered = report.get("files_recovered") or []
     if recovered:
         for item in recovered:
@@ -276,7 +278,7 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
         story.append(Paragraph("No missing JSON files were found during this run.", styles["Small"]))
     story.append(Spacer(1, 10))
 
-    story.append(Paragraph("Manifest Entries Rebuilt", styles["Heading2"]))
+    story.append(Paragraph("Manifest Entries Rebuilt", styles["ReportHeading"]))
     story.append(Paragraph(f"{report['manifest_entries_rebuilt']} entries rebuilt from filesystem state.", styles["BodyText"]))
     for slug in report.get("today_pdfs_found", []):
         story.append(Paragraph(f"• Today's PDF: {slug}", styles["Small"]))
