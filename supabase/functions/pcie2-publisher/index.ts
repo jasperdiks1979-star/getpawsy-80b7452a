@@ -98,13 +98,13 @@ async function runOne(sb: any, productId: string, opts: { forceLive?: boolean })
   // 0. product
   const t0 = performance.now();
   const { data: product } = await sb.from("products")
-    .select("id,title,slug,description,category,image_url,is_active")
+    .select("id,name,slug,description,category,image_url,is_active")
     .eq("id", productId).maybeSingle();
   if (!product) {
     tick("product_load", "failed", { product_id: productId }, "other", Math.round(performance.now()-t0));
     return { trace_id, ok: false, rejected: "other" as Reject, traces, product: null };
   }
-  tick("product_load", "passed", { product_id: productId, title: product.title, category: product.category }, undefined, Math.round(performance.now()-t0));
+  tick("product_load", "passed", { product_id: productId, name: (product as any).name, category: product.category }, undefined, Math.round(performance.now()-t0));
 
   // 1. classification
   const t1 = performance.now();
