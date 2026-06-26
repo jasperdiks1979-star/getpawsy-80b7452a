@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   try {
     const s = svc();
     const { data: products } = await s.from("products")
-      .select("id, name, slug, margin_percent, us_stock, effective_stock, average_rating, review_count, fast_shipping_score, is_active")
+      .select("id, name, slug, margin_percent, us_stock, effective_stock, is_active")
       .eq("is_active", true)
       .limit(2000);
     const { data: trendRows } = await s.from("paip_product_trend_scores")
@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
       const margin = clamp(Number(p.margin_percent ?? 0) * 100);
       const stockNum = Number(p.us_stock ?? p.effective_stock ?? 0);
       const stock = stockNum > 5 ? 100 : stockNum > 0 ? 60 : 0;
-      const reviews = clamp((Number(p.average_rating ?? 0) / 5) * 100 * (Number(p.review_count ?? 0) > 5 ? 1 : 0.5));
-      const shipping = clamp(Number(p.fast_shipping_score ?? 50));
+      const reviews = 50; // placeholder until reviews join added in Wave B
+      const shipping = 70; // US warehouse default; refined when CJ shipping field is wired
       const composite =
         trend * 0.22 + demand * 0.15 + seas * 0.08 +
         margin * 0.18 + stock * 0.14 + reviews * 0.08 +
