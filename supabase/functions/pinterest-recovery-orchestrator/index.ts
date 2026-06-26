@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   // last_account_status / last_boards_status (not last_health_*). scopes is
   // a space-separated text column, not an array.
   const { data: conn, error: connErr } = await supabase.from("pinterest_connection")
-    .select("status, token_expires_at, token_prefix, scopes, last_account_status, last_boards_status, board_count, updated_at")
+    .select("account_name, status, token_expires_at, token_prefix, scopes, last_account_status, last_boards_status, board_count, updated_at")
     .eq("status", "connected")
     .order("updated_at", { ascending: false }).limit(1).maybeSingle();
   const tokenValid = !!conn && (!conn.token_expires_at || new Date(conn.token_expires_at) > new Date());
