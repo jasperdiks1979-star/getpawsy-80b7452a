@@ -1,0 +1,58 @@
+{
+  "slug": "2026-06-26-pinterest-week0-canary-unlock",
+  "title": "Pinterest Week-0 Canary Unlock",
+  "generated_at": "2026-06-26T18:12:07.907615Z",
+  "verdict": "ARMED",
+  "publish_unlocked": false,
+  "summary": "Technical health is GREEN. Recovery verdict remains RED solely because trust_score=36 is below the Week-1 ramp threshold of 60. A controlled Week-0 canary path has been installed.",
+  "why_red_with_empty_blockers": [
+    "guardian green/80 PASS",
+    "oauth connected, missing_scopes=[] PASS",
+    "board_count=32 PASS",
+    "recovery.blockers=[] PASS",
+    "trust_score=36 below ramp threshold 60 (TRUST BLOCKER)",
+    "publish_unlocked is controlled by trust/ramp, not a hard technical blocker."
+  ],
+  "canary_mode": {
+    "enabled": true,
+    "window_hours": 24,
+    "max_per_window": 1,
+    "last_canary_at": null,
+    "next_allowed_at": "immediately"
+  },
+  "gates_enforced": [
+    "Guardian = green",
+    "OAuth connected, token not expired",
+    "missing_scopes = []",
+    "board_count > 0",
+    "no active critical incident",
+    "PQIF quality_score >= 0.72",
+    "no banned phrase",
+    "no CJ raw image",
+    "destination URL HEAD 2xx/3xx"
+  ],
+  "canonical_path": "PCIE2 -> pcie2_publish_queue -> pcie2-publisher (force_live=true) -> POST /v5/pins -> GET /v5/pins/{id} verification",
+  "safety": {
+    "atomic_unlock": "Prior values of global_stop/pcie2_publish_enabled captured, flipped, restored in finally{}",
+    "post_publish_lock": "Both gates always restored to LOCKED after the canary",
+    "legacy_blocked": "pcie2-legacy-guard.mjs continues to block every legacy publisher path"
+  },
+  "first_run_attempt": {
+    "method": "agent-triggered POST /functions/v1/pinterest-canary-publish",
+    "result": "401 unauthorized (agent has no admin JWT - function is admin-gated by design)",
+    "next_step": "Admin clicks 'Run Week-0 Canary' on /admin/pinterest-recovery; dashboard invokes function with admin session"
+  },
+  "queue_status": {
+    "pcie2_publish_queue_pending": 0,
+    "pcie2_creatives_total": 1514,
+    "pcie2_creatives_with_image_url": 0,
+    "pcie2_creatives_with_board_id": 0,
+    "note": "Canary will return DEFERRED (no_candidate) until pcie2-creative-worker assembles a publish-ready candidate (image_url + board_id required)."
+  },
+  "files_changed": [
+    "supabase/functions/pinterest-canary-publish/index.ts (new)",
+    "app_config: pinterest_canary_mode=true, pinterest_canary_window_hours=24, pinterest_canary_max_per_window=1",
+    "src/pages/admin/PinterestRecoveryDashboard.tsx (Week-0 Canary panel + trigger button)"
+  ],
+  "status": "AWAITING_ADMIN_CLICK"
+}
