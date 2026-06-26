@@ -33,8 +33,8 @@ interface AiReport {
   generated_at: string;
   status: string;
   score: number;
-  pdf: string;
-  json: string;
+  pdf: string | null;
+  json: string | null;
 }
 
 const AdminReportsPage = () => {
@@ -45,8 +45,13 @@ const AdminReportsPage = () => {
 
   useEffect(() => {
     fetch("/admin-reports/ai-implementation/manifest.json", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { reports: [] }))
-      .then((d) => setAiReports(d.reports || []))
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => {
+        // Support both shapes: bare array (legacy) and { reports: [...] } (v2).
+        const list: AiReport[] = Array.isArray(d) ? d : Array.isArray(d?.reports) ? d.reports : [];
+        list.sort((a, b) => (b.generated_at || "").localeCompare(a.generated_at || ""));
+        setAiReports(list);
+      })
       .catch(() => setAiReports([]));
   }, []);
 
@@ -158,13 +163,13 @@ const AdminReportsPage = () => {
                     <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewAi(r)}>
                       <Eye className="h-4 w-4" /> Preview PDF
                     </Button>
-                    <Button size="sm" className="gap-2" asChild>
-                      <a href={r.pdf} download>
+                    <Button size="sm" className="gap-2" asChild disabled={!r.pdf}>
+                      <a href={r.pdf ?? "#"} download>
                         <Download className="h-4 w-4" /> PDF
                       </a>
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2" asChild>
-                      <a href={r.json} download>
+                    <Button variant="outline" size="sm" className="gap-2" asChild disabled={!r.json}>
+                      <a href={r.json ?? "#"} download>
                         <FileJson className="h-4 w-4" /> JSON
                       </a>
                     </Button>
