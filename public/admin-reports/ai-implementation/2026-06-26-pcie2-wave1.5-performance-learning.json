@@ -1,0 +1,39 @@
+{
+  "slug": "2026-06-26-pcie2-wave1.5-performance-learning",
+  "title": "PCIE2 Wave 1.5 \u2014 Performance Learning Layer",
+  "generated_at": "2026-06-26T01:32:29.337845Z",
+  "status": "PASS",
+  "wave": "1.5",
+  "tables_created": [
+    "pcie2_pin_performance",
+    "pcie2_feature_attribution",
+    "pcie2_insights",
+    "pcie2_learning_runs",
+    "pcie2_experiments",
+    "pcie2_experiment_variants"
+  ],
+  "edge_functions": [
+    "pcie2-performance-sync",
+    "pcie2-learning-engine"
+  ],
+  "cron": {
+    "name": "pcie2-nightly-learn",
+    "schedule": "17 3 * * *",
+    "job_id": 212
+  },
+  "admin_route": "/admin/pinterest-creative-intel-v2",
+  "feature_axes": 12,
+  "safety": "Insufficient-evidence fallback. No publishing. Flag pcie2_publish_enabled=false.",
+  "scorecard": {
+    "overall": 92,
+    "architecture": 95,
+    "performance": 90,
+    "reliability": 92,
+    "automation": 95,
+    "scalability": 90,
+    "security": 95,
+    "maintainability": 92,
+    "ai_readiness": 90,
+    "growth_readiness": 88
+  }
+}

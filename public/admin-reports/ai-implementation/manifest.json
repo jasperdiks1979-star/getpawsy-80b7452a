@@ -1,9 +1,18 @@
 {
   "version": 2,
-  "generated_at": "2026-06-26T00:49:48.930216Z",
+  "generated_at": "2026-06-26T01:32:29.337845Z",
   "order": "chronological_ascending",
   "source": "filesystem_scan",
   "reports": [
+    {
+      "slug": "2026-06-26-pcie2-wave1.5-performance-learning",
+      "title": "PCIE2 Wave 1.5 \u2014 Performance Learning Layer",
+      "generated_at": "2026-06-26T01:32:29.337845Z",
+      "status": "PASS",
+      "score": 92,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.json"
+    },
     {
       "slug": "2026-06-26-pcie2-wave1-foundation",
       "title": "PCIE2 Wave 1 \u2014 Creative Memory + Product Understanding",
