@@ -5,6 +5,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const SITE = 'https://getpawsy.pet';
+const CI_VERSION = 'ci-v1.1-zero-bypass';
+const CI_MIN_SCORE = 75;
 const BANNED = [
   'eco-friendly','vet-approved','vet approved','life-changing','life changing',
   'stop scooping','game-changer','game changer','must-have','must have',
@@ -117,6 +119,25 @@ Deno.serve(async (req) => {
     if (existingKeys.has(key)) { skipped++; bump('duplicate'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'SKIPPED', reason: 'duplicate' }); continue; }
 
     const fp = await fingerprint(key);
+    const hfp = await fingerprint(title);
+    const ifp = await fingerprint(imageUrl);
+    const sfp = await fingerprint(`${title}::${description}`);
+
+    // === Inline Creative Intelligence pre-flight gate ===
+    // Hard checks already passed (banned phrase, quality_score >= 0.6).
+    // Compute composite CI score from available signals.
+    const wordCount = title.trim().split(/\s+/).length;
+    const lenScore = wordCount >= 5 && wordCount <= 12 ? 100 : wordCount >= 3 && wordCount <= 15 ? 80 : 55;
+    const qsScore = Math.round(Number(d.quality_score ?? 0.75) * 100);
+    const trustScore = banned ? 0 : 95;
+    const seoScore = /\b(cat|dog|pet|puppy|kitten)\b/i.test(title) ? 90 : 70;
+    const ciScore = Math.round(0.35 * qsScore + 0.20 * lenScore + 0.20 * trustScore + 0.15 * seoScore + 0.10 * 85);
+    if (ciScore < CI_MIN_SCORE) {
+      rejected++; bump('ci_below_threshold');
+      results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'REJECT', reason: 'ci_below_threshold', detail: `score=${ciScore}` });
+      continue;
+    }
+    const ciPassedAt = new Date().toISOString();
 
     const { data: ins, error: insErr } = await sb.from('pcie2_publish_queue').insert({
       product_id: p.id,
@@ -128,7 +149,15 @@ Deno.serve(async (req) => {
       destination_url: destination,
       status: 'ready',
       quality_score: d.quality_score ?? 0.75,
-      meta: { source: 'pcie2-publish-assembler', creative_id: d.id, board_mapping_reason: boardReason, fingerprint: fp, repaired: didRepair },
+      ci_version: CI_VERSION,
+      ci_passed_at: ciPassedAt,
+      ci_score: ciScore,
+      quality_fingerprint: fp,
+      semantic_fingerprint: sfp,
+      rewrite_fingerprint: fp,
+      image_fingerprint: ifp,
+      headline_fingerprint: hfp,
+      meta: { source: 'pcie2-publish-assembler', creative_id: d.id, board_mapping_reason: boardReason, fingerprint: fp, repaired: didRepair, ci_version: CI_VERSION, ci_score: ciScore, ci_passed_at: ciPassedAt },
     }).select('id').single();
 
     if (insErr) {
