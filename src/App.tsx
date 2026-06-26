@@ -527,6 +527,7 @@ const PinterestVideoLogsPage = lazyWithRetry(() => import("./pages/admin/Pintere
 const PinterestPatternsPage = lazyWithRetry(() => import("./pages/admin/PinterestPatternsPage"));
 const PinterestIntelligence = lazyWithRetry(() => import("./pages/admin/PinterestIntelligence"));
 const PinterestControlCenterPage = lazyWithRetry(() => import("./pages/admin/PinterestControlCenterPage"));
+const PqifV4Page = lazyWithRetry(() => import("./pages/admin/PqifV4Page"));
 const PinterestCreativeIntelV2Page = lazyWithRetry(() => import("./pages/admin/PinterestCreativeIntelV2Page"));
 const PinterestGrowthEnginePage = lazyWithRetry(() => import("./pages/admin/PinterestGrowthEnginePage"));
 const PinterestGenericNichePage = lazyWithRetry(() => import("./pages/admin/PinterestGenericNichePage"));
