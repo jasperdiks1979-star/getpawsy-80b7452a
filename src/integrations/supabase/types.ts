@@ -25913,6 +25913,62 @@ export type Database = {
           },
         ]
       }
+      pinterest_recovery_pin_audit: {
+        Row: {
+          board: string | null
+          classification: string
+          created_at: string
+          description: string | null
+          id: string
+          issues: Json
+          metrics: Json
+          pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          quality_score: number | null
+          run_id: string | null
+          title: string | null
+        }
+        Insert: {
+          board?: string | null
+          classification: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issues?: Json
+          metrics?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          quality_score?: number | null
+          run_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          board?: string | null
+          classification?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          issues?: Json
+          metrics?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          quality_score?: number | null
+          run_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_recovery_pin_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_recovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_recovery_queue: {
         Row: {
           attempts: number
@@ -25966,6 +26022,140 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pinterest_recovery_ramp: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          max_pins_per_day: number
+          notes: string | null
+          required_health: number
+          required_trust: number
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          max_pins_per_day: number
+          notes?: string | null
+          required_health: number
+          required_trust: number
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          max_pins_per_day?: number
+          notes?: string | null
+          required_health?: number
+          required_trust?: number
+          updated_at?: string
+          week?: number
+        }
+        Relationships: []
+      }
+      pinterest_recovery_runs: {
+        Row: {
+          blockers: Json
+          created_at: string
+          finished_at: string | null
+          id: string
+          phase: Json
+          publish_allowed: boolean
+          run_type: string
+          started_at: string
+          status: string
+          summary: Json
+          verdict: string | null
+        }
+        Insert: {
+          blockers?: Json
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          phase?: Json
+          publish_allowed?: boolean
+          run_type: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          verdict?: string | null
+        }
+        Update: {
+          blockers?: Json
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          phase?: Json
+          publish_allowed?: boolean
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          verdict?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_recovery_trust_scores: {
+        Row: {
+          account_health: number
+          board_diversity: number
+          breakdown: Json
+          conversion_score: number
+          created_at: string
+          creative_diversity: number
+          freshness: number
+          id: string
+          publisher_quality: number
+          run_id: string | null
+          seo_score: number
+          topic_diversity: number
+          trust_score: number
+        }
+        Insert: {
+          account_health: number
+          board_diversity: number
+          breakdown?: Json
+          conversion_score: number
+          created_at?: string
+          creative_diversity: number
+          freshness: number
+          id?: string
+          publisher_quality: number
+          run_id?: string | null
+          seo_score: number
+          topic_diversity: number
+          trust_score: number
+        }
+        Update: {
+          account_health?: number
+          board_diversity?: number
+          breakdown?: Json
+          conversion_score?: number
+          created_at?: string
+          creative_diversity?: number
+          freshness?: number
+          id?: string
+          publisher_quality?: number
+          run_id?: string | null
+          seo_score?: number
+          topic_diversity?: number
+          trust_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_recovery_trust_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_recovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_regeneration_queue: {
         Row: {
