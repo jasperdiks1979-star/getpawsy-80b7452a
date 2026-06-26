@@ -24,7 +24,9 @@ Deno.serve(async (req) => {
   const started = new Date().toISOString();
 
   const { data: topProducts } = await SUPA
-    .from("products").select("id,title,category").eq("active", true).order("revenue_score", { ascending: false, nullsFirst: false }).limit(topN);
+    .from("products").select("id,name,category").eq("is_active", true)
+    .order("revenue_priority_score_v2", { ascending: false, nullsFirst: false }).limit(topN);
+  (topProducts ?? []).forEach((p: any) => { p.title = p.name; });
   const productIds = (topProducts ?? []).map((p: any) => p.id);
   const categories = Array.from(new Set((topProducts ?? []).map((p: any) => p.category).filter(Boolean))).slice(0, 20);
 
