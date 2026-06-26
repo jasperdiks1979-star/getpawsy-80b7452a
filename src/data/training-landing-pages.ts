@@ -102,7 +102,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     name: 'No-Pull Reflective Dog Harness with Dual Handles',
     slug: 'heat-resistant-durable-nylon-tactical-service-dog-harness-adjustable-no-pull-reflective-vest-with-du',
     price: 43.99,
-    image: '/images/products/tactical-dog-harness.webp',
+    image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
     shortName: 'No-Pull Harness',
   },
   bundle: {
@@ -114,7 +114,7 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
         name: 'No-Pull Harness',
         slug: 'heat-resistant-durable-nylon-tactical-service-dog-harness-adjustable-no-pull-reflective-vest-with-du',
         price: 43.99,
-        image: '/images/products/tactical-dog-harness.webp',
+        image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
         shortName: 'No-Pull Harness',
       },
       {
@@ -202,7 +202,7 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
         name: 'No-Pull Harness',
         slug: 'heat-resistant-durable-nylon-tactical-service-dog-harness-adjustable-no-pull-reflective-vest-with-du',
         price: 43.99,
-        image: '/images/products/tactical-dog-harness.webp',
+        image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
         shortName: 'No-Pull Harness',
       },
     ],
@@ -262,7 +262,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
     name: 'Tactical Reflective Dog Harness — Adjustable, Metal Buckle',
     slug: 'tactical-pet-chest-service-dog-harness-vest-adjustable-reflective-dog-harness-metal-buckle-hiking-tr',
     price: 44.49,
-    image: '/images/products/tactical-dog-harness.webp',
+    image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
     shortName: 'Tactical Harness',
   },
   bundle: {
@@ -274,7 +274,7 @@ export const STOP_PULLING_LANDING: LandingPageData = {
         name: 'Tactical Harness',
         slug: 'tactical-pet-chest-service-dog-harness-vest-adjustable-reflective-dog-harness-metal-buckle-hiking-tr',
         price: 44.49,
-        image: '/images/products/tactical-dog-harness.webp',
+        image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
         shortName: 'Tactical Harness',
       },
       {
