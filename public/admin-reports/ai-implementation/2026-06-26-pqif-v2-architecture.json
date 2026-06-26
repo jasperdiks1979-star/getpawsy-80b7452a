@@ -1,79 +1,72 @@
 {
-  "title": "Pinterest Quality Intelligence Firewall v2 \u2014 Architecture Report",
-  "generated_at": "2026-06-26T10:58:53.251493Z",
-  "status": "INSTALLED (publishing remains paused: pinterest_publishing_global_stop=true, pcie2_publish_enabled=false)",
-  "pre_publish_checks": [
-    "Image \u2194 product match (loose token overlap, \u226530%)",
-    "Title \u2194 product match",
-    "Description \u2194 product match",
-    "Destination URL contains /products/{slug}",
-    "Canonical URL contains /products/{slug}",
-    "Product availability (effective_stock > 0)",
-    "Price consistency (<5% drift)",
-    "Reject CJ placeholder hosts (cjdropshipping.com, cf., img., oss-cf.)",
-    "Reject low-resolution (<1000\u00d71500 default)",
-    "Reject AI artifact aspect ratios (outside 1.0\u20132.2)",
-    "Reject duplicate image (phash within 30d)",
-    "Reject duplicate headline (14d)",
-    "Reject duplicate description (14d)",
-    "Reject duplicate destination URL (7d)",
-    "Reject duplicate creative concept fingerprint (21d)",
-    "Reject product cooldown violations (default 48h)",
-    "Reject pin similarity above threshold (default 0.88)",
-    "OCR readability check (non-printable artifact count <4)",
-    "Spelling / grammar heuristic on overlay text"
-  ],
-  "quality_scores": {
-    "emotion": "Emotion lexicon hits in title+desc",
-    "ctr": "Word count band, numerals, power words",
-    "intent": "Shopping verbs in description",
-    "seo": "Length bands + niche terms",
-    "composition": "Pinterest 2:3 ratio fidelity",
-    "mobile": "Overlay readability under 40 chars",
-    "branding": "GetPawsy mention",
-    "weights": {
-      "emotion": 0.15,
-      "ctr": 0.2,
-      "intent": 0.15,
-      "seo": 0.2,
-      "composition": 0.1,
-      "mobile": 0.1,
-      "branding": 0.1
-    },
-    "threshold": "75/100 (configurable in pqif_settings)"
-  },
-  "post_publish": [
-    "Aggregate impressions, saves, outbound clicks, CTR, engagement rate, conversion rate from pcie2_pin_performance",
-    "Compute performance_score per creative/headline/hook/visual_dna family",
-    "Update frequency_multiplier (1.5 winners \u2192 0.5 losers)",
-    "Auto-retire posted pins with impressions \u2265 500 and CTR < 0.25%",
-    "Continuous feedback into PCIE2 generator via pqif_family_performance"
-  ],
-  "nightly_self_audit": [
-    "Scan posted pins; mark orphans (no pinterest_pin_id) as rejected",
-    "Detect pins for deleted products and reject",
-    "Sample 200 most recent live pins; HEAD-check destination, flag broken_url",
-    "Surface duplicate publications via creative_fingerprint",
-    "Repairs applied automatically; counters written to pqif_audit_runs"
-  ],
-  "schedule": {
-    "pqif-nightly-audit": "0 3 * * * UTC",
-    "pqif-learning-loop": "15 */6 * * * UTC"
-  },
-  "tables": [
-    "pqif_verdicts",
-    "pqif_audit_runs",
-    "pqif_family_performance",
-    "pqif_settings"
-  ],
-  "edge_functions": [
-    "pqif-nightly-audit",
-    "pqif-learning-loop",
-    "_shared/pinterest-quality-firewall-v2.ts"
-  ],
-  "safety_locks": {
-    "pinterest_publishing_global_stop": true,
-    "pcie2_publish_enabled": false,
-    "note": "Firewall is wired and audits run autonomously; publishing remains gated."
+  "title": "PQIF v2 Architecture Report",
+  "generated_at": "2026-06-26T10:59:14.707867+00:00",
+  "status": "INSTALLED (publishing remains paused)",
+  "sections": {
+    "Pre-publish protections": [
+      "Image <-> product match (token overlap)",
+      "Title <-> product match",
+      "Description <-> product match",
+      "Destination URL contains /products/{slug}",
+      "Canonical URL contains /products/{slug}",
+      "Product availability (effective_stock > 0)",
+      "Price consistency (drift < 5%)",
+      "Reject CJ placeholder hosts",
+      "Reject low-resolution (<1000x1500 default)",
+      "Reject AI artifact aspect ratios (outside 1.0-2.2)",
+      "Reject duplicate image (phash within 30d)",
+      "Reject duplicate headline (14d)",
+      "Reject duplicate description (14d)",
+      "Reject duplicate destination URL (7d)",
+      "Reject duplicate creative concept fingerprint (21d)",
+      "Reject product cooldown violations (default 48h)",
+      "Reject pin similarity above threshold (default 0.88)",
+      "OCR readability check (non-printable artifacts < 4)",
+      "Spelling / grammar heuristic on overlay text"
+    ],
+    "Quality scoring": [
+      "emotion (15%): lexicon hits in title+desc",
+      "ctr (20%): word band, numerals, power words",
+      "intent (15%): shopping verbs in description",
+      "seo (20%): length bands + niche terms",
+      "composition (10%): Pinterest 2:3 ratio fidelity",
+      "mobile (10%): overlay readability < 40 chars",
+      "branding (10%): GetPawsy mention",
+      "Threshold: 75/100 (configurable in pqif_settings)"
+    ],
+    "Post-publish learning loop": [
+      "Aggregate impressions, saves, outbound clicks, CTR, engagement, CVR (30d)",
+      "Compute performance_score per creative/headline/hook/visual_dna family",
+      "Update frequency_multiplier (1.5 winners -> 0.5 losers)",
+      "Auto-retire posted pins (impressions >= 500 AND CTR < 0.25%)",
+      "Continuous feedback into PCIE2 generator via pqif_family_performance"
+    ],
+    "Nightly self-audit": [
+      "Mark orphan posted rows (no pinterest_pin_id) as rejected",
+      "Reject pins for deleted products",
+      "HEAD-check destinations on 200 most-recent live pins; flag broken_url",
+      "Surface duplicate publications via creative_fingerprint",
+      "All counters written to pqif_audit_runs"
+    ],
+    "Schedule": [
+      "pqif-nightly-audit: 0 3 * * * UTC",
+      "pqif-learning-loop: 15 */6 * * * UTC"
+    ],
+    "Tables created": [
+      "pqif_verdicts",
+      "pqif_audit_runs",
+      "pqif_family_performance",
+      "pqif_settings"
+    ],
+    "Edge functions / modules": [
+      "supabase/functions/_shared/pinterest-quality-firewall-v2.ts",
+      "supabase/functions/pqif-nightly-audit/index.ts",
+      "supabase/functions/pqif-learning-loop/index.ts"
+    ],
+    "Safety locks": [
+      "pinterest_publishing_global_stop = true",
+      "pcie2_publish_enabled = false",
+      "Firewall + audits run autonomously; publishing remains gated."
+    ]
   }
 }
