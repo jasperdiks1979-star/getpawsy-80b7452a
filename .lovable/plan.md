@@ -1,100 +1,94 @@
 ## Goal
-Migrate Pinterest publishing from 100% legacy to 100% PCIE2 via a gated, reversible rollout. No blind enablement. Every phase has a hard pass/fail; any fail halts and either rolls back or surfaces evidence.
+Replace the manually-seeded PCIE2 dependency with a permanent **autonomous Pinterest Intelligence ecosystem**. After this build, headline/hook/creative libraries grow on their own, every publish is unique, and the system learns from Pinterest metrics with zero manual intervention. Only after the full ecosystem passes its success gates does the controlled Phase 2 migration resume.
 
-## Phase 1 — Legacy publish-capability audit (read-only)
-Build `supabase/functions/pcie2-migration-audit/index.ts` (admin-JWT). It scans and returns evidence per category:
-- Edge functions: grep deployed function code for `/v5/pins` POST/PATCH outside `pcie2-publisher`.
-- Cron: `select jobname, schedule, command, active from cron.job where command ilike '%pinterest%' or jobname ilike '%pin%'`.
-- Queues/workers: row counts in `pinterest_pin_queue`, `pinterest_publish_queue`, `pinterest_video_queue`, `pinterest_recovery_queue`, `pinterest_regeneration_queue`, `pinterest_overlay_replacement_jobs`, `pinterest_live_pin_repair_queue` with `status in ('queued','processing','retry')`.
-- Webhooks/API routes: scan `supabase/functions/**` for HTTP handlers that enqueue publish work.
-- Feature flags: dump `app_config` keys matching `pinterest_*`, `autopilot_*`, `pcie2_*`.
-- Background jobs: `background_jobs`, `marketing_jobs`, `job_runs` recent pinterest activity.
-- Orphans: any function not in PCIE2 allowlist that imports `pinterestFetch`.
-Output: `pcie2_migration_audits` row + JSON report. **Pass = 0 publish-capable legacy paths**. Any finding halts the run with evidence appended to the executive report.
+Nothing in this plan publishes to Pinterest. `pinterest_publishing_global_stop=true` and `pcie2_publish_enabled=false` stay locked until Step 7 canary, which is gated by Steps 1–6.
 
-## Phase 2 — PCIE2 readiness check
-Same function, `mode=readiness`. For each module verify presence + last successful invocation + dependency table populated:
-classifier, headline AI, hook AI, creative evolution, quality engine, SEO engine, similarity gate, board intelligence, publisher, queue, Pinterest API token (debug token + scopes), pipeline trace writer, product resolver, tracking (`pinterest_capi_outbox`), analytics (`pinterest_analytics_daily`).
-Each module returns `green|yellow|red` with reason. **Pass = all green**.
+---
 
-## Phase 3 — Feature-flag normalization
-Inventory all `pcie2_*` and legacy `pinterest_*` flags. Produce a desired-state matrix:
-```
-pcie2_publish_enabled              = false (will flip in Phase 8 only)
-pcie2_publish_guard                = true
-pcie2_similarity_gate              = true
-pcie2_classifier                   = true
-pcie2_quality                      = true
-pcie2_creative                     = true
-pcie2_pipeline_trace               = true
-pcie2_board_ai                     = true
-pcie2_hook_ai                      = true
-pcie2_headline_ai                  = true
-pinterest_publishing_global_stop   = true (held until Phase 8)
-pinterest_legacy_publisher_enabled = false
-```
-Write deltas via `app_config` upsert with audit row in `pcie2_pipeline_trace` (action=`flag_normalize`). No mixed state allowed; mismatches halt.
+## Step 1 — Headline Intelligence Engine (self-generating)
+- New edge function `pcie2-headline-engine` (admin/internal-JWT). Inputs: `category`, `family`, `count`, `model_version`.
+- 22 headline families (Curiosity, FOMO, Problem, Solution, Transformation, Comparison, Statistics, Emotional, Luxury, Budget, Urgency, Educational, Question, Story, Before/After, Authority, Social Proof, Seasonal, Holiday, Gift, Benefit, Pain) seeded as a static enum — not as data rows.
+- Generation: Lovable AI Gateway (`google/gemini-3-flash-preview`) per category × family batch of 10. Each row writes: `headline, family, emotion, reading_grade (Flesch-Kincaid), length, predicted_ctr (model), duplicate_score (cosine vs last 200), embedding vector(3072) via `google/gemini-embedding-001`, generated_at, model_version, prompt_version, source_category`.
+- Migration: add missing columns to `pcie2_headline_library` (`emotion`, `reading_grade`, `length`, `predicted_ctr`, `duplicate_score`, `embedding vector(3072)`, `prompt_version`, `source_category`, `family` enum). Add HNSW index on `embedding`.
+- Continuous expansion: cron `pcie2-headline-engine` every 6h tops up any category × family below 25 active rows. No hard ceiling.
 
-## Phase 4 — Snapshot for one-action rollback
-New migration: `pcie2_migration_snapshots(id, taken_at, app_config jsonb, cron_jobs jsonb, queue_counts jsonb, function_versions jsonb, deployment_sha text, notes text)` + GRANTs + RLS (admin only).
-Snapshot writer dumps:
-- full `app_config`
-- `cron.job` rows
-- queue row counts + max(updated_at) per queue
-- edge function names + deployed versions (via Supabase Management API; fall back to repo SHA from `git rev-parse HEAD`)
-- current `deployment_sha`
-Rollback function `pcie2-migration-rollback` restores `app_config`, re-enables `pinterest_publishing_global_stop`, sets `pcie2_publish_enabled=false`. One call = full revert.
+## Step 2 — Hook Intelligence Engine (self-generating)
+- New edge function `pcie2-hook-engine`. Generates hooks per `product_id × category × audience × board × intent × season × country × language`.
+- Scoring per row: `predicted_ctr`, `novelty_score` (1 − max cosine vs last 500), `duplicate_score`, `quality_score` (Gemini judge rubric 0–100), `engagement_prediction`.
+- Migration: extend `pcie2_hook_library` with `audience, board_id, intent, season, country, language, predicted_ctr, novelty_score, duplicate_score, quality_score, engagement_prediction, embedding vector(3072), model_version, prompt_version`. HNSW index.
+- Cron every 6h refills any (category, audience, board) cell below 20 active hooks.
 
-## Phase 5 — Controlled canary (5 pins, dry-publish first, then live)
-Extend `pcie2-publisher` with `mode: 'canary'`. Selection rule:
-- 5 distinct products from 5 distinct functional classes
-- 5 distinct boards, headlines, hooks, prompts, scene styles, AI model versions
-- Reject if any duplicate axis collides (uses `pcie2_creatives` similarity hash)
-Run order: dry-run all 5 → if all gate-pass → flip `pcie2_publish_enabled=true` scoped only to canary product IDs via allowlist column on `pcie2_publish_queue` → publish 5 → leave `pinterest_publishing_global_stop=true` for everything else.
+## Step 3 — Creative Intelligence Engine (self-generating briefs)
+- New edge function `pcie2-creative-engine`. For each active product produce briefs across 15 concepts (Lifestyle, Close-up, Comparison, Problem, Solution, Pet Interaction, Owner Interaction, Luxury, Minimal, Outdoor, Indoor, Motion, Premium, Funny, Educational).
+- Each row in `pcie2_creatives`: `concept, prompt, negative_prompt, layout, camera_angle, lighting, background, breed, pose, composition, style, headline_id, hook_id, cta, quality_score, predicted_ctr, pinterest_score, ai_confidence, embedding vector(3072), duplicate_score, model_version, prompt_version`. Reuse existing table; ALTER to add any missing columns.
+- Concept enum lives in code; data rows never carry "templates".
 
-## Phase 6 — Live Pinterest verification per pin
-After each canary publish, call Pinterest `GET /v5/pins/{id}` and verify against `pcie2_pipeline_trace`:
-pin exists, board id, title, description, image url hash, destination url, product slug, UTM params, metadata, trace id, AI version, publish timestamp, no CJ host, no duplicate hook/title/image vs last 200 pins. Any mismatch → mark trace `rejected_post_publish`, call `pcie2-publisher` `unpublish`, halt.
+## Step 4 — Creative Evolution Guard
+- New shared module `supabase/functions/_shared/pcie2-evolution.ts`. Before any creative is marked `ready`, it must pass: cosine similarity < 0.88 vs last 200 published creatives across (image embedding, headline embedding, hook embedding), and at least 3 of {headline, hook, CTA, layout, camera_angle, lighting, background, breed, pose, composition, negative_prompt, style} must differ from the most recent sibling for the same product.
+- Failures auto-regenerate up to 5 attempts, then flag `evolution_blocked` and skip.
 
-## Phase 7 — Quality gate expansion (20 more)
-If 5/5 pass: publish 20 more under same per-pin verification. Any single failure: stop publishing, run rollback snapshot if `pcie2_publish_enabled` is broader than canary allowlist.
+## Step 5 — Dry-Run Generation (top 100 revenue products)
+- Orchestrator `pcie2-bootstrap-run` invokes Steps 1–4 against the top 100 products by 90-day revenue.
+- Hard gates before continuing:
+  - `pcie2_headline_library >= 500`
+  - `pcie2_hook_library >= 500`
+  - `pcie2_creatives >= 1000`
+  - Median `quality_score >= 70`
+  - Median `duplicate_score <= 0.25`
+- No Pinterest calls. Pure DB writes + embeddings.
 
-## Phase 8 — Legacy retirement (only on 25/25 pass)
-- Drop `pinterest_publishing_global_stop` to false
-- Set `pcie2_publish_enabled=true` (unscoped)
-- Set `pinterest_legacy_publisher_enabled=false`
-- Confirm legacy function stubs still return 410
-- Confirm legacy crons remain unscheduled
-- Archive snapshot of legacy queue rows to `pcie2_legacy_inventory` with action=`archived_post_migration`
+## Step 6 — Pipeline Trace Dry-Run (100 products)
+- Run `pcie2-publisher` in `mode=dry_trace` against the 100 products. Every `pcie2_pipeline_trace` row must contain: `pipeline_id, creative_id, creative_version, headline_version, hook_version, prompt_version, board_decision, ai_model_version, quality_score, publish_ts (null in dry), deployment_sha, source_product_id`. Any null halts.
 
-## Phase 9 — Permanent pipeline trace
-Ensure `pcie2_pipeline_trace` row written on every publish carries:
-`pipeline_id, creative_id, creative_version, ai_model_version, prompt_version, similarity_score, headline_version, hook_version, board_decision, publish_ts, deployment_sha, source_product_id, quality_score`. Add missing columns via migration; backfill canary rows.
+## Step 7 — Canary (5 brand-new creatives)
+- Only if Steps 1–6 pass. Generate 5 fresh creatives that reuse zero existing assets: new prompt, headline, hook, CTA, composition, style.
+- Each must exceed the rolling median quality score of the past 100 generated creatives.
+- Flip `pcie2_publish_enabled=true` scoped to those 5 product IDs via the existing canary allowlist on `pcie2_publish_queue`. `pinterest_publishing_global_stop` stays `true` for everything else.
+- Live Pinterest verification per pin reuses the existing Phase 6 verifier from `.lovable/plan.md`.
 
-## Phase 10 — Reporting (mandatory)
-Single Python script generates:
-- `public/admin-reports/ai-implementation/2026-06-26-pcie2-controlled-migration.{pdf,json,html}`
-- Sections: migration summary · phase-by-phase results · legacy audit evidence · readiness matrix · feature-flag diff · snapshot id · canary 5 results with live Pinterest verification · 20-pin quality gate · final flag state · remaining risks · recommendations · rollback instructions
-Append to `manifest.json`. Copy to `/mnt/documents/`. Verify file existence, manifest update, and that the Admin → Reports page lists it (curl the manifest URL).
+## Step 8 — Self-Learning Loop
+- New edge function `pcie2-learning-engine` (cron every 1h once canary is live). Pulls Pinterest analytics for published pins: impressions, saves, outbound_clicks, closeups, pin_clicks, CTR.
+- Writes feature attribution to `pcie2_feature_attribution` (already exists) and updates rolling weights for: headline family, hook family, concept, layout, board, posting hour, CTA. Future generations sample weighted by these scores.
+- Nightly `pcie2-learning-engine mode=retrain` rebuilds the CTR prediction model (logistic regression on embeddings + features) and bumps `model_version`.
 
-## Hard halts
-- Phase 1 finds any publish-capable legacy → stop, report only.
-- Phase 2 any red → stop.
-- Phase 3 mismatch the run cannot resolve → stop.
-- Phase 6 any pin fails live verification → unpublish + halt.
-- Phase 7 any pin fails → halt + rollback if needed.
+## Step 9 — Reporting (mandatory)
+- Python script generates `public/admin-reports/ai-implementation/2026-06-26-pcie2-autonomous-ecosystem.{pdf,json,html}`.
+- Sections: AI readiness · headline engine state · hook engine state · creative engine state · evolution guard stats · learning engine state · trace validation · counts (headlines/hooks/creatives) · duplicate analysis · quality analysis · remaining blockers · deployment readiness · success gate matrix.
+- Append to `manifest.json`. Copy to `/mnt/documents/`. Verify the file lists on Admin → Reports → AI Implementation Reports.
+
+---
+
+## Success criteria (auto-checked before resuming Phase 2)
+- `pcie2_headline_library > 500`
+- `pcie2_hook_library > 500`
+- `pcie2_creatives > 1000`
+- `pcie2_pipeline_trace` rows for 100 products with all provenance columns populated
+- Evolution guard active (similarity < 0.88 enforced)
+- Learning engine cron scheduled and last_run < 2h
+- Quality engine median ≥ 70, duplicate median ≤ 0.25
+- Only then call `pcie2-migration-audit mode=resume` to continue the controlled Phase 2 migration.
+
+---
 
 ## Deliverables
-- New function: `pcie2-migration-audit` (audit + readiness + flag check), `pcie2-migration-rollback`.
-- Migration: `pcie2_migration_snapshots` table + columns added to `pcie2_pipeline_trace`.
-- Extended: `pcie2-publisher` with canary + post-publish verification.
-- Reports: PDF + JSON + HTML + manifest update + `/mnt/documents/` copies.
-- Snapshot row stored, rollback callable in one action.
+- Edge functions: `pcie2-headline-engine`, `pcie2-hook-engine`, `pcie2-creative-engine`, `pcie2-bootstrap-run`, `pcie2-learning-engine`. Extend `pcie2-publisher` with `mode=dry_trace`.
+- Shared module: `_shared/pcie2-evolution.ts`, `_shared/pcie2-embeddings.ts`.
+- Migrations: extend `pcie2_headline_library`, `pcie2_hook_library`, `pcie2_creatives` with the new columns + HNSW vector indexes; add `pcie2_model_versions` registry.
+- Crons: headline top-up (6h), hook top-up (6h), learning hourly (after canary), learning retrain nightly.
+- Reports: PDF + JSON + HTML, manifest updated, mirrored to `/mnt/documents/`.
+
+## Hard halts
+- Any step's success gate fails → halt, report, no flag flips.
+- Embedding/model 402 or 429 → back off, log to `pcie2_learning_runs`, do not silently skip.
+- `pinterest_publishing_global_stop` may only flip in Step 7 and only scoped to the 5 canary product IDs.
 
 ## Non-goals
-- No new AI features.
-- No UI changes beyond report surfacing.
+- No static seeded example headlines/hooks.
+- No UI rewrites beyond surfacing the report.
+- No re-introduction of legacy publishers.
 - No Stripe/auth changes.
-- No re-introducing legacy code.
 
-Confirm to proceed and I will execute Phases 1–10 in one run, halting at the first hard fail.
+## Cost guardrail
+- Bootstrap budget cap: 5000 credits (~$500). `pcie2-bootstrap-run` aborts when `pinterest_credit_state.credits_remaining` drops below the cap floor.
+
+Confirm to proceed and I will execute Steps 1–9 in one run, halting at the first failed gate.
