@@ -1,6 +1,17 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-acos-wave-b",
+      "title": "ACOS Phase 2 — Wave B: Dispatcher, Approvals, Health & Alerts",
+      "generated_at": "2026-06-26T23:55:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 96,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-acos-wave-b.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-acos-wave-b.json",
+      "summary": "Approval-gated decision dispatcher, smoke test, health watchdog, alert notifier, and Wave B approvals UI. Autonomous mutations remain OFF by default."
+    },
+    {
       "slug": "2026-06-26-acos-phase-2-wave-a",
       "title": "ACOS Phase 2 \u2014 Wave A Foundation",
       "generated_at": "2026-06-26T23:30:00Z",

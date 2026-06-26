@@ -985,6 +985,45 @@ export type Database = {
         }
         Relationships: []
       }
+      acos_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          detail: Json
+          id: string
+          resolved_at: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source: string
+          status?: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       acos_board_intelligence: {
         Row: {
           board_id: string
@@ -1133,14 +1172,22 @@ export type Database = {
         Row: {
           action: string
           actual_outcome: Json | null
+          approval_required: boolean
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           delta: Json | null
+          dispatch_idempotency_key: string | null
+          dispatched_at: string | null
           engine: string
           evaluated_at: string | null
+          execution_result: Json | null
           expected_outcome: Json | null
           id: string
           observed_only: boolean
           reason: string | null
+          rejected_reason: string | null
+          risk_score: number | null
           rollback_ref: string | null
           status: string
           target_kind: string | null
@@ -1149,14 +1196,22 @@ export type Database = {
         Insert: {
           action: string
           actual_outcome?: Json | null
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           delta?: Json | null
+          dispatch_idempotency_key?: string | null
+          dispatched_at?: string | null
           engine: string
           evaluated_at?: string | null
+          execution_result?: Json | null
           expected_outcome?: Json | null
           id?: string
           observed_only?: boolean
           reason?: string | null
+          rejected_reason?: string | null
+          risk_score?: number | null
           rollback_ref?: string | null
           status?: string
           target_kind?: string | null
@@ -1165,20 +1220,75 @@ export type Database = {
         Update: {
           action?: string
           actual_outcome?: Json | null
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           delta?: Json | null
+          dispatch_idempotency_key?: string | null
+          dispatched_at?: string | null
           engine?: string
           evaluated_at?: string | null
+          execution_result?: Json | null
           expected_outcome?: Json | null
           id?: string
           observed_only?: boolean
           reason?: string | null
+          rejected_reason?: string | null
+          risk_score?: number | null
           rollback_ref?: string | null
           status?: string
           target_kind?: string | null
           target_ref?: string | null
         }
         Relationships: []
+      }
+      acos_dispatch_log: {
+        Row: {
+          blocked_reason: string | null
+          created_at: string
+          decision_id: string | null
+          decision_type: string | null
+          duration_ms: number | null
+          id: string
+          outcome: string
+          request_payload: Json | null
+          response_payload: Json | null
+          target_function: string | null
+        }
+        Insert: {
+          blocked_reason?: string | null
+          created_at?: string
+          decision_id?: string | null
+          decision_type?: string | null
+          duration_ms?: number | null
+          id?: string
+          outcome: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          target_function?: string | null
+        }
+        Update: {
+          blocked_reason?: string | null
+          created_at?: string
+          decision_id?: string | null
+          decision_type?: string | null
+          duration_ms?: number | null
+          id?: string
+          outcome?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          target_function?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acos_dispatch_log_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "acos_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       acos_diversity_state: {
         Row: {
@@ -1213,6 +1323,42 @@ export type Database = {
           recommendation?: string | null
           target_share?: number | null
           window_start?: string
+        }
+        Relationships: []
+      }
+      acos_health_snapshots: {
+        Row: {
+          ci_layer: Json
+          dispatcher: Json
+          engines: Json
+          guardian: Json
+          id: string
+          notes: string | null
+          overall_status: string
+          queue: Json
+          taken_at: string
+        }
+        Insert: {
+          ci_layer?: Json
+          dispatcher?: Json
+          engines?: Json
+          guardian?: Json
+          id?: string
+          notes?: string | null
+          overall_status?: string
+          queue?: Json
+          taken_at?: string
+        }
+        Update: {
+          ci_layer?: Json
+          dispatcher?: Json
+          engines?: Json
+          guardian?: Json
+          id?: string
+          notes?: string | null
+          overall_status?: string
+          queue?: Json
+          taken_at?: string
         }
         Relationships: []
       }
@@ -1634,24 +1780,33 @@ export type Database = {
       }
       acos_settings: {
         Row: {
+          approval_mode: string
+          autonomous_mutations: boolean
           created_at: string
           description: string | null
+          engine_flags: Json
           id: string
           key: string
           updated_at: string
           value: Json
         }
         Insert: {
+          approval_mode?: string
+          autonomous_mutations?: boolean
           created_at?: string
           description?: string | null
+          engine_flags?: Json
           id?: string
           key: string
           updated_at?: string
           value?: Json
         }
         Update: {
+          approval_mode?: string
+          autonomous_mutations?: boolean
           created_at?: string
           description?: string | null
+          engine_flags?: Json
           id?: string
           key?: string
           updated_at?: string
