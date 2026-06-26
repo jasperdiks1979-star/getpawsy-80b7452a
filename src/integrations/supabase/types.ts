@@ -21081,6 +21081,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_cron_disabled_snapshot: {
+        Row: {
+          command: string | null
+          disabled_at: string
+          jobid: number
+          jobname: string
+          reason: string | null
+          schedule: string | null
+        }
+        Insert: {
+          command?: string | null
+          disabled_at?: string
+          jobid: number
+          jobname: string
+          reason?: string | null
+          schedule?: string | null
+        }
+        Update: {
+          command?: string | null
+          disabled_at?: string
+          jobid?: number
+          jobname?: string
+          reason?: string | null
+          schedule?: string | null
+        }
+        Relationships: []
+      }
       pinterest_debug_tokens: {
         Row: {
           created_at: string
