@@ -121,12 +121,23 @@ async function runOne(sb: any, productId: string, opts: { forceLive?: boolean })
 
   // 2. headline
   const t2 = performance.now();
-  const { data: hl } = await sb.from("pcie2_headline_library")
+  let { data: hl } = await sb.from("pcie2_headline_library")
     .select("id,headline,functional_class,emotion,retired,performance_score")
     .eq("functional_class", cls?.functional_class ?? "_none_")
     .eq("retired", false)
     .order("performance_score", { ascending: false, nullsFirst: false })
     .limit(1).maybeSingle();
+  // Fallback: per-product headlines from the legacy pin_headline_bank.
+  if (!hl) {
+    const { data: legacyH } = await sb.from("pin_headline_bank")
+      .select("id,headline,performance_score,banned_phrases_found")
+      .eq("product_id", productId)
+      .order("performance_score", { ascending: false, nullsFirst: false })
+      .limit(1).maybeSingle();
+    if (legacyH?.headline) {
+      hl = { id: legacyH.id, headline: legacyH.headline, functional_class: cls?.functional_class, retired: false, performance_score: legacyH.performance_score, source: "pin_headline_bank" } as any;
+    }
+  }
   const headline = hl?.headline ?? null;
   if (!headline) {
     tick("headline", "failed", { reason: "no_headline_in_library", functional_class: cls?.functional_class }, "headline_missing", Math.round(performance.now()-t2));
@@ -138,12 +149,25 @@ async function runOne(sb: any, productId: string, opts: { forceLive?: boolean })
 
   // 3. hook
   const t3 = performance.now();
-  const { data: hk } = await sb.from("pcie2_hook_library")
+  let { data: hk } = await sb.from("pcie2_hook_library")
     .select("id,hook,hook_type,functional_class,retired,performance_score")
     .eq("functional_class", cls?.functional_class ?? "_none_")
     .eq("retired", false)
     .order("performance_score", { ascending: false, nullsFirst: false })
     .limit(1).maybeSingle();
+  // Fallback: pin_hook_library_v2 by category bucket (use sub_class or class root).
+  if (!hk) {
+    const bucket = (cls?.sub_class || cls?.functional_class || "").toString();
+    const { data: legacyHk } = await sb.from("pin_hook_library_v2")
+      .select("id,hook_text,bucket,retired,win_rate")
+      .eq("retired", false)
+      .ilike("bucket", bucket ? `%${bucket}%` : "%")
+      .order("win_rate", { ascending: false, nullsFirst: false })
+      .limit(1).maybeSingle();
+    if (legacyHk?.hook_text) {
+      hk = { id: legacyHk.id, hook: legacyHk.hook_text, hook_type: "legacy", functional_class: cls?.functional_class, retired: false, performance_score: legacyHk.win_rate } as any;
+    }
+  }
   const hook = hk?.hook ?? null;
   if (!hook) {
     tick("hook", "failed", { reason: "no_hook_in_library" }, "hook_missing", Math.round(performance.now()-t3));
