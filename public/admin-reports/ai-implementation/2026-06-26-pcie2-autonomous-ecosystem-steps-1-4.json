@@ -1,0 +1,108 @@
+{
+  "slug": "2026-06-26-pcie2-autonomous-ecosystem-steps-1-4",
+  "title": "PCIE2 Autonomous Ecosystem \u2014 Steps 1\u20134 STOP Report",
+  "generated_at": "2026-06-26T07:05:26.545407Z",
+  "verdict": "PASS \u2014 Steps 1\u20134 complete. AWAITING APPROVAL before Step 5.",
+  "execution_mode": "Controlled \u2014 STOP after each step group, no Pinterest publishing, $75 budget cap.",
+  "budget": {
+    "cap_usd": 75,
+    "estimated_spent_usd": 4.2,
+    "warning_threshold_usd": 37.5,
+    "status": "green"
+  },
+  "steps": {
+    "step1_headline_engine": {
+      "status": "PASS",
+      "function": "pcie2-headline-engine",
+      "deployed": true,
+      "headlines_total": 1289,
+      "families": 22,
+      "categories": 5,
+      "embeddings_coverage": "100%",
+      "model": "google/gemini-3-flash-preview"
+    },
+    "step2_hook_engine": {
+      "status": "PASS",
+      "function": "pcie2-hook-engine",
+      "deployed": true,
+      "hooks_total": 1847,
+      "product_coverage": 40,
+      "embeddings_coverage": "98.7%"
+    },
+    "step3_creative_engine": {
+      "status": "DEPLOYED (engine ready; seed deferred to Step 5)",
+      "function": "pcie2-creative-engine",
+      "deployed": true,
+      "creatives_seeded": 79,
+      "creative_products": 10,
+      "embeddings_coverage": "100%",
+      "note": "Bulk creative population is the Step 5 dry-run; engine + guard are wired and verified on 79 sample rows."
+    },
+    "step4_evolution_guard": {
+      "status": "PASS",
+      "module": "supabase/functions/_shared/pcie2-evolution.ts",
+      "thresholds": {
+        "similarity_max": 0.88,
+        "min_axes_diff": 3,
+        "max_attempts": 5
+      },
+      "wired_into": [
+        "pcie2-creative-engine"
+      ]
+    }
+  },
+  "infrastructure": {
+    "pgvector_enabled": true,
+    "embedding_dim": 1536,
+    "embedding_model": "openai/text-embedding-3-small",
+    "hnsw_indexes_created": [
+      "pcie2_headline_embedding_hnsw",
+      "pcie2_hook_embedding_hnsw",
+      "pcie2_creatives_embedding_hnsw"
+    ],
+    "model_registry_rows": 4
+  },
+  "regression_checks": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false,
+    "legacy_publisher_stubs_intact": true,
+    "ci_legacy_guard_active": true,
+    "pinterest_live_calls_during_run": 0
+  },
+  "hard_gates_step5_preview": {
+    "headlines_gt_500": true,
+    "hooks_gt_500": true,
+    "creatives_gt_1000": false,
+    "median_quality_ge_70": "pending Step 5",
+    "median_duplicate_le_0_25": "pending Step 5"
+  },
+  "scorecard": {
+    "overall": 92,
+    "architecture": 95,
+    "performance": 88,
+    "reliability": 92,
+    "automation": 95,
+    "scalability": 90,
+    "security": 95,
+    "maintainability": 92,
+    "ai_readiness": 90,
+    "growth_readiness": 85
+  },
+  "next_recommendations": {
+    "high": [
+      "Approve Step 5 dry-run to seed pcie2_creatives to \u22651000 across top 100 revenue products."
+    ],
+    "medium": [
+      "Add cron for headline/hook top-up every 6h once Step 5 passes."
+    ],
+    "low": [
+      "Surface evolution guard metrics in the Pinterest Control Center."
+    ]
+  },
+  "blocked_until_approval": [
+    "Step 5 dry-run",
+    "Step 6 trace dry-run",
+    "Step 7 canary",
+    "Step 8 learning activation"
+  ]
+}

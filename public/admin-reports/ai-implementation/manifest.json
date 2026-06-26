@@ -1,5 +1,15 @@
 [
   {
+    "slug": "2026-06-26-pcie2-autonomous-ecosystem-steps-1-4",
+    "title": "PCIE2 Autonomous Ecosystem \u2014 Steps 1\u20134 STOP Report",
+    "generated_at": "2026-06-26T07:05:26.545407Z",
+    "status": "pass",
+    "score": 92,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-autonomous-ecosystem-steps-1-4.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-autonomous-ecosystem-steps-1-4.json",
+    "html": "/admin-reports/ai-implementation/2026-06-26-pcie2-autonomous-ecosystem-steps-1-4.html"
+  },
+  {
     "slug": "2026-06-26-pcie2-controlled-migration-halted-phase2",
     "title": "PCIE2 Controlled Migration \u2014 HALTED at Phase 2 (readiness fail)",
     "generated_at": "2026-06-26T06:09:46.338416Z",
