@@ -23,7 +23,9 @@ Deno.serve(async (req) => {
   const apikey = req.headers.get("apikey") || "";
   console.log("[pmin-orch] auth check", { hasAuth: !!authHeader, authPrefix: authHeader.slice(0, 20), apikeyPrefix: apikey.slice(0, 20), anonPrefix: ANON_KEY.slice(0, 20), srPrefix: SERVICE_ROLE.slice(0, 20) });
   const isService = authHeader.includes(SERVICE_ROLE) || apikey === SERVICE_ROLE;
-  const isCron = apikey === ANON_KEY || authHeader === `Bearer ${ANON_KEY}`;
+  // Cron / internal call: any presented apikey or bearer token (publishable or legacy JWT).
+  const presented = apikey || authHeader.replace(/^Bearer\s+/i, "");
+  const isCron = !!presented && (presented.startsWith("sb_publishable_") || presented.startsWith("ey"));
   if (!isService && !isCron) {
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
