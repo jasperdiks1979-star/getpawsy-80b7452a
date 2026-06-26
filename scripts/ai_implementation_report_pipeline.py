@@ -232,7 +232,18 @@ def verify_manifest(manifest: dict[str, Any]) -> list[str]:
 
 def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     from reportlab.lib.pagesizes import letter
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.pdfgen import canvas
+
+    font_dir = Path("/nix/store/xhanp47490n743s7zd27d8i9s1khg6c0-dejavu-fonts-minimal-2.37/share/fonts/truetype")
+    regular_font = "Helvetica"
+    bold_font = "Helvetica-Bold"
+    if (font_dir / "DejaVuSans.ttf").exists() and (font_dir / "DejaVuSans-Bold.ttf").exists():
+        pdfmetrics.registerFont(TTFont("DejaVuSans", str(font_dir / "DejaVuSans.ttf")))
+        pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", str(font_dir / "DejaVuSans-Bold.ttf")))
+        regular_font = "DejaVuSans"
+        bold_font = "DejaVuSans-Bold"
 
     page_width, page_height = letter
     left = 54
@@ -249,7 +260,7 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
         if y - space < 54:
             new_page()
 
-    def wrap_text(text: str, font: str = "Helvetica", size: int = 10, max_width: float | None = None) -> list[str]:
+    def wrap_text(text: str, font: str = regular_font, size: int = 10, max_width: float | None = None) -> list[str]:
         max_width = max_width or (right - left)
         words = str(text).split()
         lines: list[str] = []
@@ -266,7 +277,7 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
             lines.append(current)
         return lines or [""]
 
-    def text_block(text: str, font: str = "Helvetica", size: int = 10, leading: int = 13, max_width: float | None = None) -> None:
+    def text_block(text: str, font: str = regular_font, size: int = 10, leading: int = 13, max_width: float | None = None) -> None:
         nonlocal y
         for line in wrap_text(text, font, size, max_width):
             ensure(leading)
@@ -278,14 +289,14 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
         nonlocal y
         ensure(30)
         y -= 10
-        c.setFont("Helvetica-Bold", 13)
+        c.setFont(bold_font, 13)
         c.drawString(left, y, label)
         y -= 18
 
-    c.setFont("Helvetica-Bold", 20)
+    c.setFont(bold_font, 20)
     c.drawString(left, y, "AI Implementation Report System Repair")
     y -= 18
-    c.setFont("Helvetica", 8)
+    c.setFont(regular_font, 8)
     c.drawString(left, y, f"Generated: {report['generated_at']}")
     y -= 18
 
@@ -295,7 +306,7 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     for fix in report["fixes"]:
         text_block(f"• {fix}")
     heading("Final Status")
-    text_block(report["final_status"], font="Helvetica-Bold", size=11)
+    text_block(report["final_status"], font=bold_font, size=11)
 
     heading("Verification Results")
     label_w = 190
@@ -303,15 +314,15 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     c.setFillColorRGB(0.07, 0.09, 0.14)
     c.rect(left, y - row_h + 3, right - left, row_h, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 8)
+    c.setFont(bold_font, 8)
     c.drawString(left + 6, y - 8, "Check")
     c.drawString(left + label_w + 6, y - 8, "Result")
     c.setFillColorRGB(0, 0, 0)
     y -= row_h
-    c.setFont("Helvetica", 8)
+    c.setFont(regular_font, 8)
     for key, value in report["verification"].items():
         display = json.dumps(value) if isinstance(value, (list, dict)) else str(value)
-        lines = wrap_text(display, "Helvetica", 8, right - left - label_w - 12)
+        lines = wrap_text(display, regular_font, 8, right - left - label_w - 12)
         height = max(row_h, 10 * len(lines) + 6)
         ensure(height + 4)
         c.setStrokeColorRGB(0.82, 0.86, 0.9)
