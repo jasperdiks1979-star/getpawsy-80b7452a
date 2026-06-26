@@ -23,11 +23,11 @@ serve(async (req) => {
       if (!a.product_id) continue;
       const { data: prod } = await sb.from("products").select("effective_stock, is_active").eq("id", a.product_id).maybeSingle();
       if (!prod || !(prod as any).is_active || ((prod as any).effective_stock ?? 0) <= 0) continue;
-      try {
-        const { error } = await sb.functions.invoke("pinterest-video-publisher", { body: { action: "queue_draft", asset_id: a.id, source: "emergency_mode" } });
-        if (!error) queued++;
-        if (queued >= 12) break;
-      } catch (_) {}
+      // P0 architecture remediation: video publisher retired. No alternative
+      // emergency video path exists — pcie2_publish_queue handles images only.
+      // Emergency mode is now a no-op for video assets.
+      void a;
+      break;
     }
 
     return new Response(JSON.stringify({ ok: true, traceId, queued }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
