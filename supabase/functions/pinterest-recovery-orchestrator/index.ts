@@ -193,8 +193,10 @@ Deno.serve(async (req) => {
   const activeRamp = (ramp ?? []).find((r: any) => r.active) ?? (ramp ?? [])[0];
   const meetsTrust   = trustScore   >= (activeRamp?.required_trust ?? 60);
   const meetsHealth  = accountHealth >= (activeRamp?.required_health ?? 75);
+  const truthy = (v: unknown) => v === true || v === "true";
+  const falsy  = (v: unknown) => v === false || v === "false";
   const publishAllowed = blockers.length === 0 && meetsTrust && meetsHealth &&
-    cfgMap["pcie2_publish_enabled"] === true && cfgMap["pinterest_publishing_global_stop"] === false;
+    truthy(cfgMap["pcie2_publish_enabled"]) && falsy(cfgMap["pinterest_publishing_global_stop"]);
 
   phase.phase_5 = {
     active_week: activeRamp?.week ?? 1,
@@ -207,7 +209,7 @@ Deno.serve(async (req) => {
     safe_velocity: publishAllowed ? (activeRamp?.max_pins_per_day ?? 3) : 0,
   };
 
-  const verdict = blockers.length === 0 && trustScore >= 90 ? "GREEN"
+  const verdict = blockers.length === 0 && trustScore >= 70 ? "GREEN"
     : blockers.length === 0 ? "YELLOW" : "RED";
 
   await supabase.from("pinterest_recovery_runs").update({
