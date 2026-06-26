@@ -16818,6 +16818,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_migration_snapshots: {
+        Row: {
+          app_config: Json
+          cron_jobs: Json | null
+          deployment_sha: string | null
+          flag_state: Json | null
+          id: string
+          legacy_guard_status: string | null
+          notes: string | null
+          queue_counts: Json | null
+          reason: string | null
+          taken_at: string
+        }
+        Insert: {
+          app_config: Json
+          cron_jobs?: Json | null
+          deployment_sha?: string | null
+          flag_state?: Json | null
+          id?: string
+          legacy_guard_status?: string | null
+          notes?: string | null
+          queue_counts?: Json | null
+          reason?: string | null
+          taken_at?: string
+        }
+        Update: {
+          app_config?: Json
+          cron_jobs?: Json | null
+          deployment_sha?: string | null
+          flag_state?: Json | null
+          id?: string
+          legacy_guard_status?: string | null
+          notes?: string | null
+          queue_counts?: Json | null
+          reason?: string | null
+          taken_at?: string
+        }
+        Relationships: []
+      }
       pcie2_pin_performance: {
         Row: {
           board_id: string | null
@@ -16912,9 +16951,16 @@ export type Database = {
       }
       pcie2_pipeline_trace: {
         Row: {
+          ai_model_version: string | null
+          board_decision: Json | null
           created_at: string
+          creative_id: string | null
+          creative_version: string | null
+          deployment_sha: string | null
           duration_ms: number | null
           evidence: Json
+          headline_version: string | null
+          hook_version: string | null
           id: string
           input_hash: string | null
           module: string
@@ -16922,20 +16968,33 @@ export type Database = {
           output_hash: string | null
           pin_queue_id: string | null
           pinterest_pin_id: string | null
+          pipeline_id: string | null
           product_id: string | null
           product_slug: string | null
+          prompt_version: string | null
+          publish_ts: string | null
+          quality_score: number | null
           reason: string | null
           reject_reason:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          similarity_score: number | null
+          source_product_id: string | null
           status: Database["public"]["Enums"]["pcie2_module_status"]
           step_index: number
           trace_id: string
         }
         Insert: {
+          ai_model_version?: string | null
+          board_decision?: Json | null
           created_at?: string
+          creative_id?: string | null
+          creative_version?: string | null
+          deployment_sha?: string | null
           duration_ms?: number | null
           evidence?: Json
+          headline_version?: string | null
+          hook_version?: string | null
           id?: string
           input_hash?: string | null
           module: string
@@ -16943,20 +17002,33 @@ export type Database = {
           output_hash?: string | null
           pin_queue_id?: string | null
           pinterest_pin_id?: string | null
+          pipeline_id?: string | null
           product_id?: string | null
           product_slug?: string | null
+          prompt_version?: string | null
+          publish_ts?: string | null
+          quality_score?: number | null
           reason?: string | null
           reject_reason?:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          similarity_score?: number | null
+          source_product_id?: string | null
           status: Database["public"]["Enums"]["pcie2_module_status"]
           step_index?: number
           trace_id: string
         }
         Update: {
+          ai_model_version?: string | null
+          board_decision?: Json | null
           created_at?: string
+          creative_id?: string | null
+          creative_version?: string | null
+          deployment_sha?: string | null
           duration_ms?: number | null
           evidence?: Json
+          headline_version?: string | null
+          hook_version?: string | null
           id?: string
           input_hash?: string | null
           module?: string
@@ -16964,12 +17036,18 @@ export type Database = {
           output_hash?: string | null
           pin_queue_id?: string | null
           pinterest_pin_id?: string | null
+          pipeline_id?: string | null
           product_id?: string | null
           product_slug?: string | null
+          prompt_version?: string | null
+          publish_ts?: string | null
+          quality_score?: number | null
           reason?: string | null
           reject_reason?:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          similarity_score?: number | null
+          source_product_id?: string | null
           status?: Database["public"]["Enums"]["pcie2_module_status"]
           step_index?: number
           trace_id?: string
