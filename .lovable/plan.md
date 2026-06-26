@@ -1,64 +1,107 @@
-# Pinterest Zero-Cleanup, Quality Firewall & Full Audit
+# Pinterest Autonomous Intelligence Platform (PAIP v1)
 
-This is a destructive, multi-system operation across ~939 published pins, ~25 PCIE2 tables, 1,514 creatives, queues, crons, storage, and edge functions. Before I touch anything, I need approval on **scope, deletion authority, and execution order**, because once pins are removed they cannot be restored from Pinterest.
+Additive upgrade on top of PCIE2, PQIF v2, Queue, Publisher, Creative Intelligence, Learning Loop, Nightly Audit. No existing system is removed, renamed, or simplified. Safety locks `pinterest_publishing_global_stop = true` and `pcie2_publish_enabled = false` remain ON until each wave is validated.
 
-Safety locks stay engaged the entire run:
-- `pinterest_publishing_global_stop = true`
-- `pcie2_publish_enabled = false`
-- No Step 6 enablement
-- All mutations logged to `pinterest_cleanup_audit` + new `pinterest_zero_cleanup_runs`
+The 19 requested modules are too large to ship in one pass without breaking existing engines. I will deliver in 4 waves, each independently verifiable, each ending in a PDF/JSON implementation report and a GREEN/RED health gate.
 
 ---
 
-## Stage A — Read-only inventory & audit (no mutations)
+## Wave A — Intelligence Layer (Modules 1, 2, 3, 4, 8, 10)
 
-1. **Phase 1 inventory** — snapshot every Pinterest entity we know about: `pinterest_pins`, `pinterest_pin_queue`, `pinterest_publish_queue`, `pcie2_creatives`, `pcie2_publish_queue`, `pinterest_video_*`, boards, sections. Pull live Pinterest counts via `/v5/boards`, `/v5/pins?page_size=250` paginated, and reconcile against DB. Record orphans (in DB, not on Pinterest) and ghosts (on Pinterest, not in DB).
-2. **Phase 2 pin quality audit** — score every live pin using existing `pinterest-integrity-guard`, `media_audit`, `pinterest_pin_audit`, plus a new Gemini 2.5 Flash multimodal pass scoring: image_quality, product_match, title_match, description_match, brand_consistency, ctr_potential, duplicate_signature (pHash + text embedding). Write to new `pinterest_zero_audit_pins(pin_id, verdict, scores jsonb, reasons text[], evidence_url)`. Verdict ∈ KEEP / REGENERATE / DELETE / ARCHIVE / BLOCK.
-3. **Phase 5–6 SEO + Visual DNA audit** — reuse `pcie2-learning-engine` embeddings; flag near-duplicates (cosine > 0.92) and keyword spam.
-4. **Phase 7–9 system audit** — verify PCIE2 subsystems, cron schedules, worker heartbeats, Pinterest token scopes, queue depths, orphan storage objects under `pinterest-ads/`, `cinematic/`, `pcie2/`. Read-only.
-5. **Deliverable A:** `2026-06-26-pinterest-zero-audit.pdf/json` with full counts, sample evidence, and the proposed delete/archive list. **Stop and wait for your approval before Stage B.**
+Pure-read scorers. No writes to publish pipeline.
 
-## Stage B — Destructive cleanup (only after you approve Stage A report)
+**New tables (all admin-RLS + service_role GRANT):**
+- `paip_trend_database` — keyword, source (pinterest_trends, pinterest_predicts, google_trends, seasonal), volume, growth, competition, seasonality_window, score, captured_at
+- `paip_product_trend_scores` — product_id, trend_score, search_opportunity, competition, seasonality, demand_forecast_30d, updated_at
+- `paip_visual_attention` — image_url, attention_score, attention_map jsonb, complexity, focal_points, golden_ratio, rule_of_thirds, whitespace, product_prominence, artifact_probability, confidence
+- `paip_emotion_scores` — creative_id, curiosity, joy, fear, relief, urgency, excitement, trust, luxury, comfort, love, pet_happiness, owner_happiness, viral_emotion
+- `paip_seo_scores` — creative_id, title_score, desc_score, keyword_density, lsi_coverage, entity_match, semantic_relevance, intent, final_score, reasons jsonb
+- `paip_competitor_signals` — competitor, niche, color_palette, headline_pattern, composition, cta_pattern, psychology_tag, captured_at
+- `paip_product_daily_rank` — product_id, run_date, composite_score, components jsonb, rank
 
-6. **Phase 3 delete** — for every pin marked DELETE: call `DELETE /v5/pins/{id}` (requires `pins:write` — see open blocker below), then mark DB row `status='deleted_zero_cleanup'`. Batch 50/min to respect rate limits. Archive verdicts go DB-only (`status='archived'`, no Pinterest call).
-7. **Phase 4 product validation + repair** — for KEEP pins with fixable metadata (wrong UTM, stale slug, wrong board), patch via `pinterest-metadata-repair` (still blocked by `pin_edit` scope per `2026-06-25-pinterest-metadata-repair.json` — will report blocked rows if scope still missing).
-8. **Phase 8 DB cleanup** — purge orphan `pcie2_creative_jobs` (status=failed > 7d), zombie workers, unused storage objects with no DB reference (move to `_quarantine/` prefix first, hard-delete after 7d).
+**Edge functions:**
+- `paip-trend-harvester` (cron `0 */6 * * *`) — pulls Pinterest trends proxy + Google Trends RSS + seasonal calendar; upserts `paip_trend_database`; recomputes `paip_product_trend_scores`.
+- `paip-visual-attention` — called by PQIF v3 before publish. Uses Gemini 2.5 Flash multimodal to return JSON heatmap proxy + scores. Caches by `image_url + sha1`.
+- `paip-emotion-scorer` — same flow, emotion vector per creative.
+- `paip-seo-scorer` — Gemini 3 flash, deterministic rubric.
+- `paip-competitor-scout` (cron `30 4 * * *`) — reuses existing competitor-intel infra; only writes pattern signals, never copies assets.
+- `paip-product-ranker` (cron `0 5 * * *`) — composite of trend/inventory/margin/history/competition/demand/season/shipping/quality/reviews.
 
-## Stage C — Quality Firewall (Phases 10–11) — additive, non-destructive
-
-9. New shared module `supabase/functions/_shared/pinterest-quality-firewall.ts` aggregating existing guards (`pinterest-integrity-guard`, `media_integrity`, governor, diversity, Evolution Guard v2) + new checks: product↔title semantic match, CTR prediction (`pinterest_pin_predictions`), grammar/spell (Gemini), visual fingerprint vs `pcie2_creatives.visual_dna_hash`.
-10. Wire firewall as **only** gate in `pcie2-publisher` and at insert into `pinterest_pin_queue` / `pcie2_publish_queue`. Fail-closed, no override.
-11. New table `pinterest_firewall_decisions(pin_ref, checks jsonb, verdict, reasons, created_at)` for forensics.
-
-## Stage D — Final report (Phase 12)
-
-12. Generate `2026-06-26-pinterest-zero-cleanup-final.pdf/json` with all counts, Pinterest Health Score (0–100), expected CTR/engagement uplift estimates derived from removed-vs-kept benchmark deltas. Update `manifest.json`.
-
----
-
-## Known blockers I need a decision on before starting
-
-1. **Pinterest `pins:write` / `pin_edit` scope is still NOT granted** (per `2026-06-25-pinterest-metadata-repair.json` — Pinterest returned restricted-feature error). Without it I cannot DELETE pins from Pinterest or PATCH titles/descriptions. Options:
-   - **(a)** Proceed with **DB-only** cleanup (mark deleted/archived, hide from dashboards, leave live on Pinterest). Honest and safe but the bad pins keep serving impressions.
-   - **(b)** Pause Stage B until Pinterest grants the scope upgrade, finish Stages A + C + D now.
-   - **(c)** Use Pinterest UI bulk-delete manually for the worst offenders after I export the list.
-2. **Deletion volume:** the last audit said 98.4% of 382 pins failed quality. Across all 939 we may be deleting 700–900 pins. Confirm you want that scale, or set a cap (e.g. delete only `verdict=DELETE` with `confidence ≥ 0.95`, archive the rest).
-3. **Live multimodal scoring of ~939 pins via Gemini 2.5 Flash** ≈ 939 image+text calls. Roughly $4–8 in gateway credits. OK?
-4. **Cron scope:** I will NOT re-enable any publishing cron. Confirm I may unschedule any *additional* legacy crons I discover during the audit.
-
-## Technical details
-
-- All new tables follow the GRANT → RLS → policy pattern with `service_role` full + `authenticated` read for admins via `has_role(auth.uid(),'admin')`.
-- Pinterest API calls use existing `pinterest_connection` token + `getPinterestApiBase`.
-- All Stage B mutations behind a single `dry_run` flag defaulting to `true`; I will run dry-run first, attach the diff to the Stage A report, and only flip to `dry_run=false` after your go.
-- No changes to `pinterest_publishing_global_stop` or `pcie2_publish_enabled`.
+**Gate:** all six tables populated for ≥80% active products, no edge function errors for 24 h.
 
 ---
 
-**Please confirm:**
-- Which blocker-1 option (a / b / c)?
-- Delete cap or full scale?
-- Approve ~$4–8 Gemini multimodal spend?
-- Approve unscheduling any newly-found legacy crons?
+## Wave B — Quality Firewall v3 + Conversion Prediction + Human Detection (Modules 5, 7, 12, 19)
 
-Once you answer, I execute Stage A end-to-end and return with the audit report for your Stage B go/no-go.
+Plug-in checks added to PQIF v2 pipeline. Existing PQIF stays authoritative; v3 is a strict superset.
+
+**New tables:**
+- `paip_conversion_predictions` — creative_id, expected_ctr, expected_save_rate, expected_outbound_ctr, expected_atc_rate, expected_purchase_p, expected_revenue_cents, expected_roas, expected_cpc, expected_cpm, expected_cpa, confidence, model_version
+- `paip_human_detection` — image_url, artificiality, human_authenticity, photo_realism, naturalness, verdict
+- `paip_firewall_v3_checks` — verdict_id, check_name, passed, score, details jsonb
+
+**New shared module:** `supabase/functions/_shared/pinterest-quality-firewall-v3.ts`. Wraps v2's `runFirewall()` and appends:
+- visual plagiarism (phash near-dup over `pcie2_creatives` + `pinterest_pins`)
+- AI watermark / CJ background detection (Gemini vision)
+- Chinese text / OCR misspelling / grammar
+- broken link / dead product / 404 HEAD checks
+- resolution / aspect ratio / compression
+- brand consistency + pet-safety lexicon
+- conversion-prediction floor + human-authenticity floor
+
+`pqif_settings` gains `v3_enabled` flag (default false → flip to true after Wave B validation).
+
+**Gate:** v3 dry-run on 100 sampled creatives — must agree with v2 on ≥95% of v2 rejections and surface ≥10 new genuine fails.
+
+---
+
+## Wave C — Creative Evolution + Memory + Auto-Retire + Self-Heal (Modules 6, 9, 13, 14)
+
+**New tables:**
+- `paip_creative_memory` — every creative ever published with full feature vector + lifetime impressions/clicks/saves/purchases/CTR/ROAS/season/weekday/hour/audience/visual_dna_id/emotion_id/trend_id. Append-only, never pruned.
+- `paip_evolution_runs` — product_id, generation, parents jsonb, mutations jsonb, survivors jsonb
+- `paip_retirement_log` — creative_id, reason, metrics_at_retirement, replacement_id
+- `paip_self_heal_log` — issue, target, action, result
+
+**Edge functions:**
+- `paip-evolution-engine` (cron `15 6 * * *`) — per product, generates the 20×9 variation matrix via existing pcie2-headline/hook/creative engines (no new generator, just orchestrator + selection pressure). Hard cap: 25 products/run.
+- `paip-memory-writer` — hooks into `pqif-learning-loop` to mirror every measured pin into `paip_creative_memory`.
+- `paip-auto-retire` (cron `45 6 * * *`) — applies CTR/saves/ROAS/season thresholds; queues replacement via evolution engine.
+- `paip-self-healer` (cron `*/30 * * * *`) — repairs broken URLs/images/missing prices/stock/dup creatives/failed jobs. Reuses existing `pcie2-self-healer` patterns.
+
+**Gate:** ≥1 full evolution generation per top-50 product; memory rows > impressions rows in `pcie2_pin_performance`.
+
+---
+
+## Wave D — Pinterest Brain + Enterprise Dashboards + Zero-Touch Activation (Modules 11, 15, 16, 17, 18)
+
+**Central orchestrator:**
+- `paip-brain` edge function (cron `*/15 * * * *`) — reads all PAIP scores + PQIF v3 verdicts + memory + predictions. Decides per creative: `publish | delay | reject | regenerate | mutate | retire | duplicate | replace`. Writes to `paip_brain_decisions` and pushes to existing `pcie2_publish_queue` (never bypasses queue or publisher).
+
+**New tables:** `paip_brain_decisions`, `paip_brain_runs`, `paip_dashboard_snapshots`.
+
+**UI:** `src/pages/admin/PinterestAutonomousPage.tsx` with tabs: Performance, Trend, SEO, Emotion, Creative, Visual, Revenue, ROAS, CTR Heatmaps, Prediction Accuracy, Learning Curve, Family Performance, Brain Decisions. All powered by a single `paip-dashboard-api` function.
+
+**Perf:** GIN/BTREE indexes on every new table's hot path; queue batching in brain; rate-limit guard reusing existing `pinterest_credit_state`.
+
+**Activation:** only after Waves A–C are GREEN and a 7-day shadow run shows brain decisions agreeing with PQIF v3 on ≥90% of rejections. Then flip `paip_brain_enabled = true`; safety locks remain user-controlled.
+
+---
+
+## Technical notes
+
+- All AI calls via Lovable AI Gateway, default `google/gemini-3-flash-preview`, vision via `google/gemini-2.5-flash`. No new secrets.
+- Every new public table follows the 4-step GRANT pattern (CREATE → GRANT to authenticated + service_role → ENABLE RLS → admin-only policies via `has_role`).
+- One implementation report (PDF + JSON) per wave under `public/admin-reports/ai-implementation/` and manifest update.
+- No legacy publisher, no removal of PQIF v2, PCIE2, learning loop, nightly audit, or any cron.
+- Backward compatibility: all existing functions, tables, columns, RLS, and crons untouched. New crons use ids ≥ 200 to avoid collision.
+
+---
+
+## What I need from you
+
+1. **Approve Wave A first** (intelligence layer only, zero publish-path risk), or approve all 4 waves to run sequentially with health-gated handoff between each.
+2. Confirm budget cap for AI scoring during bootstrap. Suggested: **$75** total across all waves (same guardrail used for PCIE2 bootstrap). I will stop and report if exceeded.
+3. Confirm safety locks stay ON until Wave D is GREEN (recommended).
+
+Reply with `Approve A`, `Approve all`, or edits to the plan.
