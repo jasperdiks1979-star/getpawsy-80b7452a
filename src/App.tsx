@@ -2585,6 +2585,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-recovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestRecoveryDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
