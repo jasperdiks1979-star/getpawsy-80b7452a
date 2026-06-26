@@ -446,3 +446,6 @@ verify_jwt = false
 
 [functions.pmin-keyword-trend-scorer]
 verify_jwt = false
+
+[functions.pcie2-publish-assembler]
+verify_jwt = false
