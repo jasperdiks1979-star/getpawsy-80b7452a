@@ -52,6 +52,20 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const trace = traceId();
+
+  // ── PCIE2_GLOBAL_STOP guard (legacy orchestrator) ──
+  try {
+    const { createClient: __c } = await import("https://esm.sh/@supabase/supabase-js@2.57.2?target=deno");
+    const __sb = __c(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+    const { checkPcie2Lock } = await import("../_shared/pcie2-publish-lock.ts");
+    const __lock = await checkPcie2Lock(__sb, "pinterest-regen-autopilot");
+    if (__lock.blocked) {
+      return new Response(JSON.stringify({ ok: false, code: __lock.code, message: __lock.message, publishing_disabled: true, pipeline: "pcie2_only", trace }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", message: String(e), publishing_disabled: true, trace }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   let body: any = {};
   try { body = await req.json(); } catch { /* GET / empty body ok */ }
 

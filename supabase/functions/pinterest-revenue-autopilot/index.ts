@@ -83,6 +83,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+
+  // ── PCIE2_GLOBAL_STOP guard (legacy orchestrator) ──
+  try {
+    const { checkPcie2Lock } = await import("../_shared/pcie2-publish-lock.ts");
+    const __lock = await checkPcie2Lock(supabase, "pinterest-revenue-autopilot");
+    if (__lock.blocked) {
+      return new Response(JSON.stringify({ ok: false, code: __lock.code, message: __lock.message, publishing_disabled: true, pipeline: "pcie2_only" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", message: String(e), publishing_disabled: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const startedAt = Date.now();
   const today = new Date().toISOString().slice(0, 10);
   const since30 = new Date(Date.now() - 30 * 86400_000).toISOString();

@@ -79,6 +79,17 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  // ── PCIE2_GLOBAL_STOP guard ──
+  try {
+    const { checkPcie2Lock } = await import("../_shared/pcie2-publish-lock.ts");
+    const __lock = await checkPcie2Lock(sb, "pinterest-autopilot-watchdog");
+    if (__lock.blocked) {
+      return new Response(JSON.stringify({ ok: false, code: __lock.code, message: __lock.message, publishing_disabled: true, pipeline: "pcie2_only", trace }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", message: String(e), publishing_disabled: true, trace }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     // 1. Pipeline freshness
     const [{ data: lastPosted }, { data: lastCreated }] = await Promise.all([

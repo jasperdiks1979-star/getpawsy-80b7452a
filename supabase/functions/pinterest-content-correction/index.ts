@@ -407,6 +407,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const traceId = crypto.randomUUID();
   try {
+    // ── PCIE2_GLOBAL_STOP guard ──
+    try {
+      const { createClient: __c } = await import("https://esm.sh/@supabase/supabase-js@2.57.2?target=deno");
+      const __sb = __c(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { checkPcie2Lock } = await import("../_shared/pcie2-publish-lock.ts");
+      const __lock = await checkPcie2Lock(__sb, "pinterest-content-correction");
+      if (__lock.blocked) {
+        return jsonResponse({ ok: false, traceId, code: __lock.code, error_message: __lock.message, publishing_disabled: true, pipeline: "pcie2_only" }, 200);
+      }
+    } catch (e) {
+      return jsonResponse({ ok: false, traceId, code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", error_message: String(e), publishing_disabled: true }, 200);
+    }
     return await handle(req, traceId);
   } catch (e) {
     const error_message = e instanceof Error ? e.message : String(e);
