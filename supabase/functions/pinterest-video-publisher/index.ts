@@ -785,6 +785,22 @@ serve(async (req) => {
       | "queue_draft" | "publish" | "reroll" | "queue_all_drafts" | "retry"
       | "publish_asset" | "repair_failed" | "__health_check__";
     await log.info("action received", { action, queue_id: body.queue_id ?? null }, { queue_id: body.queue_id ?? null });
+
+    // ── PCIE2_GLOBAL_STOP guard: block any publish-class action ──
+    const publishActions = new Set(["publish","publish_asset","retry","repair_failed"]);
+    if (publishActions.has(action)) {
+      try {
+        const { checkPcie2Lock } = await import("../_shared/pcie2-publish-lock.ts");
+        const __lock = await checkPcie2Lock(sb, "pinterest-video-publisher");
+        if (__lock.blocked) {
+          await log.warn("blocked by PCIE2_GLOBAL_STOP", { action, code: __lock.code });
+          return json({ ok: false, code: __lock.code, traceId: trace_id, message: __lock.message, publishing_disabled: true, pipeline: "pcie2_only" }, 200);
+        }
+      } catch (e) {
+        return json({ ok: false, code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", traceId: trace_id, message: String(e), publishing_disabled: true }, 200);
+      }
+    }
+
     if (action === "__health_check__") {
       const token = await getPinterestToken(sb);
       const board_id = token ? await resolveBoardId(sb, token) : null;
