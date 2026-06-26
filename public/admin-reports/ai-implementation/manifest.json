@@ -1,8 +1,19 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pinterest-traffic-ads-forensic",
+      "title": "Pinterest Traffic & Ads Forensic",
+      "generated_at": "2026-06-26T20:30:00Z",
+      "status": "COMPLETED",
+      "verdict": "RED",
+      "score": 40,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-traffic-ads-forensic.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-traffic-ads-forensic.json",
+      "summary": "Read-only investigation. Root cause: every active ad group has \u20ac0 budget \u2192 0 impressions, 0 spend in last 7d. OAuth healthy with all scopes. Conversion tag has never fired. Billing not readable via API (commerce_integration restricted)."
+    },
+    {
       "slug": "2026-06-26-ci-verification-report",
-      "title": "CI Zero-Bypass — Verification Report",
+      "title": "CI Zero-Bypass \u2014 Verification Report",
       "generated_at": "2026-06-26T19:55:00Z",
       "status": "COMPLETED",
       "verdict": "GREEN",
@@ -13,18 +24,18 @@
     },
     {
       "slug": "2026-06-26-ci-architecture-report",
-      "title": "CI Zero-Bypass — Architecture Report",
+      "title": "CI Zero-Bypass \u2014 Architecture Report",
       "generated_at": "2026-06-26T19:55:00Z",
       "status": "COMPLETED",
       "verdict": "GREEN",
       "score": 98,
       "pdf": "/admin-reports/ai-implementation/2026-06-26-ci-architecture-report.pdf",
       "json": "/admin-reports/ai-implementation/2026-06-26-ci-architecture-report.json",
-      "summary": "Single canonical Draft → CI → Queue → Publisher path. Publishers are now dumb executors; CI is the only gateway."
+      "summary": "Single canonical Draft \u2192 CI \u2192 Queue \u2192 Publisher path. Publishers are now dumb executors; CI is the only gateway."
     },
     {
       "slug": "2026-06-26-ci-migration-report",
-      "title": "CI Zero-Bypass — Migration Report",
+      "title": "CI Zero-Bypass \u2014 Migration Report",
       "generated_at": "2026-06-26T19:55:00Z",
       "status": "COMPLETED",
       "verdict": "GREEN",
@@ -35,7 +46,7 @@
     },
     {
       "slug": "2026-06-26-creative-intelligence-layer-v1",
-      "title": "Creative Intelligence Layer v1 — PCIE2 Pre-Publish Gate",
+      "title": "Creative Intelligence Layer v1 \u2014 PCIE2 Pre-Publish Gate",
       "generated_at": "2026-06-26T19:15:00Z",
       "status": "COMPLETED",
       "verdict": "GREEN",
@@ -46,14 +57,14 @@
     },
     {
       "slug": "2026-06-26-pcie2-draft-to-queue-recovery",
-      "title": "PCIE2 Draft → Publish-Ready Queue Recovery",
+      "title": "PCIE2 Draft \u2192 Publish-Ready Queue Recovery",
       "generated_at": "2026-06-26T18:30:00Z",
       "status": "COMPLETED",
       "verdict": "GREEN",
       "score": 92,
       "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-draft-to-queue-recovery.pdf",
       "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-draft-to-queue-recovery.json",
-      "summary": "Built canonical pcie2-publish-assembler bridging PCIE2 drafts → pcie2_publish_queue. Queue went from 0 → 100 publish-ready rows. Publishing remains LOCKED."
+      "summary": "Built canonical pcie2-publish-assembler bridging PCIE2 drafts \u2192 pcie2_publish_queue. Queue went from 0 \u2192 100 publish-ready rows. Publishing remains LOCKED."
     },
     {
       "slug": "2026-06-26-pinterest-week0-canary-unlock",
