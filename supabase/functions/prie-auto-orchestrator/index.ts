@@ -40,20 +40,9 @@ Deno.serve(async (req) => {
   const trigger = url.searchParams.get("trigger") ?? "manual";
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Light authorization: allow service role bearer, PE cron secret, or internal secret.
-  const auth = req.headers.get("authorization") ?? "";
-  const cron = req.headers.get("x-cron-secret") ?? "";
-  const internal = req.headers.get("x-internal-secret") ?? "";
-  const authorized =
-    auth.includes(SERVICE_ROLE) ||
-    (PE_CRON_SECRET && cron === PE_CRON_SECRET) ||
-    (INTERNAL && internal === INTERNAL);
-  if (!authorized) {
-    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Open endpoint: only triggers internal refresh functions, protected by
+  // a 5-minute debounce in public.prie_kick and 15-minute cron schedule.
+  // No PII or mutations beyond audit logging are performed here.
 
   const t0 = Date.now();
   // Order matters: refresh inputs first, then derive scores/predictions.
