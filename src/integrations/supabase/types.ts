@@ -17239,6 +17239,215 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_ci_banned_phrases: {
+        Row: {
+          category: string
+          created_at: string
+          hits: number
+          id: string
+          phrase: string
+          severity: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          hits?: number
+          id?: string
+          phrase: string
+          severity?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          hits?: number
+          id?: string
+          phrase?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      pcie2_ci_diversity_log: {
+        Row: {
+          created_at: string
+          dimension: string
+          id: string
+          queue_row_id: string | null
+          signature: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          dimension: string
+          id?: string
+          queue_row_id?: string | null
+          signature: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          dimension?: string
+          id?: string
+          queue_row_id?: string | null
+          signature?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      pcie2_ci_runs: {
+        Row: {
+          avg_score: number | null
+          finished_at: string | null
+          id: string
+          notes: Json
+          passed: number
+          rejected: number
+          rewritten: number
+          scope: string | null
+          started_at: string
+          status: string
+          total_rows: number
+          trigger: string | null
+        }
+        Insert: {
+          avg_score?: number | null
+          finished_at?: string | null
+          id?: string
+          notes?: Json
+          passed?: number
+          rejected?: number
+          rewritten?: number
+          scope?: string | null
+          started_at?: string
+          status?: string
+          total_rows?: number
+          trigger?: string | null
+        }
+        Update: {
+          avg_score?: number | null
+          finished_at?: string | null
+          id?: string
+          notes?: Json
+          passed?: number
+          rejected?: number
+          rewritten?: number
+          scope?: string | null
+          started_at?: string
+          status?: string
+          total_rows?: number
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      pcie2_ci_scores: {
+        Row: {
+          angle: string | null
+          banned_phrases: string[] | null
+          brand_consistency: number
+          category_consistency: number
+          claim_risk: number
+          created_at: string
+          cta: string | null
+          ctr_prediction: number
+          description: string | null
+          duplicate_similarity: number
+          emotion: string | null
+          family: string | null
+          headline: string | null
+          hook: string | null
+          id: string
+          image_match: number
+          meta: Json
+          novelty_score: number
+          outbound_prediction: number
+          overall_score: number
+          product_id: string | null
+          product_slug: string | null
+          queue_row_id: string | null
+          recommendation_probability: number
+          reject_reasons: string[] | null
+          rejected: boolean
+          rewrite_applied: boolean
+          save_prediction: number
+          seo_score: number
+          spam_score: number
+          trust_score: number
+        }
+        Insert: {
+          angle?: string | null
+          banned_phrases?: string[] | null
+          brand_consistency?: number
+          category_consistency?: number
+          claim_risk?: number
+          created_at?: string
+          cta?: string | null
+          ctr_prediction?: number
+          description?: string | null
+          duplicate_similarity?: number
+          emotion?: string | null
+          family?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_match?: number
+          meta?: Json
+          novelty_score?: number
+          outbound_prediction?: number
+          overall_score?: number
+          product_id?: string | null
+          product_slug?: string | null
+          queue_row_id?: string | null
+          recommendation_probability?: number
+          reject_reasons?: string[] | null
+          rejected?: boolean
+          rewrite_applied?: boolean
+          save_prediction?: number
+          seo_score?: number
+          spam_score?: number
+          trust_score?: number
+        }
+        Update: {
+          angle?: string | null
+          banned_phrases?: string[] | null
+          brand_consistency?: number
+          category_consistency?: number
+          claim_risk?: number
+          created_at?: string
+          cta?: string | null
+          ctr_prediction?: number
+          description?: string | null
+          duplicate_similarity?: number
+          emotion?: string | null
+          family?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_match?: number
+          meta?: Json
+          novelty_score?: number
+          outbound_prediction?: number
+          overall_score?: number
+          product_id?: string | null
+          product_slug?: string | null
+          queue_row_id?: string | null
+          recommendation_probability?: number
+          reject_reasons?: string[] | null
+          rejected?: boolean
+          rewrite_applied?: boolean
+          save_prediction?: number
+          seo_score?: number
+          spam_score?: number
+          trust_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_ci_scores_queue_row_id_fkey"
+            columns: ["queue_row_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_publish_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pcie2_concept_graph: {
         Row: {
           angle: string

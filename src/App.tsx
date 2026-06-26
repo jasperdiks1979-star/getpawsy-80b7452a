@@ -473,6 +473,7 @@ const RevenuePriorityRemediationPage = lazyWithRetry(() => import("./pages/admin
 const DeployStatusPage = lazyWithRetry(() => import("./pages/admin/DeployStatusPage"));
 const GuardianDashboardPage = lazyWithRetry(() => import("./pages/admin/GuardianDashboardPage"));
 const PinterestRecoveryDashboard = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryDashboard"));
+const CreativeIntelligenceLayerPage = lazyWithRetry(() => import("./pages/admin/CreativeIntelligenceLayerPage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2589,6 +2590,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestRecoveryDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="creative-intelligence-layer"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CreativeIntelligenceLayerPage />
                                 </Suspense>
                               }
                             />
