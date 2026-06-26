@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "pinterest-wave1-production-rollout",
+      "title": "Pinterest Wave 1 Production Rollout",
+      "generated_at": "2026-06-26T17:23:57.277469Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 98,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-wave1-production-rollout.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-wave1-production-rollout.json"
+    },
+    {
       "id": "2026-06-26-pinterest-oauth-final-recovery",
       "title": "Pinterest OAuth Final Recovery",
       "date": "2026-06-26",
