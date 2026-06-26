@@ -3531,6 +3531,49 @@ function translatePinterestFailure(input: PinterestFailureInput): { title: strin
 
 async function publishSelectedPin(sb: any, conn: any, pin: any, cors: Record<string, string>, opts: { actionName: string; requireApproved: boolean; ignoreSchedule: boolean }) {
   const startedAt = Date.now();
+  // ============================================================
+  // PCIE2 GLOBAL PUBLISHING KILL SWITCH (Wave 1.5+)
+  // All legacy Pinterest publishing is halted until the PCIE2
+  // pipeline is the sole publisher. Flip app_config
+  // `pinterest_publishing_global_stop` to false (admin only) once
+  // PCIE2 publish path is wired end-to-end.
+  // ============================================================
+  try {
+    const { data: killCfg } = await sb
+      .from("app_config")
+      .select("value")
+      .eq("key", "pinterest_publishing_global_stop")
+      .maybeSingle();
+    const stopped = killCfg?.value === true
+      || killCfg?.value?.enabled === true
+      || killCfg?.value === "true";
+    if (stopped) {
+      const msg = "PCIE2_GLOBAL_STOP: legacy Pinterest publishing is disabled. PCIE2 is the only allowed pipeline.";
+      await sb.from("pinterest_pin_queue").update({
+        status: "paused",
+        publishing_started_at: null,
+        error_message: msg,
+        last_publish_error: msg,
+      }).eq("id", pin.id);
+      await sb.from("pinterest_publish_logs").insert({
+        pin_queue_id: pin.id,
+        attempt: (pin.publish_attempts || 0) + 1,
+        status: "blocked",
+        image_url: pin.pin_image_url,
+        pin_title: pin.pin_title,
+        destination_link: pin.destination_link,
+        request_payload: { action: opts.actionName, reason: "pcie2_global_stop" },
+        response_payload: { reason: "pcie2_global_stop" },
+        error_message: msg,
+        duration_ms: Date.now() - startedAt,
+      });
+      console.warn("[pinterest-publish] BLOCKED by pcie2_global_stop", { pin_id: pin.id, action: opts.actionName });
+      return json(cors, { ok: false, error: msg, code: "PCIE2_GLOBAL_STOP", publishing_disabled: true });
+    }
+  } catch (e) {
+    console.error("[pinterest-publish] kill switch check failed (fail-closed)", e);
+    return json(cors, { ok: false, error: "publish_kill_switch_check_failed", code: "PCIE2_GLOBAL_STOP_FAIL_CLOSED", publishing_disabled: true });
+  }
   const attempt = (pin.publish_attempts || 0) + 1;
   const eligibility = determineEligibility(pin, { requireApproved: opts.requireApproved, ignoreSchedule: opts.ignoreSchedule, maxRetries: 2 });
   console.log("[pinterest-publish] selected queue row", compactPinForDiagnostics(pin));
