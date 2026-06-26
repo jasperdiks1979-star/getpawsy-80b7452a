@@ -1,0 +1,100 @@
+<!doctype html><meta charset=utf-8><title>Pinterest Live Verification & Root Cause Audit</title><h1>Pinterest Live Verification & Root Cause Audit</h1><pre>{
+  "slug": "2026-06-26-pinterest-live-verification-audit",
+  "generated_at": "2026-06-26T02:29:31.654344Z",
+  "title": "Pinterest Live Verification & Root Cause Audit",
+  "scope": "Last 250 published Pinterest pins (newest first), live database snapshot",
+  "verdict": "FAIL \u2014 100% of recent published pins were emitted by the LEGACY publisher. PCIE2 has 0 pipeline traces. Global publishing stop flag is ENGAGED, so no new pins are flowing through any pipeline. Low traffic is attributable to (a) the global stop preventing distribution since 2026-06-25 16:40 UTC and (b) historical legacy content quality issues (dup titles, CJ-host images).",
+  "pipeline_split": {
+    "legacy_pct": 100.0,
+    "pcie2_pct": 0.0,
+    "unknown_pct": 0.0
+  },
+  "publisher_state": {
+    "pinterest_publishing_global_stop": true,
+    "last_successful_publish_utc": "2026-06-25T16:40:13Z",
+    "legacy_crons_disabled": 17,
+    "active_pinterest_crons": 0,
+    "sole_publisher_function": "pcie2-publisher (idle \u2014 gates fail-closed pending creative briefs)",
+    "ci_legacy_guard": "scripts/pcie2-legacy-guard.mjs (passing, 0 violations)"
+  },
+  "content_audit_last_250": {
+    "total": 250,
+    "unique_titles": 194,
+    "duplicate_title_pins": 97,
+    "unique_images": 229,
+    "cj_host_images": 15,
+    "source_type_breakdown": {
+      "lifestyle_ai": 73,
+      "product_ai": 16,
+      "cj": 94,
+      "unknown": 67
+    },
+    "content_type_breakdown": {
+      "product": 242,
+      "lifestyle": 8
+    },
+    "top_boards": [
+      [
+        "Best Cat Trees 2026",
+        84
+      ],
+      [
+        "Smart Pet Gadgets",
+        78
+      ],
+      [
+        "Cat Furniture",
+        20
+      ],
+      [
+        "GetPawsy Products",
+        11
+      ],
+      [
+        "Dog Walking Essentials",
+        10
+      ],
+      [
+        "Pet Parent Hacks",
+        9
+      ],
+      [
+        "Indoor Cat Setup",
+        9
+      ],
+      [
+        "Smart Self-Cleaning Cat Litter Box",
+        5
+      ],
+      [
+        "Cat Trees for Large Cats",
+        5
+      ],
+      [
+        "Cat Products",
+        4
+      ]
+    ],
+    "pins_without_pcie2_trace": 250
+  },
+  "visitor_analysis": {
+    "diagnosis": "Distribution starvation. No pins published since global stop engaged ~16h ago. Historical pin pool has 22% duplicate titles and 6% CJ-host images, suppressing Pinterest algorithmic distribution. Add-to-cart event chain previously diagnosed (incident 2026-06-25) is still being rolled out.",
+    "primary_cause": "publishing_halt",
+    "secondary_causes": [
+      "legacy_creative_quality",
+      "duplicate_headlines",
+      "cj_host_images",
+      "atc_event_rollout_in_progress"
+    ]
+  },
+  "safe_auto_repairs_executed": [
+    "Confirmed all 17 legacy crons remain unscheduled (snapshot intact)",
+    "Verified CI legacy guard active in scripts/pcie2-legacy-guard.mjs",
+    "No mutating writes performed (read-only audit + report)"
+  ],
+  "blocked_actions_pending_approval": [
+    "Disable global stop and run PCIE2 creative-brief backfill to enable PCIE2 publishing",
+    "Hard-delete legacy publisher function directories (currently stubbed 410-Gone)",
+    "Bulk-archive remaining legacy pins with duplicate titles or CJ-host images"
+  ]
+}</pre>

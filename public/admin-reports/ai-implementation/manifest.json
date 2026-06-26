@@ -5,6 +5,16 @@
   "source": "filesystem_scan",
   "reports": [
     {
+      "slug": "2026-06-26-pinterest-live-verification-audit",
+      "title": "Pinterest Live Verification & Root Cause Audit",
+      "run_id": "2026-06-26-pinterest-live-verification-audit",
+      "generated_at": "2026-06-26T02:29:31.654344Z",
+      "status": "fail",
+      "score": 35,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.json"
+    },
+    {
       "id": "2026-06-26-pcie2-legacy-elimination-and-50pin-e2e",
       "title": "PCIE2 \u2014 Legacy Pinterest Publisher Elimination + 50-Pin E2E",
       "date": "2026-06-26",
