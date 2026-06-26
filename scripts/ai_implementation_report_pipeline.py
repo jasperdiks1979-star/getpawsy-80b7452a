@@ -239,11 +239,10 @@ def make_repair_pdf(report: dict[str, Any], path: Path) -> None:
     font_dir = Path("/nix/store/xhanp47490n743s7zd27d8i9s1khg6c0-dejavu-fonts-minimal-2.37/share/fonts/truetype")
     regular_font = "Helvetica"
     bold_font = "Helvetica-Bold"
-    if (font_dir / "DejaVuSans.ttf").exists() and (font_dir / "DejaVuSans-Bold.ttf").exists():
+    if (font_dir / "DejaVuSans.ttf").exists():
         pdfmetrics.registerFont(TTFont("DejaVuSans", str(font_dir / "DejaVuSans.ttf")))
-        pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", str(font_dir / "DejaVuSans-Bold.ttf")))
         regular_font = "DejaVuSans"
-        bold_font = "DejaVuSans-Bold"
+        bold_font = "DejaVuSans"
 
     page_width, page_height = letter
     left = 54
