@@ -10624,6 +10624,501 @@ export type Database = {
         }
         Relationships: []
       }
+      ee_p2_emotion_scores: {
+        Row: {
+          before_after: number | null
+          created_at: string
+          creative_id: string
+          curiosity: number | null
+          cuteness: number | null
+          dominant_emotion: string | null
+          emotion_vector: Json | null
+          excitement: number | null
+          fomo: number | null
+          humor: number | null
+          id: string
+          lifestyle: number | null
+          luxury: number | null
+          model_version: string | null
+          problem_solving: number | null
+          scored_at: string
+          source_table: string
+          surprise: number | null
+          transformation: number | null
+          trust: number | null
+          urgency: number | null
+        }
+        Insert: {
+          before_after?: number | null
+          created_at?: string
+          creative_id: string
+          curiosity?: number | null
+          cuteness?: number | null
+          dominant_emotion?: string | null
+          emotion_vector?: Json | null
+          excitement?: number | null
+          fomo?: number | null
+          humor?: number | null
+          id?: string
+          lifestyle?: number | null
+          luxury?: number | null
+          model_version?: string | null
+          problem_solving?: number | null
+          scored_at?: string
+          source_table?: string
+          surprise?: number | null
+          transformation?: number | null
+          trust?: number | null
+          urgency?: number | null
+        }
+        Update: {
+          before_after?: number | null
+          created_at?: string
+          creative_id?: string
+          curiosity?: number | null
+          cuteness?: number | null
+          dominant_emotion?: string | null
+          emotion_vector?: Json | null
+          excitement?: number | null
+          fomo?: number | null
+          humor?: number | null
+          id?: string
+          lifestyle?: number | null
+          luxury?: number | null
+          model_version?: string | null
+          problem_solving?: number | null
+          scored_at?: string
+          source_table?: string
+          surprise?: number | null
+          transformation?: number | null
+          trust?: number | null
+          urgency?: number | null
+        }
+        Relationships: []
+      }
+      ee_p2_experiments: {
+        Row: {
+          completed_at: string | null
+          confidence: number | null
+          created_at: string
+          experiment_type: string
+          hypothesis: string | null
+          id: string
+          metadata: Json | null
+          sample_size: number | null
+          started_at: string
+          status: string
+          updated_at: string
+          uplift: number | null
+          variants: Json | null
+          winner_variant: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          experiment_type: string
+          hypothesis?: string | null
+          id?: string
+          metadata?: Json | null
+          sample_size?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          uplift?: number | null
+          variants?: Json | null
+          winner_variant?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          experiment_type?: string
+          hypothesis?: string | null
+          id?: string
+          metadata?: Json | null
+          sample_size?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          uplift?: number | null
+          variants?: Json | null
+          winner_variant?: string | null
+        }
+        Relationships: []
+      }
+      ee_p2_image_clusters: {
+        Row: {
+          avg_ctr: number | null
+          avg_saves: number | null
+          centroid: Json | null
+          created_at: string
+          id: string
+          label: string | null
+          member_count: number | null
+          performance_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_ctr?: number | null
+          avg_saves?: number | null
+          centroid?: Json | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          member_count?: number | null
+          performance_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_ctr?: number | null
+          avg_saves?: number | null
+          centroid?: Json | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          member_count?: number | null
+          performance_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ee_p2_image_dna: {
+        Row: {
+          branding_visibility: number | null
+          brightness: number | null
+          cluster_id: string | null
+          composition: string | null
+          created_at: string
+          creative_id: string
+          cta_visibility: number | null
+          dominant_colors: Json | null
+          fingerprint: Json | null
+          framing: string | null
+          id: string
+          image_hash: string | null
+          image_url: string | null
+          model_version: string | null
+          pet_species: string | null
+          product_visibility: number | null
+          realism: number | null
+          scored_at: string
+          subject_placement: string | null
+          visual_complexity: number | null
+        }
+        Insert: {
+          branding_visibility?: number | null
+          brightness?: number | null
+          cluster_id?: string | null
+          composition?: string | null
+          created_at?: string
+          creative_id: string
+          cta_visibility?: number | null
+          dominant_colors?: Json | null
+          fingerprint?: Json | null
+          framing?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          model_version?: string | null
+          pet_species?: string | null
+          product_visibility?: number | null
+          realism?: number | null
+          scored_at?: string
+          subject_placement?: string | null
+          visual_complexity?: number | null
+        }
+        Update: {
+          branding_visibility?: number | null
+          brightness?: number | null
+          cluster_id?: string | null
+          composition?: string | null
+          created_at?: string
+          creative_id?: string
+          cta_visibility?: number | null
+          dominant_colors?: Json | null
+          fingerprint?: Json | null
+          framing?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string | null
+          model_version?: string | null
+          pet_species?: string | null
+          product_visibility?: number | null
+          realism?: number | null
+          scored_at?: string
+          subject_placement?: string | null
+          visual_complexity?: number | null
+        }
+        Relationships: []
+      }
+      ee_p2_model_accuracy: {
+        Row: {
+          created_at: string
+          evaluated_at: string
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_value: number
+          model_name: string
+          model_version: string
+          sample_size: number | null
+        }
+        Insert: {
+          created_at?: string
+          evaluated_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_value: number
+          model_name: string
+          model_version: string
+          sample_size?: number | null
+        }
+        Update: {
+          created_at?: string
+          evaluated_at?: string
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_value?: number
+          model_name?: string
+          model_version?: string
+          sample_size?: number | null
+        }
+        Relationships: []
+      }
+      ee_p2_nightly_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          run_type: string
+          started_at: string
+          stats: Json | null
+          status: string
+          steps: Json | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          run_type?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+          steps?: Json | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          run_type?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+          steps?: Json | null
+        }
+        Relationships: []
+      }
+      ee_p2_recommendations: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          expected_uplift: number | null
+          generated_at: string
+          id: string
+          reasoning: string | null
+          rec_type: string
+          recommendation: Json
+          status: string
+          target_entity_id: string | null
+          target_entity_type: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          expected_uplift?: number | null
+          generated_at?: string
+          id?: string
+          reasoning?: string | null
+          rec_type: string
+          recommendation?: Json
+          status?: string
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          expected_uplift?: number | null
+          generated_at?: string
+          id?: string
+          reasoning?: string | null
+          rec_type?: string
+          recommendation?: Json
+          status?: string
+          target_entity_id?: string | null
+          target_entity_type?: string | null
+        }
+        Relationships: []
+      }
+      ee_p2_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      ee_p2_training_samples: {
+        Row: {
+          created_at: string
+          creative_id: string | null
+          features: Json
+          id: string
+          ingested_at: string
+          label_score: number | null
+          outcomes: Json
+          pin_id: string | null
+          product_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          creative_id?: string | null
+          features?: Json
+          id?: string
+          ingested_at?: string
+          label_score?: number | null
+          outcomes?: Json
+          pin_id?: string | null
+          product_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          creative_id?: string | null
+          features?: Json
+          id?: string
+          ingested_at?: string
+          label_score?: number | null
+          outcomes?: Json
+          pin_id?: string | null
+          product_id?: string | null
+        }
+        Relationships: []
+      }
+      ee_p2_trend_signals: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          detected_at: string
+          entity_id: string
+          entity_label: string | null
+          entity_type: string
+          evidence: Json | null
+          id: string
+          momentum: number | null
+          score: number
+          signal_type: string
+          velocity: number | null
+          window_days: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          detected_at?: string
+          entity_id: string
+          entity_label?: string | null
+          entity_type: string
+          evidence?: Json | null
+          id?: string
+          momentum?: number | null
+          score?: number
+          signal_type: string
+          velocity?: number | null
+          window_days?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          detected_at?: string
+          entity_id?: string
+          entity_label?: string | null
+          entity_type?: string
+          evidence?: Json | null
+          id?: string
+          momentum?: number | null
+          score?: number
+          signal_type?: string
+          velocity?: number | null
+          window_days?: number | null
+        }
+        Relationships: []
+      }
+      ee_p2_winning_families: {
+        Row: {
+          avg_ctr: number | null
+          avg_revenue: number | null
+          avg_saves: number | null
+          confidence: number | null
+          created_at: string
+          family_type: string
+          id: string
+          last_observed: string | null
+          pattern: string
+          pattern_sample: string | null
+          sample_size: number | null
+          updated_at: string
+          win_rate: number | null
+        }
+        Insert: {
+          avg_ctr?: number | null
+          avg_revenue?: number | null
+          avg_saves?: number | null
+          confidence?: number | null
+          created_at?: string
+          family_type: string
+          id?: string
+          last_observed?: string | null
+          pattern: string
+          pattern_sample?: string | null
+          sample_size?: number | null
+          updated_at?: string
+          win_rate?: number | null
+        }
+        Update: {
+          avg_ctr?: number | null
+          avg_revenue?: number | null
+          avg_saves?: number | null
+          confidence?: number | null
+          created_at?: string
+          family_type?: string
+          id?: string
+          last_observed?: string | null
+          pattern?: string
+          pattern_sample?: string | null
+          sample_size?: number | null
+          updated_at?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       ee_predictions: {
         Row: {
           actual_ctr: number | null
