@@ -10,6 +10,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 type Body = { action?: "run_full" | "harvest" | "score_trends"; dry_run?: boolean };
 
@@ -19,8 +20,10 @@ Deno.serve(async (req) => {
 
   // Admin or service-role auth
   const authHeader = req.headers.get("authorization") || "";
+  const apikey = req.headers.get("apikey") || "";
   const isService = authHeader.includes(SERVICE_ROLE);
-  if (!isService) {
+  const isCron = apikey === ANON_KEY && !authHeader.includes("Bearer ey"); // cron uses apikey only
+  if (!isService && !isCron) {
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
