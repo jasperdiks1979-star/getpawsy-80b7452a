@@ -15,11 +15,12 @@ export default function PinterestCreativeIntelV2Page() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
+    const sb = supabase as any;
     const [{ count: classified }, { count: total }, { data: rows }, { data: runRows }] = await Promise.all([
-      supabase.from("pcie2_product_understanding").select("*", { count: "exact", head: true }),
-      supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("pcie2_product_understanding").select("functional_class"),
-      supabase.from("pcie2_runs").select("*").order("started_at", { ascending: false }).limit(10),
+      sb.from("pcie2_product_understanding").select("*", { count: "exact", head: true }),
+      sb.from("products").select("*", { count: "exact", head: true }).eq("status", "active"),
+      sb.from("pcie2_product_understanding").select("functional_class"),
+      sb.from("pcie2_runs").select("*").order("started_at", { ascending: false }).limit(10),
     ]);
     setCoverage({ classified: classified ?? 0, total: total ?? 0 });
     const tally = new Map<string, number>();
