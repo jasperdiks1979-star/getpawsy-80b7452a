@@ -38,20 +38,24 @@ Deno.serve(async (req) => {
   const trigger = url.searchParams.get("trigger") ?? "manual";
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Debounce 5 minutes via aci_settings
-  const { data: lastRow } = await sb.from("aci_settings").select("value").eq("key", "auto_last_run_at").maybeSingle();
-  const last = lastRow?.value && typeof lastRow.value === "object" && "at" in (lastRow.value as Record<string, unknown>)
-    ? new Date(((lastRow.value as Record<string, unknown>).at as string)).getTime()
-    : 0;
+  // Debounce 5 minutes via aci_audit_log (entity_type='aci_orchestrator_run')
+  const { data: lastAudit } = await sb
+    .from("aci_audit_log")
+    .select("ts")
+    .eq("entity_type", "aci_orchestrator_run")
+    .order("ts", { ascending: false })
+    .limit(1);
+  const last = lastAudit?.[0]?.ts ? new Date(lastAudit[0].ts as string).getTime() : 0;
   if (Date.now() - last < 5 * 60_000 && trigger !== "manual" && trigger !== "deploy") {
     return new Response(JSON.stringify({ ok: true, skipped: "debounced" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
+  const startedAt = new Date().toISOString();
   const { data: run } = await sb
     .from("aci_runs")
-    .insert({ run_type: "orchestrator", trigger, status: "running", started_at: new Date().toISOString() })
+    .insert({ engine: "aci-orchestrator", status: "running", mode: trigger, started_at: startedAt })
     .select("id")
     .single();
   const runId: string | undefined = run?.id;
@@ -63,10 +67,10 @@ Deno.serve(async (req) => {
     if (runId) {
       await sb.from("aci_run_steps").insert({
         run_id: runId,
-        step_name: fn,
+        step: fn,
         status: s.ok ? "ok" : "error",
         duration_ms: s.ms,
-        error_message: s.error ?? null,
+        error: s.error ?? null,
       });
     }
   }
@@ -75,13 +79,17 @@ Deno.serve(async (req) => {
   if (runId) {
     await sb.from("aci_runs").update({
       status: ok ? "completed" : "partial",
-      completed_at: new Date().toISOString(),
+      finished_at: new Date().toISOString(),
     }).eq("id", runId);
   }
-  await sb.from("aci_settings").upsert(
-    { key: "auto_last_run_at", value: { at: new Date().toISOString(), trigger } as unknown as Record<string, unknown> },
-    { onConflict: "key" },
-  );
+  await sb.from("aci_audit_log").insert({
+    actor: "system",
+    engine: "aci-orchestrator",
+    action: ok ? "run_completed" : "run_partial",
+    entity_type: "aci_orchestrator_run",
+    entity_id: runId ?? null,
+    payload: { trigger, steps } as unknown as Record<string, unknown>,
+  });
 
   return new Response(JSON.stringify({ ok, trigger, run_id: runId, steps }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
