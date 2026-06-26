@@ -123,12 +123,10 @@ export default function PinterestRevenueAiPage() {
               Self-improving Pinterest commerce brain. Wave 1: AI Brain + Revenue Prediction + Timeline.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" disabled={busy} onClick={() => invoke("prie-revenue-predictor")}>
-              Recompute predictions
-            </Button>
-            <Button disabled={busy} onClick={() => invoke("prie-brain-sync")}>
-              Run brain sync
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">Autonomous · self-initializing</Badge>
+            <Button variant="outline" disabled={busy} onClick={() => invoke("prie-auto-orchestrator")}>
+              Force refresh now
             </Button>
           </div>
         </div>
