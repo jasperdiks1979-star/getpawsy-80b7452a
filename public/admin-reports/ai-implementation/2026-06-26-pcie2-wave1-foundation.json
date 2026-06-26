@@ -1,0 +1,22 @@
+{
+  "slug": "2026-06-26-pcie2-wave1-foundation",
+  "title": "PCIE2 Wave 1 \u2014 Creative Memory + Product Understanding",
+  "generated_at": "2026-06-26T00:49:48.930216Z",
+  "status": "PASS",
+  "wave": 1,
+  "tables_created": [
+    "pcie2_product_understanding",
+    "pcie2_headline_library",
+    "pcie2_hook_library",
+    "pcie2_creatives",
+    "pcie2_runs"
+  ],
+  "edge_functions": [
+    "pcie2-product-classifier"
+  ],
+  "admin_route": "/admin/pinterest-creative-intel-v2",
+  "feature_flags": {
+    "pcie2_publish_enabled": false
+  },
+  "compatibility": "additive-only; existing Pinterest automation untouched"
+}
