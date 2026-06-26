@@ -1,6 +1,39 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-ci-verification-report",
+      "title": "CI Zero-Bypass — Verification Report",
+      "generated_at": "2026-06-26T19:55:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 100,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-ci-verification-report.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-ci-verification-report.json",
+      "summary": "DB trigger enforces LEGACY_PIPELINE_DISABLED on every queue insert/update missing CI stamps. 46/46 ready rows stamped. Publishing remains LOCKED."
+    },
+    {
+      "slug": "2026-06-26-ci-architecture-report",
+      "title": "CI Zero-Bypass — Architecture Report",
+      "generated_at": "2026-06-26T19:55:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 98,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-ci-architecture-report.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-ci-architecture-report.json",
+      "summary": "Single canonical Draft → CI → Queue → Publisher path. Publishers are now dumb executors; CI is the only gateway."
+    },
+    {
+      "slug": "2026-06-26-ci-migration-report",
+      "title": "CI Zero-Bypass — Migration Report",
+      "generated_at": "2026-06-26T19:55:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 96,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-ci-migration-report.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-ci-migration-report.json",
+      "summary": "Added 8 CI/fingerprint columns to pcie2_publish_queue, installed gate trigger, backfilled 46 ready rows, deployed nightly quality loop with 03:17 UTC cron."
+    },
+    {
       "slug": "2026-06-26-creative-intelligence-layer-v1",
       "title": "Creative Intelligence Layer v1 — PCIE2 Pre-Publish Gate",
       "generated_at": "2026-06-26T19:15:00Z",

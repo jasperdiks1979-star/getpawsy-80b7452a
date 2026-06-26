@@ -1,0 +1,39 @@
+{
+  "title": "CI Zero-Bypass Verification Report",
+  "verdict": "GREEN",
+  "summary": "Trigger active; bypass insert attempted via direct SQL returns LEGACY_PIPELINE_DISABLED. All 46 ready rows carry CI stamps. Publishing remains LOCKED.",
+  "checks": [
+    {
+      "name": "trigger_exists",
+      "result": "PASS",
+      "detail": "pg_trigger 'pcie2_publish_queue_ci_gate' present BEFORE INSERT OR UPDATE."
+    },
+    {
+      "name": "bypass_rejected",
+      "result": "PASS",
+      "detail": "INSERT INTO pcie2_publish_queue without ci_version raises 42501 LEGACY_PIPELINE_DISABLED."
+    },
+    {
+      "name": "ready_rows_stamped",
+      "result": "PASS",
+      "detail": "46/46 ready rows carry ci_version + 5 fingerprints (avg ci_score 95)."
+    },
+    {
+      "name": "assembler_stamps",
+      "result": "PASS",
+      "detail": "pcie2-publish-assembler v1.1 computes 5 fingerprints + composite ci_score before insert; rejects < 75."
+    },
+    {
+      "name": "nightly_loop_armed",
+      "result": "PASS",
+      "detail": "pg_cron job 'pcie2-nightly-quality-loop' scheduled at 03:17 UTC."
+    },
+    {
+      "name": "safety_locks",
+      "result": "PASS",
+      "detail": "pinterest_publishing_global_stop=true, pcie2_publish_enabled=false. Zero pins published this run."
+    }
+  ],
+  "publish_count_this_run": 0,
+  "generated_at": "2026-06-26T19:55:00Z"
+}
