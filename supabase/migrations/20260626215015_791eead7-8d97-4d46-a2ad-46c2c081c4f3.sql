@@ -1,0 +1,1 @@
+UPDATE public.pinterest_runtime_settings SET premium_engine_paused = false, updated_at = now() WHERE id = 1;
