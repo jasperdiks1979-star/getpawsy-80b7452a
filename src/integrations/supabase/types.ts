@@ -27898,6 +27898,275 @@ export type Database = {
         }
         Relationships: []
       }
+      pmin_category_knowledge: {
+        Row: {
+          best_colors: Json
+          best_ctas: Json
+          best_hooks: Json
+          best_lengths: Json
+          best_posting_windows: Json
+          category_key: string
+          id: string
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          best_colors?: Json
+          best_ctas?: Json
+          best_hooks?: Json
+          best_lengths?: Json
+          best_posting_windows?: Json
+          category_key: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Update: {
+          best_colors?: Json
+          best_ctas?: Json
+          best_hooks?: Json
+          best_lengths?: Json
+          best_posting_windows?: Json
+          category_key?: string
+          id?: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pmin_discovered_pins: {
+        Row: {
+          category_key: string | null
+          description_sample: string | null
+          discovered_at: string
+          engagement_proxy: number | null
+          freshness_days: number | null
+          id: string
+          niche_key: string | null
+          raw_meta: Json
+          region: string | null
+          source_url: string
+          title_hash: string
+          title_sample: string | null
+        }
+        Insert: {
+          category_key?: string | null
+          description_sample?: string | null
+          discovered_at?: string
+          engagement_proxy?: number | null
+          freshness_days?: number | null
+          id?: string
+          niche_key?: string | null
+          raw_meta?: Json
+          region?: string | null
+          source_url: string
+          title_hash: string
+          title_sample?: string | null
+        }
+        Update: {
+          category_key?: string | null
+          description_sample?: string | null
+          discovered_at?: string
+          engagement_proxy?: number | null
+          freshness_days?: number | null
+          id?: string
+          niche_key?: string | null
+          raw_meta?: Json
+          region?: string | null
+          source_url?: string
+          title_hash?: string
+          title_sample?: string | null
+        }
+        Relationships: []
+      }
+      pmin_keyword_trends: {
+        Row: {
+          category_key: string | null
+          id: string
+          keyword: string
+          opportunity_score: number
+          sample_count: number
+          season_flag: string | null
+          updated_at: string
+          velocity: number
+          volume_proxy: number
+          week_start: string
+        }
+        Insert: {
+          category_key?: string | null
+          id?: string
+          keyword: string
+          opportunity_score?: number
+          sample_count?: number
+          season_flag?: string | null
+          updated_at?: string
+          velocity?: number
+          volume_proxy?: number
+          week_start: string
+        }
+        Update: {
+          category_key?: string | null
+          id?: string
+          keyword?: string
+          opportunity_score?: number
+          sample_count?: number
+          season_flag?: string | null
+          updated_at?: string
+          velocity?: number
+          volume_proxy?: number
+          week_start?: string
+        }
+        Relationships: []
+      }
+      pmin_run_steps: {
+        Row: {
+          finished_at: string | null
+          id: string
+          payload: Json
+          run_id: string
+          started_at: string
+          status: string
+          step: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          payload?: Json
+          run_id: string
+          started_at?: string
+          status?: string
+          step: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          payload?: Json
+          run_id?: string
+          started_at?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pmin_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pmin_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pmin_runs: {
+        Row: {
+          counters: Json
+          errors: Json
+          finished_at: string | null
+          id: string
+          mode: string
+          notes: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          counters?: Json
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          counters?: Json
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pmin_settings: {
+        Row: {
+          brain_enabled: boolean
+          created_at: string
+          daily_ai_budget_usd: number
+          id: string
+          kill_switch: boolean
+          max_candidates_per_query: number
+          max_inserts_per_run: number
+          max_queries_per_run: number
+          notes: string | null
+          per_run_vision_budget_usd: number
+          updated_at: string
+        }
+        Insert: {
+          brain_enabled?: boolean
+          created_at?: string
+          daily_ai_budget_usd?: number
+          id?: string
+          kill_switch?: boolean
+          max_candidates_per_query?: number
+          max_inserts_per_run?: number
+          max_queries_per_run?: number
+          notes?: string | null
+          per_run_vision_budget_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          brain_enabled?: boolean
+          created_at?: string
+          daily_ai_budget_usd?: number
+          id?: string
+          kill_switch?: boolean
+          max_candidates_per_query?: number
+          max_inserts_per_run?: number
+          max_queries_per_run?: number
+          notes?: string | null
+          per_run_vision_budget_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pmin_sources: {
+        Row: {
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          last_run_at: string | null
+          last_status: string | null
+          source_key: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          last_run_at?: string | null
+          last_status?: string | null
+          source_key: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          last_run_at?: string | null
+          last_status?: string | null
+          source_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pqif_audit_runs: {
         Row: {
           broken_urls: number

@@ -1,6 +1,15 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pmin-wave-x1-foundation",
+      "title": "PMIN Wave X1 \u2014 Pinterest Market Intelligence Network \u00b7 Foundation & Public Discovery",
+      "date": "2026-06-26",
+      "wave": "X1",
+      "status": "GREEN",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pmin-wave-x1-foundation.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pmin-wave-x1-foundation.json"
+    },
+    {
       "slug": "2026-06-26-pqif-v4-autonomous-growth-ai",
       "title": "PQIF v4 \u2014 Autonomous Growth AI",
       "run_id": "88101740-8f5f-4bd2-b9f9-986ea614b5c2",
