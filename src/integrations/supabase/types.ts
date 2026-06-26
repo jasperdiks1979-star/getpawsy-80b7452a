@@ -16351,6 +16351,420 @@ export type Database = {
         }
         Relationships: []
       }
+      paip_competitor_signals: {
+        Row: {
+          advantage_score: number | null
+          captured_at: string
+          color_palette: Json | null
+          competitor: string
+          composition: string | null
+          cta_pattern: string | null
+          headline_pattern: string | null
+          id: string
+          niche: string | null
+          psychology_tag: string | null
+        }
+        Insert: {
+          advantage_score?: number | null
+          captured_at?: string
+          color_palette?: Json | null
+          competitor: string
+          composition?: string | null
+          cta_pattern?: string | null
+          headline_pattern?: string | null
+          id?: string
+          niche?: string | null
+          psychology_tag?: string | null
+        }
+        Update: {
+          advantage_score?: number | null
+          captured_at?: string
+          color_palette?: Json | null
+          competitor?: string
+          composition?: string | null
+          cta_pattern?: string | null
+          headline_pattern?: string | null
+          id?: string
+          niche?: string | null
+          psychology_tag?: string | null
+        }
+        Relationships: []
+      }
+      paip_emotion_scores: {
+        Row: {
+          comfort: number | null
+          created_at: string
+          creative_id: string | null
+          curiosity: number | null
+          dominant_emotion: string | null
+          excitement: number | null
+          fear: number | null
+          headline: string | null
+          id: string
+          image_url: string | null
+          joy: number | null
+          love: number | null
+          luxury: number | null
+          owner_happiness: number | null
+          pet_happiness: number | null
+          relief: number | null
+          trust: number | null
+          urgency: number | null
+          viral_emotion: number | null
+        }
+        Insert: {
+          comfort?: number | null
+          created_at?: string
+          creative_id?: string | null
+          curiosity?: number | null
+          dominant_emotion?: string | null
+          excitement?: number | null
+          fear?: number | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          joy?: number | null
+          love?: number | null
+          luxury?: number | null
+          owner_happiness?: number | null
+          pet_happiness?: number | null
+          relief?: number | null
+          trust?: number | null
+          urgency?: number | null
+          viral_emotion?: number | null
+        }
+        Update: {
+          comfort?: number | null
+          created_at?: string
+          creative_id?: string | null
+          curiosity?: number | null
+          dominant_emotion?: string | null
+          excitement?: number | null
+          fear?: number | null
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          joy?: number | null
+          love?: number | null
+          luxury?: number | null
+          owner_happiness?: number | null
+          pet_happiness?: number | null
+          relief?: number | null
+          trust?: number | null
+          urgency?: number | null
+          viral_emotion?: number | null
+        }
+        Relationships: []
+      }
+      paip_product_daily_rank: {
+        Row: {
+          components: Json | null
+          composite_score: number | null
+          created_at: string
+          id: string
+          product_id: string
+          rank: number | null
+          run_date: string
+        }
+        Insert: {
+          components?: Json | null
+          composite_score?: number | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rank?: number | null
+          run_date?: string
+        }
+        Update: {
+          components?: Json | null
+          composite_score?: number | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rank?: number | null
+          run_date?: string
+        }
+        Relationships: []
+      }
+      paip_product_trend_scores: {
+        Row: {
+          competition: number | null
+          demand_forecast_30d: number | null
+          id: string
+          matched_keywords: Json | null
+          product_id: string
+          search_opportunity: number | null
+          seasonality: number | null
+          trend_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          competition?: number | null
+          demand_forecast_30d?: number | null
+          id?: string
+          matched_keywords?: Json | null
+          product_id: string
+          search_opportunity?: number | null
+          seasonality?: number | null
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          competition?: number | null
+          demand_forecast_30d?: number | null
+          id?: string
+          matched_keywords?: Json | null
+          product_id?: string
+          search_opportunity?: number | null
+          seasonality?: number | null
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      paip_runs: {
+        Row: {
+          engine: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          stats: Json | null
+          status: string
+        }
+        Insert: {
+          engine: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Update: {
+          engine?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
+      paip_seo_scores: {
+        Row: {
+          board_relevance: number | null
+          created_at: string
+          creative_id: string | null
+          desc_score: number | null
+          description: string | null
+          entity_match: number | null
+          final_score: number | null
+          id: string
+          intent: string | null
+          keyword_density: number | null
+          lsi_coverage: number | null
+          reasons: Json | null
+          semantic_relevance: number | null
+          title: string | null
+          title_score: number | null
+        }
+        Insert: {
+          board_relevance?: number | null
+          created_at?: string
+          creative_id?: string | null
+          desc_score?: number | null
+          description?: string | null
+          entity_match?: number | null
+          final_score?: number | null
+          id?: string
+          intent?: string | null
+          keyword_density?: number | null
+          lsi_coverage?: number | null
+          reasons?: Json | null
+          semantic_relevance?: number | null
+          title?: string | null
+          title_score?: number | null
+        }
+        Update: {
+          board_relevance?: number | null
+          created_at?: string
+          creative_id?: string | null
+          desc_score?: number | null
+          description?: string | null
+          entity_match?: number | null
+          final_score?: number | null
+          id?: string
+          intent?: string | null
+          keyword_density?: number | null
+          lsi_coverage?: number | null
+          reasons?: Json | null
+          semantic_relevance?: number | null
+          title?: string | null
+          title_score?: number | null
+        }
+        Relationships: []
+      }
+      paip_settings: {
+        Row: {
+          brain_enabled: boolean | null
+          conversion_threshold: number | null
+          daily_ai_budget_usd: number | null
+          emotion_threshold: number | null
+          human_authenticity_threshold: number | null
+          id: boolean
+          seo_threshold: number | null
+          trend_threshold: number | null
+          updated_at: string
+          v3_firewall_enabled: boolean | null
+          visual_threshold: number | null
+        }
+        Insert: {
+          brain_enabled?: boolean | null
+          conversion_threshold?: number | null
+          daily_ai_budget_usd?: number | null
+          emotion_threshold?: number | null
+          human_authenticity_threshold?: number | null
+          id?: boolean
+          seo_threshold?: number | null
+          trend_threshold?: number | null
+          updated_at?: string
+          v3_firewall_enabled?: boolean | null
+          visual_threshold?: number | null
+        }
+        Update: {
+          brain_enabled?: boolean | null
+          conversion_threshold?: number | null
+          daily_ai_budget_usd?: number | null
+          emotion_threshold?: number | null
+          human_authenticity_threshold?: number | null
+          id?: boolean
+          seo_threshold?: number | null
+          trend_threshold?: number | null
+          updated_at?: string
+          v3_firewall_enabled?: boolean | null
+          visual_threshold?: number | null
+        }
+        Relationships: []
+      }
+      paip_trend_database: {
+        Row: {
+          captured_at: string
+          competition_score: number | null
+          created_at: string
+          growth_pct: number | null
+          id: string
+          keyword: string
+          metadata: Json | null
+          niche: string | null
+          seasonality_window: string | null
+          source: string
+          trend_score: number | null
+          volume: number | null
+        }
+        Insert: {
+          captured_at?: string
+          competition_score?: number | null
+          created_at?: string
+          growth_pct?: number | null
+          id?: string
+          keyword: string
+          metadata?: Json | null
+          niche?: string | null
+          seasonality_window?: string | null
+          source: string
+          trend_score?: number | null
+          volume?: number | null
+        }
+        Update: {
+          captured_at?: string
+          competition_score?: number | null
+          created_at?: string
+          growth_pct?: number | null
+          id?: string
+          keyword?: string
+          metadata?: Json | null
+          niche?: string | null
+          seasonality_window?: string | null
+          source?: string
+          trend_score?: number | null
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      paip_visual_attention: {
+        Row: {
+          artifact_probability: number | null
+          attention_map: Json | null
+          attention_score: number | null
+          color_harmony: number | null
+          complexity: number | null
+          confidence: number | null
+          contrast: number | null
+          created_at: string
+          depth_score: number | null
+          face_visibility: number | null
+          focal_points: Json | null
+          golden_ratio: number | null
+          id: string
+          image_hash: string | null
+          image_url: string
+          pet_emotion_score: number | null
+          product_prominence: number | null
+          raw: Json | null
+          rule_of_thirds: number | null
+          visual_uniqueness: number | null
+          whitespace: number | null
+        }
+        Insert: {
+          artifact_probability?: number | null
+          attention_map?: Json | null
+          attention_score?: number | null
+          color_harmony?: number | null
+          complexity?: number | null
+          confidence?: number | null
+          contrast?: number | null
+          created_at?: string
+          depth_score?: number | null
+          face_visibility?: number | null
+          focal_points?: Json | null
+          golden_ratio?: number | null
+          id?: string
+          image_hash?: string | null
+          image_url: string
+          pet_emotion_score?: number | null
+          product_prominence?: number | null
+          raw?: Json | null
+          rule_of_thirds?: number | null
+          visual_uniqueness?: number | null
+          whitespace?: number | null
+        }
+        Update: {
+          artifact_probability?: number | null
+          attention_map?: Json | null
+          attention_score?: number | null
+          color_harmony?: number | null
+          complexity?: number | null
+          confidence?: number | null
+          contrast?: number | null
+          created_at?: string
+          depth_score?: number | null
+          face_visibility?: number | null
+          focal_points?: Json | null
+          golden_ratio?: number | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string
+          pet_emotion_score?: number | null
+          product_prominence?: number | null
+          raw?: Json | null
+          rule_of_thirds?: number | null
+          visual_uniqueness?: number | null
+          whitespace?: number | null
+        }
+        Relationships: []
+      }
       passkey_credentials: {
         Row: {
           counter: number
