@@ -35,6 +35,7 @@ export default function GuardianDashboardPage() {
   const [checks, setChecks] = useState<any[]>([]);
   const [findings, setFindings] = useState<any[]>([]);
   const [gateLog, setGateLog] = useState<any[]>([]);
+  const [arch, setArch] = useState<any | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() {
@@ -81,6 +82,19 @@ export default function GuardianDashboardPage() {
     finally { setBusy(null); }
   }
 
+  async function runArchitecture() {
+    setBusy("arch");
+    try {
+      const { data, error } = await supabase.functions.invoke("architecture-validate", { body: {} });
+      if (error) throw error;
+      setArch(data);
+      toast[(data as any)?.color === "green" ? "success" : "error"](
+        `Architecture: ${(data as any)?.color?.toUpperCase()} — readiness ${(data as any)?.scores?.publish_readiness}/100`,
+      );
+    } catch (e: any) { toast.error(`Architecture scan failed: ${e.message ?? e}`); }
+    finally { setBusy(null); }
+  }
+
   const color = status?.color ?? "gray";
 
   return (
@@ -99,6 +113,10 @@ export default function GuardianDashboardPage() {
           <Button variant="secondary" onClick={runScan} disabled={busy !== null}>
             {busy === "scan" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
             Run Legacy Scanner
+          </Button>
+          <Button variant="secondary" onClick={runArchitecture} disabled={busy !== null}>
+            {busy === "arch" ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            Validate Architecture
           </Button>
         </div>
       </div>
@@ -128,6 +146,7 @@ export default function GuardianDashboardPage() {
           <TabsTrigger value="checks">Sentinel Checks ({checks.length})</TabsTrigger>
           <TabsTrigger value="findings">Legacy Findings ({findings.length})</TabsTrigger>
           <TabsTrigger value="gate">Publish Gate Log ({gateLog.length})</TabsTrigger>
+          <TabsTrigger value="arch">Architecture</TabsTrigger>
         </TabsList>
 
         <TabsContent value="checks">
@@ -187,6 +206,48 @@ export default function GuardianDashboardPage() {
               </tbody>
             </table>
           </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="arch">
+          <Card>
+            <CardHeader><CardTitle>Architecture v2</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {!arch ? (
+                <p className="text-sm text-muted-foreground">Click "Validate Architecture" to run determinism checks.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {Object.entries(arch.scores ?? {}).map(([k, v]) => (
+                      <div key={k} className="rounded-lg border p-3">
+                        <div className="text-xs uppercase text-muted-foreground">{k.replace(/_/g, " ")}</div>
+                        <div className="text-2xl font-bold">{String(v)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Canonical pipeline:</span>{" "}
+                    <code className="text-xs">{arch.canonical?.queue} → {arch.canonical?.publisher} → /v5/pins</code>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Violations ({arch.violations?.length ?? 0}):</div>
+                    {(arch.violations ?? []).length === 0 ? (
+                      <p className="text-xs text-green-700">None — architecture is deterministic.</p>
+                    ) : (
+                      <ul className="text-xs space-y-1">
+                        {arch.violations.map((v: any, i: number) => (
+                          <li key={i} className="flex gap-2">
+                            <Badge variant={v.severity === "critical" ? "destructive" : "secondary"}>{v.severity}</Badge>
+                            <span className="font-mono">{v.code}</span>
+                            <span className="text-muted-foreground">— {v.detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
