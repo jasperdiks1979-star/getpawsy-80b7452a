@@ -1,0 +1,45 @@
+{
+  "slug": "2026-06-26-ai-reports-recovery",
+  "title": "AI Implementation Reports \u2014 Recovery",
+  "run_id": "ai-reports-recovery",
+  "generated_at": "2026-06-26T00:23:33.123057+00:00",
+  "status": "shipped",
+  "score": 95,
+  "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.pdf",
+  "json": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.json",
+  "root_cause": "AdminReportsPage read `data.reports`, but manifest.json was a bare JSON array. The destructure returned undefined \u2192 empty list. Today's reports were on disk all along.",
+  "fix": [
+    "UI now accepts both manifest shapes (array OR { reports: [...] }).",
+    "Manifest rebuilt to v2 envelope { version, generated_at, reports[] } sorted newest-first.",
+    "Scanned public/admin-reports/ai-implementation/ and rebuilt 20 entries from disk, preserving titles/scores from prior entries.",
+    "Preview/Download buttons gracefully disable when a PDF or JSON is missing."
+  ],
+  "prevention": [
+    "Future runs must keep the { reports: [...] } envelope and append (never overwrite).",
+    "If manifest read fails or is empty while files exist on disk, regenerate from directory listing.",
+    "Each new report uses unique date-slug filenames; JSON is written even if PDF generation fails."
+  ],
+  "recovered_reports_count": 20,
+  "recovered_reports": [
+    "2026-06-26-aci-wave1-foundation",
+    "2026-06-26-prie-autonomous-pipeline",
+    "2026-06-25-pga-wave-a-foundation",
+    "2026-06-25-pe-wave1-cron-auth-fix",
+    "2026-06-25-revenue-recovery-wave-a",
+    "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+    "2026-06-25-pinterest-metadata-repair",
+    "2026-06-25-pinterest-creative-wave2",
+    "2026-06-25-pinterest-creative-wave1",
+    "2026-06-25-pe-wave1-control-center",
+    "2026-06-25-commander-wave-6a-foundation",
+    "2026-06-25-cmdr-wave-6a-foundations",
+    "2026-06-25-agp-wave-4a-signal-lake-growth-score",
+    "2026-06-25-agp-wave-4a-plus-intelligence",
+    "2026-06-25-agp-wave-3-small-live",
+    "2026-06-25-agp-wave-3-enhance-qa",
+    "2026-06-25-agp-wave-2-media-pipeline",
+    "2026-06-25-agp-wave-1-foundations",
+    "2026-06-25-agp-master-report",
+    "2026-06-25-aci-wave-5x-autonomous-commerce"
+  ]
+}
