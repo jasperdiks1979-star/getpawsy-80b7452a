@@ -68,13 +68,26 @@ Deno.serve(async (req) => {
   const guardianGreen = guardian?.color === "green";
   if (!guardianGreen) blockers.push(`guardian_${guardian?.color ?? "unknown"}`);
 
-  const { data: conn } = await supabase.from("pinterest_connection")
-    .select("access_token_expires_at, scopes, last_health_check, last_health_status")
+  // Single source of truth for OAuth state: pinterest_connection row.
+  // Schema uses token_expires_at (not access_token_expires_at) and
+  // last_account_status / last_boards_status (not last_health_*). scopes is
+  // a space-separated text column, not an array.
+  const { data: conn, error: connErr } = await supabase.from("pinterest_connection")
+    .select("status, token_expires_at, token_prefix, scopes, last_account_status, last_boards_status, board_count, updated_at")
+    .eq("status", "connected")
     .order("updated_at", { ascending: false }).limit(1).maybeSingle();
-  const oauthHealthy = !!conn && (!conn.access_token_expires_at || new Date(conn.access_token_expires_at) > new Date());
-  if (!oauthHealthy) blockers.push("oauth_unhealthy_or_missing");
-  const scopes = Array.isArray(conn?.scopes) ? conn.scopes : [];
-  const missingScopes = ["catalogs","ads"].filter(s => !scopes.includes(s));
+  const tokenValid = !!conn && (!conn.token_expires_at || new Date(conn.token_expires_at) > new Date());
+  const apiVerified = (conn?.last_account_status === 200) && (conn?.last_boards_status === 200);
+  const oauthHealthy = !!conn && tokenValid && apiVerified;
+  if (!oauthHealthy) {
+    blockers.push("oauth_unhealthy_or_missing");
+    console.warn("[recovery] oauth check failed", { connErr: connErr?.message, conn });
+  }
+  const scopes = typeof conn?.scopes === "string"
+    ? conn.scopes.split(/[\s,]+/).map((s: string) => s.trim().toLowerCase()).filter(Boolean)
+    : Array.isArray(conn?.scopes) ? conn.scopes : [];
+  const missingScopes = ["catalogs:read","catalogs:write","ads:read","ads:write"]
+    .filter(s => !scopes.includes(s) && !scopes.includes(s.split(":")[0]));
   if (missingScopes.length) blockers.push(`missing_scopes:${missingScopes.join(",")}`);
 
   const { count: legacyCount } = await supabase.from("guardian_legacy_findings")
@@ -89,6 +102,15 @@ Deno.serve(async (req) => {
     oauth_scopes: scopes,
     missing_scopes: missingScopes,
     legacy_findings_high: legacyCount ?? 0,
+    oauth_source: {
+      table: "public.pinterest_connection",
+      account: conn?.account_name ?? null,
+      token_prefix: conn?.token_prefix ?? null,
+      token_expires_at: conn?.token_expires_at ?? null,
+      last_account_status: conn?.last_account_status ?? null,
+      last_boards_status: conn?.last_boards_status ?? null,
+      board_count: conn?.board_count ?? null,
+    },
   };
 
   // PHASE 2 + 3 — pin cleanup + legacy detection ------------------------------
