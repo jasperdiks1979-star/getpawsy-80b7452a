@@ -62,6 +62,15 @@ Deno.serve(async (req) => {
   const limit = Math.min(Math.max(Number(body?.limit) || HARD_CAP, 1), HARD_CAP);
   const dryRun = !!body?.dryRun;
 
+  // PCIE2 GLOBAL PUBLISHING KILL SWITCH — block all legacy POST /v5/pins
+  if (!dryRun) {
+    const { data: killCfg } = await sb.from("app_config").select("value").eq("key", "pinterest_publishing_global_stop").maybeSingle();
+    const stopped = killCfg?.value === true || killCfg?.value?.enabled === true || killCfg?.value === "true";
+    if (stopped) {
+      return json({ ok: false, code: "PCIE2_GLOBAL_STOP", message: "Legacy Pinterest publishing is disabled. PCIE2 is the sole publisher." }, 423);
+    }
+  }
+
   // ── Pinterest connection ──
   const { data: settings } = await sb.from("pinterest_runtime_settings")
     .select("active_pinterest_connection_id, active_board_id").eq("id", 1).maybeSingle();
