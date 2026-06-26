@@ -10309,6 +10309,535 @@ export type Database = {
         }
         Relationships: []
       }
+      ee_learning_boards: {
+        Row: {
+          avg_ctr: number | null
+          board_id: string
+          composite_score: number | null
+          created_at: string
+          impressions_total: number
+          outbound_total: number
+          pins_count: number
+          purchases_total: number
+          revenue_total: number
+          saves_total: number
+          updated_at: string
+        }
+        Insert: {
+          avg_ctr?: number | null
+          board_id: string
+          composite_score?: number | null
+          created_at?: string
+          impressions_total?: number
+          outbound_total?: number
+          pins_count?: number
+          purchases_total?: number
+          revenue_total?: number
+          saves_total?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_ctr?: number | null
+          board_id?: string
+          composite_score?: number | null
+          created_at?: string
+          impressions_total?: number
+          outbound_total?: number
+          pins_count?: number
+          purchases_total?: number
+          revenue_total?: number
+          saves_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ee_learning_events: {
+        Row: {
+          board_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          occurred_at: string
+          payload: Json
+          pin_id: string | null
+          product_id: string | null
+          source: string
+        }
+        Insert: {
+          board_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          source: string
+        }
+        Update: {
+          board_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
+      ee_learning_history: {
+        Row: {
+          add_to_cart: number
+          board_id: string | null
+          checkout: number
+          conversion_rate: number | null
+          created_at: string
+          ctr: number | null
+          engagement: number | null
+          ga4_avg_engagement_seconds: number | null
+          ga4_bounce_rate: number | null
+          ga4_sessions: number
+          id: string
+          impressions: number
+          outbound_clicks: number
+          pin_id: string
+          pin_lifetime_days: number | null
+          product_id: string | null
+          purchases: number
+          raw: Json
+          revenue: number
+          roas: number | null
+          saves: number
+          snapshot_date: string
+          updated_at: string
+        }
+        Insert: {
+          add_to_cart?: number
+          board_id?: string | null
+          checkout?: number
+          conversion_rate?: number | null
+          created_at?: string
+          ctr?: number | null
+          engagement?: number | null
+          ga4_avg_engagement_seconds?: number | null
+          ga4_bounce_rate?: number | null
+          ga4_sessions?: number
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id: string
+          pin_lifetime_days?: number | null
+          product_id?: string | null
+          purchases?: number
+          raw?: Json
+          revenue?: number
+          roas?: number | null
+          saves?: number
+          snapshot_date: string
+          updated_at?: string
+        }
+        Update: {
+          add_to_cart?: number
+          board_id?: string | null
+          checkout?: number
+          conversion_rate?: number | null
+          created_at?: string
+          ctr?: number | null
+          engagement?: number | null
+          ga4_avg_engagement_seconds?: number | null
+          ga4_bounce_rate?: number | null
+          ga4_sessions?: number
+          id?: string
+          impressions?: number
+          outbound_clicks?: number
+          pin_id?: string
+          pin_lifetime_days?: number | null
+          product_id?: string | null
+          purchases?: number
+          raw?: Json
+          revenue?: number
+          roas?: number | null
+          saves?: number
+          snapshot_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ee_learning_products: {
+        Row: {
+          avg_conv_rate: number | null
+          avg_ctr: number | null
+          avg_save_rate: number | null
+          composite_score: number | null
+          created_at: string
+          impressions_total: number
+          last_pin_at: string | null
+          outbound_total: number
+          pins_count: number
+          pinterest_fit_score: number | null
+          popularity_score: number | null
+          product_id: string
+          purchases_total: number
+          revenue_total: number
+          saves_total: number
+          updated_at: string
+        }
+        Insert: {
+          avg_conv_rate?: number | null
+          avg_ctr?: number | null
+          avg_save_rate?: number | null
+          composite_score?: number | null
+          created_at?: string
+          impressions_total?: number
+          last_pin_at?: string | null
+          outbound_total?: number
+          pins_count?: number
+          pinterest_fit_score?: number | null
+          popularity_score?: number | null
+          product_id: string
+          purchases_total?: number
+          revenue_total?: number
+          saves_total?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_conv_rate?: number | null
+          avg_ctr?: number | null
+          avg_save_rate?: number | null
+          composite_score?: number | null
+          created_at?: string
+          impressions_total?: number
+          last_pin_at?: string | null
+          outbound_total?: number
+          pins_count?: number
+          pinterest_fit_score?: number | null
+          popularity_score?: number | null
+          product_id?: string
+          purchases_total?: number
+          revenue_total?: number
+          saves_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ee_learning_vectors: {
+        Row: {
+          board_id: string | null
+          composite_score: number | null
+          created_at: string
+          ctr_score: number | null
+          emotion_id: string | null
+          features: Json
+          freshness_score: number | null
+          headline_id: string | null
+          hour_bucket: number | null
+          id: string
+          image_dna_id: string | null
+          novelty_score: number | null
+          pin_id: string
+          product_id: string | null
+          purchase_score: number | null
+          save_score: number | null
+          spam_score: number | null
+          trust_score: number | null
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          board_id?: string | null
+          composite_score?: number | null
+          created_at?: string
+          ctr_score?: number | null
+          emotion_id?: string | null
+          features?: Json
+          freshness_score?: number | null
+          headline_id?: string | null
+          hour_bucket?: number | null
+          id?: string
+          image_dna_id?: string | null
+          novelty_score?: number | null
+          pin_id: string
+          product_id?: string | null
+          purchase_score?: number | null
+          save_score?: number | null
+          spam_score?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          board_id?: string | null
+          composite_score?: number | null
+          created_at?: string
+          ctr_score?: number | null
+          emotion_id?: string | null
+          features?: Json
+          freshness_score?: number | null
+          headline_id?: string | null
+          hour_bucket?: number | null
+          id?: string
+          image_dna_id?: string | null
+          novelty_score?: number | null
+          pin_id?: string
+          product_id?: string | null
+          purchase_score?: number | null
+          save_score?: number | null
+          spam_score?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: []
+      }
+      ee_model_versions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          params: Json
+          trained_at: string | null
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          params?: Json
+          trained_at?: string | null
+          version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          params?: Json
+          trained_at?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
+      ee_predictions: {
+        Row: {
+          actual_ctr: number | null
+          actual_impressions: number | null
+          actual_outbound: number | null
+          actual_purchases: number | null
+          actual_recorded_at: string | null
+          actual_revenue: number | null
+          actual_saves: number | null
+          confidence: number | null
+          created_at: string
+          draft_id: string | null
+          features: Json
+          id: string
+          model_version_id: string | null
+          novelty_score: number | null
+          pin_id: string | null
+          predicted_ctr: number | null
+          predicted_impressions: number | null
+          predicted_outbound: number | null
+          predicted_purchases: number | null
+          predicted_revenue: number | null
+          predicted_roas: number | null
+          predicted_saves: number | null
+          product_id: string | null
+          spam_risk: number | null
+          trust_score: number | null
+          updated_at: string
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          actual_ctr?: number | null
+          actual_impressions?: number | null
+          actual_outbound?: number | null
+          actual_purchases?: number | null
+          actual_recorded_at?: string | null
+          actual_revenue?: number | null
+          actual_saves?: number | null
+          confidence?: number | null
+          created_at?: string
+          draft_id?: string | null
+          features?: Json
+          id?: string
+          model_version_id?: string | null
+          novelty_score?: number | null
+          pin_id?: string | null
+          predicted_ctr?: number | null
+          predicted_impressions?: number | null
+          predicted_outbound?: number | null
+          predicted_purchases?: number | null
+          predicted_revenue?: number | null
+          predicted_roas?: number | null
+          predicted_saves?: number | null
+          product_id?: string | null
+          spam_risk?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          actual_ctr?: number | null
+          actual_impressions?: number | null
+          actual_outbound?: number | null
+          actual_purchases?: number | null
+          actual_recorded_at?: string | null
+          actual_revenue?: number | null
+          actual_saves?: number | null
+          confidence?: number | null
+          created_at?: string
+          draft_id?: string | null
+          features?: Json
+          id?: string
+          model_version_id?: string | null
+          novelty_score?: number | null
+          pin_id?: string | null
+          predicted_ctr?: number | null
+          predicted_impressions?: number | null
+          predicted_outbound?: number | null
+          predicted_purchases?: number | null
+          predicted_revenue?: number | null
+          predicted_roas?: number | null
+          predicted_saves?: number | null
+          product_id?: string | null
+          spam_risk?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ee_predictions_model_version_id_fkey"
+            columns: ["model_version_id"]
+            isOneToOne: false
+            referencedRelation: "ee_model_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ee_run_steps: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          payload: Json
+          run_id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          run_id: string
+          status?: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          run_id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ee_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ee_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ee_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          started_at: string
+          stats: Json
+          status: string
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          started_at?: string
+          stats?: Json
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          started_at?: string
+          stats?: Json
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ee_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       email_campaign_events: {
         Row: {
           campaign_id: string

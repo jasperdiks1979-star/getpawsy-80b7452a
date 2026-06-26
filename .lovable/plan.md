@@ -1,98 +1,88 @@
-# PMIN — Pinterest Market Intelligence Network
 
-Build an autonomous, ecosystem-wide Pinterest intelligence layer on top of PCIE2 + PQIF v4 + PAIP. Additive only. Safety locks stay ON (`pinterest_publishing_global_stop=true`, `pcie2_publish_enabled=false`, `paip_brain_enabled=false`). No copyrighted content is stored or reproduced — only statistical pattern metadata and original generations.
+# GetPawsy Evolution Engine V1 — Phased Implementation Plan
 
-This is a large multi-wave program. I'll ship it in 5 waves with health gates between each. Each wave produces a PDF + JSON implementation report in `public/admin-reports/ai-implementation/` and updates manifest.json.
+The full 19-module spec is enormous (~25 new tables, ~15 new edge functions, 1 dashboard, multiple crons, full validation suite). Shipping all of it in a single run would risk regressions to the protected systems (OAuth, Publisher, Guardian, CI Layer, Queue, Canary, Global Stop, Recovery, Legacy Guards) and would be impossible to QA in one pass.
 
-## Wave X1 — Foundation & Public Discovery (build now, no AI spend)
+I will ship it in **three phases**. Each phase is fully additive — zero edits to existing publishing, queue, OAuth, Guardian, CI, or safety-lock code. Each phase ends with the standard AI Implementation Report (PDF + JSON + manifest update).
 
-Schema:
-- `pmin_settings` — global toggles, budget caps, source enablement, kill switch.
-- `pmin_sources` — registered signal sources (trends / search-suggest / related / category / seasonal / shopping / boards).
-- `pmin_runs`, `pmin_run_steps` — orchestrator audit trail.
-- `pmin_discovered_pins` — metadata only (no images, no raw copy beyond 200-char samples), unique on `(source_url, title_hash)`. Includes `category_key`, `niche_key`, `region`, `discovered_at`, `engagement_proxy`.
-- `pmin_keyword_trends` — keyword × category × week, with `velocity`, `volume_proxy`, `season_flag`, `opportunity_score`.
-- `pmin_category_knowledge` — per-category rolling stats (best colors, best hooks, best length, best posting windows).
+I will ask you to approve each phase before starting the next one.
 
-Edge functions:
-- `pmin-orchestrator` — resumable phase controller, evidence-logged, idempotent.
-- `pmin-discovery-harvester` — uses Firecrawl (search + scrape) on Pinterest public surfaces + seed boards. Hard caps: ≤25 queries/run, ≤20 candidates/query, ≤500 inserts/run. Reuses existing `pinterest-competitor-intel` patterns.
-- `pmin-keyword-trend-scorer` — extracts velocity / freshness / seasonality. Pure compute, no AI calls.
+## Non-negotiable invariants (apply to all phases)
 
-Cron: `pmin-discovery` daily 03:45 UTC (before existing brain at 03:00? — schedule after existing competitor-intel at 03:15).
+- All new tables prefixed `ee_` (evolution engine) so they cannot be confused with `pcie2_*` queue/publisher tables.
+- All new edge functions prefixed `evolution-*`. None of them write to `pcie2_publish_queue`, `pinterest_pin_queue`, `pinterest_connection`, `app_config`, `guardian_*`, `pcie2_ci_*`, or any publisher table.
+- Evolution Engine only **reads** publisher/queue/CI/Guardian tables and **writes** to its own `ee_*` tables.
+- The single seam back to production is one optional read-only field on the dashboard ("AI suggested headline" badge next to a queue row). No write path.
+- Global Stop, `pcie2_publish_enabled=false`, Canary, Guardian gates, CI trigger — all remain authoritative. The Evolution Engine cannot publish.
 
-Admin UI: `/admin/pmin` with three panels — Discovery Health, Keyword Trends, Category Knowledge. CSV export.
+## Phase 1 — Foundation + Learning + Predictive (this run)
 
-Wave X1 gate: ≥1,000 discovered pins, ≥200 keyword trend rows, 0 errors over 3 runs.
+Goal: make the data substrate that everything else depends on. No autonomous behaviour yet.
 
-## Wave X2 — DNA Engines (Visual / Headline / Description / CTA / Layout)
+### Tables (all `ee_*`, admin/service_role only)
 
-Schema:
-- `pmin_visual_dna` — per-discovered-pin extracted features (camera angle, lighting, composition, color harmony, animal pose, etc.), embedding vector (pgvector).
-- `pmin_headline_dna`, `pmin_description_dna`, `pmin_cta_dna`, `pmin_layout_dna` — pattern rows with rolling `success_score`.
-- `pmin_pattern_performance` — daily aggregates of pattern → CTR proxy / save proxy / outbound proxy.
+```text
+ee_learning_history       per-pin daily snapshot: pinterest + GA4 + revenue metrics
+ee_learning_events        raw observation log (immutable, append-only)
+ee_learning_vectors       per-pin feature vector (headline_id, image_dna_id, emotion_id, board_id, hour_bucket, scores)
+ee_learning_products      per-product rollup scores
+ee_learning_boards        per-board rollup scores
+ee_predictions            pre-publish predictions vs actuals
+ee_model_versions         tracks which scoring model produced each prediction
+ee_runs                   run log for every nightly job (status, duration, errors)
+ee_run_steps              per-step trace
+ee_settings               feature flags (default ALL OFF — observation only)
+```
 
-Edge functions:
-- `pmin-visual-dna-extractor` — Gemini Flash vision on **publicly-listed thumbnails only**, extracts features into structured JSON. Budget capped per run ($5/run, $30/day).
-- `pmin-headline-dna-extractor` — Gemini Flash text classifier over the 200-char title samples.
-- `pmin-description-dna-extractor` — same, descriptions.
-- `pmin-pattern-aggregator` — rebuilds rolling success scores nightly.
+### Edge functions
 
-Cron: nightly 04:00 UTC, after Wave X1 harvest.
+- `evolution-learning-ingest` — pulls Pinterest analytics, GA4 (via existing tables), revenue per pin → writes `ee_learning_*`. Read-only on source tables.
+- `evolution-predictive-score` — given a draft row id, computes predicted CTR/saves/purchases/ROAS/confidence using a transparent linear model over `ee_learning_vectors`. Writes to `ee_predictions`. Does not gate anything.
+- `evolution-nightly-rollup` — recomputes product + board rollups, refreshes confidence intervals.
 
-Wave X2 gate: ≥500 visual_dna rows, ≥1,000 headline_dna rows, top patterns surfaced in UI, daily AI spend ≤ $30.
+### Cron
 
-## Wave X3 — Trend Detection, Competitor Intel & Opportunity Engine
+One nightly job at `04:17 UTC` that runs `evolution-nightly-rollup`. Disabled by default in `ee_settings`; only enabled after you approve.
 
-Schema:
-- `pmin_trends` — emerging / accelerating / declining / seasonal / holiday, with `opportunity_score`, `peak_eta`, `confidence`.
-- `pmin_competitors` — auto-discovered public accounts, growth deltas, viral boards (metadata only).
-- `pmin_product_match` — every GetPawsy product × trend → `trend_score`, `virality_score`, `pinterest_fit`, `expected_ctr`, `expected_saves`, `expected_revenue`.
+### Dashboard
 
-Edge functions:
-- `pmin-trend-detector` — EWMA + change-point detection over keyword + category time series.
-- `pmin-competitor-scout` — extends existing `paip-competitor-scout`, tracks growth over time.
-- `pmin-product-matcher` — joins `products` × `pmin_trends` × `pmin_category_knowledge`, writes ranked match table.
+`/admin/evolution-engine` — Phase 1 panels only:
+- Learning Progress (rows ingested, products covered, days of history)
+- Top Products / Boards / Headlines / Emotions (read-only leaderboards)
+- Prediction vs Actual scatter (for any draft scored so far)
+- Run log
+- "Mode: OBSERVATION ONLY" banner
 
-Cron: trend-detector 05:00 UTC, competitor-scout 05:30 UTC, product-matcher 06:00 UTC.
+### Validation in Phase 1
 
-Wave X3 gate: ≥50 active trends scored, all active products matched, opportunity ranking visible in `/admin/pmin`.
+- DB linter clean on new tables
+- Confirm Publisher / Queue / Guardian / CI / Canary tables and code are unchanged (grep diff report in the AI Implementation Report)
+- Confirm `pcie2_publish_enabled` and `global_stop` untouched
+- Confirm no new triggers on existing tables
 
-## Wave X4 — Predictive Pre-Publish Quality Gate (PCIE2 integration)
+## Phase 2 — Evolution + Trend + Emotion + Image DNA + Experiment
 
-Extends PCIE2 + PQIF v4 without touching the publish lock.
+Adds modules 2, 3, 4, 5, 8, 17 once Phase 1 data exists. Headline/image/emotion families, automatic experiment scoring, nightly "retire weak / clone winning" pass — but always writing to `ee_*` and into the existing `pcie2_*` draft tables (NEVER directly into `pcie2_publish_queue`, which the existing CI trigger guards anyway).
 
-- `pmin-creative-predictor` — given a PCIE2 candidate creative, returns predicted CTR / save / conversion / quality / uniqueness based on Wave X2 DNA + Wave X3 trends.
-- `pmin-creative-gate` — wraps PCIE2 candidate output: if predicted CTR < category top-10% **or** quality_score < 90 **or** uniqueness < 90 **or** duplicate_probability > 5%, **reject + auto-request a regeneration** via the existing PCIE2 regeneration queue. Logs every decision to `pmin_decisions`.
-- New table `pmin_decisions` — full evidence trail per evaluated creative.
+## Phase 3 — Competitor + Seasonal + Geo + Ads Intelligence + Marketing Brain + Executive Dashboard
 
-No publishing changes. Gate runs in `shadow` mode first (decisions logged, PCIE2 unchanged) until X4 health gate passes.
+Adds modules 6, 12, 13, 14, 15, 18, 19. Each is recommendation-only by spec. Ads Intelligence is read-only against the OAuth token we already have.
 
-Wave X4 gate: ≥1,000 shadow decisions, predicted-vs-actual correlation ≥ 0.4 on backtests against existing `pcie2_pin_performance`.
+## Technical notes
 
-## Wave X5 — Self-Improvement Loop & Reporting
+- All new RLS: `SELECT` to authenticated admins via `has_role`, `ALL` to `service_role`. No anon grants.
+- Validation triggers (not CHECK constraints) for any time-dependent rule (e.g. `ee_predictions.window_end > window_start`).
+- Phase 1 uses only the Lovable AI Gateway (`google/gemini-3-flash-preview`) for any text scoring; no new external secrets.
+- Reports per phase: `public/admin-reports/ai-implementation/2026-06-26-evolution-engine-phase-N.{pdf,json}` + manifest update.
 
-- `pmin-learning-loop` — nightly: ingests Pinterest metrics from `pinterest_analytics_daily` + `pinterest_video_metrics`, updates pattern success scores, promotes/retires DNA rows, regenerates category knowledge.
-- `pmin-report` — generates Daily Intelligence + Weekly Market + Monthly Strategy reports (PDF + JSON) into `public/admin-reports/ai-implementation/` and updates manifest.json.
-- Admin dashboard final panels: Trending Categories, Trending Products, Trending Keywords, Trending Headlines, Trending Image Styles, Competitor Growth, Category Heatmaps, Opportunity Scores, Publishing Recommendations, Revenue Predictions, Learning Progress.
+## What I need from you
 
-Cron: learning-loop 06:30 UTC, daily-report 07:00 UTC, weekly-report Mon 07:15, monthly-report 1st 07:30.
+Confirm **"go Phase 1"** and I will:
 
-Wave X5 gate: 3 consecutive nightly reports green, learning loop closed (pattern scores moving with observed metrics).
+1. Run the Phase 1 migration (one approval for all 11 tables + RLS + grants).
+2. Deploy the three `evolution-*` edge functions.
+3. Build `/admin/evolution-engine` Phase 1 dashboard.
+4. Wire the disabled nightly cron.
+5. Run the validation suite and ship the Phase 1 PDF + JSON report.
 
-## Safety, Budget, Compliance
-
-- All locks remain ON: `pinterest_publishing_global_stop`, `pcie2_publish_enabled`, `paip_brain_enabled`, plus new `pmin_brain_enabled=false`.
-- Budget caps in `pmin_settings`: $30/day total AI, $5/run vision, kill switch instantly stops all crons.
-- No raw copyrighted text, image, or video stored. Title/description samples capped at 200 chars. Images: URL hash + extracted features only.
-- All edge functions service-role + admin-JWT guarded. No anon access to any `pmin_*` table.
-- RLS: every `pmin_*` table — admin select; service_role full. No anon grants.
-
-## What I'll do right now (auto-approval flow)
-
-1. Open the Wave X1 migration (schema + GRANTs + RLS).
-2. After approval: deploy `pmin-orchestrator`, `pmin-discovery-harvester`, `pmin-keyword-trend-scorer`, schedule cron, build `/admin/pmin` shell with Discovery Health + Keyword Trends panels.
-3. Run one dry-harvest of ≤25 queries against existing seed niches, verify counts, generate Wave X1 PDF + JSON report.
-4. **Stop** before Wave X2 and ask you to approve AI-spend waves (`Approve X2`, `Approve X2+X3+X4+X5`, etc.) — same pattern as PAIP.
-
-Reply **Approve X1** to start, or tell me to adjust scope (e.g., skip discovery and start from product-matching, change budget caps, add/remove sources).
+I will not start Phase 2 until you approve the Phase 1 report.
