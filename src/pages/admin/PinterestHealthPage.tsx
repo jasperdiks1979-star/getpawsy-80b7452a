@@ -484,6 +484,10 @@ function OAuthRecoveryPanel({
         )}
       </div>
 
+      {missing.length > 0 && (
+        <ScopeConsentChecklist missing={missing} />
+      )}
+
       {recovery && (
         <div className="mt-4 border-t pt-3 space-y-2 text-sm">
           <div className="flex items-center gap-2 flex-wrap">
