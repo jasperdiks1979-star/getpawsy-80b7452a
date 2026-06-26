@@ -1,6 +1,6 @@
 {
   "report": "PCIE2 Sole-Publisher Consolidation & 50-Pin E2E",
-  "generated_at": "2026-06-26T02:17:37.990395Z",
+  "generated_at": "2026-06-26T02:17:42.222818Z",
   "pipeline_version": "1.0.0",
   "sole_publisher": "supabase/functions/pcie2-publisher/index.ts",
   "global_kill_switch": "app_config.pinterest_publishing_global_stop",
@@ -209,4 +209,3819 @@
           "evidence": {
             "functional_class": "small_pet_bed",
             "sub_class": "bed",
-            "confidence": 
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Give Your Small Pets a Secure Outdoor Living Space",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/174f2c69-4c67-46b3-ba5d-6226fb33ca9e/ba49a827517ffb83.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "50f9f855-6856-421f-9764-4d106de72416",
+      "product_name": "Foldable Dog Travel Bowl \u2013 3-in-1 Slow Feeder with Suction Cups",
+      "functional_class": "dog_feeder",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/50f9f855-6856-421f-9764-4d106de72416/a75e87a2203bd8b7.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "bdb46a2fe13c5c10",
+      "prompt_hash": "ba51211552b1",
+      "output_hash": "fc4e59815988",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/50f9f855-6856-421f-9764-4d106de72416/a75e87a2203bd8b7.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "2de6f9bd-b9b9-4dd6-8f66-2a2654c418bc",
+      "product_name": "Dog Training Fence \u2013 Wireless Electric Boundary Collar for All Dog Sizes",
+      "functional_class": "dog_bed",
+      "headline": "Set Up a Safe Boundary for Your Dog in Minutes",
+      "hook": "Cozy season has a new MVP.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/2de6f9bd-b9b9-4dd6-8f66-2a2654c418bc/aaadc6ad27d68385.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "abe53930c9a3d8ab",
+      "prompt_hash": "4800e0527c50",
+      "output_hash": "c4f3b9bb592f",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Set Up a Safe Boundary for Your Dog in Minutes",
+            "functional_class": "dog_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Cozy season has a new MVP."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/2de6f9bd-b9b9-4dd6-8f66-2a2654c418bc/aaadc6ad27d68385.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "58da603c-7168-44da-b187-54deca1ba5cf",
+      "product_name": "1Pc Glass Hummingbird Feeder 33OZ Hand Blown Hummingbird Feeder With 5 Flower Feeding Port Perch Ant Moat Hanging Hook S Hook Hemp Rope Cleaning Brush For Garden Decor",
+      "functional_class": "bird_feeder",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/58da603c-7168-44da-b187-54deca1ba5cf/e034eb51711a4407.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "c2240affc6ec35e2",
+      "prompt_hash": "87b05ba6a0c6",
+      "output_hash": "f265272c8440",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "bird_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "bird_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/58da603c-7168-44da-b187-54deca1ba5cf/e034eb51711a4407.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "e265e7fe-af60-4efc-b927-5c4f79fc1bf0",
+      "product_name": "Enclosed Cat Litter Box \u2013 Dual Opening Anti-Splash Odor-Locking for Cats",
+      "functional_class": "cat_litter",
+      "headline": "Anti-Splash Cat Box Keeps Floors Clean and Tidy",
+      "hook": "For homes where the litter situation needs a rethink.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/e265e7fe-af60-4efc-b927-5c4f79fc1bf0/97f71f76413953b2.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "239984133652ec5a",
+      "prompt_hash": "07d384c2e609",
+      "output_hash": "81e9c71951f0",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_litter",
+            "sub_class": "litter",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Anti-Splash Cat Box Keeps Floors Clean and Tidy",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "For homes where the litter situation needs a rethink."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/e265e7fe-af60-4efc-b927-5c4f79fc1bf0/97f71f76413953b2.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "9a4b04f6-22a6-414d-bd39-959b84c2b22e",
+      "product_name": "Large Bird Perch Stand \u2013 Playstand with Toy Hook & Ladders for Parrots",
+      "functional_class": "cat_bed",
+      "headline": "Medium to Large Parrot Playstand: Hours of Activity",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/9a4b04f6-22a6-414d-bd39-959b84c2b22e/6f653434b4bfe23e.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "3d052fc2a579b819",
+      "prompt_hash": "5bd5a91d976d",
+      "output_hash": "204bd86228c5",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Medium to Large Parrot Playstand: Hours of Activity",
+            "functional_class": "cat_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/9a4b04f6-22a6-414d-bd39-959b84c2b22e/6f653434b4bfe23e.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "035a85cb-f867-4f64-94e8-a6c71ab16b18",
+      "product_name": "GetPawsy Cat Tree Tower \u2013 Indoor Hammock & Sisal Scratching Posts",
+      "functional_class": "cat_scratcher",
+      "headline": null,
+      "hook": "Tower, scratcher, sculpture. All three.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/035a85cb-f867-4f64-94e8-a6c71ab16b18/8d1a1130eb1a83f9.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "1bc95ab4710afab2",
+      "prompt_hash": "151596a3c4a6",
+      "output_hash": "5cb7ff5a8668",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_scratcher",
+            "sub_class": "scratcher",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_scratcher"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Tower, scratcher, sculpture. All three."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/035a85cb-f867-4f64-94e8-a6c71ab16b18/8d1a1130eb1a83f9.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "f72fc96d-2bcc-4f44-957e-8edd454f1517",
+      "product_name": "Dog Hip & Joint Supplement \u2013 Glucosamine Chondroitin MSM Chews",
+      "functional_class": "dog_toy",
+      "headline": "Daily dog chews for improved joint flexibility.",
+      "hook": "The detail most chew toys leave out.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/f72fc96d-2bcc-4f44-957e-8edd454f1517/671a58eb12e1dc29.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "92da261ad1815c09",
+      "prompt_hash": "430e96478c76",
+      "output_hash": "e15c44f36053",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Daily dog chews for improved joint flexibility.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "The detail most chew toys leave out."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/f72fc96d-2bcc-4f44-957e-8edd454f1517/671a58eb12e1dc29.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "d20bbcc2-007b-486d-89c3-635e0ce7cda8",
+      "product_name": "Dog Training Collar \u2013 Dual Remote Control for Two Dogs",
+      "functional_class": "dog_harness",
+      "headline": null,
+      "hook": "Calmer walks start with the right harness.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d20bbcc2-007b-486d-89c3-635e0ce7cda8/4bc9e88699c30727.png",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "ac9691b4a6aad554",
+      "prompt_hash": "4f9408ce05b9",
+      "output_hash": "037f65c01e2d",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_harness",
+            "sub_class": "harness",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_harness"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Calmer walks start with the right harness."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d20bbcc2-007b-486d-89c3-635e0ce7cda8/4bc9e88699c30727.png"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "6935ffd5-a4af-4abf-b733-a858a77339a5",
+      "product_name": " 31\" Hamster Cage, Gerbil Cage with Glass Basin for Small Hamsters, Black",
+      "functional_class": "cat_feeder",
+      "headline": "Steel and glass hamster cage for lasting pet comfort.",
+      "hook": "Sleep through the night while the fountain runs.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/6935ffd5-a4af-4abf-b733-a858a77339a5/72a55b09ac958b48.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "3d9d7af99fa9f68f",
+      "prompt_hash": "3f01f10a6032",
+      "output_hash": "68cc6170feb3",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Steel and glass hamster cage for lasting pet comfort.",
+            "functional_class": "cat_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Sleep through the night while the fountain runs."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/6935ffd5-a4af-4abf-b733-a858a77339a5/72a55b09ac958b48.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "0381585e-8b6b-48a8-b541-c7298f99b0c9",
+      "product_name": "GetPawsy Expandable Pet Carrier Backpack \u2013 Breathable Travel Bag for Small Dogs & Cats",
+      "functional_class": "dog_carrier",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://getpawsy.pet/images/products/0381585e-8b6b-48a8-b541-c7298f99b0c9.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "dbf544d544ab703b",
+      "prompt_hash": "fc69cee87204",
+      "output_hash": "475e4d5e9980",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_carrier",
+            "sub_class": "carrier",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_carrier"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://getpawsy.pet/images/products/0381585e-8b6b-48a8-b541-c7298f99b0c9.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "7e163cf4-5097-44d2-82de-f6ce8475d4eb",
+      "product_name": "Outdoor Rabbit Hutch \u2013 Bunny Enclosure with Openable, Waterproof Roof",
+      "functional_class": "small_pet_other",
+      "headline": "Well-Built Rabbit Hutch with Easy Roof Access",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/7e163cf4-5097-44d2-82de-f6ce8475d4eb/9dac0d4dcaef0997.jpg",
+      "ok": false,
+      "rejected": "wrong_category",
+      "pipeline_id": "9f1d9d9e6bd2d63c",
+      "prompt_hash": "4df864514bd8",
+      "output_hash": "74f19c5de6bc",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "failed",
+          "reject": "wrong_category",
+          "evidence": {
+            "confidence": "0.6"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Well-Built Rabbit Hutch with Easy Roof Access",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/7e163cf4-5097-44d2-82de-f6ce8475d4eb/9dac0d4dcaef0997.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "wrong_category"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "3019dc01-9281-4d77-9383-af6453b93895",
+      "product_name": "Cat Playpen Enclosure \u2013 3-Tier Indoor with Hammock & Toy Ball",
+      "functional_class": "cat_toy",
+      "headline": null,
+      "hook": "More play. Less mess. Same energetic kitten.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/3019dc01-9281-4d77-9383-af6453b93895/b92bd83d49cc8f0e.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "167020c369d61e5e",
+      "prompt_hash": "c121cda8e253",
+      "output_hash": "00dea24e7b0c",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_toy"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "More play. Less mess. Same energetic kitten."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/3019dc01-9281-4d77-9383-af6453b93895/b92bd83d49cc8f0e.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "42eddd95-6d8f-438c-a8ff-c1b320ccdd76",
+      "product_name": "Dog Paw Balm \u2013 Moisturizing Paw Pad Protector for Dry & Cracked Paws",
+      "functional_class": "dog_grooming",
+      "headline": "Relieve Your Dog's Paw Pad Dryness",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/42eddd95-6d8f-438c-a8ff-c1b320ccdd76/c051cfed15e8a61f.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "0689dbd8200f5822",
+      "prompt_hash": "726dd393765e",
+      "output_hash": "587f54bc95e7",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_grooming",
+            "sub_class": "grooming",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Relieve Your Dog's Paw Pad Dryness",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/42eddd95-6d8f-438c-a8ff-c1b320ccdd76/c051cfed15e8a61f.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "1a38a935-637a-4a1f-8084-7e944ff4d298",
+      "product_name": "Hamster Cage \u2013 Small Animal Habitat with Food Dish, Water Bottle & Ramp",
+      "functional_class": "small_pet_feeder",
+      "headline": "Upgrade your hamster's living with a durable wire cage.",
+      "hook": "Mornings got 10 minutes shorter.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/1a38a935-637a-4a1f-8084-7e944ff4d298/109c4d8f1bb73f21.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "aef6c20e30580088",
+      "prompt_hash": "d6b282544fa4",
+      "output_hash": "fffd09f981cf",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "small_pet_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Upgrade your hamster's living with a durable wire cage.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Mornings got 10 minutes shorter."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/1a38a935-637a-4a1f-8084-7e944ff4d298/109c4d8f1bb73f21.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "530a4583-ce42-49d7-8d56-64aa0914256f",
+      "product_name": "Waterproof Dog Car Seat Cover \u2013 Non-Slip Hammock for Back Seat",
+      "functional_class": "dog_other",
+      "headline": "Travel Confidently: Dog Car Seat Cover Prevents Interior Damage",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/530a4583-ce42-49d7-8d56-64aa0914256f/0130140a496f20cb.png",
+      "ok": false,
+      "rejected": "wrong_category",
+      "pipeline_id": "2b8eeac51eeeb6d2",
+      "prompt_hash": "51839ce17c50",
+      "output_hash": "70f893d33db7",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "failed",
+          "reject": "wrong_category",
+          "evidence": {
+            "confidence": "0.6"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Travel Confidently: Dog Car Seat Cover Prevents Interior Damage",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/530a4583-ce42-49d7-8d56-64aa0914256f/0130140a496f20cb.png"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "wrong_category"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "3a9792b2-5a43-4068-81a2-8ce2f4cad9f1",
+      "product_name": "Reptile Terrarium Habitat \u2013 Turtle Kit with Basking Platform & Filter",
+      "functional_class": "fish_tank_gear",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/3a9792b2-5a43-4068-81a2-8ce2f4cad9f1/cb66605117b02cb9.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "c53387f5cc950991",
+      "prompt_hash": "aa203ac99758",
+      "output_hash": "4c7be77a4095",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "fish_tank_gear",
+            "sub_class": "tank_gear",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "fish_tank_gear"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/3a9792b2-5a43-4068-81a2-8ce2f4cad9f1/cb66605117b02cb9.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "ec39a6e9-cdc2-4300-ab29-211b81c83eb9",
+      "product_name": " Wooden Chicken Coop with Nesting Box, Pull-Out Tray, Waterproof Roof, 39\" Chicken House for 4-6 Chickens, Rabbits",
+      "functional_class": "bird_other",
+      "headline": "Durable Outdoor Shelter for Your Flock's Wellbeing.",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ec39a6e9-cdc2-4300-ab29-211b81c83eb9/e0e0dbed064480bc.jpg",
+      "ok": false,
+      "rejected": "wrong_category",
+      "pipeline_id": "0014ad5d972236a2",
+      "prompt_hash": "ce5e2f3cc07b",
+      "output_hash": "d4888f7bd661",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "failed",
+          "reject": "wrong_category",
+          "evidence": {
+            "confidence": "0.6"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Durable Outdoor Shelter for Your Flock's Wellbeing.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ec39a6e9-cdc2-4300-ab29-211b81c83eb9/e0e0dbed064480bc.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "wrong_category"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "e6e50b2c-6c42-4764-bba4-944bb0a086db",
+      "product_name": "5-Tier Hamster Habitat \u2013 Enclosure Cage with Tubes, Wheel & Accessories",
+      "functional_class": "small_pet_bed",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/e6e50b2c-6c42-4764-bba4-944bb0a086db/1c302497375902b8.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "8a5987f4f98d097f",
+      "prompt_hash": "790b5cb182c6",
+      "output_hash": "7392ab7e9761",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "small_pet_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "small_pet_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/e6e50b2c-6c42-4764-bba4-944bb0a086db/1c302497375902b8.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "a2892815-ba6a-4692-bf57-5d9435f42959",
+      "product_name": "Elevated Pet Bowl \u2013 Non-Slip Food & Water Dish for Cats & Dogs",
+      "functional_class": "dog_feeder",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/a2892815-ba6a-4692-bf57-5d9435f42959/b998bc66295a5358.png",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "ffeb4a7897d9ebb1",
+      "prompt_hash": "00c308d04f65",
+      "output_hash": "dbff00d4f3b3",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/a2892815-ba6a-4692-bf57-5d9435f42959/b998bc66295a5358.png"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "d3898f50-8438-4531-bcb2-130bddbcd3be",
+      "product_name": "Cat Bed \u2013 Fluffy Plush Round Faux Fur Anti-Slip Bed for Cats",
+      "functional_class": "dog_bed",
+      "headline": null,
+      "hook": "Cozy season has a new MVP.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d3898f50-8438-4531-bcb2-130bddbcd3be/15f4e6b400d506b1.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "283fa2bafbc306d2",
+      "prompt_hash": "a5fbff349e69",
+      "output_hash": "20f242872e25",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Cozy season has a new MVP."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d3898f50-8438-4531-bcb2-130bddbcd3be/15f4e6b400d506b1.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "7812b5c6-fbc6-4d6a-a277-a6037fab255b",
+      "product_name": " 2 in 1 Stainless Steel Cat Litter Box with Removable Lid, Scoop, Filter Bags, for Small to Large Cats, White",
+      "functional_class": "cat_litter",
+      "headline": null,
+      "hook": "For homes where the litter situation needs a rethink.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/7812b5c6-fbc6-4d6a-a277-a6037fab255b/3570539fff07439f.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "70d6920a6092db95",
+      "prompt_hash": "d8841cab7252",
+      "output_hash": "689b511f0758",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_litter",
+            "sub_class": "litter",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_litter"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "For homes where the litter situation needs a rethink."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/7812b5c6-fbc6-4d6a-a277-a6037fab255b/3570539fff07439f.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "0e10cb66-4d35-4139-bee4-33af881b96cc",
+      "product_name": "Cat Litter Box Enclosure Wooden Litter Box Furniture Hidden 2 Rooms Black",
+      "functional_class": "cat_bed",
+      "headline": "Declutter Your Home With Elegant Cat Litter Box Furniture",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/0e10cb66-4d35-4139-bee4-33af881b96cc/d811c42de84a3006.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "19e8ae98a9d4a2ff",
+      "prompt_hash": "b124ed0a3354",
+      "output_hash": "c26fa678cefb",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Declutter Your Home With Elegant Cat Litter Box Furniture",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/0e10cb66-4d35-4139-bee4-33af881b96cc/d811c42de84a3006.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "1a1302e7-939f-4c94-96b7-d4e0c9d34a37",
+      "product_name": "GetPawsy Hidden Cat Litter Box Enclosure \u2013 Furniture with Scratching Board",
+      "functional_class": "cat_scratcher",
+      "headline": null,
+      "hook": "Tower, scratcher, sculpture. All three.",
+      "image_url": "https://getpawsy.pet/images/products/1a1302e7-939f-4c94-96b7-d4e0c9d34a37.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "a8237832edfab558",
+      "prompt_hash": "f11c89735c53",
+      "output_hash": "c861e8e32d49",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_scratcher",
+            "sub_class": "scratcher",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_scratcher"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Tower, scratcher, sculpture. All three."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://getpawsy.pet/images/products/1a1302e7-939f-4c94-96b7-d4e0c9d34a37.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "6e601644-df67-466d-8352-447bfe3458b6",
+      "product_name": "Durable Dog Chew Toy \u2013 Natural Rubber Horseshoe for Aggressive Chewers",
+      "functional_class": "dog_toy",
+      "headline": "Healthy Teeth and Gums With This Chew Toy",
+      "hook": "The detail most chew toys leave out.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/6e601644-df67-466d-8352-447bfe3458b6/7a8554da4d32b2fb.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "18d0e991034ff581",
+      "prompt_hash": "68f2c9397b84",
+      "output_hash": "f8e2c96cfdf8",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Healthy Teeth and Gums With This Chew Toy",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "The detail most chew toys leave out."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/6e601644-df67-466d-8352-447bfe3458b6/7a8554da4d32b2fb.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "67a410ef-a3aa-4c2d-ba7f-8b264c3f5f6d",
+      "product_name": "GPS Dog Tracker \u2013 Real-Time Anti-Lost Pet Locator with Geofence & Alarm",
+      "functional_class": "dog_harness",
+      "headline": null,
+      "hook": "Calmer walks start with the right harness.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/67a410ef-a3aa-4c2d-ba7f-8b264c3f5f6d/31c096e84e155b8e.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "dcb0acc04df6f688",
+      "prompt_hash": "e443694cd18c",
+      "output_hash": "da3ca1627296",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_harness",
+            "sub_class": "harness",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_harness"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Calmer walks start with the right harness."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/67a410ef-a3aa-4c2d-ba7f-8b264c3f5f6d/31c096e84e155b8e.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "07ad844f-3a96-4fef-b8cd-8a6309d3bee4",
+      "product_name": "Automatic Cat Water Fountain \u2013 Circulating Filter Pet Drinker for Cats",
+      "functional_class": "cat_feeder",
+      "headline": "Experience Quiet Cat Hydration Technology Today",
+      "hook": "Sleep through the night while the fountain runs.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/07ad844f-3a96-4fef-b8cd-8a6309d3bee4/3d230f6505d47cd3.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "00980a19e1a7754c",
+      "prompt_hash": "4df6bb856b41",
+      "output_hash": "b48f79a00712",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Experience Quiet Cat Hydration Technology Today",
+            "functional_class": "cat_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Sleep through the night while the fountain runs."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/07ad844f-3a96-4fef-b8cd-8a6309d3bee4/3d230f6505d47cd3.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "39bb08f6-dfa6-40ec-8b5a-d929d6270842",
+      "product_name": "Durable Dog Carrier \u2013 Aluminum Travel Transport Case for Dogs",
+      "functional_class": "dog_carrier",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/39bb08f6-dfa6-40ec-8b5a-d929d6270842/7af97cdaf669c637.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "3eec09e26d4b6762",
+      "prompt_hash": "1670f6de2326",
+      "output_hash": "c6ca6c29bf9a",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_carrier",
+            "sub_class": "carrier",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_carrier"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/39bb08f6-dfa6-40ec-8b5a-d929d6270842/7af97cdaf669c637.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "33b63649-7ab4-4076-bdb7-8d301d8bc6bf",
+      "product_name": "Wooden Hamster Cage Habitat 48 In Clear Mice Rodents Small Animals Cage",
+      "functional_class": "small_pet_other",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/33b63649-7ab4-4076-bdb7-8d301d8bc6bf/c132e675c2622ef3.jpg",
+      "ok": false,
+      "rejected": "wrong_category",
+      "pipeline_id": "3a85dfd92c8958df",
+      "prompt_hash": "275735b9e24e",
+      "output_hash": "c14c9b2a6bf2",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "failed",
+          "reject": "wrong_category",
+          "evidence": {
+            "confidence": "0.6"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "small_pet_other"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/33b63649-7ab4-4076-bdb7-8d301d8bc6bf/c132e675c2622ef3.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "wrong_category"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "4cfa9189-9686-4649-b1bf-53fb7ecaa88f",
+      "product_name": "Cat Tree Condo \u2013 4-Level Moon & Star Jute Scratching Tower for Cats",
+      "functional_class": "cat_toy",
+      "headline": null,
+      "hook": "More play. Less mess. Same energetic kitten.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/4cfa9189-9686-4649-b1bf-53fb7ecaa88f/1aec719b0839f9c5.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "bc30e6ffd83553b5",
+      "prompt_hash": "a79f2a95ec5f",
+      "output_hash": "a1e0b0ced9e1",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_toy"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "More play. Less mess. Same energetic kitten."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/4cfa9189-9686-4649-b1bf-53fb7ecaa88f/1aec719b0839f9c5.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "d9710f28-ce34-471b-a418-754d6da688b0",
+      "product_name": " Wooden Dog Agility Seesaw for Training and Exercise, Yellow",
+      "functional_class": "dog_grooming",
+      "headline": "Reliable Wooden Agility Seesaw For Your Active Dog",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d9710f28-ce34-471b-a418-754d6da688b0/b607f548d4ff7b85.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "217d1db156f15b17",
+      "prompt_hash": "7ab621ff1826",
+      "output_hash": "27eb60a20747",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_grooming",
+            "sub_class": "grooming",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Reliable Wooden Agility Seesaw For Your Active Dog",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d9710f28-ce34-471b-a418-754d6da688b0/b607f548d4ff7b85.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "b094add4-4c14-4add-9697-0b85a5b9a8b2",
+      "product_name": "Indoor Rabbit Hutch \u2013 Enclosure with Pull-Out Tray for Rabbits & Guinea Pigs",
+      "functional_class": "small_pet_bed",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b094add4-4c14-4add-9697-0b85a5b9a8b2/826bbce48a89fbfd.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "b821c6550094e18d",
+      "prompt_hash": "bc21b02bb290",
+      "output_hash": "78d6bbf8a815",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "small_pet_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "small_pet_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b094add4-4c14-4add-9697-0b85a5b9a8b2/826bbce48a89fbfd.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "cd0bc2e6-aeb6-42ba-a890-bd2090de44f5",
+      "product_name": " 23\" Wooden Heavy Duty Dog Food Bowls Pet Elevated Feeding Station -White",
+      "functional_class": "dog_feeder",
+      "headline": "Improve Your Dog\u2019s Eating Experience, Reduce Neck Stress",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/cd0bc2e6-aeb6-42ba-a890-bd2090de44f5/24ec445ec1a9d9e4.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "cfef4a2c582b36b4",
+      "prompt_hash": "3bdb2204c9ab",
+      "output_hash": "ffdd4b91559c",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Improve Your Dog\u2019s Eating Experience, Reduce Neck Stress",
+            "functional_class": "dog_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/cd0bc2e6-aeb6-42ba-a890-bd2090de44f5/24ec445ec1a9d9e4.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "a94f47d0-4836-4283-8cab-a2ad96ae455d",
+      "product_name": "PROKEl Shark Shaped Pet Toy, Interactive TwineToy Ball Dog Toy With Suction Cup, Pet Chew ToyFor Dogs & Cats Funny Dogtoys Squeaky Toys Dogtraining Rope Toy",
+      "functional_class": "dog_bed",
+      "headline": "Interactive Dog Toy for Mental and Physical Stimulation",
+      "hook": "Cozy season has a new MVP.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/a94f47d0-4836-4283-8cab-a2ad96ae455d/cb8e26d372338f06.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "ad75f51526d5c8e6",
+      "prompt_hash": "e56000137295",
+      "output_hash": "38f1146706be",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Interactive Dog Toy for Mental and Physical Stimulation",
+            "functional_class": "dog_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Cozy season has a new MVP."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/a94f47d0-4836-4283-8cab-a2ad96ae455d/cb8e26d372338f06.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "501e9150-42e0-42d7-8031-a7225a718558",
+      "product_name": "GetPawsy Enclosed Cat Litter Box \u2013 Extra Large Front Entry with Litter Catching Lid",
+      "functional_class": "cat_litter",
+      "headline": null,
+      "hook": "For homes where the litter situation needs a rethink.",
+      "image_url": "https://getpawsy.pet/images/products/501e9150-42e0-42d7-8031-a7225a718558.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "00f104d97183fcdd",
+      "prompt_hash": "358d9a0e2c2b",
+      "output_hash": "fe652445c6b9",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_litter",
+            "sub_class": "litter",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_litter"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "For homes where the litter situation needs a rethink."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://getpawsy.pet/images/products/501e9150-42e0-42d7-8031-a7225a718558.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "2952e601-5090-4135-98bd-347b44ad59e7",
+      "product_name": " 4 Levels Cat Steps with Scratching Posts for High Bed, Sofa, Gray",
+      "functional_class": "cat_bed",
+      "headline": "Kitten-Friendly Steps for High Beds, Builds Confidence",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/2952e601-5090-4135-98bd-347b44ad59e7/2f756014cfdbb961.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "8b3c5c4d9ed16433",
+      "prompt_hash": "63ad77b93910",
+      "output_hash": "46121e5b492a",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Kitten-Friendly Steps for High Beds, Builds Confidence",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/2952e601-5090-4135-98bd-347b44ad59e7/2f756014cfdbb961.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "b840aed8-3031-42e8-81df-5d2cbb91cecd",
+      "product_name": "Cat Tree Condo \u2013 Multi-Level 33.5-Inch with Sisal Scratch Posts & Anti-Topple Device for Cats",
+      "functional_class": "cat_scratcher",
+      "headline": "Observe Your Cat's Joyful Play and Naps",
+      "hook": "Tower, scratcher, sculpture. All three.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b840aed8-3031-42e8-81df-5d2cbb91cecd/015625fff98ee3e7.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "d9d0811d741fde1c",
+      "prompt_hash": "1634c214544d",
+      "output_hash": "24aefbff14c2",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_scratcher",
+            "sub_class": "scratcher",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Observe Your Cat's Joyful Play and Naps",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Tower, scratcher, sculpture. All three."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b840aed8-3031-42e8-81df-5d2cbb91cecd/015625fff98ee3e7.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "c2a8d28b-d564-40d0-8f6a-c8f0ca72f1fc",
+      "product_name": "Heat-resistant Durable Nylon Tactical Service Dog Harness, Adjustable No-pull Reflective Vest With Dual Handles For Large Dogs",
+      "functional_class": "dog_toy",
+      "headline": "Explore Safely: Reflective Harness for Large Active Dogs",
+      "hook": "The detail most chew toys leave out.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/c2a8d28b-d564-40d0-8f6a-c8f0ca72f1fc/401045ea2fc75f2d.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "c382aa9cc888a66f",
+      "prompt_hash": "7b28b9e6b3b6",
+      "output_hash": "f4cc5be0569f",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Explore Safely: Reflective Harness for Large Active Dogs",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "The detail most chew toys leave out."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/c2a8d28b-d564-40d0-8f6a-c8f0ca72f1fc/401045ea2fc75f2d.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "314fa804-996c-45f1-a073-f268833bbc43",
+      "product_name": "GetPawsy Adjustable Dog Car Safety Seat Belt \u2013 Nylon Travel Leash",
+      "functional_class": "dog_harness",
+      "headline": "Enhance car safety for your dog with this leash.",
+      "hook": "Calmer walks start with the right harness.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/314fa804-996c-45f1-a073-f268833bbc43/7f2f314d1603d075.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "f06ef1a584b00249",
+      "prompt_hash": "d7b93db389f3",
+      "output_hash": "5ca994078e73",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_harness",
+            "sub_class": "harness",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Enhance car safety for your dog with this leash.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Calmer walks start with the right harness."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/314fa804-996c-45f1-a073-f268833bbc43/7f2f314d1603d075.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "b77331a7-9057-4bab-af77-a9324b191655",
+      "product_name": "Cat Tumbler Toy Ball",
+      "functional_class": "cat_feeder",
+      "headline": null,
+      "hook": "Sleep through the night while the fountain runs.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b77331a7-9057-4bab-af77-a9324b191655/959d6a804571af7f.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "7a8b34c5f1cfbba3",
+      "prompt_hash": "0941e4752028",
+      "output_hash": "0279fd0e2ba8",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "cat_feeder"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Sleep through the night while the fountain runs."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b77331a7-9057-4bab-af77-a9324b191655/959d6a804571af7f.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "daf9dbc5-7a31-41ed-8957-3aa317563a72",
+      "product_name": "Pet Carrier Tote Bag \u2013 Animal Shaped Shoulder Bag for Dogs & Cats",
+      "functional_class": "dog_carrier",
+      "headline": "Carry Your Cat or Dog in This Comfortable Animal Tote",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/daf9dbc5-7a31-41ed-8957-3aa317563a72/70bbf801769f31ce.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "77b8719fa1902768",
+      "prompt_hash": "7e18ac5e89f6",
+      "output_hash": "215e50cc519b",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_carrier",
+            "sub_class": "carrier",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Carry Your Cat or Dog in This Comfortable Animal Tote",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/daf9dbc5-7a31-41ed-8957-3aa317563a72/70bbf801769f31ce.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "db3342b2-b864-4db8-ac5f-c1bc022da293",
+      "product_name": "Wooden Hamster Cage Habitat 32 In Clear Mice Rodents Small Animals Cage",
+      "functional_class": "small_pet_other",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/db3342b2-b864-4db8-ac5f-c1bc022da293/3b48c7dc950279ea.jpg",
+      "ok": false,
+      "rejected": "wrong_category",
+      "pipeline_id": "b2b7bda881534bbf",
+      "prompt_hash": "7a346c788814",
+      "output_hash": "40d6ad536ecf",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "failed",
+          "reject": "wrong_category",
+          "evidence": {
+            "confidence": "0.6"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "small_pet_other"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/db3342b2-b864-4db8-ac5f-c1bc022da293/3b48c7dc950279ea.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "wrong_category"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "ba0ea417-9ec1-4f29-9eea-166277f6fd05",
+      "product_name": "1Pc Cat Toys Ball Fast Rolling In Pouch Rechargeable Motion Activated Interactive Cat Toys For Indoor Cats Hide And Seek Mouse Catching Game",
+      "functional_class": "cat_toy",
+      "headline": "Interactive cat toy mimics mouse for hunting fun.",
+      "hook": "More play. Less mess. Same energetic kitten.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ba0ea417-9ec1-4f29-9eea-166277f6fd05/62b3aa38c0b35172.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "11d9273c67274098",
+      "prompt_hash": "2647d6e767a3",
+      "output_hash": "b44a028819b3",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_toy",
+            "sub_class": "toy",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Interactive cat toy mimics mouse for hunting fun.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "More play. Less mess. Same energetic kitten."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ba0ea417-9ec1-4f29-9eea-166277f6fd05/62b3aa38c0b35172.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "c1ed0d36-7c73-4c9c-9e1f-17b770fb0fe1",
+      "product_name": "Cat Steam Brush For Shedding - Steamy Cat Brush For Indoor Cats, Cat Hair Steam Brush For Massage, Spritz Defur Comb For Cats, Pet Steamer For Dogs",
+      "functional_class": "dog_grooming",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/c1ed0d36-7c73-4c9c-9e1f-17b770fb0fe1/8ae79ac5978282d2.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "6cf397901b3e3bee",
+      "prompt_hash": "9ed45b77f866",
+      "output_hash": "45be7e769a2a",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_grooming",
+            "sub_class": "grooming",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_grooming"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/c1ed0d36-7c73-4c9c-9e1f-17b770fb0fe1/8ae79ac5978282d2.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "ac087f82-6120-4205-9468-1e58ac9d812b",
+      "product_name": "3-Tier Wooden Hamster Cage Mice And Rat Cage Small Animals Hutch With Openable Top, Front Door, Shelf, Natural Wood",
+      "functional_class": "small_pet_bed",
+      "headline": null,
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ac087f82-6120-4205-9468-1e58ac9d812b/eb8d7f3c98fef61c.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "23874c1b8345a623",
+      "prompt_hash": "fc2d1df82eb4",
+      "output_hash": "fed953b1bef4",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "small_pet_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "small_pet_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/ac087f82-6120-4205-9468-1e58ac9d812b/eb8d7f3c98fef61c.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "00996613-2cdc-41ae-87a0-6e9248293d75",
+      "product_name": "Elevated Dog Bowl Set \u2013 Dual Dish Feeding Station with Storage for Large Dogs",
+      "functional_class": "dog_feeder",
+      "headline": "Long-Lasting Elevated Dog Bowls for Your Home",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/00996613-2cdc-41ae-87a0-6e9248293d75/09d2d8ad36bd0a96.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "a14d2a1683fdbeeb",
+      "prompt_hash": "999711f85b61",
+      "output_hash": "dc0b6337a9fa",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_feeder",
+            "sub_class": "feeder",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Long-Lasting Elevated Dog Bowls for Your Home",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/00996613-2cdc-41ae-87a0-6e9248293d75/09d2d8ad36bd0a96.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "d5046917-bdb3-49fd-88ac-850e639d283c",
+      "product_name": "Dog Bed Ramp \u2013 Non-Slip Carpet Top Access Platform for Dogs",
+      "functional_class": "dog_bed",
+      "headline": null,
+      "hook": "Cozy season has a new MVP.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d5046917-bdb3-49fd-88ac-850e639d283c/43375ee183b50296.jpg",
+      "ok": false,
+      "rejected": "headline_missing",
+      "pipeline_id": "677f0fdc910f3faf",
+      "prompt_hash": "be649437f4a0",
+      "output_hash": "9df5f8432b76",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "dog_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "headline_missing",
+          "evidence": {
+            "functional_class": "dog_bed"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Cozy season has a new MVP."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d5046917-bdb3-49fd-88ac-850e639d283c/43375ee183b50296.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "headline_missing"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "31e46b70-cf1c-4d5b-99db-3350b12380db",
+      "product_name": "Cat Litter Box Enclosure \u2013 Barn Door Furniture Style with Cat Hole",
+      "functional_class": "cat_litter",
+      "headline": "Give your cat privacy, maintain home aesthetics.",
+      "hook": "For homes where the litter situation needs a rethink.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/31e46b70-cf1c-4d5b-99db-3350b12380db/bb6928a7a9caefe7.jpg",
+      "ok": false,
+      "rejected": "irrelevant_headline",
+      "pipeline_id": "347281c37798f427",
+      "prompt_hash": "ee6657d39314",
+      "output_hash": "fcad6ca6b02e",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_litter",
+            "sub_class": "litter",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "failed",
+          "reject": "irrelevant_headline",
+          "evidence": {
+            "headline": "Give your cat privacy, maintain home aesthetics.",
+            "functional_class": "cat_litter"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "For homes where the litter situation needs a rethink."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/31e46b70-cf1c-4d5b-99db-3350b12380db/bb6928a7a9caefe7.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "earlier_gate_failed",
+            "first": "irrelevant_headline"
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "b149f1fe-f0d4-45be-8c4e-1a2571a00023",
+      "product_name": "Cat Tree Condo \u2013 Multi-Level 33.5-Inch with Sisal Scratch Posts & Anti-Toppling Device for Cats",
+      "functional_class": "cat_bed",
+      "headline": "Essential cat furniture for apartment dwellers.",
+      "hook": "Made for your pet's daily comfort.",
+      "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b149f1fe-f0d4-45be-8c4e-1a2571a00023/a926004ff01d7509.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "1ad17f634b198818",
+      "prompt_hash": "ed17a9173bc8",
+      "output_hash": "4054cc705946",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_bed",
+            "sub_class": "bed",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Essential cat furniture for apartment dwellers.",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Made for your pet's daily comfort."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/b149f1fe-f0d4-45be-8c4e-1a2571a00023/a926004ff01d7509.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    },
+    {
+      "product_id": "11758292-6f06-492c-88a7-0acdeb5e417e",
+      "product_name": "GetPawsy Natural Pear Wood Cat Tree \u2013 Multi-Level Tower with Sisal Scratching Posts",
+      "functional_class": "cat_scratcher",
+      "headline": "Invest in Quality: Natural Pear Wood Cat Tree",
+      "hook": "Tower, scratcher, sculpture. All three.",
+      "image_url": "https://getpawsy.pet/images/products/11758292-6f06-492c-88a7-0acdeb5e417e.jpg",
+      "ok": true,
+      "rejected": null,
+      "pipeline_id": "000310c490690992",
+      "prompt_hash": "64384835e535",
+      "output_hash": "39dafb296235",
+      "trace": [
+        {
+          "module": "classification",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "functional_class": "cat_scratcher",
+            "sub_class": "scratcher",
+            "confidence": "0.9"
+          }
+        },
+        {
+          "module": "headline",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "headline": "Invest in Quality: Natural Pear Wood Cat Tree",
+            "source": "legacy_bank"
+          }
+        },
+        {
+          "module": "hook",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "hook": "Tower, scratcher, sculpture. All three."
+          }
+        },
+        {
+          "module": "creative_brief",
+          "status": "warning",
+          "reject": null,
+          "evidence": {
+            "source": "product_hero_fallback",
+            "image_url": "https://getpawsy.pet/images/products/11758292-6f06-492c-88a7-0acdeb5e417e.jpg"
+          }
+        },
+        {
+          "module": "similarity_gate",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "no_hash_available_dry_run"
+          }
+        },
+        {
+          "module": "quality_gate",
+          "status": "passed",
+          "reject": null,
+          "evidence": {
+            "quality_score": 0.72,
+            "threshold": 0.72
+          }
+        },
+        {
+          "module": "publish",
+          "status": "skipped",
+          "reject": null,
+          "evidence": {
+            "reason": "dry_run",
+            "pcie2_publish_enabled": false,
+            "global_stop": true
+          }
+        }
+      ]
+    }
+  ]
+}
