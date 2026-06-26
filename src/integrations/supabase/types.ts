@@ -18671,12 +18671,17 @@ export type Database = {
       pcie2_publish_queue: {
         Row: {
           board_id: string | null
+          ci_passed_at: string | null
+          ci_score: number | null
+          ci_version: string | null
           classifier_confidence: number | null
           created_at: string
           destination_url: string | null
           headline: string | null
+          headline_fingerprint: string | null
           hook: string | null
           id: string
+          image_fingerprint: string | null
           image_url: string | null
           meta: Json
           pinterest_pin_id: string | null
@@ -18684,11 +18689,14 @@ export type Database = {
           product_id: string
           product_slug: string
           published_at: string | null
+          quality_fingerprint: string | null
           quality_score: number | null
           reject_detail: string | null
           reject_reason:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          rewrite_fingerprint: string | null
+          semantic_fingerprint: string | null
           similarity_score: number | null
           status: string
           trace_id: string
@@ -18696,12 +18704,17 @@ export type Database = {
         }
         Insert: {
           board_id?: string | null
+          ci_passed_at?: string | null
+          ci_score?: number | null
+          ci_version?: string | null
           classifier_confidence?: number | null
           created_at?: string
           destination_url?: string | null
           headline?: string | null
+          headline_fingerprint?: string | null
           hook?: string | null
           id?: string
+          image_fingerprint?: string | null
           image_url?: string | null
           meta?: Json
           pinterest_pin_id?: string | null
@@ -18709,11 +18722,14 @@ export type Database = {
           product_id: string
           product_slug: string
           published_at?: string | null
+          quality_fingerprint?: string | null
           quality_score?: number | null
           reject_detail?: string | null
           reject_reason?:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          rewrite_fingerprint?: string | null
+          semantic_fingerprint?: string | null
           similarity_score?: number | null
           status?: string
           trace_id?: string
@@ -18721,12 +18737,17 @@ export type Database = {
         }
         Update: {
           board_id?: string | null
+          ci_passed_at?: string | null
+          ci_score?: number | null
+          ci_version?: string | null
           classifier_confidence?: number | null
           created_at?: string
           destination_url?: string | null
           headline?: string | null
+          headline_fingerprint?: string | null
           hook?: string | null
           id?: string
+          image_fingerprint?: string | null
           image_url?: string | null
           meta?: Json
           pinterest_pin_id?: string | null
@@ -18734,15 +18755,54 @@ export type Database = {
           product_id?: string
           product_slug?: string
           published_at?: string | null
+          quality_fingerprint?: string | null
           quality_score?: number | null
           reject_detail?: string | null
           reject_reason?:
             | Database["public"]["Enums"]["pcie2_reject_reason"]
             | null
+          rewrite_fingerprint?: string | null
+          semantic_fingerprint?: string | null
           similarity_score?: number | null
           status?: string
           trace_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pcie2_quality_loop_runs: {
+        Row: {
+          drafts_generated: number
+          finished_at: string | null
+          id: string
+          notes: Json
+          rescored: number
+          retired: number
+          rewritten: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          drafts_generated?: number
+          finished_at?: string | null
+          id?: string
+          notes?: Json
+          rescored?: number
+          retired?: number
+          rewritten?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          drafts_generated?: number
+          finished_at?: string | null
+          id?: string
+          notes?: Json
+          rescored?: number
+          retired?: number
+          rewritten?: number
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
