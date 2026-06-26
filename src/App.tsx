@@ -475,6 +475,7 @@ const DeployStatusPage = lazyWithRetry(() => import("./pages/admin/DeployStatusP
 const GuardianDashboardPage = lazyWithRetry(() => import("./pages/admin/GuardianDashboardPage"));
 const PinterestRecoveryDashboard = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryDashboard"));
 const CreativeIntelligenceLayerPage = lazyWithRetry(() => import("./pages/admin/CreativeIntelligenceLayerPage"));
+const EvolutionEnginePage = lazyWithRetry(() => import("./pages/admin/EvolutionEnginePage"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
@@ -2599,6 +2600,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CreativeIntelligenceLayerPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="evolution-engine"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EvolutionEnginePage />
                                 </Suspense>
                               }
                             />
