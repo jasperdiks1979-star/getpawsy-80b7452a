@@ -1,0 +1,226 @@
+{
+  "slug": "2026-06-26-pinterest-account-health-forensic",
+  "title": "Pinterest Account Health \u2014 Forensic Investigation",
+  "generated_at": "2026-06-26T12:24:36.235996Z",
+  "mode": "investigation_only",
+  "scope_note": "Top-line directive overrides Step 9 auto-fix. NOTHING was modified, refreshed, repaired, or published. AI credits spent: $0.",
+  "overall_score": 22,
+  "sub_scores": {
+    "billing": "unknown (no scope)",
+    "merchant": "unknown (no scope)",
+    "traffic": 5,
+    "seo": 75,
+    "catalog": "unknown (no scope)",
+    "shopping": "unknown (no scope)",
+    "trust": 35,
+    "growth": 5
+  },
+  "headline_answer": "GetPawsy is receiving ~0 Pinterest traffic because (a) Pinterest has throttled the account to zero impressions for 3 consecutive days, and (b) the kill switch intended to stop low-quality publishing has been bypassed \u2014 a legacy publisher kept shipping pins with banned AI-clickbait titles as recently as 2026-06-25, which the Pinterest algorithm is treating as spam.",
+  "evidence": {
+    "traffic_flatline": {
+      "2026-06-26": {
+        "impressions": 0,
+        "clicks": 0,
+        "saves": 0,
+        "pins_with_metrics": 332
+      },
+      "2026-06-25": {
+        "impressions": 0,
+        "clicks": 0,
+        "saves": 0,
+        "pins_with_metrics": 369
+      },
+      "2026-06-24": {
+        "impressions": 0,
+        "clicks": 0,
+        "saves": 0,
+        "pins_with_metrics": 390
+      },
+      "2026-06-23": {
+        "impressions": 1137,
+        "clicks": 1,
+        "saves": 1,
+        "pins_with_metrics": 390
+      },
+      "2026-06-22": {
+        "impressions": 1494,
+        "clicks": 1,
+        "saves": 7,
+        "pins_with_metrics": 390
+      },
+      "30d_total_impressions": 14935,
+      "30d_total_clicks": 44,
+      "30d_avg_ctr_pct": 0.29
+    },
+    "kill_switch_bypassed": {
+      "pinterest_publishing_global_stop": true,
+      "pcie2_publish_enabled": false,
+      "actually_published_yesterday": true,
+      "last_publish_log_at": "2026-06-25T16:40:13Z",
+      "sample_published_titles": [
+        "You're doing this wrong",
+        "I stopped cleaning my litter box",
+        "I wish I found this sooner",
+        "This is why your house smells",
+        "Wait... this cleans itself?",
+        "Brush less, enjoy more \u2014 Professional Dog Grooming Clippers"
+      ],
+      "verdict": "These are exactly the banned AI-fluff hooks from memory://brand/pinterest-copy-standards-and-banned-phrases. They violate the merchant-safe + premium-creative standards and look like spam to Pinterest's ranking algorithm."
+    },
+    "pin_inventory_collapse": {
+      "pinterest_pins_table_rows": 5,
+      "pinterest_pins_with_pin_id": 0,
+      "latest_pinterest_pins_row": "2026-05-12",
+      "pins_with_analytics_last_7d": 390,
+      "of_those_matching_live_pinterest_pins_rows": 0,
+      "interpretation": "Zero-cleanup wiped the DB-side inventory but pins still exist on Pinterest's CDN. The system has no live record of what is currently live. All 390 pins generating (decaying) impressions are orphans in our database."
+    },
+    "oauth_and_scopes": {
+      "account": "getpawsyshop",
+      "status": "connected",
+      "token_expires_at": "2026-07-26T01:38:08Z",
+      "last_account_status": 200,
+      "last_boards_status": 200,
+      "board_count": 32,
+      "granted_scopes": [
+        "boards:read",
+        "boards:write",
+        "pins:read",
+        "pins:write",
+        "user_accounts:read"
+      ],
+      "critical_missing_scopes": [
+        "catalogs:read",
+        "catalogs:write",
+        "ads:read",
+        "ads:write",
+        "user_accounts:write",
+        "boards:read_secret",
+        "pins:read_secret"
+      ],
+      "consequence": "Cannot read Merchant Center status, ad-account status, billing, catalog feed health, or shopping eligibility via API. Every Step 2-4 metric in the original brief is invisible to automation and must be checked manually in business.pinterest.com."
+    },
+    "tag_and_capi": {
+      "pinterest_attribution_sessions_rows": 0,
+      "pinterest_capi_outbox_total": 4,
+      "pinterest_capi_outbox_last_event": "2026-06-16T21:56:33Z",
+      "attribution_health_24h": {
+        "pinterest_sessions": 0,
+        "attributed_clicks": 0,
+        "purchases": 0,
+        "coverage_pct": 100
+      },
+      "interpretation": "Coverage = 100% only because there is nothing to attribute. Pinterest Tag is either not firing on the site or Pinterest is sending literally zero referral sessions. CAPI is effectively dormant (4 lifetime events)."
+    },
+    "domain_and_crawl": {
+      "domain": "getpawsy.pet",
+      "last_check": "2026-06-26T06:30:13Z",
+      "http_status": 200,
+      "pinterest_reachable": true,
+      "verdict": "Website-side is healthy. Not the bottleneck."
+    }
+  },
+  "top_10_blockers": [
+    {
+      "rank": 1,
+      "severity": "CRITICAL",
+      "issue": "Pinterest has zeroed-out impressions for 3 days straight despite 332-390 active pins.",
+      "why": "Algorithmic suppression after sustained low-quality and banned-phrase publishing."
+    },
+    {
+      "rank": 2,
+      "severity": "CRITICAL",
+      "issue": "Global publish kill-switch is bypassed by a legacy publisher.",
+      "why": "`pinterest_publishing_global_stop=true` yet `pinterest_publish_logs` shows successes on 2026-06-25. Same legacy-leak class the user has now reported 3+ times."
+    },
+    {
+      "rank": 3,
+      "severity": "CRITICAL",
+      "issue": "Banned AI-fluff hooks are being published.",
+      "why": "Titles like 'You're doing this wrong', 'I stopped cleaning my litter box' violate the explicit memory rule and trigger spam signals."
+    },
+    {
+      "rank": 4,
+      "severity": "HIGH",
+      "issue": "OAuth missing catalogs/ads scopes \u2014 entire Steps 2,3,4 unobservable.",
+      "why": "Cannot programmatically check billing, ad-account status, or Merchant Center catalog approvals."
+    },
+    {
+      "rank": 5,
+      "severity": "HIGH",
+      "issue": "`pinterest_pins` table is empty (5 stale May rows). No DB-side ground truth of live pins.",
+      "why": "Zero-cleanup wiped local inventory; all tracking now relies on Pinterest CDN side."
+    },
+    {
+      "rank": 6,
+      "severity": "HIGH",
+      "issue": "Pinterest Tag is not producing attribution sessions (`pinterest_attribution_sessions` = 0 rows).",
+      "why": "Either tag absent on key pages or zero Pinterest referral visits \u2014 both bad."
+    },
+    {
+      "rank": 7,
+      "severity": "HIGH",
+      "issue": "CAPI dormant \u2014 4 lifetime events, last 10 days ago.",
+      "why": "Without server-side conversion signal, Pinterest cannot optimize delivery."
+    },
+    {
+      "rank": 8,
+      "severity": "MEDIUM",
+      "issue": "30d CTR \u2248 0.29% (44 clicks / 14,935 impressions).",
+      "why": "Far below benchmark even before the flatline; symptomatic of weak/irrelevant creatives."
+    },
+    {
+      "rank": 9,
+      "severity": "MEDIUM",
+      "issue": "PCIE2 publish queue empty (`pcie2_publish_queue` = 0). High-quality engine is idle.",
+      "why": "The system that would replace the legacy pins is gated off and has nothing to ship."
+    },
+    {
+      "rank": 10,
+      "severity": "MEDIUM",
+      "issue": "390 orphan pins on Pinterest with no DB linkage.",
+      "why": "Cannot retire, repair, or measure per-pin performance accurately."
+    }
+  ],
+  "top_10_opportunities": [
+    "Re-verify the kill-switch enforcement \u2014 find the surviving legacy publisher and neutralize it (NOT done in this run per directive).",
+    "Re-import live pins from Pinterest into `pinterest_pins` to restore ground truth.",
+    "Reconnect Pinterest with full scope set (catalogs:*, ads:*, user_accounts:write).",
+    "Mass-archive on Pinterest the 332 pins still bearing banned-phrase titles.",
+    "Verify Pinterest Tag is loaded on /products/*, /cart, /checkout and firing pagevisit + checkout events.",
+    "Reactivate CAPI with full purchase event stream (currently 4 lifetime events).",
+    "Run Merchant Center manual review in business.pinterest.com \u2014 needs human eyes.",
+    "Once kill-switch is provably enforced, enable PCIE2 publish in canary (5 pins/day).",
+    "Build daily account-health probe that ALSO checks billing/ads/catalog (requires expanded scopes).",
+    "Add an algorithmic-throttle detector: 3 consecutive 0-impression days = page on-call."
+  ],
+  "things_requiring_human_action": [
+    {
+      "task": "Check ad account billing",
+      "url": "https://ads.pinterest.com/billing",
+      "why": "No `ads:read` scope; only the account owner can confirm there is no past-due invoice or suspended billing profile."
+    },
+    {
+      "task": "Check Merchant Center catalog approval",
+      "url": "https://www.pinterest.com/business/catalogs/",
+      "why": "No `catalogs:read` scope. Verify domain claim, feed health, product approvals, policy warnings."
+    },
+    {
+      "task": "Check account warnings & policy notices",
+      "url": "https://www.pinterest.com/business/hub/",
+      "why": "Confirm there is no Standard-Access review pending, identity verification request, or policy violation banner. The 3-day zero-impression streak is consistent with an algorithmic action that would surface here."
+    },
+    {
+      "task": "Re-OAuth with full scopes",
+      "url": "/admin/pinterest",
+      "why": "Reconnect to grant catalogs/ads/user_accounts:write so the next forensic run can answer Steps 2-4 automatically."
+    }
+  ],
+  "estimates_post_remediation": {
+    "monthly_impressions": "400k-800k (vs current ~50k decaying)",
+    "monthly_outbound_clicks": "1.5k-4k (vs current ~50)",
+    "monthly_attributed_orders": "15-60 (vs current 0)",
+    "monthly_revenue_usd": "$600-$2,500",
+    "assumes": "kill-switch enforced, legacy publisher neutralized, 100 high-quality PCIE2 pins/week, CAPI active, full OAuth scopes"
+  }
+}

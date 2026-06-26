@@ -1,6 +1,15 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pinterest-account-health-forensic",
+      "title": "Pinterest Account Health \u2014 Forensic Investigation",
+      "date": "2026-06-26",
+      "wave": "Investigation",
+      "status": "CRITICAL",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-account-health-forensic.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-account-health-forensic.json"
+    },
+    {
       "slug": "2026-06-26-pmin-wave-x1-foundation",
       "title": "PMIN Wave X1 \u2014 Pinterest Market Intelligence Network \u00b7 Foundation & Public Discovery",
       "date": "2026-06-26",
