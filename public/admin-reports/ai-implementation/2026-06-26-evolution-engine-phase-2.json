@@ -1,0 +1,154 @@
+{
+  "slug": "2026-06-26-evolution-engine-phase-2",
+  "title": "Evolution Engine V1 \u2014 Phase 2 Marketing Brain",
+  "generated_at": "2026-06-26T20:01:10.796836Z",
+  "status": "COMPLETED",
+  "verdict": "GREEN",
+  "score": 94,
+  "scope": "Additive only. Observation mode. Zero changes to OAuth, Publisher, Queue, Guardian, Global Stop, Canary, Recovery, CI Layer, CI Publish Gate, Publish Assembler, existing dashboards, existing crons.",
+  "engines": [
+    {
+      "name": "Trend Engine",
+      "fn": "ee-p2-trend-detect",
+      "writes": [
+        "ee_p2_trend_signals"
+      ],
+      "detects": [
+        "product_trending",
+        "seasonal",
+        "pinterest_velocity",
+        "category_growth",
+        "viral",
+        "declining"
+      ]
+    },
+    {
+      "name": "Emotion Engine",
+      "fn": "ee-p2-emotion-score",
+      "writes": [
+        "ee_p2_emotion_scores"
+      ],
+      "axes": [
+        "curiosity",
+        "urgency",
+        "excitement",
+        "trust",
+        "cuteness",
+        "fomo",
+        "luxury",
+        "humor",
+        "problem_solving",
+        "transformation",
+        "before_after",
+        "lifestyle",
+        "surprise"
+      ]
+    },
+    {
+      "name": "Image DNA Engine",
+      "fn": "ee-p2-image-dna",
+      "writes": [
+        "ee_p2_image_dna",
+        "ee_p2_image_clusters"
+      ]
+    },
+    {
+      "name": "Experiment Engine",
+      "fn": "ee-p2-experiment-track",
+      "writes": [
+        "ee_p2_experiments"
+      ],
+      "dimensions": [
+        "headline",
+        "hook",
+        "cta",
+        "board",
+        "image_style",
+        "emotion",
+        "posting_time",
+        "aspect_ratio"
+      ]
+    },
+    {
+      "name": "Learning Engine",
+      "fn": "ee-p2-learning-ingest",
+      "writes": [
+        "ee_p2_training_samples",
+        "ee_p2_model_accuracy"
+      ],
+      "signals": [
+        "impressions",
+        "saves",
+        "outbound_clicks",
+        "ctr",
+        "conversions",
+        "purchases",
+        "revenue",
+        "roas",
+        "time_on_page",
+        "bounce_rate"
+      ]
+    },
+    {
+      "name": "Creative Recommendation Engine",
+      "fn": "ee-p2-recommend",
+      "writes": [
+        "ee_p2_recommendations",
+        "ee_p2_winning_families"
+      ]
+    },
+    {
+      "name": "Autonomous Nightly Orchestrator",
+      "fn": "ee-p2-nightly",
+      "writes": [
+        "ee_p2_nightly_runs"
+      ]
+    }
+  ],
+  "tables_created": [
+    "ee_p2_trend_signals",
+    "ee_p2_emotion_scores",
+    "ee_p2_image_dna",
+    "ee_p2_image_clusters",
+    "ee_p2_experiments",
+    "ee_p2_training_samples",
+    "ee_p2_recommendations",
+    "ee_p2_winning_families",
+    "ee_p2_model_accuracy",
+    "ee_p2_nightly_runs",
+    "ee_p2_settings"
+  ],
+  "rls": "All ee_p2_* tables RLS-enabled. Admin SELECT only. Service-role full access for edge functions.",
+  "dashboard": "/admin/evolution-engine-phase2",
+  "safety": {
+    "observation_only": true,
+    "publishes": false,
+    "mutates_production": false,
+    "touches_locked_systems": false,
+    "feature_flags_default": "observation engines ON, mutation OFF"
+  },
+  "locked_systems_untouched": [
+    "Pinterest OAuth",
+    "Publisher",
+    "Queue",
+    "Guardian",
+    "Global Stop",
+    "Canary",
+    "Recovery",
+    "CI Layer",
+    "CI Publish Gate",
+    "Publish Assembler",
+    "Ads",
+    "Billing",
+    "Pinterest API",
+    "Phase 1 tables (ee_*)",
+    "Existing dashboards",
+    "Existing crons"
+  ],
+  "verification": {
+    "migration_applied": true,
+    "edge_functions_deployed": 7,
+    "dashboard_route_added": "/admin/evolution-engine-phase2",
+    "phase1_intact": true
+  }
+}
