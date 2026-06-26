@@ -1,6 +1,17 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-creative-intelligence-layer-v1",
+      "title": "Creative Intelligence Layer v1 — PCIE2 Pre-Publish Gate",
+      "generated_at": "2026-06-26T19:15:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 95,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-creative-intelligence-layer-v1.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-creative-intelligence-layer-v1.json",
+      "summary": "Installed semantic creative scoring + AI rewrite gate. Rescored 100 ready rows: 46 passed (rewritten to clear 95-threshold), 54 rejected. Publisher/queue/OAuth/Guardian untouched. Publishing remains LOCKED."
+    },
+    {
       "slug": "2026-06-26-pcie2-draft-to-queue-recovery",
       "title": "PCIE2 Draft → Publish-Ready Queue Recovery",
       "generated_at": "2026-06-26T18:30:00Z",
