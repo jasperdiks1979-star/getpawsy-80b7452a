@@ -16386,6 +16386,7 @@ export type Database = {
       }
       pcie2_creatives: {
         Row: {
+          ai_confidence: number | null
           animal_breed: string | null
           background: string | null
           board_id: string | null
@@ -16395,25 +16396,38 @@ export type Database = {
           category: string | null
           color_palette: Json | null
           composition: string | null
+          concept: string | null
           created_at: string
           creative_dna: Json
           cta: string | null
+          duplicate_score: number | null
+          embedding: string | null
           embedding_ref: string | null
+          evolution_attempts: number
           font_size: number | null
           headline: string | null
+          headline_id: string | null
           hook: string | null
+          hook_id: string | null
           id: string
           image_hash: string | null
           image_url: string | null
+          layout: string | null
           lighting: string | null
+          model_version: string | null
           negative_prompt: string | null
           perceptual_hash: string | null
           performance: Json
+          pet_pose: string | null
           pinterest_pin_id: string | null
+          pinterest_score: number | null
+          predicted_ctr: number | null
           primary_emotion: string | null
           product_id: string
           product_visibility_score: number | null
           prompt: string | null
+          prompt_version: string | null
+          quality_score: number | null
           retired: boolean
           safe_zone_score: number | null
           scores: Json
@@ -16425,6 +16439,7 @@ export type Database = {
           visual_style: string | null
         }
         Insert: {
+          ai_confidence?: number | null
           animal_breed?: string | null
           background?: string | null
           board_id?: string | null
@@ -16434,25 +16449,38 @@ export type Database = {
           category?: string | null
           color_palette?: Json | null
           composition?: string | null
+          concept?: string | null
           created_at?: string
           creative_dna?: Json
           cta?: string | null
+          duplicate_score?: number | null
+          embedding?: string | null
           embedding_ref?: string | null
+          evolution_attempts?: number
           font_size?: number | null
           headline?: string | null
+          headline_id?: string | null
           hook?: string | null
+          hook_id?: string | null
           id?: string
           image_hash?: string | null
           image_url?: string | null
+          layout?: string | null
           lighting?: string | null
+          model_version?: string | null
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
+          pet_pose?: string | null
           pinterest_pin_id?: string | null
+          pinterest_score?: number | null
+          predicted_ctr?: number | null
           primary_emotion?: string | null
           product_id: string
           product_visibility_score?: number | null
           prompt?: string | null
+          prompt_version?: string | null
+          quality_score?: number | null
           retired?: boolean
           safe_zone_score?: number | null
           scores?: Json
@@ -16464,6 +16492,7 @@ export type Database = {
           visual_style?: string | null
         }
         Update: {
+          ai_confidence?: number | null
           animal_breed?: string | null
           background?: string | null
           board_id?: string | null
@@ -16473,25 +16502,38 @@ export type Database = {
           category?: string | null
           color_palette?: Json | null
           composition?: string | null
+          concept?: string | null
           created_at?: string
           creative_dna?: Json
           cta?: string | null
+          duplicate_score?: number | null
+          embedding?: string | null
           embedding_ref?: string | null
+          evolution_attempts?: number
           font_size?: number | null
           headline?: string | null
+          headline_id?: string | null
           hook?: string | null
+          hook_id?: string | null
           id?: string
           image_hash?: string | null
           image_url?: string | null
+          layout?: string | null
           lighting?: string | null
+          model_version?: string | null
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
+          pet_pose?: string | null
           pinterest_pin_id?: string | null
+          pinterest_score?: number | null
+          predicted_ctr?: number | null
           primary_emotion?: string | null
           product_id?: string
           product_visibility_score?: number | null
           prompt?: string | null
+          prompt_version?: string | null
+          quality_score?: number | null
           retired?: boolean
           safe_zone_score?: number | null
           scores?: Json
@@ -16635,48 +16677,78 @@ export type Database = {
       pcie2_headline_library: {
         Row: {
           created_at: string
+          duplicate_score: number | null
+          embedding: string | null
           emotion: string | null
+          family: string | null
           functional_class: string
           headline: string
           hook_type: string | null
           id: string
           last_used_at: string | null
+          length: number | null
+          model_version: string | null
           ngram_signature: string | null
           performance_score: number | null
+          predicted_ctr: number | null
+          prompt_version: string | null
+          quality_score: number | null
+          reading_grade: number | null
           retired: boolean
           source: string
+          source_category: string | null
           sub_class: string | null
           updated_at: string
           use_count: number
         }
         Insert: {
           created_at?: string
+          duplicate_score?: number | null
+          embedding?: string | null
           emotion?: string | null
+          family?: string | null
           functional_class: string
           headline: string
           hook_type?: string | null
           id?: string
           last_used_at?: string | null
+          length?: number | null
+          model_version?: string | null
           ngram_signature?: string | null
           performance_score?: number | null
+          predicted_ctr?: number | null
+          prompt_version?: string | null
+          quality_score?: number | null
+          reading_grade?: number | null
           retired?: boolean
           source?: string
+          source_category?: string | null
           sub_class?: string | null
           updated_at?: string
           use_count?: number
         }
         Update: {
           created_at?: string
+          duplicate_score?: number | null
+          embedding?: string | null
           emotion?: string | null
+          family?: string | null
           functional_class?: string
           headline?: string
           hook_type?: string | null
           id?: string
           last_used_at?: string | null
+          length?: number | null
+          model_version?: string | null
           ngram_signature?: string | null
           performance_score?: number | null
+          predicted_ctr?: number | null
+          prompt_version?: string | null
+          quality_score?: number | null
+          reading_grade?: number | null
           retired?: boolean
           source?: string
+          source_category?: string | null
           sub_class?: string | null
           updated_at?: string
           use_count?: number
@@ -16685,38 +16757,86 @@ export type Database = {
       }
       pcie2_hook_library: {
         Row: {
+          audience: string | null
+          board_id: string | null
+          category: string | null
+          country: string | null
           created_at: string
+          duplicate_score: number | null
+          embedding: string | null
+          engagement_prediction: number | null
           functional_class: string
           hook: string
           hook_type: string | null
           id: string
+          intent: string | null
+          language: string | null
+          model_version: string | null
+          novelty_score: number | null
           performance_score: number | null
+          predicted_ctr: number | null
+          product_id: string | null
+          prompt_version: string | null
+          quality_score: number | null
           rationale: string | null
           retired: boolean
+          season: string | null
           updated_at: string
           use_count: number
         }
         Insert: {
+          audience?: string | null
+          board_id?: string | null
+          category?: string | null
+          country?: string | null
           created_at?: string
+          duplicate_score?: number | null
+          embedding?: string | null
+          engagement_prediction?: number | null
           functional_class: string
           hook: string
           hook_type?: string | null
           id?: string
+          intent?: string | null
+          language?: string | null
+          model_version?: string | null
+          novelty_score?: number | null
           performance_score?: number | null
+          predicted_ctr?: number | null
+          product_id?: string | null
+          prompt_version?: string | null
+          quality_score?: number | null
           rationale?: string | null
           retired?: boolean
+          season?: string | null
           updated_at?: string
           use_count?: number
         }
         Update: {
+          audience?: string | null
+          board_id?: string | null
+          category?: string | null
+          country?: string | null
           created_at?: string
+          duplicate_score?: number | null
+          embedding?: string | null
+          engagement_prediction?: number | null
           functional_class?: string
           hook?: string
           hook_type?: string | null
           id?: string
+          intent?: string | null
+          language?: string | null
+          model_version?: string | null
+          novelty_score?: number | null
           performance_score?: number | null
+          predicted_ctr?: number | null
+          product_id?: string | null
+          prompt_version?: string | null
+          quality_score?: number | null
           rationale?: string | null
           retired?: boolean
+          season?: string | null
           updated_at?: string
           use_count?: number
         }
@@ -16854,6 +16974,36 @@ export type Database = {
           queue_counts?: Json | null
           reason?: string | null
           taken_at?: string
+        }
+        Relationships: []
+      }
+      pcie2_model_versions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          model: string
+          module: string
+          prompt_version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          model: string
+          module: string
+          prompt_version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          model?: string
+          module?: string
+          prompt_version?: string
         }
         Relationships: []
       }
