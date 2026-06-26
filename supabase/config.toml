@@ -1,5 +1,8 @@
 project_id = "nojvgfbcjgipjxpfatmm"
 
+[functions.zero-cleanup-sync]
+verify_jwt = false
+
 [functions.render-worker-deploy]
 verify_jwt = false
 
