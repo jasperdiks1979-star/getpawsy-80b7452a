@@ -3,6 +3,7 @@
 // RENDER_WORKER_SECRET internal bypass. Runs every 5 min via pg_cron.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
+import { checkPcie2Lock, pcie2LockJsonResponse } from "../_shared/pcie2-publish-lock.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +46,13 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({} as any));
     const limit = Math.max(1, Math.min(10, Number(body?.limit ?? 3)));
+
+    // Honor PCIE2 global stop — video queue drainer must respect the same
+    // kill switch as every other legacy publisher. Without this check the
+    // drainer became the bypass that re-published banned AI clickbait pins
+    // on 2026-06-25 (see admin-reports/2026-06-26 forensic).
+    const lock = await checkPcie2Lock(sb, "pinterest-video-queue-drain");
+    if (lock.blocked) return pcie2LockJsonResponse(corsHeaders, lock);
 
     if (await isVideoAutoPublishDisabled(sb)) {
       return json({ ok: true, traceId: trace_id, picked: 0, uploaded: 0, published: 0, failed: 0, urls: [], kill_switch_active: true });
