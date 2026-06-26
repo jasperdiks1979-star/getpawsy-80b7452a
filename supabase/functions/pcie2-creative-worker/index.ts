@@ -163,24 +163,24 @@ async function processJob(job: any, report: any) {
 }
 
 async function chainNextWorker() {
-  // Fire-and-forget self-invocation. No await on body.
-  try {
-    await fetch(`${SUPA_URL}/functions/v1/pcie2-creative-worker`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
-      body: JSON.stringify({ chained: true }),
-    }).catch(() => {});
-  } catch { /* ignore */ }
+  // Background self-invocation that survives handler return (edge runtime).
+  const p = fetch(`${SUPA_URL}/functions/v1/pcie2-creative-worker`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
+    body: JSON.stringify({ chained: true }),
+  }).catch(() => {});
+  // @ts-ignore - EdgeRuntime is provided by Supabase Edge Runtime
+  try { (globalThis as any).EdgeRuntime?.waitUntil?.(p); } catch { /* ignore */ }
 }
 
 async function triggerStep5() {
-  try {
-    await fetch(`${SUPA_URL}/functions/v1/pcie2-step5-validate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
-      body: JSON.stringify({ triggered_by: "worker_target_reached" }),
-    }).catch(() => {});
-  } catch { /* ignore */ }
+  const p = fetch(`${SUPA_URL}/functions/v1/pcie2-step5-validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
+    body: JSON.stringify({ triggered_by: "worker_target_reached" }),
+  }).catch(() => {});
+  // @ts-ignore
+  try { (globalThis as any).EdgeRuntime?.waitUntil?.(p); } catch { /* ignore */ }
 }
 
 Deno.serve(async (req) => {
