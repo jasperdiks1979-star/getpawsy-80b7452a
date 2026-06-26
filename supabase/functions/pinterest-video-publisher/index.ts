@@ -9,6 +9,7 @@ import { createPvLogger } from "../_shared/pinterest-video-fn-logger.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
 import { stampUtmsOnLink, patchPinLink } from "../_shared/pinterest-link-stamp.ts";
 import { resolveWarehouse, fallbackCopyTags } from "../_shared/warehouse-availability.ts";
+import { checkPcie2Lock } from "../_shared/pcie2-publish-lock.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -329,6 +330,14 @@ async function isVideoAutoPublishDisabled(sb: any): Promise<boolean> {
 }
 
 async function assertPublishAllowed(sb: any, row: any, queue_id: string, trace_id: string): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
+  // Honor the global PCIE2 kill switch. Without this, the video publisher
+  // becomes a legacy bypass and can publish banned creatives even while
+  // `pinterest_publishing_global_stop = true`.
+  const lock = await checkPcie2Lock(sb, "pinterest-video-publisher");
+  if (lock.blocked) {
+    await logStage(sb, queue_id, "publish_blocked_global_stop", "fail", { engine_version: row?.engine_version, code: lock.code }, trace_id);
+    return { ok: false, code: lock.code, message: lock.message };
+  }
   if (await isVideoAutoPublishDisabled(sb)) {
     await logStage(sb, queue_id, "publish_blocked_kill_switch", "fail", { engine_version: row?.engine_version }, trace_id);
     return { ok: false, code: "AUTO_PUBLISH_DISABLED", message: "PINTEREST_VIDEO_AUTO_PUBLISH kill switch active" };

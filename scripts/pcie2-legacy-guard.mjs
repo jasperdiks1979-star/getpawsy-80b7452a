@@ -14,6 +14,8 @@ const ALLOWED = new Set([
 const FORBIDDEN_PATTERNS = [
   /fetch\(\s*[`'"][^`'"]*\/v5\/pins[^`'"]*[`'"][\s\S]*?method:\s*['"]POST['"]/m,
   /fetch\(\s*[`'"][^`'"]*\/v5\/pins[^`'"]*[`'"][\s\S]*?method:\s*['"]PATCH['"]/m,
+  // Video pin uploads use /v5/media — same blast radius as /v5/pins for new content.
+  /fetch\(\s*[`'"][^`'"]*\/v5\/media[^`'"]*[`'"][\s\S]*?method:\s*['"]POST['"]/m,
 ];
 
 let files;
