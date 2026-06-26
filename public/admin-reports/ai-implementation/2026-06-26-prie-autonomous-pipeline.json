@@ -1,0 +1,50 @@
+{
+  "report": "PRIE Autonomous Pipeline",
+  "date": "2026-06-26",
+  "status": "deployed",
+  "summary": "Pinterest Revenue Intelligence Engine converted to fully autonomous: no manual bootstrap. Orchestrator runs all refresh steps on cron, DB triggers, and page open.",
+  "components": {
+    "edge_function": "prie-auto-orchestrator",
+    "steps_run_in_order": [
+      "pinterest-analytics-sync",
+      "sync-ga4-daily",
+      "pinterest-revenue-brain",
+      "prie-brain-sync",
+      "prie-revenue-predictor"
+    ],
+    "triggers": {
+      "cron": "*/15 * * * * (job prie-auto-orchestrator-15min)",
+      "db_triggers": [
+        "pinterest_pins INSERT/UPDATE -> prie_kick('pinterest_pins_change')",
+        "products INSERT -> prie_kick('products_change')"
+      ],
+      "ui": "PinterestRevenueAiPage auto-invokes if last snapshot >30min; refreshes view every 5min",
+      "debounce": "5 minutes via prie_settings.auto_last_run_at"
+    },
+    "audit": "Every run logged to prie_timeline_events (kind=auto_orchestrator)",
+    "data_sources": ["pinterest_pins","pinterest_funnel_events","pinterest_pdp_conversion_stats","orders","ga4_daily_snapshots","pinterest_revenue_*","products"],
+    "no_fabrication": true
+  },
+  "dry_run_result": {
+    "trigger": "deploy",
+    "ok": true,
+    "total_ms": 117303,
+    "steps": [
+      {"name":"pinterest-analytics-sync","ok":true,"ms":111025},
+      {"name":"sync-ga4-daily","ok":true,"ms":1434},
+      {"name":"pinterest-revenue-brain","ok":true,"ms":1803},
+      {"name":"prie-brain-sync","ok":true,"ms":1582},
+      {"name":"prie-revenue-predictor","ok":true,"ms":1459}
+    ]
+  },
+  "removed_manual_steps": [
+    "Run Brain Sync button (replaced by 'Force refresh now')",
+    "Recompute Predictions button (now automatic)"
+  ],
+  "regression": {
+    "tsgo": "pending automated harness",
+    "endpoint_smoke": "200 OK on prie-auto-orchestrator (all 5 sub-steps green)",
+    "ui_routes_intact": true
+  },
+  "next": "Wave 2 (Pin Quality + Creative Evolution + Self-Learning) auto-continues"
+}
