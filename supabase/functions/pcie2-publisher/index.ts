@@ -237,13 +237,25 @@ async function runOne(sb: any, productId: string, opts: { forceLive?: boolean })
   const t7 = performance.now();
   const globalStop = await appConfig(sb, "pinterest_publishing_global_stop");
   const pcie2On = await appConfig(sb, "pcie2_publish_enabled");
-  const liveAllowed = !!opts.forceLive && pcie2On === true && globalStop !== true && !rejected;
+  // Guardian Production Sentinel gate — must be GREEN before any live publish.
+  let guardianAllow = false;
+  let guardianReason = "not_checked";
+  if (opts.forceLive && !rejected) {
+    try {
+      const { data: gate } = await sb.functions.invoke("guardian-publish-gate", { body: { pipeline: "pcie2-publisher", context: { product_id: productId, trace_id } } });
+      guardianAllow = !!(gate as any)?.allow;
+      guardianReason = (gate as any)?.reason ?? "no_reason";
+    } catch (e) {
+      guardianAllow = false; guardianReason = `gate_invoke_failed:${String(e).slice(0,120)}`;
+    }
+  }
+  const liveAllowed = !!opts.forceLive && pcie2On === true && globalStop !== true && !rejected && guardianAllow;
   if (rejected) {
     tick("publish", "skipped", { reason: "earlier_gate_failed", first_rejection: rejected }, undefined, Math.round(performance.now()-t7));
   } else if (!liveAllowed) {
-    tick("publish", "skipped", { reason: "dry_run", pcie2_publish_enabled: pcie2On, global_stop: globalStop }, undefined, Math.round(performance.now()-t7));
+    tick("publish", "skipped", { reason: "dry_run_or_gate_blocked", pcie2_publish_enabled: pcie2On, global_stop: globalStop, guardian_allow: guardianAllow, guardian_reason: guardianReason }, undefined, Math.round(performance.now()-t7));
   } else {
-    tick("publish", "passed", { reason: "would_post_to_pinterest_v5", note: "live POST stub; live mode locked until E2E verification" }, undefined, Math.round(performance.now()-t7));
+    tick("publish", "passed", { reason: "would_post_to_pinterest_v5", guardian_reason: guardianReason, note: "live POST stub; live mode locked until E2E verification" }, undefined, Math.round(performance.now()-t7));
   }
 
   // Persist traces
