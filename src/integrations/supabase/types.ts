@@ -16788,6 +16788,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_legacy_inventory: {
+        Row: {
+          category: string
+          detail: Json
+          id: string
+          name: string
+          neutralized: boolean
+          neutralized_via: string | null
+          recorded_at: string
+        }
+        Insert: {
+          category: string
+          detail?: Json
+          id?: string
+          name: string
+          neutralized?: boolean
+          neutralized_via?: string | null
+          recorded_at?: string
+        }
+        Update: {
+          category?: string
+          detail?: Json
+          id?: string
+          name?: string
+          neutralized?: boolean
+          neutralized_via?: string | null
+          recorded_at?: string
+        }
+        Relationships: []
+      }
       pcie2_pin_performance: {
         Row: {
           board_id: string | null
@@ -16880,6 +16910,72 @@ export type Database = {
           },
         ]
       }
+      pcie2_pipeline_trace: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          evidence: Json
+          id: string
+          input_hash: string | null
+          module: string
+          module_version: string
+          output_hash: string | null
+          pin_queue_id: string | null
+          pinterest_pin_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          reason: string | null
+          reject_reason:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          status: Database["public"]["Enums"]["pcie2_module_status"]
+          step_index: number
+          trace_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          evidence?: Json
+          id?: string
+          input_hash?: string | null
+          module: string
+          module_version: string
+          output_hash?: string | null
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          reject_reason?:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          status: Database["public"]["Enums"]["pcie2_module_status"]
+          step_index?: number
+          trace_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          evidence?: Json
+          id?: string
+          input_hash?: string | null
+          module?: string
+          module_version?: string
+          output_hash?: string | null
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          reason?: string | null
+          reject_reason?:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          status?: Database["public"]["Enums"]["pcie2_module_status"]
+          step_index?: number
+          trace_id?: string
+        }
+        Relationships: []
+      }
       pcie2_product_understanding: {
         Row: {
           audience: Json
@@ -16928,6 +17024,84 @@ export type Database = {
           sub_class?: string | null
           updated_at?: string
           use_cases?: Json
+        }
+        Relationships: []
+      }
+      pcie2_publish_queue: {
+        Row: {
+          board_id: string | null
+          classifier_confidence: number | null
+          created_at: string
+          destination_url: string | null
+          headline: string | null
+          hook: string | null
+          id: string
+          image_url: string | null
+          meta: Json
+          pinterest_pin_id: string | null
+          product_class: string | null
+          product_id: string
+          product_slug: string
+          published_at: string | null
+          quality_score: number | null
+          reject_detail: string | null
+          reject_reason:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          similarity_score: number | null
+          status: string
+          trace_id: string
+          updated_at: string
+        }
+        Insert: {
+          board_id?: string | null
+          classifier_confidence?: number | null
+          created_at?: string
+          destination_url?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          pinterest_pin_id?: string | null
+          product_class?: string | null
+          product_id: string
+          product_slug: string
+          published_at?: string | null
+          quality_score?: number | null
+          reject_detail?: string | null
+          reject_reason?:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          similarity_score?: number | null
+          status?: string
+          trace_id?: string
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string | null
+          classifier_confidence?: number | null
+          created_at?: string
+          destination_url?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_url?: string | null
+          meta?: Json
+          pinterest_pin_id?: string | null
+          product_class?: string | null
+          product_id?: string
+          product_slug?: string
+          published_at?: string | null
+          quality_score?: number | null
+          reject_detail?: string | null
+          reject_reason?:
+            | Database["public"]["Enums"]["pcie2_reject_reason"]
+            | null
+          similarity_score?: number | null
+          status?: string
+          trace_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -34846,6 +35020,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "customer"
+      pcie2_module_status: "pass" | "fail" | "skip" | "warn"
+      pcie2_reject_reason:
+        | "irrelevant_headline"
+        | "cj_supplier_image"
+        | "duplicate_creative"
+        | "low_quality"
+        | "wrong_category"
+        | "integrity_failed"
+        | "classifier_low_confidence"
+        | "missing_hook"
+        | "missing_headline"
+        | "banned_phrase"
+        | "other"
       release_issue_source: "validation_fail" | "custom"
       release_issue_status: "open" | "in_progress" | "resolved"
     }
@@ -34976,6 +35163,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "customer"],
+      pcie2_module_status: ["pass", "fail", "skip", "warn"],
+      pcie2_reject_reason: [
+        "irrelevant_headline",
+        "cj_supplier_image",
+        "duplicate_creative",
+        "low_quality",
+        "wrong_category",
+        "integrity_failed",
+        "classifier_low_confidence",
+        "missing_hook",
+        "missing_headline",
+        "banned_phrase",
+        "other",
+      ],
       release_issue_source: ["validation_fail", "custom"],
       release_issue_status: ["open", "in_progress", "resolved"],
     },
