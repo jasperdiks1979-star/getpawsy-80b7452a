@@ -16384,6 +16384,59 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_creative_jobs: {
+        Row: {
+          attempts: number
+          claim_token: string | null
+          claimed_at: string | null
+          completed_at: string | null
+          concept: string
+          created_at: string
+          creative_id: string | null
+          id: string
+          last_error: string | null
+          product_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          concept: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          last_error?: string | null
+          product_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          concept?: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          last_error?: string | null
+          product_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_creative_jobs_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pcie2_creatives: {
         Row: {
           ai_confidence: number | null
@@ -34882,6 +34935,33 @@ export type Database = {
             }
             Returns: string
           }
+      pcie2_claim_creative_jobs: {
+        Args: { p_limit: number; p_token: string }
+        Returns: {
+          attempts: number
+          claim_token: string | null
+          claimed_at: string | null
+          completed_at: string | null
+          concept: string
+          created_at: string
+          creative_id: string | null
+          id: string
+          last_error: string | null
+          product_id: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "pcie2_creative_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      pcie2_enqueue_creative_jobs: {
+        Args: { p_concepts: string[] }
+        Returns: number
+      }
       pe_reschedule_crons: { Args: { p_secret: string }; Returns: Json }
       pinterest_canonical_category: { Args: { _raw: string }; Returns: string }
       pinterest_category_imbalance: {
