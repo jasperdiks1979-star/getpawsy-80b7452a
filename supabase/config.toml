@@ -434,3 +434,12 @@ verify_jwt = false
 
 [functions.paip-product-ranker]
 verify_jwt = false
+
+[functions.pmin-orchestrator]
+verify_jwt = false
+
+[functions.pmin-discovery-harvester]
+verify_jwt = false
+
+[functions.pmin-keyword-trend-scorer]
+verify_jwt = false
