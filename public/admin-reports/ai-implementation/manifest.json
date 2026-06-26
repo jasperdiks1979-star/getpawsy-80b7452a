@@ -400,5 +400,12 @@
     "score": 0,
     "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.pdf",
     "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.json"
+  },
+  {
+    "slug": "2026-06-26-pqif-v2-architecture",
+    "title": "PQIF v2 - Architecture Report",
+    "date": "2026-06-26",
+    "pdf": "2026-06-26-pqif-v2-architecture.pdf",
+    "json": "2026-06-26-pqif-v2-architecture.json"
   }
 ]
