@@ -17141,6 +17141,104 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_assembly_results: {
+        Row: {
+          board_id: string | null
+          created_at: string
+          creative_id: string
+          destination_url: string | null
+          detail: string | null
+          id: string
+          image_url: string | null
+          product_id: string | null
+          queue_id: string | null
+          reason: string | null
+          run_id: string
+          verdict: string
+        }
+        Insert: {
+          board_id?: string | null
+          created_at?: string
+          creative_id: string
+          destination_url?: string | null
+          detail?: string | null
+          id?: string
+          image_url?: string | null
+          product_id?: string | null
+          queue_id?: string | null
+          reason?: string | null
+          run_id: string
+          verdict: string
+        }
+        Update: {
+          board_id?: string | null
+          created_at?: string
+          creative_id?: string
+          destination_url?: string | null
+          detail?: string | null
+          id?: string
+          image_url?: string | null
+          product_id?: string | null
+          queue_id?: string | null
+          reason?: string | null
+          run_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_assembly_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_assembly_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie2_assembly_runs: {
+        Row: {
+          drafts_scanned: number
+          finished_at: string | null
+          id: string
+          notes: string | null
+          passed: number
+          queued: number
+          reason_counts: Json
+          rejected: number
+          repaired: number
+          skipped: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          drafts_scanned?: number
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          passed?: number
+          queued?: number
+          reason_counts?: Json
+          rejected?: number
+          repaired?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          drafts_scanned?: number
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          passed?: number
+          queued?: number
+          reason_counts?: Json
+          rejected?: number
+          repaired?: number
+          skipped?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       pcie2_concept_graph: {
         Row: {
           angle: string

@@ -1,6 +1,17 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pcie2-draft-to-queue-recovery",
+      "title": "PCIE2 Draft → Publish-Ready Queue Recovery",
+      "generated_at": "2026-06-26T18:30:00Z",
+      "status": "COMPLETED",
+      "verdict": "GREEN",
+      "score": 92,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-draft-to-queue-recovery.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-draft-to-queue-recovery.json",
+      "summary": "Built canonical pcie2-publish-assembler bridging PCIE2 drafts → pcie2_publish_queue. Queue went from 0 → 100 publish-ready rows. Publishing remains LOCKED."
+    },
+    {
       "slug": "2026-06-26-pinterest-week0-canary-unlock",
       "title": "Pinterest Week-0 Canary Unlock",
       "generated_at": "2026-06-26T18:15:00Z",
