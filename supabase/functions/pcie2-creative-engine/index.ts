@@ -33,11 +33,11 @@ Deno.serve(async (req) => {
 
   let products: Array<{ id: string; title: string; category: string | null }> = [];
   if (body.product_ids?.length) {
-    const { data } = await SUPA.from("products").select("id,title,category").in("id", body.product_ids);
-    products = (data ?? []) as any;
+    const { data } = await SUPA.from("products").select("id,name,category").in("id", body.product_ids);
+    products = ((data ?? []) as any[]).map((p) => ({ ...p, title: p.name }));
   } else {
-    const { data } = await SUPA.from("products").select("id,title,category").eq("active", true).limit(maxProducts);
-    products = (data ?? []) as any;
+    const { data } = await SUPA.from("products").select("id,name,category").eq("is_active", true).limit(maxProducts);
+    products = ((data ?? []) as any[]).map((p) => ({ ...p, title: p.name }));
   }
 
   let inserted = 0, evolutionBlocked = 0, failed = 0;

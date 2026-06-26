@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
   let categories = body.categories;
   if (!categories?.length) {
-    const { data } = await SUPA.from("products").select("category").not("category", "is", null).eq("active", true).limit(2000);
+    const { data } = await SUPA.from("products").select("category").not("category", "is", null).eq("is_active", true).limit(2000);
     const set = new Set<string>(); (data ?? []).forEach((r: any) => r.category && set.add(String(r.category)));
     categories = Array.from(set).slice(0, 25);
   }
