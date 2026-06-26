@@ -103,5 +103,15 @@
     "score": 48,
     "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
     "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
+  },
+  {
+    "id": "2026-06-26-prie-autonomous-pipeline",
+    "title": "PRIE \u00b7 Autonomous Pipeline (no manual bootstrap)",
+    "run_id": "prie-auto",
+    "generated_at": "2026-06-26T00:00:00Z",
+    "status": "shipped",
+    "score": 100,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.json"
   }
 ]
