@@ -239,6 +239,12 @@ Deno.serve(async (req) => {
   report.estimated_completion_iso = ratePerSec > 0
     ? new Date(Date.now() + (need / ratePerSec) * 1000).toISOString() : null;
 
+  if (report.total_creatives_after >= TARGET) {
+    report.target_reached = true;
+  } else if (report.remaining > 0 && report.claimed > 0) {
+    report.chained = true;
+  }
+
   // Persist batch report
   await SUPA.from("pcie2_runs").insert({
     run_type: "creative_worker_batch",
@@ -247,13 +253,8 @@ Deno.serve(async (req) => {
     finished_at: new Date().toISOString(),
   });
 
-  if (report.total_creatives_after >= TARGET) {
-    report.target_reached = true;
-    await triggerStep5();
-  } else if (report.remaining > 0 && report.claimed > 0) {
-    report.chained = true;
-    await chainNextWorker();
-  }
+  if (report.target_reached) await triggerStep5();
+  else if (report.chained) await chainNextWorker();
 
   return new Response(JSON.stringify({ ok: true, report }), {
     headers: { ...cors, "Content-Type": "application/json" },
