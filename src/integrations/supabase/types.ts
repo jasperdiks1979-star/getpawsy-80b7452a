@@ -12147,6 +12147,316 @@ export type Database = {
         }
         Relationships: []
       }
+      guardian_audit_log: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          id: string
+          payload: Json
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target?: string | null
+        }
+        Relationships: []
+      }
+      guardian_legacy_findings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          created_at: string
+          duplicates: Json
+          evidence: Json
+          id: string
+          identifier: string
+          kind: string
+          recommendation: string | null
+          risk: string
+          scan_id: string
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category: string
+          created_at?: string
+          duplicates?: Json
+          evidence?: Json
+          id?: string
+          identifier: string
+          kind: string
+          recommendation?: string | null
+          risk?: string
+          scan_id: string
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          created_at?: string
+          duplicates?: Json
+          evidence?: Json
+          id?: string
+          identifier?: string
+          kind?: string
+          recommendation?: string | null
+          risk?: string
+          scan_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guardian_legacy_findings_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "guardian_legacy_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guardian_legacy_scans: {
+        Row: {
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          totals: Json
+          trigger: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          trigger?: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
+      guardian_notification_queue: {
+        Row: {
+          attempts: number
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          recipient: string | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          recipient?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          recipient?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      guardian_publish_gate_log: {
+        Row: {
+          context: Json
+          created_at: string
+          decision: string
+          guardian_color: string | null
+          guardian_score: number | null
+          id: string
+          pipeline: string
+          reason: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          decision: string
+          guardian_color?: string | null
+          guardian_score?: number | null
+          id?: string
+          pipeline: string
+          reason?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          decision?: string
+          guardian_color?: string | null
+          guardian_score?: number | null
+          id?: string
+          pipeline?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      guardian_sentinel_checks: {
+        Row: {
+          category: string
+          created_at: string
+          evidence: Json
+          id: string
+          latency_ms: number | null
+          message: string | null
+          name: string
+          run_id: string
+          severity: string
+          status: string
+          target: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          name: string
+          run_id: string
+          severity?: string
+          status: string
+          target?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          name?: string
+          run_id?: string
+          severity?: string
+          status?: string
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guardian_sentinel_checks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "guardian_sentinel_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guardian_sentinel_runs: {
+        Row: {
+          build_hash: string | null
+          finished_at: string | null
+          id: string
+          notes: string | null
+          score: number | null
+          started_at: string
+          totals: Json
+          trigger: string
+          verdict: string | null
+        }
+        Insert: {
+          build_hash?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          started_at?: string
+          totals?: Json
+          trigger?: string
+          verdict?: string | null
+        }
+        Update: {
+          build_hash?: string | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          started_at?: string
+          totals?: Json
+          trigger?: string
+          verdict?: string | null
+        }
+        Relationships: []
+      }
+      guardian_status: {
+        Row: {
+          blockers: Json
+          build_hash: string | null
+          color: string
+          expected_build_hash: string | null
+          id: boolean
+          last_run_at: string | null
+          last_run_id: string | null
+          publish_gate_open: boolean
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          blockers?: Json
+          build_hash?: string | null
+          color?: string
+          expected_build_hash?: string | null
+          id?: boolean
+          last_run_at?: string | null
+          last_run_id?: string | null
+          publish_gate_open?: boolean
+          score?: number
+          updated_at?: string
+        }
+        Update: {
+          blockers?: Json
+          build_hash?: string | null
+          color?: string
+          expected_build_hash?: string | null
+          id?: boolean
+          last_run_at?: string | null
+          last_run_id?: string | null
+          publish_gate_open?: boolean
+          score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guide_generation_log: {
         Row: {
           duration_ms: number | null
