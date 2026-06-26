@@ -1,0 +1,82 @@
+{
+  "title": "Pinterest Wave 1 Production Rollout",
+  "generated_at": "2026-06-26T17:23:57.277469Z",
+  "status": "COMPLETED",
+  "verdict": "GREEN",
+  "summary": {
+    "published": 5,
+    "failed": 0,
+    "duplicates": 1,
+    "avg_latency_ms": 2317,
+    "min_latency_ms": 2084,
+    "max_latency_ms": 3025,
+    "remaining_queue": 0,
+    "warnings": [],
+    "posted_pin_ids": [
+      "1117103882601293089",
+      "1117103882601293255",
+      "1117103882601293404",
+      "1117103882601293605",
+      "1117103882601293736"
+    ],
+    "per_pin": [
+      {
+        "queue_id": "b78de228-8210-4776-a2d2-46857aec2c91",
+        "pin_id": "1117103882601293089",
+        "latency_ms": 3025,
+        "dest": "https://getpawsy.pet/products/wooden-door-mounted-cat-tree-wall-mounted-cat-tree?utm_source=pinterest&utm_medium=social&",
+        "board": "1117103951261719219",
+        "board_match": true
+      },
+      {
+        "queue_id": "512f1b39-642d-4f04-bcc7-66ca47c41254",
+        "pin_id": "1117103882601293255",
+        "latency_ms": 2084,
+        "dest": "https://getpawsy.pet/products/dog-and-cat-plaid-double-layer-thickened-pet-bib-for-dogs?utm_source=pinterest&utm_medium=",
+        "board": "1117103951261719219",
+        "board_match": true
+      },
+      {
+        "queue_id": "f9d1ec71-553f-4aca-b5f6-d010dc1d2481",
+        "pin_id": "1117103882601293404",
+        "latency_ms": 2179,
+        "dest": "https://getpawsy.pet/products/stainless-steel-cat-litter-box-with-lid-large-cat-litter-box-for-big-cats-scoop-and-mat-in",
+        "board": "1117103951261719219",
+        "board_match": true
+      },
+      {
+        "queue_id": "9a336840-d21a-487f-9744-e67be7057a65",
+        "pin_id": "1117103882601293605",
+        "latency_ms": 2163,
+        "dest": "https://getpawsy.pet/products/double-layer-rice-cat-litter-mat?utm_source=pinterest&utm_medium=social&utm_campaign=creat",
+        "board": "1117103951261719219",
+        "board_match": true
+      },
+      {
+        "queue_id": "d5725d8b-f23b-472f-a6b3-c87f7ca01f53",
+        "pin_id": "1117103882601293736",
+        "latency_ms": 2134,
+        "dest": "https://getpawsy.pet/products/dog-gps-tracker-real-time-anti-lost-pet-tracker-with-geofence-flash-light-and-67a4?utm_sou",
+        "board": "1117103951261719219",
+        "board_match": true
+      }
+    ],
+    "gates_after": {
+      "pinterest_publishing_global_stop": "true",
+      "pcie2_publish_enabled": "false"
+    },
+    "completed_at": "2026-06-26T17:23:26.796280Z"
+  },
+  "scorecard": {
+    "overall": 98,
+    "architecture": 95,
+    "performance": 95,
+    "reliability": 100,
+    "automation": 95,
+    "scalability": 90,
+    "security": 98,
+    "maintainability": 92,
+    "ai_readiness": 90,
+    "growth_readiness": 95
+  }
+}

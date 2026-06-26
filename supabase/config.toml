@@ -1,5 +1,8 @@
 project_id = "nojvgfbcjgipjxpfatmm"
 
+[functions.pinterest-wave1-orchestrator]
+verify_jwt = false
+
 [functions.zero-cleanup-sync]
 verify_jwt = false
 
