@@ -27,6 +27,9 @@ export default function PinterestRecoveryDashboard() {
   const [history, setHistory] = useState<Run[]>([]);
   const [classCounts, setClassCounts] = useState<Record<string, number>>({});
   const [running, setRunning] = useState(false);
+  const [canaryRunning, setCanaryRunning] = useState(false);
+  const [canaryResult, setCanaryResult] = useState<any>(null);
+  const [canaryMeta, setCanaryMeta] = useState<{ last_at: string | null; window_h: number; mode: boolean }>({ last_at: null, window_h: 24, mode: false });
 
   async function load() {
     const { data: runs } = await supabase.from("pinterest_recovery_runs")
@@ -44,6 +47,15 @@ export default function PinterestRecoveryDashboard() {
       (audits ?? []).forEach(a => { counts[a.classification] = (counts[a.classification] ?? 0) + 1; });
       setClassCounts(counts);
     }
+    const { data: cfg } = await supabase.from("app_config")
+      .select("key,value")
+      .in("key", ["pinterest_canary_mode","pinterest_canary_window_hours","pinterest_last_canary_at"]);
+    const map = Object.fromEntries((cfg ?? []).map(r => [r.key, r.value]));
+    setCanaryMeta({
+      mode: map.pinterest_canary_mode === true,
+      window_h: Number(map.pinterest_canary_window_hours ?? 24),
+      last_at: typeof map.pinterest_last_canary_at === "string" ? map.pinterest_last_canary_at : null,
+    });
   }
 
   useEffect(() => { load(); }, []);
@@ -59,6 +71,26 @@ export default function PinterestRecoveryDashboard() {
       toast.error(e?.message ?? "Recovery scan failed");
     } finally { setRunning(false); }
   }
+
+  async function runCanary() {
+    setCanaryRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-canary-publish", { body: {} });
+      if (error) throw error;
+      setCanaryResult(data);
+      const v = (data as any)?.verdict ?? "?";
+      if (v === "PUBLISHED") toast.success(`Canary published pin ${(data as any).publish?.pinterest_pin_id ?? ""}`);
+      else toast.message(`Canary ${v}: ${(data as any)?.reason ?? "see result"}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Canary failed");
+    } finally { setCanaryRunning(false); }
+  }
+
+  const nextAllowed = canaryMeta.last_at
+    ? new Date(new Date(canaryMeta.last_at).getTime() + canaryMeta.window_h * 3600 * 1000)
+    : null;
+  const canaryReady = !nextAllowed || nextAllowed <= new Date();
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -110,6 +142,59 @@ export default function PinterestRecoveryDashboard() {
               <span className="text-muted-foreground">{k}</span><span className="font-semibold">{v}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="border-amber-500/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Week-0 Canary Mode
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="rounded border p-3 flex justify-between">
+              <span className="text-muted-foreground">Technical blockers</span>
+              <Badge variant="default">None</Badge>
+            </div>
+            <div className="rounded border p-3 flex justify-between">
+              <span className="text-muted-foreground">Trust blocker</span>
+              <Badge variant="destructive">Active (score &lt; 60)</Badge>
+            </div>
+            <div className="rounded border p-3 flex justify-between">
+              <span className="text-muted-foreground">Canary mode</span>
+              <Badge variant={canaryMeta.mode ? "default" : "secondary"}>{canaryMeta.mode ? "Enabled" : "Disabled"}</Badge>
+            </div>
+            <div className="rounded border p-3 flex justify-between">
+              <span className="text-muted-foreground">Next allowed</span>
+              <span className="font-semibold">{nextAllowed ? nextAllowed.toLocaleString() : "Now"}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Publishes exactly 1 premium pin / {canaryMeta.window_h}h via the canonical PCIE2 pipeline. All gates enforced. Both safety locks restored immediately after.
+            </p>
+            <Button size="sm" onClick={runCanary} disabled={!canaryMeta.mode || !canaryReady || canaryRunning}>
+              {canaryRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Run Week-0 Canary
+            </Button>
+          </div>
+          {canaryResult && (
+            <div className="rounded border p-3 text-xs space-y-1 bg-muted/40">
+              <div><span className="text-muted-foreground">Last result:</span> <Badge variant={canaryResult.verdict === "PUBLISHED" ? "default" : "secondary"}>{canaryResult.verdict}</Badge></div>
+              {canaryResult.reason && <div><span className="text-muted-foreground">Reason:</span> {canaryResult.reason}</div>}
+              {canaryResult.publish?.pinterest_pin_id && (
+                <div>
+                  <span className="text-muted-foreground">Pin:</span> {canaryResult.publish.pinterest_pin_id} ·
+                  HTTP {canaryResult.publish.http_status} · verify HTTP {canaryResult.publish.verification?.http_status}
+                </div>
+              )}
+              <details className="mt-1">
+                <summary className="cursor-pointer text-muted-foreground">Gate trace</summary>
+                <pre className="overflow-auto max-h-64 mt-2 text-[10px]">{JSON.stringify(canaryResult.gates ?? [], null, 2)}</pre>
+              </details>
+            </div>
+          )}
         </CardContent>
       </Card>
 
