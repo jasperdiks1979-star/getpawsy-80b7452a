@@ -33831,6 +33831,7 @@ export type Database = {
       }
       pinterest_publish_health: { Args: never; Returns: Json }
       pinterest_scheduler_health: { Args: never; Returns: Json }
+      prie_kick: { Args: { p_trigger: string }; Returns: undefined }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_old_monitoring_runs: { Args: never; Returns: number }
       pvq_destination_matches_slug: {
