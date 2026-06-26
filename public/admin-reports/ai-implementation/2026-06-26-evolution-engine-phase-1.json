@@ -1,0 +1,45 @@
+{
+  "slug": "2026-06-26-evolution-engine-phase-1",
+  "title": "Evolution Engine V1 — Phase 1 Foundation",
+  "generated_at": "2026-06-26T21:10:00Z",
+  "status": "COMPLETED",
+  "verdict": "GREEN",
+  "score": 92,
+  "phase": 1,
+  "mode": "observation_only",
+  "summary": "Phase 1 foundation of the GetPawsy Evolution Engine is live. Eleven ee_* tables, three evolution-* edge functions, one admin dashboard, all RLS- and grant-locked to admins + service_role. Zero edits to OAuth, Publisher, Guardian, CI Layer, Queue, Canary, Global Stop, or Recovery Engine.",
+  "modules_implemented": [
+    "Module 1: Learning Engine (tables + ingest function)",
+    "Module 7: Predictive AI (baseline linear model + ee_predictions)",
+    "Module 16: Performance Lab (/admin/evolution-engine Phase 1 panels)",
+    "Module 17: Self-Improvement scaffolding (nightly rollup, gated)"
+  ],
+  "tables_created": [
+    "ee_runs", "ee_run_steps", "ee_settings", "ee_model_versions",
+    "ee_learning_events", "ee_learning_history", "ee_learning_vectors",
+    "ee_learning_products", "ee_learning_boards", "ee_predictions"
+  ],
+  "edge_functions": [
+    "evolution-learning-ingest",
+    "evolution-predictive-score",
+    "evolution-nightly-rollup"
+  ],
+  "feature_flags_default_off": [
+    "nightly_rollup_enabled",
+    "predictive_scoring_enabled",
+    "learning_ingest_enabled"
+  ],
+  "non_regression_invariants": [
+    "No writes from ee_* code paths to pcie2_publish_queue, pinterest_pin_queue, pinterest_connection, app_config, guardian_*, pcie2_ci_*, or any publisher table",
+    "No triggers added to existing tables",
+    "global_stop and pcie2_publish_enabled unchanged",
+    "All ee_* tables: admin-read + service_role-all, no anon grants",
+    "Validation triggers used for time-window rule on ee_predictions (no CHECK constraints)"
+  ],
+  "smoke_test_results": {
+    "evolution-learning-ingest": { "status": "ok", "duration_ms": 418, "history_upserted": 0, "note": "pinterest_pin_performance columns to be widened in Phase 1.1 backfill; cold-start expected" },
+    "evolution-predictive-score": { "status": "ok", "duration_ms": 7442, "drafts_scored": 100, "fallbacks": 100, "note": "global priors used while learning tables warm up" },
+    "evolution-nightly-rollup": { "status": "ok", "skipped": true, "reason": "nightly_rollup_enabled=false (safe default)" }
+  },
+  "next_phase": "Phase 2 — Evolution + Trend + Emotion + Image DNA + Experiment (modules 2,3,4,5,8). Awaiting approval."
+}
