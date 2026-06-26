@@ -1,0 +1,72 @@
+{
+  "title": "PQIF v2 Architecture Report",
+  "generated_at": "2026-06-26T10:59:14.707867+00:00",
+  "status": "INSTALLED (publishing remains paused)",
+  "sections": {
+    "Pre-publish protections": [
+      "Image <-> product match (token overlap)",
+      "Title <-> product match",
+      "Description <-> product match",
+      "Destination URL contains /products/{slug}",
+      "Canonical URL contains /products/{slug}",
+      "Product availability (effective_stock > 0)",
+      "Price consistency (drift < 5%)",
+      "Reject CJ placeholder hosts",
+      "Reject low-resolution (<1000x1500 default)",
+      "Reject AI artifact aspect ratios (outside 1.0-2.2)",
+      "Reject duplicate image (phash within 30d)",
+      "Reject duplicate headline (14d)",
+      "Reject duplicate description (14d)",
+      "Reject duplicate destination URL (7d)",
+      "Reject duplicate creative concept fingerprint (21d)",
+      "Reject product cooldown violations (default 48h)",
+      "Reject pin similarity above threshold (default 0.88)",
+      "OCR readability check (non-printable artifacts < 4)",
+      "Spelling / grammar heuristic on overlay text"
+    ],
+    "Quality scoring": [
+      "emotion (15%): lexicon hits in title+desc",
+      "ctr (20%): word band, numerals, power words",
+      "intent (15%): shopping verbs in description",
+      "seo (20%): length bands + niche terms",
+      "composition (10%): Pinterest 2:3 ratio fidelity",
+      "mobile (10%): overlay readability < 40 chars",
+      "branding (10%): GetPawsy mention",
+      "Threshold: 75/100 (configurable in pqif_settings)"
+    ],
+    "Post-publish learning loop": [
+      "Aggregate impressions, saves, outbound clicks, CTR, engagement, CVR (30d)",
+      "Compute performance_score per creative/headline/hook/visual_dna family",
+      "Update frequency_multiplier (1.5 winners -> 0.5 losers)",
+      "Auto-retire posted pins (impressions >= 500 AND CTR < 0.25%)",
+      "Continuous feedback into PCIE2 generator via pqif_family_performance"
+    ],
+    "Nightly self-audit": [
+      "Mark orphan posted rows (no pinterest_pin_id) as rejected",
+      "Reject pins for deleted products",
+      "HEAD-check destinations on 200 most-recent live pins; flag broken_url",
+      "Surface duplicate publications via creative_fingerprint",
+      "All counters written to pqif_audit_runs"
+    ],
+    "Schedule": [
+      "pqif-nightly-audit: 0 3 * * * UTC",
+      "pqif-learning-loop: 15 */6 * * * UTC"
+    ],
+    "Tables created": [
+      "pqif_verdicts",
+      "pqif_audit_runs",
+      "pqif_family_performance",
+      "pqif_settings"
+    ],
+    "Edge functions / modules": [
+      "supabase/functions/_shared/pinterest-quality-firewall-v2.ts",
+      "supabase/functions/pqif-nightly-audit/index.ts",
+      "supabase/functions/pqif-learning-loop/index.ts"
+    ],
+    "Safety locks": [
+      "pinterest_publishing_global_stop = true",
+      "pcie2_publish_enabled = false",
+      "Firewall + audits run autonomously; publishing remains gated."
+    ]
+  }
+}
