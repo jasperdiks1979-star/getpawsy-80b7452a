@@ -9937,6 +9937,39 @@ export type Database = {
           },
         ]
       }
+      deploy_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          object_key: string | null
+          occurred_at: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          object_key?: string | null
+          occurred_at?: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          object_key?: string | null
+          occurred_at?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       director_archetype_weights: {
         Row: {
           archetype: string
