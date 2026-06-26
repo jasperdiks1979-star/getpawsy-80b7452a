@@ -1,12 +1,20 @@
 {
   "version": 2,
-  "generated_at": "2026-06-26T00:45:22.094510+00:00",
+  "generated_at": "2026-06-26T00:49:48.930216Z",
   "order": "chronological_ascending",
   "source": "filesystem_scan",
   "reports": [
     {
+      "slug": "2026-06-26-pcie2-wave1-foundation",
+      "title": "PCIE2 Wave 1 \u2014 Creative Memory + Product Understanding",
+      "generated_at": "2026-06-26T00:49:48.930216Z",
+      "pdf": "2026-06-26-pcie2-wave1-foundation.pdf",
+      "json": "2026-06-26-pcie2-wave1-foundation.json",
+      "status": "PASS"
+    },
+    {
       "slug": "2026-06-25-agp-wave-1-foundations",
-      "title": "Autonomous Growth Platform — Wave 1 (Foundations & Observability)",
+      "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
       "run_id": "agp-wave-1-foundations",
       "generated_at": "2026-06-25T07:38:24.840733Z",
       "status": "verified",
@@ -16,7 +24,7 @@
     },
     {
       "slug": "2026-06-25-agp-wave-2-media-pipeline",
-      "title": "Autonomous Growth Platform — Wave 2 (CJ Media Pipeline)",
+      "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
       "run_id": "agp-wave-2-media-pipeline",
       "generated_at": "2026-06-25T07:45:26.786356Z",
       "status": "verified",
@@ -26,7 +34,7 @@
     },
     {
       "slug": "2026-06-25-agp-wave-3-enhance-qa",
-      "title": "Autonomous Growth Platform — Wave 3 (Enhancement + QA loop)",
+      "title": "Autonomous Growth Platform \u2014 Wave 3 (Enhancement + QA loop)",
       "run_id": "agp-wave-3-enhance-qa",
       "generated_at": "2026-06-25T08:13:52.665545+00:00",
       "status": "verified",
@@ -36,7 +44,7 @@
     },
     {
       "slug": "2026-06-25-agp-wave-3-small-live",
-      "title": "Autonomous Growth Platform — Wave 3 Small Live Run (Enhancement)",
+      "title": "Autonomous Growth Platform \u2014 Wave 3 Small Live Run (Enhancement)",
       "run_id": "agp-wave-3-small-live",
       "generated_at": "2026-06-25T08:30:00Z",
       "status": "verified",
@@ -46,7 +54,7 @@
     },
     {
       "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
-      "title": "AGP Wave 4A — Signal Lake + Growth Score",
+      "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
       "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
       "generated_at": "2026-06-25T08:46:33.193118Z",
       "status": "succeeded",
@@ -56,7 +64,7 @@
     },
     {
       "slug": "2026-06-25-agp-wave-4a-plus-intelligence",
-      "title": "AGP Wave 4A+ — Growth Intelligence Layer",
+      "title": "AGP Wave 4A+ \u2014 Growth Intelligence Layer",
       "run_id": "ba910e61-6d21-49c6-8ebf-5e8287ac55e5",
       "generated_at": "2026-06-25T09:48:05.019739Z",
       "status": "succeeded",
@@ -66,7 +74,7 @@
     },
     {
       "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
-      "title": "Wave 5X — Autonomous Commerce Intelligence (ACI)",
+      "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
       "run_id": "aci-wave-5x",
       "generated_at": "2026-06-25T10:39:43.974564+00:00",
       "status": "success",
@@ -76,7 +84,7 @@
     },
     {
       "slug": "2026-06-25-cmdr-wave-6a-foundations",
-      "title": "Wave 6A — Autonomous Commander AI (Foundations + War Room)",
+      "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
       "run_id": "2026-06-25-cmdr-wave-6a-foundations",
       "generated_at": "2026-06-25T10:59:59.842353Z",
       "status": "success",
@@ -86,7 +94,7 @@
     },
     {
       "slug": "2026-06-25-revenue-recovery-wave-a",
-      "title": "Revenue Recovery · Wave A · Funnel Validator (diagnostic baseline)",
+      "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
       "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
       "generated_at": "2026-06-25T16:35:00Z",
       "status": "shipped",
@@ -96,7 +104,7 @@
     },
     {
       "slug": "2026-06-25-pe-wave1-control-center",
-      "title": "Pinterest Enterprise Control Center — Wave 1 Delivery",
+      "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
       "run_id": "2026-06-25-pe-wave1-control-center",
       "generated_at": "2026-06-25T22:45:07.006358Z",
       "status": "shipped",
@@ -106,7 +114,7 @@
     },
     {
       "slug": "2026-06-25-pe-wave1-cron-auth-fix",
-      "title": "Pinterest Enterprise Control Center — Wave 1 Cron Auth Fix",
+      "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Cron Auth Fix",
       "run_id": "2026-06-25-pe-wave1-cron-auth-fix",
       "generated_at": "2026-06-25T23:03:39.657626Z",
       "status": "verified",
@@ -144,7 +152,7 @@
     },
     {
       "slug": "2026-06-25-commander-wave-6a-foundation",
-      "title": "Autonomous Commander · Foundation",
+      "title": "Autonomous Commander \u00b7 Foundation",
       "run_id": "2026-06-25-commander-wave-6a-foundation",
       "generated_at": "2026-06-25T23:18:15Z",
       "status": "verified",
@@ -184,7 +192,7 @@
     },
     {
       "slug": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
-      "title": "Revenue Recovery — Wave A.2: ATC Root Cause",
+      "title": "Revenue Recovery \u2014 Wave A.2: ATC Root Cause",
       "run_id": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
       "generated_at": "2026-06-25T23:18:15Z",
       "status": "verified",
@@ -194,7 +202,7 @@
     },
     {
       "slug": "2026-06-25-pga-wave-a-foundation",
-      "title": "Pinterest Growth AI — Wave A · Foundation + Executive Overview",
+      "title": "Pinterest Growth AI \u2014 Wave A \u00b7 Foundation + Executive Overview",
       "run_id": "2026-06-25-pga-wave-a-foundation",
       "generated_at": "2026-06-25T23:22:15.830644Z",
       "status": "shipped",
@@ -224,14 +232,14 @@
     },
     {
       "slug": "2026-06-26-ai-reports-recovery",
-      "title": "AI Implementation Reports — Recovery",
+      "title": "AI Implementation Reports \u2014 Recovery",
       "run_id": "ai-reports-recovery",
       "generated_at": "2026-06-26T00:23:33.123057+00:00",
       "status": "shipped",
       "score": 95,
       "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.pdf",
       "json": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.json",
-      "root_cause": "AdminReportsPage read `data.reports`, but manifest.json was a bare JSON array. The destructure returned undefined → empty list. Today's reports were on disk all along.",
+      "root_cause": "AdminReportsPage read `data.reports`, but manifest.json was a bare JSON array. The destructure returned undefined \u2192 empty list. Today's reports were on disk all along.",
       "fix": [
         "UI now accepts both manifest shapes (array OR { reports: [...] }).",
         "Manifest rebuilt to v2 envelope { version, generated_at, reports[] } sorted newest-first.",
