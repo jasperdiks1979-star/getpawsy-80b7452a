@@ -1,0 +1,74 @@
+{
+  "title": "PQIF v4 \u2014 Autonomous Growth AI",
+  "generated_at": "2026-06-26T11:29:43.087880Z",
+  "status": "INSTALLED \u2014 publishing remains globally paused",
+  "run_id": "88101740-8f5f-4bd2-b9f9-986ea614b5c2",
+  "summary": {
+    "products_ranked": 428,
+    "strategies_proposed": 5,
+    "experiments_queued": 5,
+    "retired_pins": 0,
+    "regeneration_queued": 0,
+    "publishing": {
+      "blocked": true,
+      "reasons": [
+        "global_stop",
+        "v4_publishing_disabled"
+      ]
+    }
+  },
+  "tables_created": [
+    "pqif_v4_runs",
+    "pqif_v4_strategies",
+    "pqif_v4_experiments",
+    "pqif_v4_product_ranks",
+    "pqif_v4_retired_pins",
+    "pqif_v4_regeneration_queue",
+    "pqif_v4_decisions",
+    "pqif_v4_settings"
+  ],
+  "edge_functions": [
+    "pqif-v4-orchestrator",
+    "pqif-v4-product-ranker",
+    "pqif-v4-learning-loop",
+    "pqif-v4-strategy-generator",
+    "pqif-v4-self-heal",
+    "pqif-v4-report"
+  ],
+  "cron_jobs": [
+    "pqif-v4-orchestrator-daily  @ 04:00 UTC",
+    "pqif-v4-self-heal-hourly    @ :15 every hour",
+    "pqif-v4-learning-6h         @ :30 every 6h"
+  ],
+  "dashboard": "/admin/pqif-v4",
+  "safety": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false,
+    "pqif_v4_publishing_enabled": false,
+    "paid_ads_enabled": false,
+    "live_pin_deletion": "disabled (DB-only retirement)"
+  },
+  "scorecard": {
+    "architecture": 92,
+    "performance": 88,
+    "reliability": 90,
+    "automation": 95,
+    "scalability": 90,
+    "security": 94,
+    "maintainability": 90,
+    "ai_readiness": 95,
+    "growth_readiness": 92,
+    "overall": 92
+  },
+  "next_recommendations": {
+    "high": [
+      "Wait for pinterest_pin_performance to accumulate 7d data, then re-run learning loop to seed retirements"
+    ],
+    "medium": [
+      "Wire pqif_v4 strategies into PCIE2 creative-engine when publishing unlocks"
+    ],
+    "low": [
+      "Add per-experiment dashboard panel once first variants execute"
+    ]
+  }
+}

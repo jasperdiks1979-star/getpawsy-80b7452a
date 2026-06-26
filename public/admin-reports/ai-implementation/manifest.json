@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pqif-v4-autonomous-growth-ai",
+      "title": "PQIF v4 \u2014 Autonomous Growth AI",
+      "run_id": "88101740-8f5f-4bd2-b9f9-986ea614b5c2",
+      "generated_at": "2026-06-26T11:29:43.087880Z",
+      "status": "installed",
+      "score": 92,
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pqif-v4-autonomous-growth-ai.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pqif-v4-autonomous-growth-ai.json"
+    },
+    {
       "slug": "2026-06-26-pinterest-zero-audit-stage-a",
       "title": "Pinterest Zero-Cleanup \u2014 Stage A Preliminary Audit",
       "generated_at": "2026-06-26T10:00:00Z",

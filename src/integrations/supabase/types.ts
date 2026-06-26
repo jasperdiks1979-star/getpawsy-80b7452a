@@ -28033,6 +28033,298 @@ export type Database = {
         }
         Relationships: []
       }
+      pqif_v4_decisions: {
+        Row: {
+          created_at: string
+          decision_type: string
+          evidence: Json
+          id: string
+          run_id: string | null
+          subject_id: string | null
+          subject_type: string | null
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          decision_type: string
+          evidence?: Json
+          id?: string
+          run_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          decision_type?: string
+          evidence?: Json
+          id?: string
+          run_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pqif_v4_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pqif_v4_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pqif_v4_experiments: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          metrics: Json
+          name: string
+          started_at: string | null
+          status: string
+          strategy_id: string | null
+          variants: Json
+          winner_variant: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          metrics?: Json
+          name: string
+          started_at?: string | null
+          status?: string
+          strategy_id?: string | null
+          variants?: Json
+          winner_variant?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          metrics?: Json
+          name?: string
+          started_at?: string | null
+          status?: string
+          strategy_id?: string | null
+          variants?: Json
+          winner_variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pqif_v4_experiments_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "pqif_v4_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pqif_v4_product_ranks: {
+        Row: {
+          components: Json
+          created_at: string
+          product_id: string
+          rank: number
+          revenue_potential: number
+          run_date: string
+        }
+        Insert: {
+          components?: Json
+          created_at?: string
+          product_id: string
+          rank?: number
+          revenue_potential?: number
+          run_date: string
+        }
+        Update: {
+          components?: Json
+          created_at?: string
+          product_id?: string
+          rank?: number
+          revenue_potential?: number
+          run_date?: string
+        }
+        Relationships: []
+      }
+      pqif_v4_regeneration_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          payload: Json
+          product_id: string
+          replaces_pin_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          product_id: string
+          replaces_pin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          product_id?: string
+          replaces_pin_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pqif_v4_retired_pins: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          pin_id: string | null
+          product_id: string | null
+          reason: string
+          retired_in_db: boolean
+          retired_on_pinterest: boolean
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          reason: string
+          retired_in_db?: boolean
+          retired_on_pinterest?: boolean
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          reason?: string
+          retired_in_db?: boolean
+          retired_on_pinterest?: boolean
+        }
+        Relationships: []
+      }
+      pqif_v4_runs: {
+        Row: {
+          checkpoint: Json
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          run_type: string
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          checkpoint?: Json
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_type: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          checkpoint?: Json
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_type?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      pqif_v4_settings: {
+        Row: {
+          daily_ai_budget_usd: number
+          id: number
+          paid_ads_enabled: boolean
+          publishing_enabled: boolean
+          retire_max_ctr: number
+          retire_min_impressions: number
+          updated_at: string
+          weak_score_threshold: number
+        }
+        Insert: {
+          daily_ai_budget_usd?: number
+          id?: number
+          paid_ads_enabled?: boolean
+          publishing_enabled?: boolean
+          retire_max_ctr?: number
+          retire_min_impressions?: number
+          updated_at?: string
+          weak_score_threshold?: number
+        }
+        Update: {
+          daily_ai_budget_usd?: number
+          id?: number
+          paid_ads_enabled?: boolean
+          publishing_enabled?: boolean
+          retire_max_ctr?: number
+          retire_min_impressions?: number
+          updated_at?: string
+          weak_score_threshold?: number
+        }
+        Relationships: []
+      }
+      pqif_v4_strategies: {
+        Row: {
+          created_at: string
+          evidence: Json
+          family: string | null
+          hypothesis: string | null
+          id: string
+          name: string
+          parameters: Json
+          score: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          family?: string | null
+          hypothesis?: string | null
+          id?: string
+          name: string
+          parameters?: Json
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          family?: string | null
+          hypothesis?: string | null
+          id?: string
+          name?: string
+          parameters?: Json
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pqif_verdicts: {
         Row: {
           checks: Json
