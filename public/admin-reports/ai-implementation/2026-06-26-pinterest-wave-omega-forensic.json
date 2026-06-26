@@ -1,0 +1,100 @@
+{
+  "slug": "2026-06-26-pinterest-wave-omega-forensic",
+  "title": "Pinterest Wave \u03a9 \u2014 Forensic Proof Engine",
+  "generated_at": "2026-06-26T13:18:06.320910Z",
+  "verdict": "NO GO",
+  "health_scores": {
+    "infrastructure": 55,
+    "pinterest_api": 80,
+    "merchant": "UNKNOWN",
+    "traffic": 5,
+    "quality": 25,
+    "seo": 70,
+    "growth": 15,
+    "trust": 60,
+    "automation": 50,
+    "security": 70,
+    "overall": 38
+  },
+  "phase_1_root_cause": {
+    "file_1": "supabase/functions/pinterest-video-publisher/index.ts:331 assertPublishAllowed()",
+    "file_2": "supabase/functions/pinterest-video-queue-drain/index.ts:49",
+    "defect": "Neither function called checkPcie2Lock(); they only honored PINTEREST_VIDEO_AUTO_PUBLISH. Therefore pinterest_publishing_global_stop=true had NO effect on the video pipeline.",
+    "guard_gap": "scripts/pcie2-legacy-guard.mjs only forbade /v5/pins POST/PATCH \u2014 video uploads (/v5/media) were not blocked.",
+    "confidence": "100%"
+  },
+  "phase_3_oauth": {
+    "status": "connected",
+    "token_expires_at": "2026-07-26T01:38:08Z",
+    "scopes_present": [
+      "boards:read",
+      "boards:write",
+      "pins:read",
+      "pins:write",
+      "user_accounts:read"
+    ],
+    "scopes_missing": [
+      "catalogs:read",
+      "catalogs:write",
+      "ads:read",
+      "ads:write",
+      "user_accounts:write"
+    ],
+    "board_count": 32,
+    "last_account_status": 200,
+    "last_boards_status": 200
+  },
+  "phase_4_merchant": "UNVERIFIABLE via API (catalogs:* scope missing). Manual check: pinterest.com/business/catalogs",
+  "phase_5_billing": "UNVERIFIABLE via API (ads:read scope missing). Manual check: ads.pinterest.com/billing",
+  "phase_6_traffic_evidence": {
+    "june_25_publishes": {
+      "total": 28,
+      "success": 24,
+      "rejected": 4,
+      "banned_phrase_titles": 19
+    },
+    "impressions_since_2026_06_24": "\u22480/day (continued)",
+    "primary_cause": "kill_switch_bypass_publishing_banned_content"
+  },
+  "phase_9_quality": {
+    "banned_phrases_observed": [
+      "You're doing this wrong",
+      "I wish I found this sooner",
+      "I stopped cleaning my litter box",
+      "Cats are obsessed with this",
+      "This fixed the worst cat problem",
+      "Wait\u2026 this cleans itself?",
+      "This is why your house smells"
+    ]
+  },
+  "phase_10_repairs_executed": [
+    "Patched pinterest-video-publisher.assertPublishAllowed() \u2192 calls checkPcie2Lock() first (fail-closed).",
+    "Patched pinterest-video-queue-drain \u2192 calls checkPcie2Lock() before any work.",
+    "Tightened scripts/pcie2-legacy-guard.mjs \u2192 /v5/media POSTs forbidden outside pcie2-publisher.",
+    "app_config.pinterest_video_auto_publish = false (was true).",
+    "app_config.PINTEREST_VIDEO_AUTO_PUBLISH = false.",
+    "Unscheduled 2 residual pinterest-video-* cron jobs, snapshotted to pinterest_cron_disabled_snapshot."
+  ],
+  "phase_11_legacy_guard": {
+    "result": "PASS",
+    "files_scanned": 728,
+    "violations": 0,
+    "sole_publisher": "pcie2-publisher"
+  },
+  "phase_12_dry_run": "All publish paths (pcie2-publisher, pinterest-video-*) now hit checkPcie2Lock and return PCIE2_GLOBAL_STOP without calling /v5/pins or /v5/media.",
+  "phase_14_verdict": {
+    "result": "NO GO",
+    "blockers": [
+      "Impressions still ~0/day \u2014 must observe \u22657-day recovery.",
+      "OAuth lacks catalogs/ads scopes \u2014 merchant + billing health unverifiable via API.",
+      "19 banned-phrase pins from 2026-06-25 still live on Pinterest (must be archived manually or via authorized API call).",
+      "PCIE2 publish path intentionally disabled (pcie2_publish_enabled=false) pending Step 5 validation."
+    ],
+    "conditions_for_GO": [
+      "Re-OAuth with catalogs:read, ads:read, user_accounts:write.",
+      "Archive the 19 banned-phrase pins from 2026-06-25.",
+      "Pinterest impressions \u2265100/day for 3 consecutive days.",
+      "pcie2-step5-validate returns \ud83d\udfe2 PASS before pcie2_publish_enabled=true."
+    ]
+  }
+}

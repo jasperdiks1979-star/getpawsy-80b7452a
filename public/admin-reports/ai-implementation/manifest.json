@@ -1,6 +1,15 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pinterest-wave-omega-forensic",
+      "title": "Pinterest Wave \u03a9 \u2014 Forensic Proof Engine",
+      "date": "2026-06-26",
+      "category": "incident",
+      "verdict": "NO GO",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-wave-omega-forensic.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-wave-omega-forensic.json"
+    },
+    {
       "slug": "2026-06-26-pinterest-account-health-forensic",
       "title": "Pinterest Account Health \u2014 Forensic Investigation",
       "date": "2026-06-26",
