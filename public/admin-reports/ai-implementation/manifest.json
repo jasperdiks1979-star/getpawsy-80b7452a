@@ -1,6 +1,14 @@
 {
   "reports": [
     {
+      "id": "2026-06-26-pinterest-recovery-wave-v1",
+      "title": "Pinterest Account Recovery Wave v1 \u2014 Initial Scan",
+      "date": "2026-06-26",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-recovery-wave-v1.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-recovery-wave-v1.json",
+      "summary": "Phase 1-5 scan complete. Verdict RED. Publishing locked pending OAuth scope refresh, Guardian green, and trust \u226560."
+    },
+    {
       "slug": "2026-06-26-pinterest-wave-omega-forensic",
       "title": "Pinterest Wave \u03a9 \u2014 Forensic Proof Engine",
       "date": "2026-06-26",
