@@ -12,7 +12,7 @@ const cors = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   try {
-    const adminSecret = Deno.env.get("ADMIN_ONESHOT_SECRET");
+    const adminSecret = Deno.env.get("INTERNAL_FUNCTION_SECRET");
     const provided = req.headers.get("x-admin-secret");
     if (!adminSecret || provided !== adminSecret) {
       return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: cors });
