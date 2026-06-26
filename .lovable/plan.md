@@ -1,94 +1,94 @@
-## Goal
-Replace the manually-seeded PCIE2 dependency with a permanent **autonomous Pinterest Intelligence ecosystem**. After this build, headline/hook/creative libraries grow on their own, every publish is unique, and the system learns from Pinterest metrics with zero manual intervention. Only after the full ecosystem passes its success gates does the controlled Phase 2 migration resume.
+# PCIE2 Creative Intelligence Engine v2 — Permanent Autonomous Expansion
 
-Nothing in this plan publishes to Pinterest. `pinterest_publishing_global_stop=true` and `pcie2_publish_enabled=false` stay locked until Step 7 canary, which is gated by Steps 1–6.
+Replaces the finite concept list and one-shot Evolution Guard with a self-expanding semantic graph, multi-family creative production, and a mutation-first guard. No temporary re-seed; the engine keeps discovering new territory on its own.
 
----
+## Architecture
 
-## Step 1 — Headline Intelligence Engine (self-generating)
-- New edge function `pcie2-headline-engine` (admin/internal-JWT). Inputs: `category`, `family`, `count`, `model_version`.
-- 22 headline families (Curiosity, FOMO, Problem, Solution, Transformation, Comparison, Statistics, Emotional, Luxury, Budget, Urgency, Educational, Question, Story, Before/After, Authority, Social Proof, Seasonal, Holiday, Gift, Benefit, Pain) seeded as a static enum — not as data rows.
-- Generation: Lovable AI Gateway (`google/gemini-3-flash-preview`) per category × family batch of 10. Each row writes: `headline, family, emotion, reading_grade (Flesch-Kincaid), length, predicted_ctr (model), duplicate_score (cosine vs last 200), embedding vector(3072) via `google/gemini-embedding-001`, generated_at, model_version, prompt_version, source_category`.
-- Migration: add missing columns to `pcie2_headline_library` (`emotion`, `reading_grade`, `length`, `predicted_ctr`, `duplicate_score`, `embedding vector(3072)`, `prompt_version`, `source_category`, `family` enum). Add HNSW index on `embedding`.
-- Continuous expansion: cron `pcie2-headline-engine` every 6h tops up any category × family below 25 active rows. No hard ceiling.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ pcie2-concept-graph      (recursive semantic branch builder) │
+│   • seeds 40+ angle nodes per product                        │
+│   • detects saturation → spawns new branches via Gemini      │
+└─────────────┬────────────────────────────────────────────────┘
+              │ enqueues (product, concept, family, visual_dna)
+              ▼
+┌──────────────────────────────────────────────────────────────┐
+│ pcie2_creative_jobs  (existing queue, now multi-dim keyed)   │
+└─────────────┬────────────────────────────────────────────────┘
+              ▼
+┌──────────────────────────────────────────────────────────────┐
+│ pcie2-creative-worker v2  (mutation-first Evolution Guard)   │
+│   1. generate candidate                                      │
+│   2. score (quality≥70) + cosine sim check                   │
+│   3. if blocked → mutate angle→headline→CTA→visual→emotion   │
+│   4. only reject after all 5 mutations fail                  │
+└─────────────┬────────────────────────────────────────────────┘
+              ▼
+┌──────────────────────────────────────────────────────────────┐
+│ pcie2-self-healer cron (every 5 min)                         │
+│   • watches growth rate, similarity ceilings, queue depth    │
+│   • on stall → calls concept-graph to expand branches        │
+└──────────────────────────────────────────────────────────────┘
+```
 
-## Step 2 — Hook Intelligence Engine (self-generating)
-- New edge function `pcie2-hook-engine`. Generates hooks per `product_id × category × audience × board × intent × season × country × language`.
-- Scoring per row: `predicted_ctr`, `novelty_score` (1 − max cosine vs last 500), `duplicate_score`, `quality_score` (Gemini judge rubric 0–100), `engagement_prediction`.
-- Migration: extend `pcie2_hook_library` with `audience, board_id, intent, season, country, language, predicted_ctr, novelty_score, duplicate_score, quality_score, engagement_prediction, embedding vector(3072), model_version, prompt_version`. HNSW index.
-- Cron every 6h refills any (category, audience, board) cell below 20 active hooks.
+## What ships
 
-## Step 3 — Creative Intelligence Engine (self-generating briefs)
-- New edge function `pcie2-creative-engine`. For each active product produce briefs across 15 concepts (Lifestyle, Close-up, Comparison, Problem, Solution, Pet Interaction, Owner Interaction, Luxury, Minimal, Outdoor, Indoor, Motion, Premium, Funny, Educational).
-- Each row in `pcie2_creatives`: `concept, prompt, negative_prompt, layout, camera_angle, lighting, background, breed, pose, composition, style, headline_id, hook_id, cta, quality_score, predicted_ctr, pinterest_score, ai_confidence, embedding vector(3072), duplicate_score, model_version, prompt_version`. Reuse existing table; ALTER to add any missing columns.
-- Concept enum lives in code; data rows never carry "templates".
+### 1. New tables (migration)
+- `pcie2_concept_graph` — recursive (parent_id self-ref) semantic nodes per product/global, with `family`, `branch_type`, `saturation_score`, `last_expanded_at`, `embedding vector(1536)`.
+- `pcie2_creative_families` — 21 named families (Educational, Storytelling, …) with prompt template, weight, active flag.
+- `pcie2_visual_dna` — rotating axes (camera, lighting, breed, room, season, lens, palette, layout…) with combinatorial fingerprint.
+- `pcie2_headline_families` + `pcie2_cta_families` — generative templates, last-used timestamps, similarity cooldown.
+- `pcie2_mutation_log` — every rewrite attempt (reason, before/after, outcome) for diagnostics.
+- `pcie2_engine_health` — rolling metrics (growth_rate_5min, avg_similarity, saturation_index).
 
-## Step 4 — Creative Evolution Guard
-- New shared module `supabase/functions/_shared/pcie2-evolution.ts`. Before any creative is marked `ready`, it must pass: cosine similarity < 0.88 vs last 200 published creatives across (image embedding, headline embedding, hook embedding), and at least 3 of {headline, hook, CTA, layout, camera_angle, lighting, background, breed, pose, composition, negative_prompt, style} must differ from the most recent sibling for the same product.
-- Failures auto-regenerate up to 5 attempts, then flag `evolution_blocked` and skip.
+### 2. Edge functions (deploy)
+- **`pcie2-concept-graph`** — seeds the 40+ canonical angles, embeds each, links siblings; on demand expands a node into N child branches using `google/gemini-2.5-flash` (combines parent angle + product understanding + trend signals).
+- **`pcie2-family-router`** — picks a creative family per job using weighted rotation + cooldown; never repeats > threshold.
+- **`pcie2-visual-dna-rotator`** — emits a unique visual fingerprint (8 axes) per job; rejects fingerprints within 2-bit Hamming distance of recent 200.
+- **`pcie2-headline-engine`** *(upgrade)* — generates from {emotion, problem, benefit, numbers, urgency, curiosity, proof, search-intent, long-tail, pin-trend} combinations; auto-retires templates whose mean cosine > 0.86.
+- **`pcie2-cta-engine`** *(new)* — intent-driven CTA synthesis, not template repetition; cooldown enforced.
+- **`pcie2-creative-worker`** *(rewrite)* — mutation-first Evolution Guard v2: on quality<70 OR cosine≥0.88 sequentially mutate angle → headline → CTA → visual → emotional framing (Gemini); only reject after all 5 fail. Time-boxed 55 s, self-chains via `EdgeRuntime.waitUntil`.
+- **`pcie2-self-healer`** *(new)* — cron every 5 min: detects saturation (growth rate < 5/min for 15 min OR avg sim > 0.85), calls `pcie2-concept-graph` to spawn fresh branches and `pcie2-family-router` to elevate underused families, then enqueues new jobs.
+- **`pcie2-step5-validate`** *(reuse)* — re-runs automatically when library crosses 1,500.
 
-## Step 5 — Dry-Run Generation (top 100 revenue products)
-- Orchestrator `pcie2-bootstrap-run` invokes Steps 1–4 against the top 100 products by 90-day revenue.
-- Hard gates before continuing:
-  - `pcie2_headline_library >= 500`
-  - `pcie2_hook_library >= 500`
-  - `pcie2_creatives >= 1000`
-  - Median `quality_score >= 70`
-  - Median `duplicate_score <= 0.25`
-- No Pinterest calls. Pure DB writes + embeddings.
+### 3. Cron
+- `pg_cron`: `pcie2-self-healer` every 5 min; `pcie2-creative-worker` backstop every 1 min (already exists).
 
-## Step 6 — Pipeline Trace Dry-Run (100 products)
-- Run `pcie2-publisher` in `mode=dry_trace` against the 100 products. Every `pcie2_pipeline_trace` row must contain: `pipeline_id, creative_id, creative_version, headline_version, hook_version, prompt_version, board_decision, ai_model_version, quality_score, publish_ts (null in dry), deployment_sha, source_product_id`. Any null halts.
+### 4. Safety locks (unchanged)
+- `pinterest_publishing_global_stop = true`
+- `pcie2_publish_enabled = false`
+- Quality threshold ≥ 70
+- Cosine similarity threshold = 0.88
+- Budget guardrail: stop bootstrap at $75 spend; `pcie2_engine_health` tracks token/credit usage and writes to `cmdr_budget_ledger`.
 
-## Step 7 — Canary (5 brand-new creatives)
-- Only if Steps 1–6 pass. Generate 5 fresh creatives that reuse zero existing assets: new prompt, headline, hook, CTA, composition, style.
-- Each must exceed the rolling median quality score of the past 100 generated creatives.
-- Flip `pcie2_publish_enabled=true` scoped to those 5 product IDs via the existing canary allowlist on `pcie2_publish_queue`. `pinterest_publishing_global_stop` stays `true` for everything else.
-- Live Pinterest verification per pin reuses the existing Phase 6 verifier from `.lovable/plan.md`.
+### 5. Recovery target
+Run until **`pcie2_creatives ≥ 1,500`**, then auto-trigger `pcie2-step5-validate` and write final report:
+- Total creatives, growth rate, rejected, mutated, similarity-prevented
+- # of concept / headline / CTA / visual families created
+- Average pairwise cosine similarity
+- Estimated long-term capacity (products × families × visual_dna combos × angle nodes)
 
-## Step 8 — Self-Learning Loop
-- New edge function `pcie2-learning-engine` (cron every 1h once canary is live). Pulls Pinterest analytics for published pins: impressions, saves, outbound_clicks, closeups, pin_clicks, CTR.
-- Writes feature attribution to `pcie2_feature_attribution` (already exists) and updates rolling weights for: headline family, hook family, concept, layout, board, posting hour, CTA. Future generations sample weighted by these scores.
-- Nightly `pcie2-learning-engine mode=retrain` rebuilds the CTR prediction model (logistic regression on embeddings + features) and bumps `model_version`.
+Report saved to `public/admin-reports/ai-implementation/2026-06-26-pcie2-engine-v2-autonomous.{pdf,json}` and manifest updated.
 
-## Step 9 — Reporting (mandatory)
-- Python script generates `public/admin-reports/ai-implementation/2026-06-26-pcie2-autonomous-ecosystem.{pdf,json,html}`.
-- Sections: AI readiness · headline engine state · hook engine state · creative engine state · evolution guard stats · learning engine state · trace validation · counts (headlines/hooks/creatives) · duplicate analysis · quality analysis · remaining blockers · deployment readiness · success gate matrix.
-- Append to `manifest.json`. Copy to `/mnt/documents/`. Verify the file lists on Admin → Reports → AI Implementation Reports.
+## Execution order
 
----
+1. Migration (tables + indexes + grants + RLS service_role).
+2. Deploy concept-graph, family-router, visual-dna-rotator, headline-engine v2, cta-engine, self-healer, worker v2.
+3. Seed `pcie2_creative_families` (21 rows) + initial 40-node concept graph per active product (batched).
+4. Schedule self-healer cron + ensure worker backstop active.
+5. Trigger first expansion + worker chain.
+6. Wait for library ≥ 1,500 → run validate → emit report.
+7. Leave engine running; locks held; no Step 6 enabled.
 
-## Success criteria (auto-checked before resuming Phase 2)
-- `pcie2_headline_library > 500`
-- `pcie2_hook_library > 500`
-- `pcie2_creatives > 1000`
-- `pcie2_pipeline_trace` rows for 100 products with all provenance columns populated
-- Evolution guard active (similarity < 0.88 enforced)
-- Learning engine cron scheduled and last_run < 2h
-- Quality engine median ≥ 70, duplicate median ≤ 0.25
-- Only then call `pcie2-migration-audit mode=resume` to continue the controlled Phase 2 migration.
+## Budget
 
----
+- Concept graph seeding (~445 products × ~10 expansion calls): ~$8
+- Creative bootstrap to 1,500 (~700 new creatives, mutation-heavy): ~$25
+- Headroom / mutations: ~$15
+- Total est: **~$48 / $75 cap**
 
-## Deliverables
-- Edge functions: `pcie2-headline-engine`, `pcie2-hook-engine`, `pcie2-creative-engine`, `pcie2-bootstrap-run`, `pcie2-learning-engine`. Extend `pcie2-publisher` with `mode=dry_trace`.
-- Shared module: `_shared/pcie2-evolution.ts`, `_shared/pcie2-embeddings.ts`.
-- Migrations: extend `pcie2_headline_library`, `pcie2_hook_library`, `pcie2_creatives` with the new columns + HNSW vector indexes; add `pcie2_model_versions` registry.
-- Crons: headline top-up (6h), hook top-up (6h), learning hourly (after canary), learning retrain nightly.
-- Reports: PDF + JSON + HTML, manifest updated, mirrored to `/mnt/documents/`.
+## Out of scope
 
-## Hard halts
-- Any step's success gate fails → halt, report, no flag flips.
-- Embedding/model 402 or 429 → back off, log to `pcie2_learning_runs`, do not silently skip.
-- `pinterest_publishing_global_stop` may only flip in Step 7 and only scoped to the 5 canary product IDs.
-
-## Non-goals
-- No static seeded example headlines/hooks.
-- No UI rewrites beyond surfacing the report.
-- No re-introduction of legacy publishers.
-- No Stripe/auth changes.
-
-## Cost guardrail
-- Bootstrap budget cap: 5000 credits (~$500). `pcie2-bootstrap-run` aborts when `pinterest_credit_state.credits_remaining` drops below the cap floor.
-
-Confirm to proceed and I will execute Steps 1–9 in one run, halting at the first failed gate.
+- Pinterest publishing (locks held)
+- Render worker (already healthy, no changes)
+- Any Step 6 activation

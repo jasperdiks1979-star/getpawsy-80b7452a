@@ -16384,6 +16384,107 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_concept_graph: {
+        Row: {
+          angle: string
+          branch_type: string
+          created_at: string
+          depth: number
+          embedding: string | null
+          family: string | null
+          id: string
+          last_expanded_at: string | null
+          last_used_at: string | null
+          metadata: Json
+          parent_id: string | null
+          product_id: string | null
+          saturation_score: number
+          scope: string
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          angle: string
+          branch_type: string
+          created_at?: string
+          depth?: number
+          embedding?: string | null
+          family?: string | null
+          id?: string
+          last_expanded_at?: string | null
+          last_used_at?: string | null
+          metadata?: Json
+          parent_id?: string | null
+          product_id?: string | null
+          saturation_score?: number
+          scope?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          angle?: string
+          branch_type?: string
+          created_at?: string
+          depth?: number
+          embedding?: string | null
+          family?: string | null
+          id?: string
+          last_expanded_at?: string | null
+          last_used_at?: string | null
+          metadata?: Json
+          parent_id?: string | null
+          product_id?: string | null
+          saturation_score?: number
+          scope?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_concept_graph_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_concept_graph"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie2_creative_families: {
+        Row: {
+          active: boolean
+          cooldown_minutes: number
+          created_at: string
+          id: string
+          last_used_at: string | null
+          name: string
+          prompt_template: string
+          uses_count: number
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name: string
+          prompt_template: string
+          uses_count?: number
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          prompt_template?: string
+          uses_count?: number
+          weight?: number
+        }
+        Relationships: []
+      }
       pcie2_creative_jobs: {
         Row: {
           attempts: number
@@ -16391,13 +16492,18 @@ export type Database = {
           claimed_at: string | null
           completed_at: string | null
           concept: string
+          concept_node_id: string | null
           created_at: string
           creative_id: string | null
+          family: string | null
           id: string
           last_error: string | null
+          last_mutation_strategy: string | null
+          mutation_attempts: number
           product_id: string
           status: string
           updated_at: string
+          visual_fingerprint: string | null
         }
         Insert: {
           attempts?: number
@@ -16405,13 +16511,18 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           concept: string
+          concept_node_id?: string | null
           created_at?: string
           creative_id?: string | null
+          family?: string | null
           id?: string
           last_error?: string | null
+          last_mutation_strategy?: string | null
+          mutation_attempts?: number
           product_id: string
           status?: string
           updated_at?: string
+          visual_fingerprint?: string | null
         }
         Update: {
           attempts?: number
@@ -16419,13 +16530,18 @@ export type Database = {
           claimed_at?: string | null
           completed_at?: string | null
           concept?: string
+          concept_node_id?: string | null
           created_at?: string
           creative_id?: string | null
+          family?: string | null
           id?: string
           last_error?: string | null
+          last_mutation_strategy?: string | null
+          mutation_attempts?: number
           product_id?: string
           status?: string
           updated_at?: string
+          visual_fingerprint?: string | null
         }
         Relationships: [
           {
@@ -16450,6 +16566,7 @@ export type Database = {
           color_palette: Json | null
           composition: string | null
           concept: string | null
+          concept_node_id: string | null
           created_at: string
           creative_dna: Json
           cta: string | null
@@ -16457,6 +16574,7 @@ export type Database = {
           embedding: string | null
           embedding_ref: string | null
           evolution_attempts: number
+          family: string | null
           font_size: number | null
           headline: string | null
           headline_id: string | null
@@ -16468,6 +16586,7 @@ export type Database = {
           layout: string | null
           lighting: string | null
           model_version: string | null
+          mutation_path: Json
           negative_prompt: string | null
           perceptual_hash: string | null
           performance: Json
@@ -16489,6 +16608,7 @@ export type Database = {
           story_type: string | null
           typography: string | null
           updated_at: string
+          visual_fingerprint: string | null
           visual_style: string | null
         }
         Insert: {
@@ -16503,6 +16623,7 @@ export type Database = {
           color_palette?: Json | null
           composition?: string | null
           concept?: string | null
+          concept_node_id?: string | null
           created_at?: string
           creative_dna?: Json
           cta?: string | null
@@ -16510,6 +16631,7 @@ export type Database = {
           embedding?: string | null
           embedding_ref?: string | null
           evolution_attempts?: number
+          family?: string | null
           font_size?: number | null
           headline?: string | null
           headline_id?: string | null
@@ -16521,6 +16643,7 @@ export type Database = {
           layout?: string | null
           lighting?: string | null
           model_version?: string | null
+          mutation_path?: Json
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
@@ -16542,6 +16665,7 @@ export type Database = {
           story_type?: string | null
           typography?: string | null
           updated_at?: string
+          visual_fingerprint?: string | null
           visual_style?: string | null
         }
         Update: {
@@ -16556,6 +16680,7 @@ export type Database = {
           color_palette?: Json | null
           composition?: string | null
           concept?: string | null
+          concept_node_id?: string | null
           created_at?: string
           creative_dna?: Json
           cta?: string | null
@@ -16563,6 +16688,7 @@ export type Database = {
           embedding?: string | null
           embedding_ref?: string | null
           evolution_attempts?: number
+          family?: string | null
           font_size?: number | null
           headline?: string | null
           headline_id?: string | null
@@ -16574,6 +16700,7 @@ export type Database = {
           layout?: string | null
           lighting?: string | null
           model_version?: string | null
+          mutation_path?: Json
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
@@ -16595,7 +16722,89 @@ export type Database = {
           story_type?: string | null
           typography?: string | null
           updated_at?: string
+          visual_fingerprint?: string | null
           visual_style?: string | null
+        }
+        Relationships: []
+      }
+      pcie2_cta_families: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          intent: string
+          last_used_at: string | null
+          name: string
+          template: string
+          uses_count: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          intent: string
+          last_used_at?: string | null
+          name: string
+          template: string
+          uses_count?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          intent?: string
+          last_used_at?: string | null
+          name?: string
+          template?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
+      pcie2_engine_health: {
+        Row: {
+          active_concepts: number
+          active_families: number
+          avg_similarity: number
+          creatives_total: number
+          growth_rate_5min: number
+          id: string
+          mutations_last_hour: number
+          notes: string | null
+          queue_depth: number
+          rejections_last_hour: number
+          saturation_index: number
+          snapshot_at: string
+          visual_fingerprints: number
+        }
+        Insert: {
+          active_concepts?: number
+          active_families?: number
+          avg_similarity?: number
+          creatives_total?: number
+          growth_rate_5min?: number
+          id?: string
+          mutations_last_hour?: number
+          notes?: string | null
+          queue_depth?: number
+          rejections_last_hour?: number
+          saturation_index?: number
+          snapshot_at?: string
+          visual_fingerprints?: number
+        }
+        Update: {
+          active_concepts?: number
+          active_families?: number
+          avg_similarity?: number
+          creatives_total?: number
+          growth_rate_5min?: number
+          id?: string
+          mutations_last_hour?: number
+          notes?: string | null
+          queue_depth?: number
+          rejections_last_hour?: number
+          saturation_index?: number
+          snapshot_at?: string
+          visual_fingerprints?: number
         }
         Relationships: []
       }
@@ -16724,6 +16933,42 @@ export type Database = {
           reliability?: string
           sample_size?: number
           window_days?: number
+        }
+        Relationships: []
+      }
+      pcie2_headline_families: {
+        Row: {
+          active: boolean
+          avg_similarity: number
+          created_at: string
+          id: string
+          intent: string
+          name: string
+          retired_at: string | null
+          template: string
+          uses_count: number
+        }
+        Insert: {
+          active?: boolean
+          avg_similarity?: number
+          created_at?: string
+          id?: string
+          intent: string
+          name: string
+          retired_at?: string | null
+          template: string
+          uses_count?: number
+        }
+        Update: {
+          active?: boolean
+          avg_similarity?: number
+          created_at?: string
+          id?: string
+          intent?: string
+          name?: string
+          retired_at?: string | null
+          template?: string
+          uses_count?: number
         }
         Relationships: []
       }
@@ -17057,6 +17302,57 @@ export type Database = {
           model?: string
           module?: string
           prompt_version?: string
+        }
+        Relationships: []
+      }
+      pcie2_mutation_log: {
+        Row: {
+          after: Json | null
+          attempt: number
+          before: Json | null
+          created_at: string
+          id: string
+          job_id: string | null
+          outcome: string
+          product_id: string | null
+          quality_after: number | null
+          quality_before: number | null
+          reason: string
+          similarity_after: number | null
+          similarity_before: number | null
+          strategy: string
+        }
+        Insert: {
+          after?: Json | null
+          attempt?: number
+          before?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          outcome: string
+          product_id?: string | null
+          quality_after?: number | null
+          quality_before?: number | null
+          reason: string
+          similarity_after?: number | null
+          similarity_before?: number | null
+          strategy: string
+        }
+        Update: {
+          after?: Json | null
+          attempt?: number
+          before?: Json | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          outcome?: string
+          product_id?: string | null
+          quality_after?: number | null
+          quality_before?: number | null
+          reason?: string
+          similarity_after?: number | null
+          similarity_before?: number | null
+          strategy?: string
         }
         Relationships: []
       }
@@ -17413,6 +17709,72 @@ export type Database = {
           started_at?: string
           status?: string
           totals?: Json
+        }
+        Relationships: []
+      }
+      pcie2_visual_dna: {
+        Row: {
+          background: string | null
+          camera_angle: string | null
+          color_palette: string | null
+          composition: string | null
+          created_at: string
+          cropping: string | null
+          depth_of_field: string | null
+          fingerprint: string
+          id: string
+          last_used_at: string | null
+          layout: string | null
+          lens: string | null
+          lighting: string | null
+          pet_age: string | null
+          pet_breed: string | null
+          room: string | null
+          season: string | null
+          uses_count: number
+          weather: string | null
+        }
+        Insert: {
+          background?: string | null
+          camera_angle?: string | null
+          color_palette?: string | null
+          composition?: string | null
+          created_at?: string
+          cropping?: string | null
+          depth_of_field?: string | null
+          fingerprint: string
+          id?: string
+          last_used_at?: string | null
+          layout?: string | null
+          lens?: string | null
+          lighting?: string | null
+          pet_age?: string | null
+          pet_breed?: string | null
+          room?: string | null
+          season?: string | null
+          uses_count?: number
+          weather?: string | null
+        }
+        Update: {
+          background?: string | null
+          camera_angle?: string | null
+          color_palette?: string | null
+          composition?: string | null
+          created_at?: string
+          cropping?: string | null
+          depth_of_field?: string | null
+          fingerprint?: string
+          id?: string
+          last_used_at?: string | null
+          layout?: string | null
+          lens?: string | null
+          lighting?: string | null
+          pet_age?: string | null
+          pet_breed?: string | null
+          room?: string | null
+          season?: string | null
+          uses_count?: number
+          weather?: string | null
         }
         Relationships: []
       }
@@ -34936,20 +35298,25 @@ export type Database = {
             Returns: string
           }
       pcie2_claim_creative_jobs: {
-        Args: { p_limit: number; p_token: string }
+        Args: { p_limit?: number; p_token?: string }
         Returns: {
           attempts: number
           claim_token: string | null
           claimed_at: string | null
           completed_at: string | null
           concept: string
+          concept_node_id: string | null
           created_at: string
           creative_id: string | null
+          family: string | null
           id: string
           last_error: string | null
+          last_mutation_strategy: string | null
+          mutation_attempts: number
           product_id: string
           status: string
           updated_at: string
+          visual_fingerprint: string | null
         }[]
         SetofOptions: {
           from: "*"

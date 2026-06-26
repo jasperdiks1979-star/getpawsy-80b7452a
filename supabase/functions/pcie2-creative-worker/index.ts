@@ -1,21 +1,22 @@
-// PCIE2 Creative Worker — resumable, time-boxed queue worker.
-// Constraints:
-//   - Hard runtime cap 55s per invocation.
-//   - Persists progress after every creative (idempotent insert).
-//   - Auto-chains itself if jobs remain and creative count < TARGET.
-//   - Stops automatically at TARGET; triggers pcie2-step5-validate when crossing target.
-//   - Respects Evolution Guard (SIM_THRESHOLD 0.88) and quality gate (>=70).
-//   - No Pinterest publishing, no API calls beyond AI gateway + DB.
+// PCIE2 Creative Worker v2 — mutation-first Evolution Guard.
+// On low quality (<70) or high cosine similarity (>=0.88), sequentially mutate
+// angle -> headline -> cta -> visual -> emotion before rejecting.
+// Inserts include family + visual_fingerprint so the 4-key uniqueness index
+// allows multiple distinct creatives per (product, concept).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { chatJson, embed, pgvector, cosine } from "../_shared/pcie2-ai.ts";
-import { SIM_THRESHOLD, MAX_EVOLUTION_ATTEMPTS } from "../_shared/pcie2-evolution.ts";
+import { SIM_THRESHOLD } from "../_shared/pcie2-evolution.ts";
+import {
+  MUTATION_STRATEGIES, ENGINE_V2,
+  pickVisualDNA, fingerprintVisualDNA,
+} from "../_shared/pcie2-engine-v2.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const SUPA = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const MODEL = "google/gemini-3-flash-preview";
-const PROMPT_VERSION = "creative.v1";
-const TARGET = 1000;
-const QUALITY_MIN = 70;
+const PROMPT_VERSION = "creative.v2.mutation";
+const TARGET = ENGINE_V2.TARGET_CREATIVES;
+const QUALITY_MIN = ENGINE_V2.QUALITY_MIN;
 const RUNTIME_BUDGET_MS = 55_000;
 const BATCH_CLAIM = 4;
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
@@ -30,16 +31,24 @@ async function queuedCount(): Promise<number> {
   return count ?? 0;
 }
 
-async function generateBrief(product: { name: string; category: string | null }, concept: string, attempt: number) {
+async function generateBrief(product: { name: string; category: string | null }, concept: string, family: string | null, mutationHint?: string) {
   const system =
     "You are an art director for premium US pet ecommerce on Pinterest. " +
-    "Reply ONLY with JSON: {prompt:string, negative_prompt:string, layout:string, camera_angle:string, lighting:string, background:string, breed:string, pose:string, composition:string, style:string, cta:string, quality:number, predicted_ctr:number, pinterest_score:number, ai_confidence:number}.";
+    "Reply ONLY with JSON: {prompt:string, negative_prompt:string, layout:string, camera_angle:string, lighting:string, background:string, breed:string, pose:string, composition:string, style:string, headline:string, cta:string, primary_emotion:string, quality:number, predicted_ctr:number, pinterest_score:number, ai_confidence:number}.";
   const prompt =
-    `Product: "${product.name}" (category ${product.category ?? "pet"}). Concept: "${concept}". Attempt #${attempt}. ` +
-    `Compose a Pinterest-native creative brief. No watermarks, no on-product text, no AI fluff. ` +
-    `Lighting/background/camera_angle/composition must each be 1 short phrase. ` +
-    `predicted_ctr 0–1, pinterest_score 0–100, ai_confidence 0–100, quality 0–100.`;
+    `Product: "${product.name}" (category ${product.category ?? "pet"}).
+Concept angle: "${concept}".
+Creative family: ${family ?? "lifestyle"}.
+${mutationHint ? `MUTATION DIRECTIVE: ${mutationHint}` : ""}
+Compose a Pinterest-native creative brief. No watermarks, no on-product text, no AI fluff.
+Lighting/background/camera_angle/composition each one short phrase.
+headline 6-12 words, cta 2-5 words, primary_emotion one word.
+predicted_ctr 0-1, pinterest_score 0-100, ai_confidence 0-100, quality 0-100.`;
   return await chatJson<any>({ model: MODEL, system, prompt, temperature: 0.95 });
+}
+
+async function logMutation(row: any) {
+  await SUPA.from("pcie2_mutation_log").insert(row).then(() => {}, () => {});
 }
 
 async function processJob(job: any, report: any) {
@@ -49,66 +58,109 @@ async function processJob(job: any, report: any) {
     report.failed++; return;
   }
 
-  // Existing siblings for evolution guard
+  // Siblings for similarity
   const { data: existing } = await SUPA.from("pcie2_creatives")
-    .select("id,embedding,concept").eq("product_id", prod.id).eq("retired", false).limit(200);
+    .select("id,embedding").eq("product_id", prod.id).eq("retired", false).limit(200);
   const existingVecs: number[][] = ((existing ?? []) as any[])
     .map((r) => (typeof r.embedding === "string" ? JSON.parse(r.embedding) : r.embedding))
     .filter(Array.isArray);
-  const sameConcept = (existing ?? []).find((r: any) => r.concept === job.concept);
-  if (sameConcept) {
-    await SUPA.from("pcie2_creative_jobs").update({
-      status: "done", creative_id: sameConcept.id, completed_at: new Date().toISOString(), last_error: "already_exists",
-    }).eq("id", job.id);
-    report.duplicate_prevented++; return;
-  }
 
-  const [{ data: heads }, { data: hooks }] = await Promise.all([
-    SUPA.from("pcie2_headline_library").select("id,headline").eq("source_category", prod.category).eq("retired", false).limit(50),
-    SUPA.from("pcie2_hook_library").select("id,hook").eq("product_id", prod.id).eq("retired", false).limit(50),
-  ]);
-
+  const family: string | null = job.family ?? null;
+  let visualFingerprint: string = job.visual_fingerprint ?? fingerprintVisualDNA(pickVisualDNA(Date.now()));
   let brief: any = null;
   let vec: number[] = [];
-  let attempts = 0;
   let lastReason = "";
   let accepted = false;
-  let regenerated = false;
+  let mutationPath: string[] = [];
+  let mutationCount = 0;
 
-  while (attempts < MAX_EVOLUTION_ATTEMPTS && !accepted) {
-    attempts++;
-    if (attempts > 1) regenerated = true;
+  // Base attempts (no mutation) then escalate through mutation strategies
+  const strategies: { strategy: string | null; instruction?: string }[] = [
+    ...Array(ENGINE_V2.MAX_BASE_ATTEMPTS).fill({ strategy: null }),
+    ...MUTATION_STRATEGIES.map((m) => ({ strategy: m.strategy, instruction: m.instruction })),
+  ];
+
+  for (const step of strategies) {
+    if (accepted) break;
+    if (step.strategy) {
+      mutationCount++;
+      mutationPath.push(step.strategy);
+      // visual strategy → roll a new fingerprint
+      if (step.strategy === "visual") {
+        visualFingerprint = fingerprintVisualDNA(pickVisualDNA(Date.now() + mutationCount * 1009));
+      }
+    }
     try {
-      brief = await generateBrief(prod, job.concept, attempts);
+      const before = brief;
+      brief = await generateBrief(prod, job.concept, family, step.instruction);
       const quality = Number(brief.quality ?? 0);
-      if (quality < QUALITY_MIN) { lastReason = `quality_${quality}_lt_${QUALITY_MIN}`; continue; }
-      const text = `${brief.prompt} ${brief.layout} ${brief.camera_angle} ${brief.lighting} ${brief.background} ${brief.composition} ${brief.style}`;
+      if (quality < QUALITY_MIN) {
+        lastReason = `quality_${quality}_lt_${QUALITY_MIN}`;
+        if (step.strategy) {
+          await logMutation({
+            job_id: job.id, product_id: prod.id, reason: "low_quality", strategy: step.strategy,
+            attempt: mutationCount, before, after: brief, outcome: "retry",
+            quality_before: Number(before?.quality ?? 0), quality_after: quality,
+          });
+        }
+        continue;
+      }
+      const text = `${brief.prompt} ${brief.headline} ${brief.cta} ${brief.layout} ${brief.camera_angle} ${brief.lighting} ${brief.background} ${brief.composition} ${brief.style} ${visualFingerprint}`;
       const [v] = await embed([text]);
       vec = v ?? [];
       if (!vec.length) { lastReason = "embed_empty"; continue; }
       const maxSim = existingVecs.reduce((m, e) => Math.max(m, cosine(vec, e)), 0);
-      if (maxSim >= SIM_THRESHOLD) { lastReason = `sim_${maxSim.toFixed(3)}_ge_${SIM_THRESHOLD}`; continue; }
+      if (maxSim >= SIM_THRESHOLD) {
+        lastReason = `sim_${maxSim.toFixed(3)}_ge_${SIM_THRESHOLD}`;
+        if (step.strategy) {
+          await logMutation({
+            job_id: job.id, product_id: prod.id, reason: "high_similarity", strategy: step.strategy,
+            attempt: mutationCount, before, after: brief, outcome: "retry",
+            similarity_before: maxSim, similarity_after: maxSim,
+          });
+        }
+        continue;
+      }
       accepted = true;
+      if (step.strategy) {
+        await logMutation({
+          job_id: job.id, product_id: prod.id, reason: lastReason || "ok", strategy: step.strategy,
+          attempt: mutationCount, before, after: brief, outcome: "accepted",
+          quality_after: quality, similarity_after: maxSim,
+        });
+        report.mutated++;
+      }
     } catch (e) {
       lastReason = `ai_error:${(e as Error).message?.slice(0, 120)}`;
     }
   }
 
-  if (regenerated && accepted) report.regenerated++;
-
   if (!accepted) {
     await SUPA.from("pcie2_creative_jobs").update({
-      status: "skipped", last_error: lastReason || "evolution_blocked", completed_at: new Date().toISOString(),
+      status: "skipped", last_error: lastReason || "evolution_blocked",
+      mutation_attempts: mutationCount, last_mutation_strategy: mutationPath.at(-1) ?? null,
+      completed_at: new Date().toISOString(),
     }).eq("id", job.id);
-    report.skipped++; return;
+    report.similarity_prevented++;
+    return;
   }
 
-  const headline = heads?.[Math.floor(Math.random() * (heads?.length ?? 1))];
-  const hook = hooks?.[Math.floor(Math.random() * (hooks?.length ?? 1))];
+  // Register visual DNA fingerprint usage (idempotent)
+  await SUPA.from("pcie2_visual_dna").upsert({
+    fingerprint: visualFingerprint,
+    camera_angle: brief.camera_angle, lighting: brief.lighting,
+    background: brief.background, composition: brief.composition,
+    pet_breed: brief.breed, layout: brief.layout,
+    uses_count: 1, last_used_at: new Date().toISOString(),
+  }, { onConflict: "fingerprint" }).then(() => {}, () => {});
+
   const row = {
     product_id: prod.id,
     category: prod.category,
     concept: job.concept,
+    family,
+    visual_fingerprint: visualFingerprint,
+    concept_node_id: job.concept_node_id ?? null,
     prompt: String(brief.prompt ?? "").slice(0, 4000),
     negative_prompt: String(brief.negative_prompt ?? "").slice(0, 1000),
     layout: brief.layout,
@@ -119,34 +171,29 @@ async function processJob(job: any, report: any) {
     pet_pose: brief.pose,
     composition: brief.composition,
     visual_style: brief.style,
+    headline: brief.headline ?? null,
     cta: brief.cta,
-    headline: headline?.headline ?? null,
-    hook: hook?.hook ?? null,
-    headline_id: headline?.id ?? null,
-    hook_id: hook?.id ?? null,
+    primary_emotion: brief.primary_emotion ?? null,
     quality_score: Number(brief.quality ?? 70),
     predicted_ctr: Number(brief.predicted_ctr ?? 0.012),
     pinterest_score: Number(brief.pinterest_score ?? 70),
     ai_confidence: Number(brief.ai_confidence ?? 80),
     duplicate_score: 0,
-    evolution_attempts: attempts,
+    evolution_attempts: ENGINE_V2.MAX_BASE_ATTEMPTS + mutationCount,
+    mutation_path: mutationPath,
     model_version: MODEL,
     prompt_version: PROMPT_VERSION,
     status: "draft",
     embedding: pgvector(vec),
-    creative_dna: { concept: job.concept, attempts },
+    creative_dna: { concept: job.concept, family, mutations: mutationPath },
     scores: { quality: brief.quality, predicted_ctr: brief.predicted_ctr, pinterest_score: brief.pinterest_score },
   };
 
-  // Idempotent insert — unique (product_id, concept) where retired=false
   const { data: ins, error } = await SUPA.from("pcie2_creatives").insert(row).select("id").maybeSingle();
   if (error) {
-    // Duplicate from unique index → mark prevented
     if (String(error.message || "").includes("duplicate key")) {
-      const { data: existingRow } = await SUPA.from("pcie2_creatives")
-        .select("id").eq("product_id", prod.id).eq("concept", job.concept).eq("retired", false).maybeSingle();
       await SUPA.from("pcie2_creative_jobs").update({
-        status: "done", creative_id: existingRow?.id ?? null, completed_at: new Date().toISOString(), last_error: "duplicate_prevented",
+        status: "done", last_error: "duplicate_prevented", completed_at: new Date().toISOString(),
       }).eq("id", job.id);
       report.duplicate_prevented++; return;
     }
@@ -157,29 +204,28 @@ async function processJob(job: any, report: any) {
   }
 
   await SUPA.from("pcie2_creative_jobs").update({
-    status: "done", creative_id: ins?.id ?? null, completed_at: new Date().toISOString(),
+    status: "done", creative_id: ins?.id ?? null,
+    mutation_attempts: mutationCount,
+    last_mutation_strategy: mutationPath.at(-1) ?? null,
+    completed_at: new Date().toISOString(),
   }).eq("id", job.id);
   report.generated++;
+
+  // Bump concept usage so self-healer rotates
+  if (job.concept_node_id) {
+    await SUPA.rpc("noop").then(() => {}, () => {});
+    await SUPA.from("pcie2_concept_graph").update({
+      last_used_at: new Date().toISOString(),
+    }).eq("id", job.concept_node_id);
+  }
 }
 
-async function chainNextWorker() {
-  // Background self-invocation that survives handler return (edge runtime).
-  const p = fetch(`${SUPA_URL}/functions/v1/pcie2-creative-worker`, {
+function chain(name: string, payload: any) {
+  const p = fetch(`${SUPA_URL}/functions/v1/${name}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
-    body: JSON.stringify({ chained: true }),
+    body: JSON.stringify(payload),
   }).catch(() => {});
-  // @ts-ignore - EdgeRuntime is provided by Supabase Edge Runtime
-  try { (globalThis as any).EdgeRuntime?.waitUntil?.(p); } catch { /* ignore */ }
-}
-
-async function triggerStep5() {
-  const p = fetch(`${SUPA_URL}/functions/v1/pcie2-step5-validate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${ANON}`, "apikey": ANON },
-    body: JSON.stringify({ triggered_by: "worker_target_reached" }),
-  }).catch(() => {});
-  // @ts-ignore
   try { (globalThis as any).EdgeRuntime?.waitUntil?.(p); } catch { /* ignore */ }
 }
 
@@ -190,16 +236,16 @@ Deno.serve(async (req) => {
   const token = crypto.randomUUID();
 
   const report: any = {
-    batch_id: token, generated: 0, failed: 0, regenerated: 0, skipped: 0,
-    duplicate_prevented: 0, claimed: 0, remaining: 0, total_creatives_before: 0,
-    total_creatives_after: 0, target: TARGET, target_reached: false,
-    chained: false, runtime_ms: 0,
+    batch_id: token, generated: 0, failed: 0, mutated: 0,
+    similarity_prevented: 0, duplicate_prevented: 0, claimed: 0, remaining: 0,
+    total_creatives_before: 0, total_creatives_after: 0, target: TARGET,
+    target_reached: false, chained: false, runtime_ms: 0,
   };
 
   report.total_creatives_before = await totalCreatives();
   if (report.total_creatives_before >= TARGET) {
     report.target_reached = true;
-    await triggerStep5();
+    chain("pcie2-step5-validate", { triggered_by: "worker_target_reached" });
     report.runtime_ms = Date.now() - startedAt;
     return new Response(JSON.stringify({ ok: true, message: "target_reached", report }), {
       headers: { ...cors, "Content-Type": "application/json" },
@@ -209,11 +255,14 @@ Deno.serve(async (req) => {
   while (Date.now() < deadline) {
     if ((await totalCreatives()) >= TARGET) break;
     const { data: claimed } = await SUPA.rpc("pcie2_claim_creative_jobs", { p_limit: BATCH_CLAIM, p_token: token });
-    if (!claimed?.length) break;
+    if (!claimed?.length) {
+      // No jobs: ask self-healer to enqueue then break out so we chain
+      chain("pcie2-self-healer", { triggered_by: "worker_empty" });
+      break;
+    }
     report.claimed += claimed.length;
     for (const job of claimed) {
       if (Date.now() >= deadline) {
-        // Release un-processed job back to queued
         await SUPA.from("pcie2_creative_jobs").update({ status: "queued", claim_token: null }).eq("id", job.id);
         continue;
       }
@@ -231,30 +280,20 @@ Deno.serve(async (req) => {
   report.remaining = await queuedCount();
   report.runtime_ms = Date.now() - startedAt;
 
-  // Throughput → ETA
-  const elapsedSec = Math.max(1, report.runtime_ms / 1000);
-  const ratePerSec = report.generated / elapsedSec; // creatives/sec
-  const need = Math.max(0, TARGET - report.total_creatives_after);
-  report.estimated_completion_seconds = ratePerSec > 0 ? Math.round(need / ratePerSec) : null;
-  report.estimated_completion_iso = ratePerSec > 0
-    ? new Date(Date.now() + (need / ratePerSec) * 1000).toISOString() : null;
-
   if (report.total_creatives_after >= TARGET) {
     report.target_reached = true;
-  } else if (report.remaining > 0 && report.claimed > 0) {
+    chain("pcie2-step5-validate", { triggered_by: "worker_target_reached" });
+  } else if (report.remaining > 0) {
     report.chained = true;
+    chain("pcie2-creative-worker", { chained: true });
+  } else {
+    chain("pcie2-self-healer", { triggered_by: "worker_drained" });
   }
 
-  // Persist batch report
   await SUPA.from("pcie2_runs").insert({
-    run_type: "creative_worker_batch",
-    status: "succeeded",
-    totals: report,
-    finished_at: new Date().toISOString(),
-  });
-
-  if (report.target_reached) await triggerStep5();
-  else if (report.chained) await chainNextWorker();
+    run_type: "creative_worker_v2_batch", status: "succeeded",
+    totals: report, finished_at: new Date().toISOString(),
+  }).then(() => {}, () => {});
 
   return new Response(JSON.stringify({ ok: true, report }), {
     headers: { ...cors, "Content-Type": "application/json" },
