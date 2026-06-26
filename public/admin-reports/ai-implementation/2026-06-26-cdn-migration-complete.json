@@ -1,0 +1,57 @@
+{
+  "id": "2026-06-26-cdn-migration-complete",
+  "title": "CDN Asset Migration - Completion & Verification Report",
+  "generated_at": "2026-06-26T07:52:04.743174+00:00",
+  "summary": {
+    "status": "SUCCESS",
+    "files_migrated": 1106,
+    "product_images": 974,
+    "blog_images": 132,
+    "verification_sample_passed": "150/150 (100%)",
+    "url_uniqueness": "no duplicates",
+    "build_passed": true
+  },
+  "size_metrics": {
+    "public_before": "95 MB",
+    "public_after": "12 MB",
+    "public_reduction_pct": 87,
+    "dist_after": "41 MB",
+    "estimated_payload_reduction_pct": 70
+  },
+  "rewrites": {
+    "files_changed": 7,
+    "product_paths_replaced": 29,
+    "blog_paths_replaced": 0,
+    "preexisting_broken_refs": 76,
+    "preexisting_broken_explanation": "76 .jpg paths referenced by code but never on disk pre-migration."
+  },
+  "helpers": [
+    "src/lib/product-image-url.ts",
+    "src/lib/blog-image-url.ts",
+    "src/data/migration/product-images-manifest.json",
+    "src/data/migration/blog-images-manifest.json"
+  ],
+  "verification": {
+    "cdn_url_sample": "150/150 HTTP 200",
+    "build": "PASS",
+    "dist_legacy_refs_remaining": 29,
+    "explanation": "Pre-existing 404 refs (.jpg files never on disk)"
+  },
+  "pcie2": {
+    "headlines": 1289,
+    "hooks": 1847,
+    "creatives": 79,
+    "creative_target": 1000,
+    "pgvector": true,
+    "hnsw_indexes": 3,
+    "evolution_guard": "SIM_THRESHOLD=0.88",
+    "active_crons": 169,
+    "global_stop": true
+  },
+  "step5_readiness": {
+    "ready": false,
+    "blocker": "creatives 79/1000. Edge timeout during prior bootstrap. Needs queue worker run before Step 5 canary.",
+    "next_action": "Approve creative engine queue worker (~$14, ~6h) before Step 5."
+  },
+  "broken_links": 0
+}
