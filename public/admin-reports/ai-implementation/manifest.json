@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "slug": "2026-06-26-pinterest-week0-canary-unlock",
+      "title": "Pinterest Week-0 Canary Unlock",
+      "generated_at": "2026-06-26T18:15:00Z",
+      "status": "AWAITING_ADMIN_CLICK",
+      "verdict": "ARMED",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-week0-canary-unlock.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-week0-canary-unlock.json",
+      "summary": "Trust gate active (score 36 < 60). Canary path armed: 1 premium pin / 24h via canonical PCIE2 pipeline with full gate enforcement and atomic re-lock."
+    },
+    {
       "slug": "pinterest-wave1-production-rollout",
       "title": "Pinterest Wave 1 Production Rollout",
       "generated_at": "2026-06-26T17:23:57.277469Z",
