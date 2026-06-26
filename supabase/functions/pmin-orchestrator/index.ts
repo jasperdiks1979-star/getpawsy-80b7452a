@@ -21,8 +21,9 @@ Deno.serve(async (req) => {
   // Admin or service-role auth
   const authHeader = req.headers.get("authorization") || "";
   const apikey = req.headers.get("apikey") || "";
+  console.log("[pmin-orch] auth check", { hasAuth: !!authHeader, authPrefix: authHeader.slice(0, 20), apikeyPrefix: apikey.slice(0, 20), anonPrefix: ANON_KEY.slice(0, 20), srPrefix: SERVICE_ROLE.slice(0, 20) });
   const isService = authHeader.includes(SERVICE_ROLE) || apikey === SERVICE_ROLE;
-  const isCron = apikey === ANON_KEY;
+  const isCron = apikey === ANON_KEY || authHeader === `Bearer ${ANON_KEY}`;
   if (!isService && !isCron) {
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
