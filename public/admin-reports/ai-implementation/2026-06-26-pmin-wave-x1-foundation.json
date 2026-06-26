@@ -1,0 +1,53 @@
+{
+  "slug": "2026-06-26-pmin-wave-x1-foundation",
+  "title": "PMIN Wave X1 \u2014 Pinterest Market Intelligence Network \u00b7 Foundation & Public Discovery",
+  "wave": "X1",
+  "generated_at": "2026-06-26T12:20:51.681314Z",
+  "status": "GREEN",
+  "mode": "live",
+  "safety_locks": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false,
+    "paip_brain_enabled": false,
+    "pmin_brain_enabled": false
+  },
+  "schema": [
+    "pmin_settings",
+    "pmin_sources",
+    "pmin_runs",
+    "pmin_run_steps",
+    "pmin_discovered_pins",
+    "pmin_keyword_trends",
+    "pmin_category_knowledge"
+  ],
+  "edge_functions": [
+    "pmin-orchestrator",
+    "pmin-discovery-harvester",
+    "pmin-keyword-trend-scorer"
+  ],
+  "cron": {
+    "id": 220,
+    "name": "pmin-discovery-daily",
+    "schedule": "45 3 * * * UTC"
+  },
+  "admin_ui": "/admin/pmin",
+  "initial_run": {
+    "mode": "live",
+    "discovered_pins": 134,
+    "keyword_trends_scored": 1440,
+    "errors": 0,
+    "duration_seconds": 6
+  },
+  "compliance": {
+    "raw_copyrighted_content_stored": false,
+    "text_sample_cap_chars": 200,
+    "images_stored": false,
+    "approach": "metadata + statistical patterns only"
+  },
+  "budget": {
+    "daily_ai_usd": 30,
+    "per_run_vision_usd": 5,
+    "spent_this_wave_usd": 0
+  },
+  "next_wave": "X2 \u2014 DNA Engines (vision + headline + description classifiers). Requires user approval (AI spend)."
+}
