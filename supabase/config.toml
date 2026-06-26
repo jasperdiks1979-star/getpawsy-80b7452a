@@ -416,3 +416,21 @@ verify_jwt = false
 
 [functions.pe-cron-bootstrap]
 verify_jwt = false
+
+[functions.paip-trend-harvester]
+verify_jwt = false
+
+[functions.paip-visual-attention]
+verify_jwt = false
+
+[functions.paip-emotion-scorer]
+verify_jwt = false
+
+[functions.paip-seo-scorer]
+verify_jwt = false
+
+[functions.paip-competitor-scout]
+verify_jwt = false
+
+[functions.paip-product-ranker]
+verify_jwt = false
