@@ -20,6 +20,8 @@
     "feed:verify-live": "node scripts/verify-live-feed.js",
     "verify:us-address": "node scripts/verify-us-address.mjs",
     "verify:us-address:dist": "node scripts/verify-us-address.mjs --dist",
+    "reports:ai:repair": "python3 scripts/ai_implementation_report_pipeline.py --repair --generate-repair-report",
+    "reports:ai:verify": "python3 scripts/ai_implementation_report_pipeline.py --repair",
     "edge:contract": "bash scripts/edge-contract-check.sh",
     "start:render-worker": "node render-worker/start.mjs"
   },
