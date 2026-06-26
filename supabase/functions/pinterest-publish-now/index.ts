@@ -124,6 +124,15 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // ── PCIE2_GLOBAL_STOP guard (legacy publisher) ──
+  try {
+    const { checkPcie2Lock, pcie2LockJsonResponse } = await import("../_shared/pcie2-publish-lock.ts");
+    const __lock = await checkPcie2Lock(sb, "pinterest-publish-now");
+    if (__lock.blocked) return pcie2LockJsonResponse(corsHeaders, __lock);
+  } catch (_e) {
+    return fail("pcie2_lock", { message: "pcie2 lock check failed (fail-closed)" });
+  }
+
   // ── Admin auth ──
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return fail("auth", { message: "unauthorized" });
