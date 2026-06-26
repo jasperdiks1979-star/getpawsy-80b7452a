@@ -63,9 +63,25 @@ export default function PinterestRevenueAiPage() {
 
   useEffect(() => {
     load();
+    (async () => {
+      const { data } = await supabase
+        .from("prie_brain_snapshots")
+        .select("captured_at")
+        .order("captured_at", { ascending: false })
+        .limit(1);
+      const last = data?.[0]?.captured_at ? new Date(data[0].captured_at).getTime() : 0;
+      if (Date.now() - last > 30 * 60_000) {
+        supabase.functions
+          .invoke("prie-auto-orchestrator", { body: { trigger: "page_open" } })
+          .then(() => load())
+          .catch(() => {});
+      }
+    })();
+    const t = setInterval(load, 5 * 60_000);
+    return () => clearInterval(t);
   }, []);
 
-  async function invoke(fn: "prie-brain-sync" | "prie-revenue-predictor") {
+  async function invoke(fn: "prie-brain-sync" | "prie-revenue-predictor" | "prie-auto-orchestrator") {
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke(fn, { body: {} });
