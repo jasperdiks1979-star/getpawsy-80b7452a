@@ -3144,6 +3144,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pqif-v4"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PqifV4Page />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-creative-intel-v2"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
