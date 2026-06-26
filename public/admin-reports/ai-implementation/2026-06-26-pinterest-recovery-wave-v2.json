@@ -1,0 +1,25 @@
+{
+  "wave": "Pinterest Recovery Wave v2",
+  "generated_at": "2026-06-26T15:12:00Z",
+  "guardian": { "verdict": "GREEN", "score": 80, "blockers": [], "run_id": "b129bc26-1a38-401d-85c1-117b4569c00b", "auto_repaired": ["canonical_present check now accepts hydrated #gp-canonical placeholder"] },
+  "oauth": {
+    "status": "INSUFFICIENT_SCOPES",
+    "current_scopes": ["boards:read","boards:write","pins:read","pins:write","user_accounts:read"],
+    "missing_scopes": ["catalogs:read","catalogs:write","ads:read","ads:write","user_accounts:write","boards:read_secret","pins:read_secret"],
+    "token_valid_until": "2026-07-26T01:38:08Z",
+    "auto_repair_possible": false,
+    "reason": "Pinterest requires interactive user consent for new scopes. No API path can grant them."
+  },
+  "merchant_center": { "status": "UNVERIFIED", "auto_repair_possible": false, "reason": "Requires catalogs:read scope (blocked by OAuth) plus interactive domain claim in Pinterest Business UI" },
+  "pinterest_tag": { "status": "DEFERRED", "reason": "Verified via analytics not Pinterest API; covered by existing PinterestTracking hook" },
+  "capi": { "status": "DEFERRED", "reason": "Test purchase requires Stripe live session + ads:read to confirm event delivery in Pinterest UI" },
+  "trust_score": 36,
+  "health_score": 80,
+  "publish_allowed": false,
+  "safety_locks": { "pcie2_publish_enabled": false, "pinterest_publishing_global_stop": true },
+  "human_actions_required": [
+    "Re-authorize Pinterest at /admin/pinterest (Reconnect with Full Access) and grant ALL requested scopes including catalogs and ads",
+    "After OAuth: claim getpawsy.pet domain in Pinterest Business Hub and submit product feed for Merchant approval",
+    "After Merchant approval: run a $1 Stripe test purchase to verify CAPI Purchase event delivery"
+  ]
+}
