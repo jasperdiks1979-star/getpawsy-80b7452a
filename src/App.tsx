@@ -472,6 +472,7 @@ const RevenuePriorityReportPage = lazyWithRetry(() => import("./pages/admin/Reve
 const RevenuePriorityRemediationPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityRemediationPage"));
 const DeployStatusPage = lazyWithRetry(() => import("./pages/admin/DeployStatusPage"));
 const GuardianDashboardPage = lazyWithRetry(() => import("./pages/admin/GuardianDashboardPage"));
+const PinterestRecoveryDashboard = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryDashboard"));
 const PinterestPinSourceAuditPage = lazyWithRetry(() => import("./pages/admin/PinterestPinSourceAuditPage"));
 const PinterestVideoDestinationAudit = lazyWithRetry(() => import("./pages/admin/PinterestVideoDestinationAudit"));
 const ContentProductAudit = lazyWithRetry(() => import("./pages/admin/ContentProductAudit"));
