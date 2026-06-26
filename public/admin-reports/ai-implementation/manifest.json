@@ -1,367 +1,370 @@
-{
-  "version": 2,
-  "generated_at": "2026-06-26T02:05:58.364259+00:00",
-  "order": "chronological_ascending",
-  "source": "filesystem_scan",
-  "reports": [
-    {
-      "slug": "2026-06-26-pinterest-live-verification-audit",
-      "title": "Pinterest Live Verification & Root Cause Audit",
-      "run_id": "2026-06-26-pinterest-live-verification-audit",
-      "generated_at": "2026-06-26T02:29:31.654344Z",
-      "status": "fail",
-      "score": 35,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.json"
-    },
-    {
-      "id": "2026-06-26-pcie2-legacy-elimination-and-50pin-e2e",
-      "title": "PCIE2 \u2014 Legacy Pinterest Publisher Elimination + 50-Pin E2E",
-      "date": "2026-06-26",
-      "category": "Pinterest / PCIE2",
-      "summary": "Physically removed legacy publishers, enforced PCIE2 as sole publisher, ran 50-pin dry-run E2E across 18 functional classes, added CI guard.",
-      "files": {
-        "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.pdf",
-        "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.json",
-        "html": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.html"
-      }
-    },
-    {
-      "slug": "2026-06-25-commander-wave-6a-foundation",
-      "title": "Autonomous Commander \u00b7 Foundation",
-      "run_id": "2026-06-25-commander-wave-6a-foundation",
-      "generated_at": "2026-06-25T01:28:22Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
-    },
-    {
-      "slug": "2026-06-25-pinterest-creative-wave1",
-      "title": "Pinterest Creative Wave1",
-      "run_id": "9e7802d8-4879-4119-ae6b-ac561d087ea4",
-      "generated_at": "2026-06-25T01:28:22Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave1.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave1.json"
-    },
-    {
-      "slug": "2026-06-25-pinterest-creative-wave2",
-      "title": "Pinterest Creative Wave2",
-      "run_id": "99c383ab-a5ce-4699-a3c3-9d389207dcc2",
-      "generated_at": "2026-06-25T01:28:22Z",
-      "status": "shipped",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.json"
-    },
-    {
-      "slug": "2026-06-25-pinterest-metadata-repair",
-      "title": "Pinterest Metadata Repair",
-      "run_id": "8baa726d-c677-4375-be4b-64d1a7f18ce1",
-      "generated_at": "2026-06-25T01:28:22Z",
-      "status": "blocked_external_api_scope",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.json"
-    },
-    {
-      "slug": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
-      "title": "Revenue Recovery \u2014 Wave A.2: ATC Root Cause",
-      "run_id": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
-      "generated_at": "2026-06-25T01:28:22Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-1-foundations",
-      "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
-      "run_id": "agp-wave-1-foundations",
-      "generated_at": "2026-06-25T07:38:24.840733Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-2-media-pipeline",
-      "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
-      "run_id": "agp-wave-2-media-pipeline",
-      "generated_at": "2026-06-25T07:45:26.786356Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-3-enhance-qa",
-      "title": "Autonomous Growth Platform \u2014 Wave 3 (Enhancement + QA loop)",
-      "run_id": "agp-wave-3-enhance-qa",
-      "generated_at": "2026-06-25T08:13:52.665545+00:00",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-3-small-live",
-      "title": "Autonomous Growth Platform \u2014 Wave 3 Small Live Run (Enhancement)",
-      "run_id": "agp-wave-3-small-live",
-      "generated_at": "2026-06-25T08:30:00Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
-      "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
-      "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
-      "generated_at": "2026-06-25T08:46:33.193118Z",
-      "status": "succeeded",
-      "score": 88,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.json"
-    },
-    {
-      "slug": "2026-06-25-agp-wave-4a-plus-intelligence",
-      "title": "AGP Wave 4A+ \u2014 Growth Intelligence Layer",
-      "run_id": "ba910e61-6d21-49c6-8ebf-5e8287ac55e5",
-      "generated_at": "2026-06-25T09:48:05.019739Z",
-      "status": "succeeded",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.json"
-    },
-    {
-      "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
-      "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
-      "run_id": "aci-wave-5x",
-      "generated_at": "2026-06-25T10:39:43.974564+00:00",
-      "status": "success",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.json"
-    },
-    {
-      "slug": "2026-06-25-cmdr-wave-6a-foundations",
-      "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
-      "run_id": "2026-06-25-cmdr-wave-6a-foundations",
-      "generated_at": "2026-06-25T10:59:59.842353Z",
-      "status": "success",
-      "score": 90,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.json"
-    },
-    {
-      "slug": "2026-06-25-revenue-recovery-wave-a",
-      "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
-      "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
-      "generated_at": "2026-06-25T16:35:00Z",
-      "status": "shipped",
-      "score": 52,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
-    },
-    {
-      "slug": "2026-06-25-pe-wave1-control-center",
-      "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
-      "run_id": "2026-06-25-pe-wave1-control-center",
-      "generated_at": "2026-06-25T22:45:07.006358Z",
-      "status": "shipped",
-      "score": 78,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.json"
-    },
-    {
-      "slug": "2026-06-25-pe-wave1-cron-auth-fix",
-      "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Cron Auth Fix",
-      "run_id": "2026-06-25-pe-wave1-cron-auth-fix",
-      "generated_at": "2026-06-25T23:03:39.657626Z",
-      "status": "verified",
-      "score": 88,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.json",
-      "verification": {
-        "pe_cron_bootstrap": {
-          "http": 200,
-          "jobs_rescheduled": 3
-        },
-        "pe_endpoint_matrix_manual": {
-          "http": 200,
-          "auth_method": "x-internal-secret=PE_CRON_SECRET"
-        },
-        "pe_ai_operator_manual": {
-          "http": 200,
-          "issues_found": 14,
-          "queued": 14,
-          "auto_fixed": 0
-        },
-        "pe_daily_report_cron": "scheduled at 0 4 * * * UTC, invokes pe-ai-operator with cron-daily trigger header (same auth path verified above)",
-        "401_errors_remaining": 0
-      }
-    },
-    {
-      "slug": "2026-06-25-agp-master-report",
-      "title": "AGP Master Report",
-      "run_id": "2026-06-25-agp-master-report",
-      "generated_at": "2026-06-25T23:18:15Z",
-      "status": "recovered_from_pdf",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.json"
-    },
-    {
-      "slug": "2026-06-25-pga-wave-a-foundation",
-      "title": "Pinterest Growth AI \u2014 Wave A \u00b7 Foundation + Executive Overview",
-      "run_id": "2026-06-25-pga-wave-a-foundation",
-      "generated_at": "2026-06-25T23:22:15.830644Z",
-      "status": "shipped",
-      "score": 82,
-      "pdf": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.json"
-    },
-    {
-      "slug": "2026-06-26-ai-reports-recovery",
-      "title": "AI Implementation Reports \u2014 Recovery",
-      "run_id": "ai-reports-recovery",
-      "generated_at": "2026-06-26T00:23:33.123057+00:00",
-      "status": "shipped",
-      "score": 95,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.json",
-      "root_cause": "AdminReportsPage read `data.reports`, but manifest.json was a bare JSON array. The destructure returned undefined \u2192 empty list. Today's reports were on disk all along.",
-      "fix": [
-        "UI now accepts both manifest shapes (array OR { reports: [...] }).",
-        "Manifest rebuilt to v2 envelope { version, generated_at, reports[] } sorted newest-first.",
-        "Scanned public/admin-reports/ai-implementation/ and rebuilt 20 entries from disk, preserving titles/scores from prior entries.",
-        "Preview/Download buttons gracefully disable when a PDF or JSON is missing."
-      ],
-      "prevention": [
-        "Future runs must keep the { reports: [...] } envelope and append (never overwrite).",
-        "If manifest read fails or is empty while files exist on disk, regenerate from directory listing.",
-        "Each new report uses unique date-slug filenames; JSON is written even if PDF generation fails."
-      ],
-      "recovered_reports_count": 20,
-      "recovered_reports": [
-        "2026-06-26-aci-wave1-foundation",
-        "2026-06-26-prie-autonomous-pipeline",
-        "2026-06-25-pga-wave-a-foundation",
-        "2026-06-25-pe-wave1-cron-auth-fix",
-        "2026-06-25-revenue-recovery-wave-a",
-        "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
-        "2026-06-25-pinterest-metadata-repair",
-        "2026-06-25-pinterest-creative-wave2",
-        "2026-06-25-pinterest-creative-wave1",
-        "2026-06-25-pe-wave1-control-center",
-        "2026-06-25-commander-wave-6a-foundation",
-        "2026-06-25-cmdr-wave-6a-foundations",
-        "2026-06-25-agp-wave-4a-signal-lake-growth-score",
-        "2026-06-25-agp-wave-4a-plus-intelligence",
-        "2026-06-25-agp-wave-3-small-live",
-        "2026-06-25-agp-wave-3-enhance-qa",
-        "2026-06-25-agp-wave-2-media-pipeline",
-        "2026-06-25-agp-wave-1-foundations",
-        "2026-06-25-agp-master-report",
-        "2026-06-25-aci-wave-5x-autonomous-commerce"
-      ]
-    },
-    {
-      "slug": "2026-06-26-ai-report-system-repair",
-      "title": "AI Report System Repair",
-      "run_id": "ai-report-system-repair",
-      "generated_at": "2026-06-26T00:40:24.263431+00:00",
-      "status": "verified",
-      "score": 100,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.json",
-      "root_cause": "The prior repair only normalized the manifest shape. It did not enforce end-to-end safeguards, did not recover a PDF-only report, and the UI had no manifest-error diagnostics or cache-busting, so a failed/empty manifest path could still render the empty-state message.",
-      "verification": {
-        "pdf_exists": true,
-        "json_exists": true,
-        "manifest_updated": true,
-        "manifest_contents_verified": true,
-        "api_returns_report": true,
-        "reports_page_visible": true,
-        "preview_works": true,
-        "download_works": true,
-        "pdf_readable": true,
-        "pdf_status": "readable (2 pages)",
-        "pdf_pages": 2,
-        "manifest_api_status": 200,
-        "manifest_report_count": 22,
-        "empty_message_visible": false,
-        "preview_iframe_src": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.pdf",
-        "pdf_endpoint_status": 200,
-        "pdf_endpoint_content_type": "application/pdf",
-        "json_endpoint_status": 200,
-        "json_endpoint_parseable": true,
-        "console_errors": []
-      }
-    },
-    {
-      "slug": "2026-06-26-pcie2-wave1-foundation",
-      "title": "PCIE2 Wave 1 \u2014 Creative Memory + Product Understanding",
-      "run_id": "2026-06-26-pcie2-wave1-foundation",
-      "generated_at": "2026-06-26T00:49:48.930216Z",
-      "status": "PASS",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1-foundation.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1-foundation.json"
-    },
-    {
-      "slug": "2026-06-26-aci-wave1-foundation",
-      "title": "ACI Wave1 Foundation",
-      "run_id": "2026-06-26-aci-wave1-foundation",
-      "generated_at": "2026-06-26T01:28:22Z",
-      "status": "deployed",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.json"
-    },
-    {
-      "slug": "2026-06-26-prie-autonomous-pipeline",
-      "title": "PRIE Autonomous Pipeline",
-      "run_id": "2026-06-26-prie-autonomous-pipeline",
-      "generated_at": "2026-06-26T01:28:22Z",
-      "status": "deployed",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.json"
-    },
-    {
-      "slug": "2026-06-26-pcie2-wave1.5-performance-learning",
-      "title": "PCIE2 Wave 1.5 \u2014 Performance Learning Layer",
-      "run_id": "2026-06-26-pcie2-wave1.5-performance-learning",
-      "generated_at": "2026-06-26T01:32:29.337845Z",
-      "status": "PASS",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.json"
-    },
-    {
-      "slug": "2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace",
-      "title": "PCIE2 Publishing Kill Switch + Last-50-Pins Pipeline Trace",
-      "run_id": "2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace",
-      "generated_at": "2026-06-26T01:44:13.291605Z",
-      "status": "PASS",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.json"
-    },
-    {
-      "slug": "2026-06-26-pcie2-sole-publisher-e2e",
-      "title": "Pcie2 Sole Publisher E2e",
-      "run_id": "2026-06-26-pcie2-sole-publisher-e2e",
-      "generated_at": "2026-06-26T02:05:49Z",
-      "status": "verified",
-      "score": 0,
-      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.pdf",
-      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.json"
+[
+  {
+    "slug": "2026-06-26-pcie2-controlled-migration-halted-phase2",
+    "title": "PCIE2 Controlled Migration \u2014 HALTED at Phase 2 (readiness fail)",
+    "generated_at": "2026-06-26T06:09:46.338416Z",
+    "status": "HALT",
+    "score": 30,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-controlled-migration-halted-phase2.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-controlled-migration-halted-phase2.json",
+    "html": "/admin-reports/ai-implementation/2026-06-26-pcie2-controlled-migration-halted-phase2.html"
+  },
+  {
+    "slug": "2026-06-26-pinterest-live-verification-audit",
+    "title": "Pinterest Live Verification & Root Cause Audit",
+    "run_id": "2026-06-26-pinterest-live-verification-audit",
+    "generated_at": "2026-06-26T02:29:31.654344Z",
+    "status": "fail",
+    "score": 35,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-live-verification-audit.json"
+  },
+  {
+    "id": "2026-06-26-pcie2-legacy-elimination-and-50pin-e2e",
+    "title": "PCIE2 \u2014 Legacy Pinterest Publisher Elimination + 50-Pin E2E",
+    "date": "2026-06-26",
+    "category": "Pinterest / PCIE2",
+    "summary": "Physically removed legacy publishers, enforced PCIE2 as sole publisher, ran 50-pin dry-run E2E across 18 functional classes, added CI guard.",
+    "files": {
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.json",
+      "html": "/admin-reports/ai-implementation/2026-06-26-pcie2-legacy-elimination-and-50pin-e2e.html"
     }
-  ],
-  "updated_at": "2026-06-26T02:19:40.244566+00:00"
-}
+  },
+  {
+    "slug": "2026-06-25-commander-wave-6a-foundation",
+    "title": "Autonomous Commander \u00b7 Foundation",
+    "run_id": "2026-06-25-commander-wave-6a-foundation",
+    "generated_at": "2026-06-25T01:28:22Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-commander-wave-6a-foundation.json"
+  },
+  {
+    "slug": "2026-06-25-pinterest-creative-wave1",
+    "title": "Pinterest Creative Wave1",
+    "run_id": "9e7802d8-4879-4119-ae6b-ac561d087ea4",
+    "generated_at": "2026-06-25T01:28:22Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave1.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave1.json"
+  },
+  {
+    "slug": "2026-06-25-pinterest-creative-wave2",
+    "title": "Pinterest Creative Wave2",
+    "run_id": "99c383ab-a5ce-4699-a3c3-9d389207dcc2",
+    "generated_at": "2026-06-25T01:28:22Z",
+    "status": "shipped",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-creative-wave2.json"
+  },
+  {
+    "slug": "2026-06-25-pinterest-metadata-repair",
+    "title": "Pinterest Metadata Repair",
+    "run_id": "8baa726d-c677-4375-be4b-64d1a7f18ce1",
+    "generated_at": "2026-06-25T01:28:22Z",
+    "status": "blocked_external_api_scope",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pinterest-metadata-repair.json"
+  },
+  {
+    "slug": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+    "title": "Revenue Recovery \u2014 Wave A.2: ATC Root Cause",
+    "run_id": "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+    "generated_at": "2026-06-25T01:28:22Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a2-atc-root-cause.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-1-foundations",
+    "title": "Autonomous Growth Platform \u2014 Wave 1 (Foundations & Observability)",
+    "run_id": "agp-wave-1-foundations",
+    "generated_at": "2026-06-25T07:38:24.840733Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-1-foundations.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-2-media-pipeline",
+    "title": "Autonomous Growth Platform \u2014 Wave 2 (CJ Media Pipeline)",
+    "run_id": "agp-wave-2-media-pipeline",
+    "generated_at": "2026-06-25T07:45:26.786356Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-2-media-pipeline.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-3-enhance-qa",
+    "title": "Autonomous Growth Platform \u2014 Wave 3 (Enhancement + QA loop)",
+    "run_id": "agp-wave-3-enhance-qa",
+    "generated_at": "2026-06-25T08:13:52.665545+00:00",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-enhance-qa.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-3-small-live",
+    "title": "Autonomous Growth Platform \u2014 Wave 3 Small Live Run (Enhancement)",
+    "run_id": "agp-wave-3-small-live",
+    "generated_at": "2026-06-25T08:30:00Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-3-small-live.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-4a-signal-lake-growth-score",
+    "title": "AGP Wave 4A \u2014 Signal Lake + Growth Score",
+    "run_id": "426c65c8-af54-4d28-bea6-bf806af6b9d7",
+    "generated_at": "2026-06-25T08:46:33.193118Z",
+    "status": "succeeded",
+    "score": 88,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-signal-lake-growth-score.json"
+  },
+  {
+    "slug": "2026-06-25-agp-wave-4a-plus-intelligence",
+    "title": "AGP Wave 4A+ \u2014 Growth Intelligence Layer",
+    "run_id": "ba910e61-6d21-49c6-8ebf-5e8287ac55e5",
+    "generated_at": "2026-06-25T09:48:05.019739Z",
+    "status": "succeeded",
+    "score": 90,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-wave-4a-plus-intelligence.json"
+  },
+  {
+    "slug": "2026-06-25-aci-wave-5x-autonomous-commerce",
+    "title": "Wave 5X \u2014 Autonomous Commerce Intelligence (ACI)",
+    "run_id": "aci-wave-5x",
+    "generated_at": "2026-06-25T10:39:43.974564+00:00",
+    "status": "success",
+    "score": 90,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-aci-wave-5x-autonomous-commerce.json"
+  },
+  {
+    "slug": "2026-06-25-cmdr-wave-6a-foundations",
+    "title": "Wave 6A \u2014 Autonomous Commander AI (Foundations + War Room)",
+    "run_id": "2026-06-25-cmdr-wave-6a-foundations",
+    "generated_at": "2026-06-25T10:59:59.842353Z",
+    "status": "success",
+    "score": 90,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-cmdr-wave-6a-foundations.json"
+  },
+  {
+    "slug": "2026-06-25-revenue-recovery-wave-a",
+    "title": "Revenue Recovery \u00b7 Wave A \u00b7 Funnel Validator (diagnostic baseline)",
+    "run_id": "6c5865ee-22eb-49e4-a79d-e39e9d0a486d",
+    "generated_at": "2026-06-25T16:35:00Z",
+    "status": "shipped",
+    "score": 52,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-revenue-recovery-wave-a.json"
+  },
+  {
+    "slug": "2026-06-25-pe-wave1-control-center",
+    "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Delivery",
+    "run_id": "2026-06-25-pe-wave1-control-center",
+    "generated_at": "2026-06-25T22:45:07.006358Z",
+    "status": "shipped",
+    "score": 78,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-control-center.json"
+  },
+  {
+    "slug": "2026-06-25-pe-wave1-cron-auth-fix",
+    "title": "Pinterest Enterprise Control Center \u2014 Wave 1 Cron Auth Fix",
+    "run_id": "2026-06-25-pe-wave1-cron-auth-fix",
+    "generated_at": "2026-06-25T23:03:39.657626Z",
+    "status": "verified",
+    "score": 88,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pe-wave1-cron-auth-fix.json",
+    "verification": {
+      "pe_cron_bootstrap": {
+        "http": 200,
+        "jobs_rescheduled": 3
+      },
+      "pe_endpoint_matrix_manual": {
+        "http": 200,
+        "auth_method": "x-internal-secret=PE_CRON_SECRET"
+      },
+      "pe_ai_operator_manual": {
+        "http": 200,
+        "issues_found": 14,
+        "queued": 14,
+        "auto_fixed": 0
+      },
+      "pe_daily_report_cron": "scheduled at 0 4 * * * UTC, invokes pe-ai-operator with cron-daily trigger header (same auth path verified above)",
+      "401_errors_remaining": 0
+    }
+  },
+  {
+    "slug": "2026-06-25-agp-master-report",
+    "title": "AGP Master Report",
+    "run_id": "2026-06-25-agp-master-report",
+    "generated_at": "2026-06-25T23:18:15Z",
+    "status": "recovered_from_pdf",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-agp-master-report.json"
+  },
+  {
+    "slug": "2026-06-25-pga-wave-a-foundation",
+    "title": "Pinterest Growth AI \u2014 Wave A \u00b7 Foundation + Executive Overview",
+    "run_id": "2026-06-25-pga-wave-a-foundation",
+    "generated_at": "2026-06-25T23:22:15.830644Z",
+    "status": "shipped",
+    "score": 82,
+    "pdf": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-25-pga-wave-a-foundation.json"
+  },
+  {
+    "slug": "2026-06-26-ai-reports-recovery",
+    "title": "AI Implementation Reports \u2014 Recovery",
+    "run_id": "ai-reports-recovery",
+    "generated_at": "2026-06-26T00:23:33.123057+00:00",
+    "status": "shipped",
+    "score": 95,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-ai-reports-recovery.json",
+    "root_cause": "AdminReportsPage read `data.reports`, but manifest.json was a bare JSON array. The destructure returned undefined \u2192 empty list. Today's reports were on disk all along.",
+    "fix": [
+      "UI now accepts both manifest shapes (array OR { reports: [...] }).",
+      "Manifest rebuilt to v2 envelope { version, generated_at, reports[] } sorted newest-first.",
+      "Scanned public/admin-reports/ai-implementation/ and rebuilt 20 entries from disk, preserving titles/scores from prior entries.",
+      "Preview/Download buttons gracefully disable when a PDF or JSON is missing."
+    ],
+    "prevention": [
+      "Future runs must keep the { reports: [...] } envelope and append (never overwrite).",
+      "If manifest read fails or is empty while files exist on disk, regenerate from directory listing.",
+      "Each new report uses unique date-slug filenames; JSON is written even if PDF generation fails."
+    ],
+    "recovered_reports_count": 20,
+    "recovered_reports": [
+      "2026-06-26-aci-wave1-foundation",
+      "2026-06-26-prie-autonomous-pipeline",
+      "2026-06-25-pga-wave-a-foundation",
+      "2026-06-25-pe-wave1-cron-auth-fix",
+      "2026-06-25-revenue-recovery-wave-a",
+      "2026-06-25-revenue-recovery-wave-a2-atc-root-cause",
+      "2026-06-25-pinterest-metadata-repair",
+      "2026-06-25-pinterest-creative-wave2",
+      "2026-06-25-pinterest-creative-wave1",
+      "2026-06-25-pe-wave1-control-center",
+      "2026-06-25-commander-wave-6a-foundation",
+      "2026-06-25-cmdr-wave-6a-foundations",
+      "2026-06-25-agp-wave-4a-signal-lake-growth-score",
+      "2026-06-25-agp-wave-4a-plus-intelligence",
+      "2026-06-25-agp-wave-3-small-live",
+      "2026-06-25-agp-wave-3-enhance-qa",
+      "2026-06-25-agp-wave-2-media-pipeline",
+      "2026-06-25-agp-wave-1-foundations",
+      "2026-06-25-agp-master-report",
+      "2026-06-25-aci-wave-5x-autonomous-commerce"
+    ]
+  },
+  {
+    "slug": "2026-06-26-ai-report-system-repair",
+    "title": "AI Report System Repair",
+    "run_id": "ai-report-system-repair",
+    "generated_at": "2026-06-26T00:40:24.263431+00:00",
+    "status": "verified",
+    "score": 100,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.json",
+    "root_cause": "The prior repair only normalized the manifest shape. It did not enforce end-to-end safeguards, did not recover a PDF-only report, and the UI had no manifest-error diagnostics or cache-busting, so a failed/empty manifest path could still render the empty-state message.",
+    "verification": {
+      "pdf_exists": true,
+      "json_exists": true,
+      "manifest_updated": true,
+      "manifest_contents_verified": true,
+      "api_returns_report": true,
+      "reports_page_visible": true,
+      "preview_works": true,
+      "download_works": true,
+      "pdf_readable": true,
+      "pdf_status": "readable (2 pages)",
+      "pdf_pages": 2,
+      "manifest_api_status": 200,
+      "manifest_report_count": 22,
+      "empty_message_visible": false,
+      "preview_iframe_src": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.pdf",
+      "pdf_endpoint_status": 200,
+      "pdf_endpoint_content_type": "application/pdf",
+      "json_endpoint_status": 200,
+      "json_endpoint_parseable": true,
+      "console_errors": []
+    }
+  },
+  {
+    "slug": "2026-06-26-pcie2-wave1-foundation",
+    "title": "PCIE2 Wave 1 \u2014 Creative Memory + Product Understanding",
+    "run_id": "2026-06-26-pcie2-wave1-foundation",
+    "generated_at": "2026-06-26T00:49:48.930216Z",
+    "status": "PASS",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1-foundation.json"
+  },
+  {
+    "slug": "2026-06-26-aci-wave1-foundation",
+    "title": "ACI Wave1 Foundation",
+    "run_id": "2026-06-26-aci-wave1-foundation",
+    "generated_at": "2026-06-26T01:28:22Z",
+    "status": "deployed",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.json"
+  },
+  {
+    "slug": "2026-06-26-prie-autonomous-pipeline",
+    "title": "PRIE Autonomous Pipeline",
+    "run_id": "2026-06-26-prie-autonomous-pipeline",
+    "generated_at": "2026-06-26T01:28:22Z",
+    "status": "deployed",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.json"
+  },
+  {
+    "slug": "2026-06-26-pcie2-wave1.5-performance-learning",
+    "title": "PCIE2 Wave 1.5 \u2014 Performance Learning Layer",
+    "run_id": "2026-06-26-pcie2-wave1.5-performance-learning",
+    "generated_at": "2026-06-26T01:32:29.337845Z",
+    "status": "PASS",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-wave1.5-performance-learning.json"
+  },
+  {
+    "slug": "2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace",
+    "title": "PCIE2 Publishing Kill Switch + Last-50-Pins Pipeline Trace",
+    "run_id": "2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace",
+    "generated_at": "2026-06-26T01:44:13.291605Z",
+    "status": "PASS",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-publishing-kill-switch-and-pipeline-trace.json"
+  },
+  {
+    "slug": "2026-06-26-pcie2-sole-publisher-e2e",
+    "title": "Pcie2 Sole Publisher E2e",
+    "run_id": "2026-06-26-pcie2-sole-publisher-e2e",
+    "generated_at": "2026-06-26T02:05:49Z",
+    "status": "verified",
+    "score": 0,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-pcie2-sole-publisher-e2e.json"
+  }
+]

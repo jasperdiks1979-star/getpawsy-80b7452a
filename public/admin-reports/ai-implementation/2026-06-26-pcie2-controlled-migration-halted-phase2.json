@@ -1,0 +1,146 @@
+{
+  "slug": "2026-06-26-pcie2-controlled-migration-halted-phase2",
+  "title": "PCIE2 Controlled Migration \u2014 HALTED at Phase 2 (readiness fail)",
+  "generated_at": "2026-06-26T06:09:46.338416Z",
+  "verdict": "HALT \u2014 DO NOT enable PCIE2. Readiness gate FAILED.",
+  "scorecard": {
+    "phase1_legacy_audit": "PASS",
+    "phase2_pcie2_readiness": "FAIL",
+    "phase3_feature_flags": "DEFERRED",
+    "phase4_snapshot": "PASS",
+    "phase5_canary": "BLOCKED",
+    "phase6_live_verification": "BLOCKED",
+    "phase7_quality_gate": "BLOCKED",
+    "phase8_legacy_retirement": "BLOCKED",
+    "phase9_pipeline_trace_schema": "PASS (columns added)",
+    "phase10_reporting": "PASS",
+    "overall": 30
+  },
+  "phase1_evidence": {
+    "legacy_function_stubs": "pinterest-automation + pinterest-live-pin-repair-execute return HTTP 410 Gone with code LEGACY_PUBLISHER_REMOVED",
+    "v5_pins_write_callers_outside_pcie2": 0,
+    "remaining_v5_pins_callers_categorized": {
+      "GET_only_analytics": [
+        "pinterest-analytics-sync",
+        "pinterest-perf-backfill",
+        "pinterest-final-prod-audit",
+        "pinterest-pin-deletion-verify"
+      ],
+      "DELETE_only_cleanup": [
+        "pinterest-diversity-cleanup-execute",
+        "pinterest-live-pin-repair-cleanup-duplicates",
+        "pinterest-pin-bulk-delete"
+      ],
+      "comment_or_doc_only": [
+        "_shared/pinterest-config.ts"
+      ]
+    },
+    "pinterest_publishing_global_stop": true,
+    "ci_legacy_guard": "PASS (695 edge function files scanned, 0 violations)",
+    "active_pinterest_crons": 0,
+    "verdict": "PASS \u2014 no path can POST /v5/pins outside pcie2-publisher."
+  },
+  "phase2_readiness_matrix": {
+    "pcie2_product_understanding": {
+      "rows": 428,
+      "status": "green"
+    },
+    "pcie2_headline_library": {
+      "rows": 0,
+      "status": "RED",
+      "blocker": "Publisher cannot select a headline. Gate fails closed."
+    },
+    "pcie2_hook_library": {
+      "rows": 24,
+      "status": "YELLOW",
+      "concern": "Sparse coverage across 18 functional classes."
+    },
+    "pcie2_creatives": {
+      "rows": 0,
+      "status": "RED",
+      "blocker": "No creative briefs exist. Publisher has nothing to render."
+    },
+    "pcie2_pipeline_trace": {
+      "rows": 0,
+      "status": "RED",
+      "blocker": "Pipeline has never run end-to-end. Cannot prove provenance."
+    },
+    "pcie2_pin_performance": {
+      "rows": 0,
+      "status": "yellow",
+      "concern": "No prior performance signal."
+    },
+    "pcie2-publisher_function": {
+      "lines": 316,
+      "status": "green",
+      "note": "Deployed and gate-enforced."
+    },
+    "pinterest_connection_oauth": {
+      "status": "green"
+    },
+    "verdict": "FAIL \u2014 3 RED blockers. Canary cannot run."
+  },
+  "phase3_feature_flag_diff": {
+    "observed": {
+      "pcie2_publish_enabled": false,
+      "pcie2_pipeline_version": "1.0.0",
+      "pinterest_publishing_global_stop": true,
+      "pinterest_video_auto_publish": true
+    },
+    "desired_when_ready": {
+      "pcie2_publish_enabled": true,
+      "pcie2_publish_guard": true,
+      "pcie2_similarity_gate": true,
+      "pcie2_classifier": true,
+      "pcie2_quality": true,
+      "pcie2_creative": true,
+      "pcie2_pipeline_trace": true,
+      "pcie2_board_ai": true,
+      "pcie2_hook_ai": true,
+      "pcie2_headline_ai": true,
+      "pinterest_publishing_global_stop": false,
+      "pinterest_legacy_publisher_enabled": false
+    },
+    "action": "NOT APPLIED. Flag normalization deferred until Phase 2 unblocks."
+  },
+  "phase4_snapshot": {
+    "snapshot_id": "aef3d102-e6b9-4eb7-af39-df87227bea1f",
+    "taken_at": "2026-06-26T06:08:41.957174+00:00",
+    "reason": "pre_migration_baseline_2026-06-26",
+    "captures": [
+      "app_config",
+      "queue_counts",
+      "flag_state",
+      "legacy_guard_status"
+    ],
+    "rollback_instructions": "UPDATE app_config SET value=jsonb_extract_path(snapshot.app_config, key) FROM pcie2_migration_snapshots snapshot WHERE snapshot.id='aef3d102-e6b9-4eb7-af39-df87227bea1f';"
+  },
+  "phase5_8_status": "BLOCKED \u2014 cannot proceed until Phase 2 readiness blockers cleared.",
+  "phase9_trace_schema_upgrade": {
+    "added_columns": [
+      "pipeline_id",
+      "creative_id",
+      "creative_version",
+      "ai_model_version",
+      "prompt_version",
+      "similarity_score",
+      "headline_version",
+      "hook_version",
+      "board_decision",
+      "publish_ts",
+      "deployment_sha",
+      "source_product_id",
+      "quality_score"
+    ],
+    "status": "APPLIED"
+  },
+  "remediation_required_before_retry": [
+    "Run pcie2-headline-engine (or equivalent) to populate pcie2_headline_library \u2014 minimum 5 approved headlines per functional class \u00d7 18 classes = 90 rows.",
+    "Run pcie2-creative-brief-generator across the 100 highest revenue_priority products to seed pcie2_creatives.",
+    "Execute pcie2-publisher in `mode: dry_run` for \u226525 products and confirm pcie2_pipeline_trace rows are written with all 13 provenance columns populated.",
+    "Expand pcie2_hook_library from 24 to \u226550 (\u22652 hooks per functional class).",
+    "Re-run this migration with the same plan; Phase 2 must return all-green."
+  ],
+  "rollback_callable_in_one_action": true,
+  "next_action_recommended": "DO NOT flip pcie2_publish_enabled. Run the three remediation items above, then re-invoke the controlled-migration runbook."
+}
