@@ -1,0 +1,36 @@
+{
+  "report": "ACI Wave 1 — Foundation + Global Data Lake",
+  "date": "2026-06-26",
+  "status": "deployed",
+  "scope": "Strictly additive. No existing tables, functions, cron jobs, or dashboards modified.",
+  "new_tables": ["aci_data_sources","aci_signals"],
+  "reused_tables": ["aci_settings","aci_runs","aci_run_steps","aci_audit_log","aci_approvals","aci_learning_events","aci_forecasts","aci_recommendations","aci_tasks"],
+  "edge_functions": ["aci-orchestrator","aci-data-source-health"],
+  "fanout_chain": ["aci-data-source-health","prie-auto-orchestrator","pga-overview-sync","pe-endpoint-matrix"],
+  "cron": "aci-orchestrator-hourly at minute 7",
+  "debounce": "5 min via aci_audit_log",
+  "audit": "Every run logged to aci_runs + aci_run_steps + aci_audit_log",
+  "provenance_rule": "Every metric stored in aci_signals carries source_key + captured_at + confidence; no fabricated values",
+  "dry_run": {
+    "trigger": "deploy",
+    "ok": false,
+    "steps": [
+      {"name":"aci-data-source-health","ok":true,"ms":2397},
+      {"name":"prie-auto-orchestrator","ok":true,"ms":129846},
+      {"name":"pga-overview-sync","ok":true,"ms":994},
+      {"name":"pe-endpoint-matrix","ok":false,"ms":1403,"error":"HTTP 401 (existing cron-secret guard, not introduced by ACI)"}
+    ]
+  },
+  "data_source_health_snapshot": {
+    "healthy": ["pec","prie"],
+    "stale": ["products"],
+    "very_stale": ["blog_engine","gmc","orders","pinterest_pins","product_media","seo_engine"],
+    "error_probes_to_refine": ["cj","cpe","ga4","gsc","inventory","pga","pinterest_ads","pinterest_analytics"]
+  },
+  "next_waves": ["W2 Global Product AI (12 scores)","W3 Forecast + Opportunities","W4 Safe Executor + Approval Queue","W5 Executive AI + Nightly CEO","W6 Commander UI + Regression Gate"],
+  "guardrails_enforced": {
+    "never_auto_execute_financial": true,
+    "no_provider_api_calls_added": true,
+    "additive_only": true
+  }
+}

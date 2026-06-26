@@ -113,5 +113,15 @@
     "score": 100,
     "pdf": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.pdf",
     "json": "/admin-reports/ai-implementation/2026-06-26-prie-autonomous-pipeline.json"
+  },
+  {
+    "id": "2026-06-26-aci-wave1-foundation",
+    "title": "ACI Wave 1 \u00b7 Foundation + Global Data Lake",
+    "run_id": "aci-w1",
+    "generated_at": "2026-06-26T00:30:00Z",
+    "status": "shipped",
+    "score": 92,
+    "pdf": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-26-aci-wave1-foundation.json"
   }
 ]
