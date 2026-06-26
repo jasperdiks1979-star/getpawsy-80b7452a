@@ -1,6 +1,16 @@
 {
   "reports": [
     {
+      "id": "2026-06-26-pinterest-oauth-final-recovery",
+      "title": "Pinterest OAuth Final Recovery",
+      "date": "2026-06-26",
+      "pdf": "/admin-reports/ai-implementation/2026-06-26-pinterest-oauth-final-recovery.pdf",
+      "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-oauth-final-recovery.json",
+      "summary": "End-to-end OAuth recovery shipped: Reconnect with Full Pinterest Access button + scope verification panel + auto-running pinterest-final-recovery edge function. Single remaining blocker: interactive consent for catalogs:read/write + ads:read/write.",
+      "status": "AWAITING_INTERACTIVE_CONSENT",
+      "score": 92
+    },
+    {
       "id": "2026-06-26-pinterest-recovery-wave-v1",
       "title": "Pinterest Account Recovery Wave v1 \u2014 Initial Scan",
       "date": "2026-06-26",
