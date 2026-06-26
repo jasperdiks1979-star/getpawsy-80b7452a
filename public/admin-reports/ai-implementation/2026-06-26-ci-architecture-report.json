@@ -1,0 +1,47 @@
+{
+  "title": "CI Zero-Bypass Architecture Report",
+  "verdict": "GREEN",
+  "summary": "Single canonical path: Draft \u2192 CI \u2192 Publish Queue \u2192 Publisher. DB trigger guarantees no other path can populate the queue.",
+  "pipeline": [
+    "PCIE2 Draft (pcie2_creatives)",
+    "Creative Intelligence pre-flight (pcie2-creative-intelligence + inline assembler gate)",
+    "Semantic rewrite (Gemini 2.5 Flash, if score < 95)",
+    "Pinterest SEO scoring (species/category keyword presence)",
+    "Compliance validation (23 banned phrases)",
+    "Claim detection (medical/veterinary/superlative)",
+    "Image validation (HEAD reachability, fingerprint)",
+    "Board validation (10 allowed Pinterest boards)",
+    "Diversity validation (Jaccard vs last 50 pins)",
+    "CTR prediction (length + family weights)",
+    "Trust prediction (banned-phrase weighted)",
+    "Publish-ready queue (pcie2_publish_queue) \u2014 CI stamps required",
+    "Publisher (pcie2-publisher) \u2014 dumb executor"
+  ],
+  "enforcement": {
+    "trigger": "pcie2_publish_queue_ci_gate",
+    "error_code": "42501",
+    "error_string": "LEGACY_PIPELINE_DISABLED",
+    "fields_required": [
+      "ci_version",
+      "ci_passed_at",
+      "ci_score>=60",
+      "quality_fingerprint",
+      "semantic_fingerprint",
+      "rewrite_fingerprint",
+      "image_fingerprint",
+      "headline_fingerprint"
+    ]
+  },
+  "untouched": [
+    "publisher",
+    "queue table contract",
+    "OAuth",
+    "Guardian",
+    "Canary",
+    "recovery",
+    "board mapping",
+    "image recovery",
+    "duplicate detection"
+  ],
+  "generated_at": "2026-06-26T19:55:00Z"
+}

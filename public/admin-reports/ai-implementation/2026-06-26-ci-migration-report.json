@@ -1,0 +1,38 @@
+{
+  "title": "CI Zero-Bypass Migration Report",
+  "verdict": "GREEN",
+  "summary": "Migrated pcie2_publish_queue to CI-stamped schema. Added 8 columns + DB trigger that rejects any insert/update lacking a valid CI verdict with LEGACY_PIPELINE_DISABLED.",
+  "phases": [
+    {
+      "phase": "Schema",
+      "status": "OK",
+      "detail": "Added ci_version, ci_passed_at, ci_score, quality_fingerprint, semantic_fingerprint, rewrite_fingerprint, image_fingerprint, headline_fingerprint."
+    },
+    {
+      "phase": "Trigger",
+      "status": "OK",
+      "detail": "pcie2_publish_queue_ci_gate BEFORE INSERT OR UPDATE, raises 42501 LEGACY_PIPELINE_DISABLED unless every fingerprint + ci_passed_at + ci_score>=60 are present."
+    },
+    {
+      "phase": "Backfill",
+      "status": "OK",
+      "detail": "46/46 publish-ready rows stamped with ci-v1.0-rescore-backfill (verdict carried over from prior CI rescore). 54 rejected rows left unstamped."
+    },
+    {
+      "phase": "Assembler",
+      "status": "OK",
+      "detail": "pcie2-publish-assembler now stamps ci-v1.1-zero-bypass + 5 fingerprints and rejects rows with composite CI score < 75."
+    },
+    {
+      "phase": "Nightly loop table",
+      "status": "OK",
+      "detail": "Created pcie2_quality_loop_runs with admin RLS."
+    },
+    {
+      "phase": "Cron",
+      "status": "OK",
+      "detail": "pcie2-nightly-quality-loop scheduled at 03:17 UTC daily."
+    }
+  ],
+  "generated_at": "2026-06-26T19:55:00Z"
+}
