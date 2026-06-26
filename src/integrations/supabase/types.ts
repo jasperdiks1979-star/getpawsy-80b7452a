@@ -306,6 +306,45 @@ export type Database = {
         }
         Relationships: []
       }
+      aci_data_sources: {
+        Row: {
+          category: string
+          created_at: string
+          display_name: string
+          health: string
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          metadata: Json
+          source_key: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          display_name: string
+          health?: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json
+          source_key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          display_name?: string
+          health?: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json
+          source_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       aci_forecasts: {
         Row: {
           computed_at: string
@@ -806,6 +845,48 @@ export type Database = {
           mode?: string
           notes?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      aci_signals: {
+        Row: {
+          captured_at: string
+          confidence: number
+          created_at: string
+          entity_ref: string | null
+          entity_type: string | null
+          id: number
+          kind: string
+          source_key: string
+          value_json: Json | null
+          value_num: number | null
+          value_text: string | null
+        }
+        Insert: {
+          captured_at?: string
+          confidence?: number
+          created_at?: string
+          entity_ref?: string | null
+          entity_type?: string | null
+          id?: number
+          kind: string
+          source_key: string
+          value_json?: Json | null
+          value_num?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          captured_at?: string
+          confidence?: number
+          created_at?: string
+          entity_ref?: string | null
+          entity_type?: string | null
+          id?: number
+          kind?: string
+          source_key?: string
+          value_json?: Json | null
+          value_num?: number | null
+          value_text?: string | null
         }
         Relationships: []
       }
