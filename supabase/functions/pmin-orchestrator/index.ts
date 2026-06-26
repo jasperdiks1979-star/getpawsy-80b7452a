@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
   // Admin or service-role auth
   const authHeader = req.headers.get("authorization") || "";
   const apikey = req.headers.get("apikey") || "";
-  const isService = authHeader.includes(SERVICE_ROLE);
-  const isCron = apikey === ANON_KEY && !authHeader.includes("Bearer ey"); // cron uses apikey only
+  const isService = authHeader.includes(SERVICE_ROLE) || apikey === SERVICE_ROLE;
+  const isCron = apikey === ANON_KEY;
   if (!isService && !isCron) {
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
