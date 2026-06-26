@@ -77,9 +77,10 @@ Deno.serve(async (req) => {
     scanned++;
     if (queued >= targetQueued) { skipped++; bump('target_reached'); results.push({ run_id: runId, creative_id: d.id, product_id: d.product_id, verdict: 'SKIPPED', reason: 'target_reached' }); continue; }
 
-    const { data: p } = await sb.from('products')
-      .select('id,slug,category,primary_species,is_active,image_url,name,clean_name')
+    const { data: p, error: perr } = await sb.from('products')
+      .select('id,slug,category,primary_species,is_active,image_url,name')
       .eq('id', d.product_id).maybeSingle();
+    if (perr) { rejected++; bump('product_lookup_error'); results.push({ run_id: runId, creative_id: d.id, product_id: d.product_id, verdict: 'REJECT', reason: 'product_lookup_error', detail: perr.message }); continue; }
 
     if (!p || !p.is_active) { rejected++; bump('product_inactive'); results.push({ run_id: runId, creative_id: d.id, product_id: d.product_id, verdict: 'REJECT', reason: 'product_inactive' }); continue; }
     if (!p.slug) { rejected++; bump('product_url_invalid'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'REJECT', reason: 'product_url_invalid' }); continue; }
@@ -111,7 +112,7 @@ Deno.serve(async (req) => {
     }
 
     const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=pcie2&utm_content=${d.id.slice(0,8)}`;
-    const description = (d.body_text || d.hook || `${p.clean_name || p.name}`).slice(0, 480);
+    const description = (d.body_text || d.hook || p.name || '').slice(0, 480);
     const key = `${p.id}|${boardId}|${imageUrl}`;
     if (existingKeys.has(key)) { skipped++; bump('duplicate'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'SKIPPED', reason: 'duplicate' }); continue; }
 
