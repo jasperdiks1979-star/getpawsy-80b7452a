@@ -1,6 +1,6 @@
 {
   "title": "Pinterest OAuth Final Recovery",
-  "generated_at": "2026-06-26T15:55:58.002414Z",
+  "generated_at": "2026-06-26T15:56:07.550497Z",
   "status": "AWAITING_INTERACTIVE_CONSENT",
   "verdict": "RED",
   "single_remaining_blocker": "missing_scopes:catalogs:read,catalogs:write,ads:read,ads:write",
