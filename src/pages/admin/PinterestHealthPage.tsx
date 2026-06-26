@@ -429,6 +429,118 @@ function OAuthRecoveryPanel({
   recovery: any;
   recoveryRunning: boolean;
 }) {
+  return _OAuthRecoveryPanel({ conn, reconnecting, onReconnect, onRunRecovery, recovery, recoveryRunning });
+}
+
+const SCOPE_CONSENT_GUIDE: Record<string, { label: string; where: string; clicks: string[] }> = {
+  "boards:read": { label: "Read boards", where: "OAuth consent screen", clicks: ["Check 'See your boards and their content'"] },
+  "boards:write": { label: "Manage boards", where: "OAuth consent screen", clicks: ["Check 'Create, update, and delete your boards'"] },
+  "pins:read": { label: "Read Pins", where: "OAuth consent screen", clicks: ["Check 'See your Pins'"] },
+  "pins:write": { label: "Publish Pins", where: "OAuth consent screen", clicks: ["Check 'Create, update, and delete your Pins'"] },
+  "user_accounts:read": { label: "Read account", where: "OAuth consent screen", clicks: ["Check 'See your account information'"] },
+  "user_accounts:write": { label: "Update account", where: "OAuth consent screen", clicks: ["Check 'Update your account information' (if shown)"] },
+  "boards:read_secret": { label: "Read secret boards", where: "OAuth consent screen", clicks: ["Check 'See your secret boards'"] },
+  "pins:read_secret": { label: "Read secret Pins", where: "OAuth consent screen", clicks: ["Check 'See your secret Pins'"] },
+  "catalogs:read": {
+    label: "Read catalogs (Merchant Center)",
+    where: "Pinterest Business Hub → Catalogs",
+    clicks: [
+      "Open business.pinterest.com → Catalogs",
+      "If no catalog exists, click 'Get started' and add a data source",
+      "Return to the OAuth consent screen and check 'See your product catalogs'",
+    ],
+  },
+  "catalogs:write": {
+    label: "Manage catalogs",
+    where: "OAuth consent + Business Hub",
+    clicks: [
+      "On the OAuth consent screen, check 'Create and update product catalogs'",
+      "After redirect: in Business Hub → Catalogs, claim domain getpawsy.pet",
+    ],
+  },
+  "ads:read": {
+    label: "Read Ads",
+    where: "OAuth consent + Ads Manager",
+    clicks: [
+      "Ensure you are signed in to a Pinterest Business account that has an Ad Account (ads.pinterest.com)",
+      "If no Ad Account exists, click 'Create ad account' in Ads Manager first",
+      "On the OAuth consent screen, check 'See your ads data'",
+    ],
+  },
+  "ads:write": {
+    label: "Manage Ads",
+    where: "OAuth consent screen",
+    clicks: [
+      "Check 'Create and update ad campaigns'",
+      "Confirm the listed Ad Account matches your GetPawsy Business account",
+    ],
+  },
+  "billing:read": { label: "Read billing", where: "OAuth consent screen", clicks: ["Check 'See your billing information' (if shown)"] },
+  "biz_access:read": { label: "Business access", where: "OAuth consent screen", clicks: ["Check 'See members of your business account'"] },
+  "biz_access:write": { label: "Manage business access", where: "OAuth consent screen", clicks: ["Check 'Manage members of your business account'"] },
+};
+
+function ScopeConsentChecklist({ missing }: { missing: string[] }) {
+  return (
+    <div className="mt-4 rounded-lg border bg-amber-50/50 p-3">
+      <h3 className="text-sm font-semibold mb-1">What to click in Pinterest for each missing scope</h3>
+      <p className="text-xs text-muted-foreground mb-3">
+        After clicking <strong>Reconnect with Full Pinterest Access</strong>, Pinterest will show a permissions screen.
+        Check every box below. If a permission isn't visible, the prerequisite (catalog / ad account) is missing — follow the linked step first.
+      </p>
+      <ol className="space-y-3">
+        {missing.map((scope, i) => {
+          const g = SCOPE_CONSENT_GUIDE[scope] ?? {
+            label: scope,
+            where: "OAuth consent screen",
+            clicks: [`Check the permission labelled '${scope}'`],
+          };
+          return (
+            <li key={scope} className="flex gap-3">
+              <div className="flex-none mt-0.5 h-5 w-5 rounded-full bg-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-center">
+                {i + 1}
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium">
+                  <span className="font-mono text-xs bg-white border rounded px-1.5 py-0.5 mr-2">{scope}</span>
+                  {g.label}
+                </div>
+                <div className="text-xs text-muted-foreground mb-1">Where: {g.where}</div>
+                <ul className="text-xs space-y-1">
+                  {g.clicks.map((c, j) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <span className="text-amber-700">▸</span>
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="mt-3 text-xs text-muted-foreground border-t pt-2">
+        Tip: if Pinterest skips the consent screen (because you previously authorized GetPawsy), open
+        {" "}
+        <a href="https://www.pinterest.com/settings/apps/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+          pinterest.com/settings/apps
+        </a>
+        , revoke GetPawsy, then click Reconnect again to force a fresh permissions prompt.
+      </div>
+    </div>
+  );
+}
+
+function _OAuthRecoveryPanel({
+  conn, reconnecting, onReconnect, onRunRecovery, recovery, recoveryRunning,
+}: {
+  conn: any;
+  reconnecting: boolean;
+  onReconnect: () => void;
+  onRunRecovery: () => void;
+  recovery: any;
+  recoveryRunning: boolean;
+}) {
   const granted: string[] = typeof conn?.scopes === "string"
     ? conn.scopes.split(/[\s,]+/).map((s: string) => s.trim().toLowerCase()).filter(Boolean)
     : Array.isArray(conn?.scopes) ? conn.scopes : [];
@@ -483,6 +595,10 @@ function OAuthRecoveryPanel({
           </p>
         )}
       </div>
+
+      {missing.length > 0 && (
+        <ScopeConsentChecklist missing={missing} />
+      )}
 
       {recovery && (
         <div className="mt-4 border-t pt-3 space-y-2 text-sm">
