@@ -37,22 +37,64 @@ interface AiReport {
   json: string | null;
 }
 
+type AiManifest = AiReport[] | { reports?: AiReport[] } | null;
+
+const isAiReport = (value: unknown): value is AiReport => {
+  const item = value as Partial<AiReport> | null;
+  return Boolean(item?.slug && item?.title && item?.generated_at);
+};
+
+const normalizeAiReports = (manifest: AiManifest): AiReport[] => {
+  const raw = Array.isArray(manifest)
+    ? manifest
+    : Array.isArray(manifest?.reports)
+      ? manifest.reports
+      : [];
+
+  const unique = new Map<string, AiReport>();
+  raw.filter(isAiReport).forEach((report) => {
+    unique.set(report.slug, {
+      ...report,
+      pdf: report.pdf ?? null,
+      json: report.json ?? null,
+      score: Number.isFinite(Number(report.score)) ? Number(report.score) : 0,
+      status: report.status || "unknown",
+      run_id: report.run_id || report.slug,
+    });
+  });
+
+  return Array.from(unique.values()).sort((a, b) => {
+    const byDate = (a.generated_at || "").localeCompare(b.generated_at || "");
+    return byDate || a.slug.localeCompare(b.slug);
+  });
+};
+
 const AdminReportsPage = () => {
   const { isAdmin, isLoading } = useAuth();
   const [previewReport, setPreviewReport] = useState<ReportItem | null>(null);
   const [aiReports, setAiReports] = useState<AiReport[]>([]);
   const [previewAi, setPreviewAi] = useState<AiReport | null>(null);
+  const [aiReportError, setAiReportError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/admin-reports/ai-implementation/manifest.json", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => {
-        // Support both shapes: bare array (legacy) and { reports: [...] } (v2).
-        const list: AiReport[] = Array.isArray(d) ? d : Array.isArray(d?.reports) ? d.reports : [];
-        list.sort((a, b) => (b.generated_at || "").localeCompare(a.generated_at || ""));
-        setAiReports(list);
+    const manifestUrl = `/admin-reports/ai-implementation/manifest.json?v=${Date.now()}`;
+    fetch(manifestUrl, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Manifest request failed (${r.status})`);
+        return r.json();
       })
-      .catch(() => setAiReports([]));
+      .then((d) => {
+        const list = normalizeAiReports(d);
+        setAiReports(list);
+        setAiReportError(list.length ? null : "Manifest loaded but contains no report entries.");
+      })
+      .catch((error) => {
+        setAiReports([]);
+        setAiReportError(error instanceof Error ? error.message : "Manifest could not be loaded.");
+      });
   }, []);
 
   if (isLoading) return null;
@@ -139,7 +181,9 @@ const AdminReportsPage = () => {
         {aiReports.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-sm text-muted-foreground text-center">
-              No AI implementation reports yet. They appear here automatically after the next run.
+              {aiReportError
+                ? `AI implementation report manifest error: ${aiReportError}`
+                : "No AI implementation reports yet. They appear here automatically after the next run."}
             </CardContent>
           </Card>
         ) : (
@@ -160,7 +204,7 @@ const AdminReportsPage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewAi(r)}>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewAi(r)} disabled={!r.pdf}>
                       <Eye className="h-4 w-4" /> Preview PDF
                     </Button>
                     <Button size="sm" className="gap-2" asChild disabled={!r.pdf}>
@@ -205,7 +249,7 @@ const AdminReportsPage = () => {
             <DialogTitle>{previewAi?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 px-6 pb-6">
-            {previewAi && (
+            {previewAi?.pdf && (
               <iframe src={previewAi.pdf} title={previewAi.title} className="w-full h-full rounded-md border" />
             )}
           </div>
