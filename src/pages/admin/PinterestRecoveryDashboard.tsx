@@ -18,6 +18,12 @@ type TrustRow = {
   created_at: string;
 };
 
+type AssemblyRun = {
+  id: string; started_at: string; finished_at: string | null;
+  drafts_scanned: number; passed: number; repaired: number; rejected: number;
+  skipped: number; queued: number; reason_counts: Record<string, number>; status: string;
+};
+
 const verdictColor = (v: string | null) =>
   v === "GREEN" ? "bg-emerald-500" : v === "YELLOW" ? "bg-amber-500" : "bg-red-500";
 
@@ -30,6 +36,12 @@ export default function PinterestRecoveryDashboard() {
   const [canaryRunning, setCanaryRunning] = useState(false);
   const [canaryResult, setCanaryResult] = useState<any>(null);
   const [canaryMeta, setCanaryMeta] = useState<{ last_at: string | null; window_h: number; mode: boolean }>({ last_at: null, window_h: 24, mode: false });
+  const [asmRun, setAsmRun] = useState<AssemblyRun | null>(null);
+  const [asmRunning, setAsmRunning] = useState(false);
+  const [queueReady, setQueueReady] = useState<number>(0);
+  const [draftStats, setDraftStats] = useState<{ total: number; with_headline: number }>({ total: 0, with_headline: 0 });
+  const [rejected, setRejected] = useState<any[]>([]);
+  const [showRejected, setShowRejected] = useState(false);
 
   async function load() {
     const { data: runs } = await supabase.from("pinterest_recovery_runs")
@@ -56,6 +68,18 @@ export default function PinterestRecoveryDashboard() {
       window_h: Number(map.pinterest_canary_window_hours ?? 24),
       last_at: typeof map.pinterest_last_canary_at === "string" ? map.pinterest_last_canary_at : null,
     });
+
+    const { data: asm } = await supabase.from("pcie2_assembly_runs")
+      .select("*").order("started_at", { ascending: false }).limit(1).maybeSingle();
+    setAsmRun((asm as AssemblyRun) ?? null);
+    const { count: rdy } = await supabase.from("pcie2_publish_queue")
+      .select("id", { count: "exact", head: true }).eq("status", "ready");
+    setQueueReady(rdy ?? 0);
+    const { count: total } = await supabase.from("pcie2_creatives")
+      .select("id", { count: "exact", head: true }).eq("status", "draft");
+    const { count: hl } = await supabase.from("pcie2_creatives")
+      .select("id", { count: "exact", head: true }).eq("status", "draft").not("headline", "is", null);
+    setDraftStats({ total: total ?? 0, with_headline: hl ?? 0 });
   }
 
   useEffect(() => { load(); }, []);
@@ -85,6 +109,27 @@ export default function PinterestRecoveryDashboard() {
     } catch (e: any) {
       toast.error(e?.message ?? "Canary failed");
     } finally { setCanaryRunning(false); }
+  }
+
+  async function runAssembler() {
+    setAsmRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pcie2-publish-assembler", { body: { limit: 200, target: 100, verify_images: false } });
+      if (error) throw error;
+      toast.success(`Assembler: queued ${(data as any)?.queued ?? 0} / scanned ${(data as any)?.scanned ?? 0}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Assembler failed");
+    } finally { setAsmRunning(false); }
+  }
+
+  async function loadRejected() {
+    if (!asmRun) return;
+    const { data } = await supabase.from("pcie2_assembly_results")
+      .select("creative_id,product_id,verdict,reason,detail")
+      .eq("run_id", asmRun.id).neq("verdict", "PASS").neq("verdict", "REPAIRED").limit(50);
+    setRejected(data ?? []);
+    setShowRejected(true);
   }
 
   const nextAllowed = canaryMeta.last_at
@@ -142,6 +187,52 @@ export default function PinterestRecoveryDashboard() {
               <span className="text-muted-foreground">{k}</span><span className="font-semibold">{v}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="border-emerald-500/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Draft → Publish-Ready Queue Assembler
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="grid md:grid-cols-4 gap-3">
+            <div className="rounded border p-3"><div className="text-xs text-muted-foreground">Drafts total</div><div className="text-2xl font-semibold">{draftStats.total}</div></div>
+            <div className="rounded border p-3"><div className="text-xs text-muted-foreground">With headline</div><div className="text-2xl font-semibold">{draftStats.with_headline}</div></div>
+            <div className="rounded border p-3"><div className="text-xs text-muted-foreground">Publish-ready queue</div><div className="text-2xl font-semibold">{queueReady}</div></div>
+            <div className="rounded border p-3"><div className="text-xs text-muted-foreground">Last queued (run)</div><div className="text-2xl font-semibold">{asmRun?.queued ?? 0}</div></div>
+          </div>
+          {asmRun && (
+            <div className="grid md:grid-cols-5 gap-3 text-xs">
+              <div className="rounded border p-2"><span className="text-muted-foreground">Scanned</span><div className="font-semibold">{asmRun.drafts_scanned}</div></div>
+              <div className="rounded border p-2"><span className="text-muted-foreground">Repaired</span><div className="font-semibold">{asmRun.repaired}</div></div>
+              <div className="rounded border p-2"><span className="text-muted-foreground">Rejected</span><div className="font-semibold">{asmRun.rejected}</div></div>
+              <div className="rounded border p-2"><span className="text-muted-foreground">Skipped</span><div className="font-semibold">{asmRun.skipped}</div></div>
+              <div className="rounded border p-2"><span className="text-muted-foreground">Last run</span><div className="font-semibold">{new Date(asmRun.started_at).toLocaleString()}</div></div>
+            </div>
+          )}
+          {asmRun?.reason_counts && (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(asmRun.reason_counts).sort((a,b)=>(b[1] as number)-(a[1] as number)).slice(0,8).map(([k,v]) => (
+                <Badge key={k} variant={k === "queued_successfully" ? "default" : "secondary"}>{k}: {v as number}</Badge>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={runAssembler} disabled={asmRunning}>
+              {asmRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Run Draft → Queue Assembler
+            </Button>
+            <Button size="sm" variant="outline" onClick={loadRejected} disabled={!asmRun}>Show rejected drafts</Button>
+          </div>
+          {showRejected && rejected.length > 0 && (
+            <details open className="rounded border p-3 bg-muted/30">
+              <summary className="cursor-pointer text-xs">Rejected/skipped drafts ({rejected.length})</summary>
+              <pre className="text-[10px] overflow-auto max-h-64 mt-2">{JSON.stringify(rejected, null, 2)}</pre>
+            </details>
+          )}
+          <p className="text-xs text-muted-foreground">Assembler only fills the queue. Publishing remains locked (global stop + canary cap). Legacy publishers blocked by pcie2-legacy-guard.</p>
         </CardContent>
       </Card>
 
