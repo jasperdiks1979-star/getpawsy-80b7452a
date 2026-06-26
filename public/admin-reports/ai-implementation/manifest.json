@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-06-26T00:40:25.713234+00:00",
+  "generated_at": "2026-06-26T00:42:06.588285+00:00",
   "order": "chronological_ascending",
   "source": "filesystem_scan",
   "reports": [
@@ -282,13 +282,22 @@
         "json_exists": true,
         "manifest_updated": true,
         "manifest_contents_verified": true,
-        "api_returns_report": "pending live check",
-        "reports_page_visible": "pending live check",
-        "preview_works": "pending live check",
-        "download_works": "pending live check",
+        "api_returns_report": true,
+        "reports_page_visible": true,
+        "preview_works": true,
+        "download_works": true,
         "pdf_readable": true,
         "pdf_status": "readable (1 page)",
-        "pdf_pages": 1
+        "pdf_pages": 1,
+        "manifest_api_status": 200,
+        "manifest_report_count": 22,
+        "empty_message_visible": false,
+        "preview_iframe_src": "/admin-reports/ai-implementation/2026-06-26-ai-report-system-repair.pdf",
+        "pdf_endpoint_status": 200,
+        "pdf_endpoint_content_type": "application/pdf",
+        "json_endpoint_status": 200,
+        "json_endpoint_parseable": true,
+        "console_errors": []
       }
     }
   ]
