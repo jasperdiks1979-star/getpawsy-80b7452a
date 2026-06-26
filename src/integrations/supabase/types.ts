@@ -16504,6 +16504,134 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_experiment_variants: {
+        Row: {
+          confidence: number
+          created_at: string
+          delta: Json
+          experiment_id: string
+          id: string
+          label: string
+          metrics: Json
+          sample_size: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          delta?: Json
+          experiment_id: string
+          id?: string
+          label: string
+          metrics?: Json
+          sample_size?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          delta?: Json
+          experiment_id?: string
+          id?: string
+          label?: string
+          metrics?: Json
+          sample_size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_experiment_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie2_experiments: {
+        Row: {
+          allow_multivariate: boolean
+          config: Json
+          created_at: string
+          ended_at: string | null
+          hypothesis: string | null
+          id: string
+          name: string
+          started_at: string | null
+          status: string
+          variable: string
+          winner_variant_id: string | null
+        }
+        Insert: {
+          allow_multivariate?: boolean
+          config?: Json
+          created_at?: string
+          ended_at?: string | null
+          hypothesis?: string | null
+          id?: string
+          name: string
+          started_at?: string | null
+          status?: string
+          variable: string
+          winner_variant_id?: string | null
+        }
+        Update: {
+          allow_multivariate?: boolean
+          config?: Json
+          created_at?: string
+          ended_at?: string | null
+          hypothesis?: string | null
+          id?: string
+          name?: string
+          started_at?: string | null
+          status?: string
+          variable?: string
+          winner_variant_id?: string | null
+        }
+        Relationships: []
+      }
+      pcie2_feature_attribution: {
+        Row: {
+          computed_at: string
+          confidence: number
+          correlation: number
+          evidence: Json
+          feature_group: string
+          feature_value: string
+          id: string
+          lift_pct: number | null
+          metric: string
+          reliability: string
+          sample_size: number
+          window_days: number
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number
+          correlation?: number
+          evidence?: Json
+          feature_group: string
+          feature_value: string
+          id?: string
+          lift_pct?: number | null
+          metric: string
+          reliability?: string
+          sample_size?: number
+          window_days?: number
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number
+          correlation?: number
+          evidence?: Json
+          feature_group?: string
+          feature_value?: string
+          id?: string
+          lift_pct?: number | null
+          metric?: string
+          reliability?: string
+          sample_size?: number
+          window_days?: number
+        }
+        Relationships: []
+      }
       pcie2_headline_library: {
         Row: {
           created_at: string
@@ -16593,6 +16721,164 @@ export type Database = {
           use_count?: number
         }
         Relationships: []
+      }
+      pcie2_insights: {
+        Row: {
+          confidence: number
+          created_at: string
+          detail: string | null
+          evidence: Json
+          headline: string
+          id: string
+          kind: string
+          reliability: string
+          sample_size: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          detail?: string | null
+          evidence?: Json
+          headline: string
+          id?: string
+          kind: string
+          reliability?: string
+          sample_size?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          detail?: string | null
+          evidence?: Json
+          headline?: string
+          id?: string
+          kind?: string
+          reliability?: string
+          sample_size?: number
+        }
+        Relationships: []
+      }
+      pcie2_learning_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          run_type: string
+          started_at: string
+          status: string
+          totals: Json
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_type: string
+          started_at?: string
+          status?: string
+          totals?: Json
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_type?: string
+          started_at?: string
+          status?: string
+          totals?: Json
+        }
+        Relationships: []
+      }
+      pcie2_pin_performance: {
+        Row: {
+          board_id: string | null
+          category: string | null
+          closeups: number
+          conversion_value: number | null
+          created_at: string
+          creative_dna: Json
+          creative_id: string | null
+          cta: string | null
+          ctr: number | null
+          engagement_rate: number | null
+          headline: string | null
+          hook: string | null
+          id: string
+          impressions: number
+          measured_at: string
+          outbound_clicks: number
+          pin_id: string
+          product_id: string | null
+          product_slug: string | null
+          prompt_version: string | null
+          publish_time: string | null
+          raw: Json
+          roas: number | null
+          saves: number
+          updated_at: string
+        }
+        Insert: {
+          board_id?: string | null
+          category?: string | null
+          closeups?: number
+          conversion_value?: number | null
+          created_at?: string
+          creative_dna?: Json
+          creative_id?: string | null
+          cta?: string | null
+          ctr?: number | null
+          engagement_rate?: number | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          impressions?: number
+          measured_at?: string
+          outbound_clicks?: number
+          pin_id: string
+          product_id?: string | null
+          product_slug?: string | null
+          prompt_version?: string | null
+          publish_time?: string | null
+          raw?: Json
+          roas?: number | null
+          saves?: number
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string | null
+          category?: string | null
+          closeups?: number
+          conversion_value?: number | null
+          created_at?: string
+          creative_dna?: Json
+          creative_id?: string | null
+          cta?: string | null
+          ctr?: number | null
+          engagement_rate?: number | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          impressions?: number
+          measured_at?: string
+          outbound_clicks?: number
+          pin_id?: string
+          product_id?: string | null
+          product_slug?: string | null
+          prompt_version?: string | null
+          publish_time?: string | null
+          raw?: Json
+          roas?: number | null
+          saves?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_pin_performance_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pcie2_product_understanding: {
         Row: {
