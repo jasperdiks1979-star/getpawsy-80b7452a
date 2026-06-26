@@ -1,5 +1,13 @@
 [
   {
+    "slug": "2026-06-26-pinterest-zero-audit-stage-a",
+    "title": "Pinterest Zero-Cleanup \u2014 Stage A Preliminary Audit",
+    "generated_at": "2026-06-26T10:00:00Z",
+    "status": "AWAITING_DECISIONS",
+    "pdf": null,
+    "json": "/admin-reports/ai-implementation/2026-06-26-pinterest-zero-audit-stage-a.json"
+  },
+  {
     "slug": "2026-06-26-pcie2-v2-finalization",
     "title": "PCIE2 v2 Finalization & Health Verification",
     "generated_at": "2026-06-26T09:20:00Z",

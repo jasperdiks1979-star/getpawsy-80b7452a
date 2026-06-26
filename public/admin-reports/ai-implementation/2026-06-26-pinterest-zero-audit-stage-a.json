@@ -1,0 +1,125 @@
+{
+  "slug": "2026-06-26-pinterest-zero-audit-stage-a",
+  "generated_at": "2026-06-26T00:00:00Z",
+  "title": "Pinterest Zero-Cleanup — Stage A Preliminary Audit (read-only)",
+  "verdict": "AWAITING_DECISIONS",
+  "scope": "Read-only inventory + DB-side quality audit across Pinterest ecosystem. No mutations. No new Gemini multimodal spend.",
+  "safety_locks": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false,
+    "step_6_enabled": false
+  },
+  "inventory": {
+    "pinterest_pin_queue_total": 1778,
+    "pin_queue_by_status": {
+      "rejected": 1362,
+      "draft": 350,
+      "paused": 42,
+      "blocked_legacy_source": 9,
+      "posted": 6,
+      "skipped": 6,
+      "queued": 3,
+      "published": 0,
+      "scheduled": 0,
+      "failed": 0
+    },
+    "rows_holding_pinterest_pin_id_total": 939,
+    "live_pins_currently_active_in_db": {
+      "posted": 6,
+      "paused": 34,
+      "rejected_but_pin_id_retained": 893,
+      "note": "893 rows are likely Pinterest-side ghosts from earlier cleanup waves — DB marked rejected but pinterest_pin_id never cleared. Requires live /v5/pins/{id} verification (deferred until decisions confirmed)."
+    },
+    "pinterest_pins_table": 5,
+    "pinterest_publish_queue": 0,
+    "pcie2_publish_queue": 0,
+    "pinterest_video_queue": 216,
+    "pinterest_video_assets": 65,
+    "pinterest_boards_total": 32,
+    "pinterest_boards_usable": 11,
+    "pcie2_creatives": 1514,
+    "pcie2_creative_jobs": { "done": 1514, "skipped": 5706, "failed": 0, "queued": 0 },
+    "pcie2_headline_library": 1289,
+    "pcie2_hook_library": 1847,
+    "pcie2_concept_graph_nodes": 12799,
+    "pcie2_visual_dna_rows": 1
+  },
+  "quality_signals_db_only": {
+    "duplicate_titles_among_live_pin_id_rows": 171,
+    "duplicate_images_among_live_pin_id_rows": 83,
+    "cj_host_images_in_pin_id_rows": 187,
+    "cj_host_images_among_active_posted": 0,
+    "media_audit_blocked": 252,
+    "media_audit_review": 175,
+    "media_audit_clean": 1217,
+    "source_type_breakdown_pin_id_rows": {
+      "unknown": 418,
+      "cj": 303,
+      "lifestyle_ai": 202,
+      "product_ai": 16
+    }
+  },
+  "top_historical_rejection_reasons": [
+    ["quality-reset-pre-layout-engine", 205],
+    ["diversity_cleanup_safe_remove", 172],
+    ["gone_on_pinterest_404_410", 121],
+    ["wave2_archived:hook_not_allowed", 93],
+    ["wave2_archived:hook_not_allowed,classification_inconsistent", 87],
+    ["content_refresh_banned_phrase_2026_06_12", 75],
+    ["auto_archive: validation_failed_backlog", 69],
+    ["product_oos", 56],
+    ["creative_mismatch", 39],
+    ["diversity_collapse_bulk_purge", 37]
+  ],
+  "preliminary_proposed_actions": {
+    "delete_from_pinterest_high_confidence": {
+      "candidates_in_db": 252,
+      "criteria": "media_audit.status='BLOCKED' AND pinterest_pin_id IS NOT NULL",
+      "blocked_by": "Pinterest pins:write / pin_edit scope NOT granted (per 2026-06-25-pinterest-metadata-repair.json). Cannot DELETE remotely."
+    },
+    "archive_db_only": {
+      "candidates": 175,
+      "criteria": "media_audit.status='REVIEW'"
+    },
+    "ghost_verification_required": {
+      "candidates": 893,
+      "criteria": "status='rejected' AND pinterest_pin_id IS NOT NULL — confirm via GET /v5/pins/{id} whether each still exists on Pinterest. Roughly 9 Pinterest API calls/sec under rate limit ≈ 100 minutes total."
+    },
+    "duplicate_title_remediation_candidates": 171,
+    "duplicate_image_remediation_candidates": 83
+  },
+  "pcie2_system_health": {
+    "creative_library_size": 1514,
+    "headline_library_size": 1289,
+    "hook_library_size": 1847,
+    "creative_jobs_queue_clean": true,
+    "skipped_jobs_5706_explanation": "Skipped after 1,500 creative target reached; Evolution Guard v2 rejected over-similar generations. Expected steady-state behaviour.",
+    "publish_queue_empty": true
+  },
+  "decisions_required_before_stage_b": [
+    {
+      "id": "pinterest_pin_edit_scope",
+      "question": "Pinterest pins:write / pin_edit scope is still ungranted. Pick one:",
+      "options": {
+        "a": "DB-only cleanup (mark rejected/archived in DB, leave bad pins live on Pinterest serving impressions).",
+        "b": "Pause Stage B; finish Stage A live verification + Stage C (firewall) + Stage D (report) only.",
+        "c": "Export delete list as CSV for manual bulk-delete in Pinterest UI."
+      },
+      "recommendation": "b — finish what we control, queue the rest for after scope upgrade."
+    },
+    {
+      "id": "deletion_scale_cap",
+      "question": "Full scale (~700–900 candidates) or capped (e.g. confidence ≥ 0.95 only)?",
+      "current_high_confidence_count": 252
+    },
+    {
+      "id": "gemini_multimodal_audit_spend",
+      "question": "Approve ~$4–8 of Gemini 2.5 Flash multimodal scoring across 939 pin_id rows for product-match + visual-DNA verdict?",
+      "default_if_declined": "Skip live multimodal; rely on existing media_audit + integrity-guard signals only."
+    },
+    {
+      "id": "cron_unschedule_authority",
+      "question": "May I unschedule any *additional* legacy Pinterest crons discovered during audit? (No active crons currently visible from sandbox role.)"
+    }
+  ]
+}
