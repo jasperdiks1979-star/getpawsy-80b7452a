@@ -55,6 +55,6 @@ Deno.serve(async (req) => {
     counts: { headlines: hc, hooks: kc, creatives: cc },
     gates, all_passed, stages,
   };
-  await SUPA.from("pcie2_runs").insert({ run_kind: "bootstrap", status: all_passed ? "passed" : "halted", report: summary });
+  await SUPA.from("pcie2_runs").insert({ run_type: "bootstrap", status: all_passed ? "passed" : "halted", totals: summary, finished_at: new Date().toISOString() });
   return new Response(JSON.stringify(summary), { headers: { ...cors, "Content-Type": "application/json" } });
 });
