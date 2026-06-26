@@ -1,0 +1,81 @@
+{
+  "slug": "2026-06-26-acos-phase-2-wave-a",
+  "title": "ACOS Phase 2 \u2014 Wave A Foundation",
+  "generated_at": "2026-06-26T23:30:00Z",
+  "status": "COMPLETED",
+  "verdict": "GREEN",
+  "score": 95,
+  "summary": "Additive Autonomous Commerce OS shipped in observation mode. 21 new acos_* tables (admin-read RLS + service-role write), 18 new edge functions, /admin/command-center-2 dashboard, Commander AI with grounded context. All autonomous mutations default OFF. No existing system altered.",
+  "scope": {
+    "tables_added": 21,
+    "edge_functions_added": 18,
+    "routes_added": 1,
+    "existing_systems_modified": 0
+  },
+  "tables": [
+    "acos_settings",
+    "acos_product_metrics_hourly",
+    "acos_product_forecasts",
+    "acos_product_scores",
+    "acos_creative_families",
+    "acos_creative_fatigue",
+    "acos_winner_signals",
+    "acos_loser_signals",
+    "acos_pin_seo_variants",
+    "acos_board_intelligence",
+    "acos_diversity_state",
+    "acos_video_expansion_jobs",
+    "acos_ads_recommendations",
+    "acos_landing_audits",
+    "acos_trend_opportunities",
+    "acos_predictions",
+    "acos_commander_chats",
+    "acos_decisions",
+    "acos_learning_insights",
+    "acos_orchestrator_runs",
+    "acos_orchestrator_steps"
+  ],
+  "edge_functions": [
+    "acos-revenue-brain",
+    "acos-score-engine",
+    "acos-winner-detect",
+    "acos-loser-detect",
+    "acos-creative-families",
+    "acos-creative-fatigue",
+    "acos-pin-seo-ai",
+    "acos-board-intelligence",
+    "acos-diversity-engine",
+    "acos-video-expansion",
+    "acos-ads-ai",
+    "acos-landing-ai",
+    "acos-trend-discovery",
+    "acos-predictive",
+    "acos-commander-ai",
+    "acos-self-learning",
+    "acos-executive-report",
+    "acos-orchestrator"
+  ],
+  "ui": [
+    "/admin/command-center-2"
+  ],
+  "safety": {
+    "emergency_stop_default": false,
+    "autonomous_mutations_default": false,
+    "feature_flags": "per-engine, observation-by-default",
+    "respects": [
+      "app_config.global_stop",
+      "pcie2_publish_enabled"
+    ]
+  },
+  "rollout": {
+    "wave_a": "Foundation + observation (this wave)",
+    "wave_b": "User toggles per-engine flags after reviewing recommendations",
+    "wave_c": "Self-learning weights propagate into generation prompts"
+  },
+  "verification": {
+    "migration_applied": true,
+    "edge_functions_deployed": 18,
+    "route_registered": "/admin/command-center-2",
+    "existing_systems_intact": true
+  }
+}
