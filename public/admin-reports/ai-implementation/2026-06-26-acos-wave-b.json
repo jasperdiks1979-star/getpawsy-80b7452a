@@ -1,0 +1,59 @@
+{
+  "slug": "2026-06-26-acos-wave-b",
+  "title": "ACOS Phase 2 — Wave B: Dispatcher, Approvals, Health & Alerts",
+  "generated_at": "2026-06-26T23:55:00Z",
+  "status": "COMPLETED",
+  "verdict": "GREEN",
+  "score": 96,
+  "summary": "Wired ACOS decisions to production via a single approval-gated dispatcher. Added smoke tests, health watchdog, alert notifier, and Wave B approval flow. Autonomous mutations remain OFF by default. Existing systems untouched.",
+  "scope": {
+    "tables_added": 3,
+    "tables_altered": 2,
+    "edge_functions_added": 4,
+    "routes_added": 0,
+    "existing_systems_modified": 0
+  },
+  "tables_added": ["acos_dispatch_log", "acos_health_snapshots", "acos_alerts"],
+  "tables_altered": [
+    "acos_decisions (approval columns + idempotency)",
+    "acos_settings (approval_mode, autonomous_mutations, engine_flags)"
+  ],
+  "edge_functions_added": [
+    "acos-decision-dispatcher",
+    "acos-smoke-test",
+    "acos-health-watchdog",
+    "acos-alert-notifier"
+  ],
+  "cron_jobs": [
+    "acos-health-watchdog-5min (*/5 * * * *)",
+    "acos-alert-notifier-5min (*/5 * * * *)"
+  ],
+  "ui": {
+    "page": "/admin/command-center-2",
+    "added_sections": ["System Health", "Pending Approvals", "Open Alerts", "Smoke Test Result"]
+  },
+  "safety": {
+    "global_stop_respected": true,
+    "pcie2_publish_enabled_respected": true,
+    "autonomous_mutations_default": false,
+    "approval_mode_default": "manual",
+    "per_engine_flags_default": "off",
+    "dispatcher_chokepoint": true,
+    "ci_layer_bypass_blocked": "verified by negative test in smoke suite"
+  },
+  "verification": {
+    "migration_applied": true,
+    "edge_functions_deployed": 4,
+    "dispatcher_auth_enforced": "verified (missing auth → 401)",
+    "watchdog_live": "verified (overall_status returned, snapshot persisted)",
+    "cron_scheduled": true,
+    "existing_systems_intact": true
+  },
+  "rollout": {
+    "step_1_wire_decisions": "GREEN — dispatcher live, chokepoint enforced",
+    "step_2_smoke_tests": "GREEN — acos-smoke-test deployed; run from dashboard to populate report",
+    "step_3_alerting_health": "GREEN — watchdog + notifier scheduled every 5 min; dashboard tab live",
+    "step_4_approval_flow": "GREEN — approvals UI live; mutations stay OFF until first approval cycle is verified"
+  },
+  "next": "Trigger Smoke Test from /admin/command-center-2 (verdict expected: GREEN/YELLOW). After review, an admin can flip acos_settings.autonomous_mutations=true to begin dispatching approved decisions."
+}
