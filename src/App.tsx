@@ -2576,6 +2576,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="guardian"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GuardianDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-pin-source-audit"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
