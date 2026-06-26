@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Play, AlertCircle, ShieldCheck } from "lucide-react";
+import { RefreshCw, Play, AlertCircle, ShieldCheck, KeyRound, CheckCircle2, XCircle } from "lucide-react";
+
+const ALL_PINTEREST_SCOPES = [
+  "catalogs:read","catalogs:write","ads:read","ads:write",
+  "billing:read","billing:write","user_accounts:write",
+  "boards:read_secret","boards:write_secret",
+  "pins:read_secret","pins:write_secret",
+  "biz_access:read","biz_access:write",
+];
+const REQUIRED_PINTEREST_SCOPES = [
+  "boards:read","boards:write","pins:read","pins:write","user_accounts:read",
+  "catalogs:read","catalogs:write","ads:read","ads:write",
+];
 
 type Snapshot = {
   status: "healthy" | "delayed" | "stalled";
@@ -74,6 +86,49 @@ export default function PinterestHealthPage() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [watchdog, setWatchdog] = useState<WatchdogPayload | null>(null);
   const [watchdogLoading, setWatchdogLoading] = useState(false);
+  const [conn, setConn] = useState<any>(null);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [recovery, setRecovery] = useState<any>(null);
+  const [recoveryRunning, setRecoveryRunning] = useState(false);
+
+  async function loadConnection() {
+    const { data } = await supabase
+      .from("pinterest_connection")
+      .select("account_name,status,scopes,token_expires_at,last_account_status,last_boards_status,board_count,updated_at")
+      .eq("status", "connected")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setConn(data);
+  }
+
+  async function startReconnect() {
+    setReconnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: { extra_scopes: ALL_PINTEREST_SCOPES, auto_sync_catalog: true },
+      });
+      if (error || !data?.auth_url) throw new Error(error?.message || data?.error || "OAuth start failed");
+      window.location.href = data.auth_url;
+    } catch (e: any) {
+      setError(`Reconnect failed: ${e?.message ?? e}`);
+      setReconnecting(false);
+    }
+  }
+
+  async function runFinalRecovery() {
+    setRecoveryRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-final-recovery", { body: {} });
+      if (error) throw error;
+      setRecovery(data?.report ?? data);
+      await loadConnection();
+    } catch (e: any) {
+      setError(`Recovery failed: ${e?.message ?? e}`);
+    } finally {
+      setRecoveryRunning(false);
+    }
+  }
 
   async function refresh(runAction = false) {
     setLoading(true);
@@ -117,6 +172,12 @@ export default function PinterestHealthPage() {
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
+    loadConnection();
+    // Auto-run final recovery after a successful OAuth callback redirect
+    const qs = new URLSearchParams(window.location.search);
+    if (qs.get("oauth_success") === "true") {
+      runFinalRecovery();
+    }
     const t = setInterval(() => {
       refresh(false);
       refreshWatchdog(false);
@@ -138,6 +199,16 @@ export default function PinterestHealthPage() {
       <Helmet>
         <title>Pinterest Health Monitor — GetPawsy Admin</title>
       </Helmet>
+
+      {/* OAuth Recovery panel — verifies scopes, surfaces reconnect CTA, runs final recovery */}
+      <OAuthRecoveryPanel
+        conn={conn}
+        reconnecting={reconnecting}
+        onReconnect={startReconnect}
+        onRunRecovery={runFinalRecovery}
+        recovery={recovery}
+        recoveryRunning={recoveryRunning}
+      />
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-semibold">Pinterest Flow Monitor</h1>
@@ -345,5 +416,97 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-right break-all">{value}</span>
     </div>
+  );
+}
+
+function OAuthRecoveryPanel({
+  conn, reconnecting, onReconnect, onRunRecovery, recovery, recoveryRunning,
+}: {
+  conn: any;
+  reconnecting: boolean;
+  onReconnect: () => void;
+  onRunRecovery: () => void;
+  recovery: any;
+  recoveryRunning: boolean;
+}) {
+  const granted: string[] = typeof conn?.scopes === "string"
+    ? conn.scopes.split(/[\s,]+/).map((s: string) => s.trim().toLowerCase()).filter(Boolean)
+    : Array.isArray(conn?.scopes) ? conn.scopes : [];
+  const missing = REQUIRED_PINTEREST_SCOPES.filter((s) => !granted.includes(s));
+  const fullAccess = missing.length === 0;
+  return (
+    <Card className="p-5 border-2 border-amber-300/60">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-amber-600" />
+          <h2 className="font-semibold">Pinterest OAuth Final Recovery</h2>
+          <Badge className={fullAccess ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}>
+            Full Access: {fullAccess ? "Yes" : "No"}
+          </Badge>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onRunRecovery} disabled={recoveryRunning}>
+            <RefreshCw className={`h-4 w-4 mr-1 ${recoveryRunning ? "animate-spin" : ""}`} />
+            Re-run recovery
+          </Button>
+          <Button size="sm" onClick={onReconnect} disabled={reconnecting}>
+            <KeyRound className="h-4 w-4 mr-1" />
+            Reconnect with Full Pinterest Access
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <Row label="Account" value={conn?.account_name ?? "not connected"} />
+        <Row label="Token expires" value={conn?.token_expires_at ? new Date(conn.token_expires_at).toLocaleString() : "—"} />
+        <Row label="/user_account" value={conn?.last_account_status ? String(conn.last_account_status) : "—"} />
+        <Row label="/boards" value={`${conn?.last_boards_status ?? "—"} (${conn?.board_count ?? 0} boards)`} />
+      </div>
+
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold mb-2">Required scopes</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {REQUIRED_PINTEREST_SCOPES.map((s) => {
+            const ok = granted.includes(s);
+            return (
+              <Badge key={s} className={ok ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}>
+                {ok ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
+                {s}
+              </Badge>
+            );
+          })}
+        </div>
+        {missing.length > 0 && (
+          <p className="text-xs text-red-700 mt-2">
+            Missing: <span className="font-mono">{missing.join(", ")}</span>. Click <strong>Reconnect with Full Pinterest Access</strong>
+            {" "}to start a fresh authorization and grant every supported Pinterest Business scope.
+          </p>
+        )}
+      </div>
+
+      {recovery && (
+        <div className="mt-4 border-t pt-3 space-y-2 text-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge className={recovery.verdict === "GREEN" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}>
+              Final verdict: {recovery.verdict}
+            </Badge>
+            <Badge variant="outline">Trust: {recovery.trust_score ?? "—"}</Badge>
+            <Badge variant="outline">Guardian: {recovery.guardian?.color ?? "—"}</Badge>
+            {recovery.publish_unlocked && (
+              <Badge className="bg-emerald-600 text-white">Publishing UNLOCKED — Week 1 ramp (3/day)</Badge>
+            )}
+          </div>
+          {recovery.blockers?.length > 0 && (
+            <div className="text-xs text-red-700">
+              <strong>Remaining blocker{recovery.blockers.length > 1 ? "s" : ""}:</strong> {recovery.blockers.join("; ")}
+            </div>
+          )}
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground">View full report JSON</summary>
+            <pre className="mt-2 p-2 bg-muted rounded overflow-auto max-h-80">{JSON.stringify(recovery, null, 2)}</pre>
+          </details>
+        </div>
+      )}
+    </Card>
   );
 }
