@@ -3143,6 +3143,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-creative-intel-v2"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCreativeIntelV2Page />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-growth-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
