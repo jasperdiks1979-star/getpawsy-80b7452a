@@ -1,0 +1,100 @@
+{
+  "title": "Pinterest Account Recovery Wave v1 \u2014 Initial Scan",
+  "generated_at": "2026-06-26T15:05:01.969624Z",
+  "mission": "Regain Pinterest algorithm trust and restore organic distribution. Quality before quantity.",
+  "verdict": "RED",
+  "publish_allowed": false,
+  "trust_score": 33,
+  "blockers": [
+    "guardian_gray",
+    "oauth_unhealthy_or_missing",
+    "missing_scopes:catalogs,ads"
+  ],
+  "phases": {
+    "phase_1": {
+      "safety_locks": {
+        "pinterest_video_auto_publish": false,
+        "pcie2_publish_enabled": false,
+        "pinterest_publishing_global_stop": true
+      },
+      "guardian_color": "gray",
+      "guardian_publish_gate_open": false,
+      "oauth_healthy": false,
+      "oauth_scopes": [],
+      "missing_scopes": [
+        "catalogs",
+        "ads"
+      ],
+      "legacy_findings_high": 0
+    },
+    "phase_2_3": {
+      "total_pins": 5,
+      "classification_counts": {
+        "Average": 5
+      }
+    },
+    "phase_4": {
+      "trust_score": 33,
+      "publisher_quality": 0,
+      "account_health": 50
+    },
+    "phase_5": {
+      "active_week": 1,
+      "max_pins_per_day": 3,
+      "required_trust": 60,
+      "required_health": 75,
+      "meets_trust": false,
+      "meets_health": false,
+      "publish_allowed": false,
+      "safe_velocity": 0
+    }
+  },
+  "ramp_plan": [
+    {
+      "week": 1,
+      "pins_day": 3,
+      "trust": 60,
+      "health": 75,
+      "status": "ACTIVE"
+    },
+    {
+      "week": 2,
+      "pins_day": 5,
+      "trust": 70,
+      "health": 80,
+      "status": "locked"
+    },
+    {
+      "week": 3,
+      "pins_day": 8,
+      "trust": 80,
+      "health": 90,
+      "status": "locked"
+    },
+    {
+      "week": 4,
+      "pins_day": 12,
+      "trust": 90,
+      "health": 95,
+      "status": "locked"
+    }
+  ],
+  "decision": "DO NOT PUBLISH. Remediate blockers, then re-scan.",
+  "remediation": [
+    "Re-OAuth Pinterest with catalogs + ads scopes (currently both missing).",
+    "Run guardian-sentinel-run to refresh Guardian status from gray to green.",
+    "Manually archive the 19 banned-phrase pins flagged in the prior forensic report.",
+    "Verify Pinterest Tag + CAPI events landing for /products/ pages (sample 10).",
+    "After 14 days of zero-spam publishing, re-evaluate trust score gate (>=60 to start Week 1)."
+  ],
+  "canonical_pipeline": [
+    "AI Engine",
+    "pcie2_publish_queue",
+    "pcie2-publisher",
+    "Guardian Publish Gate",
+    "Quality Firewall",
+    "Pinterest API"
+  ],
+  "next_scheduled_scan": "Every 6h via pinterest-recovery-learning-loop cron (job 221).",
+  "dashboard": "/admin/pinterest-recovery"
+}
