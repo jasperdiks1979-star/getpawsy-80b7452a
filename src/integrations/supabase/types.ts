@@ -27484,6 +27484,183 @@ export type Database = {
         }
         Relationships: []
       }
+      pqif_audit_runs: {
+        Row: {
+          broken_urls: number
+          deleted_products: number
+          duplicates_found: number
+          finished_at: string | null
+          ghosts_found: number
+          id: string
+          notes: Json
+          orphans_cleared: number
+          pins_checked: number
+          repairs_applied: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          broken_urls?: number
+          deleted_products?: number
+          duplicates_found?: number
+          finished_at?: string | null
+          ghosts_found?: number
+          id?: string
+          notes?: Json
+          orphans_cleared?: number
+          pins_checked?: number
+          repairs_applied?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          broken_urls?: number
+          deleted_products?: number
+          duplicates_found?: number
+          finished_at?: string | null
+          ghosts_found?: number
+          id?: string
+          notes?: Json
+          orphans_cleared?: number
+          pins_checked?: number
+          repairs_applied?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pqif_family_performance: {
+        Row: {
+          conversion_rate: number
+          conversions: number
+          ctr: number
+          engagement_rate: number
+          family_key: string
+          family_type: string
+          frequency_multiplier: number
+          id: string
+          impressions: number
+          last_evaluated_at: string
+          outbound_clicks: number
+          performance_score: number
+          pins_published: number
+          saves: number
+        }
+        Insert: {
+          conversion_rate?: number
+          conversions?: number
+          ctr?: number
+          engagement_rate?: number
+          family_key: string
+          family_type: string
+          frequency_multiplier?: number
+          id?: string
+          impressions?: number
+          last_evaluated_at?: string
+          outbound_clicks?: number
+          performance_score?: number
+          pins_published?: number
+          saves?: number
+        }
+        Update: {
+          conversion_rate?: number
+          conversions?: number
+          ctr?: number
+          engagement_rate?: number
+          family_key?: string
+          family_type?: string
+          frequency_multiplier?: number
+          id?: string
+          impressions?: number
+          last_evaluated_at?: string
+          outbound_clicks?: number
+          performance_score?: number
+          pins_published?: number
+          saves?: number
+        }
+        Relationships: []
+      }
+      pqif_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          min_image_height: number
+          min_image_width: number
+          product_cooldown_hours: number
+          quality_threshold: number
+          retire_after_impressions: number
+          retire_ctr_below: number
+          similarity_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          min_image_height?: number
+          min_image_width?: number
+          product_cooldown_hours?: number
+          quality_threshold?: number
+          retire_after_impressions?: number
+          retire_ctr_below?: number
+          similarity_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          min_image_height?: number
+          min_image_width?: number
+          product_cooldown_hours?: number
+          quality_threshold?: number
+          retire_after_impressions?: number
+          retire_ctr_below?: number
+          similarity_threshold?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pqif_verdicts: {
+        Row: {
+          checks: Json
+          created_at: string
+          decision: string
+          id: string
+          overall_score: number | null
+          product_id: string | null
+          queue_id: string | null
+          reasons: string[]
+          scores: Json
+          stage: string
+          threshold: number | null
+        }
+        Insert: {
+          checks?: Json
+          created_at?: string
+          decision: string
+          id?: string
+          overall_score?: number | null
+          product_id?: string | null
+          queue_id?: string | null
+          reasons?: string[]
+          scores?: Json
+          stage: string
+          threshold?: number | null
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          decision?: string
+          id?: string
+          overall_score?: number | null
+          product_id?: string | null
+          queue_id?: string | null
+          reasons?: string[]
+          scores?: Json
+          stage?: string
+          threshold?: number | null
+        }
+        Relationships: []
+      }
       prie_brain_snapshots: {
         Row: {
           ai_confidence: number
