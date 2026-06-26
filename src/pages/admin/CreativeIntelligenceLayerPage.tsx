@@ -28,17 +28,26 @@ export default function CreativeIntelligenceLayerPage() {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [banned, setBanned] = useState<{ phrase: string; category: string; hits: number }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loopRuns, setLoopRuns] = useState<any[]>([]);
+  const [queueStats, setQueueStats] = useState<{ ready: number; stamped: number; avg: number }>({ ready: 0, stamped: 0, avg: 0 });
 
   async function load() {
     setLoading(true);
-    const [r, s, b] = await Promise.all([
+    const [r, s, b, ql, q] = await Promise.all([
       supabase.from("pcie2_ci_runs").select("*").order("started_at", { ascending: false }).limit(20),
       supabase.from("pcie2_ci_scores").select("*").order("created_at", { ascending: false }).limit(300),
       supabase.from("pcie2_ci_banned_phrases").select("phrase,category,hits").order("hits", { ascending: false }),
+      supabase.from("pcie2_quality_loop_runs").select("*").order("started_at", { ascending: false }).limit(10),
+      supabase.from("pcie2_publish_queue").select("status,ci_score,ci_version").eq("status","ready"),
     ]);
     setRuns((r.data as Run[]) ?? []);
     setScores((s.data as ScoreRow[]) ?? []);
     setBanned((b.data as any[]) ?? []);
+    setLoopRuns((ql.data as any[]) ?? []);
+    const qd = (q.data as any[]) ?? [];
+    const stamped = qd.filter(x => x.ci_version).length;
+    const avg = qd.length ? Math.round(qd.reduce((a, x) => a + Number(x.ci_score ?? 0), 0) / qd.length) : 0;
+    setQueueStats({ ready: qd.length, stamped, avg });
     setLoading(false);
   }
 
@@ -104,6 +113,37 @@ export default function CreativeIntelligenceLayerPage() {
         <Card><CardHeader><CardTitle className="text-sm">Predicted Outbound</CardTitle></CardHeader><CardContent><div className="text-3xl">{avgOut}</div></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-sm">Engagement Index</CardTitle></CardHeader><CardContent><div className="text-3xl">{avgEng}</div></CardContent></Card>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Performance Lab — Zero-Bypass Gate Status</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div><div className="text-muted-foreground">Ready rows</div><div className="text-2xl">{queueStats.ready}</div></div>
+          <div><div className="text-muted-foreground">CI-stamped</div><div className="text-2xl">{queueStats.stamped}/{queueStats.ready}</div></div>
+          <div><div className="text-muted-foreground">Avg CI score</div><div className="text-2xl">{queueStats.avg}</div></div>
+          <div><div className="text-muted-foreground">Gate</div><div className="text-2xl">
+            <Badge variant={queueStats.stamped === queueStats.ready ? "default" : "destructive"}>
+              {queueStats.stamped === queueStats.ready ? "ENFORCED" : "DRIFT"}
+            </Badge>
+          </div></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Nightly Quality Loop</CardTitle></CardHeader>
+        <CardContent>
+          {loopRuns.length === 0
+            ? <div className="text-sm text-muted-foreground">No loop runs yet. Scheduled for 03:17 UTC daily.</div>
+            : <table className="w-full text-sm">
+                <thead><tr className="text-left"><th>Started</th><th>Status</th><th>Rescored</th><th>Rewritten</th><th>Retired</th><th>New ready</th></tr></thead>
+                <tbody>{loopRuns.map((r: any) => (
+                  <tr key={r.id} className="border-t">
+                    <td>{new Date(r.started_at).toLocaleString()}</td>
+                    <td><Badge variant={r.status === "completed" ? "default" : "secondary"}>{r.status}</Badge></td>
+                    <td>{r.rescored}</td><td>{r.rewritten}</td><td>{r.retired}</td><td>{r.drafts_generated}</td>
+                  </tr>))}</tbody>
+              </table>}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
