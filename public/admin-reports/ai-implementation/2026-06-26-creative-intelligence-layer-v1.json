@@ -1,0 +1,54 @@
+{
+  "title": "Creative Intelligence Layer v1 — PCIE2 Pre-Publish Gate",
+  "generated_at": "2026-06-26T19:15:00Z",
+  "status": "INSTALLED — publishing remains globally paused",
+  "scope": "Pre-publish creative scoring + rewrite layer. Publisher / queue / OAuth / Guardian / Canary / recovery / board mapping / image recovery / duplicate detection were NOT modified.",
+  "components": {
+    "edge_function": "pcie2-creative-intelligence",
+    "tables": [
+      "pcie2_ci_scores",
+      "pcie2_ci_runs",
+      "pcie2_ci_banned_phrases",
+      "pcie2_ci_diversity_log"
+    ],
+    "dashboard": "/admin/creative-intelligence-layer",
+    "pass_threshold": 95,
+    "diversity_window": 50,
+    "headline_families": [
+      "problem_solving","lifestyle","before_after","educational","buying_guide",
+      "pet_happiness","training","home_inspiration","minimalist","luxury","funny",
+      "seasonal","safety","travel","organization","interactive_play"
+    ],
+    "banned_phrases_seeded": 23
+  },
+  "scoring_axes": [
+    "overall","spam","trust","seo","novelty","ctr_prediction","save_prediction",
+    "outbound_prediction","recommendation_probability","claim_risk",
+    "duplicate_similarity","category_consistency","brand_consistency","image_match"
+  ],
+  "rescore_run": {
+    "run_id": "7ac5eef2-9511-419b-9a95-43db22c17cd0",
+    "total": 100,
+    "passed": 46,
+    "rewritten": 46,
+    "rejected": 54,
+    "avg_score": 93.5,
+    "duration_sec": 155
+  },
+  "family_distribution": {
+    "lifestyle": 46, "interactive_play": 27, "travel": 6, "training": 5,
+    "organization": 4, "safety": 3, "minimalist": 3, "pet_happiness": 3,
+    "home_inspiration": 2, "luxury": 1
+  },
+  "queue_state_after": { "ready": 46, "rejected": 54 },
+  "safety": {
+    "pinterest_publishing_global_stop": true,
+    "pcie2_publish_enabled": false,
+    "no_pins_published_during_run": true
+  },
+  "recommendations": [
+    "Wire pcie2-creative-intelligence as a pre-flight gate inside the assembler so every new draft is scored before it ever reaches `ready` status.",
+    "Schedule a daily diversity-log rotation to evict signatures older than 30 days.",
+    "Surface the dashboard link in the Pinterest Recovery dashboard for one-glance status."
+  ]
+}
