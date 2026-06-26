@@ -946,6 +946,830 @@ export type Database = {
           },
         ]
       }
+      acos_ads_recommendations: {
+        Row: {
+          action: string
+          created_at: string
+          current_budget: number | null
+          evidence: Json | null
+          id: string
+          pin_ref: string | null
+          product_id: string | null
+          reason: string | null
+          recommended_budget: number | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          current_budget?: number | null
+          evidence?: Json | null
+          id?: string
+          pin_ref?: string | null
+          product_id?: string | null
+          reason?: string | null
+          recommended_budget?: number | null
+          status?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          current_budget?: number | null
+          evidence?: Json | null
+          id?: string
+          pin_ref?: string | null
+          product_id?: string | null
+          reason?: string | null
+          recommended_budget?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
+      acos_board_intelligence: {
+        Row: {
+          board_id: string
+          board_name: string | null
+          computed_at: string
+          conversions: number | null
+          ctr: number | null
+          detail: Json | null
+          diversity_score: number | null
+          frequency: number | null
+          id: string
+          saves: number | null
+          suggestion: string | null
+          traffic: number | null
+        }
+        Insert: {
+          board_id: string
+          board_name?: string | null
+          computed_at?: string
+          conversions?: number | null
+          ctr?: number | null
+          detail?: Json | null
+          diversity_score?: number | null
+          frequency?: number | null
+          id?: string
+          saves?: number | null
+          suggestion?: string | null
+          traffic?: number | null
+        }
+        Update: {
+          board_id?: string
+          board_name?: string | null
+          computed_at?: string
+          conversions?: number | null
+          ctr?: number | null
+          detail?: Json | null
+          diversity_score?: number | null
+          frequency?: number | null
+          id?: string
+          saves?: number | null
+          suggestion?: string | null
+          traffic?: number | null
+        }
+        Relationships: []
+      }
+      acos_commander_chats: {
+        Row: {
+          answer: string | null
+          citations: Json | null
+          created_at: string
+          data_snapshot: Json | null
+          id: string
+          latency_ms: number | null
+          model: string | null
+          question: string
+          user_id: string | null
+        }
+        Insert: {
+          answer?: string | null
+          citations?: Json | null
+          created_at?: string
+          data_snapshot?: Json | null
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          question: string
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string | null
+          citations?: Json | null
+          created_at?: string
+          data_snapshot?: Json | null
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          question?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      acos_creative_families: {
+        Row: {
+          brief: Json
+          copy_dna: Json | null
+          created_at: string
+          family: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          visual_dna: Json | null
+        }
+        Insert: {
+          brief?: Json
+          copy_dna?: Json | null
+          created_at?: string
+          family: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          visual_dna?: Json | null
+        }
+        Update: {
+          brief?: Json
+          copy_dna?: Json | null
+          created_at?: string
+          family?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          visual_dna?: Json | null
+        }
+        Relationships: []
+      }
+      acos_creative_fatigue: {
+        Row: {
+          creative_ref: string
+          detected_at: string
+          family: string | null
+          fatigue_score: number
+          id: string
+          rotation_action: string | null
+          signals: Json | null
+        }
+        Insert: {
+          creative_ref: string
+          detected_at?: string
+          family?: string | null
+          fatigue_score?: number
+          id?: string
+          rotation_action?: string | null
+          signals?: Json | null
+        }
+        Update: {
+          creative_ref?: string
+          detected_at?: string
+          family?: string | null
+          fatigue_score?: number
+          id?: string
+          rotation_action?: string | null
+          signals?: Json | null
+        }
+        Relationships: []
+      }
+      acos_decisions: {
+        Row: {
+          action: string
+          actual_outcome: Json | null
+          created_at: string
+          delta: Json | null
+          engine: string
+          evaluated_at: string | null
+          expected_outcome: Json | null
+          id: string
+          observed_only: boolean
+          reason: string | null
+          rollback_ref: string | null
+          status: string
+          target_kind: string | null
+          target_ref: string | null
+        }
+        Insert: {
+          action: string
+          actual_outcome?: Json | null
+          created_at?: string
+          delta?: Json | null
+          engine: string
+          evaluated_at?: string | null
+          expected_outcome?: Json | null
+          id?: string
+          observed_only?: boolean
+          reason?: string | null
+          rollback_ref?: string | null
+          status?: string
+          target_kind?: string | null
+          target_ref?: string | null
+        }
+        Update: {
+          action?: string
+          actual_outcome?: Json | null
+          created_at?: string
+          delta?: Json | null
+          engine?: string
+          evaluated_at?: string | null
+          expected_outcome?: Json | null
+          id?: string
+          observed_only?: boolean
+          reason?: string | null
+          rollback_ref?: string | null
+          status?: string
+          target_kind?: string | null
+          target_ref?: string | null
+        }
+        Relationships: []
+      }
+      acos_diversity_state: {
+        Row: {
+          actual_share: number | null
+          category: string
+          computed_at: string
+          delta: number | null
+          exposure_count: number | null
+          id: string
+          recommendation: string | null
+          target_share: number | null
+          window_start: string
+        }
+        Insert: {
+          actual_share?: number | null
+          category: string
+          computed_at?: string
+          delta?: number | null
+          exposure_count?: number | null
+          id?: string
+          recommendation?: string | null
+          target_share?: number | null
+          window_start: string
+        }
+        Update: {
+          actual_share?: number | null
+          category?: string
+          computed_at?: string
+          delta?: number | null
+          exposure_count?: number | null
+          id?: string
+          recommendation?: string | null
+          target_share?: number | null
+          window_start?: string
+        }
+        Relationships: []
+      }
+      acos_landing_audits: {
+        Row: {
+          audited_at: string
+          auto_applied: Json | null
+          id: string
+          issues: Json | null
+          pending_approval: Json | null
+          product_id: string
+          scores: Json
+          url: string | null
+        }
+        Insert: {
+          audited_at?: string
+          auto_applied?: Json | null
+          id?: string
+          issues?: Json | null
+          pending_approval?: Json | null
+          product_id: string
+          scores?: Json
+          url?: string | null
+        }
+        Update: {
+          audited_at?: string
+          auto_applied?: Json | null
+          id?: string
+          issues?: Json | null
+          pending_approval?: Json | null
+          product_id?: string
+          scores?: Json
+          url?: string | null
+        }
+        Relationships: []
+      }
+      acos_learning_insights: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          dimension: string
+          evidence: Json | null
+          id: string
+          metric: string
+          sample_size: number | null
+          uplift: number | null
+          value: string
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          dimension: string
+          evidence?: Json | null
+          id?: string
+          metric: string
+          sample_size?: number | null
+          uplift?: number | null
+          value: string
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          dimension?: string
+          evidence?: Json | null
+          id?: string
+          metric?: string
+          sample_size?: number | null
+          uplift?: number | null
+          value?: string
+        }
+        Relationships: []
+      }
+      acos_loser_signals: {
+        Row: {
+          consecutive_periods: number | null
+          detected_at: string
+          evidence: Json | null
+          id: string
+          metric_value: number | null
+          product_id: string
+          recommendation: string | null
+          signal_type: string
+        }
+        Insert: {
+          consecutive_periods?: number | null
+          detected_at?: string
+          evidence?: Json | null
+          id?: string
+          metric_value?: number | null
+          product_id: string
+          recommendation?: string | null
+          signal_type: string
+        }
+        Update: {
+          consecutive_periods?: number | null
+          detected_at?: string
+          evidence?: Json | null
+          id?: string
+          metric_value?: number | null
+          product_id?: string
+          recommendation?: string | null
+          signal_type?: string
+        }
+        Relationships: []
+      }
+      acos_orchestrator_runs: {
+        Row: {
+          cadence: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          cadence: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          cadence?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
+      }
+      acos_orchestrator_steps: {
+        Row: {
+          detail: Json | null
+          duration_ms: number | null
+          engine: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          rows_written: number | null
+          run_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          detail?: Json | null
+          duration_ms?: number | null
+          engine: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_written?: number | null
+          run_id: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          detail?: Json | null
+          duration_ms?: number | null
+          engine?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_written?: number | null
+          run_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acos_orchestrator_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "acos_orchestrator_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acos_pin_seo_variants: {
+        Row: {
+          applied: boolean
+          created_at: string
+          id: string
+          payload: Json
+          product_id: string
+          score: number | null
+          variant_kind: string
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          id?: string
+          payload?: Json
+          product_id: string
+          score?: number | null
+          variant_kind: string
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          id?: string
+          payload?: Json
+          product_id?: string
+          score?: number | null
+          variant_kind?: string
+        }
+        Relationships: []
+      }
+      acos_predictions: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          hi: number | null
+          horizon: string
+          id: string
+          lo: number | null
+          method: string | null
+          metric: string
+          point: number | null
+          scope: string
+          scope_ref: string | null
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          hi?: number | null
+          horizon: string
+          id?: string
+          lo?: number | null
+          method?: string | null
+          metric: string
+          point?: number | null
+          scope: string
+          scope_ref?: string | null
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          hi?: number | null
+          horizon?: string
+          id?: string
+          lo?: number | null
+          method?: string | null
+          metric?: string
+          point?: number | null
+          scope?: string
+          scope_ref?: string | null
+        }
+        Relationships: []
+      }
+      acos_product_forecasts: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          features: Json | null
+          hi: number | null
+          horizon: string
+          id: string
+          lo: number | null
+          metric: string
+          point: number | null
+          product_id: string
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          features?: Json | null
+          hi?: number | null
+          horizon: string
+          id?: string
+          lo?: number | null
+          metric: string
+          point?: number | null
+          product_id: string
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          features?: Json | null
+          hi?: number | null
+          horizon?: string
+          id?: string
+          lo?: number | null
+          metric?: string
+          point?: number | null
+          product_id?: string
+        }
+        Relationships: []
+      }
+      acos_product_metrics_hourly: {
+        Row: {
+          add_to_cart: number | null
+          aov: number | null
+          checkouts_started: number | null
+          confidence: number | null
+          cpa: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          cvr: number | null
+          gross_margin: number | null
+          gross_profit: number | null
+          id: number
+          impressions: number | null
+          inventory_health: number | null
+          net_margin: number | null
+          observed_at: string
+          outbound_clicks: number | null
+          product_id: string
+          purchases: number | null
+          refund_rate: number | null
+          revenue: number | null
+          roas: number | null
+          rpm: number | null
+          saves: number | null
+          source: Json | null
+          trend_score: number | null
+          velocity: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          aov?: number | null
+          checkouts_started?: number | null
+          confidence?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          cvr?: number | null
+          gross_margin?: number | null
+          gross_profit?: number | null
+          id?: number
+          impressions?: number | null
+          inventory_health?: number | null
+          net_margin?: number | null
+          observed_at?: string
+          outbound_clicks?: number | null
+          product_id: string
+          purchases?: number | null
+          refund_rate?: number | null
+          revenue?: number | null
+          roas?: number | null
+          rpm?: number | null
+          saves?: number | null
+          source?: Json | null
+          trend_score?: number | null
+          velocity?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          aov?: number | null
+          checkouts_started?: number | null
+          confidence?: number | null
+          cpa?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          cvr?: number | null
+          gross_margin?: number | null
+          gross_profit?: number | null
+          id?: number
+          impressions?: number | null
+          inventory_health?: number | null
+          net_margin?: number | null
+          observed_at?: string
+          outbound_clicks?: number | null
+          product_id?: string
+          purchases?: number | null
+          refund_rate?: number | null
+          revenue?: number | null
+          roas?: number | null
+          rpm?: number | null
+          saves?: number | null
+          source?: Json | null
+          trend_score?: number | null
+          velocity?: number | null
+        }
+        Relationships: []
+      }
+      acos_product_scores: {
+        Row: {
+          category: string
+          components: Json
+          computed_at: string
+          id: string
+          product_id: string
+          reasons: Json | null
+          score: number
+        }
+        Insert: {
+          category: string
+          components?: Json
+          computed_at?: string
+          id?: string
+          product_id: string
+          reasons?: Json | null
+          score: number
+        }
+        Update: {
+          category?: string
+          components?: Json
+          computed_at?: string
+          id?: string
+          product_id?: string
+          reasons?: Json | null
+          score?: number
+        }
+        Relationships: []
+      }
+      acos_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      acos_trend_opportunities: {
+        Row: {
+          category: string | null
+          confidence: number | null
+          detected_at: string
+          id: string
+          momentum: number | null
+          raw: Json | null
+          source: string
+          suggested_campaigns: Json | null
+          suggested_products: Json | null
+          topic: string
+        }
+        Insert: {
+          category?: string | null
+          confidence?: number | null
+          detected_at?: string
+          id?: string
+          momentum?: number | null
+          raw?: Json | null
+          source: string
+          suggested_campaigns?: Json | null
+          suggested_products?: Json | null
+          topic: string
+        }
+        Update: {
+          category?: string | null
+          confidence?: number | null
+          detected_at?: string
+          id?: string
+          momentum?: number | null
+          raw?: Json | null
+          source?: string
+          suggested_campaigns?: Json | null
+          suggested_products?: Json | null
+          topic?: string
+        }
+        Relationships: []
+      }
+      acos_video_expansion_jobs: {
+        Row: {
+          aspect_ratio: string
+          created_at: string
+          duration_sec: number
+          error: string | null
+          id: string
+          product_id: string
+          status: string
+          updated_at: string
+          upstream_job_ref: string | null
+          voiceover: boolean | null
+        }
+        Insert: {
+          aspect_ratio: string
+          created_at?: string
+          duration_sec: number
+          error?: string | null
+          id?: string
+          product_id: string
+          status?: string
+          updated_at?: string
+          upstream_job_ref?: string | null
+          voiceover?: boolean | null
+        }
+        Update: {
+          aspect_ratio?: string
+          created_at?: string
+          duration_sec?: number
+          error?: string | null
+          id?: string
+          product_id?: string
+          status?: string
+          updated_at?: string
+          upstream_job_ref?: string | null
+          voiceover?: boolean | null
+        }
+        Relationships: []
+      }
+      acos_winner_signals: {
+        Row: {
+          detected_at: string
+          evidence: Json | null
+          id: string
+          metric_value: number | null
+          product_id: string
+          rank: number | null
+          recommendation: string | null
+          signal_type: string
+        }
+        Insert: {
+          detected_at?: string
+          evidence?: Json | null
+          id?: string
+          metric_value?: number | null
+          product_id: string
+          rank?: number | null
+          recommendation?: string | null
+          signal_type: string
+        }
+        Update: {
+          detected_at?: string
+          evidence?: Json | null
+          id?: string
+          metric_value?: number | null
+          product_id?: string
+          rank?: number | null
+          recommendation?: string | null
+          signal_type?: string
+        }
+        Relationships: []
+      }
       ad_spend_entries: {
         Row: {
           add_to_cart: number
