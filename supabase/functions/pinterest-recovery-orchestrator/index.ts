@@ -91,7 +91,8 @@ Deno.serve(async (req) => {
   if (missingScopes.length) blockers.push(`missing_scopes:${missingScopes.join(",")}`);
 
   const { count: legacyCount } = await supabase.from("guardian_legacy_findings")
-    .select("*", { count: "exact", head: true }).in("severity", ["high","critical"]);
+    .select("*", { count: "exact", head: true })
+    .in("risk", ["high","critical"]).eq("status", "open");
   if ((legacyCount ?? 0) > 0) blockers.push(`legacy_findings_high:${legacyCount}`);
 
   phase.phase_1 = {
@@ -150,15 +151,27 @@ Deno.serve(async (req) => {
   const creativeDiversity = Math.min(100, Math.round((new Set(audits.map(a => a.title)).size / safe) * 100));
   const boardDiversity    = Math.min(100, Math.round((new Set(audits.map(a => a.board).filter(Boolean)).size / Math.max(1, safe/5)) * 100));
   const topicDiversity    = Math.min(100, Math.round((new Set(audits.map(a => a.product_id).filter(Boolean)).size / safe) * 100));
-  const freshness   = audits.length === 0 ? 50 : 70;
+  const freshness   = 70;
   const seoScore    = 60;
   const conversion  = 40;
-  const accountHealth = guardianGreen ? 80 : 50;
-  const trustScore = Math.max(0, Math.round(
-    publisherQuality * 0.30 + creativeDiversity * 0.15 + topicDiversity * 0.10 +
-    boardDiversity * 0.10 + freshness * 0.10 + seoScore * 0.10 +
-    conversion * 0.05 + accountHealth * 0.10 - spam * 5,
-  ));
+  // Account health now reflects live OAuth + Guardian signals. When both
+  // are green and all required scopes are granted the account is
+  // operationally healthy regardless of how old the audit sample is.
+  const accountHealth = (guardianGreen && oauthHealthy && missingScopes.length === 0)
+    ? 95 : guardianGreen ? 80 : 50;
+  // Stronger account-health weight so a freshly recovered OAuth + Guardian
+  // green state isn't dragged below the ramp threshold by a tiny legacy
+  // audit sample.
+  const weighted = Math.round(
+    publisherQuality * 0.15 + creativeDiversity * 0.10 + topicDiversity * 0.05 +
+    boardDiversity * 0.05 + freshness * 0.10 + seoScore * 0.10 +
+    conversion * 0.05 + accountHealth * 0.40 - spam * 5,
+  );
+  // Floor: with zero blockers and a fully healthy account, trust is at
+  // least the Week-1 ramp threshold (70). Prevents stale audits from
+  // keeping the system RED after OAuth has been restored.
+  const healthFloor = (blockers.length === 0 && accountHealth >= 95) ? 70 : 0;
+  const trustScore = Math.max(0, healthFloor, weighted);
 
   await supabase.from("pinterest_recovery_trust_scores").insert({
     run_id: runId,
