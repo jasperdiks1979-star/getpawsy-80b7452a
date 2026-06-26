@@ -10,7 +10,7 @@ const ALLOWED = new Set([
   "supabase/functions/pcie2-publisher/index.ts",
 ]);
 
-// All Pinterest API write endpoints (create + update + republish).
+// All Pinterest API write endpoints (create + update + republish + media + boards).
 const FORBIDDEN_PATTERNS = [
   /fetch\(\s*[`'"][^`'"]*\/v5\/pins[^`'"]*[`'"][\s\S]*?method:\s*['"]POST['"]/m,
   /fetch\(\s*[`'"][^`'"]*\/v5\/pins[^`'"]*[`'"][\s\S]*?method:\s*['"]PATCH['"]/m,
@@ -18,6 +18,13 @@ const FORBIDDEN_PATTERNS = [
   /fetch\(\s*[`'"][^`'"]*\/v5\/media[^`'"]*[`'"][\s\S]*?method:\s*['"]POST['"]/m,
   // Board pin attach is also a publish surface.
   /fetch\(\s*[`'"][^`'"]*\/v5\/boards\/[^`'"]*\/pins[^`'"]*[`'"][\s\S]*?method:\s*['"]POST['"]/m,
+  // Bare /pins or /media writes (defensive against template literals split across lines).
+  /api\.pinterest\.com\/v5\/(pins|media)[^"'`]*["'`][\s\S]{0,200}?method:\s*['"](POST|PATCH|PUT)['"]/m,
+  // Direct invokes of the legacy publishers (defense in depth).
+  /functions\.invoke\(\s*['"]pinterest-publish-now['"]/,
+  /functions\.invoke\(\s*['"]pinterest-video-publisher['"]/,
+  /functions\.invoke\(\s*['"]pinterest-video-queue-drain['"]/,
+  /functions\.invoke\(\s*['"]pinterest-pipeline-drain['"]/,
 ];
 
 let files;
