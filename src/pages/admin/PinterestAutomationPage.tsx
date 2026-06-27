@@ -444,21 +444,14 @@ function PinterestDashboard() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [draftRes, queuedRes, postedRes, failedRes, logRes, connectionRow] = await Promise.all([
+      const [draftRes, queuedRes, postedRes, failedRes, logRes, connectionRpc] = await Promise.all([
         supabase.from("pinterest_pin_queue").select("*").eq("status", "draft").order("created_at", { ascending: false }).limit(50),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "queued").order("scheduled_at", { ascending: true }).limit(50),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "posted").order("posted_at", { ascending: false }).limit(20),
         supabase.from("pinterest_pin_queue").select("*").eq("status", "failed").order("updated_at", { ascending: false }).limit(50),
         supabase.from("pinterest_post_logs").select("*").order("created_at", { ascending: false }).limit(20),
-        // PCIE2 Wave 4: legacy `pinterest-automation` edge function returns 410 Gone.
-        // Read the unified connection state directly from the shared `pinterest_connection`
-        // table so this page reports the same status as OAuth Recovery / Publisher / Commander.
-        supabase
-          .from("pinterest_connection")
-          .select("id, account_id, account_name, status, token_expires_at, token_created_at, token_prefix, scopes, last_account_status, last_boards_status, board_count, last_publish_at, last_error")
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        // Use SECURITY DEFINER RPC so raw OAuth tokens never leave the database.
+        (supabase as any).rpc("get_pinterest_connection_admin"),
       ]);
 
       const firstError = [draftRes, queuedRes, postedRes, failedRes, logRes].find((result) => result.error)?.error;
@@ -469,7 +462,11 @@ function PinterestDashboard() {
       setPosted(postedRes.data || []);
       setFailed(failedRes.data || []);
       setLogs(logRes.data || []);
-      setConnection((connectionRow.data as PinterestConnection | null) || null);
+      {
+        const rows = (connectionRpc as any)?.data;
+        const row = Array.isArray(rows) ? rows[0] : rows;
+        setConnection((row as PinterestConnection | null) || null);
+      }
       // publish_diagnostics action lived in the removed legacy pinterest-automation
       // function. PCIE2 publisher + Guardian dashboard own diagnostics now.
       setHealth(null);
