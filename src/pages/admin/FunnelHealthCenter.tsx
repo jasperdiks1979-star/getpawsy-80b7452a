@@ -447,9 +447,13 @@ export default function FunnelHealthCenter() {
             <ShieldCheck className="h-4 w-4" /> Delivery health per canonical event
           </CardTitle>
           <CardDescription>
-            One row per canonical event. Each column is a downstream sink. Status:
-            {" "}{statusBadge("green", "GREEN")}{" "}{statusBadge("warning", "WARNING")}{" "}{statusBadge("red", "RED")}.
+            One row per canonical event. Each column is a downstream sink.
           </CardDescription>
+          <div className="flex gap-2 pt-1">
+            {statusBadge("green", "GREEN")}
+            {statusBadge("warning", "WARNING")}
+            {statusBadge("red", "RED")}
+          </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="delivery-table">
