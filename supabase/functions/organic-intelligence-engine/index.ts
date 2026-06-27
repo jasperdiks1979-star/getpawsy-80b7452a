@@ -186,33 +186,57 @@ async function explainTopProducts(stats: J) {
     .order("predicted_score", { ascending: false })
     .limit(30);
   if (se) console.error("scores query error", se);
-  let n = 0;
+  // Normalize organic confidence inputs
+  type Seed = { slug: string; score: number; source: string; model: string };
+  const seeds: Seed[] = [];
   for (const s of scores ?? []) {
     const key = (s as any).entity_id;
     if (!key) continue;
+    seeds.push({ slug: String(key), score: Number(s.predicted_score), source: "organic_confidence", model: `v${s.model_version}` });
+  }
+  // Fallback: derive from product_winner_scores when organic_confidence is empty
+  if (seeds.length === 0) {
+    const { data: pws } = await supabase
+      .from("product_winner_scores")
+      .select("product_id,revenue_probability,conversion_probability,bestseller_score,verdict,created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    const seenProd = new Set<string>();
+    const ranked = (pws ?? []).filter((r: any) => {
+      if (seenProd.has(r.product_id)) return false;
+      seenProd.add(r.product_id); return true;
+    }).sort((a: any, b: any) => Number(b.revenue_probability) - Number(a.revenue_probability)).slice(0, 30);
+    for (const r of ranked) {
+      const { data: prod } = await supabase.from("products").select("slug").eq("id", (r as any).product_id).maybeSingle();
+      if (!prod?.slug) continue;
+      seeds.push({ slug: prod.slug as string, score: Number((r as any).revenue_probability), source: "winner_score", model: "pws_latest" });
+    }
+  }
+  let n = 0;
+  for (const s of seeds) {
     const { data: prod } = await supabase
       .from("products")
       .select("slug,name,category,price")
-      .eq("slug", key)
+      .eq("slug", s.slug)
       .maybeSingle();
     if (!prod) continue;
     const md = [
-      `**Why ${(prod as any).name} ranks ${Number(s.predicted_score).toFixed(0)}**`,
+      `**Why ${(prod as any).name} ranks ${Number(s.score).toFixed(0)}**`,
       ``,
-      `- Organic Confidence model ${s.model_version} flags strong organic evidence.`,
+      `- Source ${s.source} (${s.model}) flags strong organic evidence.`,
       `- Category **${prod.category}** is part of the verified Success DNA pool.`,
       `- Price band €${prod.price} sits within the converting range for 90-day organic orders.`,
     ].join("\n");
     await supabase.from("oie_explanations").insert({
       subject_type: "product", subject_key: prod.slug as string,
       question: "why_selling", answer_md: md,
-      evidence: [{ source: "organic_confidence", score: s.predicted_score }, { source: "success_dna", scope: "global_organic_90d" }],
+      evidence: [{ source: s.source, score: s.score, model: s.model }, { source: "success_dna", scope: "global_organic_90d" }],
       contradicting: [], confidence: 0.75, reasoning_quality: 0.7,
       expected_impact: { rpv_lift: 0.05 }, risk: 0.1,
     });
     await supabase.from("oie_intelligence_scores").upsert({
       entity_type: "product", entity_key: prod.slug as string,
-      organic_intelligence: Number(s.predicted_score) * 0.9,
+      organic_intelligence: Math.max(1, Number(s.score) * 0.9),
       explanation_confidence: 75, prediction_confidence: 70,
       learning_stability: 80, reasoning_quality: 70, evidence_count: 2,
       computed_at: new Date().toISOString(),
