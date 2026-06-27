@@ -19717,6 +19717,341 @@ export type Database = {
         }
         Relationships: []
       }
+      ode_evolution_log: {
+        Row: {
+          created_at: string
+          delta: number | null
+          event_type: string
+          id: string
+          payload: Json
+          reason: string | null
+          run_id: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          delta?: number | null
+          event_type: string
+          id?: string
+          payload?: Json
+          reason?: string | null
+          run_id?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          reason?: string | null
+          run_id?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ode_evolution_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ode_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ode_failure_patterns: {
+        Row: {
+          category_key: string | null
+          characteristic: string
+          created_at: string
+          failure_score: number
+          id: string
+          pattern_value: string
+          reason: string | null
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          category_key?: string | null
+          characteristic: string
+          created_at?: string
+          failure_score?: number
+          id?: string
+          pattern_value: string
+          reason?: string | null
+          sample_count?: number
+          updated_at?: string
+        }
+        Update: {
+          category_key?: string | null
+          characteristic?: string
+          created_at?: string
+          failure_score?: number
+          id?: string
+          pattern_value?: string
+          reason?: string | null
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ode_market_gaps: {
+        Row: {
+          category_key: string
+          competition_score: number
+          created_at: string
+          demand_score: number
+          evidence: Json
+          id: string
+          keyword: string | null
+          opportunity_score: number
+          recommended_dna: string | null
+          status: string
+          trend_velocity: number
+          updated_at: string
+        }
+        Insert: {
+          category_key: string
+          competition_score?: number
+          created_at?: string
+          demand_score?: number
+          evidence?: Json
+          id?: string
+          keyword?: string | null
+          opportunity_score?: number
+          recommended_dna?: string | null
+          status?: string
+          trend_velocity?: number
+          updated_at?: string
+        }
+        Update: {
+          category_key?: string
+          competition_score?: number
+          created_at?: string
+          demand_score?: number
+          evidence?: Json
+          id?: string
+          keyword?: string | null
+          opportunity_score?: number
+          recommended_dna?: string | null
+          status?: string
+          trend_velocity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ode_pin_quality_scores: {
+        Row: {
+          components: Json
+          created_at: string
+          evidence_quality: number
+          failure_penalty: number
+          historical_organic: number
+          id: string
+          market_opportunity: number
+          organic_confidence: number
+          pin_ref: string
+          product_id: string | null
+          quality_score: number
+          scored_at: string
+          success_dna_similarity: number
+          trend_alignment: number
+          visual_dna_strength: number
+        }
+        Insert: {
+          components?: Json
+          created_at?: string
+          evidence_quality?: number
+          failure_penalty?: number
+          historical_organic?: number
+          id?: string
+          market_opportunity?: number
+          organic_confidence?: number
+          pin_ref: string
+          product_id?: string | null
+          quality_score?: number
+          scored_at?: string
+          success_dna_similarity?: number
+          trend_alignment?: number
+          visual_dna_strength?: number
+        }
+        Update: {
+          components?: Json
+          created_at?: string
+          evidence_quality?: number
+          failure_penalty?: number
+          historical_organic?: number
+          id?: string
+          market_opportunity?: number
+          organic_confidence?: number
+          pin_ref?: string
+          product_id?: string | null
+          quality_score?: number
+          scored_at?: string
+          success_dna_similarity?: number
+          trend_alignment?: number
+          visual_dna_strength?: number
+        }
+        Relationships: []
+      }
+      ode_recommendations: {
+        Row: {
+          confidence: number
+          created_at: string
+          evidence: Json
+          id: string
+          recommendation: string
+          source: string
+          status: string
+          subject_id: string
+          subject_type: string
+          updated_at: string
+          why: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          recommendation: string
+          source?: string
+          status?: string
+          subject_id: string
+          subject_type: string
+          updated_at?: string
+          why: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          recommendation?: string
+          source?: string
+          status?: string
+          subject_id?: string
+          subject_type?: string
+          updated_at?: string
+          why?: string
+        }
+        Relationships: []
+      }
+      ode_runs: {
+        Row: {
+          counters: Json
+          created_at: string
+          errors: Json
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          counters?: Json
+          created_at?: string
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          counters?: Json
+          created_at?: string
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      ode_success_patterns: {
+        Row: {
+          avg_engagement: number | null
+          category_key: string | null
+          characteristic: string
+          created_at: string
+          evidence_score: number
+          id: string
+          notes: string | null
+          pattern_value: string
+          sample_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_engagement?: number | null
+          category_key?: string | null
+          characteristic: string
+          created_at?: string
+          evidence_score?: number
+          id?: string
+          notes?: string | null
+          pattern_value: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_engagement?: number | null
+          category_key?: string | null
+          characteristic?: string
+          created_at?: string
+          evidence_score?: number
+          id?: string
+          notes?: string | null
+          pattern_value?: string
+          sample_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ode_visual_dna: {
+        Row: {
+          characteristics: Json
+          created_at: string
+          description: string | null
+          display_name: string
+          evidence_score: number
+          family_key: string
+          id: string
+          last_seen_at: string | null
+          organic_lift: number
+          sample_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          characteristics?: Json
+          created_at?: string
+          description?: string | null
+          display_name: string
+          evidence_score?: number
+          family_key: string
+          id?: string
+          last_seen_at?: string | null
+          organic_lift?: number
+          sample_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          characteristics?: Json
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          evidence_score?: number
+          family_key?: string
+          id?: string
+          last_seen_at?: string | null
+          organic_lift?: number
+          sample_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oie_dna_profiles: {
         Row: {
           confidence: number

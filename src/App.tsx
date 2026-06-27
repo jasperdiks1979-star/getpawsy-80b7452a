@@ -539,6 +539,7 @@ const GrowthOrchestratorPage = lazyWithRetry(() => import("./pages/admin/GrowthO
 const GrowthLabPage = lazyWithRetry(() => import("./pages/admin/GrowthLabPage"));
 const OrganicIntelligencePage = lazyWithRetry(() => import("./pages/admin/OrganicIntelligencePage"));
 const OrganicIntelligenceEnginePage = lazyWithRetry(() => import("./pages/admin/OrganicIntelligenceEnginePage"));
+const OrganicDominationPage = lazyWithRetry(() => import("./pages/admin/OrganicDominationPage"));
 const OrganicFirstPage = lazyWithRetry(() => import("./pages/admin/OrganicFirstPage"));
 const OrganicConfidenceConfigPage = lazyWithRetry(() => import("./pages/admin/OrganicConfidenceConfigPage"));
 const PinterestBrainPage = lazyWithRetry(() => import("./pages/admin/PinterestBrainPage"));
@@ -3228,6 +3229,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <OrganicIntelligenceEnginePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="organic-domination"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicDominationPage />
                                 </Suspense>
                               }
                             />
