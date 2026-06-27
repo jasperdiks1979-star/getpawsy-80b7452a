@@ -3742,6 +3742,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="production-validation"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductionValidationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="bot-threshold"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
