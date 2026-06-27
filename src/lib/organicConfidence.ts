@@ -78,6 +78,8 @@ export interface OrganicConfidenceInput {
   organic_returning_sessions: number;
   paid_visitors: number;            // ONLY used to compute dependence penalty
   market_demand_index?: number;     // 0..1 trends-based boost (optional)
+  /** Optional configurable negative-signal values, each 0..1. */
+  negatives?: Record<string, number>;
 }
 
 export interface OrganicConfidenceResult {
