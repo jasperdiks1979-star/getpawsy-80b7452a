@@ -537,6 +537,7 @@ const SalesCommanderPage = lazyWithRetry(() => import("./pages/admin/SalesComman
 const AiCeoPage = lazyWithRetry(() => import("./pages/admin/AiCeoPage"));
 const GrowthOrchestratorPage = lazyWithRetry(() => import("./pages/admin/GrowthOrchestratorPage"));
 const GrowthLabPage = lazyWithRetry(() => import("./pages/admin/GrowthLabPage"));
+const OrganicIntelligencePage = lazyWithRetry(() => import("./pages/admin/OrganicIntelligencePage"));
 const OrganicFirstPage = lazyWithRetry(() => import("./pages/admin/OrganicFirstPage"));
 const OrganicConfidenceConfigPage = lazyWithRetry(() => import("./pages/admin/OrganicConfidenceConfigPage"));
 const PinterestBrainPage = lazyWithRetry(() => import("./pages/admin/PinterestBrainPage"));
