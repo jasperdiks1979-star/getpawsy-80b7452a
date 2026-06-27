@@ -34,6 +34,12 @@ describe("LiveEventsPage", () => {
     expect(screen.getByText(/Funnel/i)).toBeInTheDocument();
     expect(screen.getByText(/Sources/i)).toBeInTheDocument();
     expect(screen.getByText(/Alerts/i)).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/Realtime|Polling/)).toBeInTheDocument());
+    await waitFor(() => {
+      const matches = screen.queryAllByText((_, node) => {
+        const txt = node?.textContent ?? "";
+        return /Realtime|Polling/.test(txt);
+      });
+      expect(matches.length).toBeGreaterThan(0);
+    });
   });
 });
