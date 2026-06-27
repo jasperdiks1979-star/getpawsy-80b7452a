@@ -2050,6 +2050,42 @@ export const VisitorWorldMap = () => {
               </SelectContent>
             </Select>
 
+            {/* Source classification breakdown — canonical resolver, transparent counts */}
+            <details className="ml-2 text-xs border border-border rounded-md bg-background/70" data-testid="source-breakdown">
+              <summary className="cursor-pointer px-2 py-1.5 select-none font-medium">
+                Bron-classificatie ({sourceBreakdown.filter(r => r.visitors > 0).length})
+              </summary>
+              <div className="p-2 max-h-72 overflow-auto">
+                <table className="w-full text-[11px]">
+                  <thead className="text-muted-foreground">
+                    <tr>
+                      <th className="text-left pr-2">Bron</th>
+                      <th className="text-right pr-2">Visitors</th>
+                      <th className="text-right pr-2">Pageviews</th>
+                      <th className="text-right pr-2">Cart</th>
+                      <th className="text-right pr-2">Checkout</th>
+                      <th className="text-right">Purchase</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sourceBreakdown.map(r => (
+                      <tr key={r.source} data-source={r.source} className={r.source === "pinterest" ? "text-[#E60023] font-medium" : ""}>
+                        <td className="pr-2 capitalize">{r.source}</td>
+                        <td className="text-right pr-2">{r.visitors}</td>
+                        <td className="text-right pr-2">{r.pageviews}</td>
+                        <td className="text-right pr-2">{r.cart}</td>
+                        <td className="text-right pr-2">{r.checkout}</td>
+                        <td className="text-right">{r.purchase}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Toont sessies ná internal/US-only filters, vóór bron-filter. Gebruikt dezelfde canonical resolver als Attribution Compare en Visitor Timeline.
+                </p>
+              </div>
+            </details>
+
             {/* Map Projection Toggle */}
             <div className="flex items-center gap-2 px-2">
               <Switch
