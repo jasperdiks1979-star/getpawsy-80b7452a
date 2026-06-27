@@ -24,14 +24,17 @@ vi.mock("canvas-confetti", () => ({
   default: vi.fn(),
 }));
 
-// Mock IntersectionObserver
-const mockIntersectionObserver = vi.fn();
-mockIntersectionObserver.mockReturnValue({
-  observe: () => null,
-  unobserve: () => null,
-  disconnect: () => null,
-});
-window.IntersectionObserver = mockIntersectionObserver;
+// Mock IntersectionObserver — must be a real constructor so `new IntersectionObserver(...)`
+// inside components doesn't blow up with "is not a constructor". vi.fn().mockReturnValue()
+// stores an arrow as the implementation which fails on `new`.
+class MockIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() { return []; }
+}
+(window as unknown as { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver =
+  MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
 // Import components after mocks
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
