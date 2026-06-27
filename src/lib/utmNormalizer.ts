@@ -205,10 +205,29 @@ export function inferUtm(opts?: {
   const cameFromGo =
     internalReferrer === '/go' || internalReferrer.startsWith('/go?');
   const referrerIsTikTok = /(?:^|\.)tiktok\.com/i.test(externalReferrer);
-  const isTikTok = cameFromGo || referrerIsTikTok;
+  // TikTok ad clicks always carry `ttclid` (TikTok Click ID) and our ad
+  // creatives flag `ad=tt`. The TikTok in-app browser sometimes strips
+  // utm_* but keeps ttclid — treat either as a definitive TikTok signal so
+  // GA4 / utm_session_log / visitor analytics don't bucket paid TikTok
+  // traffic as `direct`.
+  const hasTikTokClickId = (() => {
+    if (typeof window === 'undefined') return false;
+    const p = new URLSearchParams(window.location.search);
+    return p.has('ttclid') || (p.get('ad') || '').toLowerCase() === 'tt';
+  })();
+  const uaIsTikTok = (() => {
+    if (typeof navigator === 'undefined') return false;
+    const ua = (navigator.userAgent || '').toLowerCase();
+    return ua.includes('musical_ly') || ua.includes('bytedance') || ua.includes('tiktok');
+  })();
+  const isTikTok = cameFromGo || referrerIsTikTok || hasTikTokClickId || uaIsTikTok;
 
   if (isTikTok) {
-    return { utm_source: 'tiktok', utm_medium: 'social' };
+    // Paid traffic when we have a click-id; organic otherwise.
+    return {
+      utm_source: 'tiktok',
+      utm_medium: hasTikTokClickId ? 'paid' : 'social',
+    };
   }
 
   const hasPinterestParam = (() => {

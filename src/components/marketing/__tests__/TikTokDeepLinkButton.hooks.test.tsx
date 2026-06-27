@@ -49,6 +49,7 @@ describe('TikTokDeepLinkButton — hook attribution (hook1..hook5)', () => {
     // fallback path.
     try {
       window.sessionStorage.clear();
+      window.localStorage.clear();
     } catch {
       /* jsdom — non-fatal */
     }

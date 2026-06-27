@@ -5,6 +5,7 @@ import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
 import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
 import { pushTrafficContext } from '@/lib/traffic';
+import { resolveUtm, syncUtmToUrl } from '@/lib/utmNormalizer';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -18,6 +19,17 @@ const TrackerInner = () => {
 
   useEffect(() => {
     const path = location.pathname;
+
+    // Backfill the URL with inferred UTMs (e.g. TikTok ad clicks that
+    // arrive with only `ttclid` / `ad=tt`) BEFORE firing GA4 page_view,
+    // so `page_location` carries the correct utm_source / utm_medium and
+    // GA4 stops bucketing paid TikTok traffic as `direct`.
+    try {
+      const resolved = resolveUtm({ search: window.location.search });
+      syncUtmToUrl(resolved);
+    } catch {
+      /* non-fatal — never block render or analytics */
+    }
 
     // Push traffic context to dataLayer (non-blocking, fires before page_view)
     pushTrafficContext(path);
