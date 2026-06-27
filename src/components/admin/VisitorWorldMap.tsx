@@ -23,6 +23,7 @@ import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
 import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
+import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 
 interface VisitorActivity {
   id: string;
