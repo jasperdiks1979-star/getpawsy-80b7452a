@@ -3222,6 +3222,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="organic-confidence-config"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicConfidenceConfigPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-brain"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
