@@ -14503,6 +14503,325 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_orchestrator_outcomes: {
+        Row: {
+          conversion_delta: number | null
+          dedup_key: string | null
+          id: string
+          notes: string | null
+          outcome: string
+          pinterest_delta: number | null
+          plan_id: string | null
+          rec_id: string | null
+          recorded_at: string
+          source: string | null
+          traffic_delta: number | null
+        }
+        Insert: {
+          conversion_delta?: number | null
+          dedup_key?: string | null
+          id?: string
+          notes?: string | null
+          outcome: string
+          pinterest_delta?: number | null
+          plan_id?: string | null
+          rec_id?: string | null
+          recorded_at?: string
+          source?: string | null
+          traffic_delta?: number | null
+        }
+        Update: {
+          conversion_delta?: number | null
+          dedup_key?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string
+          pinterest_delta?: number | null
+          plan_id?: string | null
+          rec_id?: string | null
+          recorded_at?: string
+          source?: string | null
+          traffic_delta?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_orchestrator_outcomes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "growth_orchestrator_outcomes_rec_id_fkey"
+            columns: ["rec_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_orchestrator_plans: {
+        Row: {
+          category: string | null
+          created_at: string
+          depends_on: string[]
+          id: string
+          rec_ids: string[]
+          run_id: string
+          score: number
+          status: string
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          depends_on?: string[]
+          id?: string
+          rec_ids?: string[]
+          run_id: string
+          score?: number
+          status?: string
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          depends_on?: string[]
+          id?: string
+          rec_ids?: string[]
+          run_id?: string
+          score?: number
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_orchestrator_plans_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_orchestrator_recommendations: {
+        Row: {
+          category: string | null
+          confidence: number
+          conflicts_with: string[]
+          created_at: string
+          dedup_key: string
+          effort: string | null
+          est_revenue_gain: number
+          est_time_to_value_hours: number
+          est_traffic_gain: number
+          evidence: Json
+          expected_impact: string | null
+          historical_success: number
+          id: string
+          obsolete: boolean
+          plan_id: string | null
+          rank: number | null
+          risk: string | null
+          run_id: string
+          score: number
+          source: string
+          source_id: string | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          confidence?: number
+          conflicts_with?: string[]
+          created_at?: string
+          dedup_key: string
+          effort?: string | null
+          est_revenue_gain?: number
+          est_time_to_value_hours?: number
+          est_traffic_gain?: number
+          evidence?: Json
+          expected_impact?: string | null
+          historical_success?: number
+          id?: string
+          obsolete?: boolean
+          plan_id?: string | null
+          rank?: number | null
+          risk?: string | null
+          run_id: string
+          score?: number
+          source: string
+          source_id?: string | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          confidence?: number
+          conflicts_with?: string[]
+          created_at?: string
+          dedup_key?: string
+          effort?: string | null
+          est_revenue_gain?: number
+          est_time_to_value_hours?: number
+          est_traffic_gain?: number
+          evidence?: Json
+          expected_impact?: string | null
+          historical_success?: number
+          id?: string
+          obsolete?: boolean
+          plan_id?: string | null
+          rank?: number | null
+          risk?: string | null
+          run_id?: string
+          score?: number
+          source?: string
+          source_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_orchestrator_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_orchestrator_runs: {
+        Row: {
+          collected_count: number
+          deduped_count: number
+          error: string | null
+          finished_at: string | null
+          growth_score: number | null
+          health_score: number | null
+          id: string
+          notes: Json
+          plans_count: number
+          started_at: string
+          status: string
+          trigger_source: string
+          validation_score: number | null
+        }
+        Insert: {
+          collected_count?: number
+          deduped_count?: number
+          error?: string | null
+          finished_at?: string | null
+          growth_score?: number | null
+          health_score?: number | null
+          id?: string
+          notes?: Json
+          plans_count?: number
+          started_at?: string
+          status?: string
+          trigger_source?: string
+          validation_score?: number | null
+        }
+        Update: {
+          collected_count?: number
+          deduped_count?: number
+          error?: string | null
+          finished_at?: string | null
+          growth_score?: number | null
+          health_score?: number | null
+          id?: string
+          notes?: Json
+          plans_count?: number
+          started_at?: string
+          status?: string
+          trigger_source?: string
+          validation_score?: number | null
+        }
+        Relationships: []
+      }
+      growth_orchestrator_simulations: {
+        Row: {
+          affected_analytics: string[]
+          affected_dashboards: string[]
+          affected_pinterest_metrics: string[]
+          estimated_conversion_uplift: number
+          estimated_impl_minutes: number
+          estimated_revenue_uplift: number
+          estimated_traffic_uplift: number
+          id: string
+          notes: string | null
+          plan_id: string | null
+          rec_id: string | null
+          risks: Json
+          rollback_complexity: string
+          simulated_at: string
+        }
+        Insert: {
+          affected_analytics?: string[]
+          affected_dashboards?: string[]
+          affected_pinterest_metrics?: string[]
+          estimated_conversion_uplift?: number
+          estimated_impl_minutes?: number
+          estimated_revenue_uplift?: number
+          estimated_traffic_uplift?: number
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          rec_id?: string | null
+          risks?: Json
+          rollback_complexity?: string
+          simulated_at?: string
+        }
+        Update: {
+          affected_analytics?: string[]
+          affected_dashboards?: string[]
+          affected_pinterest_metrics?: string[]
+          estimated_conversion_uplift?: number
+          estimated_impl_minutes?: number
+          estimated_revenue_uplift?: number
+          estimated_traffic_uplift?: number
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          rec_id?: string | null
+          risks?: Json
+          rollback_complexity?: string
+          simulated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_orchestrator_simulations_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "growth_orchestrator_simulations_rec_id_fkey"
+            columns: ["rec_id"]
+            isOneToOne: false
+            referencedRelation: "growth_orchestrator_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_orchestrator_weights: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       growth_product_scores: {
         Row: {
           confidence_score: number
