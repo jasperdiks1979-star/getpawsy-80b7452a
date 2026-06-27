@@ -335,7 +335,7 @@ const TikTokConfigPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigP
 const TikTokPixelVerifyPage = lazyWithRetry(() => import("./pages/admin/TikTokPixelVerifyPage"));
 const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokServerEventsPage"));
 const CheckoutFunnelEventsPage = lazyWithRetry(() => import("./pages/admin/CheckoutFunnelEventsPage"));
-const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealth"));
+const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealthCenter"));
 const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThresholdReport"));
 const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const DegradedEventsPage = lazyWithRetry(() => import("./pages/admin/DegradedEventsPage"));
