@@ -3213,6 +3213,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="organic-first"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicFirstPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-brain"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
