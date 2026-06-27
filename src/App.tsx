@@ -3178,6 +3178,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="sales-commander"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SalesCommanderPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="growth-orchestrator"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
