@@ -189,8 +189,10 @@ export const VisitorWorldMap = () => {
     const saved = localStorage.getItem("map-hot-spots");
     return saved !== null ? saved === "true" : true;
   });
-  // US-only and internal-traffic filters (default ON for clean data)
-  const [usOnly, setUsOnly] = useState(() => localStorage.getItem("map-us-only") !== "false");
+  // US-only is OFF by default — most rows have unresolved geo (TikTok in-app
+  // browsers often block third-party IP-geo providers), so US-only would hide
+  // valid traffic. Internal/test (NL) traffic is still excluded by default.
+  const [usOnly, setUsOnly] = useState(() => localStorage.getItem("map-us-only") === "true");
   const [excludeInternal, setExcludeInternal] = useState(() => localStorage.getItem("map-exclude-internal") !== "false");
   useEffect(() => { localStorage.setItem("map-us-only", String(usOnly)); }, [usOnly]);
   useEffect(() => { localStorage.setItem("map-exclude-internal", String(excludeInternal)); }, [excludeInternal]);
