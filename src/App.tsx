@@ -3159,6 +3159,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="growth-commander"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthCommanderPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-brain"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
