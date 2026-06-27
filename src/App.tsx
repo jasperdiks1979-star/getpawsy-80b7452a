@@ -433,6 +433,7 @@ const CommanderPage = lazyWithRetry(() => import("./pages/admin/CommanderPage"))
 const CommanderFoundationPage = lazyWithRetry(() => import("./pages/admin/CommanderFoundationPage"));
 const MarketIntelligencePage = lazyWithRetry(() => import("./pages/admin/MarketIntelligencePage"));
 const MarketIntelligenceChangelogPage = lazyWithRetry(() => import("./pages/admin/MarketIntelligenceChangelogPage"));
+const PinterestMarketIntelligencePage = lazyWithRetry(() => import("./pages/admin/PinterestMarketIntelligencePage"));
 const BacklinkEnginePage = lazyWithRetry(() => import("./pages/admin/BacklinkEnginePage"));
 const AdminResourcesPage = lazyWithRetry(() => import("./pages/admin/AdminResourcesPage"));
 const IndexingDiagnosticsPage = lazyWithRetry(() => import("./pages/admin/IndexingDiagnosticsPage"));
