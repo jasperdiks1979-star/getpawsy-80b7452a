@@ -67,6 +67,7 @@ export default function VisitorTimelinePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setValidationError(null);
       if (!sessionId) {
         // show recent sessions instead
         const { data } = await supabase
@@ -87,7 +88,9 @@ export default function VisitorTimelinePage() {
       const parsed = FunnelWaterfallSchema.safeParse(wf.data ?? {});
       const wfRow: FunnelWaterfallRow = parsed.success ? parsed.data : {};
       if (!parsed.success) {
+        const summary = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
         console.warn("[VisitorTimeline] waterfall schema validation failed", parsed.error.flatten());
+        setValidationError(summary);
       }
       setMeta({ wf: wfRow, eng: eng.data, cls: cls.data });
       setQuality(sq.data);
