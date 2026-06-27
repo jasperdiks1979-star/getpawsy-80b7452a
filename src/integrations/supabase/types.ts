@@ -40605,6 +40605,7 @@ export type Database = {
           status: string
           token_created_at: string
           token_expires_at: string
+          token_prefix: string
           updated_at: string
         }[]
       }
