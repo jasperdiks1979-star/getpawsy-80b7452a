@@ -298,27 +298,55 @@ export const useVisitorTracking = () => {
   const fetchLocation = useCallback(async (): Promise<GeoLocation | null> => {
     if (locationRef.current) return locationRef.current;
 
-    try {
-      const response = await fetch("https://ipapi.co/json/");
-      if (!response.ok) throw new Error("Failed to fetch location");
-      
-      const data = await response.json();
-      
-      if (data.latitude && data.longitude) {
-        locationRef.current = {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          country: data.country_name,
-          city: data.city,
-        };
-        // Persist for cross-module access (e.g. GA4 purchase guard)
-        sessionStorage.setItem("visitor_location", JSON.stringify(locationRef.current));
-        return locationRef.current;
+    // Multi-provider fallback. ipapi.co is rate-limited (1k/day) and is
+    // frequently blocked or throttled inside the TikTok in-app browser, which
+    // was leaving ~88% of visitor_activity rows with NULL country/lat/lng and
+    // making them invisible on the visitor map. Try providers in order and
+    // accept the first successful response.
+    type Provider = { url: string; map: (j: any) => GeoLocation | null };
+    const providers: Provider[] = [
+      {
+        url: "https://ipapi.co/json/",
+        map: (d) => (d?.latitude && d?.longitude ? {
+          latitude: d.latitude, longitude: d.longitude,
+          country: d.country_name, city: d.city,
+        } : null),
+      },
+      {
+        url: "https://ipwho.is/",
+        map: (d) => (d?.success !== false && d?.latitude && d?.longitude ? {
+          latitude: d.latitude, longitude: d.longitude,
+          country: d.country, city: d.city,
+        } : null),
+      },
+      {
+        url: "https://get.geojs.io/v1/ip/geo.json",
+        map: (d) => (d?.latitude && d?.longitude ? {
+          latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude),
+          country: d.country, city: d.city,
+        } : null),
+      },
+    ];
+
+    for (const p of providers) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2500);
+        const response = await fetch(p.url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!response.ok) continue;
+        const data = await response.json();
+        const loc = p.map(data);
+        if (loc) {
+          locationRef.current = loc;
+          sessionStorage.setItem("visitor_location", JSON.stringify(loc));
+          return loc;
+        }
+      } catch (_err) {
+        // try next provider
       }
-    } catch (error) {
-      console.error("Error fetching location:", error);
     }
-    
+
     return null;
   }, []);
 
