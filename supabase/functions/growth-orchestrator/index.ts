@@ -34,8 +34,13 @@ function json(data: unknown, status = 200) {
 async function requireAdmin(req: Request) {
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7);
+  // Allow service-role (cron/system) calls to bypass user check.
+  if (token === SERVICE_ROLE) {
+    return { sb: createClient(SUPABASE_URL, SERVICE_ROLE), user: { id: "system", email: "cron@system" } as any };
+  }
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: { user } } = await sb.auth.getUser(auth.slice(7));
+  const { data: { user } } = await sb.auth.getUser(token);
   if (!user) return null;
   const { data: role } = await sb
     .from("user_roles").select("role")
