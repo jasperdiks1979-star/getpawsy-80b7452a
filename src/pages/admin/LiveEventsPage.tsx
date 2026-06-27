@@ -341,7 +341,7 @@ function JourneyTab({ events }: { events: StreamEvent[] }) {
     const m = new Map<string, StreamEvent[]>();
     events.forEach((e) => { if (!e.session_id) return; if (!m.has(e.session_id)) m.set(e.session_id, []); m.get(e.session_id)!.push(e); });
     return Array.from(m.entries())
-      .map(([sid, evs]) => ({ sid, evs: evs.slice().sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)) }))
+      .map(([sid, evs]) => ({ sid, evs: evs.slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) }))
       .sort((a, b) => b.evs.length - a.evs.length).slice(0, 25);
   }, [events]);
   return (
