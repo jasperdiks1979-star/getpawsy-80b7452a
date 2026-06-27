@@ -24,6 +24,8 @@ import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
 import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
+import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
+import { SOURCE_META } from "@/lib/canonicalSource";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -104,27 +106,13 @@ interface VisitorActivityFull extends VisitorActivity {
   visitor_id?: string | null;
 }
 
-type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
-
-const SOURCE_COLORS: Record<string, string> = {
-  pinterest: "#E60023",
-  google: "#4285F4",
-  social: "#1DA1F2",
-  direct: "#6B7280",
-  email: "#F59E0B",
-  paid: "#8B5CF6",
-  organic: "#10B981",
-  other: "#6B7280",
-};
-
+type SourceFilter = DynamicSourceValue;
+const SOURCE_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(SOURCE_META).map(([k, v]) => [k, v.color]),
+);
 const SOURCE_LABELS: Record<string, string> = {
-  all: "Alle bronnen",
-  pinterest: "Pinterest",
-  google: "Google",
-  social: "Social Media",
-  direct: "Direct",
-  organic: "Organisch",
-  other: "Overig",
+  all: "All Sources",
+  ...Object.fromEntries(Object.entries(SOURCE_META).map(([k, v]) => [k, v.label])),
 };
 
 const ACTIVITY_COLORS = {
@@ -223,6 +211,7 @@ export const VisitorWorldMap = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [showInactiveSources, setShowInactiveSources] = useState<boolean>(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
@@ -516,12 +505,7 @@ export const VisitorWorldMap = () => {
       referrer_category: a.referrer_category ?? null,
       page_path: a.page_path ?? null,
     });
-    if (sourceFilter === "pinterest") return canonical === "pinterest";
-    if (sourceFilter === "google") return canonical === "google";
-    if (sourceFilter === "direct") return canonical === "direct";
-    if (sourceFilter === "organic") return canonical === "organic";
-    if (sourceFilter === "social") return canonical === "pinterest" || canonical === "facebook" || canonical === "tiktok";
-    return canonical === "unknown" || canonical === "referral";
+    return canonical === sourceFilter;
   };
 
   // Filter activities based on selected activity type AND source
