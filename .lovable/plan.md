@@ -1,86 +1,83 @@
-# CRO-1 — Forensic Conversion Audit & Autonomous Fix Engine
+# Analytics Gold Standard — Implementation Plan
 
-Goal: maximize purchases from existing traffic. Audit every step from first impression to checkout, score it, auto-apply every safe improvement, and produce a before/after report. No publishing, no ad spend, no destructive changes.
+Scope: make analytics trustworthy without changing any existing tracking behaviour. All new tables/events are additive. Existing dashboards keep working; new ones are added.
 
-## Phase 1 — Forensic Audit (read-only, no UI changes)
+## Phase A — Foundation (DB + classification)
 
-Audit surfaces (each gets a score 0–100 + findings + ROI tag):
+1. **New tables** (additive, RLS locked to admin):
+   - `analytics_engagement_starts` — canonical "true human visit" event.
+   - `analytics_traffic_classification` — one row per session with `traffic_type` (human/prefetch/prerender/crawler/bot/internal), reason, UA, headers signature.
+   - `analytics_funnel_waterfall` — denormalised per-session timeline (click→purchase) with timestamps + drop-off flags.
+   - `analytics_session_quality` — score 0–100 + classification (Bot/Accidental/Bounce/Interested/Shopping/HighIntent/Buyer) + signal breakdown.
+   - `analytics_geo_quality` — provider_used, lookup_ms, fallback_level, confidence (High/Med/Low/Unknown).
+   - `analytics_health_checks` — minute-by-minute status per probe.
+   - `analytics_alerts` — open/closed alerts + suggested fix.
+   - `analytics_daily_validation` — nightly totals snapshot.
 
-1. First impression: homepage above-the-fold, LCP image, hero CTA, value prop clarity
-2. Navigation + search relevance + recommendation engine output
-3. Category pages: density, sort defaults, faceting, empty states
-4. PDP: title clarity, pricing display, discount honesty, shipping cost transparency, trust badges, reviews block, urgency/scarcity signals, sticky ATC, image gallery quality, AI-copy quality
-5. Cart + checkout funnel: step count, guest checkout, address autofill, express pay (Apple/Google/PayPal), error messaging
-6. Policies: shipping times, refund, return, FAQ presence + findability
-7. Performance: Core Web Vitals (LCP/CLS/INP), JS bundle, mobile UX at 375/414 widths, image weight, font loading
-8. Landing pages: Pinterest `/go` and TikTok `/go?ad=tt` — verify continuity, hero match, ATC visibility above fold
-9. Analytics funnel integrity: GA4 `view_item → add_to_cart → begin_checkout → purchase` event coverage; rage-click / dead-click / scroll-depth / form-abandonment signal capture
+2. **Classification rules** (frontend + edge):
+   - Bot/crawler: UA regex (Googlebot, Bingbot, facebookexternalhit, Pinterestbot, TikTokBot, AhrefsBot, Cloudflare-Healthcheck, etc.).
+   - Prerender: `document.prerendering`, `navigation.type === 'prerender'`, `Sec-Purpose: prefetch;prerender`.
+   - Prefetch: `Sec-Purpose: prefetch`, `Purpose: prefetch`, `X-Moz: prefetch`, `X-Purpose`.
+   - Internal: admin IP allowlist + authed admin role.
+   - Human: passes engagement_start gate (DOM ready + visible + ≥2s active + not above).
 
-Data sources used:
-- `lp_funnel_events`, `checkout_funnel_events`, `abandoned_carts`, `utm_session_log`, `web_vitals`, `pdp_health_audits`, `rr_funnel_checks`, `rr_atc_audit`, `acos_landing_audits`, `monitoring_landing_page_scores`, `pe_conversion_funnel`, `cwv_validation_events`, `frontend_error_logs`
-- Playwright runs at 1280 desktop + 414 mobile against `/`, top 5 PDPs by traffic, `/cart`, `/checkout`, `/go?ad=tt`, `/go?source=pinterest`
+## Phase B — Engagement Start event
 
-## Phase 2 — Scoring Engine
+- New module `src/lib/engagementStart.ts`:
+  - Waits for `DOMContentLoaded`, then `requestIdleCallback`.
+  - Verifies `visibilityState==='visible'`, not prerendering, no prefetch hints, not bot, then arms a 2 000 ms visible-only timer (paused on `visibilitychange`).
+  - On fire: POSTs to new edge function `analytics-engagement-start` with session_id, visitor_id, UTM cluster (incl. ttclid/fbclid/gclid), landing_page, device, browser, country (from existing geo hook), timestamp.
+- Wired from `SafeGlobalVisitorTracker` once per session (dedup via sessionStorage key `gp_engagement_started`).
+- Existing `page_view`/visitor_activity writes are NOT changed.
 
-Compute and persist:
-- Conversion Probability Score (0–100)
-- Trust Score
-- Purchase Friction Score (inverse — lower is better)
-- Mobile Usability Score
-- Expected Conversion Rate (modeled from current funnel × friction delta)
-- Revenue Impact per finding (= projected CR lift × 30-day sessions × AOV)
+## Phase C — Funnel waterfall
 
-Stored in new `cro_audit_runs` + `cro_findings` tables, surfaced in a new `/admin/cro-command-center` page with ranked ROI table.
+- Edge function `analytics-funnel-ingest`: accepts step events (`click,redirect,landing,engagement_start,page_view,scroll,view_item,add_to_cart,begin_checkout,payment,purchase`) and upserts row in `analytics_funnel_waterfall` keyed by session_id.
+- Hook into existing emitters (`funnelEvents.ts`, `/go` redirect log, checkout events) — additive listeners, no behaviour change.
+- Drop-off computed in a SQL view `analytics_funnel_dropoff_v` (no writes).
 
-## Phase 3 — Autonomous Safe Fixes (auto-applied)
+## Phase D — Session Quality score
 
-Only changes that are reversible, non-pricing, non-policy, non-legal:
-- Add/repair missing GA4 funnel events (`view_item`, `add_to_cart`, `begin_checkout`) where coverage gaps found
-- Promote Apple Pay / Google Pay / PayPal express buttons above the fold in cart if currently buried
-- Sticky mobile ATC on PDP if missing
-- Trust strip (Free US shipping / 30-day returns / Secure checkout) on PDP + cart if missing
-- Preload LCP image + `fetchpriority="high"` on hero where missing
-- Lazy-load below-the-fold images that are eager
-- Fix duplicate `key` warning in Footer (already visible in console)
-- Compress oversize hero/PDP images > 40KB to WebP
-- Remove dead/redundant scripts blocking main thread
-- Inline shipping time + return window into PDP buy box
-- Add FAQ accordion to PDP when product has Q&A data
-- Wire rage-click + dead-click + scroll-depth + form-abandonment listeners into `SafeGlobalVisitorTracker`
-- Repair any 4xx/5xx returning landing endpoints under `/go`
+- Client collector `src/lib/sessionQuality.ts` aggregates: time-on-page, max scroll %, mouse/touch counts, product/cart/checkout interactions, visibility ratio, page count, return-visit flag (localStorage).
+- Flushed every 15s + on `visibilitychange:hidden` to edge function `analytics-session-quality` which computes score + classification server-side (deterministic formula documented in function header).
 
-## Phase 4 — Held for Approval (NOT auto-applied)
+## Phase E — Admin pages (new routes, lazy)
 
-Listed in the report with one-click apply buttons:
-- Price/discount changes
-- Refund/return policy wording
-- Removing reviews
-- Any third-party script add/remove
-- Checkout step restructuring
-- Anything touching Stripe config
+- `/admin/analytics-health` — grid of probes (auto-refresh 60s), green/yellow/red, last success, avg latency, failure reason, suggested fix. Backed by `analytics-health-probe` edge function called from cron every minute.
+- `/admin/attribution-compare` — side-by-side table: TikTok / GA4 / Server / VisitorActivity / Pinterest / Meta × Clicks/LPV/PV/EngagementStart/Sessions/ATC/Checkout/Purchase. Discrepancies >10% highlighted.
+- `/admin/visitor-timeline/:sessionId` — chronological list of all events for a session (click → purchase).
+- Global **Traffic filter toggle** component (Human Only default; All / Bots / Prefetch / Crawler) — persisted in `localStorage`, consumed by VisitorWorldMap, CRO Command Center, Funnel views.
 
-## Phase 5 — Before/After Report
+## Phase F — Alerts + Nightly validation
 
-Generated to `public/admin-reports/cro/cro-audit-<timestamp>.pdf` + `.json`, manifest updated. Includes:
-- Scores before vs after auto-fixes
-- Findings table ranked by ROI
-- Expected CR lift + revenue impact (30/90 day)
-- Held-for-approval queue
-- Playwright screenshots (desktop + mobile) of each audited surface
+- Edge function `analytics-alert-evaluator` (cron every 5 min): checks rules from spec; inserts into `analytics_alerts`; surfaces in Health page + existing Commander alert bell.
+- Edge function `analytics-daily-validation` (cron 02:30 UTC): aggregates totals into `analytics_daily_validation`, writes markdown report to `public/admin-reports/analytics/`.
 
-## Out of scope
-- No new traffic acquisition work
-- No Pinterest / TikTok publishing
-- No Stripe mode change (stays test)
-- No schema changes to `orders`, `products` pricing columns
+## Phase G — Performance guard
 
-## Deliverables
-1. `/admin/cro-command-center` dashboard
-2. `cro-audit-orchestrator` edge function (read-only audit + scoring)
-3. `cro-autofix-applier` edge function (safe fixes only, with rollback log)
-4. Tables: `cro_audit_runs`, `cro_findings`, `cro_autofix_log`
-5. PDF + JSON report in `public/admin-reports/cro/`
-6. Updated `SafeGlobalVisitorTracker` with rage/dead/scroll/form signals
-7. PDP/Cart component patches for sticky ATC, trust strip, express pay ordering
+- New scripts are dynamic-imported after `requestIdleCallback`; no synchronous network on critical path; engagement_start uses `navigator.sendBeacon` where possible; no new render-blocking CSS/JS; Lighthouse CWV smoke test in repo unchanged.
 
-Approve and I start with Phase 1 audit + Phase 2 scoring, then auto-apply Phase 3 in the same run.
+## Out of scope / not touched
+
+- Existing GA4/TikTok/Meta/Pinterest pixel firing logic.
+- Existing `visitor_activity`, `lp_funnel_events`, `checkout_funnel_events` writers.
+- Existing CRO dashboard, World Map (only adds filter consumption).
+- No schema changes to existing tables.
+
+## Technical details
+
+- 8 new tables, all `service_role` full + `authenticated` SELECT gated by `has_role(auth.uid(),'admin')`. No `anon` access.
+- 6 new edge functions (`analytics-engagement-start`, `analytics-funnel-ingest`, `analytics-session-quality`, `analytics-health-probe`, `analytics-alert-evaluator`, `analytics-daily-validation`). `verify_jwt=false` for ingest endpoints (visitor-side), JWT-verified for admin reads.
+- 3 cron jobs via `pg_cron`/`pg_net`: health (1 min), alerts (5 min), validation (daily 02:30).
+- New routes lazy-loaded under existing admin shell; added to AdminNav.
+- Bundle impact target: <8 KB gzipped on critical path (engagement_start collector inlined, rest dynamic-imported).
+
+## Rollout
+
+1. Migration (tables + RLS + grants).
+2. Edge functions + crons.
+3. Client collectors (feature-flagged via `app_config.analytics_gold_enabled`, default true after smoke).
+4. Admin pages + nav entries.
+5. 24-hour observation, then announce.
+
+Approve to proceed.
