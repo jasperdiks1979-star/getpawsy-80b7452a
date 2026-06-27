@@ -1,5 +1,15 @@
 [
   {
+    "id": "d076cf67-6dcd-4c78-bfd4-fadc8ddf49b7",
+    "ts": "20260627-072430",
+    "json": "/admin-reports/cro/cro-audit-20260627-072430.json",
+    "md": "/admin-reports/cro/cro-audit-20260627-072430.md",
+    "findings_total": 14,
+    "auto_fixes_applied": 2,
+    "conversion_probability": 64,
+    "expected_cr_pct": 0.1
+  },
+  {
     "id": "894cc2fb-5a0a-4ba3-a8e0-e60193966e8b",
     "ts": "20260627-065329",
     "json": "/admin-reports/cro/cro-audit-20260627-065329.json",
