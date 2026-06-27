@@ -3215,6 +3215,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="organic-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="organic-first"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
