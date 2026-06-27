@@ -3751,6 +3751,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="live-events"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LiveEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="bot-threshold"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
