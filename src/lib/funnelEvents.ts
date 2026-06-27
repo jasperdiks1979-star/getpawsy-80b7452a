@@ -538,6 +538,17 @@ export function firePdpView(input: {
     value: input.price ?? null,
     qa: input.qa,
   });
+  // GA4-canonical alias — surfaces in the CRO audit funnel under `view_item`.
+  // Independent dedupe bucket because the event_name participates in the
+  // idempotency hash inside fireLpEvent → envelope().
+  fireLpEvent({
+    event_name: 'view_item',
+    source_component: 'pdp',
+    product_id: input.product_id,
+    product_name: input.product_name ?? null,
+    value: input.price ?? null,
+    qa: input.qa,
+  });
 }
 
 /** Scroll-depth milestone (25/50/75/100). One row per milestone per session+page. */
