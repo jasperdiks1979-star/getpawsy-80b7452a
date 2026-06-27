@@ -50,20 +50,44 @@ Deno.serve(async (req) => {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   // --- 1. Funnel integrity ---------------------------------------------------
-  const { data: funnel } = await supa
-    .from("checkout_funnel_events")
-    .select("event_name, occurred_at")
-    .gte("occurred_at", since)
-    .limit(50000);
+  // Funnel is split across two tables in this codebase:
+  //   - lp_funnel_events       (column: event_name)  → PDP views, add_to_cart
+  //   - checkout_funnel_events (column: step)        → begin_checkout, purchase
+  // Both use `created_at` (NOT `occurred_at`). We canonicalize to GA4 names.
+  const [cfeRes, lpeRes] = await Promise.all([
+    supa
+      .from("checkout_funnel_events")
+      .select("step, created_at")
+      .gte("created_at", since)
+      .eq("qa", false)
+      .limit(50000),
+    supa
+      .from("lp_funnel_events")
+      .select("event_name, created_at")
+      .gte("created_at", since)
+      .in("event_name", ["view_item", "pdp_view", "add_to_cart"])
+      .limit(50000),
+  ]);
 
-  const counts: Record<string, number> = {};
-  (funnel || []).forEach((f) => {
-    counts[f.event_name] = (counts[f.event_name] || 0) + 1;
+  const stepCounts: Record<string, number> = {};
+  (cfeRes.data || []).forEach((f: { step: string }) => {
+    stepCounts[f.step] = (stepCounts[f.step] || 0) + 1;
   });
-  const viewItem = counts["view_item"] || 0;
-  const addToCart = counts["add_to_cart"] || 0;
-  const beginCheckout = counts["begin_checkout"] || 0;
-  const purchase = counts["purchase"] || 0;
+  const lpCounts: Record<string, number> = {};
+  (lpeRes.data || []).forEach((f: { event_name: string }) => {
+    lpCounts[f.event_name] = (lpCounts[f.event_name] || 0) + 1;
+  });
+
+  // Canonical GA4-style counts with cross-table aliases.
+  const viewItem = (lpCounts["view_item"] || 0) + (lpCounts["pdp_view"] || 0);
+  const addToCart =
+    (lpCounts["add_to_cart"] || 0) + (stepCounts["add_to_cart"] || 0);
+  const beginCheckout =
+    (stepCounts["begin_checkout"] || 0) + (stepCounts["checkout_click"] || 0);
+  const purchase =
+    (stepCounts["purchase"] || 0) +
+    (stepCounts["complete_payment"] || 0) +
+    (stepCounts["klarna_purchase"] || 0);
 
   const cartRate = viewItem ? addToCart / viewItem : 0;
   const checkoutRate = addToCart ? beginCheckout / addToCart : 0;
