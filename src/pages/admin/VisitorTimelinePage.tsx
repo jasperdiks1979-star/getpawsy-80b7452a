@@ -62,6 +62,7 @@ export default function VisitorTimelinePage() {
   const [quality, setQuality] = useState<any>(null);
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
