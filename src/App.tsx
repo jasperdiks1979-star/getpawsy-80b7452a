@@ -1743,6 +1743,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="cro-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CroCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="autonomous-seo"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
