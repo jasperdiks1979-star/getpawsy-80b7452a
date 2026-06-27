@@ -1,0 +1,37 @@
+name: Production Validation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 4 * * *"
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Invoke production-validation-runner
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets — skipping (configure to enable gate)."
+            exit 0
+          fi
+          RESP=$(curl -sS -X POST \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"trigger\":\"ci\",\"git_commit\":\"${GITHUB_SHA}\"}" \
+            "${SUPABASE_URL}/functions/v1/production-validation-runner")
+          echo "$RESP"
+          STATUS=$(echo "$RESP" | jq -r '.status // "fail"')
+          FAILED=$(echo "$RESP" | jq -r '.failed // 0')
+          if [ "$STATUS" = "fail" ] || [ "$FAILED" != "0" ]; then
+            echo "Deployment gate REJECTED — production validation failed."
+            exit 1
+          fi
+          echo "Deployment gate PASSED."
