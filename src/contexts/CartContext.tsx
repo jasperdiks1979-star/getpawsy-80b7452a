@@ -26,6 +26,8 @@ const ttAddToCart = (params: { contentId: string; contentName: string; value: nu
   import('@/lib/tiktok-pixel').then(m => m.ttTrackAddToCart(params)).catch(() => {});
 const getFireUserAddToCart = () =>
   import('@/lib/funnelEvents').then(m => m.fireUserAddToCart);
+const getFireUserRemoveFromCart = () =>
+  import('@/lib/funnelEvents').then(m => m.fireUserRemoveFromCart);
 
 export interface CartItem {
   id: string;
@@ -349,6 +351,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const item = items.find(i => i.id === id);
     if (item) {
       trackRemoveFromCart(id, item.name, item.price, item.quantity);
+      // Mirror into internal DB (lp_funnel_events) — analytics parity with ATC.
+      getFireUserRemoveFromCart().then((fire) => fire({
+        product_id: id,
+        slug: (item as { slug?: string | null }).slug ?? null,
+        product_name: item.name,
+        qty: item.quantity,
+        price: item.price,
+        source_component: 'cart_remove_button',
+      })).catch(() => {});
+      // Mirror into visitor_activity for World Map / activity feeds.
+      getTrackVisitorEvent().then((track) =>
+        track('remove_from_cart', {
+          productId: id,
+          productName: item.name,
+          productPrice: item.price,
+          productQuantity: item.quantity,
+        }),
+      ).catch(() => {});
+      // Mirror into analytics_funnel_waterfall.
+      import('@/lib/analyticsFunnel').then((m) => m.recordFunnelStep('remove_from_cart')).catch(() => {});
     }
     setItems(prev => prev.filter(item => item.id !== id));
   };
