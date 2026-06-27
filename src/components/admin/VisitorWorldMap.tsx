@@ -1200,6 +1200,12 @@ export const VisitorWorldMap = () => {
 
   const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
 
+  // Enriched audit breakdown + Pinterest drilldown — unfiltered (raw) data so
+  // the panel exposes internal/bot/preview traffic that the active toggles
+  // are hiding from the map.
+  const enrichedBreakdown = buildEnrichedBreakdown(rawActivities ?? []);
+  const pinterestAudit = buildPinterestDrilldown(rawActivities ?? []);
+
   // Source classification breakdown — built from displayActivities (after
   // internal/US filters but BEFORE source filter), so it always tells the
   // truth about what classification each session got. Matches Attribution
