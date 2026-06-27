@@ -273,6 +273,40 @@ export const trackRemoveFromCart = (
   });
 };
 
+// View Cart — canonical GA4 ecommerce event. Fires when the cart page mounts,
+// the cart drawer becomes visible, or the cart otherwise becomes the user's
+// active view. Idempotency / throttling is the caller's responsibility.
+export const trackViewCart = (
+  cartItems: Array<{
+    item_id: string;
+    item_name: string;
+    price: number;
+    quantity: number;
+    item_category?: string | null;
+    item_variant?: string | null;
+    item_brand?: string | null;
+  }> = [],
+  totalValue?: number,
+): void => {
+  const value =
+    typeof totalValue === 'number'
+      ? totalValue
+      : cartItems.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
+  trackEvent('view_cart', withPersistedUtm({
+    currency: 'USD',
+    value,
+    items: cartItems.map((i) => ({
+      item_id: i.item_id,
+      item_name: i.item_name,
+      item_brand: i.item_brand ?? 'GetPawsy',
+      item_category: i.item_category ?? undefined,
+      item_variant: i.item_variant ?? undefined,
+      price: i.price,
+      quantity: i.quantity,
+    })),
+  }));
+};
+
 // Product view
 export const trackViewItem = (
   productId: string,
