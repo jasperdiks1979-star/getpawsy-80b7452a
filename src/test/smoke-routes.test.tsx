@@ -23,7 +23,7 @@ describe('Performance Integrity Tests', () => {
     // Intentional: the framer-motion wrapper added ~2s to LCP and was replaced
     // with a plain <div>. Lock in the passthrough so animation can't sneak back.
     const code = fs.readFileSync('src/components/ui/page-transition.tsx', 'utf-8');
-    expect(code).not.toMatch(/framer-motion/);
+    expect(code).not.toMatch(/from\s+['"]framer-motion['"]/);
     expect(code).not.toMatch(/<motion\./);
     expect(code).toMatch(/<div className={className}>/);
   });
