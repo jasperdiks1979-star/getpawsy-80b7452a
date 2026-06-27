@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveUtm } from "@/lib/utmNormalizer";
 import { sanitizeTrackingFields, isBotUserAgent } from "@/lib/eventSanitizer";
 
-type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
+type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "remove_from_cart" | "purchase";
 
 interface GeoLocation {
   latitude: number;
@@ -485,6 +485,8 @@ export const useVisitorTracking = () => {
     trackAddToCart: (productId: string, productName: string, productPrice: number, quantity: number = 1, productCategory?: string) =>
       trackActivity("add_to_cart", { productId, productName, productPrice, productQuantity: quantity, productCategory }),
     trackViewCart: () => trackActivity("view_cart"),
+    trackRemoveFromCart: (productId: string, productName: string, productPrice: number, quantity: number = 1) =>
+      trackActivity("remove_from_cart", { productId, productName, productPrice, productQuantity: quantity }),
     trackPurchase: (orderId: string, orderValue: number) =>
       trackActivity("purchase", { orderId, orderValue }),
     sessionId: sessionId.current,
