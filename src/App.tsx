@@ -2257,6 +2257,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-market-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestMarketIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="backlink-engine"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
