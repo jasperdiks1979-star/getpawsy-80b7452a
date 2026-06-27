@@ -19950,6 +19950,161 @@ export type Database = {
         }
         Relationships: []
       }
+      organic_confidence_change_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          changes: Json | null
+          created_at: string
+          id: string
+          model_id: string | null
+          model_version: number | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          model_id?: string | null
+          model_version?: number | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          model_id?: string | null
+          model_version?: number | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organic_confidence_change_log_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "organic_confidence_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organic_confidence_models: {
+        Row: {
+          activated_at: string | null
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          market_demand_boost: number
+          name: string
+          negative_weights: Json
+          parent_version: number | null
+          reason: string | null
+          status: string
+          thresholds: Json
+          updated_at: string
+          version: number
+          weights: Json
+        }
+        Insert: {
+          activated_at?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          market_demand_boost?: number
+          name: string
+          negative_weights?: Json
+          parent_version?: number | null
+          reason?: string | null
+          status?: string
+          thresholds?: Json
+          updated_at?: string
+          version: number
+          weights?: Json
+        }
+        Update: {
+          activated_at?: string | null
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          market_demand_boost?: number
+          name?: string
+          negative_weights?: Json
+          parent_version?: number | null
+          reason?: string | null
+          status?: string
+          thresholds?: Json
+          updated_at?: string
+          version?: number
+          weights?: Json
+        }
+        Relationships: []
+      }
+      organic_confidence_predictions: {
+        Row: {
+          actual_purchases: number | null
+          actual_revenue: number | null
+          actual_score: number | null
+          components: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          error_abs: number | null
+          id: string
+          inputs: Json | null
+          measured_at: string | null
+          model_version: number
+          predicted_at: string
+          predicted_level: string | null
+          predicted_level_index: number | null
+          predicted_score: number
+        }
+        Insert: {
+          actual_purchases?: number | null
+          actual_revenue?: number | null
+          actual_score?: number | null
+          components?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          error_abs?: number | null
+          id?: string
+          inputs?: Json | null
+          measured_at?: string | null
+          model_version: number
+          predicted_at?: string
+          predicted_level?: string | null
+          predicted_level_index?: number | null
+          predicted_score: number
+        }
+        Update: {
+          actual_purchases?: number | null
+          actual_revenue?: number | null
+          actual_score?: number | null
+          components?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          error_abs?: number | null
+          id?: string
+          inputs?: Json | null
+          measured_at?: string | null
+          model_version?: number
+          predicted_at?: string
+          predicted_level?: string | null
+          predicted_level_index?: number | null
+          predicted_score?: number
+        }
+        Relationships: []
+      }
       packaging_inventory: {
         Row: {
           cj_product_id: string | null
@@ -40539,6 +40694,33 @@ export type Database = {
         Returns: undefined
       }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
+      get_active_organic_confidence_model: {
+        Args: never
+        Returns: {
+          activated_at: string | null
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          market_demand_boost: number
+          name: string
+          negative_weights: Json
+          parent_version: number | null
+          reason: string | null
+          status: string
+          thresholds: Json
+          updated_at: string
+          version: number
+          weights: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "organic_confidence_models"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_crawler_sampling_decision_stats: {
         Args: { p_limit?: number; p_window_hours?: number }
         Returns: Json
