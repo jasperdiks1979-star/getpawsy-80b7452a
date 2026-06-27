@@ -22,6 +22,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
+import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
 
 interface VisitorActivity {
   id: string;
@@ -35,6 +36,10 @@ interface VisitorActivity {
   last_seen_at?: string;
   referrer_category?: string | null;
   utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  referrer?: string | null;
+  page_path?: string | null;
 }
 
 // Full row shape returned by `select("*")` — used for the CSV export so we
@@ -446,13 +451,20 @@ export const VisitorWorldMap = () => {
   // Helper to check if activity matches source filter
   const matchesSourceFilter = (a: VisitorActivity): boolean => {
     if (sourceFilter === "all") return true;
-    if (sourceFilter === "pinterest") {
-      return a.referrer_category === "social" && (
-        a.utm_source === "pinterest" || 
-        (!a.utm_source && a.referrer_category === "social") // Pinterest often comes without utm_source
-      );
-    }
-    return a.referrer_category === sourceFilter;
+    const canonical = resolveCanonicalSource({
+      utm_source: a.utm_source ?? null,
+      utm_medium: a.utm_medium ?? null,
+      utm_campaign: a.utm_campaign ?? null,
+      referrer: a.referrer ?? null,
+      referrer_category: a.referrer_category ?? null,
+      page_path: a.page_path ?? null,
+    });
+    if (sourceFilter === "pinterest") return canonical === "pinterest";
+    if (sourceFilter === "google") return canonical === "google";
+    if (sourceFilter === "direct") return canonical === "direct";
+    if (sourceFilter === "organic") return canonical === "organic";
+    if (sourceFilter === "social") return canonical === "pinterest" || canonical === "facebook" || canonical === "tiktok";
+    return canonical === "unknown" || canonical === "referral";
   };
 
   // Filter activities based on selected activity type AND source
