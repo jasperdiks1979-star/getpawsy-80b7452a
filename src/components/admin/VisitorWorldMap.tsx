@@ -449,6 +449,26 @@ export const VisitorWorldMap = () => {
       )
     : activities;
 
+  // RAW activities — unfiltered by `usOnly` / `excludeInternal`. Powers the
+  // enriched source breakdown and Pinterest drilldown so the panel can
+  // honestly explain why visible counts shift when toggles change.
+  const { data: rawActivities } = useQuery({
+    queryKey: ["visitor-activities-raw", timeRange],
+    queryFn: async () => {
+      const timeRangeMs = getTimeRangeMs();
+      const since = new Date(Date.now() - timeRangeMs).toISOString();
+      const { data, error } = await supabase
+        .from("visitor_activity")
+        .select("session_id,visitor_id,country,city,page_path,referrer,referrer_category,utm_source,utm_medium,utm_campaign,utm_content,is_internal,is_bot_suspect,bot_suspect_reason,traffic_quality,activity_type,device_type,browser,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(20000);
+      if (error) throw error;
+      return (data ?? []) as unknown as AuditRow[];
+    },
+    refetchInterval: 60000,
+  });
+
   // Helper to check if activity matches source filter
   const matchesSourceFilter = (a: VisitorActivity): boolean => {
     if (sourceFilter === "all") return true;
