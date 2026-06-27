@@ -1222,9 +1222,15 @@ export const VisitorWorldMap = () => {
     
     filteredActivities.forEach((activity) => {
       const current = sessionHighestActivity.get(activity.session_id);
-      const activityRank = { browsing: 1, cart: 2, checkout: 3 };
+      const activityRank: Record<string, number> = { browsing: 1, product_view: 1, view_cart: 2, add_to_cart: 2, cart: 2, begin_checkout: 3, checkout: 3, purchase: 4 };
+      const bucket: "browsing" | "cart" | "checkout" =
+        activity.activity_type === "cart" || activity.activity_type === "add_to_cart" || activity.activity_type === "view_cart"
+          ? "cart"
+          : activity.activity_type === "checkout" || activity.activity_type === "begin_checkout" || activity.activity_type === "purchase"
+            ? "checkout"
+            : "browsing";
       if (!current || activityRank[activity.activity_type] > activityRank[current]) {
-        sessionHighestActivity.set(activity.session_id, activity.activity_type);
+        sessionHighestActivity.set(activity.session_id, bucket);
       }
     });
 
