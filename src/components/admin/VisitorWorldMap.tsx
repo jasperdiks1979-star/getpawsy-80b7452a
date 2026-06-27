@@ -24,6 +24,8 @@ import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
 import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
+import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
+import { SOURCE_META } from "@/lib/canonicalSource";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -104,27 +106,13 @@ interface VisitorActivityFull extends VisitorActivity {
   visitor_id?: string | null;
 }
 
-type SourceFilter = "all" | "pinterest" | "google" | "social" | "direct" | "organic" | "other";
-
-const SOURCE_COLORS: Record<string, string> = {
-  pinterest: "#E60023",
-  google: "#4285F4",
-  social: "#1DA1F2",
-  direct: "#6B7280",
-  email: "#F59E0B",
-  paid: "#8B5CF6",
-  organic: "#10B981",
-  other: "#6B7280",
-};
-
+type SourceFilter = DynamicSourceValue;
+const SOURCE_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(SOURCE_META).map(([k, v]) => [k, v.color]),
+);
 const SOURCE_LABELS: Record<string, string> = {
-  all: "Alle bronnen",
-  pinterest: "Pinterest",
-  google: "Google",
-  social: "Social Media",
-  direct: "Direct",
-  organic: "Organisch",
-  other: "Overig",
+  all: "All Sources",
+  ...Object.fromEntries(Object.entries(SOURCE_META).map(([k, v]) => [k, v.label])),
 };
 
 const ACTIVITY_COLORS = {
@@ -223,6 +211,7 @@ export const VisitorWorldMap = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [showInactiveSources, setShowInactiveSources] = useState<boolean>(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
     return saved !== null ? saved === "true" : false;
@@ -516,12 +505,7 @@ export const VisitorWorldMap = () => {
       referrer_category: a.referrer_category ?? null,
       page_path: a.page_path ?? null,
     });
-    if (sourceFilter === "pinterest") return canonical === "pinterest";
-    if (sourceFilter === "google") return canonical === "google";
-    if (sourceFilter === "direct") return canonical === "direct";
-    if (sourceFilter === "organic") return canonical === "organic";
-    if (sourceFilter === "social") return canonical === "pinterest" || canonical === "facebook" || canonical === "tiktok";
-    return canonical === "unknown" || canonical === "referral";
+    return canonical === sourceFilter;
   };
 
   // Filter activities based on selected activity type AND source
@@ -2069,49 +2053,20 @@ export const VisitorWorldMap = () => {
             </Select>
 
             {/* Source/Referrer Filter */}
-            <Select value={sourceFilter} onValueChange={(value) => setSourceFilter(value as SourceFilter)}>
-              <SelectTrigger className={`w-[155px] h-9 ${sourceFilter === "pinterest" ? "border-[#E60023] bg-[#E60023]/10" : ""}`}>
-                <Target className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Bron" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <div className="flex items-center gap-2">
-                    Alle bronnen
-                  </div>
-                </SelectItem>
-                <SelectItem value="pinterest">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#E60023" }} />
-                    Pinterest
-                  </div>
-                </SelectItem>
-                <SelectItem value="google">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#4285F4" }} />
-                    Google
-                  </div>
-                </SelectItem>
-                <SelectItem value="social">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#1DA1F2" }} />
-                    Social Media
-                  </div>
-                </SelectItem>
-                <SelectItem value="direct">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#6B7280" }} />
-                    Direct
-                  </div>
-                </SelectItem>
-                <SelectItem value="organic">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#10B981" }} />
-                    Organisch
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <DynamicSourceFilter
+              value={sourceFilter}
+              onChange={(v) => setSourceFilter(v)}
+              rows={(rawActivities ?? displayActivities ?? []).map((a) => ({
+                utm_source: a.utm_source ?? null,
+                utm_medium: a.utm_medium ?? null,
+                utm_campaign: a.utm_campaign ?? null,
+                referrer: a.referrer ?? null,
+                referrer_category: a.referrer_category ?? null,
+                page_path: a.page_path ?? null,
+              }))}
+              showInactive={showInactiveSources}
+              onShowInactiveChange={setShowInactiveSources}
+            />
 
             {/* Source classification breakdown — canonical resolver, transparent counts */}
             <details className="ml-2 text-xs border border-border rounded-md bg-background/70" data-testid="source-breakdown">

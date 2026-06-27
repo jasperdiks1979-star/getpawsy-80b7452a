@@ -23,10 +23,16 @@ export type CanonicalSource =
   | "tiktok"
   | "google"
   | "facebook"
+  | "instagram"
+  | "reddit"
+  | "x"
+  | "linkedin"
+  | "youtube"
   | "email"
   | "organic"
   | "referral"
   | "direct"
+  | "paid_ads"
   | "unknown";
 
 export interface SourceInput {
@@ -49,8 +55,14 @@ export interface SourceInput {
 
 const PIN_HOSTS = /(^|\.)pinterest\.[a-z.]+$|(^|\.)pin\.it$/i;
 const TIKTOK_HOSTS = /(^|\.)tiktok\.com$|(^|\.)vt\.tiktok\.com$/i;
-const META_HOSTS = /(^|\.)(facebook|instagram|fb)\.com$|(^|\.)l\.facebook\.com$/i;
+const FB_HOSTS = /(^|\.)facebook\.com$|(^|\.)fb\.com$|(^|\.)l\.facebook\.com$/i;
+const IG_HOSTS = /(^|\.)instagram\.com$|(^|\.)l\.instagram\.com$/i;
 const GOOGLE_HOSTS = /(^|\.)google\.[a-z.]+$/i;
+const REDDIT_HOSTS = /(^|\.)reddit\.com$|(^|\.)redd\.it$/i;
+const X_HOSTS = /(^|\.)(twitter|x)\.com$|(^|\.)t\.co$/i;
+const LI_HOSTS = /(^|\.)linkedin\.com$|(^|\.)lnkd\.in$/i;
+const YT_HOSTS = /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i;
+const PAID_MEDIUMS = new Set(["cpc", "ppc", "paid", "paidsearch", "paid_search", "display", "retargeting"]);
 
 function host(url?: string | null): string | null {
   if (!url) return null;
@@ -89,7 +101,10 @@ export function resolveCanonicalSource(input: SourceInput): CanonicalSource {
   }
 
   // 3. Meta / Facebook
-  if (["facebook", "instagram", "meta", "fb"].includes(src) || !!input.fbclid || (refHost && META_HOSTS.test(refHost))) {
+  if (src === "instagram" || src === "ig" || (refHost && IG_HOSTS.test(refHost))) {
+    return "instagram";
+  }
+  if (["facebook", "meta", "fb"].includes(src) || !!input.fbclid || (refHost && FB_HOSTS.test(refHost))) {
     return "facebook";
   }
 
@@ -98,9 +113,20 @@ export function resolveCanonicalSource(input: SourceInput): CanonicalSource {
     return "google";
   }
 
+  // 4b. Other social platforms
+  if (src === "reddit" || (refHost && REDDIT_HOSTS.test(refHost))) return "reddit";
+  if (src === "x" || src === "twitter" || (refHost && X_HOSTS.test(refHost))) return "x";
+  if (src === "linkedin" || (refHost && LI_HOSTS.test(refHost))) return "linkedin";
+  if (src === "youtube" || src === "yt" || (refHost && YT_HOSTS.test(refHost))) return "youtube";
+
   // 5. Email
   if (med === "email" || src === "newsletter" || src === "klaviyo" || src === "mailchimp") {
     return "email";
+  }
+
+  // 5b. Generic paid ad signals without a recognised platform → paid_ads
+  if (PAID_MEDIUMS.has(med) || src === "ads" || src === "paid") {
+    return "paid_ads";
   }
 
   // 6. Generic medium hints (organic_social / paid_social / referral)
@@ -124,8 +150,47 @@ export const CANONICAL_SOURCES: readonly CanonicalSource[] = [
   "tiktok",
   "google",
   "facebook",
+  "instagram",
+  "reddit",
+  "x",
+  "linkedin",
+  "youtube",
   "email",
+  "paid_ads",
   "organic",
   "referral",
   "unknown",
 ] as const;
+
+/**
+ * Shared presentation metadata for every canonical source.
+ * Used by World Map, Attribution Compare, Visitor Timeline and Funnel
+ * dashboards so colour/label/icon stay consistent.
+ */
+export interface SourceMeta {
+  slug: CanonicalSource;
+  label: string;
+  color: string;
+}
+
+export const SOURCE_META: Record<CanonicalSource, SourceMeta> = {
+  pinterest: { slug: "pinterest", label: "Pinterest", color: "#E60023" },
+  tiktok:    { slug: "tiktok",    label: "TikTok",    color: "#000000" },
+  google:    { slug: "google",    label: "Google",    color: "#4285F4" },
+  facebook:  { slug: "facebook",  label: "Facebook",  color: "#1877F2" },
+  instagram: { slug: "instagram", label: "Instagram", color: "#E1306C" },
+  reddit:    { slug: "reddit",    label: "Reddit",    color: "#FF4500" },
+  x:         { slug: "x",         label: "X (Twitter)", color: "#0F1419" },
+  linkedin:  { slug: "linkedin",  label: "LinkedIn",  color: "#0A66C2" },
+  youtube:   { slug: "youtube",   label: "YouTube",   color: "#FF0000" },
+  email:     { slug: "email",     label: "Email",     color: "#F59E0B" },
+  paid_ads:  { slug: "paid_ads",  label: "Paid Ads",  color: "#8B5CF6" },
+  organic:   { slug: "organic",   label: "Organic",   color: "#10B981" },
+  referral:  { slug: "referral",  label: "Referral",  color: "#1DA1F2" },
+  direct:    { slug: "direct",    label: "Direct",    color: "#6B7280" },
+  unknown:   { slug: "unknown",   label: "Unknown",   color: "#9CA3AF" },
+};
+
+export function getSourceMeta(s: CanonicalSource): SourceMeta {
+  return SOURCE_META[s] ?? SOURCE_META.unknown;
+}
