@@ -92,14 +92,9 @@ export default function PinterestHealthPage() {
   const [recoveryRunning, setRecoveryRunning] = useState(false);
 
   async function loadConnection() {
-    const { data } = await supabase
-      .from("pinterest_connection")
-      .select("account_name,status,scopes,token_expires_at,last_account_status,last_boards_status,board_count,updated_at")
-      .eq("status", "connected")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setConn(data);
+    const { data } = await (supabase as any).rpc("get_pinterest_connection_admin");
+    const row = Array.isArray(data) ? data[0] : data;
+    setConn(row && row.status === "connected" ? row : row ?? null);
   }
 
   async function startReconnect() {
