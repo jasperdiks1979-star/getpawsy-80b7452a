@@ -1,85 +1,86 @@
-## ACOS Phase 2 — Wave B Activation Plan
+# CRO-1 — Forensic Conversion Audit & Autonomous Fix Engine
 
-Wave A shipped 18 engines + 21 tables in observation mode. This plan wires those decisions into the production queue **behind an approval gate**, adds health/alerting, and ships a verification harness. Autonomous mutations remain **OFF** until the approval flow is verified end-to-end.
+Goal: maximize purchases from existing traffic. Audit every step from first impression to checkout, score it, auto-apply every safe improvement, and produce a before/after report. No publishing, no ad spend, no destructive changes.
 
-### Guardrails (non-negotiable)
-- Respect `app_config.global_stop`, `pcie2_publish_enabled`, Guardian gate, CI Layer trigger.
-- No direct inserts into `pcie2_publish_queue` from ACOS — all writes go through `pcie2-publish-assembler` (the only CI-stamped path).
-- `acos_settings.autonomous_mutations = false` default. Every engine flag defaults OFF.
-- All ACOS→queue writes pass through one new dispatcher with a kill switch.
+## Phase 1 — Forensic Audit (read-only, no UI changes)
 
----
+Audit surfaces (each gets a score 0–100 + findings + ROI tag):
 
-### Step 1 — Wire decisions into the queue (behind approval gate)
+1. First impression: homepage above-the-fold, LCP image, hero CTA, value prop clarity
+2. Navigation + search relevance + recommendation engine output
+3. Category pages: density, sort defaults, faceting, empty states
+4. PDP: title clarity, pricing display, discount honesty, shipping cost transparency, trust badges, reviews block, urgency/scarcity signals, sticky ATC, image gallery quality, AI-copy quality
+5. Cart + checkout funnel: step count, guest checkout, address autofill, express pay (Apple/Google/PayPal), error messaging
+6. Policies: shipping times, refund, return, FAQ presence + findability
+7. Performance: Core Web Vitals (LCP/CLS/INP), JS bundle, mobile UX at 375/414 widths, image weight, font loading
+8. Landing pages: Pinterest `/go` and TikTok `/go?ad=tt` — verify continuity, hero match, ATC visibility above fold
+9. Analytics funnel integrity: GA4 `view_item → add_to_cart → begin_checkout → purchase` event coverage; rage-click / dead-click / scroll-depth / form-abandonment signal capture
 
-**New edge function `acos-decision-dispatcher`** — the single chokepoint:
-1. Reads pending rows from `acos_decisions` where `status='approved'` AND engine flag enabled.
-2. Routes by `decision_type`:
-   - `creative_publish` / `creative_refresh` → calls `pcie2-publish-assembler` (CI-stamped, Guardian-gated).
-   - `pin_seo_variant` → writes to `acos_pin_seo_variants` (observation table, no publish).
-   - `ads_recommendation`, `board_action`, `landing_audit` → recorded only, surfaced in Command Center.
-3. Idempotency via `acos_decisions.dispatched_at` + `dispatch_idempotency_key`.
-4. Writes `acos_decisions.execution_result` and `acos_orchestrator_steps` row.
-5. Hard checks before any dispatch: global_stop, pcie2_publish_enabled, engine flag, approval status, rate limit.
+Data sources used:
+- `lp_funnel_events`, `checkout_funnel_events`, `abandoned_carts`, `utm_session_log`, `web_vitals`, `pdp_health_audits`, `rr_funnel_checks`, `rr_atc_audit`, `acos_landing_audits`, `monitoring_landing_page_scores`, `pe_conversion_funnel`, `cwv_validation_events`, `frontend_error_logs`
+- Playwright runs at 1280 desktop + 414 mobile against `/`, top 5 PDPs by traffic, `/cart`, `/checkout`, `/go?ad=tt`, `/go?source=pinterest`
 
-**Engines updated to write decisions (not actions):**
-- `acos-revenue-brain`, `acos-score-engine`, `acos-winner-detect`, `acos-loser-detect`, `acos-creative-families`, `acos-creative-fatigue`, `acos-pin-seo-ai`, `acos-commander-ai`, `acos-orchestrator` all emit rows into `acos_decisions` with `status='pending_approval'` (or `auto_approved` once Wave C lands).
-- Existing observation rows in `acos_*_signals` tables remain untouched.
+## Phase 2 — Scoring Engine
 
-**Schema additions** (migration):
-- `acos_decisions`: add `dispatch_idempotency_key`, `dispatched_at`, `execution_result jsonb`, `approval_required boolean default true`, `approved_by`, `approved_at`, `rejected_reason`.
-- `acos_settings`: add `approval_mode text default 'manual'` (`manual` | `auto_low_risk` | `auto`).
-- New `acos_dispatch_log` table for every dispatcher invocation.
+Compute and persist:
+- Conversion Probability Score (0–100)
+- Trust Score
+- Purchase Friction Score (inverse — lower is better)
+- Mobile Usability Score
+- Expected Conversion Rate (modeled from current funnel × friction delta)
+- Revenue Impact per finding (= projected CR lift × 30-day sessions × AOV)
 
----
+Stored in new `cro_audit_runs` + `cro_findings` tables, surfaced in a new `/admin/cro-command-center` page with ranked ROI table.
 
-### Step 2 — Integration smoke tests
+## Phase 3 — Autonomous Safe Fixes (auto-applied)
 
-**New edge function `acos-smoke-test`** runs and persists a single report row in `acos_orchestrator_runs` of type `smoke_test`:
+Only changes that are reversible, non-pricing, non-policy, non-legal:
+- Add/repair missing GA4 funnel events (`view_item`, `add_to_cart`, `begin_checkout`) where coverage gaps found
+- Promote Apple Pay / Google Pay / PayPal express buttons above the fold in cart if currently buried
+- Sticky mobile ATC on PDP if missing
+- Trust strip (Free US shipping / 30-day returns / Secure checkout) on PDP + cart if missing
+- Preload LCP image + `fetchpriority="high"` on hero where missing
+- Lazy-load below-the-fold images that are eager
+- Fix duplicate `key` warning in Footer (already visible in console)
+- Compress oversize hero/PDP images > 40KB to WebP
+- Remove dead/redundant scripts blocking main thread
+- Inline shipping time + return window into PDP buy box
+- Add FAQ accordion to PDP when product has Q&A data
+- Wire rage-click + dead-click + scroll-depth + form-abandonment listeners into `SafeGlobalVisitorTracker`
+- Repair any 4xx/5xx returning landing endpoints under `/go`
 
-| Check | Pass criteria |
-|---|---|
-| All 18 ACOS functions reachable (HEAD) | 200 |
-| 21 ACOS tables: select 1 | no error |
-| Orchestrator hourly+nightly steps complete | finished_at set |
-| `acos-decision-dispatcher` blocks when `autonomous_mutations=false` | returns `blocked_by_settings` |
-| Dispatcher blocks when `global_stop=true` | returns `blocked_global_stop` |
-| Dispatcher routes a fake `pin_seo_variant` decision (low risk) | row in `acos_pin_seo_variants` |
-| Existing systems intact: Guardian, CI Layer trigger, pcie2 assembler reachable | all 200 |
-| Queue write rejected without CI stamps (negative test) | trigger fires |
+## Phase 4 — Held for Approval (NOT auto-applied)
 
-Auto-fix loop: on failure of a known class (missing GRANT, missing column, stale row), apply known remediation and re-run once. Otherwise mark `failed` and stop.
+Listed in the report with one-click apply buttons:
+- Price/discount changes
+- Refund/return policy wording
+- Removing reviews
+- Any third-party script add/remove
+- Checkout step restructuring
+- Anything touching Stripe config
 
-Report saved to `public/admin-reports/ai-implementation/2026-06-26-acos-wave-b-smoke.{pdf,json}`.
+## Phase 5 — Before/After Report
 
----
+Generated to `public/admin-reports/cro/cro-audit-<timestamp>.pdf` + `.json`, manifest updated. Includes:
+- Scores before vs after auto-fixes
+- Findings table ranked by ROI
+- Expected CR lift + revenue impact (30/90 day)
+- Held-for-approval queue
+- Playwright screenshots (desktop + mobile) of each audited surface
 
-### Step 3 — Health, alerting & dashboard
+## Out of scope
+- No new traffic acquisition work
+- No Pinterest / TikTok publishing
+- No Stripe mode change (stays test)
+- No schema changes to `orders`, `products` pricing columns
 
-- **`acos-health-watchdog`** (cron every 5 min): probes every engine + dispatcher + queue depth + CI gate trigger + Guardian status → writes `acos_health_snapshots` (new table) and raises `acos_alerts` rows on threshold breach.
-- **`acos-alert-notifier`**: routes alerts to existing `guardian_notification_queue` (reuses ops channel) — no new transport.
-- **Dashboard:** new tab in `/admin/command-center-2` → "System Health" — shows per-engine status pill, last-run age, last-error, queue depth, dispatcher status, kill-switch state, recent alerts feed.
+## Deliverables
+1. `/admin/cro-command-center` dashboard
+2. `cro-audit-orchestrator` edge function (read-only audit + scoring)
+3. `cro-autofix-applier` edge function (safe fixes only, with rollback log)
+4. Tables: `cro_audit_runs`, `cro_findings`, `cro_autofix_log`
+5. PDF + JSON report in `public/admin-reports/cro/`
+6. Updated `SafeGlobalVisitorTracker` with rage/dead/scroll/form signals
+7. PDP/Cart component patches for sticky ATC, trust strip, express pay ordering
 
-New tables (migration): `acos_health_snapshots`, `acos_alerts`, `acos_dispatch_log`.
-
----
-
-### Step 4 — Wave B approval flow
-
-- **UI:** new tab "Approvals" in `/admin/command-center-2` listing `acos_decisions` where `status='pending_approval'` — shows decision payload, risk score, source engine, predicted impact, and **Approve / Reject / Approve+Auto-future** actions.
-- **Approve** flips `status='approved'`, sets `approved_by/at`; dispatcher picks it up on next tick.
-- **Reject** sets `status='rejected'` + reason; engine learns via `acos_learning_insights`.
-- **Auto-future** writes a rule into `acos_score_weights` so similar low-risk decisions skip approval next time (only when admin opts in per engine).
-- **Default state:** `approval_mode='manual'`, `autonomous_mutations=false`. Nothing dispatches until an admin clicks Approve.
-
----
-
-### Gate after each step
-After each of steps 1–4: generate validation report (`.pdf`+`.json`+manifest update), verify GREEN, then proceed. Stop and surface on RED.
-
-### Not in scope (deferred)
-- Auto-tuning weights from outcomes (Wave C).
-- Enabling any engine flag to ON (user toggles after reviewing approvals UI).
-- Any change to OAuth, Publisher, Guardian, CI Layer, Publish Assembler, Global Stop, Canary, Recovery, Evolution Engine, existing crons.
-
-Ready to execute step 1 on approval.
+Approve and I start with Phase 1 audit + Phase 2 scoring, then auto-apply Phase 3 in the same run.

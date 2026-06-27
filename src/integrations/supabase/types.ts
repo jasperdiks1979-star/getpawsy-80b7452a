@@ -10272,6 +10272,215 @@ export type Database = {
           },
         ]
       }
+      cro_audit_runs: {
+        Row: {
+          auto_fixes_applied: number | null
+          conversion_probability_score: number | null
+          expected_conversion_rate: number | null
+          findings_total: number | null
+          finished_at: string | null
+          friction_score: number | null
+          id: string
+          mobile_usability_score: number | null
+          notes: Json | null
+          revenue_impact_30d: number | null
+          started_at: string
+          status: string
+          surfaces_audited: number | null
+          trust_score: number | null
+        }
+        Insert: {
+          auto_fixes_applied?: number | null
+          conversion_probability_score?: number | null
+          expected_conversion_rate?: number | null
+          findings_total?: number | null
+          finished_at?: string | null
+          friction_score?: number | null
+          id?: string
+          mobile_usability_score?: number | null
+          notes?: Json | null
+          revenue_impact_30d?: number | null
+          started_at?: string
+          status?: string
+          surfaces_audited?: number | null
+          trust_score?: number | null
+        }
+        Update: {
+          auto_fixes_applied?: number | null
+          conversion_probability_score?: number | null
+          expected_conversion_rate?: number | null
+          findings_total?: number | null
+          finished_at?: string | null
+          friction_score?: number | null
+          id?: string
+          mobile_usability_score?: number | null
+          notes?: Json | null
+          revenue_impact_30d?: number | null
+          started_at?: string
+          status?: string
+          surfaces_audited?: number | null
+          trust_score?: number | null
+        }
+        Relationships: []
+      }
+      cro_autofix_log: {
+        Row: {
+          action: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          finding_id: string | null
+          id: string
+          notes: string | null
+          rollback_at: string | null
+          rolled_back: boolean | null
+          run_id: string | null
+          target: string | null
+        }
+        Insert: {
+          action: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          notes?: string | null
+          rollback_at?: string | null
+          rolled_back?: boolean | null
+          run_id?: string | null
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          notes?: string | null
+          rollback_at?: string | null
+          rolled_back?: boolean | null
+          run_id?: string | null
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cro_autofix_log_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "cro_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cro_autofix_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cro_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cro_findings: {
+        Row: {
+          auto_fixable: boolean | null
+          auto_fixed: boolean | null
+          category: string
+          created_at: string
+          description: string | null
+          evidence: Json | null
+          expected_cr_lift_pct: number | null
+          id: string
+          requires_approval: boolean | null
+          revenue_impact_30d: number | null
+          roi_rank: number | null
+          run_id: string | null
+          severity: string
+          status: string
+          surface: string
+          title: string
+        }
+        Insert: {
+          auto_fixable?: boolean | null
+          auto_fixed?: boolean | null
+          category: string
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          expected_cr_lift_pct?: number | null
+          id?: string
+          requires_approval?: boolean | null
+          revenue_impact_30d?: number | null
+          roi_rank?: number | null
+          run_id?: string | null
+          severity: string
+          status?: string
+          surface: string
+          title: string
+        }
+        Update: {
+          auto_fixable?: boolean | null
+          auto_fixed?: boolean | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          expected_cr_lift_pct?: number | null
+          id?: string
+          requires_approval?: boolean | null
+          revenue_impact_30d?: number | null
+          roi_rank?: number | null
+          run_id?: string | null
+          severity?: string
+          status?: string
+          surface?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cro_findings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "cro_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cro_ux_signals: {
+        Row: {
+          created_at: string
+          device: string | null
+          id: string
+          path: string | null
+          payload: Json | null
+          session_id: string | null
+          signal_type: string
+          viewport_h: number | null
+          viewport_w: number | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          path?: string | null
+          payload?: Json | null
+          session_id?: string | null
+          signal_type: string
+          viewport_h?: number | null
+          viewport_w?: number | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          id?: string
+          path?: string | null
+          payload?: Json | null
+          session_id?: string | null
+          signal_type?: string
+          viewport_h?: number | null
+          viewport_w?: number | null
+        }
+        Relationships: []
+      }
       cron_job_logs: {
         Row: {
           completed_at: string | null

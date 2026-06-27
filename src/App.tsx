@@ -362,6 +362,7 @@ const AdminSmokeTestEventsPage = lazyWithRetry(() => import("./pages/admin/Admin
 const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoCommandCenterPage"));
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
 const CRODashboardPage = lazyWithRetry(() => import("./pages/admin/CRODashboardPage"));
+const CroCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CroCommandCenterPage"));
 const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
 const AutonomousSeoEnginePage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoEnginePage"));
 const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
@@ -1738,6 +1739,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CRODashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cro-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CroCommandCenterPage />
                                 </Suspense>
                               }
                             />
