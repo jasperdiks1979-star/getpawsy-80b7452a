@@ -241,8 +241,8 @@ export default function FunnelHealthCenter() {
   const pageViews = fVa.filter(r => r.activity_type === "browsing" || r.activity_type === "product_view").length;
   const viewItemTotal = lpCount("view_item") + vaCount("view_item");
   const addToCartTotal = lpCount("add_to_cart") + vaCount("add_to_cart") + waterCount("add_to_cart");
-  const viewCartTotal = lpCount("view_cart") + vaCount("view_cart");
-  const removeFromCartTotal = lpCount("remove_from_cart") + vaCount("remove_from_cart");
+  const viewCartTotal = lpCount("view_cart") + vaCount("view_cart") + waterCount("view_cart");
+  const removeFromCartTotal = lpCount("remove_from_cart") + vaCount("remove_from_cart") + waterCount("remove_from_cart");
   const beginCheckoutTotal = lpCount("begin_checkout") + ckCount("begin_checkout") + waterCount("begin_checkout");
 
   const convRate = pct(purchaseCount, visitors);
