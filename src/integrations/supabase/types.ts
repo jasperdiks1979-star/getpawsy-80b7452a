@@ -33749,6 +33749,110 @@ export type Database = {
         }
         Relationships: []
       }
+      production_validation_checks: {
+        Row: {
+          category: string
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          name: string
+          run_id: string
+          severity: string
+          status: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          name: string
+          run_id: string
+          severity?: string
+          status: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          name?: string
+          run_id?: string
+          severity?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_validation_checks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "production_validation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_validation_runs: {
+        Row: {
+          analytics_version: string | null
+          created_at: string
+          deployment_id: string | null
+          duration_ms: number | null
+          failed_count: number
+          failed_events: number
+          finished_at: string | null
+          git_commit: string | null
+          id: string
+          passed_count: number
+          report: Json
+          started_at: string
+          status: string
+          target_url: string
+          trigger_source: string
+          verified_events: number
+          warning_count: number
+        }
+        Insert: {
+          analytics_version?: string | null
+          created_at?: string
+          deployment_id?: string | null
+          duration_ms?: number | null
+          failed_count?: number
+          failed_events?: number
+          finished_at?: string | null
+          git_commit?: string | null
+          id?: string
+          passed_count?: number
+          report?: Json
+          started_at?: string
+          status?: string
+          target_url?: string
+          trigger_source?: string
+          verified_events?: number
+          warning_count?: number
+        }
+        Update: {
+          analytics_version?: string | null
+          created_at?: string
+          deployment_id?: string | null
+          duration_ms?: number | null
+          failed_count?: number
+          failed_events?: number
+          finished_at?: string | null
+          git_commit?: string | null
+          id?: string
+          passed_count?: number
+          report?: Json
+          started_at?: string
+          status?: string
+          target_url?: string
+          trigger_source?: string
+          verified_events?: number
+          warning_count?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           admin_review_reason: string | null
