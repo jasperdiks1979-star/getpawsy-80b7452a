@@ -34,10 +34,16 @@ async function upsertEdge(src_id: string, dst_id: string, relation: string, weig
 
 async function buildGraph(stats: J) {
   // Products (sample 200 active)
-  const { data: products } = await supabase.from("products").select("slug,title,category,price").eq("status", "active").limit(200);
+  const { data: products, error: pe } = await supabase
+    .from("products")
+    .select("slug,name,category,price")
+    .eq("is_active", true)
+    .not("slug", "is", null)
+    .limit(200);
+  if (pe) console.error("products query error", pe);
   let nodes = 0, edges = 0;
   for (const p of products ?? []) {
-    const pid = await upsertNode("product", p.slug, p.title, { category: p.category, price: p.price });
+    const pid = await upsertNode("product", p.slug as string, (p as any).name, { category: p.category, price: p.price });
     if (!pid) continue;
     nodes++;
     if (p.category) {
@@ -46,10 +52,17 @@ async function buildGraph(stats: J) {
     }
   }
   // Pins → products
-  const { data: pins } = await supabase.from("pinterest_pin_queue").select("pin_id,product_slug,board_id,headline").eq("status", "published").limit(500);
+  const { data: pins, error: qe } = await supabase
+    .from("pinterest_pin_queue")
+    .select("pinterest_pin_id,product_slug,board_id,pin_title")
+    .eq("status", "published")
+    .not("pinterest_pin_id", "is", null)
+    .limit(500);
+  if (qe) console.error("pin queue query error", qe);
   for (const pin of pins ?? []) {
-    if (!pin.pin_id) continue;
-    const pinId = await upsertNode("pin", String(pin.pin_id), pin.headline ?? null, {});
+    const pinKey = (pin as any).pinterest_pin_id;
+    if (!pinKey) continue;
+    const pinId = await upsertNode("pin", String(pinKey), (pin as any).pin_title ?? null, {});
     if (!pinId) continue;
     nodes++;
     if (pin.product_slug) {
@@ -66,18 +79,19 @@ async function buildGraph(stats: J) {
 
 async function runRootCause(stats: J) {
   // Detect significant changes in pinterest pin metrics (7d vs prior 7d)
-  const { data: perf } = await supabase
+  const { data: perf, error: pe } = await supabase
     .from("pcie2_pin_performance")
-    .select("pin_id,saves_count,clicks_count,impressions_count,captured_at")
-    .gte("captured_at", new Date(Date.now() - 14 * 86400_000).toISOString())
+    .select("pin_id,saves,outbound_clicks,impressions,measured_at")
+    .gte("measured_at", new Date(Date.now() - 14 * 86400_000).toISOString())
     .limit(2000);
+  if (pe) console.error("perf query error", pe);
   const byPin: Record<string, { recent: number; prior: number }> = {};
   const cutoff = Date.now() - 7 * 86400_000;
   for (const r of perf ?? []) {
     const k = String(r.pin_id);
     byPin[k] ??= { recent: 0, prior: 0 };
-    const isRecent = new Date(r.captured_at as string).getTime() >= cutoff;
-    const v = Number(r.saves_count ?? 0);
+    const isRecent = new Date((r as any).measured_at as string).getTime() >= cutoff;
+    const v = Number((r as any).saves ?? 0);
     if (isRecent) byPin[k].recent += v; else byPin[k].prior += v;
   }
   let inserted = 0;
@@ -107,8 +121,14 @@ async function runRootCause(stats: J) {
 }
 
 async function buildDNA(stats: J) {
-  // Success DNA from organic verified orders
-  const { data: orders } = await supabase.from("orders").select("id,total_amount,created_at,metadata").gte("created_at", new Date(Date.now() - 90 * 86400_000).toISOString()).limit(200);
+  // Success DNA from organic verified orders (paid + completed = revenue truth)
+  const { data: orders, error: oe } = await supabase
+    .from("orders")
+    .select("id,total_amount,created_at,items,status")
+    .in("status", ["paid", "completed", "shipped", "delivered", "fulfilled"])
+    .gte("created_at", new Date(Date.now() - 90 * 86400_000).toISOString())
+    .limit(500);
+  if (oe) console.error("orders query error", oe);
   const traits = { sample: orders?.length ?? 0, avg_order_value: orders?.length ? (orders.reduce((a, o: any) => a + Number(o.total_amount ?? 0), 0) / orders.length) : 0 };
   if ((orders?.length ?? 0) > 0) {
     await supabase.from("oie_dna_profiles").insert({
@@ -118,7 +138,8 @@ async function buildDNA(stats: J) {
     });
   }
   // Failure DNA from retired pins
-  const { data: retired } = await supabase.from("pqif_v4_retired_pins").select("id,pin_id,reason").limit(100);
+  const { data: retired, error: re } = await supabase.from("pqif_v4_retired_pins").select("id,pin_id,reason").limit(200);
+  if (re) console.error("retired query error", re);
   if ((retired?.length ?? 0) > 0) {
     const reasons: Record<string, number> = {};
     for (const r of retired ?? []) reasons[String(r.reason ?? "unknown")] = (reasons[String(r.reason ?? "unknown")] ?? 0) + 1;
@@ -133,11 +154,14 @@ async function buildDNA(stats: J) {
 
 async function discoverPatterns(stats: J) {
   // Simple: morning vs evening publishing CTR
-  const { data: pins } = await supabase.from("pcie2_pin_performance").select("pin_id,clicks_count,impressions_count,captured_at").limit(2000);
+  const { data: pins } = await supabase
+    .from("pcie2_pin_performance")
+    .select("pin_id,outbound_clicks,impressions,measured_at")
+    .limit(2000);
   let am_imp = 0, am_clk = 0, pm_imp = 0, pm_clk = 0;
   for (const r of pins ?? []) {
-    const h = new Date(r.captured_at as string).getUTCHours();
-    const i = Number(r.impressions_count ?? 0), c = Number(r.clicks_count ?? 0);
+    const h = new Date((r as any).measured_at as string).getUTCHours();
+    const i = Number((r as any).impressions ?? 0), c = Number((r as any).outbound_clicks ?? 0);
     if (h < 14) { am_imp += i; am_clk += c; } else { pm_imp += i; pm_clk += c; }
   }
   const amCtr = am_imp ? am_clk / am_imp : 0;
@@ -156,30 +180,39 @@ async function discoverPatterns(stats: J) {
 }
 
 async function explainTopProducts(stats: J) {
-  const { data: scores } = await supabase
-    .from("organic_confidence_predictions").select("entity_key,predicted_score,model_version")
-    .eq("entity_type", "product").order("predicted_score", { ascending: false }).limit(20);
+  const { data: scores, error: se } = await supabase
+    .from("organic_confidence_predictions")
+    .select("entity_id,predicted_score,model_version")
+    .eq("entity_type", "product")
+    .order("predicted_score", { ascending: false })
+    .limit(30);
+  if (se) console.error("scores query error", se);
   let n = 0;
   for (const s of scores ?? []) {
-    if (!s.entity_key) continue;
-    const { data: prod } = await supabase.from("products").select("slug,title,category,price").eq("slug", s.entity_key).maybeSingle();
+    const key = (s as any).entity_id;
+    if (!key) continue;
+    const { data: prod } = await supabase
+      .from("products")
+      .select("slug,name,category,price")
+      .eq("slug", key)
+      .maybeSingle();
     if (!prod) continue;
     const md = [
-      `**Why ${prod.title} ranks ${Number(s.predicted_score).toFixed(0)}**`,
+      `**Why ${(prod as any).name} ranks ${Number(s.predicted_score).toFixed(0)}**`,
       ``,
       `- Organic Confidence model ${s.model_version} flags strong organic evidence.`,
       `- Category **${prod.category}** is part of the verified Success DNA pool.`,
       `- Price band €${prod.price} sits within the converting range for 90-day organic orders.`,
     ].join("\n");
     await supabase.from("oie_explanations").insert({
-      subject_type: "product", subject_key: prod.slug,
+      subject_type: "product", subject_key: prod.slug as string,
       question: "why_selling", answer_md: md,
       evidence: [{ source: "organic_confidence", score: s.predicted_score }, { source: "success_dna", scope: "global_organic_90d" }],
       contradicting: [], confidence: 0.75, reasoning_quality: 0.7,
       expected_impact: { rpv_lift: 0.05 }, risk: 0.1,
     });
     await supabase.from("oie_intelligence_scores").upsert({
-      entity_type: "product", entity_key: prod.slug,
+      entity_type: "product", entity_key: prod.slug as string,
       organic_intelligence: Number(s.predicted_score) * 0.9,
       explanation_confidence: 75, prediction_confidence: 70,
       learning_stability: 80, reasoning_quality: 70, evidence_count: 2,
