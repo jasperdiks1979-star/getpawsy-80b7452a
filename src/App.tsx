@@ -3204,6 +3204,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="growth-lab"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthLabPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-brain"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
