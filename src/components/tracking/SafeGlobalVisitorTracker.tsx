@@ -6,6 +6,7 @@ import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
 import { pushTrafficContext } from '@/lib/traffic';
 import { resolveUtm, syncUtmToUrl } from '@/lib/utmNormalizer';
+import { installUxSignals } from '@/lib/ux-signals';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -16,6 +17,12 @@ const TrackerInner = () => {
   const { trackBrowsing, trackViewCart, trackCheckout } = useVisitorTracking();
 
   useVisitorHeartbeat(30000);
+
+  useEffect(() => {
+    // One-time install of rage / dead-click / scroll-depth / form-abandon
+    // capture. Never throws — wraps its own listeners.
+    try { installUxSignals(); } catch { /* non-fatal */ }
+  }, []);
 
   useEffect(() => {
     const path = location.pathname;
