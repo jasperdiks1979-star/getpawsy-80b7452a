@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // ISO-8601 timestamp (nullable) — validated at runtime so the timeline never
 // renders unparseable values from the database.
