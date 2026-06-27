@@ -34,13 +34,28 @@ function json(data: unknown, status = 200) {
 async function requireAdmin(req: Request) {
   const auth = req.headers.get("Authorization") ?? "";
   if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7);
+  // Allow service-role (cron/system) calls to bypass user check.
+  if (token === SERVICE_ROLE) {
+    return { sb: createClient(SUPABASE_URL, SERVICE_ROLE), user: { id: "system", email: "cron@system" } as any };
+  }
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: { user } } = await sb.auth.getUser(auth.slice(7));
+  const { data: { user } } = await sb.auth.getUser(token);
   if (!user) return null;
   const { data: role } = await sb
     .from("user_roles").select("role")
     .eq("user_id", user.id).eq("role", "admin").maybeSingle();
   return role ? { sb, user } : null;
+}
+
+// System-run gate: allow pg_cron (which only has the anon key) to fire the
+// nightly `run` aggregation. Only `action=run` is permitted system-wide; every
+// mutating operator action still requires admin.
+function isSystemRun(req: Request, body: AnyRow): { sb: ReturnType<typeof createClient> } | null {
+  const trigger = String(body?.trigger ?? "");
+  if (body?.action !== "run") return null;
+  if (!trigger.startsWith("cron_")) return null;
+  return { sb: createClient(SUPABASE_URL, SERVICE_ROLE) };
 }
 
 function clamp(n: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, n)); }
@@ -666,11 +681,13 @@ async function actionSnapshot(sb: ReturnType<typeof createClient>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const admin = await requireAdmin(req);
-    if (!admin) return json({ error: "forbidden" }, 403);
     let body: AnyRow = {};
     try { body = await req.json(); } catch { /* empty body ok */ }
     const action = (body.action as string) || "snapshot";
+    const sys = isSystemRun(req, body);
+    if (sys) return json(await actionRun(sys.sb, body.trigger || "cron_manual"));
+    const admin = await requireAdmin(req);
+    if (!admin) return json({ error: "forbidden" }, 403);
     if (action === "run") return json(await actionRun(admin.sb, body.trigger || "manual"));
     if (action === "simulate") return json(await actionSimulate(admin.sb, body));
     if (action === "record_outcome") return json(await actionRecordOutcome(admin.sb, body));

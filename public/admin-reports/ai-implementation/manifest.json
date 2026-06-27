@@ -1,5 +1,16 @@
 [
   {
+    "slug": "2026-06-27-growth-orchestrator-final-integration",
+    "title": "Autonomous Growth Orchestrator \u2014 Final Integration",
+    "run_id": "2f67fceb-829d-4540-bf17-6d2781d8d802",
+    "generated_at": "2026-06-27T18:35:00Z",
+    "status": "COMPLETED",
+    "verdict": "GREEN",
+    "score": 94,
+    "pdf": "/admin-reports/ai-implementation/2026-06-27-growth-orchestrator-final-integration.pdf",
+    "json": "/admin-reports/ai-implementation/2026-06-27-growth-orchestrator-final-integration.json"
+  },
+  {
     "slug": "2026-06-26-pinterest-publish-unlock-repair",
     "title": "Pinterest Publish Unlock \u2014 Stale Recovery State Repair",
     "generated_at": "2026-06-26T21:24:26.290352Z",
