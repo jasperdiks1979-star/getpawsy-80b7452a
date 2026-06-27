@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Play, Brain, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
 
 type Run = { id: string; status: string; target_label: string | null; created_at: string; duration_ms: number | null; steps_completed: number };
 type Report = { id: string; run_id: string; target_label: string | null; summary: string | null; report_md: string | null; report_json: any; created_at: string };
@@ -71,8 +70,10 @@ export default function OrganicIntelligencePage() {
         <div className="grid lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Executive report{report?.target_label ? ` — ${report.target_label}` : ""}</CardTitle></CardHeader>
-            <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-              {report?.report_md ? <ReactMarkdown>{report.report_md}</ReactMarkdown> : <p className="text-muted-foreground">No report yet. Run the loop.</p>}
+            <CardContent>
+              {report?.report_md ? (
+                <pre className="text-xs whitespace-pre-wrap font-sans leading-relaxed">{report.report_md}</pre>
+              ) : <p className="text-muted-foreground">No report yet. Run the loop.</p>}
             </CardContent>
           </Card>
 
