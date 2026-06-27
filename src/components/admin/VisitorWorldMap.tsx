@@ -25,6 +25,42 @@ import { MapPerfDashboard } from "./MapPerfDashboard";
 import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 
+function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
+  const cls = tone === "good"
+    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    : tone === "bad"
+      ? "border-destructive/40 bg-destructive/10 text-destructive"
+      : tone === "warn"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+        : "border-border bg-background/60 text-foreground";
+  return (
+    <div className={`rounded border px-1.5 py-1 ${cls}`}>
+      <div className="text-[9px] uppercase opacity-70">{label}</div>
+      <div className="text-xs font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function MiniList({ title, rows, empty }: { title: string; rows: Array<{ k: string; v: number }>; empty?: string }) {
+  return (
+    <div>
+      <div className="font-medium text-[10px] mb-0.5">{title}</div>
+      {rows.length === 0 ? (
+        <div className="text-[10px] text-muted-foreground">{empty ?? "Geen data."}</div>
+      ) : (
+        <ul className="space-y-0.5">
+          {rows.map((r, i) => (
+            <li key={i} className="flex justify-between gap-2 border-b border-border/40 py-0.5">
+              <span className="truncate" title={r.k}>{r.k || "(leeg)"}</span>
+              <span className="tabular-nums text-muted-foreground">{r.v}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 interface VisitorActivity {
   id: string;
   session_id: string;
