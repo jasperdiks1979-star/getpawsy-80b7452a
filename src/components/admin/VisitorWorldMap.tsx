@@ -2113,6 +2113,85 @@ export const VisitorWorldMap = () => {
               </div>
             </details>
 
+            {/* Enriched breakdown — raw / unfiltered, exposes internal/bot/preview splits */}
+            <details className="ml-2 text-xs border border-amber-500/40 rounded-md bg-amber-500/5" data-testid="source-audit-breakdown">
+              <summary className="cursor-pointer px-2 py-1.5 select-none font-medium">
+                Bron-audit (verrijkt, ongefilterd)
+              </summary>
+              <div className="p-2 max-h-80 overflow-auto space-y-3">
+                <table className="w-full text-[11px]">
+                  <thead className="text-muted-foreground">
+                    <tr>
+                      <th className="text-left pr-2">Bron</th>
+                      <th className="text-right pr-2" title="Unieke sessies">Tot</th>
+                      <th className="text-right pr-2" title="Externe schone bezoekers">Clean</th>
+                      <th className="text-right pr-2" title="Eigen admin/test verkeer">Intern</th>
+                      <th className="text-right pr-2" title="Bots / crawlers">Bot</th>
+                      <th className="text-right pr-2" title="Preview / prefetch">Prefetch</th>
+                      <th className="text-right pr-2">US</th>
+                      <th className="text-right">Non-US</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enrichedBreakdown.filter(r => r.visitors > 0).map(r => (
+                      <tr key={r.source} data-source={r.source} className={r.source === "pinterest" ? "text-[#E60023] font-medium" : ""}>
+                        <td className="pr-2 capitalize">{r.source}</td>
+                        <td className="text-right pr-2">{r.visitors}</td>
+                        <td className="text-right pr-2">{r.external_clean}</td>
+                        <td className="text-right pr-2">{r.internal}</td>
+                        <td className="text-right pr-2">{r.bot}</td>
+                        <td className="text-right pr-2">{r.preview_prefetch}</td>
+                        <td className="text-right pr-2">{r.us}</td>
+                        <td className="text-right">{r.non_us}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pinterest drilldown */}
+                <div className="border-t border-border pt-2" data-testid="pinterest-drilldown">
+                  <div className="font-semibold text-[11px] mb-1 text-[#E60023]">Pinterest drill-down</div>
+                  {pinterestAudit.totals.visitors === 0 ? (
+                    <p className="text-[10px] text-muted-foreground">Geen Pinterest-verkeer in het geselecteerde tijdsbereik.</p>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-4 gap-2 text-[10px] mb-2">
+                        <Stat label="Clean ext." value={pinterestAudit.totals.external_clean} tone={pinterestAudit.totals.external_clean ? "good" : "bad"} />
+                        <Stat label="Intern" value={pinterestAudit.totals.internal} tone={pinterestAudit.totals.internal ? "warn" : "neutral"} />
+                        <Stat label="Bot" value={pinterestAudit.totals.bot} tone={pinterestAudit.totals.bot ? "warn" : "neutral"} />
+                        <Stat label="Prefetch" value={pinterestAudit.totals.preview_prefetch} tone={pinterestAudit.totals.preview_prefetch ? "warn" : "neutral"} />
+                        <Stat label="US" value={pinterestAudit.totals.us} tone={pinterestAudit.totals.us ? "good" : "bad"} />
+                        <Stat label="Non-US" value={pinterestAudit.totals.non_us} />
+                        <Stat label="Pageviews" value={pinterestAudit.totals.pageviews} />
+                        <Stat label="ATC" value={pinterestAudit.funnel.add_to_cart} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-[10px]">
+                        <MiniList title="Landen" rows={pinterestAudit.byCountry.map(r => ({ k: r.country, v: r.visitors }))} />
+                        <MiniList title="Campaign" rows={pinterestAudit.byCampaign.map(r => ({ k: r.campaign, v: r.visitors }))} />
+                        <MiniList title="Pin ID" rows={pinterestAudit.byPinId.map(r => ({ k: r.pin_id, v: r.visitors }))} empty="Geen pin_id in landing-URL." />
+                        <MiniList title="Landing page" rows={pinterestAudit.byLanding.map(r => ({ k: r.path, v: r.visitors }))} />
+                      </div>
+                      <div className="mt-2 text-[10px] text-muted-foreground">
+                        Funnel: view {pinterestAudit.funnel.product_view} → cart {pinterestAudit.funnel.add_to_cart} → checkout {pinterestAudit.funnel.begin_checkout} → purchase {pinterestAudit.funnel.purchase}
+                      </div>
+                      {pinterestAudit.warnings.length > 0 && (
+                        <ul className="mt-2 space-y-1" data-testid="pinterest-warnings">
+                          {pinterestAudit.warnings.map((w, i) => (
+                            <li key={i} className="text-[10px] text-amber-700 dark:text-amber-300 border border-amber-500/40 rounded px-2 py-1 bg-amber-500/10">
+                              ⚠ {w}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Negeert ‘Exclude internal/test’ en ‘US only’ — laat zien wat de filters verbergen.
+                </p>
+              </div>
+            </details>
+
             {/* Map Projection Toggle */}
             <div className="flex items-center gap-2 px-2">
               <Switch
