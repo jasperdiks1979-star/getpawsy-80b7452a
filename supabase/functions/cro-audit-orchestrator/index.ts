@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
   }
 
   // ATC rate — the #1 conversion lever right now.
-  if (viewItem > 100 && cartRate < 0.03) {
+  if (viewItem > 100 && cartRate < 0.05) {
     findings.push({
       surface: "pdp",
       category: "friction",
