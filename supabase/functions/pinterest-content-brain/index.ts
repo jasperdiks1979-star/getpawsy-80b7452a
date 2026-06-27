@@ -91,7 +91,7 @@ async function decide(sb: ReturnType<typeof createClient>, opts: {
   const productIds = Array.from(new Set(drafts.map((d) => d.product_id).filter(Boolean))) as string[];
   const [{ data: products }, { data: scores }] = await Promise.all([
     sb.from("products")
-      .select("id, slug, name, category, margin_pct, retail_price, us_stock, primary_species, is_active, image_url")
+      .select("id, slug, name, category, us_stock, primary_species, is_active, image_url")
       .in("id", productIds),
     sb.from("agp_growth_scores")
       .select("product_id, overall_score, revenue_potential, conversion_score")
@@ -128,8 +128,8 @@ async function decide(sb: ReturnType<typeof createClient>, opts: {
     const hookScore = 100 - Math.min(60, Math.round(((hook30.get(hKey) || 0) / hTotal) * 200));
 
     // Product match (margin + growth score + stock)
-    const margin = safeNumber(product.margin_pct, 0.25);
     const growth = scoreMap.get(product.id);
+    const margin = 0.25; // default; engine handles margin elsewhere
     const growthScore = safeNumber(growth?.overall_score, 60);
     const revenuePotential = safeNumber(growth?.revenue_potential, 50);
     const productScore = Math.min(100, margin * 100 + growthScore * 0.4 + revenuePotential * 0.3);
