@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // ISO-8601 timestamp (nullable) — validated at runtime so the timeline never
 // renders unparseable values from the database.
@@ -60,10 +62,12 @@ export default function VisitorTimelinePage() {
   const [quality, setQuality] = useState<any>(null);
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setValidationError(null);
       if (!sessionId) {
         // show recent sessions instead
         const { data } = await supabase
@@ -84,7 +88,9 @@ export default function VisitorTimelinePage() {
       const parsed = FunnelWaterfallSchema.safeParse(wf.data ?? {});
       const wfRow: FunnelWaterfallRow = parsed.success ? parsed.data : {};
       if (!parsed.success) {
+        const summary = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
         console.warn("[VisitorTimeline] waterfall schema validation failed", parsed.error.flatten());
+        setValidationError(summary);
       }
       setMeta({ wf: wfRow, eng: eng.data, cls: cls.data });
       setQuality(sq.data);
@@ -131,6 +137,20 @@ export default function VisitorTimelinePage() {
         <h1 className="text-2xl font-bold">Visitor Timeline</h1>
         <p className="text-xs text-muted-foreground break-all">{sessionId}</p>
       </div>
+
+      {validationError && (
+        <Alert className="border-orange-500/50 bg-orange-500/5 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 [&>svg]:text-orange-600">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Timeline data validation warning</AlertTitle>
+          <AlertDescription className="text-xs break-words">
+            This session&apos;s waterfall row could not be fully validated against the expected schema. The timeline below may show incomplete or fallback values.
+            <br className="mb-2" />
+            <span className="font-mono text-[11px] opacity-90">{validationError}</span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-lg border border-border p-4">
