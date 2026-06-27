@@ -20105,6 +20105,183 @@ export type Database = {
         }
         Relationships: []
       }
+      organic_intelligence_reports: {
+        Row: {
+          created_at: string
+          id: string
+          report_json: Json
+          report_md: string | null
+          run_id: string | null
+          summary: string | null
+          target_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_json?: Json
+          report_md?: string | null
+          run_id?: string | null
+          summary?: string | null
+          target_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_json?: Json
+          report_md?: string | null
+          run_id?: string | null
+          summary?: string | null
+          target_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organic_intelligence_reports_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "organic_intelligence_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organic_intelligence_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          errors: Json
+          id: string
+          status: string
+          step_log: Json
+          steps_completed: number
+          steps_total: number
+          target_label: string | null
+          target_order_id: string | null
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          errors?: Json
+          id?: string
+          status?: string
+          step_log?: Json
+          steps_completed?: number
+          steps_total?: number
+          target_label?: string | null
+          target_order_id?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          errors?: Json
+          id?: string
+          status?: string
+          step_log?: Json
+          steps_completed?: number
+          steps_total?: number
+          target_label?: string | null
+          target_order_id?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organic_sale_attribution: {
+        Row: {
+          attribution: Json
+          created_at: string
+          funnel_stages: Json
+          id: string
+          is_verified_organic: boolean
+          order_id: string | null
+          order_label: string | null
+          run_id: string | null
+          strengths: Json
+          weaknesses: Json
+          why_converted: string | null
+        }
+        Insert: {
+          attribution?: Json
+          created_at?: string
+          funnel_stages?: Json
+          id?: string
+          is_verified_organic?: boolean
+          order_id?: string | null
+          order_label?: string | null
+          run_id?: string | null
+          strengths?: Json
+          weaknesses?: Json
+          why_converted?: string | null
+        }
+        Update: {
+          attribution?: Json
+          created_at?: string
+          funnel_stages?: Json
+          id?: string
+          is_verified_organic?: boolean
+          order_id?: string | null
+          order_label?: string | null
+          run_id?: string | null
+          strengths?: Json
+          weaknesses?: Json
+          why_converted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organic_sale_attribution_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "organic_intelligence_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organic_success_dna: {
+        Row: {
+          created_at: string
+          dna: Json
+          id: string
+          is_active: boolean
+          recommendations: Json
+          run_id: string | null
+          sample_size: number
+          similar_creatives: Json
+          similar_products: Json
+        }
+        Insert: {
+          created_at?: string
+          dna?: Json
+          id?: string
+          is_active?: boolean
+          recommendations?: Json
+          run_id?: string | null
+          sample_size?: number
+          similar_creatives?: Json
+          similar_products?: Json
+        }
+        Update: {
+          created_at?: string
+          dna?: Json
+          id?: string
+          is_active?: boolean
+          recommendations?: Json
+          run_id?: string | null
+          sample_size?: number
+          similar_creatives?: Json
+          similar_products?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organic_success_dna_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "organic_intelligence_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packaging_inventory: {
         Row: {
           cj_product_id: string | null
