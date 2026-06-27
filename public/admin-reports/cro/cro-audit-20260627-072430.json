@@ -1,0 +1,176 @@
+{
+  "run_id": "d076cf67-6dcd-4c78-bfd4-fadc8ddf49b7",
+  "generated_at": "2026-06-27T07:20:19.031149Z",
+  "scores": {
+    "before": {
+      "conversion_probability": 66.0,
+      "trust": 84.0,
+      "friction": 12.0,
+      "mobile_usability": 88.0,
+      "expected_cr_pct": 0.1
+    },
+    "after": {
+      "conversion_probability": 64.0,
+      "trust": 76.0,
+      "friction": 24.0,
+      "mobile_usability": 88.0,
+      "expected_cr_pct": 0.1,
+      "revenue_impact_30d_usd": 31.0
+    }
+  },
+  "funnel_30d": {
+    "cls": 0.000701581027667985,
+    "inp_ms": null,
+    "lcp_ms": 1637.8799999999587,
+    "purchase": 1,
+    "view_item": 963,
+    "add_to_cart": 37,
+    "begin_checkout": 33
+  },
+  "totals": {
+    "findings": 14,
+    "auto_fixed": 2
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "surface": "pdp",
+      "severity": "critical",
+      "title": "Catastrophic Add-to-Cart rate (3.84%)",
+      "description": "963 PDP views produced only 37 ATCs. Industry benchmark 5\u20138%. Likely causes: price/shipping surprise above buy box, sticky ATC missing on mobile, slow image gallery, weak hero headline.",
+      "expected_cr_lift_pct": 18.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 2,
+      "surface": "checkout",
+      "severity": "high",
+      "title": "Low checkout \u2192 purchase rate (3.0%)",
+      "description": "Only 1 of 33 checkouts converted. Likely: address validation, payment failures, or shipping surprise. Add inline validation, retry logic, and a visible total breakdown.",
+      "expected_cr_lift_pct": 12.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 3,
+      "surface": "checkout",
+      "severity": "high",
+      "title": "Stripe completion 20% (1/5)",
+      "description": "Shoppers reach Stripe but abandon. Re-validate Apple Pay / Google Pay availability, verify currency formatting on hosted checkout, and confirm return URL doesn't 404.",
+      "expected_cr_lift_pct": 8.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 4,
+      "surface": "pdp",
+      "severity": "high",
+      "title": "Bounce rate 271% on PDPs",
+      "description": "2,609 sessions bounced after a single PDP view with <10s dwell. Above-the-fold not compelling \u2014 promote hero benefit, social proof, and price within first viewport.",
+      "expected_cr_lift_pct": 6.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 5,
+      "surface": "landing",
+      "severity": "medium",
+      "title": "Landing CTA CTR 0.23%",
+      "description": "Landing page CTA impressions = 869, clicks = 2. Either the CTA is below the fold or the headline doesn't match the ad. Run an LP\u2192PDP message-match audit.",
+      "expected_cr_lift_pct": 5.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 6,
+      "surface": "pdp",
+      "severity": "medium",
+      "title": "Sticky ATC visible 1375\u00d7 but only 37 ATCs",
+      "description": "Sticky CTA is reaching the viewport but not earning clicks. A/B test colour, copy ('Add to Cart' vs 'Get yours'), and price-with-discount stamp.",
+      "expected_cr_lift_pct": 4.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 7,
+      "surface": "cart",
+      "severity": "medium",
+      "title": "33 abandoned carts in last 30d",
+      "description": "Wire abandoned-cart recovery emails (1h, 24h, 72h). Estimated 8\u201315% recovery.",
+      "expected_cr_lift_pct": 4.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 8,
+      "surface": "checkout",
+      "severity": "high",
+      "title": "Klarna proceed rate 0.27% (1/377)",
+      "description": "Klarna messaging is visible but almost nobody clicks through. Either the placement is invisible (below the fold) or US shoppers don't trust the BNPL widget. Test moving Klarna into the express-pay row.",
+      "expected_cr_lift_pct": 3.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 9,
+      "surface": "performance",
+      "severity": "high",
+      "title": "Mobile Web Vitals not being captured",
+      "description": "85 desktop vitals logged but 0 mobile. Mobile is the dominant traffic \u2014 fix the `device_hint` detection in the web-vitals beacon or you're flying blind on mobile UX.",
+      "expected_cr_lift_pct": 3.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 10,
+      "surface": "stability",
+      "severity": "high",
+      "title": "1000 real JS errors in 30d (e.g. 'Failed to fetch')",
+      "description": "Network failures and uncaught exceptions during browsing/checkout. Add retry on every supabase.invoke and surface a friendly toast.",
+      "expected_cr_lift_pct": 3.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 11,
+      "surface": "checkout",
+      "severity": "high",
+      "title": "3 hard checkout errors in 30d",
+      "description": "Frontend logged 'checkout_error' funnel events \u2014 investigate Stripe init / shipping API failures.",
+      "expected_cr_lift_pct": 2.0,
+      "auto_fixed": false,
+      "requires_approval": false
+    },
+    {
+      "rank": 12,
+      "surface": "remarketing",
+      "severity": "low",
+      "title": "74 return visits \u2014 remarketing audience ready",
+      "description": "Build a Pinterest/TikTok retargeting audience from these high-intent return visitors.",
+      "expected_cr_lift_pct": 2.0,
+      "auto_fixed": false,
+      "requires_approval": true
+    },
+    {
+      "rank": 13,
+      "surface": "footer",
+      "severity": "low",
+      "title": "Duplicate React key in footer LinkList",
+      "description": "Two links shared href '/products' causing key collision. Second link now points to /collections.",
+      "expected_cr_lift_pct": 0.0,
+      "auto_fixed": true,
+      "requires_approval": false
+    },
+    {
+      "rank": 14,
+      "surface": "analytics",
+      "severity": "medium",
+      "title": "Rage/dead-click + scroll-depth + form-abandon capture installed",
+      "description": "Wired into SafeGlobalVisitorTracker. Persists to cro_ux_signals.",
+      "expected_cr_lift_pct": 0.0,
+      "auto_fixed": true,
+      "requires_approval": false
+    }
+  ]
+}
