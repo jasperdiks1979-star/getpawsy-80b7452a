@@ -14657,6 +14657,232 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_lab_experiments: {
+        Row: {
+          affected_ids: Json | null
+          category: string
+          completed_at: string | null
+          confidence_target: number | null
+          created_at: string
+          evidence: Json | null
+          expected_conversion_lift: number | null
+          expected_revenue_cents: number | null
+          failure_metric: string | null
+          hypothesis: string
+          id: string
+          lessons: string | null
+          min_sample_size: number | null
+          name: string
+          outcome: string | null
+          source: string | null
+          started_at: string | null
+          status: string
+          success_metric: string
+          surface: string | null
+          updated_at: string
+          variant_a: Json
+          variant_b: Json
+          winner: string | null
+        }
+        Insert: {
+          affected_ids?: Json | null
+          category: string
+          completed_at?: string | null
+          confidence_target?: number | null
+          created_at?: string
+          evidence?: Json | null
+          expected_conversion_lift?: number | null
+          expected_revenue_cents?: number | null
+          failure_metric?: string | null
+          hypothesis: string
+          id?: string
+          lessons?: string | null
+          min_sample_size?: number | null
+          name: string
+          outcome?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string
+          success_metric: string
+          surface?: string | null
+          updated_at?: string
+          variant_a?: Json
+          variant_b?: Json
+          winner?: string | null
+        }
+        Update: {
+          affected_ids?: Json | null
+          category?: string
+          completed_at?: string | null
+          confidence_target?: number | null
+          created_at?: string
+          evidence?: Json | null
+          expected_conversion_lift?: number | null
+          expected_revenue_cents?: number | null
+          failure_metric?: string | null
+          hypothesis?: string
+          id?: string
+          lessons?: string | null
+          min_sample_size?: number | null
+          name?: string
+          outcome?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string
+          success_metric?: string
+          surface?: string | null
+          updated_at?: string
+          variant_a?: Json
+          variant_b?: Json
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      growth_lab_knowledge: {
+        Row: {
+          confidence: number | null
+          conversion_delta: number | null
+          created_at: string
+          evidence: Json | null
+          experiment_id: string | null
+          id: string
+          lessons: string | null
+          pattern_key: string
+          pattern_type: string
+          revenue_delta_cents: number | null
+          verdict: string
+        }
+        Insert: {
+          confidence?: number | null
+          conversion_delta?: number | null
+          created_at?: string
+          evidence?: Json | null
+          experiment_id?: string | null
+          id?: string
+          lessons?: string | null
+          pattern_key: string
+          pattern_type: string
+          revenue_delta_cents?: number | null
+          verdict: string
+        }
+        Update: {
+          confidence?: number | null
+          conversion_delta?: number | null
+          created_at?: string
+          evidence?: Json | null
+          experiment_id?: string | null
+          id?: string
+          lessons?: string | null
+          pattern_key?: string
+          pattern_type?: string
+          revenue_delta_cents?: number | null
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_lab_knowledge_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "growth_lab_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_lab_results: {
+        Row: {
+          add_to_cart: number | null
+          checkouts: number | null
+          clicks: number | null
+          confidence: number | null
+          ctr: number | null
+          cvr: number | null
+          experiment_id: string
+          id: string
+          impressions: number | null
+          p_value: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          rpv_cents: number | null
+          saves: number | null
+          snapshot_at: string
+          variant: string
+        }
+        Insert: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          clicks?: number | null
+          confidence?: number | null
+          ctr?: number | null
+          cvr?: number | null
+          experiment_id: string
+          id?: string
+          impressions?: number | null
+          p_value?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          rpv_cents?: number | null
+          saves?: number | null
+          snapshot_at?: string
+          variant: string
+        }
+        Update: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          clicks?: number | null
+          confidence?: number | null
+          ctr?: number | null
+          cvr?: number | null
+          experiment_id?: string
+          id?: string
+          impressions?: number | null
+          p_value?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          rpv_cents?: number | null
+          saves?: number | null
+          snapshot_at?: string
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_lab_results_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "growth_lab_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_lab_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          stats: Json | null
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          stats?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       growth_market_trends: {
         Row: {
           captured_at: string
