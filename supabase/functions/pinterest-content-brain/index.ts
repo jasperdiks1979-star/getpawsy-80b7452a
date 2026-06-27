@@ -134,8 +134,9 @@ async function decide(sb: ReturnType<typeof createClient>, opts: {
     const revenuePotential = safeNumber(growth?.revenue_potential, 50);
     const productScore = Math.min(100, margin * 100 + growthScore * 0.4 + revenuePotential * 0.3);
 
-    // Creative integrity quick-check (must have image & link)
-    if (!draft.pin_image_url || !draft.destination_link) continue;
+    // Creative integrity quick-check (destination link mandatory;
+    // pin_image_url is resolved at publish-time by the worker).
+    if (!draft.destination_link) continue;
 
     // Composite (weights: diversity 30, product 30, category 15, hook 10, revenue 15)
     const total =
