@@ -337,6 +337,7 @@ const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokS
 const CheckoutFunnelEventsPage = lazyWithRetry(() => import("./pages/admin/CheckoutFunnelEventsPage"));
 const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealthCenter"));
 const ProductionValidationPage = lazyWithRetry(() => import("./pages/admin/ProductionValidationPage"));
+const LiveEventsPage = lazyWithRetry(() => import("./pages/admin/LiveEventsPage"));
 const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThresholdReport"));
 const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const DegradedEventsPage = lazyWithRetry(() => import("./pages/admin/DegradedEventsPage"));
@@ -3746,6 +3747,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ProductionValidationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="live-events"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LiveEventsPage />
                                 </Suspense>
                               }
                             />
