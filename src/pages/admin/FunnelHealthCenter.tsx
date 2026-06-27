@@ -129,7 +129,7 @@ export default function FunnelHealthCenter() {
       const [w, l, c, v, o, u] = await Promise.all([
         supabase
           .from("analytics_funnel_waterfall")
-          .select("session_id,visitor_id,utm_source,utm_medium,utm_campaign,landing_page,click_at,redirect_at,landing_at,engagement_start_at,page_view_at,scroll_at,view_item_at,add_to_cart_at,begin_checkout_at,payment_at,purchase_at,furthest_step,traffic_type,updated_at,created_at")
+          .select("session_id,visitor_id,utm_source,utm_medium,utm_campaign,landing_page,click_at,redirect_at,landing_at,engagement_start_at,page_view_at,scroll_at,view_item_at,add_to_cart_at,view_cart_at,remove_from_cart_at,begin_checkout_at,payment_at,purchase_at,furthest_step,traffic_type,updated_at,created_at")
           .gte("created_at", since)
           .order("created_at", { ascending: false })
           .limit(5000),
