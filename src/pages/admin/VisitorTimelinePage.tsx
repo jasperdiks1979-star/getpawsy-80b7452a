@@ -1,6 +1,55 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// ISO-8601 timestamp (nullable) — validated at runtime so the timeline never
+// renders unparseable values from the database.
+const TimestampField = z
+  .string()
+  .datetime({ offset: true })
+  .nullable()
+  .optional()
+  .catch(null);
+
+const FunnelWaterfallSchema = z
+  .object({
+    session_id: z.string().optional().nullable(),
+    utm_source: z.string().nullable().optional().catch(null),
+    utm_medium: z.string().nullable().optional().catch(null),
+    utm_campaign: z.string().nullable().optional().catch(null),
+    landing_page: z.string().nullable().optional().catch(null),
+    furthest_step: z.string().nullable().optional().catch(null),
+    traffic_type: z.string().nullable().optional().catch(null),
+    click_at: TimestampField,
+    redirect_at: TimestampField,
+    landing_at: TimestampField,
+    engagement_start_at: TimestampField,
+    page_view_at: TimestampField,
+    scroll_at: TimestampField,
+    view_item_at: TimestampField,
+    add_to_cart_at: TimestampField,
+    begin_checkout_at: TimestampField,
+    payment_at: TimestampField,
+    purchase_at: TimestampField,
+  })
+  .passthrough();
+
+export type FunnelWaterfallRow = z.infer<typeof FunnelWaterfallSchema>;
+
+const STEP_FIELDS: ReadonlyArray<{ key: keyof FunnelWaterfallRow; label: string }> = [
+  { key: "click_at", label: "Click" },
+  { key: "redirect_at", label: "Redirect" },
+  { key: "landing_at", label: "Landing" },
+  { key: "engagement_start_at", label: "Engagement Start" },
+  { key: "page_view_at", label: "Page View" },
+  { key: "scroll_at", label: "Scroll" },
+  { key: "view_item_at", label: "View Item" },
+  { key: "add_to_cart_at", label: "Add To Cart" },
+  { key: "begin_checkout_at", label: "Begin Checkout" },
+  { key: "payment_at", label: "Payment" },
+  { key: "purchase_at", label: "Purchase" },
+];
 
 type Event = { ts: string; label: string; detail?: string };
 
@@ -32,24 +81,18 @@ export default function VisitorTimelinePage() {
         supabase.from("analytics_traffic_classification").select("*").eq("session_id", sessionId).maybeSingle(),
         supabase.from("analytics_session_quality").select("*").eq("session_id", sessionId).maybeSingle(),
       ]);
-      setMeta({ wf: wf.data, eng: eng.data, cls: cls.data });
+      const parsed = FunnelWaterfallSchema.safeParse(wf.data ?? {});
+      const wfRow: FunnelWaterfallRow = parsed.success ? parsed.data : {};
+      if (!parsed.success) {
+        console.warn("[VisitorTimeline] waterfall schema validation failed", parsed.error.flatten());
+      }
+      setMeta({ wf: wfRow, eng: eng.data, cls: cls.data });
       setQuality(sq.data);
 
-      const w: any = wf.data || {};
-      const evs: Event[] = [];
-      const push = (ts: string | null | undefined, label: string) => { if (ts) evs.push({ ts, label }); };
-      push(w.click_at, "Click");
-      push(w.redirect_at, "Redirect");
-      push(w.landing_at, "Landing");
-      push(w.engagement_start_at, "Engagement Start");
-      push(w.page_view_at, "Page View");
-      push(w.scroll_at, "Scroll");
-      push(w.view_item_at, "View Item");
-      push(w.add_to_cart_at, "Add To Cart");
-      push(w.begin_checkout_at, "Begin Checkout");
-      push(w.payment_at, "Payment");
-      push(w.purchase_at, "Purchase");
-      evs.sort((a, b) => a.ts.localeCompare(b.ts));
+      const evs: Event[] = STEP_FIELDS.flatMap(({ key, label }) => {
+        const ts = wfRow[key];
+        return typeof ts === "string" && ts ? [{ ts, label }] : [];
+      }).sort((a, b) => a.ts.localeCompare(b.ts));
       setEvents(evs);
       setLoading(false);
     })();
