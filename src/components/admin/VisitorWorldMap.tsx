@@ -27,7 +27,7 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 interface VisitorActivity {
   id: string;
   session_id: string;
-  activity_type: "browsing" | "cart" | "checkout";
+  activity_type: "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
   latitude: number | null;
   longitude: number | null;
   country: string | null;
