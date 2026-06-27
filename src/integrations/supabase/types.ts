@@ -3668,6 +3668,330 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_alerts: {
+        Row: {
+          alert_key: string
+          details: Json | null
+          id: string
+          message: string | null
+          metric_value: number | null
+          opened_at: string
+          resolved_at: string | null
+          severity: string
+          status: string
+          suggested_fix: string | null
+          threshold_value: number | null
+          title: string
+        }
+        Insert: {
+          alert_key: string
+          details?: Json | null
+          id?: string
+          message?: string | null
+          metric_value?: number | null
+          opened_at?: string
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          suggested_fix?: string | null
+          threshold_value?: number | null
+          title: string
+        }
+        Update: {
+          alert_key?: string
+          details?: Json | null
+          id?: string
+          message?: string | null
+          metric_value?: number | null
+          opened_at?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          suggested_fix?: string | null
+          threshold_value?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      analytics_daily_validation: {
+        Row: {
+          bot_pct: number | null
+          classification_breakdown: Json | null
+          created_at: string
+          engagement_starts: number | null
+          ga4_pageviews: number | null
+          geo_success_pct: number | null
+          human_pct: number | null
+          prefetch_pct: number | null
+          purchases: number | null
+          report_date: string
+          report_path: string | null
+          server_sessions: number | null
+          unknown_pct: number | null
+          visitor_activity_rows: number | null
+        }
+        Insert: {
+          bot_pct?: number | null
+          classification_breakdown?: Json | null
+          created_at?: string
+          engagement_starts?: number | null
+          ga4_pageviews?: number | null
+          geo_success_pct?: number | null
+          human_pct?: number | null
+          prefetch_pct?: number | null
+          purchases?: number | null
+          report_date: string
+          report_path?: string | null
+          server_sessions?: number | null
+          unknown_pct?: number | null
+          visitor_activity_rows?: number | null
+        }
+        Update: {
+          bot_pct?: number | null
+          classification_breakdown?: Json | null
+          created_at?: string
+          engagement_starts?: number | null
+          ga4_pageviews?: number | null
+          geo_success_pct?: number | null
+          human_pct?: number | null
+          prefetch_pct?: number | null
+          purchases?: number | null
+          report_date?: string
+          report_path?: string | null
+          server_sessions?: number | null
+          unknown_pct?: number | null
+          visitor_activity_rows?: number | null
+        }
+        Relationships: []
+      }
+      analytics_engagement_starts: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          fbclid: string | null
+          fired_at: string
+          gclid: string | null
+          id: string
+          landing_page: string | null
+          os: string | null
+          referrer: string | null
+          region: string | null
+          session_id: string
+          ttclid: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          fbclid?: string | null
+          fired_at?: string
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
+          os?: string | null
+          referrer?: string | null
+          region?: string | null
+          session_id: string
+          ttclid?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          fbclid?: string | null
+          fired_at?: string
+          gclid?: string | null
+          id?: string
+          landing_page?: string | null
+          os?: string | null
+          referrer?: string | null
+          region?: string | null
+          session_id?: string
+          ttclid?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_funnel_waterfall: {
+        Row: {
+          add_to_cart_at: string | null
+          begin_checkout_at: string | null
+          click_at: string | null
+          created_at: string
+          engagement_start_at: string | null
+          furthest_step: string | null
+          landing_at: string | null
+          landing_page: string | null
+          page_view_at: string | null
+          payment_at: string | null
+          purchase_at: string | null
+          redirect_at: string | null
+          scroll_at: string | null
+          session_id: string
+          traffic_type: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          view_item_at: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          add_to_cart_at?: string | null
+          begin_checkout_at?: string | null
+          click_at?: string | null
+          created_at?: string
+          engagement_start_at?: string | null
+          furthest_step?: string | null
+          landing_at?: string | null
+          landing_page?: string | null
+          page_view_at?: string | null
+          payment_at?: string | null
+          purchase_at?: string | null
+          redirect_at?: string | null
+          scroll_at?: string | null
+          session_id: string
+          traffic_type?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          view_item_at?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          add_to_cart_at?: string | null
+          begin_checkout_at?: string | null
+          click_at?: string | null
+          created_at?: string
+          engagement_start_at?: string | null
+          furthest_step?: string | null
+          landing_at?: string | null
+          landing_page?: string | null
+          page_view_at?: string | null
+          payment_at?: string | null
+          purchase_at?: string | null
+          redirect_at?: string | null
+          scroll_at?: string | null
+          session_id?: string
+          traffic_type?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          view_item_at?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_geo_quality: {
+        Row: {
+          city: string | null
+          confidence: string | null
+          country: string | null
+          created_at: string
+          fallback_level: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          lookup_ms: number | null
+          provider_used: string | null
+          region: string | null
+          session_id: string
+        }
+        Insert: {
+          city?: string | null
+          confidence?: string | null
+          country?: string | null
+          created_at?: string
+          fallback_level?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          lookup_ms?: number | null
+          provider_used?: string | null
+          region?: string | null
+          session_id: string
+        }
+        Update: {
+          city?: string | null
+          confidence?: string | null
+          country?: string | null
+          created_at?: string
+          fallback_level?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          lookup_ms?: number | null
+          provider_used?: string | null
+          region?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
+      analytics_health_checks: {
+        Row: {
+          checked_at: string
+          details: Json | null
+          failure_reason: string | null
+          id: string
+          last_success_at: string | null
+          latency_ms: number | null
+          probe_key: string
+          status: string
+          suggested_fix: string | null
+        }
+        Insert: {
+          checked_at?: string
+          details?: Json | null
+          failure_reason?: string | null
+          id?: string
+          last_success_at?: string | null
+          latency_ms?: number | null
+          probe_key: string
+          status: string
+          suggested_fix?: string | null
+        }
+        Update: {
+          checked_at?: string
+          details?: Json | null
+          failure_reason?: string | null
+          id?: string
+          last_success_at?: string | null
+          latency_ms?: number | null
+          probe_key?: string
+          status?: string
+          suggested_fix?: string | null
+        }
+        Relationships: []
+      }
       analytics_quarantine: {
         Row: {
           created_at: string
@@ -3707,6 +4031,111 @@ export type Database = {
           source?: string
           user_agent?: string | null
           utm_source?: string | null
+        }
+        Relationships: []
+      }
+      analytics_session_quality: {
+        Row: {
+          cart_interactions: number | null
+          checkout_interactions: number | null
+          classification: string | null
+          created_at: string
+          max_scroll_pct: number | null
+          mouse_events: number | null
+          page_count: number | null
+          product_interactions: number | null
+          return_visit: boolean | null
+          score: number
+          session_id: string
+          signals: Json | null
+          time_on_page_ms: number | null
+          touch_events: number | null
+          updated_at: string
+          visible_ratio: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          cart_interactions?: number | null
+          checkout_interactions?: number | null
+          classification?: string | null
+          created_at?: string
+          max_scroll_pct?: number | null
+          mouse_events?: number | null
+          page_count?: number | null
+          product_interactions?: number | null
+          return_visit?: boolean | null
+          score?: number
+          session_id: string
+          signals?: Json | null
+          time_on_page_ms?: number | null
+          touch_events?: number | null
+          updated_at?: string
+          visible_ratio?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          cart_interactions?: number | null
+          checkout_interactions?: number | null
+          classification?: string | null
+          created_at?: string
+          max_scroll_pct?: number | null
+          mouse_events?: number | null
+          page_count?: number | null
+          product_interactions?: number | null
+          return_visit?: boolean | null
+          score?: number
+          session_id?: string
+          signals?: Json | null
+          time_on_page_ms?: number | null
+          touch_events?: number | null
+          updated_at?: string
+          visible_ratio?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_traffic_classification: {
+        Row: {
+          classified_at: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+          is_prerendering: boolean | null
+          purpose_header: string | null
+          reason: string | null
+          sec_purpose: string | null
+          session_id: string
+          traffic_type: string
+          user_agent: string | null
+          was_hidden: boolean | null
+        }
+        Insert: {
+          classified_at?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_prerendering?: boolean | null
+          purpose_header?: string | null
+          reason?: string | null
+          sec_purpose?: string | null
+          session_id: string
+          traffic_type: string
+          user_agent?: string | null
+          was_hidden?: boolean | null
+        }
+        Update: {
+          classified_at?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_prerendering?: boolean | null
+          purpose_header?: string | null
+          reason?: string | null
+          sec_purpose?: string | null
+          session_id?: string
+          traffic_type?: string
+          user_agent?: string | null
+          was_hidden?: boolean | null
         }
         Relationships: []
       }
@@ -38017,6 +38446,18 @@ export type Database = {
           purchases_24h: number | null
           traffic_source: string | null
           variant_key: string | null
+        }
+        Relationships: []
+      }
+      analytics_funnel_dropoff_v: {
+        Row: {
+          added_to_cart: number | null
+          began_checkout: number | null
+          day: string | null
+          engaged: number | null
+          landed: number | null
+          purchased: number | null
+          viewed_item: number | null
         }
         Relationships: []
       }

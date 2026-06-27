@@ -7,6 +7,9 @@ import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundar
 import { pushTrafficContext } from '@/lib/traffic';
 import { resolveUtm, syncUtmToUrl } from '@/lib/utmNormalizer';
 import { installUxSignals } from '@/lib/ux-signals';
+import { armEngagementStart } from '@/lib/engagementStart';
+import { installSessionQuality, sessionQualitySignals } from '@/lib/sessionQuality';
+import { recordFunnelStep } from '@/lib/analyticsFunnel';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -22,6 +25,10 @@ const TrackerInner = () => {
     // One-time install of rage / dead-click / scroll-depth / form-abandon
     // capture. Never throws — wraps its own listeners.
     try { installUxSignals(); } catch { /* non-fatal */ }
+    // Engagement-start gate (true human visit signal) — non-blocking.
+    try { armEngagementStart(); } catch { /* non-fatal */ }
+    // Session quality collector.
+    try { installSessionQuality(); } catch { /* non-fatal */ }
   }, []);
 
   useEffect(() => {
@@ -57,11 +64,19 @@ const TrackerInner = () => {
     // Visitor tracking (internal analytics — always runs)
     if (path === '/checkout') {
       trackCheckout();
+      try { sessionQualitySignals.checkout(); } catch {}
+      try { recordFunnelStep('begin_checkout'); } catch {}
     } else if (path === '/cart') {
       trackViewCart();
+      try { sessionQualitySignals.cart(); } catch {}
     } else {
       trackBrowsing(path);
+      if (path.startsWith('/products/')) {
+        try { sessionQualitySignals.product(); } catch {}
+        try { recordFunnelStep('view_item'); } catch {}
+      }
     }
+    try { recordFunnelStep('page_view'); sessionQualitySignals.page(); } catch {}
   }, [location.pathname, trackBrowsing, trackViewCart, trackCheckout]);
 
   return null;

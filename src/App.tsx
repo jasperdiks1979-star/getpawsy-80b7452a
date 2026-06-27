@@ -363,6 +363,9 @@ const SeoCommandCenterPage = lazyWithRetry(() => import("./pages/admin/SeoComman
 const RevenueScalingPage = lazyWithRetry(() => import("./pages/admin/RevenueScalingPage"));
 const CRODashboardPage = lazyWithRetry(() => import("./pages/admin/CRODashboardPage"));
 const CroCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CroCommandCenterPage"));
+const AnalyticsHealthPage = lazyWithRetry(() => import("./pages/admin/AnalyticsHealthPage"));
+const AttributionComparePage = lazyWithRetry(() => import("./pages/admin/AttributionComparePage"));
+const VisitorTimelinePage = lazyWithRetry(() => import("./pages/admin/VisitorTimelinePage"));
 const AutonomousSeoPage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoPage"));
 const AutonomousSeoEnginePage = lazyWithRetry(() => import("./pages/admin/AutonomousSeoEnginePage"));
 const SeoWarRoomPage = lazyWithRetry(() => import("./pages/admin/SeoWarRoomPage"));
@@ -1747,6 +1750,38 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CroCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="analytics-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AnalyticsHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="attribution-compare"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AttributionComparePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="visitor-timeline"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <VisitorTimelinePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="visitor-timeline/:sessionId"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <VisitorTimelinePage />
                                 </Suspense>
                               }
                             />
