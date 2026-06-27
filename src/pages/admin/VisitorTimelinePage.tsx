@@ -139,7 +139,7 @@ export default function VisitorTimelinePage() {
       </div>
 
       {validationError && (
-        <Alert variant="destructive" className="border-orange-500/50 text-orange-700 dark:text-orange-400 [&>svg]:text-orange-600">
+        <Alert className="border-orange-500/50 bg-orange-500/5 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 [&>svg]:text-orange-600">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Timeline data validation warning</AlertTitle>
           <AlertDescription className="text-xs break-words">
@@ -149,6 +149,7 @@ export default function VisitorTimelinePage() {
           </AlertDescription>
         </Alert>
       )}
+
 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
