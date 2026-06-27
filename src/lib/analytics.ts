@@ -10,6 +10,7 @@ import { enrichEventWithLpCta } from '@/lib/lpCtaCorrelation';
 import { validateUtmAttribution } from '@/lib/utmAttributionValidator';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { getPersistedUtm } from '@/lib/utmNormalizer';
+import { resolveCanonicalEvent } from '@/lib/analytics-canonical-events';
 
 /**
  * Conversion-event UTM enricher. Pulls the persisted attribution
@@ -118,6 +119,11 @@ export const trackEvent = (
   eventName: string,
   params?: Record<string, unknown>
 ): void => {
+  // Canonicalize legacy aliases at the single ingress point so every
+  // downstream consumer (GA4, lp_funnel_events, dashboards) sees the
+  // exact same event name. New code should already emit canonical names;
+  // this layer protects against legacy callers and 3rd-party integrations.
+  eventName = resolveCanonicalEvent(eventName);
   const isFounder = getFounderModeStatus();
 
   // Hard suppress conversion events for founder
