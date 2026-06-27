@@ -69,6 +69,14 @@ const TrackerInner = () => {
     } else if (path === '/cart') {
       trackViewCart();
       try { sessionQualitySignals.cart(); } catch {}
+      // GA4 canonical view_cart fire (cart page mount). Internal DB already
+      // recorded via trackViewCart() above; this adds GA4 parity.
+      try {
+        if (MARKETING_FLAGS.GOOGLE_ENABLED) {
+          import('@/lib/analytics').then((m) => m.trackViewCart([])).catch(() => {});
+        }
+      } catch {}
+      try { recordFunnelStep('view_cart'); } catch {}
     } else {
       trackBrowsing(path);
       if (path.startsWith('/products/')) {
