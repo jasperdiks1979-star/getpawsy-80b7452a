@@ -138,6 +138,19 @@ export default function VisitorTimelinePage() {
         <p className="text-xs text-muted-foreground break-all">{sessionId}</p>
       </div>
 
+      {validationError && (
+        <Alert variant="destructive" className="border-orange-500/50 text-orange-700 dark:text-orange-400 [&>svg]:text-orange-600">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Timeline data validation warning</AlertTitle>
+          <AlertDescription className="text-xs break-words">
+            This session&apos;s waterfall row could not be fully validated against the expected schema. The timeline below may show incomplete or fallback values.
+            <br className="mb-2" />
+            <span className="font-mono text-[11px] opacity-90">{validationError}</span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-lg border border-border p-4">
           <h2 className="font-semibold mb-2">Classification</h2>
