@@ -19717,6 +19717,330 @@ export type Database = {
         }
         Relationships: []
       }
+      oie_dna_profiles: {
+        Row: {
+          confidence: number
+          created_at: string
+          expected_impact: Json
+          id: string
+          kind: string
+          sample_size: number
+          scope: string
+          scope_key: string | null
+          traits: Json
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          expected_impact?: Json
+          id?: string
+          kind: string
+          sample_size?: number
+          scope: string
+          scope_key?: string | null
+          traits: Json
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          expected_impact?: Json
+          id?: string
+          kind?: string
+          sample_size?: number
+          scope?: string
+          scope_key?: string | null
+          traits?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oie_explanations: {
+        Row: {
+          answer_md: string
+          confidence: number
+          contradicting: Json
+          created_at: string
+          evidence: Json
+          expected_impact: Json
+          id: string
+          question: string
+          reasoning_quality: number
+          risk: number
+          subject_key: string
+          subject_type: string
+        }
+        Insert: {
+          answer_md: string
+          confidence?: number
+          contradicting?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact?: Json
+          id?: string
+          question: string
+          reasoning_quality?: number
+          risk?: number
+          subject_key: string
+          subject_type: string
+        }
+        Update: {
+          answer_md?: string
+          confidence?: number
+          contradicting?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact?: Json
+          id?: string
+          question?: string
+          reasoning_quality?: number
+          risk?: number
+          subject_key?: string
+          subject_type?: string
+        }
+        Relationships: []
+      }
+      oie_graph_edges: {
+        Row: {
+          attrs: Json
+          created_at: string
+          dst_id: string
+          evidence_count: number
+          id: string
+          last_seen_at: string
+          relation: string
+          src_id: string
+          weight: number
+        }
+        Insert: {
+          attrs?: Json
+          created_at?: string
+          dst_id: string
+          evidence_count?: number
+          id?: string
+          last_seen_at?: string
+          relation: string
+          src_id: string
+          weight?: number
+        }
+        Update: {
+          attrs?: Json
+          created_at?: string
+          dst_id?: string
+          evidence_count?: number
+          id?: string
+          last_seen_at?: string
+          relation?: string
+          src_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oie_graph_edges_dst_id_fkey"
+            columns: ["dst_id"]
+            isOneToOne: false
+            referencedRelation: "oie_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oie_graph_edges_src_id_fkey"
+            columns: ["src_id"]
+            isOneToOne: false
+            referencedRelation: "oie_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oie_graph_nodes: {
+        Row: {
+          attrs: Json
+          created_at: string
+          id: string
+          label: string | null
+          last_seen_at: string
+          node_key: string
+          node_type: string
+          updated_at: string
+        }
+        Insert: {
+          attrs?: Json
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          node_key: string
+          node_type: string
+          updated_at?: string
+        }
+        Update: {
+          attrs?: Json
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          node_key?: string
+          node_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oie_intelligence_scores: {
+        Row: {
+          computed_at: string
+          entity_key: string
+          entity_type: string
+          evidence_count: number
+          explanation_confidence: number
+          id: string
+          learning_stability: number
+          organic_intelligence: number
+          prediction_confidence: number
+          reasoning_quality: number
+        }
+        Insert: {
+          computed_at?: string
+          entity_key: string
+          entity_type: string
+          evidence_count?: number
+          explanation_confidence?: number
+          id?: string
+          learning_stability?: number
+          organic_intelligence?: number
+          prediction_confidence?: number
+          reasoning_quality?: number
+        }
+        Update: {
+          computed_at?: string
+          entity_key?: string
+          entity_type?: string
+          evidence_count?: number
+          explanation_confidence?: number
+          id?: string
+          learning_stability?: number
+          organic_intelligence?: number
+          prediction_confidence?: number
+          reasoning_quality?: number
+        }
+        Relationships: []
+      }
+      oie_patterns: {
+        Row: {
+          confidence: number
+          discovered_at: string
+          evidence: Json
+          hypothesis: string
+          id: string
+          lift: number
+          pattern_key: string
+          sample_size: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          discovered_at?: string
+          evidence: Json
+          hypothesis: string
+          id?: string
+          lift?: number
+          pattern_key: string
+          sample_size?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          discovered_at?: string
+          evidence?: Json
+          hypothesis?: string
+          id?: string
+          lift?: number
+          pattern_key?: string
+          sample_size?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oie_root_cause_analyses: {
+        Row: {
+          causal_chain: Json
+          confidence: number
+          created_at: string
+          entity_key: string | null
+          entity_type: string
+          event_type: string
+          evidence_strength: number
+          id: string
+          observed_change: Json
+          reasoning_quality: number
+          recommended_actions: Json
+          root_cause: string
+        }
+        Insert: {
+          causal_chain: Json
+          confidence?: number
+          created_at?: string
+          entity_key?: string | null
+          entity_type: string
+          event_type: string
+          evidence_strength?: number
+          id?: string
+          observed_change: Json
+          reasoning_quality?: number
+          recommended_actions?: Json
+          root_cause: string
+        }
+        Update: {
+          causal_chain?: Json
+          confidence?: number
+          created_at?: string
+          entity_key?: string | null
+          entity_type?: string
+          event_type?: string
+          evidence_strength?: number
+          id?: string
+          observed_change?: Json
+          reasoning_quality?: number
+          recommended_actions?: Json
+          root_cause?: string
+        }
+        Relationships: []
+      }
+      oie_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          kind: string
+          stats: Json
+          status: string
+          steps_completed: number
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          kind: string
+          stats?: Json
+          status?: string
+          steps_completed?: number
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          kind?: string
+          stats?: Json
+          status?: string
+          steps_completed?: number
+        }
+        Relationships: []
+      }
       optimizer_run_items: {
         Row: {
           after_snapshot: Json | null
