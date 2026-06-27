@@ -681,11 +681,13 @@ async function actionSnapshot(sb: ReturnType<typeof createClient>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const admin = await requireAdmin(req);
-    if (!admin) return json({ error: "forbidden" }, 403);
     let body: AnyRow = {};
     try { body = await req.json(); } catch { /* empty body ok */ }
     const action = (body.action as string) || "snapshot";
+    const sys = isSystemRun(req, body);
+    if (sys) return json(await actionRun(sys.sb, body.trigger || "cron_manual"));
+    const admin = await requireAdmin(req);
+    if (!admin) return json({ error: "forbidden" }, 403);
     if (action === "run") return json(await actionRun(admin.sb, body.trigger || "manual"));
     if (action === "simulate") return json(await actionSimulate(admin.sb, body));
     if (action === "record_outcome") return json(await actionRecordOutcome(admin.sb, body));
