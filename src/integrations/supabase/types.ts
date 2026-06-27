@@ -3146,6 +3146,202 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_ceo_daily_reports: {
+        Row: {
+          executive_score: Json
+          forecast: Json
+          generated_at: string
+          id: string
+          mission_status: Json
+          report_date: string
+          summary: string | null
+          top_10: Json
+        }
+        Insert: {
+          executive_score?: Json
+          forecast?: Json
+          generated_at?: string
+          id?: string
+          mission_status?: Json
+          report_date?: string
+          summary?: string | null
+          top_10?: Json
+        }
+        Update: {
+          executive_score?: Json
+          forecast?: Json
+          generated_at?: string
+          id?: string
+          mission_status?: Json
+          report_date?: string
+          summary?: string | null
+          top_10?: Json
+        }
+        Relationships: []
+      }
+      ai_ceo_outcomes: {
+        Row: {
+          actual_revenue_cents: number
+          actual_sales: number
+          delta_cents: number
+          expected_revenue_cents: number
+          expected_sales: number
+          id: string
+          lessons: string | null
+          measured_at: string
+          recommendation_id: string
+          success: boolean
+        }
+        Insert: {
+          actual_revenue_cents?: number
+          actual_sales?: number
+          delta_cents?: number
+          expected_revenue_cents?: number
+          expected_sales?: number
+          id?: string
+          lessons?: string | null
+          measured_at?: string
+          recommendation_id: string
+          success?: boolean
+        }
+        Update: {
+          actual_revenue_cents?: number
+          actual_sales?: number
+          delta_cents?: number
+          expected_revenue_cents?: number
+          expected_sales?: number
+          id?: string
+          lessons?: string | null
+          measured_at?: string
+          recommendation_id?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_ceo_outcomes_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_ceo_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_ceo_recommendations: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          dedupe_key: string | null
+          difficulty: number
+          evidence: Json
+          expected_revenue_cents: number
+          expected_sales: number
+          expected_traffic: number
+          id: string
+          impact_score: number
+          owner: string
+          rank: number
+          reason: string
+          risk: number
+          roi_score: number
+          run_id: string | null
+          status: string
+          time_to_result_hours: number
+          title: string
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string | null
+          difficulty?: number
+          evidence?: Json
+          expected_revenue_cents?: number
+          expected_sales?: number
+          expected_traffic?: number
+          id?: string
+          impact_score?: number
+          owner?: string
+          rank: number
+          reason: string
+          risk?: number
+          roi_score?: number
+          run_id?: string | null
+          status?: string
+          time_to_result_hours?: number
+          title: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string | null
+          difficulty?: number
+          evidence?: Json
+          expected_revenue_cents?: number
+          expected_sales?: number
+          expected_traffic?: number
+          id?: string
+          impact_score?: number
+          owner?: string
+          rank?: number
+          reason?: string
+          risk?: number
+          roi_score?: number
+          run_id?: string | null
+          status?: string
+          time_to_result_hours?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_ceo_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_ceo_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_ceo_runs: {
+        Row: {
+          error: string | null
+          executive_score: Json
+          explain: Json
+          finished_at: string | null
+          id: string
+          observe: Json
+          predict: Json
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          error?: string | null
+          executive_score?: Json
+          explain?: Json
+          finished_at?: string | null
+          id?: string
+          observe?: Json
+          predict?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          error?: string | null
+          executive_score?: Json
+          explain?: Json
+          finished_at?: string | null
+          id?: string
+          observe?: Json
+          predict?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
       ai_content_drafts: {
         Row: {
           created_at: string
