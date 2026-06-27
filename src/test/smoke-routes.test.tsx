@@ -2,11 +2,15 @@ import { describe, it, expect, vi } from 'vitest';
 import fs from 'fs';
 
 describe('Performance Integrity Tests', () => {
-  it('App.tsx does NOT use lazy for Products page', () => {
+  it('App.tsx lazy-loads the Products page for homepage LCP', () => {
+    // Intentional regression flip: Products was switched to lazyWithRetry to keep
+    // the homepage critical bundle small. Locked here so we don't accidentally
+    // re-eager-import it. See: App.tsx header comment "lazy for homepage LCP".
     const code = fs.readFileSync('src/App.tsx', 'utf-8');
-    expect(code).toContain('import Products from "./pages/Products"');
-    const lazyMatch = code.match(/lazyWithRetry\(\(\)\s*=>\s*import\(['"]\.\/pages\/Products['"]\)\)/);
-    expect(lazyMatch).toBeNull();
+    expect(code).not.toContain('import Products from "./pages/Products"');
+    expect(code).toMatch(
+      /const\s+Products\s*=\s*lazyWithRetry\(\(\)\s*=>\s*import\(['"]\.\/pages\/Products['"]\)\)/,
+    );
   });
 
   it('App.tsx does NOT have paint-blocking loading screen', () => {
@@ -15,10 +19,13 @@ describe('Performance Integrity Tests', () => {
     expect(code).not.toContain('const [isLoading');
   });
 
-  it('PageTransition initial state is visible', () => {
+  it('PageTransition is a zero-cost passthrough (no framer-motion)', () => {
+    // Intentional: the framer-motion wrapper added ~2s to LCP and was replaced
+    // with a plain <div>. Lock in the passthrough so animation can't sneak back.
     const code = fs.readFileSync('src/components/ui/page-transition.tsx', 'utf-8');
-    expect(code).toContain('opacity: 1');
-    expect(code).toContain('y: 0');
+    expect(code).not.toMatch(/from\s+['"]framer-motion['"]/);
+    expect(code).not.toMatch(/<motion\./);
+    expect(code).toMatch(/<div className={className}>/);
   });
 
   it('useCategoryProducts uses optimized cache settings', () => {
@@ -46,14 +53,20 @@ describe('Build Integrity Tests', () => {
     const html = fs.readFileSync('index.html', 'utf-8');
     expect(html).toContain('boot-recovery');
     expect(html).toContain('hard-reload-btn');
-    expect(html).toContain('copy-diag-btn');
-    expect(html).toContain('BOOT_FAIL');
+    // copy-diag-btn was removed when the banner was minimised; the watchdog now
+    // tracks __BOOT_FATAL_ERRORS__ instead of the old BOOT_FAIL flag.
+    expect(html).toContain('__BOOT_FATAL_ERRORS__');
+    expect(html).toContain('__BOOT_OK__');
   });
 
-  it('vite.config.ts has sitemap plugin DISABLED', () => {
+  it('vite.config.ts wires the active sitemaps plugin', () => {
+    // The legacy `sitemapPlugin()` was retired in favour of the multi-file
+    // `sitemapsPlugin()` (sitemap-pages / sitemap-collections / sitemap-blog).
+    // Lock the new wiring in.
     const config = fs.readFileSync('vite.config.ts', 'utf-8');
-    expect(config).not.toMatch(/^\s*sitemapPlugin\(\)/m);
-    expect(config).toContain('// sitemapPlugin()');
+    expect(config).toContain('import sitemapsPlugin from "./vite-plugin-sitemaps"');
+    expect(config).toMatch(/^\s*sitemapsPlugin\(\),/m);
+    expect(config).not.toMatch(/^\s*sitemapPlugin\(\),/m);
   });
 
   it('vite.config.ts includes buildIdPlugin', () => {
