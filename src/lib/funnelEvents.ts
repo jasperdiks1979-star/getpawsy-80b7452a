@@ -291,11 +291,85 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
   }
 }
 
-export interface CheckoutEventInput {
+export interface RemoveFromCartInput {
+  product_id: string;
+  slug?: string | null;
+  product_name?: string | null;
+  variant_id?: string | null;
+  qty: number;
+  price: number;
+  currency?: string;
+  source_component: string;
+  qa?: boolean;
 }
 
-// (placeholder removed by patch — see below)
+/** Mirror a remove_from_cart user click into lp_funnel_events. */
+export function fireUserRemoveFromCart(input: RemoveFromCartInput): void {
+  try {
+    const hasProductId = typeof input.product_id === 'string' && input.product_id.length > 0;
+    const hasSlug = typeof input.slug === 'string' && (input.slug?.length ?? 0) > 0;
+    const degraded = !hasProductId;
+    const fallbackProductKey = hasProductId
+      ? input.product_id
+      : hasSlug
+      ? (input.slug as string)
+      : `__nopid__:${input.source_component}`;
+    const env = envelope({
+      event_source: 'user_click',
+      source_component: input.source_component,
+      product_id: fallbackProductKey,
+      variant_id: input.variant_id ?? null,
+      event: 'remove_from_cart',
+    });
+    if (env.is_bot && !input.qa) return;
+    if (env.deduped && !input.qa) return;
+    if (!input.qa) markDeduped(env.idempotency_key);
 
+    const last = getLastTouch() ?? classifySource();
+    const first = getFirstTouch() ?? last;
+    const row: Record<string, unknown> = {
+      session_id: env.session_id,
+      event_name: 'remove_from_cart',
+      page_path: typeof window !== 'undefined' ? window.location.pathname : null,
+      product_id: hasProductId ? input.product_id : null,
+      product_name: input.product_name ?? null,
+      value: input.price * input.qty,
+      utm_source: last.source,
+      utm_medium: last.medium,
+      utm_campaign: last.campaign,
+      event_source: env.event_source,
+      user_action_id: env.user_action_id,
+      idempotency_key: env.idempotency_key,
+      source_component: env.source_component,
+      is_bot: env.is_bot,
+      bot_reason: env.bot_reason,
+      geo_quality: env.geo_quality,
+      traffic_quality_score: env.traffic_quality_score,
+      deduped: env.deduped,
+      validation_status: degraded ? 'degraded' : 'verified',
+      degraded,
+      ...qualityFields(env),
+      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
+      raw_payload: {
+        slug: input.slug ?? null,
+        qty: input.qty,
+        price: input.price,
+        currency: input.currency ?? 'USD',
+        first_touch: first,
+        last_touch: last,
+      },
+    };
+    void supabase.from('lp_funnel_events').insert(row as never).then(({ error }) => {
+      if (error && error.code !== '23505') {
+        console.debug('[funnelEvents] remove_from_cart insert failed:', error.message);
+      }
+    });
+  } catch (e) {
+    console.debug('[funnelEvents] fireUserRemoveFromCart threw:', e);
+  }
+}
+
+export interface CheckoutEventInput {
   step:
     | 'checkout_click'
     | 'checkout_redirect_attempt'
