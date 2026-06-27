@@ -127,7 +127,7 @@ describe("source breakdown explains why visible Pinterest count changes", () => 
   const rows = [
     pinSession("clean-us", { country: "United States" }),
     pinSession("internal-nl", { country: "The Netherlands", is_internal: true, traffic_quality: "internal" }),
-    pinSession("bot", { is_bot_suspect: true }),
+    pinSession("bot", { country: "Germany", is_bot_suspect: true }),
   ];
 
   it("with Exclude internal/test OFF: total Pinterest=3, clean=1, internal=1, bot=1", () => {
