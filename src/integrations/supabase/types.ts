@@ -3853,6 +3853,7 @@ export type Database = {
           payment_at: string | null
           purchase_at: string | null
           redirect_at: string | null
+          remove_from_cart_at: string | null
           scroll_at: string | null
           session_id: string
           traffic_type: string | null
@@ -3860,6 +3861,7 @@ export type Database = {
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
+          view_cart_at: string | null
           view_item_at: string | null
           visitor_id: string | null
         }
@@ -3876,6 +3878,7 @@ export type Database = {
           payment_at?: string | null
           purchase_at?: string | null
           redirect_at?: string | null
+          remove_from_cart_at?: string | null
           scroll_at?: string | null
           session_id: string
           traffic_type?: string | null
@@ -3883,6 +3886,7 @@ export type Database = {
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          view_cart_at?: string | null
           view_item_at?: string | null
           visitor_id?: string | null
         }
@@ -3899,6 +3903,7 @@ export type Database = {
           payment_at?: string | null
           purchase_at?: string | null
           redirect_at?: string | null
+          remove_from_cart_at?: string | null
           scroll_at?: string | null
           session_id?: string
           traffic_type?: string | null
@@ -3906,6 +3911,7 @@ export type Database = {
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          view_cart_at?: string | null
           view_item_at?: string | null
           visitor_id?: string | null
         }

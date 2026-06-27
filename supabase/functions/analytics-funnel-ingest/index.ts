@@ -12,7 +12,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
 const STEPS = [
   "click","redirect","landing","engagement_start","page_view","scroll",
-  "view_item","add_to_cart","begin_checkout","payment","purchase",
+  "view_item","add_to_cart","view_cart","remove_from_cart","begin_checkout","payment","purchase",
 ] as const;
 type Step = typeof STEPS[number];
 
@@ -20,6 +20,7 @@ const COL: Record<Step,string> = {
   click:"click_at", redirect:"redirect_at", landing:"landing_at",
   engagement_start:"engagement_start_at", page_view:"page_view_at",
   scroll:"scroll_at", view_item:"view_item_at", add_to_cart:"add_to_cart_at",
+  view_cart:"view_cart_at", remove_from_cart:"remove_from_cart_at",
   begin_checkout:"begin_checkout_at", payment:"payment_at", purchase:"purchase_at",
 };
 

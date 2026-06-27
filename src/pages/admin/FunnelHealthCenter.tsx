@@ -129,7 +129,7 @@ export default function FunnelHealthCenter() {
       const [w, l, c, v, o, u] = await Promise.all([
         supabase
           .from("analytics_funnel_waterfall")
-          .select("session_id,visitor_id,utm_source,utm_medium,utm_campaign,landing_page,click_at,redirect_at,landing_at,engagement_start_at,page_view_at,scroll_at,view_item_at,add_to_cart_at,begin_checkout_at,payment_at,purchase_at,furthest_step,traffic_type,updated_at,created_at")
+          .select("session_id,visitor_id,utm_source,utm_medium,utm_campaign,landing_page,click_at,redirect_at,landing_at,engagement_start_at,page_view_at,scroll_at,view_item_at,add_to_cart_at,view_cart_at,remove_from_cart_at,begin_checkout_at,payment_at,purchase_at,furthest_step,traffic_type,updated_at,created_at")
           .gte("created_at", since)
           .order("created_at", { ascending: false })
           .limit(5000),
@@ -241,8 +241,8 @@ export default function FunnelHealthCenter() {
   const pageViews = fVa.filter(r => r.activity_type === "browsing" || r.activity_type === "product_view").length;
   const viewItemTotal = lpCount("view_item") + vaCount("view_item");
   const addToCartTotal = lpCount("add_to_cart") + vaCount("add_to_cart") + waterCount("add_to_cart");
-  const viewCartTotal = lpCount("view_cart") + vaCount("view_cart");
-  const removeFromCartTotal = lpCount("remove_from_cart") + vaCount("remove_from_cart");
+  const viewCartTotal = lpCount("view_cart") + vaCount("view_cart") + waterCount("view_cart");
+  const removeFromCartTotal = lpCount("remove_from_cart") + vaCount("remove_from_cart") + waterCount("remove_from_cart");
   const beginCheckoutTotal = lpCount("begin_checkout") + ckCount("begin_checkout") + waterCount("begin_checkout");
 
   const convRate = pct(purchaseCount, visitors);
