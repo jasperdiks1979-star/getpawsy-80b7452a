@@ -18,7 +18,6 @@ async function upsertNode(node_type: string, node_key: string, label: string | n
 }
 
 async function upsertEdge(src_id: string, dst_id: string, relation: string, weight = 1, attrs: J = {}) {
-  await supabase.rpc("noop").catch(() => {});
   const { data: existing } = await supabase.from("oie_graph_edges").select("id,evidence_count,weight").eq("src_id", src_id).eq("dst_id", dst_id).eq("relation", relation).maybeSingle();
   if (existing) {
     await supabase.from("oie_graph_edges").update({
