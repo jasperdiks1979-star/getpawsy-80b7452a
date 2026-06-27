@@ -3150,6 +3150,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="execution-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ExecutionCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-brain"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
