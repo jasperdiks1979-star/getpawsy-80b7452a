@@ -64,7 +64,7 @@ async function flush() {
   if (!queue.length) return;
   const batch = queue.splice(0, queue.length);
   try {
-    await supabase.from("cro_ux_signals").insert(batch);
+    await supabase.from("cro_ux_signals").insert(batch as never);
   } catch {
     /* never throw — non-blocking */
   }
