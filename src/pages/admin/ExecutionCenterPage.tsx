@@ -239,7 +239,10 @@ export default function ExecutionCenterPage() {
     toast.success(`Bulk ${status} applied to ${targets.length}`);
   };
 
-  const recsWithState = useMemo(() => recs.map(r => ({ rec: r, s: state[r.id] ?? { status: "pending" as RecStatus, planVersion: 1, history: [] as any[] } })), [recs, state]);
+  const recsWithState = useMemo(() => recs.map(r => {
+    const s: LocalState = state[r.id] ?? { status: "pending", planVersion: 1, history: [] };
+    return { rec: r, s };
+  }), [recs, state]);
 
   const summary = useMemo(() => {
     const buckets: Record<RecStatus, number> = { pending: 0, approved: 0, rejected: 0, postponed: 0, executed: 0, rolled_back: 0, regenerate: 0 };
