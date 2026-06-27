@@ -3233,6 +3233,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="organic-domination"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicDominationPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="organic-first"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
