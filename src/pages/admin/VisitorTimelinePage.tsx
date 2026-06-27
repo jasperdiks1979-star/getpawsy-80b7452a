@@ -35,7 +35,7 @@ export default function VisitorTimelinePage() {
       setMeta({ wf: wf.data, eng: eng.data, cls: cls.data });
       setQuality(sq.data);
 
-      const w = wf.data || {};
+      const w: any = wf.data || {};
       const evs: Event[] = [];
       const push = (ts: string | null | undefined, label: string) => { if (ts) evs.push({ ts, label }); };
       push(w.click_at, "Click");
