@@ -34,26 +34,56 @@ const isPaid = (r: { utm_source?: string|null; utm_medium?: string|null; utm_cam
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const log01 = (n: number, ceil: number) => clamp01(Math.log1p(Math.max(0, n)) / Math.log1p(ceil));
 
-const WEIGHTS = {
-  organic_visitors: 0.15,
-  organic_engagement: 0.20,
-  organic_conversion: 0.25,
-  organic_revenue: 0.15,
-  returning_quality: 0.10,
-  paid_independence: 0.15,
+// Default weights / thresholds used only as a fallback if the configurable
+// model cannot be loaded. The source of truth is `organic_confidence_models`.
+const FALLBACK_WEIGHTS: Record<string, number> = {
+  organic_visitors: 0.15, organic_engagement: 0.20, organic_conversion: 0.25,
+  organic_revenue: 0.15, returning_quality: 0.10, paid_independence: 0.15,
+};
+const FALLBACK_THRESHOLDS = {
+  emerging:        { min_visitors: 10, min_score: 20 },
+  validated:       { min_visitors: 50, min_score: 45, min_purchases: 1, min_atc_rate: 0.05 },
+  organic_winner:  { min_purchases: 2, min_score: 65 },
+  scale_candidate: { min_purchases: 3, min_score: 80, min_cvr: 0.02, max_paid_share: 0.5 },
+};
+const FALLBACK_BOOST = 5;
+
+type Model = {
+  version: number;
+  weights: Record<string, number>;
+  negative_weights: Record<string, number>;
+  thresholds: any;
+  market_demand_boost: number;
 };
 
-function score(input: {
+async function loadActiveModel(sb: any): Promise<Model> {
+  try {
+    const { data } = await sb.rpc("get_active_organic_confidence_model");
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && row.weights) {
+      return {
+        version: Number(row.version ?? 0),
+        weights: row.weights as Record<string, number>,
+        negative_weights: (row.negative_weights ?? {}) as Record<string, number>,
+        thresholds: row.thresholds ?? FALLBACK_THRESHOLDS,
+        market_demand_boost: Number(row.market_demand_boost ?? FALLBACK_BOOST),
+      };
+    }
+  } catch (_e) { /* fall through to fallback */ }
+  return { version: 0, weights: FALLBACK_WEIGHTS, negative_weights: {}, thresholds: FALLBACK_THRESHOLDS, market_demand_boost: FALLBACK_BOOST };
+}
+
+function score(model: Model, input: {
   organic_visitors: number; organic_product_views: number; organic_add_to_cart: number;
   organic_purchases: number; organic_revenue: number; organic_returning_sessions: number;
-  paid_visitors: number;
+  paid_visitors: number; market_demand_index?: number; negatives?: Record<string, number>;
 }) {
   const total = input.organic_visitors + input.paid_visitors;
   const paid_share = total > 0 ? input.paid_visitors / total : 0;
   const view_rate = input.organic_visitors > 0 ? clamp01(input.organic_product_views / input.organic_visitors) : 0;
   const atc_rate  = input.organic_product_views > 0 ? clamp01(input.organic_add_to_cart / input.organic_product_views) : 0;
   const cvr       = input.organic_product_views > 0 ? clamp01(input.organic_purchases / input.organic_product_views) : 0;
-  const c = {
+  const c: Record<string, number> = {
     organic_visitors: log01(input.organic_visitors, 1000),
     organic_engagement: 0.5 * view_rate + 0.5 * Math.min(1, atc_rate * 8),
     organic_conversion: Math.min(1, cvr * 25),
@@ -62,17 +92,36 @@ function score(input: {
     paid_independence: clamp01(1 - paid_share),
   };
   let s = 0;
-  for (const [k,w] of Object.entries(WEIGHTS)) s += (c as any)[k] * w * 100;
+  for (const [k, w] of Object.entries(model.weights)) s += (c[k] ?? 0) * Number(w) * 100;
+  if (input.negatives && model.negative_weights) {
+    for (const [k, w] of Object.entries(model.negative_weights)) {
+      const v = clamp01(Number(input.negatives[k] ?? 0));
+      s -= v * Number(w) * 100;
+    }
+  }
+  if (typeof input.market_demand_index === "number" && model.market_demand_boost > 0) {
+    s += clamp01(input.market_demand_index) * model.market_demand_boost;
+  }
+  s = Math.max(0, Math.min(100, s));
+  const t = { ...FALLBACK_THRESHOLDS, ...(model.thresholds ?? {}) };
   let level = "hypothesis", level_index = 1;
-  if (input.organic_visitors >= 10 && s >= 20) { level = "emerging"; level_index = 2; }
-  if (input.organic_visitors >= 50 && s >= 45 && (input.organic_purchases >= 1 || atc_rate >= 0.05)) {
+  if (input.organic_visitors >= (t.emerging?.min_visitors ?? 10) && s >= (t.emerging?.min_score ?? 20)) {
+    level = "emerging"; level_index = 2;
+  }
+  if (input.organic_visitors >= (t.validated?.min_visitors ?? 50) && s >= (t.validated?.min_score ?? 45) &&
+      (input.organic_purchases >= (t.validated?.min_purchases ?? 1) || atc_rate >= (t.validated?.min_atc_rate ?? 0.05))) {
     level = "validated"; level_index = 3;
   }
-  if (input.organic_purchases >= 2 && s >= 65) { level = "organic_winner"; level_index = 4; }
-  if (input.organic_purchases >= 3 && cvr >= 0.02 && s >= 80 && paid_share <= 0.5) {
+  if (input.organic_purchases >= (t.organic_winner?.min_purchases ?? 2) && s >= (t.organic_winner?.min_score ?? 65)) {
+    level = "organic_winner"; level_index = 4;
+  }
+  if (input.organic_purchases >= (t.scale_candidate?.min_purchases ?? 3) &&
+      cvr >= (t.scale_candidate?.min_cvr ?? 0.02) &&
+      s >= (t.scale_candidate?.min_score ?? 80) &&
+      paid_share <= (t.scale_candidate?.max_paid_share ?? 0.5)) {
     level = "scale_candidate"; level_index = 5;
   }
-  return { score: Math.round(s*100)/100, level, level_index, paid_share, organic_conversion_rate: cvr, components: c };
+  return { score: Math.round(s * 100) / 100, level, level_index, paid_share, organic_conversion_rate: cvr, components: c };
 }
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -107,7 +156,23 @@ Deno.serve(async (req) => {
     if (!ok) return json({ error: "unauthorized" }, 401);
     const { sb } = ok;
     const url = new URL(req.url);
-    const days = Math.min(90, Math.max(1, Number(url.searchParams.get("days") ?? 30)));
+    let body: any = {};
+    if (req.method === "POST") { try { body = await req.json(); } catch { /* ignore */ } }
+    const days = Math.min(90, Math.max(1, Number(body.days ?? url.searchParams.get("days") ?? 30)));
+    const persist = Boolean(body.persist_predictions ?? false);
+
+    // Load configurable model (override_model wins, then DB active model, then fallback)
+    let model: Model = await loadActiveModel(sb);
+    if (body.override_model && typeof body.override_model === "object") {
+      const o = body.override_model;
+      model = {
+        version: Number(o.version ?? -1),
+        weights: { ...model.weights, ...(o.weights ?? {}) },
+        negative_weights: { ...model.negative_weights, ...(o.negative_weights ?? {}) },
+        thresholds: o.thresholds ? { ...model.thresholds, ...o.thresholds } : model.thresholds,
+        market_demand_boost: typeof o.market_demand_boost === "number" ? o.market_demand_boost : model.market_demand_boost,
+      };
+    }
     const since = new Date(Date.now() - days * 86_400_000).toISOString();
 
     const { data: rows, error } = await sb.from("visitor_activity")
@@ -189,10 +254,10 @@ Deno.serve(async (req) => {
       paid_visitors: p.visitors,
     });
 
-    const globalScore = score(inputFor(global.organic, global.paid));
+    const globalScore = score(model, inputFor(global.organic, global.paid));
 
     const products = [...perProduct.entries()].map(([id, v]) => {
-      const sc = score(inputFor(v.organic, v.paid));
+      const sc = score(model, inputFor(v.organic, v.paid));
       return {
         product_id: id, product_name: v.name, category: v.cat,
         organic_revenue: v.organic.revenue,
@@ -205,7 +270,7 @@ Deno.serve(async (req) => {
     }).sort((a, b) => b.confidence - a.confidence);
 
     const categories = [...perCategory.entries()].map(([cat, v]) => {
-      const sc = score(inputFor(v.organic, v.paid));
+      const sc = score(model, inputFor(v.organic, v.paid));
       return {
         category: cat,
         organic_visitors: v.organic.visitors,
@@ -242,12 +307,35 @@ Deno.serve(async (req) => {
       }).sort((a, b) => b.confidence - a.confidence);
     } catch { /* table optional */ }
 
+    // Persist predictions (best effort) for the learning engine. Only when a
+    // real (non-override) model is used and the caller opted-in, to avoid
+    // polluting history with simulations.
+    if (persist && model.version > 0 && !body.override_model) {
+      const rows: any[] = [
+        { entity_type: "global", entity_id: null, model_version: model.version,
+          predicted_score: globalScore.score, predicted_level: globalScore.level,
+          predicted_level_index: globalScore.level_index, components: globalScore.components,
+          inputs: { window_days: days } },
+        ...products.slice(0, 200).map(p => ({
+          entity_type: "product", entity_id: p.product_id, model_version: model.version,
+          predicted_score: p.confidence, predicted_level: p.level, predicted_level_index: p.level_index,
+          inputs: { organic_visitors: p.organic_visitors, organic_purchases: p.organic_purchases, organic_revenue: p.organic_revenue },
+        })),
+        ...categories.slice(0, 100).map(c => ({
+          entity_type: "category", entity_id: c.category, model_version: model.version,
+          predicted_score: c.confidence, predicted_level: c.level, predicted_level_index: c.level_index,
+        })),
+      ];
+      try { await sb.from("organic_confidence_predictions").insert(rows); } catch (_e) { /* non-fatal */ }
+    }
+
     return json({
       ok: true,
       generated_at: new Date().toISOString(),
       window_days: days,
       principle: "ORGANIC-FIRST — paid traffic is never used as proof of product quality.",
-      weights: WEIGHTS,
+      model: { version: model.version, weights: model.weights, negative_weights: model.negative_weights, thresholds: model.thresholds, market_demand_boost: model.market_demand_boost },
+      weights: model.weights,
       global: {
         organic: {
           visitors: global.organic.visitors, sessions: global.organic.sessions.size,
