@@ -1179,6 +1179,37 @@ export const VisitorWorldMap = () => {
 
   const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
 
+  // Source classification breakdown — built from displayActivities (after
+  // internal/US filters but BEFORE source filter), so it always tells the
+  // truth about what classification each session got. Matches Attribution
+  // Compare totals because both call resolveCanonicalSource().
+  const sourceBreakdown = (() => {
+    const map = new Map<CanonicalSource, { visitors: Set<string>; pageviews: number; cart: number; checkout: number; purchase: number }>();
+    for (const s of CANONICAL_SOURCES) {
+      map.set(s, { visitors: new Set(), pageviews: 0, cart: 0, checkout: 0, purchase: 0 });
+    }
+    (displayActivities ?? []).forEach((a) => {
+      const canonical = resolveCanonicalSource({
+        utm_source: a.utm_source ?? null,
+        utm_medium: a.utm_medium ?? null,
+        utm_campaign: a.utm_campaign ?? null,
+        referrer: a.referrer ?? null,
+        referrer_category: a.referrer_category ?? null,
+        page_path: a.page_path ?? null,
+      });
+      const bucket = map.get(canonical)!;
+      bucket.visitors.add(a.session_id);
+      bucket.pageviews += 1;
+      if (a.activity_type === "cart") bucket.cart += 1;
+      else if (a.activity_type === "checkout" || a.activity_type === "begin_checkout") bucket.checkout += 1;
+      else if (a.activity_type === "purchase") bucket.purchase += 1;
+    });
+    return CANONICAL_SOURCES.map((s) => {
+      const b = map.get(s)!;
+      return { source: s, visitors: b.visitors.size, pageviews: b.pageviews, cart: b.cart, checkout: b.checkout, purchase: b.purchase };
+    });
+  })();
+
   // Get selected time range label
   const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
 
