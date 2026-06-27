@@ -22,11 +22,12 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
+import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
 
 interface VisitorActivity {
   id: string;
   session_id: string;
-  activity_type: "browsing" | "cart" | "checkout";
+  activity_type: "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
   latitude: number | null;
   longitude: number | null;
   country: string | null;
@@ -35,6 +36,10 @@ interface VisitorActivity {
   last_seen_at?: string;
   referrer_category?: string | null;
   utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  referrer?: string | null;
+  page_path?: string | null;
 }
 
 // Full row shape returned by `select("*")` — used for the CSV export so we
@@ -446,13 +451,20 @@ export const VisitorWorldMap = () => {
   // Helper to check if activity matches source filter
   const matchesSourceFilter = (a: VisitorActivity): boolean => {
     if (sourceFilter === "all") return true;
-    if (sourceFilter === "pinterest") {
-      return a.referrer_category === "social" && (
-        a.utm_source === "pinterest" || 
-        (!a.utm_source && a.referrer_category === "social") // Pinterest often comes without utm_source
-      );
-    }
-    return a.referrer_category === sourceFilter;
+    const canonical = resolveCanonicalSource({
+      utm_source: a.utm_source ?? null,
+      utm_medium: a.utm_medium ?? null,
+      utm_campaign: a.utm_campaign ?? null,
+      referrer: a.referrer ?? null,
+      referrer_category: a.referrer_category ?? null,
+      page_path: a.page_path ?? null,
+    });
+    if (sourceFilter === "pinterest") return canonical === "pinterest";
+    if (sourceFilter === "google") return canonical === "google";
+    if (sourceFilter === "direct") return canonical === "direct";
+    if (sourceFilter === "organic") return canonical === "organic";
+    if (sourceFilter === "social") return canonical === "pinterest" || canonical === "facebook" || canonical === "tiktok";
+    return canonical === "unknown" || canonical === "referral";
   };
 
   // Filter activities based on selected activity type AND source
@@ -1167,6 +1179,37 @@ export const VisitorWorldMap = () => {
 
   const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
 
+  // Source classification breakdown — built from displayActivities (after
+  // internal/US filters but BEFORE source filter), so it always tells the
+  // truth about what classification each session got. Matches Attribution
+  // Compare totals because both call resolveCanonicalSource().
+  const sourceBreakdown = (() => {
+    const map = new Map<CanonicalSource, { visitors: Set<string>; pageviews: number; cart: number; checkout: number; purchase: number }>();
+    for (const s of CANONICAL_SOURCES) {
+      map.set(s, { visitors: new Set(), pageviews: 0, cart: 0, checkout: 0, purchase: 0 });
+    }
+    (displayActivities ?? []).forEach((a) => {
+      const canonical = resolveCanonicalSource({
+        utm_source: a.utm_source ?? null,
+        utm_medium: a.utm_medium ?? null,
+        utm_campaign: a.utm_campaign ?? null,
+        referrer: a.referrer ?? null,
+        referrer_category: a.referrer_category ?? null,
+        page_path: a.page_path ?? null,
+      });
+      const bucket = map.get(canonical)!;
+      bucket.visitors.add(a.session_id);
+      bucket.pageviews += 1;
+      if (a.activity_type === "cart") bucket.cart += 1;
+      else if (a.activity_type === "checkout" || a.activity_type === "begin_checkout") bucket.checkout += 1;
+      else if (a.activity_type === "purchase") bucket.purchase += 1;
+    });
+    return CANONICAL_SOURCES.map((s) => {
+      const b = map.get(s)!;
+      return { source: s, visitors: b.visitors.size, pageviews: b.pageviews, cart: b.cart, checkout: b.checkout, purchase: b.purchase };
+    });
+  })();
+
   // Get selected time range label
   const selectedTimeRangeLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || "Laatste 24 uur";
 
@@ -1179,9 +1222,15 @@ export const VisitorWorldMap = () => {
     
     filteredActivities.forEach((activity) => {
       const current = sessionHighestActivity.get(activity.session_id);
-      const activityRank = { browsing: 1, cart: 2, checkout: 3 };
+      const activityRank: Record<string, number> = { browsing: 1, product_view: 1, view_cart: 2, add_to_cart: 2, cart: 2, begin_checkout: 3, checkout: 3, purchase: 4 };
+      const bucket: "browsing" | "cart" | "checkout" =
+        activity.activity_type === "cart" || activity.activity_type === "add_to_cart" || activity.activity_type === "view_cart"
+          ? "cart"
+          : activity.activity_type === "checkout" || activity.activity_type === "begin_checkout" || activity.activity_type === "purchase"
+            ? "checkout"
+            : "browsing";
       if (!current || activityRank[activity.activity_type] > activityRank[current]) {
-        sessionHighestActivity.set(activity.session_id, activity.activity_type);
+        sessionHighestActivity.set(activity.session_id, bucket);
       }
     });
 
@@ -2000,6 +2049,42 @@ export const VisitorWorldMap = () => {
                 </SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Source classification breakdown — canonical resolver, transparent counts */}
+            <details className="ml-2 text-xs border border-border rounded-md bg-background/70" data-testid="source-breakdown">
+              <summary className="cursor-pointer px-2 py-1.5 select-none font-medium">
+                Bron-classificatie ({sourceBreakdown.filter(r => r.visitors > 0).length})
+              </summary>
+              <div className="p-2 max-h-72 overflow-auto">
+                <table className="w-full text-[11px]">
+                  <thead className="text-muted-foreground">
+                    <tr>
+                      <th className="text-left pr-2">Bron</th>
+                      <th className="text-right pr-2">Visitors</th>
+                      <th className="text-right pr-2">Pageviews</th>
+                      <th className="text-right pr-2">Cart</th>
+                      <th className="text-right pr-2">Checkout</th>
+                      <th className="text-right">Purchase</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sourceBreakdown.map(r => (
+                      <tr key={r.source} data-source={r.source} className={r.source === "pinterest" ? "text-[#E60023] font-medium" : ""}>
+                        <td className="pr-2 capitalize">{r.source}</td>
+                        <td className="text-right pr-2">{r.visitors}</td>
+                        <td className="text-right pr-2">{r.pageviews}</td>
+                        <td className="text-right pr-2">{r.cart}</td>
+                        <td className="text-right pr-2">{r.checkout}</td>
+                        <td className="text-right">{r.purchase}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Toont sessies ná internal/US-only filters, vóór bron-filter. Gebruikt dezelfde canonical resolver als Attribution Compare en Visitor Timeline.
+                </p>
+              </div>
+            </details>
 
             {/* Map Projection Toggle */}
             <div className="flex items-center gap-2 px-2">
