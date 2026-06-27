@@ -267,8 +267,10 @@ function SourceTab({ events }: { events: StreamEvent[] }) {
       if (e.canonical === "begin_checkout") b.checkout++;
       if (e.canonical === "purchase") { b.purchase++; b.revenue += Number(e.value ?? 0); }
     });
-    return Array.from(map.entries()).map(([k, v]) => ({ source: k, visitors: v.visitors.size, ...v }))
-      .sort((a, b) => b.visitors - a.visitors);
+    return Array.from(map.entries()).map(([k, v]) => ({
+      source: k, visitors: v.visitors.size, pv: v.pv, atc: v.atc,
+      checkout: v.checkout, purchase: v.purchase, revenue: v.revenue,
+    })).sort((a, b) => b.visitors - a.visitors);
   }, [events]);
   return (
     <div className="overflow-x-auto rounded-md border">
