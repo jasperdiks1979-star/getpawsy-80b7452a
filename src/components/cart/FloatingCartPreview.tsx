@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ArrowRight, X } from 'lucide-react';
@@ -18,6 +18,31 @@ export const FloatingCartPreview = memo(({ isVisible, onClose }: FloatingCartPre
 
   const displayItems = items.slice(0, 3);
   const remainingCount = items.length - 3;
+
+  // Fire canonical view_cart (GA4 + funnel waterfall) whenever the drawer
+  // transitions from hidden → visible. One emit per open, never on close.
+  const wasVisibleRef = useRef(false);
+  useEffect(() => {
+    if (isVisible && !wasVisibleRef.current) {
+      wasVisibleRef.current = true;
+      try {
+        import('@/lib/analytics').then((m) => m.trackViewCart(
+          items.map((i) => ({
+            item_id: i.id,
+            item_name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          totalPrice,
+        )).catch(() => {});
+      } catch {}
+      try {
+        import('@/lib/analyticsFunnel').then((m) => m.recordFunnelStep('view_cart')).catch(() => {});
+      } catch {}
+    } else if (!isVisible) {
+      wasVisibleRef.current = false;
+    }
+  }, [isVisible, items, totalPrice]);
 
   return (
     <AnimatePresence>

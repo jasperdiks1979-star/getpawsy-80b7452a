@@ -7,7 +7,8 @@ const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
 export type FunnelStep =
   | "click" | "redirect" | "landing" | "engagement_start" | "page_view"
-  | "scroll" | "view_item" | "add_to_cart" | "begin_checkout" | "payment" | "purchase";
+  | "scroll" | "view_item" | "add_to_cart" | "view_cart" | "remove_from_cart"
+  | "begin_checkout" | "payment" | "purchase";
 
 export function recordFunnelStep(step: FunnelStep, extra?: Record<string, unknown>): void {
   try {
