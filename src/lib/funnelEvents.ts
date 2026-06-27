@@ -292,6 +292,10 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
 }
 
 export interface CheckoutEventInput {
+}
+
+// (placeholder removed by patch — see below)
+
   step:
     | 'checkout_click'
     | 'checkout_redirect_attempt'
