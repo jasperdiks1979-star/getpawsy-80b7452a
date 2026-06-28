@@ -563,6 +563,7 @@ const ProductIntelligenceDnaPage = lazyWithRetry(() => import("./pages/admin/Pro
 const MarketIntelligenceDnaPage = lazyWithRetry(() => import("./pages/admin/MarketIntelligenceDnaPage"));
 const KnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/KnowledgeGraphPage"));
 const ExecutiveDecisionPage = lazyWithRetry(() => import("./pages/admin/ExecutiveDecisionPage"));
+const ExperimentationPage = lazyWithRetry(() => import("./pages/admin/ExperimentationPage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
@@ -1816,6 +1817,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ExecutiveDecisionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="experiments"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ExperimentationPage />
                                 </Suspense>
                               }
                             />
