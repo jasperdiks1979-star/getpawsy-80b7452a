@@ -67,22 +67,23 @@ async function run(supabase: any, execute: boolean) {
   const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString();
 
   // 1. Posted pins in window
-  const { data: queue = [] } = await supabase
+  const { data: queueData } = await supabase
     .from("pinterest_pin_queue")
     .select("id,pin_id,product_slug,niche_key,board_name,cta,pin_title,posted_at,meta")
     .eq("status", "posted")
     .gte("posted_at", sinceIso)
     .limit(2000);
+  const queue: Row[] = queueData ?? [];
 
   // 2. Performance keyed by pin_id
   const pinIds = queue.map((r: Row) => r.pin_id).filter(Boolean);
   const perfMap = new Map<string, Row>();
   if (pinIds.length) {
-    const { data: perf = [] } = await supabase
+    const { data: perfData } = await supabase
       .from("pinterest_pin_performance")
       .select("pin_id,impressions,clicks,saves,ctr")
       .in("pin_id", pinIds);
-    perf.forEach((p: Row) => perfMap.set(p.pin_id, p));
+    (perfData ?? []).forEach((p: Row) => perfMap.set(p.pin_id, p));
   }
 
   // 3. Aggregate by (dimension, value) with time decay
