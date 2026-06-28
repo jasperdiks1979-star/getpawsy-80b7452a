@@ -17,8 +17,9 @@ const BASE_URL = "https://getpawsy.pet";
 const BUCKET = "pinterest-ads";
 const DEFAULT_MODEL = Deno.env.get("PINTEREST_FACTORY_IMAGE_MODEL") || Deno.env.get("PINTEREST_CD_IMAGE_MODEL") || "google/gemini-3-pro-image-preview";
 const TEXT_MODEL = Deno.env.get("PINTEREST_FACTORY_TEXT_MODEL") || "google/gemini-2.5-flash";
+declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 
-type Sb = ReturnType<typeof createClient>;
+type Sb = any;
 
 function admin() {
   return createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -393,7 +394,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
   const metrics: Record<string, unknown> = {
     stages: [],
     started_at: new Date().toISOString(),
-    memory_start_mb: Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024),
+    memory_start_mb: Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024),
   };
   try {
     const { data: pin, error: pinErr } = await timed("queue_lookup", metrics, async () => sb
@@ -534,7 +535,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
 
     metrics.finished_at = new Date().toISOString();
     metrics.duration_ms = Date.now() - startedMs;
-    metrics.memory_end_mb = Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024);
+    metrics.memory_end_mb = Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024);
     await sb.from("pinterest_creative_factory_jobs").update({
       status: "completed",
       stage: "queue",
@@ -552,7 +553,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
     const message = e instanceof Error ? e.message : String(e);
     metrics.finished_at = new Date().toISOString();
     metrics.duration_ms = Date.now() - startedMs;
-    metrics.memory_end_mb = Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024);
+    metrics.memory_end_mb = Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024);
     const nextStatus = Number(job.attempt_count ?? 0) + 1 >= Number(job.max_attempts ?? 3) ? "failed" : "retry";
     const regenerateNext = message.startsWith("quality_gate_failed") || message.startsWith("integrity_guard_failed") || message.startsWith("copy_validation_failed");
     await sb.from("pinterest_creative_factory_jobs").update({
