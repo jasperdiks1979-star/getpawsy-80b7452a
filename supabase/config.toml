@@ -455,3 +455,6 @@ verify_jwt = false
 
 [functions.pcie2-evidence-governor]
 verify_jwt = false
+
+[functions.pcie2-adaptive-learning-governor]
+verify_jwt = false
