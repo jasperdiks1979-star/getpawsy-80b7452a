@@ -190,29 +190,40 @@ async function fetchSnapshot(sb: any): Promise<Snapshot> {
     boardCount: connRow?.board_count ?? null,
   };
 
-  // Cron freshness (last-run age of the critical jobs)
-  const criticalJobs = [
-    "pinterest-cron-worker-10min",
-    "pinterest-flow-monitor-10min",
-    "pinterest-creative-factory-work-15min",
-    "pinterest-creative-factory-refill-30min",
+  // Cron freshness — derive from observable side-effects (no dependency on a
+  // cron-logging table that critical Pinterest jobs may not write to).
+  const { data: lastUpdated } = await sb
+    .from("pinterest_pin_queue")
+    .select("updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastQueueUpdateAt = lastUpdated?.updated_at ?? null;
+  const minutesSinceQueueUpdate = minutesSince(lastQueueUpdateAt);
+  const minutesSincePublish = minutesSince(lastPublishAt);
+  const minutesSinceDraft = minutesSince(oldestDraftAt) ?? minutesSince(lastDirectorAt);
+  const cronJobs = [
+    {
+      name: "pinterest-cron-worker-10min",
+      minutesSinceRun: minutesSincePublish,
+      ok: queued === 0 || (minutesSincePublish !== null && minutesSincePublish <= 20),
+    },
+    {
+      name: "pinterest-flow-monitor-10min",
+      minutesSinceRun: 0, // we are it
+      ok: true,
+    },
+    {
+      name: "pinterest-creative-factory-work-15min",
+      minutesSinceRun: minutesSinceQueueUpdate,
+      ok: minutesSinceQueueUpdate !== null && minutesSinceQueueUpdate <= 30,
+    },
+    {
+      name: "pinterest-creative-factory-refill-30min",
+      minutesSinceRun: minutesSince(lastDirectorAt),
+      ok: minutesSince(lastDirectorAt) !== null && minutesSince(lastDirectorAt)! <= 60,
+    },
   ];
-  const { data: jobLogs } = await sb
-    .from("cron_job_logs")
-    .select("job_name, started_at, success")
-    .in("job_name", criticalJobs)
-    .gte("started_at", since24Iso)
-    .order("started_at", { ascending: false });
-  const cronJobs = criticalJobs.map((name) => {
-    const latest = (jobLogs ?? []).find((r: any) => r.job_name === name);
-    const minutesSinceRun = latest
-      ? Math.round((Date.now() - new Date(latest.started_at).getTime()) / 60_000)
-      : null;
-    // OK if it ran within 2× its expected cadence
-    const cadenceMin = name.endsWith("30min") ? 30 : name.endsWith("15min") ? 15 : 10;
-    const ok = minutesSinceRun !== null && minutesSinceRun <= cadenceMin * 2 && latest?.success !== false;
-    return { name, minutesSinceRun, ok };
-  });
 
   return {
     status: "healthy",
