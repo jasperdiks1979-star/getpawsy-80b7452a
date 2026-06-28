@@ -20142,6 +20142,509 @@ export type Database = {
         }
         Relationships: []
       }
+      mil_ai_registry: {
+        Row: {
+          category: string
+          created_at: string
+          display_name: string
+          engine_key: string
+          id: string
+          meta: Json
+          status: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          display_name: string
+          engine_key: string
+          id?: string
+          meta?: Json
+          status?: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          display_name?: string
+          engine_key?: string
+          id?: string
+          meta?: Json
+          status?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      mil_confidence_calibration: {
+        Row: {
+          actual_success_rate: number | null
+          bucket_high: number
+          bucket_low: number
+          calibration_error: number | null
+          created_at: string
+          engine_key: string
+          id: string
+          period_end: string | null
+          period_start: string | null
+          predicted_avg: number | null
+          recommended_adjustment: number | null
+          sample_size: number
+        }
+        Insert: {
+          actual_success_rate?: number | null
+          bucket_high: number
+          bucket_low: number
+          calibration_error?: number | null
+          created_at?: string
+          engine_key: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          predicted_avg?: number | null
+          recommended_adjustment?: number | null
+          sample_size?: number
+        }
+        Update: {
+          actual_success_rate?: number | null
+          bucket_high?: number
+          bucket_low?: number
+          calibration_error?: number | null
+          created_at?: string
+          engine_key?: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          predicted_avg?: number | null
+          recommended_adjustment?: number | null
+          sample_size?: number
+        }
+        Relationships: []
+      }
+      mil_decisions: {
+        Row: {
+          actual_outcome: Json | null
+          business_impact_score: number | null
+          confidence: number | null
+          decided_at: string
+          decision_type: string
+          delta: Json | null
+          engine_key: string
+          evaluated_at: string | null
+          expected_outcome: Json
+          financial_impact_cents: number | null
+          id: string
+          meta: Json
+          reasoning: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          business_impact_score?: number | null
+          confidence?: number | null
+          decided_at?: string
+          decision_type: string
+          delta?: Json | null
+          engine_key: string
+          evaluated_at?: string | null
+          expected_outcome?: Json
+          financial_impact_cents?: number | null
+          id?: string
+          meta?: Json
+          reasoning?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          actual_outcome?: Json | null
+          business_impact_score?: number | null
+          confidence?: number | null
+          decided_at?: string
+          decision_type?: string
+          delta?: Json | null
+          engine_key?: string
+          evaluated_at?: string | null
+          expected_outcome?: Json
+          financial_impact_cents?: number | null
+          id?: string
+          meta?: Json
+          reasoning?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      mil_experiments: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          ended_at: string | null
+          engine_key: string
+          hypothesis: string
+          id: string
+          lift: number | null
+          metric: string
+          parameter: string
+          results: Json
+          started_at: string | null
+          status: string
+          variant_a: Json
+          variant_b: Json
+          winner: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          engine_key: string
+          hypothesis: string
+          id?: string
+          lift?: number | null
+          metric: string
+          parameter: string
+          results?: Json
+          started_at?: string | null
+          status?: string
+          variant_a: Json
+          variant_b: Json
+          winner?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          engine_key?: string
+          hypothesis?: string
+          id?: string
+          lift?: number | null
+          metric?: string
+          parameter?: string
+          results?: Json
+          started_at?: string | null
+          status?: string
+          variant_a?: Json
+          variant_b?: Json
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      mil_knowledge_edges: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json
+          relation: string
+          source_id: string
+          source_kind: string
+          target_id: string
+          target_kind: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          relation: string
+          source_id: string
+          source_kind: string
+          target_id: string
+          target_kind: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          relation?: string
+          source_id?: string
+          source_kind?: string
+          target_id?: string
+          target_kind?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      mil_leaderboard_snapshots: {
+        Row: {
+          created_at: string
+          fastest_learning: string | null
+          id: string
+          most_accurate: string | null
+          most_profitable: string | null
+          rankings: Json
+          snapshot_date: string
+          worst_performer: string | null
+        }
+        Insert: {
+          created_at?: string
+          fastest_learning?: string | null
+          id?: string
+          most_accurate?: string | null
+          most_profitable?: string | null
+          rankings?: Json
+          snapshot_date?: string
+          worst_performer?: string | null
+        }
+        Update: {
+          created_at?: string
+          fastest_learning?: string | null
+          id?: string
+          most_accurate?: string | null
+          most_profitable?: string | null
+          rankings?: Json
+          snapshot_date?: string
+          worst_performer?: string | null
+        }
+        Relationships: []
+      }
+      mil_performance_reviews: {
+        Row: {
+          business_value: number | null
+          conversion_accuracy: number | null
+          created_at: string
+          ctr_accuracy: number | null
+          decision_quality: number | null
+          details: Json
+          engine_key: string
+          id: string
+          letter_grade: string | null
+          notes: string | null
+          novelty_score: number | null
+          overall_grade: number | null
+          period_end: string
+          period_start: string
+          prediction_accuracy: number | null
+          profit_contribution_cents: number | null
+          roas_accuracy: number | null
+          sample_size: number | null
+        }
+        Insert: {
+          business_value?: number | null
+          conversion_accuracy?: number | null
+          created_at?: string
+          ctr_accuracy?: number | null
+          decision_quality?: number | null
+          details?: Json
+          engine_key: string
+          id?: string
+          letter_grade?: string | null
+          notes?: string | null
+          novelty_score?: number | null
+          overall_grade?: number | null
+          period_end: string
+          period_start: string
+          prediction_accuracy?: number | null
+          profit_contribution_cents?: number | null
+          roas_accuracy?: number | null
+          sample_size?: number | null
+        }
+        Update: {
+          business_value?: number | null
+          conversion_accuracy?: number | null
+          created_at?: string
+          ctr_accuracy?: number | null
+          decision_quality?: number | null
+          details?: Json
+          engine_key?: string
+          id?: string
+          letter_grade?: string | null
+          notes?: string | null
+          novelty_score?: number | null
+          overall_grade?: number | null
+          period_end?: string
+          period_start?: string
+          prediction_accuracy?: number | null
+          profit_contribution_cents?: number | null
+          roas_accuracy?: number | null
+          sample_size?: number | null
+        }
+        Relationships: []
+      }
+      mil_root_cause_chains: {
+        Row: {
+          chain: Json
+          confidence: number | null
+          created_at: string
+          id: string
+          incident_ref: string | null
+          recommended_action: string | null
+          root_cause: string | null
+          symptom: string
+        }
+        Insert: {
+          chain?: Json
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          incident_ref?: string | null
+          recommended_action?: string | null
+          root_cause?: string | null
+          symptom: string
+        }
+        Update: {
+          chain?: Json
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          incident_ref?: string | null
+          recommended_action?: string | null
+          root_cause?: string | null
+          symptom?: string
+        }
+        Relationships: []
+      }
+      mil_run_steps: {
+        Row: {
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          run_id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id: string
+          status?: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mil_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "mil_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mil_runs: {
+        Row: {
+          decisions_evaluated: number | null
+          ended_at: string | null
+          engines_reviewed: number | null
+          error: string | null
+          experiments_launched: number | null
+          id: string
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+          weight_adjustments: number | null
+        }
+        Insert: {
+          decisions_evaluated?: number | null
+          ended_at?: string | null
+          engines_reviewed?: number | null
+          error?: string | null
+          experiments_launched?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+          weight_adjustments?: number | null
+        }
+        Update: {
+          decisions_evaluated?: number | null
+          ended_at?: string | null
+          engines_reviewed?: number | null
+          error?: string | null
+          experiments_launched?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+          weight_adjustments?: number | null
+        }
+        Relationships: []
+      }
+      mil_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      mil_strategy_reports: {
+        Row: {
+          best_ai: string | null
+          biggest_failures: Json
+          biggest_wins: Json
+          created_at: string
+          forecast_accuracy: number | null
+          highest_roi_experiments: Json
+          id: string
+          opportunities: Json
+          period_month: string
+          strategic_priorities: Json
+          summary: string | null
+          threats: Json
+          worst_ai: string | null
+        }
+        Insert: {
+          best_ai?: string | null
+          biggest_failures?: Json
+          biggest_wins?: Json
+          created_at?: string
+          forecast_accuracy?: number | null
+          highest_roi_experiments?: Json
+          id?: string
+          opportunities?: Json
+          period_month: string
+          strategic_priorities?: Json
+          summary?: string | null
+          threats?: Json
+          worst_ai?: string | null
+        }
+        Update: {
+          best_ai?: string | null
+          biggest_failures?: Json
+          biggest_wins?: Json
+          created_at?: string
+          forecast_accuracy?: number | null
+          highest_roi_experiments?: Json
+          id?: string
+          opportunities?: Json
+          period_month?: string
+          strategic_priorities?: Json
+          summary?: string | null
+          threats?: Json
+          worst_ai?: string | null
+        }
+        Relationships: []
+      }
       monitoring_ad_actions: {
         Row: {
           action_type: string
