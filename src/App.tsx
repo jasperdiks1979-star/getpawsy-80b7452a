@@ -554,6 +554,7 @@ const GrowthDirectorPage = lazyWithRetry(() => import("./pages/admin/GrowthDirec
 const MetaIntelligencePage = lazyWithRetry(() => import("./pages/admin/MetaIntelligencePage"));
 const GovernancePage = lazyWithRetry(() => import("./pages/admin/GovernancePage"));
 const AosCommandCenterPage = lazyWithRetry(() => import("./pages/admin/AosCommandCenterPage"));
+const BusinessDnaPage = lazyWithRetry(() => import("./pages/admin/BusinessDnaPage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
