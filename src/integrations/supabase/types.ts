@@ -6215,6 +6215,691 @@ export type Database = {
         }
         Relationships: []
       }
+      aicos_departments: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          id: string
+          mission: string | null
+          name: string
+          parent_code: string | null
+          responsibilities: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          name: string
+          parent_code?: string | null
+          responsibilities?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          name?: string
+          parent_code?: string | null
+          responsibilities?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      aicos_employees: {
+        Row: {
+          avg_latency_ms: number | null
+          capabilities: Json | null
+          code: string
+          confidence: number | null
+          created_at: string | null
+          department_code: string
+          dependencies: Json | null
+          display_name: string
+          engine: string
+          health_score: number | null
+          id: string
+          inputs: Json | null
+          last_heartbeat: string | null
+          metadata: Json | null
+          outputs: Json | null
+          status: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          avg_latency_ms?: number | null
+          capabilities?: Json | null
+          code: string
+          confidence?: number | null
+          created_at?: string | null
+          department_code: string
+          dependencies?: Json | null
+          display_name: string
+          engine: string
+          health_score?: number | null
+          id?: string
+          inputs?: Json | null
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          outputs?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          avg_latency_ms?: number | null
+          capabilities?: Json | null
+          code?: string
+          confidence?: number | null
+          created_at?: string | null
+          department_code?: string
+          dependencies?: Json | null
+          display_name?: string
+          engine?: string
+          health_score?: number | null
+          id?: string
+          inputs?: Json | null
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          outputs?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      aicos_health: {
+        Row: {
+          analytics: number | null
+          business: number | null
+          creative: number | null
+          customer: number | null
+          details: Json | null
+          executive: number | null
+          experimentation: number | null
+          governance: number | null
+          id: string
+          infrastructure: number | null
+          knowledge: number | null
+          overall: number | null
+          revenue: number | null
+          taken_at: string | null
+        }
+        Insert: {
+          analytics?: number | null
+          business?: number | null
+          creative?: number | null
+          customer?: number | null
+          details?: Json | null
+          executive?: number | null
+          experimentation?: number | null
+          governance?: number | null
+          id?: string
+          infrastructure?: number | null
+          knowledge?: number | null
+          overall?: number | null
+          revenue?: number | null
+          taken_at?: string | null
+        }
+        Update: {
+          analytics?: number | null
+          business?: number | null
+          creative?: number | null
+          customer?: number | null
+          details?: Json | null
+          executive?: number | null
+          experimentation?: number | null
+          governance?: number | null
+          id?: string
+          infrastructure?: number | null
+          knowledge?: number | null
+          overall?: number | null
+          revenue?: number | null
+          taken_at?: string | null
+        }
+        Relationships: []
+      }
+      aicos_incidents: {
+        Row: {
+          action_plan: Json | null
+          created_at: string | null
+          departments: string[] | null
+          id: string
+          impact_estimate: Json | null
+          lessons_learned: string | null
+          owner: string | null
+          resolution: string | null
+          resolved_at: string | null
+          severity: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          action_plan?: Json | null
+          created_at?: string | null
+          departments?: string[] | null
+          id?: string
+          impact_estimate?: Json | null
+          lessons_learned?: string | null
+          owner?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          action_plan?: Json | null
+          created_at?: string | null
+          departments?: string[] | null
+          id?: string
+          impact_estimate?: Json | null
+          lessons_learned?: string | null
+          owner?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      aicos_knowledge_sync: {
+        Row: {
+          created_at: string | null
+          id: string
+          payload: Json | null
+          source_engine: string
+          status: string | null
+          target_engine: string
+          topic: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          source_engine: string
+          status?: string | null
+          target_engine: string
+          topic?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payload?: Json | null
+          source_engine?: string
+          status?: string | null
+          target_engine?: string
+          topic?: string | null
+        }
+        Relationships: []
+      }
+      aicos_memory: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          evidence: Json | null
+          id: string
+          importance: number | null
+          kind: string
+          search_tsv: unknown
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          evidence?: Json | null
+          id?: string
+          importance?: number | null
+          kind: string
+          search_tsv?: unknown
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          evidence?: Json | null
+          id?: string
+          importance?: number | null
+          kind?: string
+          search_tsv?: unknown
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      aicos_messages: {
+        Row: {
+          confidence: number | null
+          context: string | null
+          correlation_id: string | null
+          created_at: string | null
+          deadline: string | null
+          evidence: Json | null
+          expected_result: string | null
+          id: string
+          priority: number | null
+          receiver: string
+          reply_to: string | null
+          requested_action: string | null
+          sender: string
+          status: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          context?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          evidence?: Json | null
+          expected_result?: string | null
+          id?: string
+          priority?: number | null
+          receiver: string
+          reply_to?: string | null
+          requested_action?: string | null
+          sender: string
+          status?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          context?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          evidence?: Json | null
+          expected_result?: string | null
+          id?: string
+          priority?: number | null
+          receiver?: string
+          reply_to?: string | null
+          requested_action?: string | null
+          sender?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      aicos_objectives: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          due_at: string | null
+          expected_value_usd: number | null
+          id: string
+          metadata: Json | null
+          owner_department: string | null
+          priority: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          due_at?: string | null
+          expected_value_usd?: number | null
+          id?: string
+          metadata?: Json | null
+          owner_department?: string | null
+          priority?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          due_at?: string | null
+          expected_value_usd?: number | null
+          id?: string
+          metadata?: Json | null
+          owner_department?: string | null
+          priority?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      aicos_policies: {
+        Row: {
+          activated_at: string | null
+          active: boolean | null
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          weights: Json | null
+        }
+        Insert: {
+          activated_at?: string | null
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          weights?: Json | null
+        }
+        Update: {
+          activated_at?: string | null
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          weights?: Json | null
+        }
+        Relationships: []
+      }
+      aicos_resource_usage: {
+        Row: {
+          amount: number
+          consumer: string
+          created_at: string | null
+          id: string
+          resource: string
+          task_id: string | null
+        }
+        Insert: {
+          amount: number
+          consumer: string
+          created_at?: string | null
+          id?: string
+          resource: string
+          task_id?: string | null
+        }
+        Update: {
+          amount?: number
+          consumer?: string
+          created_at?: string | null
+          id?: string
+          resource?: string
+          task_id?: string | null
+        }
+        Relationships: []
+      }
+      aicos_resources: {
+        Row: {
+          daily_budget: number | null
+          hard_cap: number | null
+          id: string
+          last_reset_at: string | null
+          metadata: Json | null
+          resource: string
+          updated_at: string | null
+          used_today: number | null
+        }
+        Insert: {
+          daily_budget?: number | null
+          hard_cap?: number | null
+          id?: string
+          last_reset_at?: string | null
+          metadata?: Json | null
+          resource: string
+          updated_at?: string | null
+          used_today?: number | null
+        }
+        Update: {
+          daily_budget?: number | null
+          hard_cap?: number | null
+          id?: string
+          last_reset_at?: string | null
+          metadata?: Json | null
+          resource?: string
+          updated_at?: string | null
+          used_today?: number | null
+        }
+        Relationships: []
+      }
+      aicos_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      aicos_tasks: {
+        Row: {
+          assigned_employee: string | null
+          completed_at: string | null
+          correlation_id: string | null
+          created_at: string | null
+          customer_impact: number | null
+          department_code: string | null
+          dependencies: Json | null
+          error: string | null
+          id: string
+          learning_value: number | null
+          objective_id: string | null
+          operational_cost: number | null
+          parent_task_id: string | null
+          payload: Json | null
+          priority_score: number | null
+          profit_impact: number | null
+          result: Json | null
+          revenue_impact: number | null
+          risk: number | null
+          started_at: string | null
+          status: string | null
+          strategic_importance: number | null
+          title: string
+          updated_at: string | null
+          urgency: number | null
+        }
+        Insert: {
+          assigned_employee?: string | null
+          completed_at?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          customer_impact?: number | null
+          department_code?: string | null
+          dependencies?: Json | null
+          error?: string | null
+          id?: string
+          learning_value?: number | null
+          objective_id?: string | null
+          operational_cost?: number | null
+          parent_task_id?: string | null
+          payload?: Json | null
+          priority_score?: number | null
+          profit_impact?: number | null
+          result?: Json | null
+          revenue_impact?: number | null
+          risk?: number | null
+          started_at?: string | null
+          status?: string | null
+          strategic_importance?: number | null
+          title: string
+          updated_at?: string | null
+          urgency?: number | null
+        }
+        Update: {
+          assigned_employee?: string | null
+          completed_at?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          customer_impact?: number | null
+          department_code?: string | null
+          dependencies?: Json | null
+          error?: string | null
+          id?: string
+          learning_value?: number | null
+          objective_id?: string | null
+          operational_cost?: number | null
+          parent_task_id?: string | null
+          payload?: Json | null
+          priority_score?: number | null
+          profit_impact?: number | null
+          result?: Json | null
+          revenue_impact?: number | null
+          risk?: number | null
+          started_at?: string | null
+          status?: string | null
+          strategic_importance?: number | null
+          title?: string
+          updated_at?: string | null
+          urgency?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aicos_tasks_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "aicos_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aicos_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "aicos_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aicos_twin_snapshots: {
+        Row: {
+          horizon: string | null
+          id: string
+          metrics: Json
+          notes: string | null
+          predictions: Json | null
+          taken_at: string | null
+        }
+        Insert: {
+          horizon?: string | null
+          id?: string
+          metrics?: Json
+          notes?: string | null
+          predictions?: Json | null
+          taken_at?: string | null
+        }
+        Update: {
+          horizon?: string | null
+          id?: string
+          metrics?: Json
+          notes?: string | null
+          predictions?: Json | null
+          taken_at?: string | null
+        }
+        Relationships: []
+      }
+      aicos_workflow_steps: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          department_code: string | null
+          id: string
+          input: Json | null
+          notes: string | null
+          output: Json | null
+          stage: string
+          started_at: string | null
+          status: string | null
+          workflow_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          department_code?: string | null
+          id?: string
+          input?: Json | null
+          notes?: string | null
+          output?: Json | null
+          stage: string
+          started_at?: string | null
+          status?: string | null
+          workflow_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          department_code?: string | null
+          id?: string
+          input?: Json | null
+          notes?: string | null
+          output?: Json | null
+          stage?: string
+          started_at?: string | null
+          status?: string | null
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aicos_workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "aicos_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aicos_workflows: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          current_stage: string | null
+          id: string
+          name: string
+          objective_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          current_stage?: string | null
+          id?: string
+          name: string
+          objective_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          current_stage?: string | null
+          id?: string
+          name?: string
+          objective_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aicos_workflows_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "aicos_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_alerts: {
         Row: {
           alert_key: string
