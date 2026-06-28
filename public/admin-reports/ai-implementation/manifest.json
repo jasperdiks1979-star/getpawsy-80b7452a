@@ -1,5 +1,13 @@
 [
   {
+    "id": "shil-v1-2026-06-28",
+    "title": "Self-Healing Intelligence Layer (SHIL) v1",
+    "date": "2026-06-28",
+    "pdf": "/admin-reports/ai-implementation/SHIL_v1_2026-06-28.pdf",
+    "json": "/admin-reports/ai-implementation/SHIL_v1_2026-06-28.json",
+    "summary": "Platform-wide self-healing layer with 16 subsystems, 6 playbooks, 3 edge functions, /5 min cron, admin dashboard at /admin/self-healing."
+  },
+  {
     "slug": "2026-06-27-growth-orchestrator-final-integration",
     "title": "Autonomous Growth Orchestrator \u2014 Final Integration",
     "run_id": "2f67fceb-829d-4540-bf17-6d2781d8d802",
