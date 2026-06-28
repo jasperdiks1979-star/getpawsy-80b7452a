@@ -2431,6 +2431,704 @@ export type Database = {
         }
         Relationships: []
       }
+      agal_anomalies: {
+        Row: {
+          anomaly_type: string
+          description: string | null
+          detected_at: string
+          evidence: Json
+          id: string
+          resolved_at: string | null
+          severity: string
+          source: string
+          status: string
+        }
+        Insert: {
+          anomaly_type: string
+          description?: string | null
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source: string
+          status?: string
+        }
+        Update: {
+          anomaly_type?: string
+          description?: string | null
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      agal_audit_runs: {
+        Row: {
+          anomalies_found: number | null
+          biases_found: number | null
+          ended_at: string | null
+          engines_audited: number | null
+          error: string | null
+          id: string
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+          trust_updates: number | null
+          validations: number | null
+        }
+        Insert: {
+          anomalies_found?: number | null
+          biases_found?: number | null
+          ended_at?: string | null
+          engines_audited?: number | null
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+          trust_updates?: number | null
+          validations?: number | null
+        }
+        Update: {
+          anomalies_found?: number | null
+          biases_found?: number | null
+          ended_at?: string | null
+          engines_audited?: number | null
+          error?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+          trust_updates?: number | null
+          validations?: number | null
+        }
+        Relationships: []
+      }
+      agal_audit_steps: {
+        Row: {
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          run_id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id: string
+          status?: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agal_audit_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agal_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agal_bias_signals: {
+        Row: {
+          bias_type: string
+          detected_at: string
+          engine_key: string
+          evidence: Json
+          id: string
+          notes: string | null
+          resolved_at: string | null
+          severity: number | null
+        }
+        Insert: {
+          bias_type: string
+          detected_at?: string
+          engine_key: string
+          evidence?: Json
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: number | null
+        }
+        Update: {
+          bias_type?: string
+          detected_at?: string
+          engine_key?: string
+          evidence?: Json
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: number | null
+        }
+        Relationships: []
+      }
+      agal_compliance_checks: {
+        Row: {
+          checked_at: string
+          domain: string
+          evidence: Json
+          id: string
+          rule: string
+          severity: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          domain: string
+          evidence?: Json
+          id?: string
+          rule: string
+          severity?: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          domain?: string
+          evidence?: Json
+          id?: string
+          rule?: string
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      agal_constitution: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          locked: boolean
+          principle: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          locked?: boolean
+          principle: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          locked?: boolean
+          principle?: string
+        }
+        Relationships: []
+      }
+      agal_decision_ledger: {
+        Row: {
+          actual_result: Json | null
+          business_impact_score: number | null
+          confidence: number | null
+          decision_type: string
+          engine_key: string
+          engine_version: string | null
+          expected_result: Json
+          financial_impact_cents: number | null
+          id: string
+          inputs: Json
+          meta: Json
+          outputs: Json
+          prev_hash: string | null
+          prompt: string | null
+          reasoning: string | null
+          recorded_at: string
+          row_hash: string
+          sequence_no: number
+          subject: string | null
+        }
+        Insert: {
+          actual_result?: Json | null
+          business_impact_score?: number | null
+          confidence?: number | null
+          decision_type: string
+          engine_key: string
+          engine_version?: string | null
+          expected_result?: Json
+          financial_impact_cents?: number | null
+          id?: string
+          inputs?: Json
+          meta?: Json
+          outputs?: Json
+          prev_hash?: string | null
+          prompt?: string | null
+          reasoning?: string | null
+          recorded_at?: string
+          row_hash: string
+          sequence_no?: number
+          subject?: string | null
+        }
+        Update: {
+          actual_result?: Json | null
+          business_impact_score?: number | null
+          confidence?: number | null
+          decision_type?: string
+          engine_key?: string
+          engine_version?: string | null
+          expected_result?: Json
+          financial_impact_cents?: number | null
+          id?: string
+          inputs?: Json
+          meta?: Json
+          outputs?: Json
+          prev_hash?: string | null
+          prompt?: string | null
+          reasoning?: string | null
+          recorded_at?: string
+          row_hash?: string
+          sequence_no?: number
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      agal_executive_reports: {
+        Row: {
+          bias_summary: Json
+          biggest_errors: Json
+          biggest_successes: Json
+          cadence: string
+          created_at: string
+          id: string
+          least_reliable_ai: string | null
+          most_reliable_ai: string | null
+          period_end: string
+          period_start: string
+          recommendations: Json
+          risk_summary: Json
+          summary: string | null
+          trust_trend: Json
+        }
+        Insert: {
+          bias_summary?: Json
+          biggest_errors?: Json
+          biggest_successes?: Json
+          cadence: string
+          created_at?: string
+          id?: string
+          least_reliable_ai?: string | null
+          most_reliable_ai?: string | null
+          period_end: string
+          period_start: string
+          recommendations?: Json
+          risk_summary?: Json
+          summary?: string | null
+          trust_trend?: Json
+        }
+        Update: {
+          bias_summary?: Json
+          biggest_errors?: Json
+          biggest_successes?: Json
+          cadence?: string
+          created_at?: string
+          id?: string
+          least_reliable_ai?: string | null
+          most_reliable_ai?: string | null
+          period_end?: string
+          period_start?: string
+          recommendations?: Json
+          risk_summary?: Json
+          summary?: string | null
+          trust_trend?: Json
+        }
+        Relationships: []
+      }
+      agal_forensic_investigations: {
+        Row: {
+          cascade: Json
+          first_bad_assumption: string | null
+          first_bad_decision: string | null
+          frozen_at: string
+          id: string
+          incident_id: string | null
+          lessons_learned: string | null
+          timeline: Json
+        }
+        Insert: {
+          cascade?: Json
+          first_bad_assumption?: string | null
+          first_bad_decision?: string | null
+          frozen_at?: string
+          id?: string
+          incident_id?: string | null
+          lessons_learned?: string | null
+          timeline?: Json
+        }
+        Update: {
+          cascade?: Json
+          first_bad_assumption?: string | null
+          first_bad_decision?: string | null
+          frozen_at?: string
+          id?: string
+          incident_id?: string | null
+          lessons_learned?: string | null
+          timeline?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agal_forensic_investigations_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "agal_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agal_incidents: {
+        Row: {
+          closed_at: string | null
+          estimated_revenue_loss_cents: number | null
+          id: string
+          meta: Json
+          opened_at: string
+          severity: string
+          status: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          closed_at?: string | null
+          estimated_revenue_loss_cents?: number | null
+          id?: string
+          meta?: Json
+          opened_at?: string
+          severity?: string
+          status?: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          closed_at?: string | null
+          estimated_revenue_loss_cents?: number | null
+          id?: string
+          meta?: Json
+          opened_at?: string
+          severity?: string
+          status?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      agal_reasoning_audits: {
+        Row: {
+          alternatives_considered: boolean | null
+          created_at: string
+          decision_ledger_id: string | null
+          engine_key: string
+          evidence_score: number | null
+          id: string
+          jumped_to_conclusion: boolean | null
+          logic_score: number | null
+          notes: string | null
+          overall_score: number | null
+          uncertainty_score: number | null
+        }
+        Insert: {
+          alternatives_considered?: boolean | null
+          created_at?: string
+          decision_ledger_id?: string | null
+          engine_key: string
+          evidence_score?: number | null
+          id?: string
+          jumped_to_conclusion?: boolean | null
+          logic_score?: number | null
+          notes?: string | null
+          overall_score?: number | null
+          uncertainty_score?: number | null
+        }
+        Update: {
+          alternatives_considered?: boolean | null
+          created_at?: string
+          decision_ledger_id?: string | null
+          engine_key?: string
+          evidence_score?: number | null
+          id?: string
+          jumped_to_conclusion?: boolean | null
+          logic_score?: number | null
+          notes?: string | null
+          overall_score?: number | null
+          uncertainty_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agal_reasoning_audits_decision_ledger_id_fkey"
+            columns: ["decision_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "agal_decision_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agal_risk_assessments: {
+        Row: {
+          action_ref: string | null
+          brand_risk: number | null
+          created_at: string
+          customer_risk: number | null
+          engine_key: string
+          financial_risk: number | null
+          id: string
+          legal_risk: number | null
+          operational_risk: number | null
+          overall_risk: number | null
+          rationale: string | null
+          technical_risk: number | null
+          verdict: string | null
+        }
+        Insert: {
+          action_ref?: string | null
+          brand_risk?: number | null
+          created_at?: string
+          customer_risk?: number | null
+          engine_key: string
+          financial_risk?: number | null
+          id?: string
+          legal_risk?: number | null
+          operational_risk?: number | null
+          overall_risk?: number | null
+          rationale?: string | null
+          technical_risk?: number | null
+          verdict?: string | null
+        }
+        Update: {
+          action_ref?: string | null
+          brand_risk?: number | null
+          created_at?: string
+          customer_risk?: number | null
+          engine_key?: string
+          financial_risk?: number | null
+          id?: string
+          legal_risk?: number | null
+          operational_risk?: number | null
+          overall_risk?: number | null
+          rationale?: string | null
+          technical_risk?: number | null
+          verdict?: string | null
+        }
+        Relationships: []
+      }
+      agal_root_cause_validations: {
+        Row: {
+          agreement: boolean | null
+          claim: string
+          confidence: number | null
+          created_at: string
+          evidence: Json
+          id: string
+          independent_verdict: string | null
+          upstream_engine: string
+        }
+        Insert: {
+          agreement?: boolean | null
+          claim: string
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          independent_verdict?: string | null
+          upstream_engine: string
+        }
+        Update: {
+          agreement?: boolean | null
+          claim?: string
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          independent_verdict?: string | null
+          upstream_engine?: string
+        }
+        Relationships: []
+      }
+      agal_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      agal_trust_scores: {
+        Row: {
+          bias_score: number | null
+          business_impact_score: number | null
+          calibration_score: number | null
+          created_at: string
+          details: Json
+          engine_key: string
+          id: string
+          learning_score: number | null
+          overall_trust: number | null
+          period_end: string
+          period_start: string
+          prediction_score: number | null
+          reasoning_score: number | null
+          reliability_score: number | null
+          sample_size: number | null
+          stability_score: number | null
+          transparency_score: number | null
+        }
+        Insert: {
+          bias_score?: number | null
+          business_impact_score?: number | null
+          calibration_score?: number | null
+          created_at?: string
+          details?: Json
+          engine_key: string
+          id?: string
+          learning_score?: number | null
+          overall_trust?: number | null
+          period_end: string
+          period_start: string
+          prediction_score?: number | null
+          reasoning_score?: number | null
+          reliability_score?: number | null
+          sample_size?: number | null
+          stability_score?: number | null
+          transparency_score?: number | null
+        }
+        Update: {
+          bias_score?: number | null
+          business_impact_score?: number | null
+          calibration_score?: number | null
+          created_at?: string
+          details?: Json
+          engine_key?: string
+          id?: string
+          learning_score?: number | null
+          overall_trust?: number | null
+          period_end?: string
+          period_start?: string
+          prediction_score?: number | null
+          reasoning_score?: number | null
+          reliability_score?: number | null
+          sample_size?: number | null
+          stability_score?: number | null
+          transparency_score?: number | null
+        }
+        Relationships: []
+      }
+      agal_truth_validations: {
+        Row: {
+          actual: number | null
+          calibration_score: number | null
+          created_at: string
+          decision_ledger_id: string | null
+          engine_key: string
+          error_abs: number | null
+          error_pct: number | null
+          id: string
+          metric: string
+          predicted: number | null
+          verdict: string | null
+        }
+        Insert: {
+          actual?: number | null
+          calibration_score?: number | null
+          created_at?: string
+          decision_ledger_id?: string | null
+          engine_key: string
+          error_abs?: number | null
+          error_pct?: number | null
+          id?: string
+          metric: string
+          predicted?: number | null
+          verdict?: string | null
+        }
+        Update: {
+          actual?: number | null
+          calibration_score?: number | null
+          created_at?: string
+          decision_ledger_id?: string | null
+          engine_key?: string
+          error_abs?: number | null
+          error_pct?: number | null
+          id?: string
+          metric?: string
+          predicted?: number | null
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agal_truth_validations_decision_ledger_id_fkey"
+            columns: ["decision_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "agal_decision_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agal_version_snapshots: {
+        Row: {
+          active: boolean
+          artifact_kind: string
+          artifact_ref: string
+          created_at: string
+          engine_key: string
+          hash: string | null
+          id: string
+          payload: Json
+          version_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          artifact_kind: string
+          artifact_ref: string
+          created_at?: string
+          engine_key: string
+          hash?: string | null
+          id?: string
+          payload: Json
+          version_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          artifact_kind?: string
+          artifact_ref?: string
+          created_at?: string
+          engine_key?: string
+          hash?: string | null
+          id?: string
+          payload?: Json
+          version_label?: string | null
+        }
+        Relationships: []
+      }
       agd_briefings: {
         Row: {
           best_creative: Json | null

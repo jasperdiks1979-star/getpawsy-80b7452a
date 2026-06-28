@@ -552,6 +552,7 @@ const RevenueBrainPage = lazyWithRetry(() => import("./pages/admin/RevenueBrainP
 const ArieCommandCenterPage = lazyWithRetry(() => import("./pages/admin/ArieCommandCenterPage"));
 const GrowthDirectorPage = lazyWithRetry(() => import("./pages/admin/GrowthDirectorPage"));
 const MetaIntelligencePage = lazyWithRetry(() => import("./pages/admin/MetaIntelligencePage"));
+const GovernancePage = lazyWithRetry(() => import("./pages/admin/GovernancePage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
@@ -1717,6 +1718,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <MetaIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="governance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GovernancePage />
                                 </Suspense>
                               }
                             />
