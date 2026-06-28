@@ -11,9 +11,9 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const HALF_LIFE_DAYS = 21;             // decay
-const MIN_SAMPLE = 5;                  // per dimension/value
+const MIN_SAMPLE = 2;                  // per dimension/value (early-stage)
 const EXPLORATION_RATIO = 0.2;         // 80/20
-const WINDOW_DAYS = 60;
+const WINDOW_DAYS = 365;
 
 type Row = Record<string, any>;
 
@@ -95,7 +95,7 @@ async function run(supabase: any, execute: boolean) {
   for (const q of queue) {
     const perf = perfMap.get(String(q.pinterest_pin_id));
     if (!perf) continue;
-    if ((perf.impressions ?? 0) < 10) continue;
+    if ((perf.impressions ?? 0) < 1) continue;
     evaluated++;
     const ageDays = (now - new Date(q.posted_at).getTime()) / 86_400_000;
     const w = decay(ageDays);
