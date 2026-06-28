@@ -122,6 +122,8 @@ export default function PinterestHealthPage() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [growth, setGrowth] = useState<any | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
+  const [exp, setExp] = useState<any | null>(null);
+  const [expLoading, setExpLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -220,10 +222,26 @@ export default function PinterestHealthPage() {
     }
   }
 
+  async function refreshExperiments(execute = false) {
+    setExpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-experiment-engine",
+        execute ? { body: {} } : { method: "GET" as any },
+      );
+      if (!error && data?.ok) setExp(data.snapshot);
+    } catch (_) {
+      /* silent — surfaced in panel */
+    } finally {
+      setExpLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
     refreshGrowth(false);
+    refreshExperiments(false);
     loadConnection();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
@@ -234,6 +252,7 @@ export default function PinterestHealthPage() {
       refresh(false);
       refreshWatchdog(false);
       refreshGrowth(false);
+      refreshExperiments(false);
     }, 60_000);
     return () => clearInterval(t);
   }, []);
@@ -765,6 +784,83 @@ export default function PinterestHealthPage() {
             {growth.winnerMultiplier.product_slug && (
               <div className="mt-3 text-xs text-muted-foreground">
                 Winner multiplier candidate: <span className="font-mono">{growth.winnerMultiplier.product_slug}</span> · requested {growth.winnerMultiplier.variants_requested} variants · triggered: {String(growth.winnerMultiplier.triggered)}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Pinterest Experiment Engine</h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={expLoading} onClick={() => refreshExperiments(false)}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${expLoading ? "animate-spin" : ""}`} /> Snapshot
+            </Button>
+            <Button size="sm" disabled={expLoading} onClick={() => refreshExperiments(true)}>
+              <Play className="h-4 w-4 mr-1" /> Run cycle
+            </Button>
+          </div>
+        </div>
+        {!exp ? (
+          <p className="text-sm text-muted-foreground">No experiment snapshot yet.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              <Stat label="Active experiments" value={exp.active} />
+              <Stat label="Promoted winners" value={exp.winners.length} />
+              <Stat label="Retired losers" value={exp.losers.length} />
+              <Stat label="Avg lift" value={`${exp.avgLiftPct}%`} />
+              <Stat label="Confidence target" value={`${exp.avgConfidencePct}%`} />
+              <Stat label="Min sample / arm" value={exp.thresholds.minImpressionsPerArm} />
+              <Stat label="p-value cutoff" value={exp.thresholds.pValueThreshold} />
+              <Stat label="Expected annual impact" value={`${exp.expectedAnnualImpactPct}%`} />
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <h3 className="font-semibold mb-1">Winning variants</h3>
+                {exp.winners.length === 0 ? (
+                  <p className="text-muted-foreground">No winners yet — gathering evidence.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {exp.winners.slice(0, 8).map((w: any) => (
+                      <li key={w.experiment_id} className="flex justify-between border-b py-1 gap-2">
+                        <span className="truncate">{w.headline ?? w.pin_id}</span>
+                        <span>{(w.ctr * 100).toFixed(2)}% · {w.impressions.toLocaleString()} imp</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Retired losers</h3>
+                {exp.losers.length === 0 ? (
+                  <p className="text-muted-foreground">No losers retired yet.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {exp.losers.slice(0, 8).map((l: any) => (
+                      <li key={l.experiment_id} className="flex justify-between border-b py-1 gap-2">
+                        <span className="truncate">{l.headline ?? l.pin_id}</span>
+                        <span>{(l.ctr * 100).toFixed(2)}% · {l.impressions.toLocaleString()} imp</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            {exp.history.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-1 text-xs">Experiment history</h3>
+                <ul className="space-y-1 text-xs">
+                  {exp.history.slice(0, 10).map((h: any, i: number) => (
+                    <li key={i} className="border-b py-1">
+                      <div className="flex justify-between gap-2">
+                        <span className="truncate">{h.rationale}</span>
+                        <span className="text-muted-foreground">{new Date(h.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </>
