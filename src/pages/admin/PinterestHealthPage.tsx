@@ -1144,6 +1144,7 @@ export default function PinterestHealthPage() {
       <CollectiveIntelligencePanel />
       <EvidenceGovernorPanel />
       <AdaptiveLearningGovernorPanel />
+      <ExplainableAIPanel />
     </div>
   );
 }
@@ -2004,6 +2005,159 @@ function AdaptiveLearningGovernorPanel() {
           </ul>
         </div>
       </div>
+    </Card>
+  );
+}
+
+function ExplainableAIPanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pcie2-xai-engine", { body: {} , method: "GET" });
+    if (data) setSnap(data);
+    setLoading(false);
+  }
+  async function run() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pcie2-xai-engine", { body: { action: "run" } });
+    if (data) setSnap(data);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const ev = snap?.latest_evaluation ?? {};
+  const feed: any[] = snap?.feed ?? [];
+  const top: any[] = snap?.top_decisions ?? [];
+  const worst: any[] = snap?.worst_decisions ?? [];
+
+  const pct = (v: any, digits = 0) =>
+    v == null || Number.isNaN(Number(v)) ? "—" : `${(Number(v) * 100).toFixed(digits)}%`;
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Explainable AI (XAI)</h2>
+          <p className="text-xs text-muted-foreground">
+            Every optimization with reason codes, confidence, evidence, alternatives, and plain-English rationale.
+            Nightly self-evaluation grades the AI on accuracy and explainability.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" onClick={run} disabled={loading}>Run self-eval</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <Stat label="Decision Quality" value={ev.decision_quality_score != null ? `${ev.decision_quality_score}/100` : "—"} />
+        <Stat label="Prediction Accuracy" value={pct(ev.prediction_accuracy, 1)} />
+        <Stat label="Explainability" value={pct(ev.explainability_score, 0)} />
+        <Stat label="Confidence Calibration" value={pct(ev.confidence_calibration, 0)} />
+        <Stat label="Evidence Completeness" value={pct(ev.evidence_completeness, 0)} />
+        <Stat label="Decision Traceability" value={pct(ev.decision_traceability, 0)} />
+        <Stat label="Missing Evidence" value={pct(ev.missing_evidence_pct, 0)} />
+        <Stat label="Decisions (14d)" value={String(ev.total_decisions ?? feed.length ?? 0)} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">Decision feed</div>
+          <ul className="space-y-1 max-h-96 overflow-y-auto pr-1">
+            {feed.map((d) => (
+              <li
+                key={d.id}
+                className="border rounded p-2 text-xs cursor-pointer hover:bg-muted/40"
+                onClick={() => setSelected(d)}
+              >
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{d.summary}</span>
+                  <span className="text-muted-foreground whitespace-nowrap">
+                    {d.confidence != null ? `${Math.round(Number(d.confidence) * 100)}%` : "—"}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  {d.source_engine} · {d.decision_type}
+                  {d.expected_lift != null && <> · lift {(Number(d.expected_lift) * 100).toFixed(1)}%</>}
+                  {d.status && <> · <span className={
+                    d.status === "validated" ? "text-emerald-600"
+                    : d.status === "missed" ? "text-rose-600"
+                    : d.status === "neutral" ? "text-muted-foreground"
+                    : ""
+                  }>{d.status}</span></>}
+                </div>
+                {Array.isArray(d.reason_codes) && d.reason_codes.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {d.reason_codes.slice(0, 5).map((c: string) => (
+                      <span key={c} className="px-1.5 py-0.5 rounded bg-muted text-[10px]">{c}</span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+            {feed.length === 0 && <li className="text-xs text-muted-foreground">No decisions yet — engines will start populating the feed.</li>}
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <div className="font-medium text-sm mb-1">Top decisions (by revenue impact)</div>
+            <ul className="space-y-1 text-xs">
+              {top.map((d) => (
+                <li key={d.id} className="border rounded p-2">
+                  <div className="font-medium truncate">{d.summary}</div>
+                  <div className="text-muted-foreground">
+                    +${(Number((d.outcome?.revenue_impact_cents ?? 0)) / 100).toFixed(2)} ·
+                    actual lift {d.outcome?.actual_lift != null ? `${(Number(d.outcome.actual_lift) * 100).toFixed(1)}%` : "—"}
+                  </div>
+                </li>
+              ))}
+              {top.length === 0 && <li className="text-muted-foreground">Waiting on outcomes.</li>}
+            </ul>
+          </div>
+          <div>
+            <div className="font-medium text-sm mb-1">Worst decisions</div>
+            <ul className="space-y-1 text-xs">
+              {worst.map((d) => (
+                <li key={d.id} className="border rounded p-2">
+                  <div className="font-medium truncate">{d.summary}</div>
+                  <div className="text-muted-foreground">
+                    ${(Number((d.outcome?.revenue_impact_cents ?? 0)) / 100).toFixed(2)} ·
+                    actual lift {d.outcome?.actual_lift != null ? `${(Number(d.outcome.actual_lift) * 100).toFixed(1)}%` : "—"}
+                  </div>
+                </li>
+              ))}
+              {worst.length === 0 && <li className="text-muted-foreground">None.</li>}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {selected && (
+        <div className="border rounded p-3 bg-muted/30 text-xs space-y-2">
+          <div className="flex justify-between">
+            <div className="font-medium">{selected.summary}</div>
+            <button className="text-muted-foreground" onClick={() => setSelected(null)}>close</button>
+          </div>
+          <div className="text-sm">{selected.plain_english}</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Stat label="Confidence" value={selected.confidence != null ? `${Math.round(Number(selected.confidence) * 100)}%` : "—"} />
+            <Stat label="Expected lift" value={selected.expected_lift != null ? `${(Number(selected.expected_lift) * 100).toFixed(1)}%` : "—"} />
+            <Stat label="Risk" value={selected.risk != null ? Number(selected.risk).toFixed(2) : "—"} />
+            <Stat label="Explainability" value={selected.explainability_score != null ? `${Math.round(Number(selected.explainability_score) * 100)}%` : "—"} />
+          </div>
+          {Array.isArray(selected.reason_codes) && selected.reason_codes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {selected.reason_codes.map((c: string) => (
+                <span key={c} className="px-1.5 py-0.5 rounded bg-background border text-[10px]">{c}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

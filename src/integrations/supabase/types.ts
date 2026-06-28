@@ -23706,6 +23706,218 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_xai_decisions: {
+        Row: {
+          alternatives: Json
+          confidence: number | null
+          counterfactual: Json
+          created_at: string
+          decision_age_days: number | null
+          decision_type: string
+          dedupe_key: string | null
+          estimated_downside: number | null
+          evidence: Json
+          evidence_freshness_days: number | null
+          evidence_sample_size: number | null
+          evidence_strength: number | null
+          expected_lift: number | null
+          expected_metric: string | null
+          explainability_score: number | null
+          id: string
+          linked_decision_id: string | null
+          plain_english: string
+          reason_codes: string[]
+          risk: number | null
+          source_engine: string
+          status: string
+          subject_id: string | null
+          subject_kind: string | null
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          alternatives?: Json
+          confidence?: number | null
+          counterfactual?: Json
+          created_at?: string
+          decision_age_days?: number | null
+          decision_type: string
+          dedupe_key?: string | null
+          estimated_downside?: number | null
+          evidence?: Json
+          evidence_freshness_days?: number | null
+          evidence_sample_size?: number | null
+          evidence_strength?: number | null
+          expected_lift?: number | null
+          expected_metric?: string | null
+          explainability_score?: number | null
+          id?: string
+          linked_decision_id?: string | null
+          plain_english: string
+          reason_codes?: string[]
+          risk?: number | null
+          source_engine: string
+          status?: string
+          subject_id?: string | null
+          subject_kind?: string | null
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          alternatives?: Json
+          confidence?: number | null
+          counterfactual?: Json
+          created_at?: string
+          decision_age_days?: number | null
+          decision_type?: string
+          dedupe_key?: string | null
+          estimated_downside?: number | null
+          evidence?: Json
+          evidence_freshness_days?: number | null
+          evidence_sample_size?: number | null
+          evidence_strength?: number | null
+          expected_lift?: number | null
+          expected_metric?: string | null
+          explainability_score?: number | null
+          id?: string
+          linked_decision_id?: string | null
+          plain_english?: string
+          reason_codes?: string[]
+          risk?: number | null
+          source_engine?: string
+          status?: string
+          subject_id?: string | null
+          subject_kind?: string | null
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pcie2_xai_evaluations: {
+        Row: {
+          avg_prediction_error: number | null
+          best_decision_id: string | null
+          confidence_calibration: number | null
+          correct_predictions: number | null
+          created_at: string
+          decision_quality_score: number | null
+          decision_traceability: number | null
+          evaluated_at: string
+          evaluated_decisions: number | null
+          evidence_completeness: number | null
+          explainability_score: number | null
+          highest_roi_decision_id: string | null
+          id: string
+          missing_evidence_pct: number | null
+          most_expensive_mistake_id: string | null
+          prediction_accuracy: number | null
+          summary: Json
+          total_decisions: number | null
+          window_days: number
+          worst_decision_id: string | null
+        }
+        Insert: {
+          avg_prediction_error?: number | null
+          best_decision_id?: string | null
+          confidence_calibration?: number | null
+          correct_predictions?: number | null
+          created_at?: string
+          decision_quality_score?: number | null
+          decision_traceability?: number | null
+          evaluated_at?: string
+          evaluated_decisions?: number | null
+          evidence_completeness?: number | null
+          explainability_score?: number | null
+          highest_roi_decision_id?: string | null
+          id?: string
+          missing_evidence_pct?: number | null
+          most_expensive_mistake_id?: string | null
+          prediction_accuracy?: number | null
+          summary?: Json
+          total_decisions?: number | null
+          window_days?: number
+          worst_decision_id?: string | null
+        }
+        Update: {
+          avg_prediction_error?: number | null
+          best_decision_id?: string | null
+          confidence_calibration?: number | null
+          correct_predictions?: number | null
+          created_at?: string
+          decision_quality_score?: number | null
+          decision_traceability?: number | null
+          evaluated_at?: string
+          evaluated_decisions?: number | null
+          evidence_completeness?: number | null
+          explainability_score?: number | null
+          highest_roi_decision_id?: string | null
+          id?: string
+          missing_evidence_pct?: number | null
+          most_expensive_mistake_id?: string | null
+          prediction_accuracy?: number | null
+          summary?: Json
+          total_decisions?: number | null
+          window_days?: number
+          worst_decision_id?: string | null
+        }
+        Relationships: []
+      }
+      pcie2_xai_outcomes: {
+        Row: {
+          actual_lift: number | null
+          created_at: string
+          ctr_impact: number | null
+          decision_id: string
+          id: string
+          measured_at: string
+          notes: string | null
+          prediction_error: number | null
+          purchase_impact: number | null
+          revenue_impact_cents: number | null
+          save_impact: number | null
+          was_correct: boolean | null
+          window_days: number
+        }
+        Insert: {
+          actual_lift?: number | null
+          created_at?: string
+          ctr_impact?: number | null
+          decision_id: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          prediction_error?: number | null
+          purchase_impact?: number | null
+          revenue_impact_cents?: number | null
+          save_impact?: number | null
+          was_correct?: boolean | null
+          window_days?: number
+        }
+        Update: {
+          actual_lift?: number | null
+          created_at?: string
+          ctr_impact?: number | null
+          decision_id?: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          prediction_error?: number | null
+          purchase_impact?: number | null
+          revenue_impact_cents?: number | null
+          save_impact?: number | null
+          was_correct?: boolean | null
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_xai_outcomes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_xai_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdp_health_audits: {
         Row: {
           audited_at: string
