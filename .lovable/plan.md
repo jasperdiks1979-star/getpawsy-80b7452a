@@ -1,85 +1,122 @@
-## Self-Healing Intelligence Layer (SHIL) — v1
+# ARIE — Autonomous Revenue Intelligence Engine
 
-**Architectural rule (permanent):** every critical subsystem registers a `probe → diagnose → recover → validate → learn` contract. SHIL is the single brain that runs that contract on a 5-minute heartbeat. It does **not** replace Guardian, Commander, ACOS, OIE, ODE, Production Validation or PCIE2 health surfaces — it consumes them and acts on top.
+ARIE is a large, multi-phase system. This plan covers **Phase 1 (Foundation)** — the minimum that gives the AI eyes (full funnel), ears (validation), hands (safe auto-repair) and a face (Revenue Command Center). Phases 2–4 are scoped at the end so we can ship value now without boil-the-ocean risk.
 
----
+## Scope of Phase 1
 
-### What's new (kept minimal, reusing existing telemetry)
+In:
+- End-to-end funnel event store + attribution stitching
+- Cross-source validator (GA4 ↔ DB ↔ Pinterest ↔ TikTok)
+- Conversion drop detector + incident generation
+- Hourly synthetic visitor robots (Pinterest / TikTok / Organic on mobile + desktop)
+- JS / API health collector (reusing existing `frontend_error_logs`)
+- Auto-Fix engine for **safe categories only** (metadata, canonical, UTM repair, event dedup, broken image fallback) with versioning + rollback
+- Revenue Command Center at `/admin/revenue-command`
 
-#### 1. Database — 6 new tables (prefix `shil_`)
-| table | purpose |
-|---|---|
-| `shil_subsystems` | registry of monitored components: name, type, probe ref, severity, owner, current status |
-| `shil_incidents` | every detected anomaly: subsystem, signature_id, severity, evidence_jsonb, detected_at, recovered_at, recovery_id, mttd_seconds, mttr_seconds, status |
-| `shil_signatures` | learned anomaly fingerprints (hashable JSON of the symptom) + known root cause + confidence |
-| `shil_playbooks` | named safe recovery actions (e.g. `restart_pinterest_worker`, `requeue_missing_pin_image_url`, `split_oversize_creative_job`) with required-evidence preconditions and a code-side handler key |
-| `shil_recoveries` | every recovery attempt: incident_id, playbook_id, started_at, finished_at, outcome, before_state, after_state, validation_passed |
-| `shil_metrics_daily` | rollup: MTTD, MTTR, auto-recovery rate, recurring-incident rate, false-positive rate, availability % per subsystem |
+Out (deferred):
+- Session replay (rrweb pipeline) — large infra, Phase 2
+- Data-driven multi-touch attribution model — Phase 3
+- Self-learning confidence tuning loop — Phase 4
+- Any auto-edit of payments, pricing, inventory, checkout, auth, schema (hard-blocked by safety policy)
 
-All with RLS: admin SELECT, service_role ALL. GRANTs explicit per cloud rule.
+## Database (new tables, all admin-only RLS + service_role)
 
-#### 2. Edge functions (3, reuse pattern)
-- **`self-healing-orchestrator`** (cron every 5 min): runs all registered probes in parallel, classifies anomalies via `shil_signatures`, opens incidents, dispatches safe playbooks to the recoverer, updates metrics rollup.
-- **`self-healing-recoverer`**: executes a single named playbook with strict allow-list mapping → existing edge functions (e.g. `pinterest-cron-worker`, `pcie2-publish-assembler`, `pinterest-recovery-orchestrator`, `pinterest-creative-factory continuous_run`). Never invents actions; never publishes; never duplicates work. Captures before/after state.
-- **`self-healing-validator`**: after a recovery, re-runs the original probe + a 2nd-tier validation (Production Validation hook where relevant) and stamps `validation_passed`. If fail, escalates to a notification row in `guardian_notification_queue` (reuses existing).
+```text
+arie_funnel_events          one row per stage transition; session_id, visitor_id, stage,
+                            ts, product_id, source, campaign, creative_id, pin_id,
+                            tiktok_video_id, device, country, value_cents, meta jsonb
+arie_sessions               denormalized journey: first_touch, last_touch, stages_reached[],
+                            time_to_purchase_ms, revenue_cents, attribution jsonb
+arie_validation_runs        source pair (ga4_vs_db, pin_vs_db, ttk_vs_db), window,
+                            expected, actual, drift_pct, severity, status
+arie_incidents              id, type, severity, confidence, affected_revenue_cents,
+                            affected_sessions, root_cause, suggested_repair,
+                            auto_repair_status, rollback_token, opened_at, resolved_at
+arie_repairs                incident_id, category, before jsonb, after jsonb,
+                            applied_by, confidence, rollback_available, rolled_back_at
+arie_synthetic_runs         persona, device, browser, route_path, step_results jsonb,
+                            failure_stage, total_ms, status
+arie_health_snapshots       hourly: funnel_conversion, drop_pcts jsonb, pixel_health,
+                            api_health, tracking_health, lost_revenue_estimate_cents
+arie_settings               feature_flags jsonb (auto_repair_enabled per category),
+                            confidence_threshold, alert_channels
+```
 
-#### 3. Initial probe set (seeded — reuses existing tables)
-| probe | source of truth (no duplication) |
-|---|---|
-| Creative Director CPU/timeout | `pinterest_creative_factory_jobs` (stalled > 10 min) |
-| Pinterest Queue stall | `pcie2_publish_queue` (ready, no progress in 30 min) |
-| Missing `pin_image_url` | `pcie2_publish_queue` count where `status='queued' AND pin_image_url IS NULL` |
-| OAuth expired | `pinterest_connection` (token_expires_at < now()+1h) |
-| Edge function error spikes | `frontend_error_logs` + `pinterest_pipeline_failures` |
-| Cron stalled | `cron_job_logs` last_success > expected interval × 3 |
-| Checkout funnel collapse | `checkout_funnel_events` (begin_checkout > 0 AND complete_payment == 0 over 24h) |
-| Stripe sessions expiring | `orders` (status='expired' AND no payment_intent_id) trending |
-| Storage / media missing | `cj_media_asset_registry` 404 sample |
-| Analytics ingestion stale | `analytics_funnel_waterfall` last write > 30 min |
-| Worker heartbeats | `cinematic_worker_heartbeats`, `render_worker_heartbeats` |
+All tables: admin SELECT, service_role ALL. No `anon` grants.
 
-#### 4. Seeded playbooks (safe by default)
-- `restart_pinterest_cron_worker` → invoke `pinterest-cron-worker`
-- `replenish_creative_factory` → invoke `pinterest-creative-factory` action `continuous_run`
-- `requeue_pcie2_missing_images` → invoke `pcie2-publish-assembler` refresh
-- `refresh_pinterest_oauth` → invoke `pinterest-recovery-orchestrator`
-- `unpause_premium_engine_if_safe` → set `premium_engine_paused = false` only if creative inventory > threshold AND health green (mirrors prior incident pattern)
-- `escalate_only` → no action, emit notification (used for checkout, Stripe, security)
+## Edge functions (Deno)
 
-Everything destructive (publishing, paying, schema change, security) is **escalate_only**.
+```text
+arie-funnel-ingest          public POST from client tracker, validates + writes
+                            arie_funnel_events (dedup on event_id)
+arie-session-stitcher       cron 5m: rebuilds arie_sessions from raw events,
+                            resolves UTM/click-id → attribution
+arie-validator              cron 15m: cross-source counts (GA4 via existing
+                            ga4_daily_snapshots, pinterest_analytics_daily, orders),
+                            writes arie_validation_runs, opens incident on drift>15%
+arie-drop-detector          cron 30m: per-segment CVR z-score vs 14-day baseline,
+                            opens incident with confidence + estimated lost $
+arie-synthetic-robot        cron hourly: playwright-style fetch journeys (HTTP
+                            level, no headless browser) for 4 personas × 2 devices
+arie-auto-fix               invoked by incidents; dispatches to category handler
+                            (metadata/canonical/utm/dedup); writes arie_repairs with
+                            rollback token; respects safety allowlist + flag
+arie-health-rollup          cron hourly: writes arie_health_snapshots powering dashboard
+```
 
-#### 5. Frontend — one admin page
-`src/pages/admin/SelfHealingPage.tsx` at `/admin/self-healing`:
-- Live subsystem grid (color-coded), incidents feed, MTTD/MTTR cards, learned signatures table, playbook history, manual "Run probes now" button (admin-only edge invoke).
+Reuse: `gi_*`, `pinterest_analytics_daily`, `ga4_daily_snapshots`, `orders`, `checkout_funnel_events`, `frontend_error_logs`, `tracking_anomalies`, `monitoring_incidents` (do not duplicate — ARIE links by FK where overlap exists).
 
-Plus a single nav entry under existing Commander cluster — no duplicate dashboards.
+## Client tracker
 
-#### 6. Cron
-`pg_cron`: `*/5 * * * *` invoking `self-healing-orchestrator` with anon key + admin internal header (matches existing pattern used by other orchestrators).
+`src/lib/arie/tracker.ts` — thin wrapper that emits to `arie-funnel-ingest` for each stage already wired in the app (PDP view, gallery, variant, ATC, checkout steps, purchase). Sends `event_id` (uuid) so the validator can dedup against GA4. No new UI hooks needed beyond importing into existing components.
 
-#### 7. Implementation report
-Per project memory rule, write `public/admin-reports/ai-implementation/SHIL_v1_2026-06-28.{pdf,json}` and update `manifest.json`.
+## Revenue Command Center (`/admin/revenue-command`)
 
----
+Single page, tabbed:
 
-### Out of scope for v1 (called out explicitly)
-- No new analytics events. Canonical events untouched.
-- No new auth flows.
-- No autonomous Stripe / publishing / security actions — all `escalate_only` until proven safe.
-- No video generation, no per-user notifications channel (reuses `guardian_notification_queue`).
-- No replacement of Guardian, Commander, ACOS dashboards — SHIL links to them.
+```text
+Overview      live revenue, today vs 14d, lost-revenue estimate, open incidents count
+Funnel        Sankey of arie_health_snapshots latest drop_pcts; per-source filter
+Validation    table of arie_validation_runs (last 24h) with drift % and severity
+Incidents     open/resolved, root cause, repair status, manual rollback button
+Synthetic     last 24h of arie_synthetic_runs grid: persona × device, pass/fail
+Health        pixel/API/tracking gauges + sparkline from arie_health_snapshots
+Repairs       changelog of arie_repairs with diff preview + rollback
+```
 
-### Acceptance criteria
-1. `shil_subsystems` seeded with ≥ 15 components; all probes return a status row each cron tick.
-2. A synthetic injected failure (e.g. fake stalled creative job) opens an incident within ≤ 5 min and a recovery row within the same cycle.
-3. After recovery, validator stamps `validation_passed=true` and `mttr_seconds` recorded.
-4. Admin page renders live state with zero console errors.
-5. Implementation report PDF + JSON exist and `manifest.json` updated.
-6. No regressions in test suite (407 passed baseline holds).
+Reuse existing shadcn cards/tables; no new design tokens.
 
-### Technical notes
-- All new tables follow the `CREATE → GRANT → ENABLE RLS → POLICY` order.
-- All new edge functions: `verify_jwt = false` (default) with in-code admin-header check via `admin_secrets` for orchestrator/recoverer manual triggers; cron uses the standard cron header allow-list (matches existing orchestrators).
-- Recoverer maps playbook → handler via a static allow-list object — no dynamic eval, no user-supplied function names.
-- All probe outputs hashed into a deterministic `signature_hash` for learning + recurrence detection.
-- MTTR/MTTD computed from `detected_at` / `recovered_at` timestamps; rolled up nightly into `shil_metrics_daily`.
+## Safety contract (hard-coded in arie-auto-fix)
+
+```text
+ALLOWED_CATEGORIES = [
+  'metadata.title', 'metadata.description', 'metadata.canonical',
+  'metadata.og', 'metadata.pinterest_rich_pin', 'jsonld.product',
+  'utm.repair', 'tracking.event_dedup', 'image.fallback_alt'
+]
+FORBIDDEN_PATHS     = ['payments/*', 'pricing/*', 'inventory/*',
+                       'checkout/*', 'auth/*', 'schema/*']
+REQUIRES_FLAG       = arie_settings.feature_flags.auto_repair[category] === true
+MIN_CONFIDENCE      = 0.95
+```
+
+Any repair outside allowlist → incident only, no auto-action.
+
+## Phase 1 deliverables checklist
+
+```text
+[ ] 1 migration (8 tables + RLS + grants)
+[ ] 7 edge functions deployed
+[ ] 6 cron schedules wired via pg_cron + pg_net
+[ ] src/lib/arie/tracker.ts + wired into existing funnel components
+[ ] /admin/revenue-command page + route
+[ ] arie_settings seeded with auto_repair all-false (opt-in per category)
+```
+
+## Deferred phases
+
+- **Phase 2** — rrweb session replay pipeline, rage/dead-click detection, heatmap aggregation.
+- **Phase 3** — data-driven attribution model (Shapley) layered on `arie_sessions`.
+- **Phase 4** — confidence self-tuning: every applied repair feeds a Bayesian update on category confidence; false positives lower auto-fix appetite.
+
+Approve to start Phase 1, or tell me to cut/reorder scope.

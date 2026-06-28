@@ -4763,6 +4763,377 @@ export type Database = {
         }
         Relationships: []
       }
+      arie_funnel_events: {
+        Row: {
+          campaign: string | null
+          country: string | null
+          created_at: string
+          creative_id: string | null
+          currency: string | null
+          device: string | null
+          event_id: string | null
+          id: string
+          meta: Json
+          pin_id: string | null
+          product_id: string | null
+          session_id: string
+          source: string | null
+          stage: string
+          tiktok_video_id: string | null
+          ts: string
+          value_cents: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          currency?: string | null
+          device?: string | null
+          event_id?: string | null
+          id?: string
+          meta?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          session_id: string
+          source?: string | null
+          stage: string
+          tiktok_video_id?: string | null
+          ts?: string
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          currency?: string | null
+          device?: string | null
+          event_id?: string | null
+          id?: string
+          meta?: Json
+          pin_id?: string | null
+          product_id?: string | null
+          session_id?: string
+          source?: string | null
+          stage?: string
+          tiktok_video_id?: string | null
+          ts?: string
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      arie_health_snapshots: {
+        Row: {
+          api_health: number | null
+          details: Json
+          drop_pcts: Json
+          funnel_conversion: number | null
+          id: string
+          lost_revenue_estimate_cents: number
+          pixel_health: number | null
+          tracking_health: number | null
+          ts: string
+        }
+        Insert: {
+          api_health?: number | null
+          details?: Json
+          drop_pcts?: Json
+          funnel_conversion?: number | null
+          id?: string
+          lost_revenue_estimate_cents?: number
+          pixel_health?: number | null
+          tracking_health?: number | null
+          ts?: string
+        }
+        Update: {
+          api_health?: number | null
+          details?: Json
+          drop_pcts?: Json
+          funnel_conversion?: number | null
+          id?: string
+          lost_revenue_estimate_cents?: number
+          pixel_health?: number | null
+          tracking_health?: number | null
+          ts?: string
+        }
+        Relationships: []
+      }
+      arie_incidents: {
+        Row: {
+          affected_revenue_cents: number
+          affected_sessions: number
+          auto_repair_status: string
+          confidence: number
+          details: Json
+          id: string
+          notes: string | null
+          opened_at: string
+          resolved_at: string | null
+          rollback_token: string | null
+          root_cause: string | null
+          segment: Json
+          severity: string
+          source_pair: string | null
+          suggested_repair: string | null
+          type: string
+        }
+        Insert: {
+          affected_revenue_cents?: number
+          affected_sessions?: number
+          auto_repair_status?: string
+          confidence?: number
+          details?: Json
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          resolved_at?: string | null
+          rollback_token?: string | null
+          root_cause?: string | null
+          segment?: Json
+          severity?: string
+          source_pair?: string | null
+          suggested_repair?: string | null
+          type: string
+        }
+        Update: {
+          affected_revenue_cents?: number
+          affected_sessions?: number
+          auto_repair_status?: string
+          confidence?: number
+          details?: Json
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          resolved_at?: string | null
+          rollback_token?: string | null
+          root_cause?: string | null
+          segment?: Json
+          severity?: string
+          source_pair?: string | null
+          suggested_repair?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      arie_repairs: {
+        Row: {
+          after_state: Json
+          applied_by: string
+          before_state: Json
+          category: string
+          confidence: number
+          created_at: string
+          id: string
+          incident_id: string | null
+          rollback_available: boolean
+          rollback_token: string | null
+          rolled_back_at: string | null
+          status: string
+        }
+        Insert: {
+          after_state?: Json
+          applied_by?: string
+          before_state?: Json
+          category: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          incident_id?: string | null
+          rollback_available?: boolean
+          rollback_token?: string | null
+          rolled_back_at?: string | null
+          status?: string
+        }
+        Update: {
+          after_state?: Json
+          applied_by?: string
+          before_state?: Json
+          category?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          incident_id?: string | null
+          rollback_available?: boolean
+          rollback_token?: string | null
+          rolled_back_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arie_repairs_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "arie_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arie_sessions: {
+        Row: {
+          attribution: Json
+          campaign: string | null
+          country: string | null
+          creative_id: string | null
+          device: string | null
+          first_touch: string | null
+          id: string
+          last_touch: string | null
+          pin_id: string | null
+          revenue_cents: number
+          session_id: string
+          source: string | null
+          stages_reached: string[]
+          tiktok_video_id: string | null
+          time_to_purchase_ms: number | null
+          updated_at: string
+          visitor_id: string | null
+        }
+        Insert: {
+          attribution?: Json
+          campaign?: string | null
+          country?: string | null
+          creative_id?: string | null
+          device?: string | null
+          first_touch?: string | null
+          id?: string
+          last_touch?: string | null
+          pin_id?: string | null
+          revenue_cents?: number
+          session_id: string
+          source?: string | null
+          stages_reached?: string[]
+          tiktok_video_id?: string | null
+          time_to_purchase_ms?: number | null
+          updated_at?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          attribution?: Json
+          campaign?: string | null
+          country?: string | null
+          creative_id?: string | null
+          device?: string | null
+          first_touch?: string | null
+          id?: string
+          last_touch?: string | null
+          pin_id?: string | null
+          revenue_cents?: number
+          session_id?: string
+          source?: string | null
+          stages_reached?: string[]
+          tiktok_video_id?: string | null
+          time_to_purchase_ms?: number | null
+          updated_at?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      arie_settings: {
+        Row: {
+          alert_channels: Json
+          confidence_threshold: number
+          feature_flags: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          alert_channels?: Json
+          confidence_threshold?: number
+          feature_flags?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          alert_channels?: Json
+          confidence_threshold?: number
+          feature_flags?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      arie_synthetic_runs: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device: string
+          failure_stage: string | null
+          id: string
+          persona: string
+          route_path: string | null
+          status: string
+          step_results: Json
+          total_ms: number | null
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device: string
+          failure_stage?: string | null
+          id?: string
+          persona: string
+          route_path?: string | null
+          status?: string
+          step_results?: Json
+          total_ms?: number | null
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device?: string
+          failure_stage?: string | null
+          id?: string
+          persona?: string
+          route_path?: string | null
+          status?: string
+          step_results?: Json
+          total_ms?: number | null
+        }
+        Relationships: []
+      }
+      arie_validation_runs: {
+        Row: {
+          actual: number | null
+          created_at: string
+          details: Json
+          drift_pct: number | null
+          expected: number | null
+          id: string
+          severity: string
+          source_pair: string
+          status: string
+          window_label: string
+        }
+        Insert: {
+          actual?: number | null
+          created_at?: string
+          details?: Json
+          drift_pct?: number | null
+          expected?: number | null
+          id?: string
+          severity?: string
+          source_pair: string
+          status?: string
+          window_label: string
+        }
+        Update: {
+          actual?: number | null
+          created_at?: string
+          details?: Json
+          drift_pct?: number | null
+          expected?: number | null
+          id?: string
+          severity?: string
+          source_pair?: string
+          status?: string
+          window_label?: string
+        }
+        Relationships: []
+      }
       authority_clusters: {
         Row: {
           config: Json | null
