@@ -2663,3 +2663,135 @@ function UsGeoIntelligencePanel() {
     </Card>
   );
 }
+
+function PinterestPsychologyEnginePanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [sim, setSim] = useState<any>(null);
+  const [simInput, setSimInput] = useState<{ title: string; niche: string }>({ title: "", niche: "cat_litter" });
+
+  async function load() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("ppe-engine", { body: { action: "snapshot" } });
+    if (data?.ppe) setSnap(data.ppe);
+    setLoading(false);
+  }
+  async function simulate() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("ppe-engine", { body: { action: "simulate", title: simInput.title, niche: simInput.niche } });
+    setSim(data ?? null);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const f = snap?.floors ?? {};
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-lg font-semibold">Pinterest Psychology Engine (PPE)</h2>
+          <p className="text-xs text-muted-foreground">
+            Story-first reasoning · Multi-candidate competition · Product-Hero gate.
+            Floors: visibility ≥ {f.visibility ?? 95}, CTR ≥ {f.ctr ?? 95}, novelty ≥ {f.novelty ?? 96}, composite ≥ {f.composite ?? 92}.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <Stat label="Candidates 24h" value={String(snap?.sample_24h ?? 0)} />
+        <Stat label="Avg composite 24h" value={snap?.avg_composite_24h != null ? `${snap.avg_composite_24h}/100` : "—"} />
+        <Stat label="Avg CTR 24h" value={snap?.avg_ctr_24h != null ? `${snap.avg_ctr_24h}/100` : "—"} />
+        <Stat label="Avg visibility 24h" value={snap?.avg_visibility_24h != null ? `${snap.avg_visibility_24h}/100` : "—"} />
+        <Stat label="Avg scroll-stop 24h" value={snap?.avg_scroll_stop_24h != null ? `${snap.avg_scroll_stop_24h}/100` : "—"} />
+        <Stat label="Beats competitors 24h" value={String(snap?.competitor_wins_24h ?? 0)} />
+        <Stat label="Loses vs competitors 24h" value={String(snap?.competitor_loses_24h ?? 0)} />
+        <Stat label="7d sample" value={String(snap?.sample_7d ?? 0)} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">Recent winners</div>
+          <ul className="space-y-1 text-xs max-h-64 overflow-y-auto pr-1">
+            {(snap?.winners_recent ?? []).map((w: any) => (
+              <li key={w.creative_id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{w.product_slug}</span>
+                  <span className="text-muted-foreground">{w.composite}/100 · {w.competitor_verdict}</span>
+                </div>
+                <div className="text-muted-foreground truncate">{w.primary_emotion} · {w.badge_text}</div>
+                <div className="truncate">{w.story}</div>
+              </li>
+            ))}
+            {(!snap?.winners_recent || snap.winners_recent.length === 0) && (
+              <li className="text-muted-foreground">No winners yet — run the director.</li>
+            )}
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <div className="font-medium text-sm mb-1">Top rejection reasons (24h)</div>
+            <ul className="space-y-1 text-xs max-h-32 overflow-y-auto pr-1">
+              {(snap?.rejection_reasons ?? []).map((r: any) => (
+                <li key={r.reason} className="flex justify-between border rounded p-2">
+                  <span className="truncate">{r.reason}</span>
+                  <span className="text-muted-foreground">{r.count}</span>
+                </li>
+              ))}
+              {(!snap?.rejection_reasons || snap.rejection_reasons.length === 0) && (
+                <li className="text-muted-foreground">No rejections logged.</li>
+              )}
+            </ul>
+          </div>
+          <div>
+            <div className="font-medium text-sm mb-1">Badge rotation (7d)</div>
+            <ul className="space-y-1 text-xs max-h-32 overflow-y-auto pr-1">
+              {(snap?.badge_usage_top ?? []).map((b: any) => (
+                <li key={b.text} className="flex justify-between border rounded p-2">
+                  <span className="truncate">{b.text}</span>
+                  <span className="text-muted-foreground">{b.count}</span>
+                </li>
+              ))}
+              {(!snap?.badge_usage_top || snap.badge_usage_top.length === 0) && (
+                <li className="text-muted-foreground">No badge usage yet.</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t pt-3 space-y-2">
+        <div className="font-medium text-sm">Simulate a story profile</div>
+        <div className="flex flex-wrap gap-2 items-center text-xs">
+          <input
+            value={simInput.title}
+            onChange={(e) => setSimInput({ ...simInput, title: e.target.value })}
+            placeholder="Supplier title (e.g. PVC Coated Two-color Waterproof Training Rope)"
+            className="border rounded px-2 py-1 flex-1 min-w-[240px]"
+          />
+          <input
+            value={simInput.niche}
+            onChange={(e) => setSimInput({ ...simInput, niche: e.target.value })}
+            placeholder="niche key"
+            className="border rounded px-2 py-1 w-40"
+          />
+          <Button size="sm" onClick={simulate} disabled={loading || (!simInput.title && !simInput.niche)}>Simulate</Button>
+        </div>
+        {sim?.profile && (
+          <div className="text-xs border rounded p-3 bg-muted/30 space-y-1">
+            <div><strong>Story:</strong> {sim.profile.story}</div>
+            <div><strong>Primary emotion:</strong> {sim.profile.primary_emotion} · <strong>Secondary:</strong> {sim.profile.secondary_emotion}</div>
+            <div><strong>Desired response:</strong> {sim.profile.desired_response}</div>
+            <div><strong>Motivations:</strong> {(sim.profile.buying_motivations ?? []).join(" · ")}</div>
+            <div><strong>Scenes:</strong> {(sim.profile.scene_suggestions ?? []).join(" · ")}</div>
+            <div><strong>Title rewrite:</strong> {sim.title_rewrite?.before} → <em>{sim.title_rewrite?.after}</em></div>
+            <div><strong>Badge:</strong> {sim.badge?.text ?? "—"} · <strong>Attention balance:</strong> {sim.attention_map?.balance}</div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
