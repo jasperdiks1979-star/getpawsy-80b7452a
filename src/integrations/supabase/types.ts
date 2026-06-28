@@ -17830,6 +17830,571 @@ export type Database = {
         }
         Relationships: []
       }
+      gpi_concept_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpi_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gpi_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gpi_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpi_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gpi_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gpi_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gpi_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpi_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gpi_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gpi_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gpi_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gpi_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gpi_learnings: {
+        Row: {
+          applied: boolean
+          concept_key: string | null
+          confidence: number
+          created_at: string
+          delta_confidence: number | null
+          delta_weight: number | null
+          engine_source: string
+          evidence: Json
+          id: string
+          insight: string
+          module_key: string | null
+        }
+        Insert: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source: string
+          evidence?: Json
+          id?: string
+          insight: string
+          module_key?: string | null
+        }
+        Update: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source?: string
+          evidence?: Json
+          id?: string
+          insight?: string
+          module_key?: string | null
+        }
+        Relationships: []
+      }
+      gpi_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gpi_performance: {
+        Row: {
+          cac: number | null
+          clicks: number
+          closeups: number
+          comments: number
+          created_at: string
+          ctr: number | null
+          cvr: number | null
+          follows: number
+          id: string
+          impressions: number
+          ltv: number | null
+          metadata: Json
+          outbound_clicks: number
+          outbound_ctr: number | null
+          pin_id: string
+          profile_visits: number
+          profit_usd: number
+          purchases: number
+          revenue_usd: number
+          roas: number | null
+          save_rate: number | null
+          saves: number
+          snapshot_date: string
+          success_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          cac?: number | null
+          clicks?: number
+          closeups?: number
+          comments?: number
+          created_at?: string
+          ctr?: number | null
+          cvr?: number | null
+          follows?: number
+          id?: string
+          impressions?: number
+          ltv?: number | null
+          metadata?: Json
+          outbound_clicks?: number
+          outbound_ctr?: number | null
+          pin_id: string
+          profile_visits?: number
+          profit_usd?: number
+          purchases?: number
+          revenue_usd?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          snapshot_date?: string
+          success_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cac?: number | null
+          clicks?: number
+          closeups?: number
+          comments?: number
+          created_at?: string
+          ctr?: number | null
+          cvr?: number | null
+          follows?: number
+          id?: string
+          impressions?: number
+          ltv?: number | null
+          metadata?: Json
+          outbound_clicks?: number
+          outbound_ctr?: number | null
+          pin_id?: string
+          profile_visits?: number
+          profit_usd?: number
+          purchases?: number
+          revenue_usd?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          snapshot_date?: string
+          success_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gpi_pin_dna: {
+        Row: {
+          badge: string | null
+          board_id: string | null
+          camera_angle: string | null
+          category: string | null
+          colors: string[]
+          created_at: string
+          creative_family: string | null
+          cta: string | null
+          device: string | null
+          emotion: string | null
+          headline: string | null
+          hook: string | null
+          id: string
+          image_fingerprint: string | null
+          language: string
+          lighting: string | null
+          metadata: Json
+          offer: string | null
+          pin_id: string
+          product_id: string | null
+          publish_hour: number | null
+          publish_time: string | null
+          publish_weekday: number | null
+          scene: string | null
+          season: string | null
+          story: string | null
+          target_market: string
+          traffic_source: string | null
+          typography: string | null
+          updated_at: string
+          visual_style: string | null
+        }
+        Insert: {
+          badge?: string | null
+          board_id?: string | null
+          camera_angle?: string | null
+          category?: string | null
+          colors?: string[]
+          created_at?: string
+          creative_family?: string | null
+          cta?: string | null
+          device?: string | null
+          emotion?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_fingerprint?: string | null
+          language?: string
+          lighting?: string | null
+          metadata?: Json
+          offer?: string | null
+          pin_id: string
+          product_id?: string | null
+          publish_hour?: number | null
+          publish_time?: string | null
+          publish_weekday?: number | null
+          scene?: string | null
+          season?: string | null
+          story?: string | null
+          target_market?: string
+          traffic_source?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_style?: string | null
+        }
+        Update: {
+          badge?: string | null
+          board_id?: string | null
+          camera_angle?: string | null
+          category?: string | null
+          colors?: string[]
+          created_at?: string
+          creative_family?: string | null
+          cta?: string | null
+          device?: string | null
+          emotion?: string | null
+          headline?: string | null
+          hook?: string | null
+          id?: string
+          image_fingerprint?: string | null
+          language?: string
+          lighting?: string | null
+          metadata?: Json
+          offer?: string | null
+          pin_id?: string
+          product_id?: string | null
+          publish_hour?: number | null
+          publish_time?: string | null
+          publish_weekday?: number | null
+          scene?: string | null
+          season?: string | null
+          story?: string | null
+          target_market?: string
+          traffic_source?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_style?: string | null
+        }
+        Relationships: []
+      }
+      gpi_predictions: {
+        Row: {
+          actual_value: number | null
+          confidence: number
+          created_at: string
+          engine_source: string | null
+          features: Json
+          id: string
+          model_version: number
+          outcome_at: string | null
+          pin_id: string | null
+          predicted_value: number
+          prediction_type: string
+          subject_id: string | null
+          subject_type: string
+        }
+        Insert: {
+          actual_value?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          pin_id?: string | null
+          predicted_value: number
+          prediction_type: string
+          subject_id?: string | null
+          subject_type: string
+        }
+        Update: {
+          actual_value?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          pin_id?: string | null
+          predicted_value?: number
+          prediction_type?: string
+          subject_id?: string | null
+          subject_type?: string
+        }
+        Relationships: []
+      }
+      gpi_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       growth_autopilot_config: {
         Row: {
           category_whitelist: string[]
@@ -49917,6 +50482,30 @@ export type Database = {
           p_slug: string
         }
         Returns: Json
+      }
+      gpi_refresh_module_rollups: { Args: never; Returns: undefined }
+      gpi_success_score: {
+        Args: {
+          p_ctr: number
+          p_cvr: number
+          p_outbound_ctr: number
+          p_roas: number
+          p_save_rate: number
+        }
+        Returns: number
+      }
+      gpi_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
+        }
+        Returns: string
       }
       has_role: {
         Args: {
