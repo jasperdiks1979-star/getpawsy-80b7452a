@@ -1299,10 +1299,10 @@ function CollectiveIntelligencePanel() {
       </div>
       {run ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
-          <Stat label="Joinable pins" value={m.joinable_pins ?? 0} />
-          <Stat label="DNA attributes" value={m.distinct_attributes ?? 0} />
-          <Stat label="Winners" value={m.winners ?? 0} />
-          <Stat label="Losers" value={m.losers ?? 0} />
+          <CiStat label="Joinable pins" value={m.joinable_pins ?? 0} />
+          <CiStat label="DNA attributes" value={m.distinct_attributes ?? 0} />
+          <CiStat label="Winners" value={m.winners ?? 0} />
+          <CiStat label="Losers" value={m.losers ?? 0} />
         </div>
       ) : (
         <p className="text-xs text-muted-foreground mb-3">No cycles yet. Click "Run cycle".</p>
