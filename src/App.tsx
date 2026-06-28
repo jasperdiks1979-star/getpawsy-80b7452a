@@ -558,6 +558,7 @@ const BusinessDnaPage = lazyWithRetry(() => import("./pages/admin/BusinessDnaPag
 const CustomerPsychologyPage = lazyWithRetry(() => import("./pages/admin/CustomerPsychologyPage"));
 const PinterestIntelligencePage = lazyWithRetry(() => import("./pages/admin/PinterestIntelligencePage"));
 const CreativeDnaPage = lazyWithRetry(() => import("./pages/admin/CreativeDnaPage"));
+const AnalyticsDnaPage = lazyWithRetry(() => import("./pages/admin/AnalyticsDnaPage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
@@ -1771,6 +1772,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CreativeDnaPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="analytics-dna"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AnalyticsDnaPage />
                                 </Suspense>
                               }
                             />
