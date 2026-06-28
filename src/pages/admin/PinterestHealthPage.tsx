@@ -457,7 +457,7 @@ export default function PinterestHealthPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="border rounded-lg p-3">
       <div className="text-2xl font-semibold">{value}</div>
