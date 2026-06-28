@@ -29895,6 +29895,7 @@ export type Database = {
           last_publish_error: string | null
           last_validated_at: string | null
           last_validation_error: string | null
+          last_verified_at: string | null
           legacy_supplier_content: boolean
           legacy_supplier_reason: string | null
           live_pin_verified_at: string | null
@@ -29933,6 +29934,11 @@ export type Database = {
           updated_at: string
           us_audience_score: number | null
           validation_status: string | null
+          verification_attempts: number
+          verification_checks: Json | null
+          verification_failure_reason: string | null
+          verification_score: number | null
+          verification_state: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -29960,6 +29966,7 @@ export type Database = {
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
+          last_verified_at?: string | null
           legacy_supplier_content?: boolean
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
@@ -29998,6 +30005,11 @@ export type Database = {
           updated_at?: string
           us_audience_score?: number | null
           validation_status?: string | null
+          verification_attempts?: number
+          verification_checks?: Json | null
+          verification_failure_reason?: string | null
+          verification_score?: number | null
+          verification_state?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -30025,6 +30037,7 @@ export type Database = {
           last_publish_error?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
+          last_verified_at?: string | null
           legacy_supplier_content?: boolean
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
@@ -30063,6 +30076,11 @@ export type Database = {
           updated_at?: string
           us_audience_score?: number | null
           validation_status?: string | null
+          verification_attempts?: number
+          verification_checks?: Json | null
+          verification_failure_reason?: string | null
+          verification_score?: number | null
+          verification_state?: string | null
         }
         Relationships: [
           {
