@@ -6056,6 +6056,581 @@ export type Database = {
         }
         Relationships: []
       }
+      aos_consensus_decisions: {
+        Row: {
+          created_at: string
+          final_verdict: string | null
+          id: string
+          proposal: Json
+          rationale: string | null
+          required_weight: number
+          resolved_at: string | null
+          status: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          final_verdict?: string | null
+          id?: string
+          proposal: Json
+          rationale?: string | null
+          required_weight?: number
+          resolved_at?: string | null
+          status?: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          final_verdict?: string | null
+          id?: string
+          proposal?: Json
+          rationale?: string | null
+          required_weight?: number
+          resolved_at?: string | null
+          status?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      aos_consensus_votes: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          decision_id: string
+          engine_key: string
+          id: string
+          reasoning: string | null
+          vote: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          decision_id: string
+          engine_key: string
+          id?: string
+          reasoning?: string | null
+          vote: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          decision_id?: string
+          engine_key?: string
+          id?: string
+          reasoning?: string | null
+          vote?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aos_consensus_votes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "aos_consensus_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aos_daily_strategy: {
+        Row: {
+          best_channels: Json
+          best_creatives: Json
+          briefing_md: string | null
+          created_at: string
+          id: string
+          inventory_risks: Json
+          strategy: string | null
+          strategy_date: string
+          top_products: Json
+          trends: Json
+          worst_channels: Json
+          worst_creatives: Json
+        }
+        Insert: {
+          best_channels?: Json
+          best_creatives?: Json
+          briefing_md?: string | null
+          created_at?: string
+          id?: string
+          inventory_risks?: Json
+          strategy?: string | null
+          strategy_date: string
+          top_products?: Json
+          trends?: Json
+          worst_channels?: Json
+          worst_creatives?: Json
+        }
+        Update: {
+          best_channels?: Json
+          best_creatives?: Json
+          briefing_md?: string | null
+          created_at?: string
+          id?: string
+          inventory_risks?: Json
+          strategy?: string | null
+          strategy_date?: string
+          top_products?: Json
+          trends?: Json
+          worst_channels?: Json
+          worst_creatives?: Json
+        }
+        Relationships: []
+      }
+      aos_digital_twin_snapshots: {
+        Row: {
+          actual: Json | null
+          confidence: number | null
+          created_at: string
+          error: Json | null
+          evaluated_at: string | null
+          horizon: string
+          id: string
+          predicted: Json
+        }
+        Insert: {
+          actual?: Json | null
+          confidence?: number | null
+          created_at?: string
+          error?: Json | null
+          evaluated_at?: string | null
+          horizon: string
+          id?: string
+          predicted?: Json
+        }
+        Update: {
+          actual?: Json | null
+          confidence?: number | null
+          created_at?: string
+          error?: Json | null
+          evaluated_at?: string | null
+          horizon?: string
+          id?: string
+          predicted?: Json
+        }
+        Relationships: []
+      }
+      aos_engine_registry: {
+        Row: {
+          category: string | null
+          created_at: string
+          display_name: string
+          engine_key: string
+          health: string
+          id: string
+          last_heartbeat_at: string | null
+          meta: Json
+          trust_score: number
+          weight: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          display_name: string
+          engine_key: string
+          health?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          meta?: Json
+          trust_score?: number
+          weight?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          display_name?: string
+          engine_key?: string
+          health?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          meta?: Json
+          trust_score?: number
+          weight?: number
+        }
+        Relationships: []
+      }
+      aos_event_subscriptions: {
+        Row: {
+          active: boolean
+          created_at: string
+          engine_key: string
+          event_type: string
+          id: string
+          last_seen_seq: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          engine_key: string
+          event_type: string
+          id?: string
+          last_seen_seq?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          engine_key?: string
+          event_type?: string
+          id?: string
+          last_seen_seq?: number | null
+        }
+        Relationships: []
+      }
+      aos_events: {
+        Row: {
+          event_type: string
+          id: string
+          occurred_at: string
+          payload: Json
+          sequence_no: number
+          severity: string
+          source_engine: string | null
+          subject: string | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          sequence_no?: number
+          severity?: string
+          source_engine?: string | null
+          subject?: string | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          sequence_no?: number
+          severity?: string
+          source_engine?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      aos_failover_events: {
+        Row: {
+          details: Json
+          detected_at: string
+          engine_key: string
+          failure_type: string
+          id: string
+          recovery_action: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          details?: Json
+          detected_at?: string
+          engine_key: string
+          failure_type: string
+          id?: string
+          recovery_action?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          details?: Json
+          detected_at?: string
+          engine_key?: string
+          failure_type?: string
+          id?: string
+          recovery_action?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      aos_health_snapshots: {
+        Row: {
+          ai_health: number | null
+          business_health: number | null
+          created_at: string
+          creative_health: number | null
+          cx_health: number | null
+          details: Json
+          id: string
+          infra_health: number | null
+          overall_score: number | null
+          revenue_health: number | null
+          tracking_health: number | null
+          traffic_health: number | null
+        }
+        Insert: {
+          ai_health?: number | null
+          business_health?: number | null
+          created_at?: string
+          creative_health?: number | null
+          cx_health?: number | null
+          details?: Json
+          id?: string
+          infra_health?: number | null
+          overall_score?: number | null
+          revenue_health?: number | null
+          tracking_health?: number | null
+          traffic_health?: number | null
+        }
+        Update: {
+          ai_health?: number | null
+          business_health?: number | null
+          created_at?: string
+          creative_health?: number | null
+          cx_health?: number | null
+          details?: Json
+          id?: string
+          infra_health?: number | null
+          overall_score?: number | null
+          revenue_health?: number | null
+          tracking_health?: number | null
+          traffic_health?: number | null
+        }
+        Relationships: []
+      }
+      aos_knowledge: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          key: string
+          kind: string
+          payload: Json
+          publisher_engine: string
+          superseded_at: string | null
+          supersedes_id: string | null
+          tags: string[]
+          topic: string
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          key: string
+          kind: string
+          payload?: Json
+          publisher_engine: string
+          superseded_at?: string | null
+          supersedes_id?: string | null
+          tags?: string[]
+          topic: string
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          key?: string
+          kind?: string
+          payload?: Json
+          publisher_engine?: string
+          superseded_at?: string | null
+          supersedes_id?: string | null
+          tags?: string[]
+          topic?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aos_knowledge_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "aos_knowledge"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aos_orchestrator_runs: {
+        Row: {
+          consensus_resolved: number | null
+          ended_at: string | null
+          error: string | null
+          events_ingested: number | null
+          health_score: number | null
+          id: string
+          started_at: string
+          status: string
+          summary: Json
+          tasks_scheduled: number | null
+          trigger: string
+        }
+        Insert: {
+          consensus_resolved?: number | null
+          ended_at?: string | null
+          error?: string | null
+          events_ingested?: number | null
+          health_score?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          tasks_scheduled?: number | null
+          trigger?: string
+        }
+        Update: {
+          consensus_resolved?: number | null
+          ended_at?: string | null
+          error?: string | null
+          events_ingested?: number | null
+          health_score?: number | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+          tasks_scheduled?: number | null
+          trigger?: string
+        }
+        Relationships: []
+      }
+      aos_orchestrator_steps: {
+        Row: {
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          run_id: string
+          status: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id: string
+          status?: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          run_id?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aos_orchestrator_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aos_orchestrator_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aos_resource_usage: {
+        Row: {
+          cap: number | null
+          details: Json
+          id: string
+          pct: number | null
+          recorded_at: string
+          resource: string
+          status: string | null
+          used: number | null
+        }
+        Insert: {
+          cap?: number | null
+          details?: Json
+          id?: string
+          pct?: number | null
+          recorded_at?: string
+          resource: string
+          status?: string | null
+          used?: number | null
+        }
+        Update: {
+          cap?: number | null
+          details?: Json
+          id?: string
+          pct?: number | null
+          recorded_at?: string
+          resource?: string
+          status?: string | null
+          used?: number | null
+        }
+        Relationships: []
+      }
+      aos_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      aos_tasks: {
+        Row: {
+          category: string
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          owner_engine: string | null
+          payload: Json
+          priority: number
+          related_event_id: string | null
+          resource_estimate: Json
+          started_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_engine?: string | null
+          payload?: Json
+          priority?: number
+          related_event_id?: string | null
+          resource_estimate?: Json
+          started_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_engine?: string | null
+          payload?: Json
+          priority?: number
+          related_event_id?: string | null
+          resource_estimate?: Json
+          started_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aos_tasks_related_event_id_fkey"
+            columns: ["related_event_id"]
+            isOneToOne: false
+            referencedRelation: "aos_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_config: {
         Row: {
           key: string
