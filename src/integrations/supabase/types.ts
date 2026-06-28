@@ -21625,6 +21625,111 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_alg_runs: {
+        Row: {
+          actions: Json
+          finished_at: string | null
+          id: string
+          metrics: Json
+          new_state: string | null
+          notes: string | null
+          prev_state: string | null
+          started_at: string
+        }
+        Insert: {
+          actions?: Json
+          finished_at?: string | null
+          id?: string
+          metrics?: Json
+          new_state?: string | null
+          notes?: string | null
+          prev_state?: string | null
+          started_at?: string
+        }
+        Update: {
+          actions?: Json
+          finished_at?: string | null
+          id?: string
+          metrics?: Json
+          new_state?: string | null
+          notes?: string | null
+          prev_state?: string | null
+          started_at?: string
+        }
+        Relationships: []
+      }
+      pcie2_alg_state: {
+        Row: {
+          confidence: number
+          ctr_volatility: number | null
+          decay_half_life_days: number
+          decision_accuracy: number | null
+          drift_score: number | null
+          evidence_drift: number
+          id: string
+          learning_speed: number
+          model_confidence: number | null
+          outlier_count: number
+          prediction_accuracy: number | null
+          purchase_volatility: number | null
+          reason: string | null
+          reliability_score: number | null
+          revenue_volatility: number | null
+          save_volatility: number | null
+          scope: string
+          season_tag: string | null
+          stability_score: number | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          ctr_volatility?: number | null
+          decay_half_life_days?: number
+          decision_accuracy?: number | null
+          drift_score?: number | null
+          evidence_drift?: number
+          id?: string
+          learning_speed?: number
+          model_confidence?: number | null
+          outlier_count?: number
+          prediction_accuracy?: number | null
+          purchase_volatility?: number | null
+          reason?: string | null
+          reliability_score?: number | null
+          revenue_volatility?: number | null
+          save_volatility?: number | null
+          scope?: string
+          season_tag?: string | null
+          stability_score?: number | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          ctr_volatility?: number | null
+          decay_half_life_days?: number
+          decision_accuracy?: number | null
+          drift_score?: number | null
+          evidence_drift?: number
+          id?: string
+          learning_speed?: number
+          model_confidence?: number | null
+          outlier_count?: number
+          prediction_accuracy?: number | null
+          purchase_volatility?: number | null
+          reason?: string | null
+          reliability_score?: number | null
+          revenue_volatility?: number | null
+          save_volatility?: number | null
+          scope?: string
+          season_tag?: string | null
+          stability_score?: number | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pcie2_assembly_results: {
         Row: {
           board_id: string | null
@@ -22530,6 +22635,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_frozen_rules: {
+        Row: {
+          created_at: string
+          frozen_until: string | null
+          id: string
+          reason: string | null
+          rule_key: string
+        }
+        Insert: {
+          created_at?: string
+          frozen_until?: string | null
+          id?: string
+          reason?: string | null
+          rule_key: string
+        }
+        Update: {
+          created_at?: string
+          frozen_until?: string | null
+          id?: string
+          reason?: string | null
+          rule_key?: string
+        }
+        Relationships: []
+      }
       pcie2_headline_families: {
         Row: {
           active: boolean
@@ -23202,6 +23331,36 @@ export type Database = {
           sub_class?: string | null
           updated_at?: string
           use_cases?: Json
+        }
+        Relationships: []
+      }
+      pcie2_protected_winners: {
+        Row: {
+          created_at: string
+          creative_id: string | null
+          id: string
+          lifetime_revenue: number | null
+          protected_until: string | null
+          reason: string | null
+          trait_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          lifetime_revenue?: number | null
+          protected_until?: string | null
+          reason?: string | null
+          trait_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          lifetime_revenue?: number | null
+          protected_until?: string | null
+          reason?: string | null
+          trait_key?: string | null
         }
         Relationships: []
       }
