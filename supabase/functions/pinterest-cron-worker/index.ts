@@ -1374,6 +1374,68 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // ── Content Quality Gate ──────────────────────────────────────────
+        // Reuses the existing pcie2_ci_scores produced by the CI Layer.
+        // Threshold is env-configurable (default 70). Below threshold = skip,
+        // marked draft for regeneration by the creative-factory.
+        try {
+          const minScore = Number(Deno.env.get("PIN_MIN_QUALITY_SCORE") ?? 70);
+          const { data: ciRow } = await sb
+            .from("pcie2_ci_scores")
+            .select("overall_score, rejected, reject_reasons")
+            .eq("queue_row_id", pin.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (ciRow) {
+            const score = Number(ciRow.overall_score ?? 0);
+            if (ciRow.rejected || score < minScore) {
+              const reason = `quality_below_threshold:${score}/${minScore}`;
+              await sb.from("pinterest_pin_queue").update({
+                status: "draft",
+                rejection_reason: reason,
+                last_publish_error: reason,
+                publishing_started_at: null,
+                updated_at: new Date().toISOString(),
+              }).eq("id", pin.id);
+              await sb.from("pinterest_post_logs").insert({
+                pin_queue_id: pin.id,
+                action: "content_quality_gate",
+                status: "rejected",
+                error_message: reason,
+                response_data: { ci: ciRow, threshold: minScore },
+              });
+              results.push({ pinId: pin.id, status: "rejected", error: reason });
+              continue;
+            }
+          }
+        } catch (e) {
+          console.warn("[cron] CI quality gate threw:", e);
+        }
+
+        // ── URL Quality probe (pre-publish, non-blocking metadata) ────────
+        try {
+          const q = await probeUrlQuality(destinationLink, 4000);
+          await sb.from("pinterest_pin_queue").update({
+            meta: {
+              ...((pin as any).meta || {}),
+              url_quality: {
+                http: q.http_status,
+                load_ms: q.load_ms,
+                og: q.has_og,
+                schema: q.has_schema,
+                canonical: q.has_canonical,
+                mobile: q.mobile_viewport,
+                rich_pin_ready: q.rich_pin_ready,
+                final_url: q.final_url,
+                checked_at: new Date().toISOString(),
+              },
+            },
+          }).eq("id", pin.id);
+        } catch (e) {
+          console.warn("[cron] url-quality probe failed (non-fatal):", e);
+        }
+
         const requestPayload = {
           title: pin.pin_title,
           description: pin.pin_description,
