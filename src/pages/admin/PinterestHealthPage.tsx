@@ -120,6 +120,8 @@ function fmt(iso: string | null) {
 
 export default function PinterestHealthPage() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
+  const [growth, setGrowth] = useState<any | null>(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -203,9 +205,25 @@ export default function PinterestHealthPage() {
     }
   }
 
+  async function refreshGrowth(execute = false) {
+    setGrowthLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-growth-ai",
+        execute ? { body: {} } : { method: "GET" as any },
+      );
+      if (!error && data?.ok) setGrowth(data.snapshot);
+    } catch (_) {
+      /* silent — surfaced in panel */
+    } finally {
+      setGrowthLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
+    refreshGrowth(false);
     loadConnection();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
@@ -215,6 +233,7 @@ export default function PinterestHealthPage() {
     const t = setInterval(() => {
       refresh(false);
       refreshWatchdog(false);
+      refreshGrowth(false);
     }, 60_000);
     return () => clearInterval(t);
   }, []);
@@ -612,6 +631,145 @@ export default function PinterestHealthPage() {
           )}
         </Card>
       )}
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Pinterest Growth AI</h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={growthLoading} onClick={() => refreshGrowth(false)}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${growthLoading ? "animate-spin" : ""}`} /> Snapshot
+            </Button>
+            <Button size="sm" disabled={growthLoading} onClick={() => refreshGrowth(true)}>
+              <Play className="h-4 w-4 mr-1" /> Run optimization
+            </Button>
+          </div>
+        </div>
+        {!growth ? (
+          <p className="text-sm text-muted-foreground">No Growth AI snapshot yet. Click Snapshot.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              <Stat label="Avg CTR (30d)" value={`${(growth.baseline.avgCtr * 100).toFixed(2)}%`} />
+              <Stat label="Rev / pin (30d)" value={`$${(growth.baseline.avgRevenuePerPin / 100).toFixed(2)}`} />
+              <Stat label="WoW clicks" value={`${growth.growthVelocity.weekOverWeekClicksPct >= 0 ? "+" : ""}${growth.growthVelocity.weekOverWeekClicksPct}%`} />
+              <Stat label="WoW revenue" value={`${growth.growthVelocity.weekOverWeekRevenuePct >= 0 ? "+" : ""}${growth.growthVelocity.weekOverWeekRevenuePct}%`} />
+              <Stat label="Est. weekly organic traffic" value={growth.estimatedWeeklyOrganicTraffic.toLocaleString()} />
+              <Stat label="Est. monthly revenue" value={`$${(growth.estimatedMonthlyRevenueCents / 100).toFixed(0)}`} />
+              <Stat label="AI confidence" value={`${Math.round(growth.aiConfidence * 100)}%`} />
+              <Stat label="Decisions logged" value={growth.decisionsLogged} />
+            </div>
+            <div className="rounded-md border bg-muted/40 p-3 mb-4 text-sm">
+              <span className="font-medium">Next optimization →</span> {growth.nextRecommendedOptimization}
+            </div>
+            <div className="grid md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <h3 className="font-semibold mb-1">Top revenue products</h3>
+                <ul className="space-y-1">
+                  {growth.topRevenueProducts.slice(0, 5).map((p: any) => (
+                    <li key={p.product_slug} className="flex justify-between border-b py-1">
+                      <span className="truncate">{p.product_slug}</span>
+                      <span>${(p.revenue_cents / 100).toFixed(0)} · {p.purchases}p</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top organic products</h3>
+                <ul className="space-y-1">
+                  {growth.topOrganicProducts.slice(0, 5).map((p: any) => (
+                    <li key={p.product_slug} className="flex justify-between border-b py-1">
+                      <span className="truncate">{p.product_slug}</span>
+                      <span>{p.saves}s · {p.clicks}c</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top CTR products</h3>
+                <ul className="space-y-1">
+                  {growth.topCtrProducts.slice(0, 5).map((p: any) => (
+                    <li key={p.product_slug} className="flex justify-between border-b py-1">
+                      <span className="truncate">{p.product_slug}</span>
+                      <span>{(p.ctr * 100).toFixed(2)}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top boards (revenue)</h3>
+                <ul className="space-y-1">
+                  {growth.topBoards.slice(0, 5).map((b: any) => (
+                    <li key={b.board_name} className="flex justify-between border-b py-1">
+                      <span className="truncate">{b.board_name}</span>
+                      <span>${(b.revenue_cents / 100).toFixed(0)} · {(b.ctr * 100).toFixed(2)}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Best UTC hours</h3>
+                <ul className="space-y-1">
+                  {growth.bestHoursUtc.slice(0, 5).map((h: any) => (
+                    <li key={h.hour} className="flex justify-between border-b py-1">
+                      <span>{String(h.hour).padStart(2, "0")}:00</span>
+                      <span>{(h.ctr * 100).toFixed(2)}% · {h.samples}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Best weekdays</h3>
+                <ul className="space-y-1">
+                  {growth.bestWeekdays.slice(0, 7).map((d: any) => (
+                    <li key={d.weekday} className="flex justify-between border-b py-1">
+                      <span>{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.weekday]}</span>
+                      <span>{(d.ctr * 100).toFixed(2)}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top headlines</h3>
+                <ul className="space-y-1">
+                  {growth.topHeadlines.slice(0, 5).map((h: any, i: number) => (
+                    <li key={i} className="flex justify-between border-b py-1">
+                      <span className="truncate">{h.headline}</span>
+                      <span>{h.avgScore}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top hooks</h3>
+                <ul className="space-y-1">
+                  {growth.topHooks.slice(0, 5).map((h: any, i: number) => (
+                    <li key={i} className="flex justify-between border-b py-1">
+                      <span className="truncate">{h.hook}</span>
+                      <span>{h.avgScore}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-1">Top CTAs</h3>
+                <ul className="space-y-1">
+                  {growth.topCTAs.slice(0, 5).map((c: any, i: number) => (
+                    <li key={i} className="flex justify-between border-b py-1">
+                      <span className="truncate">{c.cta}</span>
+                      <span>{c.avgScore}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            {growth.winnerMultiplier.product_slug && (
+              <div className="mt-3 text-xs text-muted-foreground">
+                Winner multiplier candidate: <span className="font-mono">{growth.winnerMultiplier.product_slug}</span> · requested {growth.winnerMultiplier.variants_requested} variants · triggered: {String(growth.winnerMultiplier.triggered)}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
 
       <Card className="p-5">
         <h2 className="font-semibold mb-2">Recent incidents</h2>
