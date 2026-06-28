@@ -1145,6 +1145,7 @@ export default function PinterestHealthPage() {
       <EvidenceGovernorPanel />
       <AdaptiveLearningGovernorPanel />
       <ExplainableAIPanel />
+      <MarketIntelligencePanel />
     </div>
   );
 }
@@ -2156,6 +2157,132 @@ function ExplainableAIPanel() {
               ))}
             </div>
           )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function MarketIntelligencePanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-market-intelligence", { body: {}, method: "GET" });
+    if (data?.market_intel) setSnap(data.market_intel);
+    setLoading(false);
+  }
+  async function run() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-market-intelligence", { body: { action: "run" } });
+    if (data?.market_intel) setSnap(data.market_intel);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const counts = snap?.counts ?? {};
+  const recs: any[] = snap?.recommendations ?? [];
+  const emerging: any[] = snap?.emerging ?? [];
+  const declining: any[] = snap?.declining ?? [];
+  const lastRun = snap?.last_runs?.[0];
+
+  const usd = (cents: number) => `$${((cents || 0) / 100).toFixed(0)}`;
+  const num = (n: any, d = 2) => n == null ? "—" : Number(n).toFixed(d);
+
+  const actionColor = (a: string) =>
+    a === "amplify" ? "text-emerald-600"
+    : a === "harvest" ? "text-amber-600"
+    : a === "throttle" ? "text-rose-600"
+    : "";
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Pinterest Market Intelligence</h2>
+          <p className="text-xs text-muted-foreground">
+            External trend signals (keywords, clusters, seasonal, competitor patterns) scored, lifecycle-classified,
+            and emitted as XAI recommendations every night.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" onClick={run} disabled={loading}>Run scan</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <Stat label="Market Trend Score" value={snap?.market_trend_score != null ? `${snap.market_trend_score}/100` : "—"} />
+        <Stat label="Trend Confidence" value={num(snap?.trend_confidence)} />
+        <Stat label="Competition Index" value={num(snap?.competition_index)} />
+        <Stat label="Creative Saturation" value={num(snap?.creative_saturation)} />
+        <Stat label="Expected Reach" value={(snap?.expected_reach_total ?? 0).toLocaleString()} />
+        <Stat label="Expected Revenue" value={usd(snap?.expected_revenue_cents_total ?? 0)} />
+        <Stat label="Emerging" value={String(counts.emerging ?? 0)} />
+        <Stat label="Declining" value={String(counts.declining ?? 0)} />
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">Emerging opportunities</div>
+          <ul className="space-y-1 max-h-72 overflow-y-auto pr-1 text-xs">
+            {emerging.map((o) => (
+              <li key={o.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{o.signal_key}</span>
+                  <span className="text-muted-foreground">{o.opportunity_score}</span>
+                </div>
+                <div className="text-muted-foreground">
+                  {o.niche ?? "—"} · conf {(Number(o.confidence) * 100).toFixed(0)}% ·
+                  <span className={actionColor(o.recommended_action)}> {o.recommended_action}</span>
+                </div>
+              </li>
+            ))}
+            {emerging.length === 0 && <li className="text-muted-foreground">No emerging signals yet.</li>}
+          </ul>
+        </div>
+
+        <div>
+          <div className="font-medium text-sm mb-1">Recommended actions</div>
+          <ul className="space-y-1 max-h-72 overflow-y-auto pr-1 text-xs">
+            {recs.map((o) => (
+              <li key={o.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{o.signal_key}</span>
+                  <span className={actionColor(o.recommended_action)}>{o.recommended_action}</span>
+                </div>
+                <div className="text-muted-foreground">
+                  score {o.opportunity_score} · {o.lifecycle} · reach {(o.expected_reach ?? 0).toLocaleString()} · {usd(o.expected_revenue_cents)}
+                </div>
+              </li>
+            ))}
+            {recs.length === 0 && <li className="text-muted-foreground">No actions ranked yet.</li>}
+          </ul>
+        </div>
+
+        <div>
+          <div className="font-medium text-sm mb-1">Declining categories</div>
+          <ul className="space-y-1 max-h-72 overflow-y-auto pr-1 text-xs">
+            {declining.map((o) => (
+              <li key={o.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{o.signal_key}</span>
+                  <span className="text-muted-foreground">{o.opportunity_score}</span>
+                </div>
+                <div className="text-muted-foreground">{o.niche ?? "—"} · throttle</div>
+              </li>
+            ))}
+            {declining.length === 0 && <li className="text-muted-foreground">Nothing declining — healthy market.</li>}
+          </ul>
+        </div>
+      </div>
+
+      {lastRun && (
+        <div className="text-[11px] text-muted-foreground border-t pt-2">
+          Last run {new Date(lastRun.started_at).toLocaleString()} · {lastRun.signals_seen ?? 0} signals ·
+          {" "}{lastRun.opportunities_new ?? 0} upserts · {lastRun.opportunities_expired ?? 0} expired ·
+          {" "}{lastRun.xai_emitted ?? 0} XAI decisions
         </div>
       )}
     </Card>
