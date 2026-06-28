@@ -56674,6 +56674,443 @@ export type Database = {
         }
         Relationships: []
       }
+      trpe_changes: {
+        Row: {
+          created_at: string
+          dependencies: Json
+          deployed_at: string | null
+          expected_outcome: string | null
+          id: string
+          post_review: string | null
+          risk: string
+          rollback_plan: string | null
+          status: string
+          title: string
+          validated: boolean
+          verification_checklist: Json
+        }
+        Insert: {
+          created_at?: string
+          dependencies?: Json
+          deployed_at?: string | null
+          expected_outcome?: string | null
+          id?: string
+          post_review?: string | null
+          risk?: string
+          rollback_plan?: string | null
+          status?: string
+          title: string
+          validated?: boolean
+          verification_checklist?: Json
+        }
+        Update: {
+          created_at?: string
+          dependencies?: Json
+          deployed_at?: string | null
+          expected_outcome?: string | null
+          id?: string
+          post_review?: string | null
+          risk?: string
+          rollback_plan?: string | null
+          status?: string
+          title?: string
+          validated?: boolean
+          verification_checklist?: Json
+        }
+        Relationships: []
+      }
+      trpe_health_snapshots: {
+        Row: {
+          captured_at: string
+          health_score: number
+          id: string
+          signals: Json
+          status: string
+          subsystem: string
+        }
+        Insert: {
+          captured_at?: string
+          health_score: number
+          id?: string
+          signals?: Json
+          status: string
+          subsystem: string
+        }
+        Update: {
+          captured_at?: string
+          health_score?: number
+          id?: string
+          signals?: Json
+          status?: string
+          subsystem?: string
+        }
+        Relationships: []
+      }
+      trpe_incidents: {
+        Row: {
+          created_at: string
+          detected_at: string
+          id: string
+          impact: string | null
+          learning: string | null
+          owner: string | null
+          preventive_action: string | null
+          recovery: string | null
+          resolved_at: string | null
+          root_cause: string | null
+          severity: string
+          status: string
+          subsystem: string | null
+          timeline: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact?: string | null
+          learning?: string | null
+          owner?: string | null
+          preventive_action?: string | null
+          recovery?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity: string
+          status?: string
+          subsystem?: string | null
+          timeline?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact?: string | null
+          learning?: string | null
+          owner?: string | null
+          preventive_action?: string | null
+          recovery?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          subsystem?: string | null
+          timeline?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trpe_integrity_checks: {
+        Row: {
+          category: string
+          check_name: string
+          details: Json
+          expected_count: number | null
+          found_count: number
+          id: string
+          ran_at: string
+          reconciled: boolean
+          status: string
+        }
+        Insert: {
+          category: string
+          check_name: string
+          details?: Json
+          expected_count?: number | null
+          found_count?: number
+          id?: string
+          ran_at?: string
+          reconciled?: boolean
+          status: string
+        }
+        Update: {
+          category?: string
+          check_name?: string
+          details?: Json
+          expected_count?: number | null
+          found_count?: number
+          id?: string
+          ran_at?: string
+          reconciled?: boolean
+          status?: string
+        }
+        Relationships: []
+      }
+      trpe_reliability_metrics: {
+        Row: {
+          availability: number | null
+          created_at: string
+          error_budget_remaining: number | null
+          failure_rate: number | null
+          id: string
+          latency_p95_ms: number | null
+          mtbf_minutes: number | null
+          mttr_minutes: number | null
+          retry_rate: number | null
+          subsystem: string
+          success_rate: number | null
+          timeout_rate: number | null
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          availability?: number | null
+          created_at?: string
+          error_budget_remaining?: number | null
+          failure_rate?: number | null
+          id?: string
+          latency_p95_ms?: number | null
+          mtbf_minutes?: number | null
+          mttr_minutes?: number | null
+          retry_rate?: number | null
+          subsystem: string
+          success_rate?: number | null
+          timeout_rate?: number | null
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          availability?: number | null
+          created_at?: string
+          error_budget_remaining?: number | null
+          failure_rate?: number | null
+          id?: string
+          latency_p95_ms?: number | null
+          mtbf_minutes?: number | null
+          mttr_minutes?: number | null
+          retry_rate?: number | null
+          subsystem?: string
+          success_rate?: number | null
+          timeout_rate?: number | null
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      trpe_runs: {
+        Row: {
+          completed_at: string | null
+          cycle: string
+          id: string
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          cycle: string
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          cycle?: string
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      trpe_self_healing_actions: {
+        Row: {
+          action: string
+          completed_at: string | null
+          created_at: string
+          details: Json
+          escalated: boolean
+          id: string
+          outcome: string | null
+          safe_mode: boolean
+          status: string
+          subsystem: string
+          trigger: string
+        }
+        Insert: {
+          action: string
+          completed_at?: string | null
+          created_at?: string
+          details?: Json
+          escalated?: boolean
+          id?: string
+          outcome?: string | null
+          safe_mode?: boolean
+          status?: string
+          subsystem: string
+          trigger: string
+        }
+        Update: {
+          action?: string
+          completed_at?: string | null
+          created_at?: string
+          details?: Json
+          escalated?: boolean
+          id?: string
+          outcome?: string | null
+          safe_mode?: boolean
+          status?: string
+          subsystem?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      trpe_settings: {
+        Row: {
+          config: Json
+          enabled: boolean
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trpe_slo_evaluations: {
+        Row: {
+          details: Json
+          evaluated_at: string
+          id: string
+          slo_id: string
+          status: string
+          value: number
+        }
+        Insert: {
+          details?: Json
+          evaluated_at?: string
+          id?: string
+          slo_id: string
+          status: string
+          value: number
+        }
+        Update: {
+          details?: Json
+          evaluated_at?: string
+          id?: string
+          slo_id?: string
+          status?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trpe_slo_evaluations_slo_id_fkey"
+            columns: ["slo_id"]
+            isOneToOne: false
+            referencedRelation: "trpe_slos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trpe_slos: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          id: string
+          last_evaluated_at: string | null
+          metric: string
+          name: string
+          status: string
+          subsystem: string
+          target: number
+          window_label: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          metric: string
+          name: string
+          status?: string
+          subsystem: string
+          target: number
+          window_label?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          metric?: string
+          name?: string
+          status?: string
+          subsystem?: string
+          target?: number
+          window_label?: string
+        }
+        Relationships: []
+      }
+      trpe_subsystems: {
+        Row: {
+          category: string
+          created_at: string
+          critical: boolean
+          description: string | null
+          id: string
+          name: string
+          owner: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          critical?: boolean
+          description?: string | null
+          id?: string
+          name: string
+          owner?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          critical?: boolean
+          description?: string | null
+          id?: string
+          name?: string
+          owner?: string | null
+        }
+        Relationships: []
+      }
+      trpe_verification_runs: {
+        Row: {
+          details: Json
+          duration_ms: number | null
+          id: string
+          journey: string
+          ran_at: string
+          status: string
+        }
+        Insert: {
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          journey: string
+          ran_at?: string
+          status: string
+        }
+        Update: {
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          journey?: string
+          ran_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
