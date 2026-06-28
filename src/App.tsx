@@ -549,7 +549,6 @@ const PinterestBrainPage = lazyWithRetry(() => import("./pages/admin/PinterestBr
 const PinterestSpyPage = lazyWithRetry(() => import("./pages/admin/PinterestSpyPage"));
 const PminPage = lazyWithRetry(() => import("./pages/admin/PminPage"));
 const RevenueBrainPage = lazyWithRetry(() => import("./pages/admin/RevenueBrainPage"));
-const ProductIntelligencePage = lazyWithRetry(() => import("./pages/admin/ProductIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
 const PinterestIntegrityPage = lazyWithRetry(() => import("./pages/admin/PinterestIntegrityPage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
