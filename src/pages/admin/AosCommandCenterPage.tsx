@@ -109,6 +109,8 @@ export default function AosCommandCenterPage() {
           <TabsTrigger value="twin">Digital Twin</TabsTrigger>
           <TabsTrigger value="consensus">Consensus</TabsTrigger>
           <TabsTrigger value="runs">Runs</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="failover">Failover</TabsTrigger>
         </TabsList>
 
         <TabsContent value="engines">
