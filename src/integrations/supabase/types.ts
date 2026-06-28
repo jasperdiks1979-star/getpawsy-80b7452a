@@ -22095,6 +22095,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie_v2_candidate_sets: {
+        Row: {
+          created_at: string
+          dry_run: boolean
+          id: string
+          niche: string | null
+          product_slug: string | null
+          requested: number
+          run_id: string | null
+          winner_creative_id: string | null
+          winner_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          niche?: string | null
+          product_slug?: string | null
+          requested: number
+          run_id?: string | null
+          winner_creative_id?: string | null
+          winner_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          niche?: string | null
+          product_slug?: string | null
+          requested?: number
+          run_id?: string | null
+          winner_creative_id?: string | null
+          winner_score?: number | null
+        }
+        Relationships: []
+      }
       pcie_v2_combo_fingerprints: {
         Row: {
           creative_id: string | null
@@ -22177,10 +22213,13 @@ export type Database = {
       }
       pcie_v2_creatives: {
         Row: {
+          candidate_set_id: string | null
           created_at: string
           decisions: Json
+          dry_run: boolean
           fingerprint: string | null
           id: string
+          image_fingerprint: string | null
           image_url: string | null
           model: string | null
           negative_prompt: string | null
@@ -22194,17 +22233,24 @@ export type Database = {
           product_slug: string | null
           prompt: string | null
           prompt_version: string | null
+          provider_slug: string | null
           reject_reason: string | null
+          render_settings: Json | null
+          render_status: string | null
+          replay_of_creative_id: string | null
           run_id: string | null
           scores: Json
           seed: number | null
           status: string
         }
         Insert: {
+          candidate_set_id?: string | null
           created_at?: string
           decisions?: Json
+          dry_run?: boolean
           fingerprint?: string | null
           id?: string
+          image_fingerprint?: string | null
           image_url?: string | null
           model?: string | null
           negative_prompt?: string | null
@@ -22218,17 +22264,24 @@ export type Database = {
           product_slug?: string | null
           prompt?: string | null
           prompt_version?: string | null
+          provider_slug?: string | null
           reject_reason?: string | null
+          render_settings?: Json | null
+          render_status?: string | null
+          replay_of_creative_id?: string | null
           run_id?: string | null
           scores?: Json
           seed?: number | null
           status?: string
         }
         Update: {
+          candidate_set_id?: string | null
           created_at?: string
           decisions?: Json
+          dry_run?: boolean
           fingerprint?: string | null
           id?: string
+          image_fingerprint?: string | null
           image_url?: string | null
           model?: string | null
           negative_prompt?: string | null
@@ -22242,7 +22295,11 @@ export type Database = {
           product_slug?: string | null
           prompt?: string | null
           prompt_version?: string | null
+          provider_slug?: string | null
           reject_reason?: string | null
+          render_settings?: Json | null
+          render_status?: string | null
+          replay_of_creative_id?: string | null
           run_id?: string | null
           scores?: Json
           seed?: number | null
@@ -22550,6 +22607,159 @@ export type Database = {
           name?: string
           order_index?: number
           slug?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_prompt_qa: {
+        Row: {
+          check_slug: string
+          created_at: string
+          creative_id: string
+          detail: string | null
+          id: string
+          passed: boolean
+          severity: string
+        }
+        Insert: {
+          check_slug: string
+          created_at?: string
+          creative_id: string
+          detail?: string | null
+          id?: string
+          passed: boolean
+          severity?: string
+        }
+        Update: {
+          check_slug?: string
+          created_at?: string
+          creative_id?: string
+          detail?: string | null
+          id?: string
+          passed?: boolean
+          severity?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_render_attempts: {
+        Row: {
+          attempt_no: number
+          candidate_set_id: string | null
+          created_at: string
+          creative_id: string | null
+          duration_ms: number | null
+          error: string | null
+          id: string
+          image_fingerprint: string | null
+          image_url: string | null
+          model: string | null
+          provider_slug: string
+          render_settings: Json | null
+          seed: string | null
+          status: string
+        }
+        Insert: {
+          attempt_no?: number
+          candidate_set_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          image_fingerprint?: string | null
+          image_url?: string | null
+          model?: string | null
+          provider_slug: string
+          render_settings?: Json | null
+          seed?: string | null
+          status: string
+        }
+        Update: {
+          attempt_no?: number
+          candidate_set_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          image_fingerprint?: string | null
+          image_url?: string | null
+          model?: string | null
+          provider_slug?: string
+          render_settings?: Json | null
+          seed?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_render_providers: {
+        Row: {
+          config: Json
+          created_at: string
+          display_name: string
+          enabled: boolean
+          handler: string
+          id: string
+          max_retries: number
+          model: string | null
+          priority: number
+          slug: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          display_name: string
+          enabled?: boolean
+          handler: string
+          id?: string
+          max_retries?: number
+          model?: string | null
+          priority?: number
+          slug: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          display_name?: string
+          enabled?: boolean
+          handler?: string
+          id?: string
+          max_retries?: number
+          model?: string | null
+          priority?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_render_qa: {
+        Row: {
+          check_slug: string
+          created_at: string
+          creative_id: string
+          detail: string | null
+          id: string
+          passed: boolean
+          render_attempt_id: string | null
+          score: number | null
+        }
+        Insert: {
+          check_slug: string
+          created_at?: string
+          creative_id: string
+          detail?: string | null
+          id?: string
+          passed: boolean
+          render_attempt_id?: string | null
+          score?: number | null
+        }
+        Update: {
+          check_slug?: string
+          created_at?: string
+          creative_id?: string
+          detail?: string | null
+          id?: string
+          passed?: boolean
+          render_attempt_id?: string | null
+          score?: number | null
         }
         Relationships: []
       }
