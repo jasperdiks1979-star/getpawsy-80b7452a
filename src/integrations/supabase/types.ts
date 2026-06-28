@@ -22378,6 +22378,9 @@ export type Database = {
           pinterest_pin_id: string | null
           pinterest_queue_id: string | null
           pipeline_trace: Json
+          ppe_composite: number | null
+          ppe_payload: Json
+          ppe_winner: boolean
           product_id: string | null
           product_slug: string | null
           prompt: string | null
@@ -22414,6 +22417,9 @@ export type Database = {
           pinterest_pin_id?: string | null
           pinterest_queue_id?: string | null
           pipeline_trace?: Json
+          ppe_composite?: number | null
+          ppe_payload?: Json
+          ppe_winner?: boolean
           product_id?: string | null
           product_slug?: string | null
           prompt?: string | null
@@ -22450,6 +22456,9 @@ export type Database = {
           pinterest_pin_id?: string | null
           pinterest_queue_id?: string | null
           pipeline_trace?: Json
+          ppe_composite?: number | null
+          ppe_payload?: Json
+          ppe_winner?: boolean
           product_id?: string | null
           product_slug?: string | null
           prompt?: string | null
@@ -36408,6 +36417,182 @@ export type Database = {
           last_status?: string | null
           source_key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ppe_badge_usage: {
+        Row: {
+          badge_id: string
+          creative_id: string | null
+          id: number
+          used_at: string
+        }
+        Insert: {
+          badge_id: string
+          creative_id?: string | null
+          id?: number
+          used_at?: string
+        }
+        Update: {
+          badge_id?: string
+          creative_id?: string | null
+          id?: number
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ppe_badge_usage_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "ppe_brand_badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ppe_brand_badges: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          id: string
+          text: string
+          weight: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          text: string
+          weight?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          text?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      ppe_candidate_scores: {
+        Row: {
+          attention_map: Json
+          badge_text: string | null
+          candidate_set_id: string | null
+          competitor_verdict: string | null
+          composite: number | null
+          created_at: string
+          creative_id: string | null
+          ctr_prediction: number | null
+          id: string
+          niche: string | null
+          novelty: number | null
+          primary_emotion: string | null
+          product_slug: string | null
+          product_visibility: number | null
+          purchase_prediction: number | null
+          raw: Json
+          rejection_reasons: Json
+          save_prediction: number | null
+          scroll_stop: number | null
+          story: string | null
+          us_relevance: number | null
+          winner: boolean
+        }
+        Insert: {
+          attention_map?: Json
+          badge_text?: string | null
+          candidate_set_id?: string | null
+          competitor_verdict?: string | null
+          composite?: number | null
+          created_at?: string
+          creative_id?: string | null
+          ctr_prediction?: number | null
+          id?: string
+          niche?: string | null
+          novelty?: number | null
+          primary_emotion?: string | null
+          product_slug?: string | null
+          product_visibility?: number | null
+          purchase_prediction?: number | null
+          raw?: Json
+          rejection_reasons?: Json
+          save_prediction?: number | null
+          scroll_stop?: number | null
+          story?: string | null
+          us_relevance?: number | null
+          winner?: boolean
+        }
+        Update: {
+          attention_map?: Json
+          badge_text?: string | null
+          candidate_set_id?: string | null
+          competitor_verdict?: string | null
+          composite?: number | null
+          created_at?: string
+          creative_id?: string | null
+          ctr_prediction?: number | null
+          id?: string
+          niche?: string | null
+          novelty?: number | null
+          primary_emotion?: string | null
+          product_slug?: string | null
+          product_visibility?: number | null
+          purchase_prediction?: number | null
+          raw?: Json
+          rejection_reasons?: Json
+          save_prediction?: number | null
+          scroll_stop?: number | null
+          story?: string | null
+          us_relevance?: number | null
+          winner?: boolean
+        }
+        Relationships: []
+      }
+      ppe_story_profiles: {
+        Row: {
+          buying_motivations: Json
+          created_at: string
+          desired_response: string | null
+          id: string
+          niche: string
+          primary_emotion: string
+          product_slug: string | null
+          scene_suggestions: Json
+          secondary_emotion: string | null
+          source: string
+          story: string
+          target_customer: Json
+        }
+        Insert: {
+          buying_motivations?: Json
+          created_at?: string
+          desired_response?: string | null
+          id?: string
+          niche: string
+          primary_emotion: string
+          product_slug?: string | null
+          scene_suggestions?: Json
+          secondary_emotion?: string | null
+          source?: string
+          story: string
+          target_customer?: Json
+        }
+        Update: {
+          buying_motivations?: Json
+          created_at?: string
+          desired_response?: string | null
+          id?: string
+          niche?: string
+          primary_emotion?: string
+          product_slug?: string | null
+          scene_suggestions?: Json
+          secondary_emotion?: string | null
+          source?: string
+          story?: string
+          target_customer?: Json
         }
         Relationships: []
       }
