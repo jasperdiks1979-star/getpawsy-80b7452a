@@ -246,21 +246,19 @@ Deno.serve(async (req) => {
 
     // 8) Log to evolution log + ops snapshot
     await sb.from("pinterest_evolution_log").insert({
-      run_id: runId,
-      action: "taste_engine_run",
-      target: "account",
-      payload: {
-        window_days: WINDOW_DAYS,
-        pins_with_signal: per.size,
+      decision_type: "taste_engine_run",
+      target_dimension: "account",
+      rationale: `Taste run ${runId}: ${signalsWritten} signals, ${clustersWritten} clusters, ${scored} drafts scored (${gateOk} pass).`,
+      new_value: {
+        run_id: runId,
         signals_written: signalsWritten,
         clusters_written: clustersWritten,
         rising_signals: signalRows.filter(s => s.status === "rising").length,
         declining_signals: signalRows.filter(s => s.status === "declining").length,
         top_rising: topRising.slice(0, 10),
         cluster_summary: clusterRows.map(c => ({ k: c.cluster_key, w: c.weight, m: c.momentum, s: c.status })),
-        drafts_scored: scored,
-        drafts_pass_gate: gateOk,
       },
+      metrics: { window_days: WINDOW_DAYS, pins_with_signal: per.size, drafts_scored: scored, drafts_pass_gate: gateOk },
     });
     await sb.from("pinterest_ops_snapshots").insert({
       kind: "taste_engine",
