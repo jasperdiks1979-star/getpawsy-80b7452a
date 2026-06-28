@@ -1741,3 +1741,152 @@ function GrowthDirectorPanel() {
     </Card>
   );
 }
+
+function EvidenceGovernorPanel() {
+  const [weights, setWeights] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const [w, h, r] = await Promise.all([
+      (supabase as any).from("pcie2_trait_weights")
+        .select("dimension,value,weight,prev_weight,status,sample_n,confidence,ctr_lift,save_lift,rev_lift,purchase_lift,trend,stability,evidence_age_days,last_reason,last_evaluated_at")
+        .order("weight", { ascending: false }).limit(400),
+      (supabase as any).from("pcie2_trait_weight_history")
+        .select("dimension,value,old_weight,new_weight,delta,reason,evidence,created_at")
+        .order("created_at", { ascending: false }).limit(40),
+      (supabase as any).from("pcie2_evidence_runs")
+        .select("started_at,finished_at,traits_evaluated,traits_promoted,traits_demoted,traits_observed,avg_confidence,learning_velocity,summary")
+        .order("started_at", { ascending: false }).limit(10),
+    ]);
+    setWeights(w.data ?? []);
+    setHistory(h.data ?? []);
+    setRuns(r.data ?? []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function runNow(dry = false) {
+    setRunning(true);
+    try {
+      await (supabase as any).functions.invoke(`pcie2-evidence-governor${dry ? "?dry_run=1" : ""}`);
+      await load();
+    } finally { setRunning(false); }
+  }
+
+  const active = weights.filter((w) => w.status === "active");
+  const observ = weights.filter((w) => w.status === "observational");
+  const improving = [...active]
+    .filter((w) => Number(w.weight) > Number(w.prev_weight))
+    .sort((a, b) => (Number(b.weight) - Number(b.prev_weight)) - (Number(a.weight) - Number(a.prev_weight)))
+    .slice(0, 10);
+  const declining = [...active]
+    .filter((w) => Number(w.weight) < Number(w.prev_weight))
+    .sort((a, b) => (Number(a.weight) - Number(a.prev_weight)) - (Number(b.weight) - Number(b.prev_weight)))
+    .slice(0, 10);
+  const highestConfidence = [...active]
+    .sort((a, b) => Number(b.confidence) - Number(a.confidence)).slice(0, 10);
+  const newest = [...weights]
+    .sort((a, b) => new Date(b.last_evaluated_at).getTime() - new Date(a.last_evaluated_at).getTime())
+    .slice(0, 10);
+  const awaiting = [...observ]
+    .sort((a, b) => Number(b.sample_n) - Number(a.sample_n)).slice(0, 10);
+  const lastRun = runs[0];
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-lg font-semibold">Creative Evidence Governor</h3>
+          <p className="text-xs text-muted-foreground">
+            Weight changes are evidence-gated (n≥20 · impressions≥500 · age≥14d · Wilson conf≥0.60 · no single-pin dominance).
+            Updates are gradual EMA — never instant flips.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" variant="outline" onClick={() => runNow(true)} disabled={running}>Dry-run</Button>
+          <Button size="sm" onClick={() => runNow(false)} disabled={running}>Run governor</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+        <Stat label="Active rules" value={active.length} />
+        <Stat label="Observational" value={observ.length} />
+        <Stat label="Avg confidence" value={lastRun ? Number(lastRun.avg_confidence ?? 0).toFixed(2) : "—"} />
+        <Stat label="Learning velocity" value={lastRun ? `${Number(lastRun.learning_velocity ?? 0).toFixed(2)}/d` : "—"} />
+        <Stat label="Last run" value={lastRun ? new Date(lastRun.started_at).toLocaleString() : "—"} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <TraitList title="Top improving traits" rows={improving} showDelta />
+        <TraitList title="Top declining traits" rows={declining} showDelta />
+        <TraitList title="Highest confidence rules" rows={highestConfidence} />
+        <TraitList title="Newest learning" rows={newest} />
+      </div>
+
+      <details>
+        <summary className="cursor-pointer text-sm font-medium">Traits awaiting more evidence ({observ.length})</summary>
+        <TraitList title="" rows={awaiting} muted />
+      </details>
+
+      <details>
+        <summary className="cursor-pointer text-sm font-medium">Recent weight changes ({history.length})</summary>
+        <ul className="text-xs space-y-1 mt-2 max-h-72 overflow-auto">
+          {history.map((h, i) => (
+            <li key={i} className="border-b border-border/40 pb-1">
+              <span className="font-mono">{h.dimension}={h.value}</span>{" "}
+              <span className={Number(h.delta) >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                {Number(h.old_weight).toFixed(2)} → {Number(h.new_weight).toFixed(2)} ({Number(h.delta) >= 0 ? "+" : ""}{Number(h.delta).toFixed(2)})
+              </span>
+              <span className="text-muted-foreground"> · {h.reason}</span>
+            </li>
+          ))}
+          {history.length === 0 && <li className="text-muted-foreground">No weight changes yet — system still observing.</li>}
+        </ul>
+      </details>
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="rounded border border-border p-2">
+      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
+      <div className="font-semibold">{String(value)}</div>
+    </div>
+  );
+}
+
+function TraitList({ title, rows, showDelta = false, muted = false }: { title: string; rows: any[]; showDelta?: boolean; muted?: boolean }) {
+  return (
+    <div className={muted ? "opacity-80" : ""}>
+      {title && <div className="text-xs font-semibold mb-1">{title}</div>}
+      <ul className="text-xs space-y-1">
+        {rows.map((r, i) => {
+          const delta = Number(r.weight) - Number(r.prev_weight);
+          return (
+            <li key={i} className="flex items-center justify-between gap-2 border-b border-border/30 py-0.5">
+              <span className="truncate font-mono" title={`${r.dimension}=${r.value}`}>
+                {r.dimension}=<b>{r.value}</b>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <Badge variant="outline">w {Number(r.weight).toFixed(2)}</Badge>
+                {showDelta && (
+                  <span className={delta >= 0 ? "text-emerald-600" : "text-rose-600"}>
+                    {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
+                  </span>
+                )}
+                <span className="text-muted-foreground">n={r.sample_n} · c={Number(r.confidence ?? 0).toFixed(2)}</span>
+              </span>
+            </li>
+          );
+        })}
+        {rows.length === 0 && <li className="text-muted-foreground">No data yet.</li>}
+      </ul>
+    </div>
+  );
+}
