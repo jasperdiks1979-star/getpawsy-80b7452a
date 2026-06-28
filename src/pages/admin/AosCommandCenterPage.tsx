@@ -27,7 +27,7 @@ export default function AosCommandCenterPage() {
 
   async function load() {
     setLoading(true);
-    const [e, ev, t, k, h, s, tw, c, r] = await Promise.all([
+    const [e, ev, t, k, h, s, tw, c, r, res, fo] = await Promise.all([
       supabase.from("aos_engine_registry").select("*").order("engine_key"),
       supabase.from("aos_events").select("*").order("sequence_no", { ascending: false }).limit(100),
       supabase.from("aos_tasks").select("*").order("priority", { ascending: false }).limit(50),
@@ -49,7 +49,8 @@ export default function AosCommandCenterPage() {
     setTwin(tw.data ?? []);
     setConsensus(c.data ?? []);
     setRuns(r.data ?? []);
-    // The two extra promises live at indexes 9 and 10 in the destructure below.
+    setResources(res.data ?? []);
+    setFailovers(fo.data ?? []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
