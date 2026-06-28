@@ -198,7 +198,7 @@ const handlers: Record<string, (p: any) => Promise<any>> = {
       rows.push({ horizon, metric: "revenue", target_date: f.target_date, forecast: f.revenue, ci_low: f.revenue_ci_low, ci_high: f.revenue_ci_high, model: out?.model ?? "llm", model_version: out?.model_version ?? "v1" });
       rows.push({ horizon, metric: "profit", target_date: f.target_date, forecast: f.profit, ci_low: f.profit_ci_low, ci_high: f.profit_ci_high, model: out?.model ?? "llm", model_version: out?.model_version ?? "v1" });
     }
-    if (rows.length) await supabase.from("roe_forecasts").upsert(rows, { onConflict: "horizon,metric,target_date,COALESCE(model_version,'')" as any });
+    if (rows.length) await supabase.from("roe_forecasts").upsert(rows, { onConflict: "horizon,metric,target_date,model_version" });
     return rows;
   },
 

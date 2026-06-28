@@ -50969,6 +50969,672 @@ export type Database = {
           },
         ]
       }
+      roe_bottlenecks: {
+        Row: {
+          area: string
+          confidence: number
+          description: string
+          detected_at: string
+          evidence: Json
+          expected_unlock_usd: number | null
+          id: string
+          recommended_action: string | null
+          severity: number
+          status: string
+        }
+        Insert: {
+          area: string
+          confidence?: number
+          description: string
+          detected_at?: string
+          evidence?: Json
+          expected_unlock_usd?: number | null
+          id?: string
+          recommended_action?: string | null
+          severity?: number
+          status?: string
+        }
+        Update: {
+          area?: string
+          confidence?: number
+          description?: string
+          detected_at?: string
+          evidence?: Json
+          expected_unlock_usd?: number | null
+          id?: string
+          recommended_action?: string | null
+          severity?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      roe_capital_allocations: {
+        Row: {
+          confidence: number
+          created_at: string
+          expected_return_usd: number | null
+          id: string
+          rationale: string | null
+          recommended_share_pct: number
+          resource: string
+          snapshot_date: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          expected_return_usd?: number | null
+          id?: string
+          rationale?: string | null
+          recommended_share_pct: number
+          resource: string
+          snapshot_date: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          expected_return_usd?: number | null
+          id?: string
+          rationale?: string | null
+          recommended_share_pct?: number
+          resource?: string
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
+      roe_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      roe_customer_value: {
+        Row: {
+          confidence: number
+          created_at: string
+          expected_churn_rate: number | null
+          expected_ltv: number | null
+          expected_profit_contribution: number | null
+          expected_referral_value: number | null
+          expected_repeat_purchases: number | null
+          id: string
+          notes: string | null
+          segment: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          expected_churn_rate?: number | null
+          expected_ltv?: number | null
+          expected_profit_contribution?: number | null
+          expected_referral_value?: number | null
+          expected_repeat_purchases?: number | null
+          id?: string
+          notes?: string | null
+          segment: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          expected_churn_rate?: number | null
+          expected_ltv?: number | null
+          expected_profit_contribution?: number | null
+          expected_referral_value?: number | null
+          expected_repeat_purchases?: number | null
+          id?: string
+          notes?: string | null
+          segment?: string
+        }
+        Relationships: []
+      }
+      roe_executive_scorecard: {
+        Row: {
+          business_value_score: number | null
+          capital_efficiency: number | null
+          created_at: string
+          efficiency_score: number | null
+          forecast_accuracy: number | null
+          growth_health: number | null
+          id: string
+          margin_score: number | null
+          notes: string | null
+          profit_health: number | null
+          revenue_health: number | null
+          scaling_readiness: number | null
+          snapshot_date: string
+        }
+        Insert: {
+          business_value_score?: number | null
+          capital_efficiency?: number | null
+          created_at?: string
+          efficiency_score?: number | null
+          forecast_accuracy?: number | null
+          growth_health?: number | null
+          id?: string
+          margin_score?: number | null
+          notes?: string | null
+          profit_health?: number | null
+          revenue_health?: number | null
+          scaling_readiness?: number | null
+          snapshot_date: string
+        }
+        Update: {
+          business_value_score?: number | null
+          capital_efficiency?: number | null
+          created_at?: string
+          efficiency_score?: number | null
+          forecast_accuracy?: number | null
+          growth_health?: number | null
+          id?: string
+          margin_score?: number | null
+          notes?: string | null
+          profit_health?: number | null
+          revenue_health?: number | null
+          scaling_readiness?: number | null
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
+      roe_forecasts: {
+        Row: {
+          ci_high: number | null
+          ci_low: number | null
+          created_at: string
+          features: Json
+          forecast: number
+          horizon: string
+          id: string
+          metric: string
+          model: string | null
+          model_version: string
+          target_date: string
+        }
+        Insert: {
+          ci_high?: number | null
+          ci_low?: number | null
+          created_at?: string
+          features?: Json
+          forecast: number
+          horizon: string
+          id?: string
+          metric: string
+          model?: string | null
+          model_version?: string
+          target_date: string
+        }
+        Update: {
+          ci_high?: number | null
+          ci_low?: number | null
+          created_at?: string
+          features?: Json
+          forecast?: number
+          horizon?: string
+          id?: string
+          metric?: string
+          model?: string | null
+          model_version?: string
+          target_date?: string
+        }
+        Relationships: []
+      }
+      roe_marginal_value: {
+        Row: {
+          confidence: number
+          created_at: string
+          delta_pct: number
+          expected_payback_days: number | null
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          id: string
+          lever: string
+          notes: string | null
+          risk: number
+          roi: number | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          delta_pct: number
+          expected_payback_days?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          lever: string
+          notes?: string | null
+          risk?: number
+          roi?: number | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          delta_pct?: number
+          expected_payback_days?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          lever?: string
+          notes?: string | null
+          risk?: number
+          roi?: number | null
+        }
+        Relationships: []
+      }
+      roe_portfolio_ranks: {
+        Row: {
+          composite_score: number
+          created_at: string
+          expected_future_value_usd: number | null
+          growth_pct: number | null
+          id: string
+          inventory_stability: number | null
+          ltv_score: number | null
+          margin_pct: number | null
+          operational_complexity: number | null
+          product_id: string
+          product_label: string | null
+          profit_30d: number | null
+          rank: number | null
+          recommended_action: string | null
+          refund_rate: number | null
+          revenue_30d: number | null
+          shipping_cost: number | null
+          snapshot_date: string
+          trend_score: number | null
+        }
+        Insert: {
+          composite_score?: number
+          created_at?: string
+          expected_future_value_usd?: number | null
+          growth_pct?: number | null
+          id?: string
+          inventory_stability?: number | null
+          ltv_score?: number | null
+          margin_pct?: number | null
+          operational_complexity?: number | null
+          product_id: string
+          product_label?: string | null
+          profit_30d?: number | null
+          rank?: number | null
+          recommended_action?: string | null
+          refund_rate?: number | null
+          revenue_30d?: number | null
+          shipping_cost?: number | null
+          snapshot_date: string
+          trend_score?: number | null
+        }
+        Update: {
+          composite_score?: number
+          created_at?: string
+          expected_future_value_usd?: number | null
+          growth_pct?: number | null
+          id?: string
+          inventory_stability?: number | null
+          ltv_score?: number | null
+          margin_pct?: number | null
+          operational_complexity?: number | null
+          product_id?: string
+          product_label?: string | null
+          profit_30d?: number | null
+          rank?: number | null
+          recommended_action?: string | null
+          refund_rate?: number | null
+          revenue_30d?: number | null
+          shipping_cost?: number | null
+          snapshot_date?: string
+          trend_score?: number | null
+        }
+        Relationships: []
+      }
+      roe_pricing_recommendations: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          brand_impact: string | null
+          competitive_position: string | null
+          confidence: number
+          created_at: string
+          current_price: number | null
+          expected_conversion_impact: number | null
+          expected_ltv_impact: number | null
+          expected_margin_impact: number | null
+          expected_revenue_impact_usd: number | null
+          id: string
+          product_id: string
+          rationale: string | null
+          recommended_price: number
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          brand_impact?: string | null
+          competitive_position?: string | null
+          confidence?: number
+          created_at?: string
+          current_price?: number | null
+          expected_conversion_impact?: number | null
+          expected_ltv_impact?: number | null
+          expected_margin_impact?: number | null
+          expected_revenue_impact_usd?: number | null
+          id?: string
+          product_id: string
+          rationale?: string | null
+          recommended_price: number
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          brand_impact?: string | null
+          competitive_position?: string | null
+          confidence?: number
+          created_at?: string
+          current_price?: number | null
+          expected_conversion_impact?: number | null
+          expected_ltv_impact?: number | null
+          expected_margin_impact?: number | null
+          expected_revenue_impact_usd?: number | null
+          id?: string
+          product_id?: string
+          rationale?: string | null
+          recommended_price?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      roe_revenue_tree: {
+        Row: {
+          created_at: string
+          id: string
+          node: string
+          notes: string | null
+          sensitivity_profit: number | null
+          sensitivity_revenue: number | null
+          snapshot_date: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          node: string
+          notes?: string | null
+          sensitivity_profit?: number | null
+          sensitivity_revenue?: number | null
+          snapshot_date: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          node?: string
+          notes?: string | null
+          sensitivity_profit?: number | null
+          sensitivity_revenue?: number | null
+          snapshot_date?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      roe_scaling_opportunities: {
+        Row: {
+          channel: string
+          created_at: string
+          current_spend_usd: number | null
+          expected_marginal_return: number | null
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          id: string
+          rationale: string | null
+          recommended_spend_usd: number | null
+          risk: number | null
+          status: string
+          target: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          current_spend_usd?: number | null
+          expected_marginal_return?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          rationale?: string | null
+          recommended_spend_usd?: number | null
+          risk?: number | null
+          status?: string
+          target: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          current_spend_usd?: number | null
+          expected_marginal_return?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          rationale?: string | null
+          recommended_spend_usd?: number | null
+          risk?: number | null
+          status?: string
+          target?: string
+        }
+        Relationships: []
+      }
+      roe_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      roe_simulations: {
+        Row: {
+          confidence: number
+          created_at: string
+          expected_cash_flow_usd: number | null
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          expected_risk: number | null
+          id: string
+          intervention: Json
+          rationale: string | null
+          scenario: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          expected_cash_flow_usd?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          expected_risk?: number | null
+          id?: string
+          intervention?: Json
+          rationale?: string | null
+          scenario: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          expected_cash_flow_usd?: number | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          expected_risk?: number | null
+          id?: string
+          intervention?: Json
+          rationale?: string | null
+          scenario?: string
+        }
+        Relationships: []
+      }
+      roe_snapshots: {
+        Row: {
+          add_to_cart: number | null
+          aov: number | null
+          attributes: Json
+          cac: number | null
+          cash_flow: number | null
+          checkout_started: number | null
+          contribution_margin: number | null
+          created_at: string
+          ctr: number | null
+          gross_margin: number | null
+          id: string
+          ltv: number | null
+          net_margin: number | null
+          orders: number | null
+          outbound_ctr: number | null
+          payback_days: number | null
+          product_views: number | null
+          qualified_visits: number | null
+          refunds: number | null
+          repeat_orders: number | null
+          returns: number | null
+          revenue: number | null
+          roas: number | null
+          sessions: number | null
+          snapshot_date: string
+          source: string
+          updated_at: string
+          visitors: number | null
+        }
+        Insert: {
+          add_to_cart?: number | null
+          aov?: number | null
+          attributes?: Json
+          cac?: number | null
+          cash_flow?: number | null
+          checkout_started?: number | null
+          contribution_margin?: number | null
+          created_at?: string
+          ctr?: number | null
+          gross_margin?: number | null
+          id?: string
+          ltv?: number | null
+          net_margin?: number | null
+          orders?: number | null
+          outbound_ctr?: number | null
+          payback_days?: number | null
+          product_views?: number | null
+          qualified_visits?: number | null
+          refunds?: number | null
+          repeat_orders?: number | null
+          returns?: number | null
+          revenue?: number | null
+          roas?: number | null
+          sessions?: number | null
+          snapshot_date: string
+          source?: string
+          updated_at?: string
+          visitors?: number | null
+        }
+        Update: {
+          add_to_cart?: number | null
+          aov?: number | null
+          attributes?: Json
+          cac?: number | null
+          cash_flow?: number | null
+          checkout_started?: number | null
+          contribution_margin?: number | null
+          created_at?: string
+          ctr?: number | null
+          gross_margin?: number | null
+          id?: string
+          ltv?: number | null
+          net_margin?: number | null
+          orders?: number | null
+          outbound_ctr?: number | null
+          payback_days?: number | null
+          product_views?: number | null
+          qualified_visits?: number | null
+          refunds?: number | null
+          repeat_orders?: number | null
+          returns?: number | null
+          revenue?: number | null
+          roas?: number | null
+          sessions?: number | null
+          snapshot_date?: string
+          source?: string
+          updated_at?: string
+          visitors?: number | null
+        }
+        Relationships: []
+      }
+      roe_unit_economics: {
+        Row: {
+          break_even_cpa: number | null
+          break_even_roas: number | null
+          contribution_margin: number | null
+          created_at: string
+          customer_payback_days: number | null
+          gross_margin_pct: number | null
+          id: string
+          ltv_cac_ratio: number | null
+          net_margin_pct: number | null
+          operating_margin_pct: number | null
+          snapshot_date: string
+        }
+        Insert: {
+          break_even_cpa?: number | null
+          break_even_roas?: number | null
+          contribution_margin?: number | null
+          created_at?: string
+          customer_payback_days?: number | null
+          gross_margin_pct?: number | null
+          id?: string
+          ltv_cac_ratio?: number | null
+          net_margin_pct?: number | null
+          operating_margin_pct?: number | null
+          snapshot_date: string
+        }
+        Update: {
+          break_even_cpa?: number | null
+          break_even_roas?: number | null
+          contribution_margin?: number | null
+          created_at?: string
+          customer_payback_days?: number | null
+          gross_margin_pct?: number | null
+          id?: string
+          ltv_cac_ratio?: number | null
+          net_margin_pct?: number | null
+          operating_margin_pct?: number | null
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
       rr_atc_audit: {
         Row: {
           atc_clickable: boolean | null
@@ -56294,6 +56960,23 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      roe_compose_scorecard: { Args: { p_date: string }; Returns: Json }
+      roe_portfolio_score: {
+        Args: {
+          expected_future_value_usd: number
+          growth_pct: number
+          inventory_stability: number
+          ltv_score: number
+          margin_pct: number
+          operational_complexity: number
+          profit_30d: number
+          refund_rate: number
+          revenue_30d: number
+          shipping_cost: number
+          trend_score: number
+        }
+        Returns: number
       }
       run_pinterest_mass_repair: {
         Args: { p_phase: string; p_threshold: number }
