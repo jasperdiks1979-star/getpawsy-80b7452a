@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Brain, Play, Target, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { recordDecision } from "@/lib/governanceLedger";
 
 type Run = {
   id: string;
@@ -68,6 +69,29 @@ export default function AiCeoPage() {
       if (error) throw error;
       toast.success("AI CEO loop complete");
       await load();
+      // Governance Ledger (Phase 4): every AI CEO recommendation becomes
+      // exactly one ledger row, deduped by recommendation id. This is the
+      // single bridge between the reasoning system and persisted evidence —
+      // no parallel tables, no duplicate logging.
+      try {
+        const { data: latest } = await supabase
+          .from("ai_ceo_runs").select("id").order("started_at", { ascending: false }).limit(1).maybeSingle();
+        if (latest) {
+          const { data: r } = await supabase
+            .from("ai_ceo_recommendations").select("*").eq("run_id", (latest as any).id);
+          for (const rec of ((r as any[]) ?? [])) {
+            await recordDecision({
+              sourceEngine: "ai_ceo",
+              decisionType: rec.category ?? "recommendation",
+              proposal: { title: rec.title, reason: rec.reason, rank: rec.rank },
+              expectedMetric: "revenue_cents",
+              expectedValue: rec.expected_revenue_cents ?? 0,
+              confidence: rec.confidence ?? null,
+              dedupeKey: `ai_ceo:${rec.id}`,
+            });
+          }
+        }
+      } catch (e) { console.warn("[governance] AI CEO ledger sync failed", e); }
     } catch (e: any) {
       toast.error(e.message ?? "Loop failed");
     } finally {

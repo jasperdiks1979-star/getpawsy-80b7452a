@@ -14206,6 +14206,69 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_decision_log: {
+        Row: {
+          actual_metric: string | null
+          actual_value: number | null
+          confidence: number | null
+          created_at: string
+          decision_type: string
+          dedupe_key: string | null
+          executed_at: string | null
+          expected_metric: string | null
+          expected_value: number | null
+          id: string
+          learning_status: string
+          linked_report: string | null
+          outcome: string | null
+          proposal: Json
+          roi: number | null
+          source_engine: string
+          timestamp: string
+          updated_at: string
+        }
+        Insert: {
+          actual_metric?: string | null
+          actual_value?: number | null
+          confidence?: number | null
+          created_at?: string
+          decision_type: string
+          dedupe_key?: string | null
+          executed_at?: string | null
+          expected_metric?: string | null
+          expected_value?: number | null
+          id?: string
+          learning_status?: string
+          linked_report?: string | null
+          outcome?: string | null
+          proposal?: Json
+          roi?: number | null
+          source_engine: string
+          timestamp?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_metric?: string | null
+          actual_value?: number | null
+          confidence?: number | null
+          created_at?: string
+          decision_type?: string
+          dedupe_key?: string | null
+          executed_at?: string | null
+          expected_metric?: string | null
+          expected_value?: number | null
+          id?: string
+          learning_status?: string
+          linked_report?: string | null
+          outcome?: string | null
+          proposal?: Json
+          roi?: number | null
+          source_engine?: string
+          timestamp?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       governor_decision_logs: {
         Row: {
           created_at: string
@@ -42313,6 +42376,30 @@ export type Database = {
           view_to_atc: number
           view_to_purchase: number
         }[]
+      }
+      gov_record_decision: {
+        Args: {
+          p_confidence?: number
+          p_decision_type: string
+          p_dedupe_key?: string
+          p_expected_metric?: string
+          p_expected_value?: number
+          p_linked_report?: string
+          p_proposal: Json
+          p_source_engine: string
+        }
+        Returns: string
+      }
+      gov_update_outcome: {
+        Args: {
+          p_actual_metric: string
+          p_actual_value: number
+          p_id: string
+          p_learning_status?: string
+          p_outcome: string
+          p_roi?: number
+        }
+        Returns: undefined
       }
       governor_check_pin: {
         Args: {
