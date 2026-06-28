@@ -529,6 +529,9 @@ Deno.serve(async (req) => {
       const meta = (p?.meta ?? {}) as Record<string, unknown>;
       if (url.includes("/creative-director/")) return "creative_director_path";
       if ((meta as any)?.creative_source === "creative_director_v2") return "creative_director_meta";
+      if (url.includes("/creative-factory/")) return "creative_factory_path";
+      if ((meta as any)?.creative_source === "creative_factory_v1") return "creative_factory_meta";
+      if ((meta as any)?.generator === "pinterest-creative-factory") return "creative_factory_meta";
       if (/cf\.cjdropshipping\.com|oss-cf\.cjdropshipping\.com/i.test(url)) return "cj_supplier";
       if (/getpawsy\.pet\/images\/products\//i.test(url)) return "product_image";
       if (/res\.cloudinary\.com/i.test(url) && /l_text[:_]/i.test(url)) return "cloudinary_template_overlay";
@@ -537,7 +540,10 @@ Deno.serve(async (req) => {
       return "untagged_non_creative_director";
     };
     const isAiAllowed = (cat: string) =>
-      cat === "creative_director_path" || cat === "creative_director_meta";
+      cat === "creative_director_path" ||
+      cat === "creative_director_meta" ||
+      cat === "creative_factory_path" ||
+      cat === "creative_factory_meta";
 
     try {
       const { data: rtPremium } = await sb
