@@ -364,6 +364,55 @@ export default function PinterestHealthPage() {
             <Row label="Last director output" value={snap.lastDirectorAt ? `${fmt(snap.lastDirectorAt)} (${snap.minutesSinceLastDirector} min)` : "—"} />
           </div>
         )}
+
+        {snap && (
+          <div className="mt-5">
+            <h3 className="text-sm font-semibold mb-2">Autonomy KPIs (24h)</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+              <Stat
+                label="Success rate"
+                value={snap.successRate24h == null ? 0 : Math.round(snap.successRate24h * 100)}
+              />
+              <Stat
+                label="Avg interval (min)"
+                value={snap.avgPublishIntervalMin ?? 0}
+              />
+              <Stat label="Factory throughput" value={snap.factoryThroughput24h ?? 0} />
+              <Stat label="Queue growth" value={snap.queueGrowthRate24h ?? 0} />
+              <Stat label="Est. runtime (days)" value={snap.estRuntimeDays ?? 0} />
+              <Stat label="Boards" value={snap.tokenStatus?.boardCount ?? 0} />
+            </div>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <Row
+                label="Pinterest token"
+                value={
+                  snap.tokenStatus?.connected
+                    ? `🟢 connected · expires ${fmt(snap.tokenStatus.expiresAt)} (${snap.tokenStatus.minutesUntilExpiry ?? "—"} min)`
+                    : "🔴 disconnected"
+                }
+              />
+              <Row
+                label="Daily publish rate"
+                value={`${snap.publishedToday} today`}
+              />
+            </div>
+            {snap.cronJobs && snap.cronJobs.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-2">Critical cron freshness</h3>
+                <div className="space-y-1 text-xs">
+                  {snap.cronJobs.map((j) => (
+                    <div key={j.name} className="flex justify-between border-b py-1 gap-2 flex-wrap">
+                      <span className="font-mono">{j.ok ? "🟢" : "🔴"} {j.name}</span>
+                      <span className="text-muted-foreground">
+                        last run {j.minutesSinceRun ?? "—"} min ago
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {snap && snap.incidents.length > 0 && (
