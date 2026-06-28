@@ -1,0 +1,45 @@
+{
+  "id": "shil-v1-2026-06-28",
+  "title": "Self-Healing Intelligence Layer (SHIL) v1",
+  "date": "2026-06-28",
+  "architectural_rule": "Zero-Downtime Autonomous Self-Healing Platform — every critical subsystem registers a probe → diagnose → recover → validate → learn contract.",
+  "components_protected": [
+    "pinterest_creative_factory","pcie2_publish_queue","pcie2_missing_pin_images",
+    "pinterest_oauth","pinterest_cron_worker","pinterest_premium_engine",
+    "checkout_funnel_collapse","stripe_session_expiry_burst","analytics_ingestion",
+    "frontend_error_rate","pinterest_pipeline_failures","cron_job_freshness",
+    "media_asset_404","cinematic_worker_heartbeat","render_worker_heartbeat","guardian_status"
+  ],
+  "new_tables": ["shil_subsystems","shil_signatures","shil_playbooks","shil_incidents","shil_recoveries","shil_metrics_daily"],
+  "new_edge_functions": ["self-healing-orchestrator","self-healing-recoverer","self-healing-validator"],
+  "cron": {"name": "shil-orchestrator-5min","schedule": "*/5 * * * *"},
+  "playbooks_seeded": [
+    "restart_pinterest_cron_worker","replenish_creative_factory","requeue_pcie2_missing_images",
+    "refresh_pinterest_oauth","unpause_premium_engine_if_safe","escalate_only"
+  ],
+  "first_run_results": {
+    "subsystems_probed": 16,
+    "green": 13,
+    "yellow": 1,
+    "red": 2,
+    "incidents_opened": 3,
+    "recoveries_dispatched": 3,
+    "auto_recovery_succeeded": ["restart_pinterest_cron_worker"],
+    "escalated": ["frontend_error_rate"],
+    "in_progress": ["requeue_pcie2_missing_images"]
+  },
+  "safety": {
+    "publishing_actions": "all gated by existing quality gates — SHIL never publishes",
+    "stripe_actions": "escalate_only",
+    "security_actions": "escalate_only",
+    "destructive_actions": "all require human approval"
+  },
+  "metrics_tracked": ["MTTD","MTTR","auto_recovery_rate","recurring_incident_rate","false_positive_rate","availability_pct"],
+  "admin_route": "/admin/self-healing",
+  "next_iterations": [
+    "wire SHIL probes into per-subsystem incident_at timestamps for accurate MTTD",
+    "promote a few escalate_only playbooks to safe auto-recovery as confidence grows",
+    "nightly rollup edge function for shil_metrics_daily",
+    "Slack / email channel for guardian_notification_queue"
+  ]
+}
