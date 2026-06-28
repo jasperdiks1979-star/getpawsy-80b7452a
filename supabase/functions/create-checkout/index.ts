@@ -428,8 +428,13 @@ serve(async (req) => {
           },
         },
       ],
-      // Pre-fill phone (helps wallet payments + carrier delivery)
-      phone_number_collection: { enabled: true },
+      // Phone collection DISABLED (Growth Cycle #1, 2026-06-28).
+      // Evidence: 13/13 real USD Stripe sessions expired in last 30d; 100%
+      // mobile traffic. Baymard: each required Checkout field ≈ 7% abandon.
+      // Wallet payments (Apple/Google Pay/Link) still capture phone when
+      // the wallet provides it; CJ fulfillment does not require phone.
+      // Rollback: set { enabled: true }.
+      phone_number_collection: { enabled: false },
       // Locale-tag UI as English for US shoppers
       locale: "en",
       // Improves wallet payments by surfacing it as the express choice
