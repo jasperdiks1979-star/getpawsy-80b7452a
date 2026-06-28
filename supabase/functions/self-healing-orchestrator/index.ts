@@ -437,6 +437,27 @@ async function runOnce() {
 
     let dispatched = false;
     if (incidentId && playbookName) {
+      // Dedup: skip if there is already a recovery in-flight or attempted in
+      // the last 10 minutes for this incident.
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: recentRec } = await db
+        .from("shil_recoveries")
+        .select("id, outcome, started_at")
+        .eq("incident_id", incidentId)
+        .gte("started_at", tenMinAgo)
+        .limit(1)
+        .maybeSingle();
+      if (recentRec) {
+        results.push({
+          subsystem: sub.name,
+          status: probeResult.status,
+          symptom: probeResult.symptom,
+          incident_id: incidentId,
+          recovery_dispatched: false,
+          evidence: { ...probeResult.evidence, dedup: "recent_recovery_skipped" },
+        });
+        continue;
+      }
       try {
         await fetch(`${SUPABASE_URL}/functions/v1/self-healing-recoverer`, {
           method: "POST",
