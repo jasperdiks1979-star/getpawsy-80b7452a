@@ -47,6 +47,20 @@ type Snapshot = {
     boardCount: number | null;
   };
   cronJobs?: Array<{ name: string; minutesSinceRun: number | null; ok: boolean }>;
+  verification?: {
+    verified24h: number;
+    failed24h: number;
+    waitingBacklog: number;
+    successRate24h: number | null;
+    avgScore24h: number | null;
+    avgVerificationMinutes: number | null;
+    lastVerifiedAt: string | null;
+    lastFailedAt: string | null;
+    topFailureCauses: Array<{ reason: string; count: number }>;
+    autoRecoveries24h: number;
+    recoverySuccessRate24h: number | null;
+    productionHealthScore: number;
+  };
 };
 
 type WatchdogPayload = {
