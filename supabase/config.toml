@@ -449,3 +449,6 @@ verify_jwt = false
 
 [functions.pcie2-publish-assembler]
 verify_jwt = false
+
+[functions.pinterest-taste-engine]
+verify_jwt = false
