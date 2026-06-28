@@ -1337,7 +1337,7 @@ function CollectiveIntelligencePanel() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | string }) {
+function CiStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded border border-border/60 p-2">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
