@@ -2327,9 +2327,15 @@ const ProductDetail = () => {
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className={
+              // CRITICAL: keep this legacy desktop sticky bar hidden on mobile.
+              // PdpStickyAtc (md:hidden, z-40) owns the mobile sticky CTA. When
+              // this z-50 bar also renders on mobile, its wrapper div sits on
+              // top of the mobile ATC button and silently swallows every tap
+              // (the wrapper has no onClick) — pawsy-cart stays []. That single
+              // overlap killed every mobile purchase (167 PDP / 0 sales, 7d).
               pdpStickyV2
-                ? "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/60 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] safe-area-bottom"
-                : "fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.15)] safe-area-bottom"
+                ? "hidden md:block fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border/60 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] safe-area-bottom"
+                : "hidden md:block fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.15)] safe-area-bottom"
             }
           >
             {pdpStickyV2 && (
