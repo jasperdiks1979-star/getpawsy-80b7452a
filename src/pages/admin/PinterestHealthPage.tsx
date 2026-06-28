@@ -61,6 +61,19 @@ type Snapshot = {
     recoverySuccessRate24h: number | null;
     productionHealthScore: number;
   };
+  content?: {
+    avgContentScore: number | null;
+    contentDiversityScore: number;
+    expectedWeeklyReach: number;
+    topBoards: Array<{ board_name: string; posted: number; ctr: number; saveRate: number }>;
+    boardRanking: Array<{ board_name: string; score: number; classification: string | null }>;
+    topHeadlines: Array<{ headline: string; count: number; avgScore: number | null }>;
+    topHooks: Array<{ hook: string; count: number }>;
+    topCTAs: Array<{ cta: string; count: number }>;
+    worstContent: Array<{ pin_id: string; reason: string; score: number | null }>;
+    creativeEvolutionTrend: Array<{ day: string; avgScore: number; published: number }>;
+    qualityGateRejections24h: number;
+  };
 };
 
 type WatchdogPayload = {
