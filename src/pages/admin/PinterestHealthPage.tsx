@@ -124,6 +124,8 @@ export default function PinterestHealthPage() {
   const [growthLoading, setGrowthLoading] = useState(false);
   const [exp, setExp] = useState<any | null>(null);
   const [expLoading, setExpLoading] = useState(false);
+  const [evo, setEvo] = useState<any | null>(null);
+  const [evoLoading, setEvoLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -237,11 +239,27 @@ export default function PinterestHealthPage() {
     }
   }
 
+  async function refreshEvolution(execute = false) {
+    setEvoLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-evolution-engine",
+        execute ? { body: {} } : { method: "GET" as any },
+      );
+      if (!error && data?.ok) setEvo(data.snapshot);
+    } catch (_) {
+      /* silent */
+    } finally {
+      setEvoLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
     refreshGrowth(false);
     refreshExperiments(false);
+    refreshEvolution(false);
     loadConnection();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
@@ -253,6 +271,7 @@ export default function PinterestHealthPage() {
       refreshWatchdog(false);
       refreshGrowth(false);
       refreshExperiments(false);
+      refreshEvolution(false);
     }, 60_000);
     return () => clearInterval(t);
   }, []);
@@ -863,6 +882,57 @@ export default function PinterestHealthPage() {
                 </ul>
               </div>
             )}
+          </>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Creative Evolution Engine — Creative Genome</h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={evoLoading} onClick={() => refreshEvolution(false)}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${evoLoading ? "animate-spin" : ""}`} /> Snapshot
+            </Button>
+            <Button size="sm" disabled={evoLoading} onClick={() => refreshEvolution(true)}>
+              Evolve now
+            </Button>
+          </div>
+        </div>
+        {!evo ? (
+          <p className="text-sm text-muted-foreground">No evolution snapshot yet.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs mb-3">
+              <div><div className="text-muted-foreground">Evaluated pins</div><div className="text-lg font-semibold">{evo.evaluated_pins}</div></div>
+              <div><div className="text-muted-foreground">Baseline score</div><div className="text-lg font-semibold">{Number(evo.baseline_score).toFixed(2)}</div></div>
+              <div><div className="text-muted-foreground">Expected CTR lift</div><div className="text-lg font-semibold text-green-600">+{Number(evo.expected_ctr_lift_pct).toFixed(1)}%</div></div>
+              <div><div className="text-muted-foreground">Exploitation</div><div className="text-lg font-semibold">{Math.round(evo.exploitation_ratio * 100)}%</div></div>
+              <div><div className="text-muted-foreground">Exploration</div><div className="text-lg font-semibold">{Math.round(evo.exploration_ratio * 100)}%</div></div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-xs font-semibold mb-1">Top winning DNA</h3>
+                <ul className="text-xs space-y-1">
+                  {(evo.winners ?? []).slice(0, 10).map((w: any, i: number) => (
+                    <li key={i} className="flex justify-between gap-2 border-b py-1">
+                      <span className="truncate"><span className="text-muted-foreground">{w.dimension}=</span>{w.value}</span>
+                      <span className="text-green-600 font-mono">+{w.lift_pct}% · n={w.sample_size} · c={w.confidence}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold mb-1">Decaying / losing traits</h3>
+                <ul className="text-xs space-y-1">
+                  {(evo.decaying ?? evo.losers ?? []).slice(0, 10).map((l: any, i: number) => (
+                    <li key={i} className="flex justify-between gap-2 border-b py-1">
+                      <span className="truncate"><span className="text-muted-foreground">{l.dimension}=</span>{l.value}</span>
+                      <span className="text-red-600 font-mono">{l.lift_pct}% · n={l.sample_size}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </>
         )}
       </Card>
