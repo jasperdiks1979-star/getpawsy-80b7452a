@@ -32199,6 +32199,90 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_taste_clusters: {
+        Row: {
+          cluster_key: string
+          computed_at: string
+          id: string
+          label: string
+          last_seen: string | null
+          momentum: number
+          sample_n: number
+          signals: Json
+          status: string
+          weight: number
+        }
+        Insert: {
+          cluster_key: string
+          computed_at?: string
+          id?: string
+          label: string
+          last_seen?: string | null
+          momentum?: number
+          sample_n?: number
+          signals?: Json
+          status?: string
+          weight?: number
+        }
+        Update: {
+          cluster_key?: string
+          computed_at?: string
+          id?: string
+          label?: string
+          last_seen?: string | null
+          momentum?: number
+          sample_n?: number
+          signals?: Json
+          status?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pinterest_taste_signals: {
+        Row: {
+          computed_at: string
+          confidence: number
+          dimension: string
+          expected_lifetime_days: number
+          id: string
+          lift_score: number
+          momentum_30d: number
+          run_id: string | null
+          sample_n: number
+          status: string
+          value: string
+          velocity_7d: number
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number
+          dimension: string
+          expected_lifetime_days?: number
+          id?: string
+          lift_score?: number
+          momentum_30d?: number
+          run_id?: string | null
+          sample_n?: number
+          status?: string
+          value: string
+          velocity_7d?: number
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number
+          dimension?: string
+          expected_lifetime_days?: number
+          id?: string
+          lift_score?: number
+          momentum_30d?: number
+          run_id?: string | null
+          sample_n?: number
+          status?: string
+          value?: string
+          velocity_7d?: number
+        }
+        Relationships: []
+      }
       pinterest_title_variants: {
         Row: {
           created_at: string
