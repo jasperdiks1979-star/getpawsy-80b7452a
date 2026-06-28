@@ -19460,6 +19460,955 @@ export type Database = {
         }
         Relationships: []
       }
+      gpd_bundles: {
+        Row: {
+          accessory_product_ids: string[]
+          bundle_type: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_aov_lift: number | null
+          expected_profit_lift: number | null
+          id: string
+          primary_product_id: string
+          status: string
+        }
+        Insert: {
+          accessory_product_ids?: string[]
+          bundle_type?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_aov_lift?: number | null
+          expected_profit_lift?: number | null
+          id?: string
+          primary_product_id: string
+          status?: string
+        }
+        Update: {
+          accessory_product_ids?: string[]
+          bundle_type?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_aov_lift?: number | null
+          expected_profit_lift?: number | null
+          id?: string
+          primary_product_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      gpd_commercial: {
+        Row: {
+          actual_margin_pct: number | null
+          ad_cost: number | null
+          breakeven_cpa: number | null
+          breakeven_roas: number | null
+          contribution_margin: number | null
+          cost_price: number | null
+          created_at: string
+          current_price: number | null
+          expected_margin_pct: number | null
+          gross_profit: number | null
+          id: string
+          import_cost: number | null
+          metadata: Json
+          net_profit: number | null
+          product_id: string
+          shipping_cost: number | null
+          snapshot_date: string
+          transaction_fees: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_margin_pct?: number | null
+          ad_cost?: number | null
+          breakeven_cpa?: number | null
+          breakeven_roas?: number | null
+          contribution_margin?: number | null
+          cost_price?: number | null
+          created_at?: string
+          current_price?: number | null
+          expected_margin_pct?: number | null
+          gross_profit?: number | null
+          id?: string
+          import_cost?: number | null
+          metadata?: Json
+          net_profit?: number | null
+          product_id: string
+          shipping_cost?: number | null
+          snapshot_date?: string
+          transaction_fees?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_margin_pct?: number | null
+          ad_cost?: number | null
+          breakeven_cpa?: number | null
+          breakeven_roas?: number | null
+          contribution_margin?: number | null
+          cost_price?: number | null
+          created_at?: string
+          current_price?: number | null
+          expected_margin_pct?: number | null
+          gross_profit?: number | null
+          id?: string
+          import_cost?: number | null
+          metadata?: Json
+          net_profit?: number | null
+          product_id?: string
+          shipping_cost?: number | null
+          snapshot_date?: string
+          transaction_fees?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gpd_concept_history: {
+        Row: {
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpd_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gpd_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gpd_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpd_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gpd_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gpd_creative_match: {
+        Row: {
+          best_audience: string | null
+          best_board: string | null
+          best_camera: string | null
+          best_color_palette: string[]
+          best_cta: string | null
+          best_emotion: string | null
+          best_headline: string | null
+          best_season: string | null
+          best_story: string | null
+          best_typography: string | null
+          confidence: number
+          evidence: Json
+          id: string
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          best_audience?: string | null
+          best_board?: string | null
+          best_camera?: string | null
+          best_color_palette?: string[]
+          best_cta?: string | null
+          best_emotion?: string | null
+          best_headline?: string | null
+          best_season?: string | null
+          best_story?: string | null
+          best_typography?: string | null
+          confidence?: number
+          evidence?: Json
+          id?: string
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          best_audience?: string | null
+          best_board?: string | null
+          best_camera?: string | null
+          best_color_palette?: string[]
+          best_cta?: string | null
+          best_emotion?: string | null
+          best_headline?: string | null
+          best_season?: string | null
+          best_story?: string | null
+          best_typography?: string | null
+          confidence?: number
+          evidence?: Json
+          id?: string
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gpd_customer_fit: {
+        Row: {
+          confidence: number
+          evidence: Json
+          id: string
+          probability: number
+          product_id: string
+          segment: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          evidence?: Json
+          id?: string
+          probability?: number
+          product_id: string
+          segment: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          evidence?: Json
+          id?: string
+          probability?: number
+          product_id?: string
+          segment?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gpd_discovery: {
+        Row: {
+          brand_fit: number | null
+          category: string | null
+          created_at: string
+          discovery_type: string
+          evidence: Json
+          expected_revenue_usd: number | null
+          external_id: string | null
+          id: string
+          label: string
+          score: number
+          status: string
+        }
+        Insert: {
+          brand_fit?: number | null
+          category?: string | null
+          created_at?: string
+          discovery_type: string
+          evidence?: Json
+          expected_revenue_usd?: number | null
+          external_id?: string | null
+          id?: string
+          label: string
+          score?: number
+          status?: string
+        }
+        Update: {
+          brand_fit?: number | null
+          category?: string | null
+          created_at?: string
+          discovery_type?: string
+          evidence?: Json
+          expected_revenue_usd?: number | null
+          external_id?: string | null
+          id?: string
+          label?: string
+          score?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      gpd_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gpd_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpd_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gpd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gpd_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gpd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gpd_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gpd_health: {
+        Row: {
+          conversion_rate: number | null
+          created_at: string
+          creative_performance: number | null
+          customer_satisfaction: number | null
+          id: string
+          inventory_health: number | null
+          margin: number | null
+          metadata: Json
+          overall_score: number | null
+          pinterest_performance: number | null
+          product_id: string
+          refund_rate: number | null
+          sales_velocity: number | null
+          seasonality: number | null
+          shipping_speed: number | null
+          snapshot_date: string
+          trend_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          conversion_rate?: number | null
+          created_at?: string
+          creative_performance?: number | null
+          customer_satisfaction?: number | null
+          id?: string
+          inventory_health?: number | null
+          margin?: number | null
+          metadata?: Json
+          overall_score?: number | null
+          pinterest_performance?: number | null
+          product_id: string
+          refund_rate?: number | null
+          sales_velocity?: number | null
+          seasonality?: number | null
+          shipping_speed?: number | null
+          snapshot_date?: string
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          conversion_rate?: number | null
+          created_at?: string
+          creative_performance?: number | null
+          customer_satisfaction?: number | null
+          id?: string
+          inventory_health?: number | null
+          margin?: number | null
+          metadata?: Json
+          overall_score?: number | null
+          pinterest_performance?: number | null
+          product_id?: string
+          refund_rate?: number | null
+          sales_velocity?: number | null
+          seasonality?: number | null
+          shipping_speed?: number | null
+          snapshot_date?: string
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gpd_intent: {
+        Row: {
+          gift_potential: number | null
+          id: string
+          impulse_score: number | null
+          ltv_impact: number | null
+          metadata: Json
+          product_id: string
+          purchase_probability: number | null
+          refund_probability: number | null
+          repeat_purchase_probability: number | null
+          return_probability: number | null
+          seasonality_score: number | null
+          trust_score: number | null
+          updated_at: string
+          urgency_score: number | null
+        }
+        Insert: {
+          gift_potential?: number | null
+          id?: string
+          impulse_score?: number | null
+          ltv_impact?: number | null
+          metadata?: Json
+          product_id: string
+          purchase_probability?: number | null
+          refund_probability?: number | null
+          repeat_purchase_probability?: number | null
+          return_probability?: number | null
+          seasonality_score?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          urgency_score?: number | null
+        }
+        Update: {
+          gift_potential?: number | null
+          id?: string
+          impulse_score?: number | null
+          ltv_impact?: number | null
+          metadata?: Json
+          product_id?: string
+          purchase_probability?: number | null
+          refund_probability?: number | null
+          repeat_purchase_probability?: number | null
+          return_probability?: number | null
+          seasonality_score?: number | null
+          trust_score?: number | null
+          updated_at?: string
+          urgency_score?: number | null
+        }
+        Relationships: []
+      }
+      gpd_inventory: {
+        Row: {
+          id: string
+          metadata: Json
+          oversupply_risk: number | null
+          product_id: string
+          shipping_time_days: number | null
+          stockout_risk: number | null
+          supplier_reliability: number | null
+          supplier_stock: number | null
+          updated_at: string
+          variant_availability: number | null
+          warehouse: string | null
+          warehouse_stability: number | null
+        }
+        Insert: {
+          id?: string
+          metadata?: Json
+          oversupply_risk?: number | null
+          product_id: string
+          shipping_time_days?: number | null
+          stockout_risk?: number | null
+          supplier_reliability?: number | null
+          supplier_stock?: number | null
+          updated_at?: string
+          variant_availability?: number | null
+          warehouse?: string | null
+          warehouse_stability?: number | null
+        }
+        Update: {
+          id?: string
+          metadata?: Json
+          oversupply_risk?: number | null
+          product_id?: string
+          shipping_time_days?: number | null
+          stockout_risk?: number | null
+          supplier_reliability?: number | null
+          supplier_stock?: number | null
+          updated_at?: string
+          variant_availability?: number | null
+          warehouse?: string | null
+          warehouse_stability?: number | null
+        }
+        Relationships: []
+      }
+      gpd_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gpd_opportunities: {
+        Row: {
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_profit_gain_usd: number | null
+          expected_revenue_gain_usd: number | null
+          id: string
+          opportunity_type: string
+          priority: number
+          product_id: string | null
+          recommendation: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_profit_gain_usd?: number | null
+          expected_revenue_gain_usd?: number | null
+          id?: string
+          opportunity_type: string
+          priority?: number
+          product_id?: string | null
+          recommendation: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_profit_gain_usd?: number | null
+          expected_revenue_gain_usd?: number | null
+          id?: string
+          opportunity_type?: string
+          priority?: number
+          product_id?: string | null
+          recommendation?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      gpd_predictions: {
+        Row: {
+          actual_value: number | null
+          ci_high: number | null
+          ci_low: number | null
+          confidence: number
+          created_at: string
+          engine_source: string | null
+          features: Json
+          id: string
+          model_version: number
+          outcome_at: string | null
+          predicted_value: number
+          prediction_type: string
+          product_id: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value: number
+          prediction_type: string
+          product_id?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value?: number
+          prediction_type?: string
+          product_id?: string | null
+        }
+        Relationships: []
+      }
+      gpd_price_history: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          price: number
+          product_id: string
+          reason: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          price: number
+          product_id: string
+          reason?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          price?: number
+          product_id?: string
+          reason?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      gpd_price_recommendations: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confidence: number
+          created_at: string
+          current_price: number
+          elasticity: number | null
+          expected_profit_lift_usd: number | null
+          expected_revenue_lift_usd: number | null
+          id: string
+          product_id: string
+          reason: string | null
+          recommended_price: number
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number
+          created_at?: string
+          current_price: number
+          elasticity?: number | null
+          expected_profit_lift_usd?: number | null
+          expected_revenue_lift_usd?: number | null
+          id?: string
+          product_id: string
+          reason?: string | null
+          recommended_price: number
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number
+          created_at?: string
+          current_price?: number
+          elasticity?: number | null
+          expected_profit_lift_usd?: number | null
+          expected_revenue_lift_usd?: number | null
+          id?: string
+          product_id?: string
+          reason?: string | null
+          recommended_price?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      gpd_products: {
+        Row: {
+          brand: string | null
+          category: string | null
+          cj_product_id: string | null
+          created_at: string
+          dimensions: Json | null
+          id: string
+          launch_date: string | null
+          lifecycle_stage: string
+          material: string | null
+          metadata: Json
+          product_id: string
+          shipping_profile: string | null
+          status: string
+          subcategory: string | null
+          supplier: string | null
+          supplier_product_id: string | null
+          tags: string[]
+          updated_at: string
+          weight_g: number | null
+        }
+        Insert: {
+          brand?: string | null
+          category?: string | null
+          cj_product_id?: string | null
+          created_at?: string
+          dimensions?: Json | null
+          id?: string
+          launch_date?: string | null
+          lifecycle_stage?: string
+          material?: string | null
+          metadata?: Json
+          product_id: string
+          shipping_profile?: string | null
+          status?: string
+          subcategory?: string | null
+          supplier?: string | null
+          supplier_product_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          weight_g?: number | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string | null
+          cj_product_id?: string | null
+          created_at?: string
+          dimensions?: Json | null
+          id?: string
+          launch_date?: string | null
+          lifecycle_stage?: string
+          material?: string | null
+          metadata?: Json
+          product_id?: string
+          shipping_profile?: string | null
+          status?: string
+          subcategory?: string | null
+          supplier?: string | null
+          supplier_product_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          weight_g?: number | null
+        }
+        Relationships: []
+      }
+      gpd_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gpd_trends: {
+        Row: {
+          confidence: number
+          direction: string
+          evidence: Json
+          id: string
+          observed_at: string
+          product_id: string | null
+          seasonality: Json
+          signal_strength: number
+          source: string
+          trend_type: string
+        }
+        Insert: {
+          confidence?: number
+          direction?: string
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          product_id?: string | null
+          seasonality?: Json
+          signal_strength?: number
+          source: string
+          trend_type: string
+        }
+        Update: {
+          confidence?: number
+          direction?: string
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          product_id?: string | null
+          seasonality?: Json
+          signal_strength?: number
+          source?: string
+          trend_type?: string
+        }
+        Relationships: []
+      }
       gpi_concept_history: {
         Row: {
           change_reason: string | null
@@ -52150,6 +53099,20 @@ export type Database = {
           p_slug: string
         }
         Returns: Json
+      }
+      gpd_refresh_module_rollups: { Args: never; Returns: undefined }
+      gpd_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
+        }
+        Returns: string
       }
       gpi_refresh_module_rollups: { Args: never; Returns: undefined }
       gpi_success_score: {
