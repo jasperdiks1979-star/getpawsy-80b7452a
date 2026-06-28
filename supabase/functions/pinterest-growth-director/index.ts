@@ -1,6 +1,7 @@
 // Pinterest Growth Director — single new intelligence layer.
 // Reads from existing engines (revenue funnel, board performance, taste, predictions,
 // pin queue, products) and emits a holistic Growth Director snapshot + ranked decisions.
+import { emitXaiDecision } from "../_shared/xai-decision.ts";
 // Never publishes. Never duplicates existing engines.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -323,6 +324,40 @@ Deno.serve(async (req) => {
       });
       if (decisions.length) {
         await sb.from("pinterest_growth_director_decisions").insert(decisions);
+        // Mirror top decisions into the explainable-AI ledger so the
+        // Pinterest Health dashboard can show plain-English rationales.
+        for (const d of decisions.slice(0, 12)) {
+          const reasonCodes: string[] = [];
+          if (d.category === "creative_allocation") reasonCodes.push("HIGH_CONFIDENCE", "HIGH_PURCHASE_RATE");
+          if (d.category === "board_allocation") reasonCodes.push("BOARD_RELEVANCE", d.evidence?.board?.action === "increase" ? "HIGH_CTR" : "LOW_VARIANCE");
+          if (d.category === "opportunity") reasonCodes.push("LOW_COMPETITION", d.evidence?.kind === "trend" ? "SEASONAL_MATCH" : "CREATIVE_DIVERSITY");
+          if (d.category === "bottleneck") reasonCodes.push("VOLATILITY_HIGH");
+          const expectedLift = d.expected_revenue_cents_30d && acc.revenueCents
+            ? Math.min(1, d.expected_revenue_cents_30d / Math.max(1, acc.revenueCents))
+            : null;
+          await emitXaiDecision({
+            sourceEngine: "growth_director",
+            decisionType: d.category,
+            subjectKind: d.target_kind,
+            subjectId: d.target_ref ? String(d.target_ref) : undefined,
+            summary: d.title,
+            reasonCodes,
+            confidence: d.confidence,
+            expectedLift: expectedLift ?? undefined,
+            risk: d.effort === "high" ? 0.6 : d.effort === "medium" ? 0.35 : 0.15,
+            evidence: {
+              sample_size: d.category === "creative_allocation" ? (d.evidence?.product?.pins_30d ?? 0) : undefined,
+              freshness_days: 30,
+              metrics: { rationale: d.rationale },
+              sources: ["pinterest_growth_director_runs", "pinterest_pin_performance"],
+            },
+            alternatives: [{ option: "do_nothing", rejection_reason: "baseline below projected lift", confidence: 1 - (d.confidence ?? 0.5) }],
+            counterfactual: {
+              if_unchanged: { expected_metric: "revenue_cents_30d", expected_value: acc.revenueCents, note: "Continuing current allocation" },
+            },
+            dedupeKey: `gd:${run.id}:${d.category}:${d.target_ref ?? d.title}`,
+          });
+        }
       }
     }
 
