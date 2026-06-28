@@ -38801,6 +38801,298 @@ export type Database = {
         }
         Relationships: []
       }
+      shil_incidents: {
+        Row: {
+          business_impact: string | null
+          created_at: string
+          detected_at: string
+          escalated_at: string | null
+          evidence: Json
+          id: string
+          mttd_seconds: number | null
+          mttr_seconds: number | null
+          notes: string | null
+          recovered_at: string | null
+          recovery_id: string | null
+          severity: string
+          signature_hash: string | null
+          signature_id: string | null
+          status: string
+          subsystem: string
+        }
+        Insert: {
+          business_impact?: string | null
+          created_at?: string
+          detected_at?: string
+          escalated_at?: string | null
+          evidence?: Json
+          id?: string
+          mttd_seconds?: number | null
+          mttr_seconds?: number | null
+          notes?: string | null
+          recovered_at?: string | null
+          recovery_id?: string | null
+          severity?: string
+          signature_hash?: string | null
+          signature_id?: string | null
+          status?: string
+          subsystem: string
+        }
+        Update: {
+          business_impact?: string | null
+          created_at?: string
+          detected_at?: string
+          escalated_at?: string | null
+          evidence?: Json
+          id?: string
+          mttd_seconds?: number | null
+          mttr_seconds?: number | null
+          notes?: string | null
+          recovered_at?: string | null
+          recovery_id?: string | null
+          severity?: string
+          signature_hash?: string | null
+          signature_id?: string | null
+          status?: string
+          subsystem?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shil_incidents_signature_id_fkey"
+            columns: ["signature_id"]
+            isOneToOne: false
+            referencedRelation: "shil_signatures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shil_metrics_daily: {
+        Row: {
+          auto_recovered: number
+          availability_pct: number | null
+          avg_mttd_seconds: number | null
+          avg_mttr_seconds: number | null
+          created_at: string
+          day: string
+          escalated: number
+          id: string
+          incidents_total: number
+          recurring_incidents: number
+          subsystem: string
+        }
+        Insert: {
+          auto_recovered?: number
+          availability_pct?: number | null
+          avg_mttd_seconds?: number | null
+          avg_mttr_seconds?: number | null
+          created_at?: string
+          day: string
+          escalated?: number
+          id?: string
+          incidents_total?: number
+          recurring_incidents?: number
+          subsystem: string
+        }
+        Update: {
+          auto_recovered?: number
+          availability_pct?: number | null
+          avg_mttd_seconds?: number | null
+          avg_mttr_seconds?: number | null
+          created_at?: string
+          day?: string
+          escalated?: number
+          id?: string
+          incidents_total?: number
+          recurring_incidents?: number
+          subsystem?: string
+        }
+        Relationships: []
+      }
+      shil_playbooks: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          handler_key: string
+          id: string
+          is_safe: boolean
+          name: string
+          preconditions: Json | null
+          requires_approval: boolean
+          target_function: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          enabled?: boolean
+          handler_key: string
+          id?: string
+          is_safe?: boolean
+          name: string
+          preconditions?: Json | null
+          requires_approval?: boolean
+          target_function?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          handler_key?: string
+          id?: string
+          is_safe?: boolean
+          name?: string
+          preconditions?: Json | null
+          requires_approval?: boolean
+          target_function?: string | null
+        }
+        Relationships: []
+      }
+      shil_recoveries: {
+        Row: {
+          after_state: Json | null
+          before_state: Json | null
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          handler_key: string
+          id: string
+          incident_id: string | null
+          outcome: string | null
+          playbook_name: string
+          started_at: string
+          validation_evidence: Json | null
+          validation_passed: boolean | null
+        }
+        Insert: {
+          after_state?: Json | null
+          before_state?: Json | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          handler_key: string
+          id?: string
+          incident_id?: string | null
+          outcome?: string | null
+          playbook_name: string
+          started_at?: string
+          validation_evidence?: Json | null
+          validation_passed?: boolean | null
+        }
+        Update: {
+          after_state?: Json | null
+          before_state?: Json | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          handler_key?: string
+          id?: string
+          incident_id?: string | null
+          outcome?: string | null
+          playbook_name?: string
+          started_at?: string
+          validation_evidence?: Json | null
+          validation_passed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shil_recoveries_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "shil_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shil_signatures: {
+        Row: {
+          confidence: number
+          evidence_sample: Json | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          occurrences: number
+          preferred_playbook: string | null
+          root_cause: string | null
+          signature_hash: string
+          subsystem: string
+          symptom: string
+        }
+        Insert: {
+          confidence?: number
+          evidence_sample?: Json | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          preferred_playbook?: string | null
+          root_cause?: string | null
+          signature_hash: string
+          subsystem: string
+          symptom: string
+        }
+        Update: {
+          confidence?: number
+          evidence_sample?: Json | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          preferred_playbook?: string | null
+          root_cause?: string | null
+          signature_hash?: string
+          subsystem?: string
+          symptom?: string
+        }
+        Relationships: []
+      }
+      shil_subsystems: {
+        Row: {
+          category: string
+          created_at: string
+          default_playbook: string | null
+          enabled: boolean
+          id: string
+          last_checked_at: string | null
+          last_evidence: Json | null
+          last_status: string | null
+          name: string
+          notes: string | null
+          probe_key: string
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          default_playbook?: string | null
+          enabled?: boolean
+          id?: string
+          last_checked_at?: string | null
+          last_evidence?: Json | null
+          last_status?: string | null
+          name: string
+          notes?: string | null
+          probe_key: string
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          default_playbook?: string | null
+          enabled?: boolean
+          id?: string
+          last_checked_at?: string | null
+          last_evidence?: Json | null
+          last_status?: string | null
+          name?: string
+          notes?: string | null
+          probe_key?: string
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shopping_optimizations: {
         Row: {
           applied_at: string | null
