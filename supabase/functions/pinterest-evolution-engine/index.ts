@@ -193,10 +193,27 @@ async function run(supabase: any, execute: boolean) {
   };
   const genome: GenomeRow[] = [];
   const writes: Row[] = [];
+  // Taste DNA consumption: rising signals boost, declining decay
+  const tasteBoost = new Map<string, number>();
+  try {
+    const { data: taste } = await supabase
+      .from("pinterest_taste_signals")
+      .select("dimension,value,status,lift_score")
+      .in("status", ["rising", "declining"]);
+    (taste ?? []).forEach((t: Row) => {
+      const k = `${String(t.dimension).toLowerCase()}::${String(t.value).toLowerCase()}`;
+      const factor = t.status === "rising"
+        ? 1 + Math.min(0.3, Number(t.lift_score) * 0.5)
+        : Math.max(0.7, 1 + Number(t.lift_score) * 0.5);
+      tasteBoost.set(k, factor);
+    });
+  } catch { /* taste signals optional */ }
   buckets.forEach((a, key) => {
     if (a.n < MIN_SAMPLE) return;
     const [dim, val] = key.split("::");
-    const composite = a.score / Math.max(a.weight, 0.0001);
+    const raw = a.score / Math.max(a.weight, 0.0001);
+    const boost = tasteBoost.get(`${dim.toLowerCase()}::${val.toLowerCase()}`) ?? 1;
+    const composite = raw * boost;
     const lift = ((composite - baseline) / baseline) * 100;
     const confidence = Math.min(1, a.n / 30);
     genome.push({
