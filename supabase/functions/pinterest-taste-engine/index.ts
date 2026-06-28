@@ -260,10 +260,11 @@ Deno.serve(async (req) => {
       },
       metrics: { window_days: WINDOW_DAYS, pins_with_signal: per.size, drafts_scored: scored, drafts_pass_gate: gateOk },
     });
-    await sb.from("pinterest_ops_snapshots").insert({
-      kind: "taste_engine",
-      payload: { run_id: runId, signals: signalsWritten, clusters: clustersWritten, drafts_scored: scored, drafts_pass_gate: gateOk },
-    });
+    try {
+      await sb.from("pinterest_ops_snapshots").insert({
+        metrics: { engine: "taste_engine", run_id: runId, signals: signalsWritten, clusters: clustersWritten, drafts_scored: scored, drafts_pass_gate: gateOk },
+      });
+    } catch { /* unique constraint on snapshot_date — ok */ }
 
     return new Response(JSON.stringify({
       ok: true, run_id: runId,
