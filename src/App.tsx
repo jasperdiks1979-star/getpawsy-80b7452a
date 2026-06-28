@@ -1713,6 +1713,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="meta-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MetaIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
