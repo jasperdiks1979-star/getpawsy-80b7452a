@@ -1,0 +1,7 @@
+---
+name: Genesis Strategic Planning Engine (SPE)
+description: Long-horizon (24h→3y) planning layer with objectives tree, initiatives, roadmap, risks, scenarios, capabilities, maturity, investments, briefings
+type: feature
+---
+SPE is the long-term navigator. Tables: spe_objectives (hierarchical, slug-keyed, horizon ∈ 24h/7d/30d/90d/1y/3y), spe_initiatives (objective-linked, scored on BV/cost/risk/ROI), spe_roadmap (current_quarter/next_quarter/future_backlog/deferred), spe_resources, spe_dependencies (blockers + critical path), spe_risks, spe_scenarios (best/expected/worst/disruption/rapid_growth/supply_chain_failure/pinterest_traffic_loss), spe_capabilities, spe_maturity, spe_briefings (daily/weekly/monthly/quarterly/annual), spe_forecasts, spe_investments (approval-gated), spe_evolution_log, spe_consultations, spe_settings.
+Edge fn `spe-api` (Gemini 3 flash, JSON-only). Actions: createObjective, listObjectives, prioritizeInitiatives, generateInitiatives, generateRoadmap, planQuarter, planYear, forecastObjectives, analyzeRisks, generateScenarios, recommendInvestments, approveInvestment, scoreMaturity, mapCapabilities, planResources, generateExecutiveBrief, addDependency, criticalPath, searchStrategy, stats. All recommendations only, evidence-grounded, confidence-scored, Genesis-aligned (profit + enterprise value + US-first + auditable + reversible). UI: /admin/strategy via `SPE` client at `src/lib/spe/client.ts`.

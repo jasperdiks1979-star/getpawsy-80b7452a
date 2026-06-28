@@ -53542,6 +53542,665 @@ export type Database = {
           },
         ]
       }
+      spe_briefings: {
+        Row: {
+          achievements: Json
+          cadence: string
+          confidence: number
+          created_at: string
+          forecasts: Json
+          id: string
+          period_end: string | null
+          period_start: string | null
+          priorities: Json
+          recommended_experiments: Json
+          recommended_investments: Json
+          recommended_pauses: Json
+          risks: Json
+          summary: string
+        }
+        Insert: {
+          achievements?: Json
+          cadence: string
+          confidence?: number
+          created_at?: string
+          forecasts?: Json
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          priorities?: Json
+          recommended_experiments?: Json
+          recommended_investments?: Json
+          recommended_pauses?: Json
+          risks?: Json
+          summary: string
+        }
+        Update: {
+          achievements?: Json
+          cadence?: string
+          confidence?: number
+          created_at?: string
+          forecasts?: Json
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          priorities?: Json
+          recommended_experiments?: Json
+          recommended_investments?: Json
+          recommended_pauses?: Json
+          risks?: Json
+          summary?: string
+        }
+        Relationships: []
+      }
+      spe_capabilities: {
+        Row: {
+          capability: string
+          current_level: number
+          domain: string | null
+          gap_notes: string | null
+          id: string
+          owner: string | null
+          target_level: number
+          updated_at: string
+        }
+        Insert: {
+          capability: string
+          current_level?: number
+          domain?: string | null
+          gap_notes?: string | null
+          id?: string
+          owner?: string | null
+          target_level?: number
+          updated_at?: string
+        }
+        Update: {
+          capability?: string
+          current_level?: number
+          domain?: string | null
+          gap_notes?: string | null
+          id?: string
+          owner?: string | null
+          target_level?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spe_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      spe_dependencies: {
+        Row: {
+          blocker: boolean
+          created_at: string
+          from_id: string
+          from_kind: string
+          id: string
+          notes: string | null
+          relation: string
+          to_id: string
+          to_kind: string
+        }
+        Insert: {
+          blocker?: boolean
+          created_at?: string
+          from_id: string
+          from_kind: string
+          id?: string
+          notes?: string | null
+          relation?: string
+          to_id: string
+          to_kind: string
+        }
+        Update: {
+          blocker?: boolean
+          created_at?: string
+          from_id?: string
+          from_kind?: string
+          id?: string
+          notes?: string | null
+          relation?: string
+          to_id?: string
+          to_kind?: string
+        }
+        Relationships: []
+      }
+      spe_evolution_log: {
+        Row: {
+          after_state: Json | null
+          before_state: Json | null
+          confidence: number | null
+          created_at: string
+          entity_id: string | null
+          entity_kind: string | null
+          event: string
+          id: string
+          rationale: string | null
+        }
+        Insert: {
+          after_state?: Json | null
+          before_state?: Json | null
+          confidence?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_kind?: string | null
+          event: string
+          id?: string
+          rationale?: string | null
+        }
+        Update: {
+          after_state?: Json | null
+          before_state?: Json | null
+          confidence?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_kind?: string | null
+          event?: string
+          id?: string
+          rationale?: string | null
+        }
+        Relationships: []
+      }
+      spe_forecasts: {
+        Row: {
+          ci_high: number | null
+          ci_low: number | null
+          confidence: number
+          created_at: string
+          features: Json
+          forecast: number
+          horizon: string
+          id: string
+          method: string | null
+          objective_id: string | null
+          target_date: string
+        }
+        Insert: {
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          features?: Json
+          forecast: number
+          horizon: string
+          id?: string
+          method?: string | null
+          objective_id?: string | null
+          target_date: string
+        }
+        Update: {
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          features?: Json
+          forecast?: number
+          horizon?: string
+          id?: string
+          method?: string | null
+          objective_id?: string | null
+          target_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spe_forecasts_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "spe_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spe_initiatives: {
+        Row: {
+          business_value: number | null
+          confidence: number
+          cost_usd: number | null
+          created_at: string
+          description: string | null
+          effort_weeks: number | null
+          evidence: Json
+          expected_learning: string | null
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          horizon: string
+          id: string
+          objective_id: string | null
+          owner: string | null
+          priority: number
+          rationale: string | null
+          risk: number | null
+          roi: number | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_value?: number | null
+          confidence?: number
+          cost_usd?: number | null
+          created_at?: string
+          description?: string | null
+          effort_weeks?: number | null
+          evidence?: Json
+          expected_learning?: string | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          horizon?: string
+          id?: string
+          objective_id?: string | null
+          owner?: string | null
+          priority?: number
+          rationale?: string | null
+          risk?: number | null
+          roi?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_value?: number | null
+          confidence?: number
+          cost_usd?: number | null
+          created_at?: string
+          description?: string | null
+          effort_weeks?: number | null
+          evidence?: Json
+          expected_learning?: string | null
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          horizon?: string
+          id?: string
+          objective_id?: string | null
+          owner?: string | null
+          priority?: number
+          rationale?: string | null
+          risk?: number | null
+          roi?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spe_initiatives_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "spe_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spe_investments: {
+        Row: {
+          amount_usd: number
+          approved_at: string | null
+          approved_by: string | null
+          confidence: number
+          created_at: string
+          expected_payback_days: number | null
+          expected_return_usd: number | null
+          id: string
+          rationale: string | null
+          risk: number | null
+          status: string
+          target: string
+        }
+        Insert: {
+          amount_usd: number
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number
+          created_at?: string
+          expected_payback_days?: number | null
+          expected_return_usd?: number | null
+          id?: string
+          rationale?: string | null
+          risk?: number | null
+          status?: string
+          target: string
+        }
+        Update: {
+          amount_usd?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number
+          created_at?: string
+          expected_payback_days?: number | null
+          expected_return_usd?: number | null
+          id?: string
+          rationale?: string | null
+          risk?: number | null
+          status?: string
+          target?: string
+        }
+        Relationships: []
+      }
+      spe_maturity: {
+        Row: {
+          domain: string
+          evidence: Json
+          id: string
+          recommendations: string | null
+          score: number
+          updated_at: string
+          weakest_area: string | null
+        }
+        Insert: {
+          domain: string
+          evidence?: Json
+          id?: string
+          recommendations?: string | null
+          score?: number
+          updated_at?: string
+          weakest_area?: string | null
+        }
+        Update: {
+          domain?: string
+          evidence?: Json
+          id?: string
+          recommendations?: string | null
+          score?: number
+          updated_at?: string
+          weakest_area?: string | null
+        }
+        Relationships: []
+      }
+      spe_objectives: {
+        Row: {
+          confidence: number
+          created_at: string
+          current_value: number | null
+          dependencies: Json
+          description: string | null
+          evidence: Json
+          expected_value_usd: number | null
+          horizon: string
+          id: string
+          level: string
+          metric: string | null
+          owner: string | null
+          parent_id: string | null
+          priority: number
+          rationale: string | null
+          slug: string
+          status: string
+          tags: string[]
+          target_value: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          current_value?: number | null
+          dependencies?: Json
+          description?: string | null
+          evidence?: Json
+          expected_value_usd?: number | null
+          horizon: string
+          id?: string
+          level?: string
+          metric?: string | null
+          owner?: string | null
+          parent_id?: string | null
+          priority?: number
+          rationale?: string | null
+          slug: string
+          status?: string
+          tags?: string[]
+          target_value?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          current_value?: number | null
+          dependencies?: Json
+          description?: string | null
+          evidence?: Json
+          expected_value_usd?: number | null
+          horizon?: string
+          id?: string
+          level?: string
+          metric?: string | null
+          owner?: string | null
+          parent_id?: string | null
+          priority?: number
+          rationale?: string | null
+          slug?: string
+          status?: string
+          tags?: string[]
+          target_value?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spe_objectives_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "spe_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spe_resources: {
+        Row: {
+          allocation: Json
+          capacity_units: number | null
+          id: string
+          notes: string | null
+          resource: string
+          unit_label: string | null
+          updated_at: string
+          used_units: number | null
+        }
+        Insert: {
+          allocation?: Json
+          capacity_units?: number | null
+          id?: string
+          notes?: string | null
+          resource: string
+          unit_label?: string | null
+          updated_at?: string
+          used_units?: number | null
+        }
+        Update: {
+          allocation?: Json
+          capacity_units?: number | null
+          id?: string
+          notes?: string | null
+          resource?: string
+          unit_label?: string | null
+          updated_at?: string
+          used_units?: number | null
+        }
+        Relationships: []
+      }
+      spe_risks: {
+        Row: {
+          category: string | null
+          created_at: string
+          evidence: Json
+          id: string
+          impact_usd: number | null
+          mitigation: string | null
+          monitoring: string | null
+          owner: string | null
+          probability: number
+          severity: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          impact_usd?: number | null
+          mitigation?: string | null
+          monitoring?: string | null
+          owner?: string | null
+          probability?: number
+          severity?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          impact_usd?: number | null
+          mitigation?: string | null
+          monitoring?: string | null
+          owner?: string | null
+          probability?: number
+          severity?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spe_roadmap: {
+        Row: {
+          bucket: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          initiative_id: string | null
+          notes: string | null
+          position: number
+          start_date: string | null
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiative_id?: string | null
+          notes?: string | null
+          position?: number
+          start_date?: string | null
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          initiative_id?: string | null
+          notes?: string | null
+          position?: number
+          start_date?: string | null
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spe_roadmap_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "spe_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spe_scenarios: {
+        Row: {
+          assumptions: Json
+          confidence: number
+          created_at: string
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          expected_risk: number | null
+          horizon: string
+          id: string
+          rationale: string | null
+          scenario: string
+          strategic_response: string | null
+        }
+        Insert: {
+          assumptions?: Json
+          confidence?: number
+          created_at?: string
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          expected_risk?: number | null
+          horizon?: string
+          id?: string
+          rationale?: string | null
+          scenario: string
+          strategic_response?: string | null
+        }
+        Update: {
+          assumptions?: Json
+          confidence?: number
+          created_at?: string
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          expected_risk?: number | null
+          horizon?: string
+          id?: string
+          rationale?: string | null
+          scenario?: string
+          strategic_response?: string | null
+        }
+        Relationships: []
+      }
+      spe_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       stock_notifications: {
         Row: {
           created_at: string
