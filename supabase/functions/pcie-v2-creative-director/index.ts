@@ -92,6 +92,69 @@ async function callLovable(model: string, messages: any[], json = false) {
   return j.choices?.[0]?.message?.content ?? "";
 }
 
+// ---------- image renderer (provider-agnostic with failover) ----------
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const h = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+const PROVIDER_HANDLERS: Record<string, (prompt: string, opts: any) => Promise<{ bytes: Uint8Array; mime: string; seed?: string }>> = {
+  async lovable_image(prompt, opts) {
+    const model = opts.model as string;
+    const isGemini = model.startsWith("google/");
+    const body: any = isGemini
+      ? { model, messages: [{ role: "user", content: prompt }], modalities: ["image", "text"] }
+      : { model, prompt, size: "1024x1536", quality: "low", n: 1 };
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`provider_${res.status}:${(await res.text()).slice(0, 200)}`);
+    const j = await res.json();
+    const b64 = j?.data?.[0]?.b64_json;
+    if (!b64) throw new Error("provider_no_image");
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    return { bytes, mime: "image/png", seed: j?.data?.[0]?.seed?.toString() };
+  },
+};
+
+async function renderWithFailover(supabase: any, ctx: any, candidateNo: number) {
+  const providers = ctx.cat.providers;
+  if (!providers.length) throw new Error("no_providers");
+  const maxRetries = Number(ctx.cat.config.render_max_retries ?? 2);
+  let lastErr: any = null;
+  for (const provider of providers) {
+    for (let attempt = 1; attempt <= (provider.max_retries ?? maxRetries); attempt++) {
+      const t0 = Date.now();
+      try {
+        const handler = PROVIDER_HANDLERS[provider.handler];
+        if (!handler) throw new Error(`unknown_handler:${provider.handler}`);
+        const out = await handler(ctx.prompt, { model: provider.model, ...provider.config });
+        const fp = await sha256Hex(out.bytes);
+        const path = `${ctx.product.slug || "seed"}/${ctx.candidate_set_id}/${candidateNo}-${fp.slice(0, 12)}.png`;
+        const up = await supabase.storage.from(STORAGE_BUCKET).upload(path, out.bytes, { contentType: out.mime, upsert: true });
+        if (up.error) throw new Error(`storage:${up.error.message}`);
+        const sig = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
+        const image_url = sig.data?.signedUrl ?? null;
+        const attemptRow = await supabase.from("pcie_v2_render_attempts").insert({
+          candidate_set_id: ctx.candidate_set_id, provider_slug: provider.slug, model: provider.model,
+          attempt_no: attempt, status: "ok", duration_ms: Date.now() - t0, seed: out.seed,
+          render_settings: { size: "1024x1536" }, image_url, image_fingerprint: fp,
+        }).select("id").single();
+        return { image_url, image_fingerprint: fp, provider_slug: provider.slug, seed: out.seed, render_attempt_id: attemptRow.data?.id, storage_path: path };
+      } catch (e) {
+        lastErr = e;
+        await supabase.from("pcie_v2_render_attempts").insert({
+          candidate_set_id: ctx.candidate_set_id, provider_slug: provider.slug, model: provider.model,
+          attempt_no: attempt, status: "error", duration_ms: Date.now() - t0, error: String(e),
+        });
+      }
+    }
+  }
+  throw new Error(`render_failover_exhausted:${lastErr}`);
+}
+
 // ---------- pipeline stage handlers (each pure, swappable) ----------
 const STAGE_HANDLERS: Record<string, (ctx: any) => Promise<void> | void> = {
   product_context(ctx) {
