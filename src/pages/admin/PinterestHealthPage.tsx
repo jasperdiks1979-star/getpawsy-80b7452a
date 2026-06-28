@@ -793,6 +793,10 @@ export default function PinterestHealthPage() {
       <Card className="p-5">
         <h2 className="font-semibold mb-2">Recent incidents</h2>
         {/* anchor */}
+      </Card>
+
+      <Card className="p-5" style={{ display: "none" }}>
+        <div />
         {incidents.length === 0 ? (
           <p className="text-sm text-muted-foreground">No incidents logged yet.</p>
         ) : (
