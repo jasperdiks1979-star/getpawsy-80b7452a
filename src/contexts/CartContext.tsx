@@ -273,6 +273,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       currency: 'USD',
       source_component: 'cart_context_add_item',
     })).catch(() => {});
+
+    // Canonical funnel step — feeds /admin/funnel-health waterfall.
+    // Without this call the funnel reports a false 0% add_to_cart rate and
+    // every downstream priority decision is blind. Pair this with the
+    // shared event_id so dedupe with GA4 / Pinterest works.
+    import('@/lib/analyticsFunnel')
+      .then((m) => m.recordFunnelStep('add_to_cart', {
+        product_id: newItem.id,
+        slug: newItem.slug ?? null,
+        value: newItem.price,
+        currency: 'USD',
+        event_id,
+      }))
+      .catch(() => {});
     
     // GA4 Add to Cart
     trackAddToCart(newItem.id, newItem.name, newItem.price, 1, {

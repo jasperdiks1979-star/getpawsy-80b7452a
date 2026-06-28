@@ -70,6 +70,17 @@ const PaymentSuccess = () => {
         currency: 'USD',
         stripe_session_id: sessionId,
       });
+      // Canonical waterfall `purchase` step — the ONLY way
+      // analytics_funnel_waterfall.purchase_at gets stamped. Without this
+      // the funnel reports 0 purchases even when Stripe confirms revenue.
+      // Non-blocking, idempotent (guarded by lpKey above).
+      import('@/lib/analyticsFunnel')
+        .then((m) => m.recordFunnelStep('purchase', {
+          value: typeof totalPrice === 'number' ? totalPrice : undefined,
+          currency: 'USD',
+          stripe_session_id: sessionId,
+        }))
+        .catch(() => {});
       // Also mirror a canonical `purchase` event so the AI revenue
       // dashboard can compute checkout→payment ratios even when the
       // cart was cleared by a page refresh (no items in scope).

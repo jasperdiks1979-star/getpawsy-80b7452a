@@ -1,0 +1,34 @@
+{
+  "id": "profit-cycle-001-2026-06-28",
+  "title": "Profit Cycle 001 \u2014 Restore Funnel Truth (Priority 1)",
+  "date": "2026-06-28",
+  "doctrine": "Every action must increase the probability that an unknown visitor completes a real purchase.",
+  "todays_question": "What is the single action with the highest expected increase in verified revenue?",
+  "todays_answer": "Restore funnel telemetry \u2014 without it every other decision is blind. (Geo-block hypothesis ruled out by data.)",
+  "evidence": {
+    "shipping_country_blocked_events_14d": 0,
+    "waterfall_view_item_14d": 167,
+    "waterfall_add_to_cart_14d": 1,
+    "waterfall_begin_checkout_14d": 0,
+    "waterfall_payment_14d": 0,
+    "waterfall_purchase_14d": 0,
+    "stripe_sessions_recent": 17,
+    "real_purchases_recent": 1,
+    "interpretation": "Telemetry shows ~0% conversion; ground truth (orders + Stripe) shows 17 begin_checkout / 1 purchase. The funnel is blind, not broken business-side."
+  },
+  "changes_shipped": [
+    "src/contexts/CartContext.tsx \u2014 recordFunnelStep('add_to_cart') now fires on real user click (was missing).",
+    "src/pages/Checkout.tsx \u2014 recordFunnelStep('payment') fires the instant we redirect to Stripe.",
+    "src/pages/PaymentSuccess.tsx \u2014 recordFunnelStep('purchase') fires on success page (idempotent via existing lpKey)."
+  ],
+  "verified_not_a_bottleneck": [
+    "Geo shipping-country gate: 0 real-visitor events in 14 days \u2014 not blocking US traffic.",
+    "Edge-function CORS: curl OPTIONS from getpawsy.pet origin returns 200 + correct headers on all three failing functions. Browser CORS errors during the autopsy were caused by Cloudflare bot-flagging the headless probe."
+  ],
+  "deferred_with_reason": {
+    "stripe_checkout_abandonment_autopsy": "Cannot be performed from sandbox IP (Cloudflare flags as bot + geo-gate fires). Next cycle: invoke create-checkout directly via service-role, then open Stripe URL in Playwright bypassing the storefront.",
+    "begin_checkout_waterfall_0": "Hook already exists in SafeGlobalVisitorTracker on path === '/checkout'. Zero events suggests real customers may be skipping /checkout. Investigate in next cycle once payment/purchase data starts flowing."
+  },
+  "validation_24h": "Re-query analytics_funnel_waterfall for new add_to_cart / payment / purchase rows after natural traffic. Success = >0 in each step within 24h.",
+  "next_cycle_top_action_candidate": "Once telemetry confirms working, run a true Stripe-page autopsy from a US-origin context to identify the 17\u21925\u21921 drop-off cause."
+}
