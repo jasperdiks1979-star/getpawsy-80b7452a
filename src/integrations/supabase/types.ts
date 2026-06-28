@@ -16166,6 +16166,849 @@ export type Database = {
         }
         Relationships: []
       }
+      gad_ai_decision_audit: {
+        Row: {
+          actual_outcome: Json | null
+          confidence: number
+          decided_at: string
+          decision: string
+          engine_source: string
+          expected_outcome: Json
+          financial_impact_usd: number | null
+          id: string
+          learning: string | null
+          metadata: Json
+          reason: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          confidence?: number
+          decided_at?: string
+          decision: string
+          engine_source: string
+          expected_outcome?: Json
+          financial_impact_usd?: number | null
+          id?: string
+          learning?: string | null
+          metadata?: Json
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          actual_outcome?: Json | null
+          confidence?: number
+          decided_at?: string
+          decision?: string
+          engine_source?: string
+          expected_outcome?: Json
+          financial_impact_usd?: number | null
+          id?: string
+          learning?: string | null
+          metadata?: Json
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      gad_anomalies: {
+        Row: {
+          anomaly_type: string
+          confidence: number
+          detected_at: string
+          expected: number | null
+          id: string
+          metadata: Json
+          observed: number | null
+          root_cause: string | null
+          scope: string | null
+          scope_ref: string | null
+          severity: string
+          status: string
+          z_score: number | null
+        }
+        Insert: {
+          anomaly_type: string
+          confidence?: number
+          detected_at?: string
+          expected?: number | null
+          id?: string
+          metadata?: Json
+          observed?: number | null
+          root_cause?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+          severity?: string
+          status?: string
+          z_score?: number | null
+        }
+        Update: {
+          anomaly_type?: string
+          confidence?: number
+          detected_at?: string
+          expected?: number | null
+          id?: string
+          metadata?: Json
+          observed?: number | null
+          root_cause?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+          severity?: string
+          status?: string
+          z_score?: number | null
+        }
+        Relationships: []
+      }
+      gad_attributions: {
+        Row: {
+          campaign: string | null
+          channel: string
+          confidence: number
+          conversion_id: string
+          created_at: string
+          creative_id: string | null
+          id: string
+          metadata: Json
+          model: string
+          revenue_usd: number | null
+          weight: number
+        }
+        Insert: {
+          campaign?: string | null
+          channel: string
+          confidence?: number
+          conversion_id: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          metadata?: Json
+          model: string
+          revenue_usd?: number | null
+          weight?: number
+        }
+        Update: {
+          campaign?: string | null
+          channel?: string
+          confidence?: number
+          conversion_id?: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          metadata?: Json
+          model?: string
+          revenue_usd?: number | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      gad_concept_history: {
+        Row: {
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gad_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gad_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gad_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gad_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gad_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gad_data_sources: {
+        Row: {
+          created_at: string
+          freshness_seconds: number | null
+          id: string
+          is_active: boolean
+          key: string
+          kind: string
+          last_ingest_at: string | null
+          metadata: Json
+          name: string
+          trust_score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          freshness_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          key: string
+          kind: string
+          last_ingest_at?: string | null
+          metadata?: Json
+          name: string
+          trust_score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          freshness_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          kind?: string
+          last_ingest_at?: string | null
+          metadata?: Json
+          name?: string
+          trust_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gad_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gad_events: {
+        Row: {
+          board_id: string | null
+          campaign: string | null
+          country: string | null
+          created_at: string
+          creative_id: string | null
+          device: string | null
+          event_name: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          pinterest_ids: Json
+          product_id: string | null
+          revenue_usd: number | null
+          session_id: string | null
+          source_key: string | null
+          tiktok_ids: Json
+          traffic_source: string | null
+          trust_score: number
+          utm: Json
+          visitor_id: string | null
+        }
+        Insert: {
+          board_id?: string | null
+          campaign?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          device?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          pinterest_ids?: Json
+          product_id?: string | null
+          revenue_usd?: number | null
+          session_id?: string | null
+          source_key?: string | null
+          tiktok_ids?: Json
+          traffic_source?: string | null
+          trust_score?: number
+          utm?: Json
+          visitor_id?: string | null
+        }
+        Update: {
+          board_id?: string | null
+          campaign?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          device?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          pinterest_ids?: Json
+          product_id?: string | null
+          revenue_usd?: number | null
+          session_id?: string | null
+          source_key?: string | null
+          tiktok_ids?: Json
+          traffic_source?: string | null
+          trust_score?: number
+          utm?: Json
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      gad_experiments: {
+        Row: {
+          confidence: number
+          created_at: string
+          ended_at: string | null
+          expected_result: Json
+          hypothesis: string
+          id: string
+          key: string
+          loser: string | null
+          metadata: Json
+          observed_result: Json
+          p_value: number | null
+          profit_impact_usd: number | null
+          revenue_impact_usd: number | null
+          significance: string | null
+          started_at: string
+          status: string
+          updated_at: string
+          version: number
+          winner: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          ended_at?: string | null
+          expected_result?: Json
+          hypothesis: string
+          id?: string
+          key: string
+          loser?: string | null
+          metadata?: Json
+          observed_result?: Json
+          p_value?: number | null
+          profit_impact_usd?: number | null
+          revenue_impact_usd?: number | null
+          significance?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          version?: number
+          winner?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          ended_at?: string | null
+          expected_result?: Json
+          hypothesis?: string
+          id?: string
+          key?: string
+          loser?: string | null
+          metadata?: Json
+          observed_result?: Json
+          p_value?: number | null
+          profit_impact_usd?: number | null
+          revenue_impact_usd?: number | null
+          significance?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          version?: number
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      gad_forecasts: {
+        Row: {
+          accuracy_score: number | null
+          actual_value: number | null
+          ci_high: number | null
+          ci_low: number | null
+          created_at: string
+          engine_source: string | null
+          forecast_type: string
+          id: string
+          metadata: Json
+          model_version: number
+          predicted_for: string | null
+          predicted_value: number
+          resolved_at: string | null
+          scope: string | null
+          scope_ref: string | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          created_at?: string
+          engine_source?: string | null
+          forecast_type: string
+          id?: string
+          metadata?: Json
+          model_version?: number
+          predicted_for?: string | null
+          predicted_value: number
+          resolved_at?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          created_at?: string
+          engine_source?: string | null
+          forecast_type?: string
+          id?: string
+          metadata?: Json
+          model_version?: number
+          predicted_for?: string | null
+          predicted_value?: number
+          resolved_at?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+        }
+        Relationships: []
+      }
+      gad_funnel_snapshots: {
+        Row: {
+          confidence: number
+          conversions: number
+          created_at: string
+          drop_rate: number | null
+          estimated_lost_revenue: number | null
+          id: string
+          metadata: Json
+          snapshot_date: string
+          step: string
+          step_order: number
+          visitors: number
+        }
+        Insert: {
+          confidence?: number
+          conversions?: number
+          created_at?: string
+          drop_rate?: number | null
+          estimated_lost_revenue?: number | null
+          id?: string
+          metadata?: Json
+          snapshot_date?: string
+          step: string
+          step_order: number
+          visitors?: number
+        }
+        Update: {
+          confidence?: number
+          conversions?: number
+          created_at?: string
+          drop_rate?: number | null
+          estimated_lost_revenue?: number | null
+          id?: string
+          metadata?: Json
+          snapshot_date?: string
+          step?: string
+          step_order?: number
+          visitors?: number
+        }
+        Relationships: []
+      }
+      gad_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gad_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gad_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gad_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gad_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gad_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gad_metrics: {
+        Row: {
+          completeness: number | null
+          confidence: number
+          consistency: number | null
+          created_at: string
+          freshness: number | null
+          id: string
+          latency_ms: number | null
+          metadata: Json
+          metric_key: string
+          sampling: number | null
+          scope: string
+          scope_ref: string | null
+          snapshot_date: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          completeness?: number | null
+          confidence?: number
+          consistency?: number | null
+          created_at?: string
+          freshness?: number | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          metric_key: string
+          sampling?: number | null
+          scope?: string
+          scope_ref?: string | null
+          snapshot_date?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          completeness?: number | null
+          confidence?: number
+          consistency?: number | null
+          created_at?: string
+          freshness?: number | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json
+          metric_key?: string
+          sampling?: number | null
+          scope?: string
+          scope_ref?: string | null
+          snapshot_date?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      gad_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gad_root_causes: {
+        Row: {
+          anomaly_id: string | null
+          causal_chain: string[]
+          confidence: number
+          created_at: string
+          evidence: Json
+          hypothesis: string
+          id: string
+          verdict: string | null
+        }
+        Insert: {
+          anomaly_id?: string | null
+          causal_chain?: string[]
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          hypothesis: string
+          id?: string
+          verdict?: string | null
+        }
+        Update: {
+          anomaly_id?: string | null
+          causal_chain?: string[]
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          hypothesis?: string
+          id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gad_root_causes_anomaly_id_fkey"
+            columns: ["anomaly_id"]
+            isOneToOne: false
+            referencedRelation: "gad_anomalies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gad_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gad_truth_validations: {
+        Row: {
+          confidence: number
+          created_at: string
+          delta_abs: number | null
+          delta_pct: number | null
+          id: string
+          metadata: Json
+          metric_key: string
+          notes: string | null
+          scope: string | null
+          scope_ref: string | null
+          source_a: string
+          source_b: string
+          status: string
+          value_a: number | null
+          value_b: number | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          delta_abs?: number | null
+          delta_pct?: number | null
+          id?: string
+          metadata?: Json
+          metric_key: string
+          notes?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+          source_a: string
+          source_b: string
+          status?: string
+          value_a?: number | null
+          value_b?: number | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          delta_abs?: number | null
+          delta_pct?: number | null
+          id?: string
+          metadata?: Json
+          metric_key?: string
+          notes?: string | null
+          scope?: string | null
+          scope_ref?: string | null
+          source_a?: string
+          source_b?: string
+          status?: string
+          value_a?: number | null
+          value_b?: number | null
+        }
+        Relationships: []
+      }
       gbd_conflicts: {
         Row: {
           conflict_type: string
@@ -50921,6 +51764,20 @@ export type Database = {
           p_valid: number
         }
         Returns: undefined
+      }
+      gad_refresh_module_rollups: { Args: never; Returns: undefined }
+      gad_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
+        }
+        Returns: string
       }
       gbd_search_knowledge: {
         Args: { _limit?: number; _query: string }
