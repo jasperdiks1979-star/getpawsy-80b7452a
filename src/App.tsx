@@ -481,6 +481,7 @@ const RevenuePriorityReportPage = lazyWithRetry(() => import("./pages/admin/Reve
 const RevenuePriorityRemediationPage = lazyWithRetry(() => import("./pages/admin/RevenuePriorityRemediationPage"));
 const DeployStatusPage = lazyWithRetry(() => import("./pages/admin/DeployStatusPage"));
 const GuardianDashboardPage = lazyWithRetry(() => import("./pages/admin/GuardianDashboardPage"));
+const SelfHealingPage = lazyWithRetry(() => import("./pages/admin/SelfHealingPage"));
 const PinterestRecoveryDashboard = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryDashboard"));
 const CreativeIntelligenceLayerPage = lazyWithRetry(() => import("./pages/admin/CreativeIntelligenceLayerPage"));
 const EvolutionEnginePage = lazyWithRetry(() => import("./pages/admin/EvolutionEnginePage"));
@@ -2653,6 +2654,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GuardianDashboardPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="self-healing"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SelfHealingPage />
                                 </Suspense>
                               }
                             />
