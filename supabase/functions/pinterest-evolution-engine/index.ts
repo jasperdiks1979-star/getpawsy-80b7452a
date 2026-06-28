@@ -21,6 +21,28 @@ function decay(ageDays: number) {
   return Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
 }
 
+function featuresFromDim(d: Row): Record<string, string> {
+  const out: Record<string, string> = {};
+  const put = (k: string, v: any) => {
+    if (v === null || v === undefined) return;
+    const s = String(v).toLowerCase().trim().slice(0, 80);
+    if (s) out[k] = s;
+  };
+  put("hook_variant", d.hook_variant);
+  put("copy_variant", d.copy_variant);
+  put("cta_variant", d.cta_variant);
+  put("niche", d.niche_key);
+  put("category", d.category_key);
+  put("board", d.board_id);
+  if (d.published_at) {
+    const dt = new Date(d.published_at);
+    put("posting_hour", `${dt.getUTCHours()}h`);
+    put("weekday", `${dt.getUTCDay()}`);
+    put("month", `${dt.getUTCMonth() + 1}`);
+  }
+  return out;
+}
+
 function featuresFromQueue(q: Row): Record<string, string> {
   const meta = (q?.meta ?? {}) as Row;
   const intel = (meta.intelligence ?? {}) as Row;
@@ -66,24 +88,49 @@ function scorePerf(p: Row): number {
 async function run(supabase: any, execute: boolean) {
   const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString();
 
-  // 1. Posted pins in window
-  const { data: queueData } = await supabase
+  // 1. Production evidence: pin_dimensions (DNA) + analytics_daily (signals)
+  const { data: dims } = await supabase
+    .from("pinterest_pin_dimensions")
+    .select("pin_id,hook_variant,copy_variant,cta_variant,niche_key,category_key,board_id,published_at")
+    .gte("published_at", sinceIso)
+    .limit(5000);
+  const dimensions: Row[] = dims ?? [];
+
+  // Also include queue meta DNA when available (richer features)
+  const { data: q } = await supabase
     .from("pinterest_pin_queue")
-    .select("id,pinterest_pin_id,product_slug,niche_key,board_name,cta,pin_title,posted_at,meta")
+    .select("pinterest_pin_id,niche_key,board_name,cta,pin_title,posted_at,meta")
     .eq("status", "posted")
     .gte("posted_at", sinceIso)
     .limit(2000);
-  const queue: Row[] = queueData ?? [];
+  const queueByPinId = new Map<string, Row>();
+  (q ?? []).forEach((r: Row) => { if (r.pinterest_pin_id) queueByPinId.set(String(r.pinterest_pin_id), r); });
 
-  // 2. Performance keyed by pin_id
-  const pinIds = queue.map((r: Row) => r.pinterest_pin_id).filter(Boolean);
+  // 2. Sum analytics by pin_id (any pin_id observed in dims OR queue)
+  const pinIds = Array.from(new Set([
+    ...dimensions.map((d) => String(d.pin_id)),
+    ...Array.from(queueByPinId.keys()),
+  ])).filter(Boolean);
   const perfMap = new Map<string, Row>();
   if (pinIds.length) {
-    const { data: perfData } = await supabase
-      .from("pinterest_pin_performance")
-      .select("pin_id,impressions,clicks,saves,ctr")
-      .in("pin_id", pinIds);
-    (perfData ?? []).forEach((p: Row) => perfMap.set(String(p.pin_id), p));
+    // chunk to keep IN list reasonable
+    for (let i = 0; i < pinIds.length; i += 500) {
+      const slice = pinIds.slice(i, i + 500);
+      const { data: perfData } = await supabase
+        .from("pinterest_analytics_daily")
+        .select("pin_id,impressions,outbound_clicks,saves,pin_clicks")
+        .in("pin_id", slice);
+      (perfData ?? []).forEach((p: Row) => {
+        const k = String(p.pin_id);
+        const a = perfMap.get(k) ?? { pin_id: k, impressions: 0, clicks: 0, saves: 0 };
+        a.impressions += Number(p.impressions ?? 0);
+        a.clicks += Number(p.outbound_clicks ?? 0) + Number(p.pin_clicks ?? 0);
+        a.saves += Number(p.saves ?? 0);
+        perfMap.set(k, a);
+      });
+    }
+    // derive ctr
+    perfMap.forEach((v) => { v.ctr = v.impressions > 0 ? v.clicks / v.impressions : 0; });
   }
 
   // 3. Aggregate by (dimension, value) with time decay
@@ -92,16 +139,31 @@ async function run(supabase: any, execute: boolean) {
   const now = Date.now();
   let evaluated = 0;
 
-  for (const q of queue) {
-    const perf = perfMap.get(String(q.pinterest_pin_id));
-    if (!perf) continue;
-    if ((perf.impressions ?? 0) < 1) continue;
+  const samples: { pin_id: string; perf: Row; feats: Record<string, string>; postedAt: string }[] = [];
+  for (const d of dimensions) {
+    const perf = perfMap.get(String(d.pin_id));
+    if (!perf || (perf.impressions ?? 0) < 1) continue;
+    const qrow = queueByPinId.get(String(d.pin_id));
+    const feats = { ...featuresFromDim(d), ...(qrow ? featuresFromQueue(qrow) : {}) };
+    samples.push({
+      pin_id: String(d.pin_id), perf, feats,
+      postedAt: d.published_at ?? qrow?.posted_at ?? new Date().toISOString(),
+    });
+  }
+  // also add queue-only pins (no dim row) when they have perf
+  queueByPinId.forEach((qrow, pid) => {
+    if (dimensions.find((d) => String(d.pin_id) === pid)) return;
+    const perf = perfMap.get(pid);
+    if (!perf || (perf.impressions ?? 0) < 1) return;
+    samples.push({ pin_id: pid, perf, feats: featuresFromQueue(qrow), postedAt: qrow.posted_at });
+  });
+
+  for (const sm of samples) {
     evaluated++;
-    const ageDays = (now - new Date(q.posted_at).getTime()) / 86_400_000;
-    const w = decay(ageDays);
-    const s = scorePerf(perf);
-    const feats = featuresFromQueue(q);
-    for (const [dim, val] of Object.entries(feats)) {
+    const ageDays = (now - new Date(sm.postedAt).getTime()) / 86_400_000;
+    const w = decay(Math.max(0, ageDays));
+    const s = scorePerf(sm.perf);
+    for (const [dim, val] of Object.entries(sm.feats)) {
       const key = `${dim}::${val}`;
       const a = buckets.get(key) ?? { score: 0, weight: 0, n: 0, raw: [] };
       a.score += s * w;
