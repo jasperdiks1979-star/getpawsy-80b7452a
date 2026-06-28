@@ -16549,6 +16549,793 @@ export type Database = {
         }
         Relationships: []
       }
+      gcd_concept_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcd_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gcd_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gcd_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcd_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gcd_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gcd_creatives: {
+        Row: {
+          created_at: string
+          creative_family: string | null
+          creative_id: string
+          creative_version: number
+          creator_engine: string | null
+          generation_cost_usd: number | null
+          generation_id: string | null
+          generation_time_ms: number | null
+          id: string
+          image_fingerprint: string | null
+          metadata: Json
+          parent_creative_id: string | null
+          pipeline_version: string | null
+          product_id: string | null
+          prompt: string | null
+          prompt_version: number | null
+          render_provider: string | null
+          seed: number | null
+          status: string
+          updated_at: string
+          video_fingerprint: string | null
+        }
+        Insert: {
+          created_at?: string
+          creative_family?: string | null
+          creative_id: string
+          creative_version?: number
+          creator_engine?: string | null
+          generation_cost_usd?: number | null
+          generation_id?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          image_fingerprint?: string | null
+          metadata?: Json
+          parent_creative_id?: string | null
+          pipeline_version?: string | null
+          product_id?: string | null
+          prompt?: string | null
+          prompt_version?: number | null
+          render_provider?: string | null
+          seed?: number | null
+          status?: string
+          updated_at?: string
+          video_fingerprint?: string | null
+        }
+        Update: {
+          created_at?: string
+          creative_family?: string | null
+          creative_id?: string
+          creative_version?: number
+          creator_engine?: string | null
+          generation_cost_usd?: number | null
+          generation_id?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          image_fingerprint?: string | null
+          metadata?: Json
+          parent_creative_id?: string | null
+          pipeline_version?: string | null
+          product_id?: string | null
+          prompt?: string | null
+          prompt_version?: number | null
+          render_provider?: string | null
+          seed?: number | null
+          status?: string
+          updated_at?: string
+          video_fingerprint?: string | null
+        }
+        Relationships: []
+      }
+      gcd_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gcd_genes: {
+        Row: {
+          confidence: number
+          created_at: string
+          evidence_count: number
+          family: string
+          gene_type: string
+          gene_value: string
+          id: string
+          is_active: boolean
+          last_evidence_at: string | null
+          losses: number
+          metadata: Json
+          updated_at: string
+          version: number
+          weight: number
+          wins: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          evidence_count?: number
+          family?: string
+          gene_type: string
+          gene_value: string
+          id?: string
+          is_active?: boolean
+          last_evidence_at?: string | null
+          losses?: number
+          metadata?: Json
+          updated_at?: string
+          version?: number
+          weight?: number
+          wins?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evidence_count?: number
+          family?: string
+          gene_type?: string
+          gene_value?: string
+          id?: string
+          is_active?: boolean
+          last_evidence_at?: string | null
+          losses?: number
+          metadata?: Json
+          updated_at?: string
+          version?: number
+          weight?: number
+          wins?: number
+        }
+        Relationships: []
+      }
+      gcd_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcd_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gcd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gcd_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gcd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gcd_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gcd_learnings: {
+        Row: {
+          applied: boolean
+          concept_key: string | null
+          confidence: number
+          created_at: string
+          delta_confidence: number | null
+          delta_weight: number | null
+          engine_source: string
+          evidence: Json
+          family: string | null
+          gene_type: string | null
+          gene_value: string | null
+          id: string
+          insight: string
+          module_key: string | null
+          scope: string
+        }
+        Insert: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source: string
+          evidence?: Json
+          family?: string | null
+          gene_type?: string | null
+          gene_value?: string | null
+          id?: string
+          insight: string
+          module_key?: string | null
+          scope?: string
+        }
+        Update: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source?: string
+          evidence?: Json
+          family?: string | null
+          gene_type?: string | null
+          gene_value?: string | null
+          id?: string
+          insight?: string
+          module_key?: string | null
+          scope?: string
+        }
+        Relationships: []
+      }
+      gcd_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gcd_performance: {
+        Row: {
+          add_to_cart: number
+          atc_rate: number | null
+          checkouts: number
+          clicks: number
+          created_at: string
+          creative_id: string
+          ctr: number | null
+          cvr: number | null
+          fatigue_score: number | null
+          id: string
+          impressions: number
+          metadata: Json
+          novelty_score: number | null
+          outbound_clicks: number
+          outbound_ctr: number | null
+          profit_usd: number
+          purchases: number
+          refunds_usd: number
+          returns: number
+          revenue_usd: number
+          roas: number | null
+          save_rate: number | null
+          saves: number
+          snapshot_date: string
+          success_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          add_to_cart?: number
+          atc_rate?: number | null
+          checkouts?: number
+          clicks?: number
+          created_at?: string
+          creative_id: string
+          ctr?: number | null
+          cvr?: number | null
+          fatigue_score?: number | null
+          id?: string
+          impressions?: number
+          metadata?: Json
+          novelty_score?: number | null
+          outbound_clicks?: number
+          outbound_ctr?: number | null
+          profit_usd?: number
+          purchases?: number
+          refunds_usd?: number
+          returns?: number
+          revenue_usd?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          snapshot_date?: string
+          success_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          add_to_cart?: number
+          atc_rate?: number | null
+          checkouts?: number
+          clicks?: number
+          created_at?: string
+          creative_id?: string
+          ctr?: number | null
+          cvr?: number | null
+          fatigue_score?: number | null
+          id?: string
+          impressions?: number
+          metadata?: Json
+          novelty_score?: number | null
+          outbound_clicks?: number
+          outbound_ctr?: number | null
+          profit_usd?: number
+          purchases?: number
+          refunds_usd?: number
+          returns?: number
+          revenue_usd?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          snapshot_date?: string
+          success_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gcd_predictions: {
+        Row: {
+          actual_value: number | null
+          ci_high: number | null
+          ci_low: number | null
+          confidence: number
+          created_at: string
+          creative_id: string | null
+          engine_source: string | null
+          features: Json
+          id: string
+          model_version: number
+          outcome_at: string | null
+          predicted_value: number
+          prediction_type: string
+        }
+        Insert: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          creative_id?: string | null
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value: number
+          prediction_type: string
+        }
+        Update: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          creative_id?: string | null
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value?: number
+          prediction_type?: string
+        }
+        Relationships: []
+      }
+      gcd_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gcd_visual_dna: {
+        Row: {
+          age: string | null
+          attention_flow: string[]
+          background: string | null
+          badge: string | null
+          brand_placement: string | null
+          breed: string | null
+          brightness: number | null
+          camera: string | null
+          clutter_score: number | null
+          color_palette: string[]
+          composition: string | null
+          contrast: number | null
+          created_at: string
+          creative_id: string
+          cta: string | null
+          depth_of_field: string | null
+          desired_feeling: string | null
+          emotion_primary: string | null
+          emotion_secondary: string | null
+          environment: string | null
+          eye_contact: boolean | null
+          facial_expression: string | null
+          focal_length: string | null
+          foreground: string | null
+          framing: string | null
+          headline_position: string | null
+          human_presence: boolean | null
+          id: string
+          indoor: boolean | null
+          interaction: string | null
+          leading_lines: boolean | null
+          lens: string | null
+          light_direction: string | null
+          light_temperature: string | null
+          lighting: string | null
+          luxury_score: number | null
+          metadata: Json
+          minimalism_score: number | null
+          motion: string | null
+          negative_space: number | null
+          object_count: number | null
+          outdoor: boolean | null
+          perspective: string | null
+          pet_presence: boolean | null
+          pose: string | null
+          product_visibility_score: number | null
+          psychological_trigger: string | null
+          rule_of_thirds: boolean | null
+          saturation: number | null
+          season: string | null
+          story: string | null
+          texture: string | null
+          time_of_day: string | null
+          typography: string | null
+          updated_at: string
+          visual_hierarchy: string | null
+          warmth: number | null
+          weather: string | null
+        }
+        Insert: {
+          age?: string | null
+          attention_flow?: string[]
+          background?: string | null
+          badge?: string | null
+          brand_placement?: string | null
+          breed?: string | null
+          brightness?: number | null
+          camera?: string | null
+          clutter_score?: number | null
+          color_palette?: string[]
+          composition?: string | null
+          contrast?: number | null
+          created_at?: string
+          creative_id: string
+          cta?: string | null
+          depth_of_field?: string | null
+          desired_feeling?: string | null
+          emotion_primary?: string | null
+          emotion_secondary?: string | null
+          environment?: string | null
+          eye_contact?: boolean | null
+          facial_expression?: string | null
+          focal_length?: string | null
+          foreground?: string | null
+          framing?: string | null
+          headline_position?: string | null
+          human_presence?: boolean | null
+          id?: string
+          indoor?: boolean | null
+          interaction?: string | null
+          leading_lines?: boolean | null
+          lens?: string | null
+          light_direction?: string | null
+          light_temperature?: string | null
+          lighting?: string | null
+          luxury_score?: number | null
+          metadata?: Json
+          minimalism_score?: number | null
+          motion?: string | null
+          negative_space?: number | null
+          object_count?: number | null
+          outdoor?: boolean | null
+          perspective?: string | null
+          pet_presence?: boolean | null
+          pose?: string | null
+          product_visibility_score?: number | null
+          psychological_trigger?: string | null
+          rule_of_thirds?: boolean | null
+          saturation?: number | null
+          season?: string | null
+          story?: string | null
+          texture?: string | null
+          time_of_day?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_hierarchy?: string | null
+          warmth?: number | null
+          weather?: string | null
+        }
+        Update: {
+          age?: string | null
+          attention_flow?: string[]
+          background?: string | null
+          badge?: string | null
+          brand_placement?: string | null
+          breed?: string | null
+          brightness?: number | null
+          camera?: string | null
+          clutter_score?: number | null
+          color_palette?: string[]
+          composition?: string | null
+          contrast?: number | null
+          created_at?: string
+          creative_id?: string
+          cta?: string | null
+          depth_of_field?: string | null
+          desired_feeling?: string | null
+          emotion_primary?: string | null
+          emotion_secondary?: string | null
+          environment?: string | null
+          eye_contact?: boolean | null
+          facial_expression?: string | null
+          focal_length?: string | null
+          foreground?: string | null
+          framing?: string | null
+          headline_position?: string | null
+          human_presence?: boolean | null
+          id?: string
+          indoor?: boolean | null
+          interaction?: string | null
+          leading_lines?: boolean | null
+          lens?: string | null
+          light_direction?: string | null
+          light_temperature?: string | null
+          lighting?: string | null
+          luxury_score?: number | null
+          metadata?: Json
+          minimalism_score?: number | null
+          motion?: string | null
+          negative_space?: number | null
+          object_count?: number | null
+          outdoor?: boolean | null
+          perspective?: string | null
+          pet_presence?: boolean | null
+          pose?: string | null
+          product_visibility_score?: number | null
+          psychological_trigger?: string | null
+          rule_of_thirds?: boolean | null
+          saturation?: number | null
+          season?: string | null
+          story?: string | null
+          texture?: string | null
+          time_of_day?: string | null
+          typography?: string | null
+          updated_at?: string
+          visual_hierarchy?: string | null
+          warmth?: number | null
+          weather?: string | null
+        }
+        Relationships: []
+      }
       gcp_concept_history: {
         Row: {
           change_reason: string | null
@@ -50158,6 +50945,30 @@ export type Database = {
           _source_engine: string
           _topic: string
           _value: Json
+        }
+        Returns: string
+      }
+      gcd_refresh_module_rollups: { Args: never; Returns: undefined }
+      gcd_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
+        }
+        Returns: string
+      }
+      gcd_upsert_gene: {
+        Args: {
+          p_confidence?: number
+          p_family: string
+          p_type: string
+          p_value: string
+          p_weight?: number
         }
         Returns: string
       }
