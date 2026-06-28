@@ -1852,15 +1852,6 @@ function EvidenceGovernorPanel() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="rounded border border-border p-2">
-      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
-      <div className="font-semibold">{String(value)}</div>
-    </div>
-  );
-}
-
 function TraitList({ title, rows, showDelta = false, muted = false }: { title: string; rows: any[]; showDelta?: boolean; muted?: boolean }) {
   return (
     <div className={muted ? "opacity-80" : ""}>
