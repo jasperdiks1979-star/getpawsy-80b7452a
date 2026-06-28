@@ -1140,6 +1140,7 @@ export default function PinterestHealthPage() {
         )}
       </Card>
       <TasteEnginePanel />
+      <GrowthDirectorPanel />
     </div>
   );
 }
@@ -1468,6 +1469,175 @@ function _OAuthRecoveryPanel({
           </details>
         </div>
       )}
+    </Card>
+  );
+}
+
+function GrowthDirectorPanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [decisions, setDecisions] = useState<any[]>([]);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const [s, d, r] = await Promise.all([
+      (supabase as any).from("pinterest_growth_director_snapshots")
+        .select("*").order("computed_at", { ascending: false }).limit(1).maybeSingle(),
+      (supabase as any).from("pinterest_growth_director_decisions")
+        .select("category,title,rationale,expected_impact_score,expected_revenue_cents_30d,confidence,effort,target_kind,target_ref,created_at")
+        .order("created_at", { ascending: false }).limit(40),
+      (supabase as any).from("pinterest_growth_director_runs")
+        .select("started_at,finished_at,status,products_scored,boards_evaluated,opportunities_found,decisions_emitted,summary")
+        .order("started_at", { ascending: false }).limit(7),
+    ]);
+    setSnap(s.data ?? null);
+    setDecisions(d.data ?? []);
+    setRuns(r.data ?? []);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function run() {
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).functions.invoke("pinterest-growth-director", { body: {} });
+      if (error) throw error;
+      await load();
+    } finally { setBusy(false); }
+  }
+
+  const kpis = snap?.account_kpis ?? {};
+  const outlook = snap?.outlook_30d ?? {};
+  const top = (snap?.product_priorities ?? []).slice(0, 10);
+  const boards = (snap?.board_allocations ?? []).slice(0, 8);
+  const bn = snap?.bottlenecks ?? [];
+  const opps = (snap?.opportunities ?? []).slice(0, 10);
+
+  return (
+    <Card className="p-4 mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold">Pinterest Growth Director</h2>
+          <p className="text-xs text-muted-foreground">Holistic account-wide optimization brain · runs daily 04:45 UTC</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">Confidence {((snap?.confidence ?? 0) * 100).toFixed(0)}%</Badge>
+          <Button size="sm" variant="outline" disabled={busy} onClick={run}>{busy ? "Running…" : "Run now"}</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-xs mb-4">
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">CTR</div><div className="font-semibold">{((kpis.ctr ?? 0) * 100).toFixed(2)}%</div></div>
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">Save rate</div><div className="font-semibold">{((kpis.save_rate ?? 0) * 100).toFixed(2)}%</div></div>
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">Click→ATC</div><div className="font-semibold">{((kpis.click_to_atc ?? 0) * 100).toFixed(1)}%</div></div>
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">ATC→Buy</div><div className="font-semibold">{((kpis.atc_to_purchase ?? 0) * 100).toFixed(1)}%</div></div>
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">Rev 30d</div><div className="font-semibold">${((kpis.revenue_cents ?? 0) / 100).toFixed(0)}</div></div>
+        <div className="p-2 rounded bg-muted"><div className="text-muted-foreground">Outlook +30d</div><div className="font-semibold">{outlook.projected_growth_pct ?? 0}%</div></div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm font-semibold mb-1">Top bottlenecks</div>
+          {bn.length === 0 ? <div className="text-xs text-muted-foreground">None detected.</div> : (
+            <ul className="space-y-1 text-xs">
+              {bn.map((b: any) => (
+                <li key={b.key} className="flex items-center justify-between p-2 rounded bg-muted">
+                  <span>{b.label}</span>
+                  <Badge variant={b.severity > 0.8 ? "destructive" : "secondary"}>{(b.severity * 100).toFixed(0)}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <div className="text-sm font-semibold mb-1">Top opportunities</div>
+          {opps.length === 0 ? <div className="text-xs text-muted-foreground">None.</div> : (
+            <ul className="space-y-1 text-xs">
+              {opps.map((o: any, i: number) => (
+                <li key={i} className="p-2 rounded bg-muted">
+                  <div className="font-medium">{o.kind === "trend" ? `${o.dimension}: ${o.value}` : (o.name ?? o.slug ?? o.value)}</div>
+                  <div className="text-muted-foreground">{o.reason}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="text-sm font-semibold mb-1">Top 10 priority products</div>
+        {top.length === 0 ? <div className="text-xs text-muted-foreground">Awaiting funnel data with product_id linkage.</div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="text-left text-muted-foreground"><tr><th className="py-1">Product</th><th>Score</th><th>Winner p</th><th>Rev 30d</th><th>Pins</th><th>Margin</th></tr></thead>
+              <tbody>
+                {top.map((p: any) => (
+                  <tr key={p.product_id} className="border-t border-border">
+                    <td className="py-1">{p.name}</td>
+                    <td><Badge variant="default">{p.priority_score}</Badge></td>
+                    <td>{(p.winner_p * 100).toFixed(0)}%</td>
+                    <td>${(p.revenue_cents_30d / 100).toFixed(0)}</td>
+                    <td>{p.pins_30d}</td>
+                    <td>{(p.margin * 100).toFixed(0)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <div className="text-sm font-semibold mb-1">Board capital allocation</div>
+        {boards.length === 0 ? <div className="text-xs text-muted-foreground">Awaiting board performance data.</div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="text-left text-muted-foreground"><tr><th className="py-1">Board</th><th>Rev 30d</th><th>CTR</th><th>Current</th><th>Target</th><th>Action</th></tr></thead>
+              <tbody>
+                {boards.map((b: any) => (
+                  <tr key={b.board_name} className="border-t border-border">
+                    <td className="py-1">{b.board_name}</td>
+                    <td>${(b.revenue_cents_30d / 100).toFixed(0)}</td>
+                    <td>{(b.ctr * 100).toFixed(2)}%</td>
+                    <td>{b.current_publish_weight.toFixed(2)}</td>
+                    <td>{(b.recommended_share * 100).toFixed(1)}%</td>
+                    <td><Badge variant={b.action === "increase" ? "default" : b.action === "decrease" ? "destructive" : "outline"}>{b.action}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <div className="text-sm font-semibold mb-1">Ranked decisions ({decisions.length})</div>
+        <div className="space-y-1 max-h-96 overflow-auto">
+          {decisions.slice(0, 20).map((d, i) => (
+            <div key={i} className="p-2 rounded bg-muted text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-medium">{d.title}</div>
+                <div className="flex gap-1">
+                  <Badge variant="outline">{d.category}</Badge>
+                  <Badge>impact {Math.round(d.expected_impact_score)}</Badge>
+                  <Badge variant="secondary">conf {Math.round(d.confidence * 100)}%</Badge>
+                </div>
+              </div>
+              <div className="text-muted-foreground mt-1">{d.rationale}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <details className="mt-3 text-xs">
+        <summary className="cursor-pointer text-muted-foreground">Recent runs ({runs.length})</summary>
+        <ul className="mt-1 space-y-1">
+          {runs.map((r, i) => (
+            <li key={i} className="text-muted-foreground">
+              {new Date(r.started_at).toLocaleString()} · {r.status} · {r.products_scored}p / {r.boards_evaluated}b / {r.opportunities_found}o / {r.decisions_emitted}d
+            </li>
+          ))}
+        </ul>
+      </details>
     </Card>
   );
 }
