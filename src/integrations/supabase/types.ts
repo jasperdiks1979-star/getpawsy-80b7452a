@@ -2027,6 +2027,410 @@ export type Database = {
         }
         Relationships: []
       }
+      aec_advisor_votes: {
+        Row: {
+          advisor_key: string
+          confidence: number | null
+          created_at: string
+          decision_id: string | null
+          evidence_quality: number | null
+          expected_roi: number | null
+          id: string
+          payload: Json
+          recommendation: string
+          risk: number | null
+          run_id: string
+          time_horizon: string | null
+          vote_score: number | null
+          weight: number
+        }
+        Insert: {
+          advisor_key: string
+          confidence?: number | null
+          created_at?: string
+          decision_id?: string | null
+          evidence_quality?: number | null
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          recommendation: string
+          risk?: number | null
+          run_id: string
+          time_horizon?: string | null
+          vote_score?: number | null
+          weight?: number
+        }
+        Update: {
+          advisor_key?: string
+          confidence?: number | null
+          created_at?: string
+          decision_id?: string | null
+          evidence_quality?: number | null
+          expected_roi?: number | null
+          id?: string
+          payload?: Json
+          recommendation?: string
+          risk?: number | null
+          run_id?: string
+          time_horizon?: string | null
+          vote_score?: number | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aec_advisor_votes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aec_council_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aec_advisors: {
+        Row: {
+          advisor_key: string
+          created_at: string
+          current_weight: number
+          decisions_observed: number
+          default_weight: number
+          display_name: string
+          domain: string
+          last_seen_at: string | null
+          notes: string | null
+          reliability_score: number
+          updated_at: string
+        }
+        Insert: {
+          advisor_key: string
+          created_at?: string
+          current_weight?: number
+          decisions_observed?: number
+          default_weight?: number
+          display_name: string
+          domain: string
+          last_seen_at?: string | null
+          notes?: string | null
+          reliability_score?: number
+          updated_at?: string
+        }
+        Update: {
+          advisor_key?: string
+          created_at?: string
+          current_weight?: number
+          decisions_observed?: number
+          default_weight?: number
+          display_name?: string
+          domain?: string
+          last_seen_at?: string | null
+          notes?: string | null
+          reliability_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aec_briefings: {
+        Row: {
+          bullets: Json
+          created_at: string
+          estimated_confidence: number | null
+          estimated_monthly_revenue_cents: number | null
+          for_date: string
+          highest_risk: string | null
+          highest_roi: string | null
+          id: string
+          largest_opportunity: string | null
+          required_founder_action: string
+          run_id: string | null
+          yesterday_summary: Json
+        }
+        Insert: {
+          bullets?: Json
+          created_at?: string
+          estimated_confidence?: number | null
+          estimated_monthly_revenue_cents?: number | null
+          for_date: string
+          highest_risk?: string | null
+          highest_roi?: string | null
+          id?: string
+          largest_opportunity?: string | null
+          required_founder_action?: string
+          run_id?: string | null
+          yesterday_summary?: Json
+        }
+        Update: {
+          bullets?: Json
+          created_at?: string
+          estimated_confidence?: number | null
+          estimated_monthly_revenue_cents?: number | null
+          for_date?: string
+          highest_risk?: string | null
+          highest_roi?: string | null
+          id?: string
+          largest_opportunity?: string | null
+          required_founder_action?: string
+          run_id?: string | null
+          yesterday_summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aec_briefings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aec_council_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aec_council_runs: {
+        Row: {
+          advisors_polled: number
+          council_confidence: number | null
+          council_consensus: string | null
+          created_at: string
+          decision_quality_score: number | null
+          decisions_count: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          projected_growth_pct: number | null
+          projected_monthly_revenue_cents: number | null
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          advisors_polled?: number
+          council_confidence?: number | null
+          council_consensus?: string | null
+          created_at?: string
+          decision_quality_score?: number | null
+          decisions_count?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          projected_growth_pct?: number | null
+          projected_monthly_revenue_cents?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          advisors_polled?: number
+          council_confidence?: number | null
+          council_consensus?: string | null
+          created_at?: string
+          decision_quality_score?: number | null
+          decisions_count?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          projected_growth_pct?: number | null
+          projected_monthly_revenue_cents?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      aec_decisions: {
+        Row: {
+          actual_outcome: Json | null
+          consensus: string
+          council_confidence: number | null
+          created_at: string
+          decision_type: string
+          dedupe_key: string | null
+          evaluated_at: string | null
+          expected_learning_value: number | null
+          expected_maintenance_cost: number | null
+          expected_revenue_cents: number | null
+          expected_risk: number | null
+          expected_stability: number | null
+          explanation: string | null
+          final_action: string
+          id: string
+          long_term_benefit: number | null
+          reason_codes: string[]
+          run_id: string
+          short_term_benefit: number | null
+          status: string
+          subject_id: string | null
+          subject_kind: string | null
+          votes_against: number
+          votes_for: number
+          weighted_score: number | null
+          xai_decision_id: string | null
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          consensus: string
+          council_confidence?: number | null
+          created_at?: string
+          decision_type: string
+          dedupe_key?: string | null
+          evaluated_at?: string | null
+          expected_learning_value?: number | null
+          expected_maintenance_cost?: number | null
+          expected_revenue_cents?: number | null
+          expected_risk?: number | null
+          expected_stability?: number | null
+          explanation?: string | null
+          final_action: string
+          id?: string
+          long_term_benefit?: number | null
+          reason_codes?: string[]
+          run_id: string
+          short_term_benefit?: number | null
+          status?: string
+          subject_id?: string | null
+          subject_kind?: string | null
+          votes_against?: number
+          votes_for?: number
+          weighted_score?: number | null
+          xai_decision_id?: string | null
+        }
+        Update: {
+          actual_outcome?: Json | null
+          consensus?: string
+          council_confidence?: number | null
+          created_at?: string
+          decision_type?: string
+          dedupe_key?: string | null
+          evaluated_at?: string | null
+          expected_learning_value?: number | null
+          expected_maintenance_cost?: number | null
+          expected_revenue_cents?: number | null
+          expected_risk?: number | null
+          expected_stability?: number | null
+          explanation?: string | null
+          final_action?: string
+          id?: string
+          long_term_benefit?: number | null
+          reason_codes?: string[]
+          run_id?: string
+          short_term_benefit?: number | null
+          status?: string
+          subject_id?: string | null
+          subject_kind?: string | null
+          votes_against?: number
+          votes_for?: number
+          weighted_score?: number | null
+          xai_decision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aec_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aec_council_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aec_priorities: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          rank: number
+          run_id: string
+          score: number | null
+          subject_id: string | null
+          subject_kind: string | null
+          title: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          rank: number
+          run_id: string
+          score?: number | null
+          subject_id?: string | null
+          subject_kind?: string | null
+          title: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          rank?: number
+          run_id?: string
+          score?: number | null
+          subject_id?: string | null
+          subject_kind?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aec_priorities_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "aec_council_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aec_reliability_ledger: {
+        Row: {
+          advisor_key: string
+          confidence_calibration: number | null
+          created_at: string
+          decision_accuracy: number | null
+          decisions_evaluated: number
+          false_negatives: number
+          false_positives: number
+          id: string
+          learning_efficiency: number | null
+          new_weight: number | null
+          notes: string | null
+          prediction_accuracy: number | null
+          reliability_score: number | null
+          roi_accuracy: number | null
+          week_start: string
+        }
+        Insert: {
+          advisor_key: string
+          confidence_calibration?: number | null
+          created_at?: string
+          decision_accuracy?: number | null
+          decisions_evaluated?: number
+          false_negatives?: number
+          false_positives?: number
+          id?: string
+          learning_efficiency?: number | null
+          new_weight?: number | null
+          notes?: string | null
+          prediction_accuracy?: number | null
+          reliability_score?: number | null
+          roi_accuracy?: number | null
+          week_start: string
+        }
+        Update: {
+          advisor_key?: string
+          confidence_calibration?: number | null
+          created_at?: string
+          decision_accuracy?: number | null
+          decisions_evaluated?: number
+          false_negatives?: number
+          false_positives?: number
+          id?: string
+          learning_efficiency?: number | null
+          new_weight?: number | null
+          notes?: string | null
+          prediction_accuracy?: number | null
+          reliability_score?: number | null
+          roi_accuracy?: number | null
+          week_start?: string
+        }
+        Relationships: []
+      }
       agm_actions: {
         Row: {
           action_type: string
