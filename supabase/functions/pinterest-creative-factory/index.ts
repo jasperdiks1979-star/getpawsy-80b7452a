@@ -802,6 +802,10 @@ async function processJob(sb: Sb, job: any, settings: any) {
           scores: qc.scores,
           niche_key: niche,
           model: settings?.model ?? DEFAULT_MODEL,
+          master: {
+            dims: masterDims,
+            inspiration: (metrics as any).inspiration ?? null,
+          },
         },
       };
       const { error } = await sb.from("pinterest_pin_queue").update({
