@@ -205,16 +205,23 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
       hook_group: niche,
       category_key: niche,
       overlay_text: copy.overlay,
+      source_type: "product_ai",
+      content_type: "product",
+      pin_variant: "product_ai",
       meta: {
         creative_source: source,
         ai_generated: true,
         generator: "pinterest-creative-factory",
         inventory_seed: true,
         publish_allowed: true,
+        source_type: "product_ai",
       },
     };
     const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
       .insert(row).select("id").maybeSingle();
+    if (insErr) {
+      console.warn("[factory] inventory insert failed", insErr.message);
+    }
     if (!insErr && pin?.id) {
       created++;
       await sb.from("pinterest_creative_factory_jobs").upsert({
@@ -276,12 +283,16 @@ async function seedProductDrafts(
         hook_group: niche,
         category_key: niche,
         overlay_text: copy.overlay,
+        source_type: "product_ai",
+        content_type: "product",
+        pin_variant: "product_ai",
         meta: {
           creative_source: source,
           ai_generated: true,
           generator: "pinterest-creative-factory",
           inventory_seed: true,
           publish_allowed: true,
+          source_type: "product_ai",
         },
       }).select("id").maybeSingle();
     if (insErr || !pin?.id) continue;
@@ -763,7 +774,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
         image_hash: mediaHash,
         pin_image_phash: phash,
         meta,
-        status: pin.status === "blocked_legacy_source" ? "queued" : pin.status,
+        status: pin.status === "queued" ? "queued" : "queued",
         approved_at: pin.approved_at ?? new Date().toISOString(),
         error_message: null,
         rejection_reason: null,

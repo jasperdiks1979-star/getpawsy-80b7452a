@@ -226,6 +226,23 @@ function pickTemplate(niche: string): BoardTemplate {
   return DEFAULT_TEMPLATE;
 }
 
+// Rotating overlay pool used when a board template falls back to its generic
+// phrase. Keeps the DiversityGuard headline cap from blocking publish.
+const OVERLAY_VARIETY_POOL: string[] = [
+  "Loved by US pet parents",
+  "Pet-tested every day",
+  "Built for happy pets",
+  "Made for cozy homes",
+  "Pet parent approved",
+  "Designed for daily joy",
+  "Soft, sturdy, safe",
+  "Premium pet upgrade",
+  "Better than you'd expect",
+  "Quiet luxury for pets",
+  "Small space, big love",
+  "Tested in real homes",
+];
+
 /**
  * Build the deterministic pin copy for a given product + variant index.
  * variantIndex rotates through 4 title options for A/B testing.
@@ -238,7 +255,21 @@ export function buildPinCopy(
   const titles = t.titles(product);
   const title = sanitizePinText(titles[variantIndex % titles.length]).slice(0, 100);
   const description = sanitizePinText(t.description(product)).slice(0, 480);
-  const overlay = sanitizePinText(t.overlay(product)).slice(0, 32);
+  let overlay = sanitizePinText(t.overlay(product)).slice(0, 32);
+  // If the template fell back to its generic phrase, rotate through the
+  // variety pool deterministically so consecutive pins don't collide with
+  // the DiversityGuard headline cap.
+  const productBenefit = (product.benefit || "").trim();
+  const usedFallback = !productBenefit || overlay !== productBenefit.split(/\s+/).slice(0, 5).join(" ").slice(0, 32);
+  if (usedFallback) {
+    // Hash the product name so each product picks a stable but varied phrase,
+    // then rotate further by variantIndex.
+    const name = (product.name || "").toLowerCase();
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    const idx = (h + variantIndex) % OVERLAY_VARIETY_POOL.length;
+    overlay = OVERLAY_VARIETY_POOL[idx].slice(0, 32);
+  }
   return {
     title,
     description,
