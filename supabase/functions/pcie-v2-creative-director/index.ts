@@ -320,13 +320,19 @@ const STAGE_HANDLERS: Record<string, (ctx: any) => Promise<void> | void> = {
     ctx.axis_breakdown = breakdown;
     const threshold = Number(ctx.cat.config.publish_gate_threshold ?? 95);
     ctx.pass_publish_gate = !hardFail && ctx.novelty_total >= threshold && !ctx.duplicate;
-    ctx.reject_reason = hardFail ? "hard_axis_failure" : ctx.duplicate ? "duplicate_fingerprint" : (!ctx.pass_publish_gate ? "below_threshold" : null);
+    if (!ctx.reject_reason) {
+      ctx.reject_reason = hardFail ? "hard_axis_failure" : ctx.duplicate ? "duplicate_fingerprint" : (!ctx.pass_publish_gate ? "below_threshold" : null);
+    }
+    if (ctx.prompt_qa_blocked || ctx.render_qa_blocked || ctx.render_status === "failed") ctx.pass_publish_gate = false;
     ctx.trace.push({ stage: "publish", novelty_total: ctx.novelty_total, pass: ctx.pass_publish_gate, reject: ctx.reject_reason });
   },
 };
 
-async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product: any) {
-  const ctx: any = { product, decisions: {}, refs: {}, scores: {}, trace: [], cat, duplicate: false };
+async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product: any, opts: { dry_run: boolean; candidate_set_id: string; candidate_no: number; replay_of?: string | null }) {
+  const ctx: any = {
+    product, decisions: {}, refs: {}, scores: {}, trace: [], cat, duplicate: false,
+    supabase, dry_run: opts.dry_run, candidate_set_id: opts.candidate_set_id, candidate_no: opts.candidate_no,
+  };
   for (const stage of cat.stages) {
     try { await STAGE_HANDLERS[stage.handler]?.(ctx); }
     catch (e) { ctx.trace.push({ stage: stage.slug, error: String(e) }); }
@@ -342,10 +348,14 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
   const { data: creative, error } = await supabase.from("pcie_v2_creatives").insert({
     run_id, product_id: product.id, product_slug: product.slug, niche: product.niche,
     status, reject_reason: ctx.reject_reason, prompt: ctx.prompt,
-    prompt_version: "pcie_v2.0", model: cat.config.default_image_model,
+    prompt_version: "pcie_v2.1", model: cat.config.default_image_model,
     fingerprint: fp, novelty_total: ctx.novelty_total,
     pass_publish_gate: ctx.pass_publish_gate,
     decisions: ctx.decisions, scores: ctx.scores, pipeline_trace: ctx.trace,
+    image_url: ctx.image_url ?? null, image_fingerprint: ctx.image_fingerprint ?? null,
+    seed: ctx.seed ?? null, provider_slug: ctx.provider_slug ?? null,
+    render_settings: ctx.render_settings ?? {}, candidate_set_id: opts.candidate_set_id,
+    replay_of_creative_id: opts.replay_of ?? null, dry_run: opts.dry_run, render_status: ctx.render_status ?? "skipped",
   }).select("id").single();
   if (error) throw error;
 
@@ -359,38 +369,85 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
       ctx.axis_breakdown.map((a: any) => ({ creative_id: creative.id, ...a }))
     );
   }
+  if (ctx.prompt_qa?.length) {
+    await supabase.from("pcie_v2_prompt_qa").insert(ctx.prompt_qa.map((c: any) => ({ creative_id: creative.id, ...c })));
+  }
+  if (ctx.render_qa?.length) {
+    await supabase.from("pcie_v2_render_qa").insert(ctx.render_qa.map((c: any) => ({ creative_id: creative.id, render_attempt_id: ctx.render_attempt_id ?? null, ...c })));
+  }
+  if (ctx.render_attempt_id) {
+    await supabase.from("pcie_v2_render_attempts").update({ creative_id: creative.id }).eq("id", ctx.render_attempt_id);
+  }
   await supabase.from("pcie_v2_combo_fingerprints").upsert({ fingerprint: fp, creative_id: creative.id });
   await supabase.from("pcie_v2_events").insert({
     creative_id: creative.id, run_id, stage: "pipeline_complete",
     event_type: status, payload: { reject_reason: ctx.reject_reason, novelty_total: ctx.novelty_total },
   });
-  return { creative_id: creative.id, status, novelty_total: ctx.novelty_total, reject_reason: ctx.reject_reason };
+  return {
+    creative_id: creative.id, status, novelty_total: ctx.novelty_total, reject_reason: ctx.reject_reason,
+    image_url: ctx.image_url ?? null, provider_slug: ctx.provider_slug ?? null,
+  };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
   try {
+    const url = new URL(req.url);
+    const isReplay = url.pathname.endsWith("/replay");
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    const count = Math.min(20, Math.max(1, Number(body.count ?? 3)));
-    const niche = String(body.niche ?? "cat_litter");
     const cat = await loadCatalogs(supabase);
     if (cat.flags.pcie_v2_enabled === false) {
       return new Response(JSON.stringify({ ok: false, error: "pcie_v2_disabled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // ---- Replay: regenerate a creative with same/updated config
+    if (isReplay) {
+      const srcId = String(body.creative_id ?? "");
+      const { data: src, error: e1 } = await supabase.from("pcie_v2_creatives").select("*").eq("id", srcId).single();
+      if (e1 || !src) return new Response(JSON.stringify({ ok: false, error: "creative_not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: run } = await supabase.from("pcie_v2_runs").insert({ trigger: "replay", requested: 1, config_snapshot: { src: srcId } }).select("id").single();
+      const { data: set } = await supabase.from("pcie_v2_candidate_sets").insert({ run_id: run!.id, product_slug: src.product_slug, niche: src.niche, requested: 1, dry_run: !!body.dry_run }).select("id").single();
+      const product = { id: src.product_id, slug: src.product_slug, title: src.product_slug, niche: src.niche };
+      const r = await runPipeline(supabase, cat, run!.id, product, { dry_run: !!body.dry_run, candidate_set_id: set!.id, candidate_no: 1, replay_of: srcId });
+      await supabase.from("pcie_v2_runs").update({ status: "complete", produced: r.status === "draft" ? 1 : 0, rejected: r.status === "rejected" ? 1 : 0, finished_at: new Date().toISOString() }).eq("id", run!.id);
+      return new Response(JSON.stringify({ ok: true, replayed_from: srcId, result: r }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ---- Multi-candidate generation
+    const candidatesPerRun = Number(body.candidates ?? cat.config.candidates_per_run ?? 3);
+    const count = Math.min(20, Math.max(1, Number(body.count ?? 1)));
+    const niche = String(body.niche ?? "cat_litter");
+    const dry_run = body.dry_run ?? cat.config.dry_run_default ?? false;
     const { data: run } = await supabase.from("pcie_v2_runs").insert({ trigger: body.trigger ?? "manual", requested: count, config_snapshot: { count, niche } }).select("id").single();
     const results: any[] = [];
     let produced = 0, rejected = 0, duplicates = 0;
     for (let i = 0; i < count; i++) {
       const product = { id: null, slug: `seed-${niche}-${i}`, title: niche.replace(/_/g, " "), niche };
-      const r = await runPipeline(supabase, cat, run!.id, product);
-      results.push(r);
-      if (r.status === "draft") produced++;
-      else if (r.reject_reason === "duplicate_fingerprint") { rejected++; duplicates++; }
-      else rejected++;
+      const { data: set } = await supabase.from("pcie_v2_candidate_sets").insert({
+        run_id: run!.id, product_slug: product.slug, niche, requested: candidatesPerRun, dry_run,
+      }).select("id").single();
+      const candidates: any[] = [];
+      for (let c = 1; c <= candidatesPerRun; c++) {
+        const r = await runPipeline(supabase, cat, run!.id, product, { dry_run, candidate_set_id: set!.id, candidate_no: c });
+        candidates.push(r);
+      }
+      const winner = candidates
+        .filter((c) => c.status === "draft")
+        .sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0]
+        ?? candidates.sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0];
+      if (winner) {
+        await supabase.from("pcie_v2_candidate_sets").update({ winner_creative_id: winner.creative_id, winner_score: winner.novelty_total }).eq("id", set!.id);
+      }
+      results.push({ candidate_set_id: set!.id, winner_creative_id: winner?.creative_id, winner_score: winner?.novelty_total, candidates });
+      for (const r of candidates) {
+        if (r.status === "draft") produced++;
+        else if (r.reject_reason === "duplicate_fingerprint") { rejected++; duplicates++; }
+        else rejected++;
+      }
     }
     await supabase.from("pcie_v2_runs").update({ status: "complete", produced, rejected, duplicates, finished_at: new Date().toISOString() }).eq("id", run!.id);
-    return new Response(JSON.stringify({ ok: true, run_id: run!.id, produced, rejected, duplicates, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, run_id: run!.id, produced, rejected, duplicates, dry_run, results }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
