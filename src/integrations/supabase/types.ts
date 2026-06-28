@@ -2431,6 +2431,619 @@ export type Database = {
         }
         Relationships: []
       }
+      agd_briefings: {
+        Row: {
+          best_creative: Json | null
+          biggest_conversion_drop: Json | null
+          biggest_risks: Json
+          briefing_date: string
+          bullets: Json
+          created_at: string
+          expected_profit_cents: number | null
+          fastest_growing_category: Json | null
+          growth_score: number | null
+          id: string
+          largest_revenue_leak: Json | null
+          most_profitable_product: Json | null
+          predicted_revenue_cents: number | null
+          profit_yesterday_cents: number | null
+          recommended_actions: Json
+          revenue_yesterday_cents: number | null
+          top_opportunities: Json
+          worst_creative: Json | null
+        }
+        Insert: {
+          best_creative?: Json | null
+          biggest_conversion_drop?: Json | null
+          biggest_risks?: Json
+          briefing_date: string
+          bullets?: Json
+          created_at?: string
+          expected_profit_cents?: number | null
+          fastest_growing_category?: Json | null
+          growth_score?: number | null
+          id?: string
+          largest_revenue_leak?: Json | null
+          most_profitable_product?: Json | null
+          predicted_revenue_cents?: number | null
+          profit_yesterday_cents?: number | null
+          recommended_actions?: Json
+          revenue_yesterday_cents?: number | null
+          top_opportunities?: Json
+          worst_creative?: Json | null
+        }
+        Update: {
+          best_creative?: Json | null
+          biggest_conversion_drop?: Json | null
+          biggest_risks?: Json
+          briefing_date?: string
+          bullets?: Json
+          created_at?: string
+          expected_profit_cents?: number | null
+          fastest_growing_category?: Json | null
+          growth_score?: number | null
+          id?: string
+          largest_revenue_leak?: Json | null
+          most_profitable_product?: Json | null
+          predicted_revenue_cents?: number | null
+          profit_yesterday_cents?: number | null
+          recommended_actions?: Json
+          revenue_yesterday_cents?: number | null
+          top_opportunities?: Json
+          worst_creative?: Json | null
+        }
+        Relationships: []
+      }
+      agd_decisions: {
+        Row: {
+          action: Json
+          business_value_score: number | null
+          confidence: number
+          created_at: string
+          decided_at: string
+          decision_type: string
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          experiment_id: string | null
+          id: string
+          inputs: Json
+          outcome: Json | null
+          rationale: string
+          reasoning_chain: Json
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          action?: Json
+          business_value_score?: number | null
+          confidence?: number
+          created_at?: string
+          decided_at?: string
+          decision_type: string
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          experiment_id?: string | null
+          id?: string
+          inputs?: Json
+          outcome?: Json | null
+          rationale: string
+          reasoning_chain?: Json
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          action?: Json
+          business_value_score?: number | null
+          confidence?: number
+          created_at?: string
+          decided_at?: string
+          decision_type?: string
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          experiment_id?: string | null
+          id?: string
+          inputs?: Json
+          outcome?: Json | null
+          rationale?: string
+          reasoning_chain?: Json
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_decisions_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "agd_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_experiments: {
+        Row: {
+          confidence: number
+          created_at: string
+          duration_hours: number
+          ended_at: string | null
+          expected_impact: Json
+          goal: string
+          hypothesis_id: string | null
+          id: string
+          name: string
+          outcome: Json | null
+          risk: number
+          rollback_plan: Json
+          started_at: string | null
+          status: string
+          success_criteria: Json
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          duration_hours?: number
+          ended_at?: string | null
+          expected_impact?: Json
+          goal: string
+          hypothesis_id?: string | null
+          id?: string
+          name: string
+          outcome?: Json | null
+          risk?: number
+          rollback_plan?: Json
+          started_at?: string | null
+          status?: string
+          success_criteria?: Json
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          duration_hours?: number
+          ended_at?: string | null
+          expected_impact?: Json
+          goal?: string
+          hypothesis_id?: string | null
+          id?: string
+          name?: string
+          outcome?: Json | null
+          risk?: number
+          rollback_plan?: Json
+          started_at?: string | null
+          status?: string
+          success_criteria?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_experiments_hypothesis_id_fkey"
+            columns: ["hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "agd_hypotheses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_forecasts: {
+        Row: {
+          confidence: number | null
+          generated_at: string
+          horizon: string
+          id: string
+          inputs: Json
+          lower_bound: number | null
+          metric: string
+          model: string | null
+          predicted_value: number
+          upper_bound: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          generated_at?: string
+          horizon: string
+          id?: string
+          inputs?: Json
+          lower_bound?: number | null
+          metric: string
+          model?: string | null
+          predicted_value: number
+          upper_bound?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          generated_at?: string
+          horizon?: string
+          id?: string
+          inputs?: Json
+          lower_bound?: number | null
+          metric?: string
+          model?: string | null
+          predicted_value?: number
+          upper_bound?: number | null
+        }
+        Relationships: []
+      }
+      agd_hypotheses: {
+        Row: {
+          area: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_impact_cents: number | null
+          experiment_id: string | null
+          generated_by: string
+          id: string
+          statement: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          area: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_impact_cents?: number | null
+          experiment_id?: string | null
+          generated_by?: string
+          id?: string
+          statement: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_impact_cents?: number | null
+          experiment_id?: string | null
+          generated_by?: string
+          id?: string
+          statement?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agd_knowledge_edges: {
+        Row: {
+          attributes: Json
+          created_at: string
+          dst_node: string
+          edge_type: string
+          id: string
+          src_node: string
+          weight: number | null
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          dst_node: string
+          edge_type: string
+          id?: string
+          src_node: string
+          weight?: number | null
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          dst_node?: string
+          edge_type?: string
+          id?: string
+          src_node?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_knowledge_edges_dst_node_fkey"
+            columns: ["dst_node"]
+            isOneToOne: false
+            referencedRelation: "agd_knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agd_knowledge_edges_src_node_fkey"
+            columns: ["src_node"]
+            isOneToOne: false
+            referencedRelation: "agd_knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_knowledge_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string | null
+          last_seen_at: string
+          node_type: string
+          ref_id: string
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          node_type: string
+          ref_id: string
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_seen_at?: string
+          node_type?: string
+          ref_id?: string
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agd_memory: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          importance: number | null
+          memory_type: string
+          source_run: string | null
+          tags: string[] | null
+          topic: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: string
+          importance?: number | null
+          memory_type: string
+          source_run?: string | null
+          tags?: string[] | null
+          topic: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          importance?: number | null
+          memory_type?: string
+          source_run?: string | null
+          tags?: string[] | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_memory_source_run_fkey"
+            columns: ["source_run"]
+            isOneToOne: false
+            referencedRelation: "agd_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_opportunities: {
+        Row: {
+          bottleneck: string | null
+          business_value_score: number
+          category: string
+          confidence: number | null
+          created_at: string
+          description: string | null
+          effort_score: number | null
+          evidence: Json
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          id: string
+          linked_decision_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bottleneck?: string | null
+          business_value_score?: number
+          category: string
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          effort_score?: number | null
+          evidence?: Json
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          linked_decision_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bottleneck?: string | null
+          business_value_score?: number
+          category?: string
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          effort_score?: number | null
+          evidence?: Json
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          linked_decision_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_opportunities_linked_decision_id_fkey"
+            columns: ["linked_decision_id"]
+            isOneToOne: false
+            referencedRelation: "agd_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_run_steps: {
+        Row: {
+          details: Json
+          ended_at: string | null
+          error: string | null
+          id: string
+          run_id: string
+          started_at: string
+          status: string
+          step: string
+        }
+        Insert: {
+          details?: Json
+          ended_at?: string | null
+          error?: string | null
+          id?: string
+          run_id: string
+          started_at?: string
+          status?: string
+          step: string
+        }
+        Update: {
+          details?: Json
+          ended_at?: string | null
+          error?: string | null
+          id?: string
+          run_id?: string
+          started_at?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agd_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agd_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agd_runs: {
+        Row: {
+          bottleneck: string | null
+          decisions_taken: number | null
+          ended_at: string | null
+          error: string | null
+          growth_score: number | null
+          hypotheses_generated: number | null
+          id: string
+          opportunities_added: number | null
+          signals_ingested: number | null
+          started_at: string
+          status: string
+          summary: Json
+          trigger: string
+        }
+        Insert: {
+          bottleneck?: string | null
+          decisions_taken?: number | null
+          ended_at?: string | null
+          error?: string | null
+          growth_score?: number | null
+          hypotheses_generated?: number | null
+          id?: string
+          opportunities_added?: number | null
+          signals_ingested?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Update: {
+          bottleneck?: string | null
+          decisions_taken?: number | null
+          ended_at?: string | null
+          error?: string | null
+          growth_score?: number | null
+          hypotheses_generated?: number | null
+          id?: string
+          opportunities_added?: number | null
+          signals_ingested?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json
+          trigger?: string
+        }
+        Relationships: []
+      }
+      agd_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      agd_signals: {
+        Row: {
+          created_at: string
+          dimension: Json
+          id: string
+          meta: Json
+          metric: string
+          observed_at: string
+          source: string
+          value: number | null
+          value_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          dimension?: Json
+          id?: string
+          meta?: Json
+          metric: string
+          observed_at?: string
+          source: string
+          value?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          dimension?: Json
+          id?: string
+          meta?: Json
+          metric?: string
+          observed_at?: string
+          source?: string
+          value?: number | null
+          value_text?: string | null
+        }
+        Relationships: []
+      }
       agm_actions: {
         Row: {
           action_type: string
