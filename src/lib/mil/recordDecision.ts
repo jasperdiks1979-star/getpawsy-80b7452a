@@ -16,7 +16,7 @@ export type MilDecisionInput = {
  * matching actual_outcome against expected_outcome.
  */
 export async function recordMilDecision(input: MilDecisionInput) {
-  const { error } = await supabase.from("mil_decisions").insert({
+  const { error } = await (supabase.from("mil_decisions") as any).insert({
     engine_key: input.engineKey,
     decision_type: input.decisionType,
     subject: input.subject ?? null,
