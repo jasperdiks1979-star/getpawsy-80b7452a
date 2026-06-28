@@ -95,7 +95,7 @@ async function run(supabase: any, execute: boolean) {
   for (const q of queue) {
     const perf = perfMap.get(String(q.pinterest_pin_id));
     if (!perf) continue;
-    if ((perf.impressions ?? 0) < 50) continue;
+    if ((perf.impressions ?? 0) < 10) continue;
     evaluated++;
     const ageDays = (now - new Date(q.posted_at).getTime()) / 86_400_000;
     const w = decay(ageDays);
