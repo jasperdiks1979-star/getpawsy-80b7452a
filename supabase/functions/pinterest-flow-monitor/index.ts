@@ -68,6 +68,20 @@ type Snapshot = {
     recoverySuccessRate24h: number | null;
     productionHealthScore: number; // 0-100
   };
+  // Content Quality Engine KPIs
+  content?: {
+    avgContentScore: number | null;
+    contentDiversityScore: number; // 0..1 unique overlays / 100 recent
+    expectedWeeklyReach: number;   // sum of save_prediction * impressions_avg
+    topBoards: Array<{ board_name: string; posted: number; ctr: number; saveRate: number }>;
+    boardRanking: Array<{ board_name: string; score: number; classification: string | null }>;
+    topHeadlines: Array<{ headline: string; count: number; avgScore: number | null }>;
+    topHooks: Array<{ hook: string; count: number }>;
+    topCTAs: Array<{ cta: string; count: number }>;
+    worstContent: Array<{ pin_id: string; reason: string; score: number | null }>;
+    creativeEvolutionTrend: Array<{ day: string; avgScore: number; published: number }>;
+    qualityGateRejections24h: number;
+  };
 };
 
 function minutesSince(iso: string | null): number | null {
