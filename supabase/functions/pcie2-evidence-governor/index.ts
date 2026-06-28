@@ -18,7 +18,7 @@ const MIN_SAMPLE = 20;             // pins per trait
 const MIN_IMPRESSIONS = 500;
 const MIN_AGE_DAYS = 14;           // first-seen must be ≥ this
 const MIN_CONFIDENCE = 0.6;        // Wilson lower bound
-const ALPHA = 0.10;                // EMA step — never instant flip
+const ALPHA_BASE = 0.10;           // EMA step — never instant flip (scaled by ALG learning_speed)
 const WEIGHT_MIN = 0.2;
 const WEIGHT_MAX = 2.0;
 const OUTLIER_PIN_SHARE = 0.40;    // single pin > 40% impressions ⇒ observational
@@ -67,6 +67,18 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const dryRun = url.searchParams.get("dry_run") === "1";
   const supa = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Consult Adaptive Learning Governor — never bypass.
+  const { data: alg } = await supa
+    .from("pcie2_alg_state").select("state, learning_speed").eq("scope", "global").maybeSingle();
+  const algState = alg?.state ?? "LEARNING";
+  const algSpeed = Number(alg?.learning_speed ?? 1);
+  if (algState === "PAUSED" && !dryRun) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: "ALG state=PAUSED" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const ALPHA = ALPHA_BASE * Math.max(0, Math.min(1, algSpeed));
   const t0 = Date.now();
   const now = Date.now();
   const recentSince = new Date(now - RECENT_WINDOW * 864e5);
