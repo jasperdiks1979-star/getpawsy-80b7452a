@@ -135,6 +135,73 @@ export default function PinterestHealthPage() {
   const [reconnecting, setReconnecting] = useState(false);
   const [recovery, setRecovery] = useState<any>(null);
   const [recoveryRunning, setRecoveryRunning] = useState(false);
+  const [inspiration, setInspiration] = useState<{
+    sampleSize: number;
+    avgInspiration: number | null;
+    avgAiRisk: number | null;
+    avgAxes: Record<string, number>;
+    topRooms: Array<{ value: string; avg: number; n: number }>;
+    topStories: Array<{ value: string; avg: number; n: number }>;
+    recent: Array<{ id: string; inspiration: number; ai_risk: number; image_url: string | null; room: string | null; story: string | null }>;
+  } | null>(null);
+
+  async function loadInspiration() {
+    const { data } = await (supabase as any)
+      .from("pinterest_pin_queue")
+      .select("id, pin_image_url, meta, created_at")
+      .not("meta->intelligence->master", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const rows = (data ?? []) as any[];
+    if (rows.length === 0) {
+      setInspiration({ sampleSize: 0, avgInspiration: null, avgAiRisk: null, avgAxes: {}, topRooms: [], topStories: [], recent: [] });
+      return;
+    }
+    const axesKeys = ["save_likelihood","interior_quality","emotional_impact","composition","storytelling","visual_uniqueness","lifestyle_realism"];
+    const axesAgg: Record<string, { sum: number; n: number }> = {};
+    const roomAgg: Record<string, { sum: number; n: number }> = {};
+    const storyAgg: Record<string, { sum: number; n: number }> = {};
+    let insSum = 0, insN = 0, riskSum = 0, riskN = 0;
+    const recent: any[] = [];
+    for (const r of rows) {
+      const m = r?.meta?.intelligence?.master;
+      const ins = m?.inspiration;
+      if (!ins) continue;
+      const total = Number(ins.total ?? 0);
+      const risk = Number(ins.axes?.ai_look_risk ?? 0);
+      insSum += total; insN++;
+      riskSum += risk; riskN++;
+      for (const k of axesKeys) {
+        const v = Number(ins.axes?.[k] ?? 0);
+        axesAgg[k] = axesAgg[k] ?? { sum: 0, n: 0 };
+        axesAgg[k].sum += v; axesAgg[k].n++;
+      }
+      const room = m?.dims?.room ?? null;
+      const story = m?.dims?.story ?? null;
+      if (room) { roomAgg[room] = roomAgg[room] ?? { sum: 0, n: 0 }; roomAgg[room].sum += total; roomAgg[room].n++; }
+      if (story) { storyAgg[story] = storyAgg[story] ?? { sum: 0, n: 0 }; storyAgg[story].sum += total; storyAgg[story].n++; }
+      if (recent.length < 8) {
+        recent.push({ id: r.id, inspiration: total, ai_risk: risk, image_url: r.pin_image_url, room, story });
+      }
+    }
+    const avgAxes: Record<string, number> = {};
+    for (const [k, v] of Object.entries(axesAgg)) avgAxes[k] = Math.round(v.sum / Math.max(1, v.n));
+    const rank = (agg: Record<string, { sum: number; n: number }>) =>
+      Object.entries(agg)
+        .filter(([_, v]) => v.n >= 2)
+        .map(([value, v]) => ({ value, avg: Math.round(v.sum / v.n), n: v.n }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 5);
+    setInspiration({
+      sampleSize: insN,
+      avgInspiration: insN ? Math.round(insSum / insN) : null,
+      avgAiRisk: riskN ? Math.round(riskSum / riskN) : null,
+      avgAxes,
+      topRooms: rank(roomAgg),
+      topStories: rank(storyAgg),
+      recent,
+    });
+  }
 
   async function loadConnection() {
     const { data } = await (supabase as any).rpc("get_pinterest_connection_admin");
