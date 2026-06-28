@@ -568,6 +568,7 @@ const RevenueOptimizationPage = lazyWithRetry(() => import("./pages/admin/Revenu
 const StrategicPlanningPage = lazyWithRetry(() => import("./pages/admin/StrategicPlanningPage"));
 const AiCompanyOsPage = lazyWithRetry(() => import("./pages/admin/AiCompanyOsPage"));
 const ArchitecturePage = lazyWithRetry(() => import("./pages/admin/ArchitecturePage"));
+const EvolutionEnginePage = lazyWithRetry(() => import("./pages/admin/EvolutionEnginePage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
@@ -1861,6 +1862,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ArchitecturePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="evolution"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EvolutionEnginePage />
                                 </Suspense>
                               }
                             />
