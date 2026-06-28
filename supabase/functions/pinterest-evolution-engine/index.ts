@@ -69,21 +69,21 @@ async function run(supabase: any, execute: boolean) {
   // 1. Posted pins in window
   const { data: queueData } = await supabase
     .from("pinterest_pin_queue")
-    .select("id,pin_id,product_slug,niche_key,board_name,cta,pin_title,posted_at,meta")
+    .select("id,pinterest_pin_id,product_slug,niche_key,board_name,cta,pin_title,posted_at,meta")
     .eq("status", "posted")
     .gte("posted_at", sinceIso)
     .limit(2000);
   const queue: Row[] = queueData ?? [];
 
   // 2. Performance keyed by pin_id
-  const pinIds = queue.map((r: Row) => r.pin_id).filter(Boolean);
+  const pinIds = queue.map((r: Row) => r.pinterest_pin_id).filter(Boolean);
   const perfMap = new Map<string, Row>();
   if (pinIds.length) {
     const { data: perfData } = await supabase
       .from("pinterest_pin_performance")
       .select("pin_id,impressions,clicks,saves,ctr")
       .in("pin_id", pinIds);
-    (perfData ?? []).forEach((p: Row) => perfMap.set(p.pin_id, p));
+    (perfData ?? []).forEach((p: Row) => perfMap.set(String(p.pin_id), p));
   }
 
   // 3. Aggregate by (dimension, value) with time decay
@@ -93,7 +93,7 @@ async function run(supabase: any, execute: boolean) {
   let evaluated = 0;
 
   for (const q of queue) {
-    const perf = perfMap.get(q.pin_id);
+    const perf = perfMap.get(String(q.pinterest_pin_id));
     if (!perf) continue;
     if ((perf.impressions ?? 0) < 50) continue;
     evaluated++;
