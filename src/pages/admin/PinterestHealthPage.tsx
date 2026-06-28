@@ -261,6 +261,7 @@ export default function PinterestHealthPage() {
     refreshExperiments(false);
     refreshEvolution(false);
     loadConnection();
+    loadInspiration();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
     if (qs.get("oauth_success") === "true") {
@@ -272,6 +273,7 @@ export default function PinterestHealthPage() {
       refreshGrowth(false);
       refreshExperiments(false);
       refreshEvolution(false);
+      loadInspiration();
     }, 60_000);
     return () => clearInterval(t);
   }, []);
