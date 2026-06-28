@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
+import { pickBestBoard, probeUrlQuality } from "../_shared/pinterest-board-intelligence.ts";
 import { verifyPinFull } from "../_shared/pinterest-verify.ts";
 import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
@@ -1223,7 +1224,48 @@ Deno.serve(async (req) => {
         if (activeBoardOverride) {
           boardId = activeBoardOverride.id;
         } else {
-          const boardRef = pin.board_name || "";
+          // ── Board Intelligence: pick the highest-EV publishable board
+          //    using historical CTR/save/purchase × keyword similarity.
+          //    Falls back to keyword match when 30d perf rollup is empty.
+          let chosenBoardName = pin.board_name || "";
+          try {
+            const pick = await pickBestBoard(sb, {
+              category_key: (pin as any).category_key ?? null,
+              niche: (pin as any).niche_key ?? (pin as any).category_key ?? null,
+              product_name: (pin as any).product_name ?? (pin as any).product_slug ?? null,
+              current_board_name: pin.board_name ?? null,
+              current_board_id: (pin as any).board_id ?? null,
+            });
+            if (pick.picked) {
+              chosenBoardName = pick.picked.name;
+              boardIdCache.set(chosenBoardName, pick.picked.id);
+              // Persist + log if the intelligence migrated the pin.
+              if (pick.migrated) {
+                await sb.from("pinterest_pin_queue").update({
+                  board_id: pick.picked.id,
+                  board_name: pick.picked.name,
+                  updated_at: new Date().toISOString(),
+                }).eq("id", pin.id);
+                await sb.from("pinterest_post_logs").insert({
+                  pin_queue_id: pin.id,
+                  action: "board_intelligence_migrate",
+                  status: "ok",
+                  response_data: {
+                    from: pin.board_name,
+                    to: pick.picked.name,
+                    reason: pick.reason,
+                    score: pick.picked.score,
+                    alternatives: pick.alternatives.slice(0, 3),
+                  },
+                });
+                pin.board_name = pick.picked.name;
+                (pin as any).board_id = pick.picked.id;
+              }
+            }
+          } catch (e) {
+            console.warn("[cron] board-intelligence failed, falling back to static name:", e);
+          }
+          const boardRef = chosenBoardName;
           boardId = boardIdCache.has(boardRef)
             ? boardIdCache.get(boardRef)!
             : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
@@ -1330,6 +1372,68 @@ Deno.serve(async (req) => {
           console.warn(`[cron] Pin ${pin.id} REJECTED by governor:`, JSON.stringify(govVerdict.violations));
           results.push({ pinId: pin.id, status: "rejected", error: reason });
           continue;
+        }
+
+        // ── Content Quality Gate ──────────────────────────────────────────
+        // Reuses the existing pcie2_ci_scores produced by the CI Layer.
+        // Threshold is env-configurable (default 70). Below threshold = skip,
+        // marked draft for regeneration by the creative-factory.
+        try {
+          const minScore = Number(Deno.env.get("PIN_MIN_QUALITY_SCORE") ?? 70);
+          const { data: ciRow } = await sb
+            .from("pcie2_ci_scores")
+            .select("overall_score, rejected, reject_reasons")
+            .eq("queue_row_id", pin.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (ciRow) {
+            const score = Number(ciRow.overall_score ?? 0);
+            if (ciRow.rejected || score < minScore) {
+              const reason = `quality_below_threshold:${score}/${minScore}`;
+              await sb.from("pinterest_pin_queue").update({
+                status: "draft",
+                rejection_reason: reason,
+                last_publish_error: reason,
+                publishing_started_at: null,
+                updated_at: new Date().toISOString(),
+              }).eq("id", pin.id);
+              await sb.from("pinterest_post_logs").insert({
+                pin_queue_id: pin.id,
+                action: "content_quality_gate",
+                status: "rejected",
+                error_message: reason,
+                response_data: { ci: ciRow, threshold: minScore },
+              });
+              results.push({ pinId: pin.id, status: "rejected", error: reason });
+              continue;
+            }
+          }
+        } catch (e) {
+          console.warn("[cron] CI quality gate threw:", e);
+        }
+
+        // ── URL Quality probe (pre-publish, non-blocking metadata) ────────
+        try {
+          const q = await probeUrlQuality(destinationLink, 4000);
+          await sb.from("pinterest_pin_queue").update({
+            meta: {
+              ...((pin as any).meta || {}),
+              url_quality: {
+                http: q.http_status,
+                load_ms: q.load_ms,
+                og: q.has_og,
+                schema: q.has_schema,
+                canonical: q.has_canonical,
+                mobile: q.mobile_viewport,
+                rich_pin_ready: q.rich_pin_ready,
+                final_url: q.final_url,
+                checked_at: new Date().toISOString(),
+              },
+            },
+          }).eq("id", pin.id);
+        } catch (e) {
+          console.warn("[cron] url-quality probe failed (non-fatal):", e);
         }
 
         const requestPayload = {
