@@ -1346,6 +1346,15 @@ function CiStat({ label, value }: { label: string; value: number | string }) {
   );
 }
 
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="border rounded-lg p-3">
+      <div className="text-2xl font-semibold">{value}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between border-b py-1">
