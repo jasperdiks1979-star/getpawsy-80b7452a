@@ -283,6 +283,166 @@ async function fetchSnapshot(sb: any): Promise<Snapshot> {
   };
 }
 
+async function fetchContentKpis(sb: any): Promise<NonNullable<Snapshot["content"]>> {
+  const since = new Date(Date.now() - 14 * 86400_000).toISOString();
+  const since24 = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const empty: NonNullable<Snapshot["content"]> = {
+    avgContentScore: null,
+    contentDiversityScore: 0,
+    expectedWeeklyReach: 0,
+    topBoards: [],
+    boardRanking: [],
+    topHeadlines: [],
+    topHooks: [],
+    topCTAs: [],
+    worstContent: [],
+    creativeEvolutionTrend: [],
+    qualityGateRejections24h: 0,
+  };
+  try {
+    // CI scores joined to recent pins
+    const { data: ci } = await sb
+      .from("pcie2_ci_scores")
+      .select("queue_row_id, overall_score, save_prediction, ctr_prediction, headline, hook, cta, rejected, created_at")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    const ciRows = ci ?? [];
+    const scored = ciRows.filter((r: any) => typeof r.overall_score === "number");
+    const avgContentScore = scored.length
+      ? Math.round((scored.reduce((a: number, r: any) => a + Number(r.overall_score), 0) / scored.length) * 10) / 10
+      : null;
+
+    // Recent published / posted pins (last 100)
+    const { data: recent } = await sb
+      .from("pinterest_pin_queue")
+      .select("id, board_name, overlay_text, pin_title, posted_at")
+      .in("status", ["posted", "published"])
+      .order("posted_at", { ascending: false, nullsFirst: false })
+      .limit(100);
+    const recentRows = recent ?? [];
+    const overlays = new Set<string>();
+    for (const r of recentRows) if (r.overlay_text) overlays.add(String(r.overlay_text).trim().toLowerCase());
+    const contentDiversityScore = recentRows.length
+      ? Math.round((overlays.size / recentRows.length) * 100) / 100
+      : 0;
+
+    // Top boards by published volume (perf rollup may be empty → graceful)
+    const byBoard: Record<string, { posted: number }> = {};
+    for (const r of recentRows) {
+      const b = r.board_name || "(unassigned)";
+      byBoard[b] = byBoard[b] || { posted: 0 };
+      byBoard[b].posted += 1;
+    }
+    const { data: perf } = await sb
+      .from("pinterest_board_performance")
+      .select("board_name, ctr, purchase_rate, saves_30d, impressions_30d, classification, publish_weight, rank")
+      .order("publish_weight", { ascending: false, nullsFirst: false })
+      .limit(20);
+    const perfByName = new Map<string, any>((perf ?? []).map((p: any) => [p.board_name, p]));
+    const topBoards = Object.entries(byBoard)
+      .map(([board_name, v]) => {
+        const p = perfByName.get(board_name) ?? null;
+        const impr = Number(p?.impressions_30d ?? 0);
+        return {
+          board_name,
+          posted: v.posted,
+          ctr: Number(p?.ctr ?? 0),
+          saveRate: impr ? Number(p?.saves_30d ?? 0) / impr : 0,
+        };
+      })
+      .sort((a, b) => b.posted - a.posted)
+      .slice(0, 8);
+    const boardRanking = (perf ?? []).map((p: any) => ({
+      board_name: p.board_name,
+      score: Number(p.publish_weight ?? 0),
+      classification: p.classification ?? null,
+    }));
+
+    // Top headlines / hooks / CTAs from CI rows (winners by score)
+    const accum = (key: "headline" | "hook" | "cta") => {
+      const m: Record<string, { count: number; sum: number }> = {};
+      for (const r of ciRows) {
+        const k = (r[key] ?? "").toString().trim();
+        if (!k) continue;
+        m[k] = m[k] || { count: 0, sum: 0 };
+        m[k].count += 1;
+        m[k].sum += Number(r.overall_score ?? 0);
+      }
+      return Object.entries(m)
+        .map(([k, v]) => ({ k, count: v.count, avg: v.count ? v.sum / v.count : 0 }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 8);
+    };
+    const topHeadlines = accum("headline").map((x) => ({ headline: x.k, count: x.count, avgScore: Math.round(x.avg * 10) / 10 }));
+    const topHooks = accum("hook").map((x) => ({ hook: x.k, count: x.count }));
+    const topCTAs = accum("cta").map((x) => ({ cta: x.k, count: x.count }));
+
+    // Worst content (lowest scoring rejected rows)
+    const worstContent = ciRows
+      .filter((r: any) => r.rejected || Number(r.overall_score ?? 100) < 60)
+      .sort((a: any, b: any) => Number(a.overall_score ?? 0) - Number(b.overall_score ?? 0))
+      .slice(0, 10)
+      .map((r: any) => ({
+        pin_id: r.queue_row_id,
+        reason: r.rejected ? "rejected" : "below_threshold",
+        score: r.overall_score == null ? null : Number(r.overall_score),
+      }));
+
+    // Evolution trend: daily avg score over 14d
+    const byDay: Record<string, { sum: number; n: number; pub: number }> = {};
+    for (const r of ciRows) {
+      const day = String(r.created_at).slice(0, 10);
+      byDay[day] = byDay[day] || { sum: 0, n: 0, pub: 0 };
+      byDay[day].sum += Number(r.overall_score ?? 0);
+      byDay[day].n += 1;
+    }
+    for (const r of recentRows) {
+      if (!r.posted_at) continue;
+      const day = String(r.posted_at).slice(0, 10);
+      byDay[day] = byDay[day] || { sum: 0, n: 0, pub: 0 };
+      byDay[day].pub += 1;
+    }
+    const creativeEvolutionTrend = Object.entries(byDay)
+      .map(([day, v]) => ({ day, avgScore: v.n ? Math.round((v.sum / v.n) * 10) / 10 : 0, published: v.pub }))
+      .sort((a, b) => a.day.localeCompare(b.day));
+
+    // Expected weekly reach (rough): mean save_prediction × posts-per-week × board impr/board
+    const avgSavePred = ciRows.length
+      ? ciRows.reduce((a: number, r: any) => a + Number(r.save_prediction ?? 0), 0) / ciRows.length
+      : 0;
+    const weeklyPosts = recentRows.filter((r: any) => r.posted_at && new Date(r.posted_at).getTime() > Date.now() - 7 * 86400_000).length;
+    const avgBoardImpr = (perf ?? []).length
+      ? (perf ?? []).reduce((a: number, p: any) => a + Number(p.impressions_30d ?? 0), 0) / (perf as any[]).length / 30 * 7
+      : 0;
+    const expectedWeeklyReach = Math.round(avgSavePred * weeklyPosts * Math.max(1, avgBoardImpr));
+
+    // Quality gate rejections (cron-worker writes pinterest_post_logs rows)
+    const { count: gateRej } = await sb
+      .from("pinterest_post_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("action", "content_quality_gate")
+      .gte("created_at", since24);
+
+    return {
+      avgContentScore,
+      contentDiversityScore,
+      expectedWeeklyReach,
+      topBoards,
+      boardRanking,
+      topHeadlines,
+      topHooks,
+      topCTAs,
+      worstContent,
+      creativeEvolutionTrend,
+      qualityGateRejections24h: gateRej ?? 0,
+    };
+  } catch (e) {
+    console.warn("[flow-monitor] content KPIs failed:", e);
+    return empty;
+  }
+}
+
 async function fetchVerificationKpis(sb: any): Promise<Snapshot["verification"]> {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const { data: rows } = await sb
