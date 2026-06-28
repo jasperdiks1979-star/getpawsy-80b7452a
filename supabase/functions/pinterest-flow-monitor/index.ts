@@ -264,6 +264,66 @@ async function fetchSnapshot(sb: any): Promise<Snapshot> {
     estRuntimeDays,
     tokenStatus,
     cronJobs,
+    verification: await fetchVerificationKpis(sb),
+  };
+}
+
+async function fetchVerificationKpis(sb: any): Promise<Snapshot["verification"]> {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const { data: rows } = await sb
+    .from("pinterest_pin_queue")
+    .select("verification_state, verification_score, verification_failure_reason, posted_at, last_verified_at, verification_attempts")
+    .eq("status", "posted")
+    .gte("posted_at", since);
+  const r = rows || [];
+  const verified = r.filter((x: any) => x.verification_state === "verified_success").length;
+  const failed = r.filter((x: any) => x.verification_state === "verification_failed").length;
+  const total = verified + failed;
+  const successRate = total ? verified / total : null;
+  const avgScore = r.length ? Math.round(r.reduce((a: number, x: any) => a + (x.verification_score || 0), 0) / r.length) : null;
+  const durations = r
+    .filter((x: any) => x.last_verified_at && x.posted_at)
+    .map((x: any) => (new Date(x.last_verified_at).getTime() - new Date(x.posted_at).getTime()) / 60_000);
+  const avgDuration = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+  const { data: waitingRows } = await sb
+    .from("pinterest_pin_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("verification_state", "waiting_verification")
+    .eq("status", "posted");
+  const waiting = (waitingRows as any)?.count ?? 0;
+  const { data: lastV } = await sb
+    .from("pinterest_pin_queue")
+    .select("last_verified_at, verification_state")
+    .eq("verification_state", "verified_success")
+    .order("last_verified_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: lastF } = await sb
+    .from("pinterest_pin_queue")
+    .select("last_verified_at")
+    .eq("verification_state", "verification_failed")
+    .order("last_verified_at", { ascending: false }).limit(1).maybeSingle();
+  const causes: Record<string, number> = {};
+  for (const x of r) if (x.verification_failure_reason) causes[x.verification_failure_reason] = (causes[x.verification_failure_reason] || 0) + 1;
+  const topFailureCauses = Object.entries(causes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([reason, count]) => ({ reason, count }));
+  const autoRecoveries = r.filter((x: any) => (x.verification_attempts || 0) >= 2 && x.verification_state === "verified_success").length;
+  const recoveryDenominator = autoRecoveries + r.filter((x: any) => (x.verification_attempts || 0) >= 2 && x.verification_state === "verification_failed").length;
+  const recoveryRate = recoveryDenominator ? autoRecoveries / recoveryDenominator : null;
+  const productionHealthScore = Math.round(
+    (successRate ?? 1) * 70 +
+    Math.min(1, (avgScore ?? 0) / 100) * 30
+  );
+  return {
+    verified24h: verified,
+    failed24h: failed,
+    waitingBacklog: waiting || 0,
+    successRate24h: successRate,
+    avgScore24h: avgScore,
+    avgVerificationMinutes: avgDuration,
+    lastVerifiedAt: lastV?.last_verified_at ?? null,
+    lastFailedAt: lastF?.last_verified_at ?? null,
+    topFailureCauses,
+    autoRecoveries24h: autoRecoveries,
+    recoverySuccessRate24h: recoveryRate,
+    productionHealthScore,
   };
 }
 
