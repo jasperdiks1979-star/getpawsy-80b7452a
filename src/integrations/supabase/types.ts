@@ -14789,6 +14789,563 @@ export type Database = {
         }
         Relationships: []
       }
+      ede_allocations: {
+        Row: {
+          allocated_to: string
+          amount: number
+          created_at: string
+          expected_value_usd: number | null
+          id: string
+          priority: number
+          proposal_id: string | null
+          resource: string
+          unit: string
+        }
+        Insert: {
+          allocated_to: string
+          amount: number
+          created_at?: string
+          expected_value_usd?: number | null
+          id?: string
+          priority?: number
+          proposal_id?: string | null
+          resource: string
+          unit: string
+        }
+        Update: {
+          allocated_to?: string
+          amount?: number
+          created_at?: string
+          expected_value_usd?: number | null
+          id?: string
+          priority?: number
+          proposal_id?: string | null
+          resource?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_allocations_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_alternatives: {
+        Row: {
+          attributes: Json
+          confidence: number
+          created_at: string
+          description: string | null
+          expected_impact_usd: number | null
+          id: string
+          option_label: string
+          proposal_id: string
+          rank: number
+          risk: number
+        }
+        Insert: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          expected_impact_usd?: number | null
+          id?: string
+          option_label: string
+          proposal_id: string
+          rank: number
+          risk?: number
+        }
+        Update: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          expected_impact_usd?: number | null
+          id?: string
+          option_label?: string
+          proposal_id?: string
+          rank?: number
+          risk?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_alternatives_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_business_value: {
+        Row: {
+          brand_impact_score: number | null
+          business_confidence: number | null
+          cost_usd: number | null
+          created_at: string
+          customer_impact_score: number | null
+          data_completeness: number | null
+          expected_roi: number | null
+          forecast_accuracy: number | null
+          historical_similarity: number | null
+          id: string
+          learning_value_score: number | null
+          operational_impact_score: number | null
+          profit_impact_usd: number | null
+          proposal_id: string
+          revenue_impact_usd: number | null
+          risk_score: number | null
+          strategic_impact_score: number | null
+          time_horizon_days: number | null
+        }
+        Insert: {
+          brand_impact_score?: number | null
+          business_confidence?: number | null
+          cost_usd?: number | null
+          created_at?: string
+          customer_impact_score?: number | null
+          data_completeness?: number | null
+          expected_roi?: number | null
+          forecast_accuracy?: number | null
+          historical_similarity?: number | null
+          id?: string
+          learning_value_score?: number | null
+          operational_impact_score?: number | null
+          profit_impact_usd?: number | null
+          proposal_id: string
+          revenue_impact_usd?: number | null
+          risk_score?: number | null
+          strategic_impact_score?: number | null
+          time_horizon_days?: number | null
+        }
+        Update: {
+          brand_impact_score?: number | null
+          business_confidence?: number | null
+          cost_usd?: number | null
+          created_at?: string
+          customer_impact_score?: number | null
+          data_completeness?: number | null
+          expected_roi?: number | null
+          forecast_accuracy?: number | null
+          historical_similarity?: number | null
+          id?: string
+          learning_value_score?: number | null
+          operational_impact_score?: number | null
+          profit_impact_usd?: number | null
+          proposal_id?: string
+          revenue_impact_usd?: number | null
+          risk_score?: number | null
+          strategic_impact_score?: number | null
+          time_horizon_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_business_value_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_decisions: {
+        Row: {
+          approval_pct: number
+          conditions: string | null
+          confidence: number
+          decided_at: string
+          evidence: Json
+          governance_required: boolean
+          human_required: boolean
+          id: string
+          outcome: string
+          participating_weight: number
+          proposal_id: string
+          rationale: string
+          rollback_plan: string | null
+          weighted_score: number
+        }
+        Insert: {
+          approval_pct: number
+          conditions?: string | null
+          confidence?: number
+          decided_at?: string
+          evidence?: Json
+          governance_required?: boolean
+          human_required?: boolean
+          id?: string
+          outcome: string
+          participating_weight: number
+          proposal_id: string
+          rationale: string
+          rollback_plan?: string | null
+          weighted_score: number
+        }
+        Update: {
+          approval_pct?: number
+          conditions?: string | null
+          confidence?: number
+          decided_at?: string
+          evidence?: Json
+          governance_required?: boolean
+          human_required?: boolean
+          id?: string
+          outcome?: string
+          participating_weight?: number
+          proposal_id?: string
+          rationale?: string
+          rollback_plan?: string | null
+          weighted_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_decisions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_executives: {
+        Row: {
+          active: boolean
+          attributes: Json
+          business_accuracy: number
+          confidence_calibration: number
+          created_at: string
+          financial_accuracy: number
+          id: string
+          learning_score: number
+          mandate: string
+          perspective: string
+          prediction_accuracy: number
+          role_key: string
+          title: string
+          trust_score: number
+          updated_at: string
+          vote_count: number
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          attributes?: Json
+          business_accuracy?: number
+          confidence_calibration?: number
+          created_at?: string
+          financial_accuracy?: number
+          id?: string
+          learning_score?: number
+          mandate: string
+          perspective: string
+          prediction_accuracy?: number
+          role_key: string
+          title: string
+          trust_score?: number
+          updated_at?: string
+          vote_count?: number
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          attributes?: Json
+          business_accuracy?: number
+          confidence_calibration?: number
+          created_at?: string
+          financial_accuracy?: number
+          id?: string
+          learning_score?: number
+          mandate?: string
+          perspective?: string
+          prediction_accuracy?: number
+          role_key?: string
+          title?: string
+          trust_score?: number
+          updated_at?: string
+          vote_count?: number
+          weight?: number
+        }
+        Relationships: []
+      }
+      ede_post_reviews: {
+        Row: {
+          actual: Json
+          decision_quality_score: number | null
+          delta: Json
+          expected: Json
+          id: string
+          lessons: string | null
+          proposal_id: string
+          reviewed_at: string
+          reviewer: string | null
+        }
+        Insert: {
+          actual?: Json
+          decision_quality_score?: number | null
+          delta?: Json
+          expected?: Json
+          id?: string
+          lessons?: string | null
+          proposal_id: string
+          reviewed_at?: string
+          reviewer?: string | null
+        }
+        Update: {
+          actual?: Json
+          decision_quality_score?: number | null
+          delta?: Json
+          expected?: Json
+          id?: string
+          lessons?: string | null
+          proposal_id?: string
+          reviewed_at?: string
+          reviewer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_post_reviews_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_proposals: {
+        Row: {
+          baseline: Json
+          consulted_dna: string[]
+          created_at: string
+          decided_at: string | null
+          estimated_impact_usd: number | null
+          evidence: Json
+          executed_at: string | null
+          id: string
+          intervention: Json
+          proposal_type: string
+          requires_human: boolean
+          risk_level: string
+          status: string
+          submitted_by: string
+          summary: string
+          title: string
+          voting_opened_at: string | null
+        }
+        Insert: {
+          baseline?: Json
+          consulted_dna?: string[]
+          created_at?: string
+          decided_at?: string | null
+          estimated_impact_usd?: number | null
+          evidence?: Json
+          executed_at?: string | null
+          id?: string
+          intervention?: Json
+          proposal_type: string
+          requires_human?: boolean
+          risk_level?: string
+          status?: string
+          submitted_by: string
+          summary: string
+          title: string
+          voting_opened_at?: string | null
+        }
+        Update: {
+          baseline?: Json
+          consulted_dna?: string[]
+          created_at?: string
+          decided_at?: string | null
+          estimated_impact_usd?: number | null
+          evidence?: Json
+          executed_at?: string | null
+          id?: string
+          intervention?: Json
+          proposal_type?: string
+          requires_human?: boolean
+          risk_level?: string
+          status?: string
+          submitted_by?: string
+          summary?: string
+          title?: string
+          voting_opened_at?: string | null
+        }
+        Relationships: []
+      }
+      ede_scenarios: {
+        Row: {
+          created_at: string
+          description: string
+          expected_impact_usd: number | null
+          id: string
+          predicted_outcome: Json
+          probability: number
+          proposal_id: string | null
+          recovery_plan: string | null
+          scenario_type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          expected_impact_usd?: number | null
+          id?: string
+          predicted_outcome?: Json
+          probability?: number
+          proposal_id?: string | null
+          recovery_plan?: string | null
+          scenario_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          expected_impact_usd?: number | null
+          id?: string
+          predicted_outcome?: Json
+          probability?: number
+          proposal_id?: string | null
+          recovery_plan?: string | null
+          scenario_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_scenarios_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_scorecards: {
+        Row: {
+          business_accuracy: number | null
+          created_at: string
+          decision_value: number | null
+          executive_id: string
+          financial_accuracy: number | null
+          id: string
+          long_term_performance: number | null
+          prediction_accuracy: number | null
+          snapshot: Json
+          trust_score: number | null
+          vote_count: number | null
+          window_days: number
+        }
+        Insert: {
+          business_accuracy?: number | null
+          created_at?: string
+          decision_value?: number | null
+          executive_id: string
+          financial_accuracy?: number | null
+          id?: string
+          long_term_performance?: number | null
+          prediction_accuracy?: number | null
+          snapshot?: Json
+          trust_score?: number | null
+          vote_count?: number | null
+          window_days?: number
+        }
+        Update: {
+          business_accuracy?: number | null
+          created_at?: string
+          decision_value?: number | null
+          executive_id?: string
+          financial_accuracy?: number | null
+          id?: string
+          long_term_performance?: number | null
+          prediction_accuracy?: number | null
+          snapshot?: Json
+          trust_score?: number | null
+          vote_count?: number | null
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_scorecards_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "ede_executives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ede_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      ede_votes: {
+        Row: {
+          conditions: string | null
+          confidence: number
+          created_at: string
+          evidence: Json
+          executive_id: string
+          id: string
+          perspective_impact: Json
+          proposal_id: string
+          reasoning: string
+          vote: string
+          weight_at_vote: number
+        }
+        Insert: {
+          conditions?: string | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          executive_id: string
+          id?: string
+          perspective_impact?: Json
+          proposal_id: string
+          reasoning: string
+          vote: string
+          weight_at_vote?: number
+        }
+        Update: {
+          conditions?: string | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          executive_id?: string
+          id?: string
+          perspective_impact?: Json
+          proposal_id?: string
+          reasoning?: string
+          vote?: string
+          weight_at_vote?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ede_votes_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "ede_executives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ede_votes_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "ede_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ee_learning_boards: {
         Row: {
           avg_ctr: number | null
@@ -54176,6 +54733,7 @@ export type Database = {
           variant: string
         }[]
       }
+      ede_recalc_weights: { Args: never; Returns: Json }
       evaluate_render_trace_alerts: {
         Args: { p_record?: boolean }
         Returns: Json
