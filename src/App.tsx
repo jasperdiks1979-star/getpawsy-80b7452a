@@ -565,6 +565,7 @@ const KnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/KnowledgeGr
 const ExecutiveDecisionPage = lazyWithRetry(() => import("./pages/admin/ExecutiveDecisionPage"));
 const ExperimentationPage = lazyWithRetry(() => import("./pages/admin/ExperimentationPage"));
 const RevenueOptimizationPage = lazyWithRetry(() => import("./pages/admin/RevenueOptimizationPage"));
+const StrategicPlanningPage = lazyWithRetry(() => import("./pages/admin/StrategicPlanningPage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
