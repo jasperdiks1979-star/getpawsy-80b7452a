@@ -1937,9 +1937,10 @@ function AdaptiveLearningGovernorPanel() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <Stat label="State" value={
-          <span className={stateColor[s.state] ?? ""}>{s.state ?? "—"}</span>
-        } />
+        <div className="border rounded p-2">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">State</div>
+          <div className={`font-medium ${stateColor[s.state] ?? ""}`}>{s.state ?? "—"}</div>
+        </div>
         <Stat label="Learning speed" value={Number(s.learning_speed ?? 0).toFixed(2)} />
         <Stat label="Confidence" value={Number(s.confidence ?? 0).toFixed(2)} />
         <Stat label="Evidence drift" value={Number(s.evidence_drift ?? 0).toFixed(3)} />
