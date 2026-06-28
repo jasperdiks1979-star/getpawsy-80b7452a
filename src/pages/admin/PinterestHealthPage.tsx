@@ -2006,12 +2006,3 @@ function AdaptiveLearningGovernorPanel() {
     </Card>
   );
 }
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="border rounded p-2">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="font-medium">{value}</div>
-    </div>
-  );
-}
