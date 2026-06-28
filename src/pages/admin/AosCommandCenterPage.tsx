@@ -22,10 +22,12 @@ export default function AosCommandCenterPage() {
   const [twin, setTwin] = useState<R[]>([]);
   const [consensus, setConsensus] = useState<R[]>([]);
   const [runs, setRuns] = useState<R[]>([]);
+  const [resources, setResources] = useState<R[]>([]);
+  const [failovers, setFailovers] = useState<R[]>([]);
 
   async function load() {
     setLoading(true);
-    const [e, ev, t, k, h, s, tw, c, r] = await Promise.all([
+    const [e, ev, t, k, h, s, tw, c, r, res, fo] = await Promise.all([
       supabase.from("aos_engine_registry").select("*").order("engine_key"),
       supabase.from("aos_events").select("*").order("sequence_no", { ascending: false }).limit(100),
       supabase.from("aos_tasks").select("*").order("priority", { ascending: false }).limit(50),
@@ -35,6 +37,8 @@ export default function AosCommandCenterPage() {
       supabase.from("aos_digital_twin_snapshots").select("*").order("created_at", { ascending: false }).limit(20),
       supabase.from("aos_consensus_decisions").select("*").order("created_at", { ascending: false }).limit(20),
       supabase.from("aos_orchestrator_runs").select("*").order("started_at", { ascending: false }).limit(20),
+      supabase.from("aos_resource_usage").select("*").order("recorded_at", { ascending: false }).limit(40),
+      supabase.from("aos_failover_events").select("*").order("detected_at", { ascending: false }).limit(20),
     ]);
     setEngines(e.data ?? []);
     setEvents(ev.data ?? []);
@@ -45,6 +49,8 @@ export default function AosCommandCenterPage() {
     setTwin(tw.data ?? []);
     setConsensus(c.data ?? []);
     setRuns(r.data ?? []);
+    setResources(res.data ?? []);
+    setFailovers(fo.data ?? []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -103,6 +109,8 @@ export default function AosCommandCenterPage() {
           <TabsTrigger value="twin">Digital Twin</TabsTrigger>
           <TabsTrigger value="consensus">Consensus</TabsTrigger>
           <TabsTrigger value="runs">Runs</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="failover">Failover</TabsTrigger>
         </TabsList>
 
         <TabsContent value="engines">
@@ -240,6 +248,46 @@ export default function AosCommandCenterPage() {
                 </div>
               ))}
               {runs.length === 0 && <p className="text-muted-foreground text-sm">No runs yet.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="resources">
+          <Card>
+            <CardHeader><CardTitle>Resource Manager</CardTitle></CardHeader>
+            <CardContent className="space-y-2 max-h-[600px] overflow-auto">
+              {resources.map(r => (
+                <div key={r.id} className="flex justify-between border rounded p-2 text-sm">
+                  <div>
+                    <div className="font-medium">{r.resource}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(r.recorded_at).toLocaleString()}</div>
+                  </div>
+                  <Badge variant={r.status === "critical" ? "destructive" : r.status === "warn" ? "secondary" : "default"}>
+                    {((Number(r.pct ?? 0)) * 100).toFixed(0)}% · {r.status}
+                  </Badge>
+                </div>
+              ))}
+              {resources.length === 0 && <p className="text-muted-foreground text-sm">No resource snapshots yet.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="failover">
+          <Card>
+            <CardHeader><CardTitle>Failover Events</CardTitle></CardHeader>
+            <CardContent className="space-y-2 max-h-[600px] overflow-auto">
+              {failovers.map(f => (
+                <div key={f.id} className="border rounded p-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{f.engine_key} · {f.failure_type}</span>
+                    <Badge variant={f.status === "open" ? "destructive" : "default"}>{f.status}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(f.detected_at).toLocaleString()} · action: {f.recovery_action ?? "—"}
+                  </div>
+                </div>
+              ))}
+              {failovers.length === 0 && <p className="text-muted-foreground text-sm">No failover events.</p>}
             </CardContent>
           </Card>
         </TabsContent>
