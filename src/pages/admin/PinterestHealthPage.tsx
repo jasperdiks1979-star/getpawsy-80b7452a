@@ -1148,6 +1148,7 @@ export default function PinterestHealthPage() {
       <AdaptiveLearningGovernorPanel />
       <ExplainableAIPanel />
       <MarketIntelligencePanel />
+      <UsGeoIntelligencePanel />
     </div>
   );
 }
