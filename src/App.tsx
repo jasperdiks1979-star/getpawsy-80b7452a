@@ -549,6 +549,7 @@ const PinterestBrainPage = lazyWithRetry(() => import("./pages/admin/PinterestBr
 const PinterestSpyPage = lazyWithRetry(() => import("./pages/admin/PinterestSpyPage"));
 const PminPage = lazyWithRetry(() => import("./pages/admin/PminPage"));
 const RevenueBrainPage = lazyWithRetry(() => import("./pages/admin/RevenueBrainPage"));
+const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
 const PinterestIntegrityPage = lazyWithRetry(() => import("./pages/admin/PinterestIntegrityPage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
@@ -3312,6 +3313,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenueBrainPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pie"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PieEnginePage />
                                 </Suspense>
                               }
                             />

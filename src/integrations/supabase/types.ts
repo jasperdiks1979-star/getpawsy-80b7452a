@@ -26680,6 +26680,568 @@ export type Database = {
         }
         Relationships: []
       }
+      pie_daily_meetings: {
+        Row: {
+          briefing: string | null
+          created_at: string
+          expected_total_profit_cents: number
+          expected_total_revenue_cents: number
+          hidden_gems: number
+          id: string
+          meeting_date: string
+          products_evaluated: number
+          rankings: Json
+          summary: Json
+          winners_selected: number
+        }
+        Insert: {
+          briefing?: string | null
+          created_at?: string
+          expected_total_profit_cents?: number
+          expected_total_revenue_cents?: number
+          hidden_gems?: number
+          id?: string
+          meeting_date?: string
+          products_evaluated?: number
+          rankings?: Json
+          summary?: Json
+          winners_selected?: number
+        }
+        Update: {
+          briefing?: string | null
+          created_at?: string
+          expected_total_profit_cents?: number
+          expected_total_revenue_cents?: number
+          hidden_gems?: number
+          id?: string
+          meeting_date?: string
+          products_evaluated?: number
+          rankings?: Json
+          summary?: Json
+          winners_selected?: number
+        }
+        Relationships: []
+      }
+      pie_diversity_ledger: {
+        Row: {
+          dimension: string
+          id: string
+          product_id: string
+          promoted_at: string
+          value: string
+        }
+        Insert: {
+          dimension: string
+          id?: string
+          product_id: string
+          promoted_at?: string
+          value: string
+        }
+        Update: {
+          dimension?: string
+          id?: string
+          product_id?: string
+          promoted_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      pie_engine_runs: {
+        Row: {
+          action: string
+          decisions_made: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          products_scanned: number
+          promotions_scheduled: number
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          action: string
+          decisions_made?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scanned?: number
+          promotions_scheduled?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          action?: string
+          decisions_made?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scanned?: number
+          promotions_scheduled?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      pie_learning_weights: {
+        Row: {
+          evidence_count: number
+          id: string
+          last_updated_at: string
+          metadata: Json
+          weight_key: string
+          weight_value: number
+        }
+        Insert: {
+          evidence_count?: number
+          id?: string
+          last_updated_at?: string
+          metadata?: Json
+          weight_key: string
+          weight_value?: number
+        }
+        Update: {
+          evidence_count?: number
+          id?: string
+          last_updated_at?: string
+          metadata?: Json
+          weight_key?: string
+          weight_value?: number
+        }
+        Relationships: []
+      }
+      pie_marketing_calendar: {
+        Row: {
+          brief: Json
+          channel: string
+          created_at: string
+          id: string
+          opportunity_score: number | null
+          product_id: string
+          scheduled_for: string
+          status: string
+        }
+        Insert: {
+          brief?: Json
+          channel: string
+          created_at?: string
+          id?: string
+          opportunity_score?: number | null
+          product_id: string
+          scheduled_for: string
+          status?: string
+        }
+        Update: {
+          brief?: Json
+          channel?: string
+          created_at?: string
+          id?: string
+          opportunity_score?: number | null
+          product_id?: string
+          scheduled_for?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pie_product_history: {
+        Row: {
+          components: Json
+          computed_at: string
+          id: string
+          opportunity_score: number
+          product_id: string
+          run_id: string | null
+          tier: string | null
+        }
+        Insert: {
+          components?: Json
+          computed_at?: string
+          id?: string
+          opportunity_score: number
+          product_id: string
+          run_id?: string | null
+          tier?: string | null
+        }
+        Update: {
+          components?: Json
+          computed_at?: string
+          id?: string
+          opportunity_score?: number
+          product_id?: string
+          run_id?: string | null
+          tier?: string | null
+        }
+        Relationships: []
+      }
+      pie_product_metrics: {
+        Row: {
+          atc: number
+          checkouts: number
+          clicks: number
+          conversion_rate: number | null
+          created_at: string
+          ctr: number | null
+          id: string
+          impressions: number
+          metric_date: string
+          outbound: number
+          product_id: string
+          purchases: number
+          revenue_cents: number
+          roas: number | null
+          save_rate: number | null
+          saves: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          atc?: number
+          checkouts?: number
+          clicks?: number
+          conversion_rate?: number | null
+          created_at?: string
+          ctr?: number | null
+          id?: string
+          impressions?: number
+          metric_date?: string
+          outbound?: number
+          product_id: string
+          purchases?: number
+          revenue_cents?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          atc?: number
+          checkouts?: number
+          clicks?: number
+          conversion_rate?: number | null
+          created_at?: string
+          ctr?: number | null
+          id?: string
+          impressions?: number
+          metric_date?: string
+          outbound?: number
+          product_id?: string
+          purchases?: number
+          revenue_cents?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pie_product_predictions: {
+        Row: {
+          confidence: number
+          created_at: string
+          horizon_days: number
+          id: string
+          inputs: Json
+          model_version: string
+          predicted_clicks: number
+          predicted_conversions: number
+          predicted_impressions: number
+          predicted_profit_cents: number
+          predicted_revenue_cents: number
+          predicted_roas: number | null
+          product_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          horizon_days?: number
+          id?: string
+          inputs?: Json
+          model_version?: string
+          predicted_clicks?: number
+          predicted_conversions?: number
+          predicted_impressions?: number
+          predicted_profit_cents?: number
+          predicted_revenue_cents?: number
+          predicted_roas?: number | null
+          product_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          horizon_days?: number
+          id?: string
+          inputs?: Json
+          model_version?: string
+          predicted_clicks?: number
+          predicted_conversions?: number
+          predicted_impressions?: number
+          predicted_profit_cents?: number
+          predicted_revenue_cents?: number
+          predicted_roas?: number | null
+          product_id?: string
+        }
+        Relationships: []
+      }
+      pie_product_scores: {
+        Row: {
+          block_reasons: string[]
+          competition_score: number
+          computed_at: string
+          confidence: number
+          creative_match: Json
+          demand_score: number
+          diversity_score: number
+          historical_score: number
+          inventory_intelligence: Json
+          inventory_safety_score: number
+          margin_intelligence: Json
+          novelty_score: number
+          opportunity_score: number
+          product_id: string
+          projected_conversion: number
+          projected_ctr: number
+          projected_margin: number
+          projected_revenue_cents: number
+          seasonality_score: number
+          tier: string
+          trend_intelligence: Json
+          trend_score: number
+        }
+        Insert: {
+          block_reasons?: string[]
+          competition_score?: number
+          computed_at?: string
+          confidence?: number
+          creative_match?: Json
+          demand_score?: number
+          diversity_score?: number
+          historical_score?: number
+          inventory_intelligence?: Json
+          inventory_safety_score?: number
+          margin_intelligence?: Json
+          novelty_score?: number
+          opportunity_score?: number
+          product_id: string
+          projected_conversion?: number
+          projected_ctr?: number
+          projected_margin?: number
+          projected_revenue_cents?: number
+          seasonality_score?: number
+          tier?: string
+          trend_intelligence?: Json
+          trend_score?: number
+        }
+        Update: {
+          block_reasons?: string[]
+          competition_score?: number
+          computed_at?: string
+          confidence?: number
+          creative_match?: Json
+          demand_score?: number
+          diversity_score?: number
+          historical_score?: number
+          inventory_intelligence?: Json
+          inventory_safety_score?: number
+          margin_intelligence?: Json
+          novelty_score?: number
+          opportunity_score?: number
+          product_id?: string
+          projected_conversion?: number
+          projected_ctr?: number
+          projected_margin?: number
+          projected_revenue_cents?: number
+          seasonality_score?: number
+          tier?: string
+          trend_intelligence?: Json
+          trend_score?: number
+        }
+        Relationships: []
+      }
+      pie_product_trending: {
+        Row: {
+          captured_at: string
+          id: string
+          keyword: string | null
+          payload: Json
+          product_id: string | null
+          seasonality_factor: number | null
+          signal_source: string
+          trend_score: number
+          velocity: number | null
+        }
+        Insert: {
+          captured_at?: string
+          id?: string
+          keyword?: string | null
+          payload?: Json
+          product_id?: string | null
+          seasonality_factor?: number | null
+          signal_source: string
+          trend_score?: number
+          velocity?: number | null
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          keyword?: string | null
+          payload?: Json
+          product_id?: string | null
+          seasonality_factor?: number | null
+          signal_source?: string
+          trend_score?: number
+          velocity?: number | null
+        }
+        Relationships: []
+      }
+      pie_promotion_decisions: {
+        Row: {
+          channel: string
+          created_at: string
+          decision: string
+          decision_date: string
+          expected_ctr: number | null
+          expected_profit_cents: number
+          expected_revenue_cents: number
+          expected_risk: number | null
+          id: string
+          opportunity_score: number
+          product_id: string
+          promoted: boolean
+          reason_codes: string[]
+          reasoning: string | null
+          run_id: string | null
+          scheduled_for: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          decision: string
+          decision_date?: string
+          expected_ctr?: number | null
+          expected_profit_cents?: number
+          expected_revenue_cents?: number
+          expected_risk?: number | null
+          id?: string
+          opportunity_score: number
+          product_id: string
+          promoted?: boolean
+          reason_codes?: string[]
+          reasoning?: string | null
+          run_id?: string | null
+          scheduled_for?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          decision?: string
+          decision_date?: string
+          expected_ctr?: number | null
+          expected_profit_cents?: number
+          expected_revenue_cents?: number
+          expected_risk?: number | null
+          id?: string
+          opportunity_score?: number
+          product_id?: string
+          promoted?: boolean
+          reason_codes?: string[]
+          reasoning?: string | null
+          run_id?: string | null
+          scheduled_for?: string | null
+        }
+        Relationships: []
+      }
+      pie_promotion_history: {
+        Row: {
+          asset_ref: string | null
+          channel: string
+          decision_id: string | null
+          id: string
+          metadata: Json
+          product_id: string
+          published_at: string
+        }
+        Insert: {
+          asset_ref?: string | null
+          channel: string
+          decision_id?: string | null
+          id?: string
+          metadata?: Json
+          product_id: string
+          published_at?: string
+        }
+        Update: {
+          asset_ref?: string | null
+          channel?: string
+          decision_id?: string | null
+          id?: string
+          metadata?: Json
+          product_id?: string
+          published_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pie_promotion_history_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "pie_promotion_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pie_promotion_results: {
+        Row: {
+          id: string
+          measured_at: string
+          observed_clicks: number
+          observed_impressions: number
+          observed_profit_cents: number
+          observed_purchases: number
+          observed_revenue_cents: number
+          observed_saves: number
+          prediction_error: Json | null
+          product_id: string
+          promotion_id: string | null
+        }
+        Insert: {
+          id?: string
+          measured_at?: string
+          observed_clicks?: number
+          observed_impressions?: number
+          observed_profit_cents?: number
+          observed_purchases?: number
+          observed_revenue_cents?: number
+          observed_saves?: number
+          prediction_error?: Json | null
+          product_id: string
+          promotion_id?: string | null
+        }
+        Update: {
+          id?: string
+          measured_at?: string
+          observed_clicks?: number
+          observed_impressions?: number
+          observed_profit_cents?: number
+          observed_purchases?: number
+          observed_revenue_cents?: number
+          observed_saves?: number
+          prediction_error?: Json | null
+          product_id?: string
+          promotion_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pie_promotion_results_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "pie_promotion_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pin_ab_experiments: {
         Row: {
           created_at: string
