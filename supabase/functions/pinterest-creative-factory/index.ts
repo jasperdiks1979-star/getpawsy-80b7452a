@@ -327,6 +327,27 @@ async function seedProductDrafts(
       }).select("id").maybeSingle();
     if (insErr || !pin?.id) continue;
     created.push(pin.id as string);
+    // Closed-loop lineage stamp (product-draft path).
+    try {
+      const { data: ci } = await sb.from("pcie2_creatives").insert({
+        product_id: product.id,
+        headline: copy.title,
+        hook: copy.description,
+        body_text: copy.description,
+        cta: null,
+        image_url: product.image_url ?? null,
+        status: "queued",
+        scores: { quality: 0.75, source: "creative-factory-product" },
+        creative_dna: { niche, source, generator: "pinterest-creative-factory", inventory_seed: false },
+      }).select("id").maybeSingle();
+      if (ci?.id) {
+        await sb.from("pinterest_pin_queue")
+          .update({ pcie2_creative_id: ci.id })
+          .eq("id", pin.id);
+      }
+    } catch (e) {
+      console.warn("[factory] lineage stamp (product) failed:", (e as Error).message);
+    }
     await sb.from("pinterest_creative_factory_jobs").upsert({
       pin_queue_id: pin.id,
       product_id: product.id,
