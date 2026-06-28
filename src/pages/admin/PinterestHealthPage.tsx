@@ -1140,6 +1140,7 @@ export default function PinterestHealthPage() {
         )}
       </Card>
       <ExecutiveCouncilPanel />
+      <PcieV2Panel />
       <TasteEnginePanel />
       <GrowthDirectorPanel />
       <CollectiveIntelligencePanel />
@@ -2438,6 +2439,104 @@ function ExecutiveCouncilPanel() {
               </li>
             ))}
             {decisions.length === 0 && <li className="text-muted-foreground">No Council decisions yet — click Convene Council.</li>}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function PcieV2Panel() {
+  const [runs, setRuns] = useState<any[]>([]);
+  const [creatives, setCreatives] = useState<any[]>([]);
+  const [flags, setFlags] = useState<any[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    const [r, c, fl, sf, hk, ax, st] = await Promise.all([
+      supabase.from("pcie_v2_runs").select("*").order("started_at", { ascending: false }).limit(10),
+      supabase.from("pcie_v2_creatives").select("id,status,niche,novelty_total,reject_reason,decisions,created_at").order("created_at", { ascending: false }).limit(20),
+      supabase.from("pcie_v2_feature_flags").select("*").order("flag"),
+      supabase.from("pcie_v2_style_families").select("id", { count: "exact", head: true }),
+      supabase.from("pcie_v2_hooks").select("id", { count: "exact", head: true }),
+      supabase.from("pcie_v2_scoring_axes").select("id", { count: "exact", head: true }),
+      supabase.from("pcie_v2_pipeline_stages").select("id", { count: "exact", head: true }),
+    ]);
+    setRuns(r.data ?? []); setCreatives(c.data ?? []); setFlags(fl.data ?? []);
+    setCounts({ style_families: sf.count ?? 0, hooks: hk.count ?? 0, axes: ax.count ?? 0, stages: st.count ?? 0 });
+  }
+  useEffect(() => { refresh(); }, []);
+
+  async function trigger() {
+    setBusy(true);
+    try {
+      await supabase.functions.invoke("pcie-v2-creative-director", { body: { count: 5, niche: "cat_litter", trigger: "manual_panel" } });
+      await refresh();
+    } finally { setBusy(false); }
+  }
+
+  async function toggleFlag(flag: string, enabled: boolean) {
+    await supabase.from("pcie_v2_feature_flags").update({ enabled, updated_at: new Date().toISOString() }).eq("flag", flag);
+    refresh();
+  }
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">PCIE-V2 Creative Director</h3>
+          <p className="text-xs text-muted-foreground">Config-driven · self-critiquing · genetic-learning · the future replacement of legacy Creative Factory.</p>
+        </div>
+        <Button size="sm" onClick={trigger} disabled={busy}>{busy ? "Running…" : "Run 5 (dry)"}</Button>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 text-center text-xs">
+        <div className="rounded border p-2"><div className="text-xl font-semibold">{counts.style_families}</div>Style families</div>
+        <div className="rounded border p-2"><div className="text-xl font-semibold">{counts.hooks}</div>Hooks</div>
+        <div className="rounded border p-2"><div className="text-xl font-semibold">{counts.axes}</div>Scoring axes</div>
+        <div className="rounded border p-2"><div className="text-xl font-semibold">{counts.stages}</div>Pipeline stages</div>
+      </div>
+
+      <div>
+        <div className="text-xs font-medium mb-1">Feature flags</div>
+        <div className="flex flex-wrap gap-2">
+          {flags.map((f) => (
+            <button key={f.flag} onClick={() => toggleFlag(f.flag, !f.enabled)}
+              className={`text-xs rounded border px-2 py-1 ${f.enabled ? "bg-primary/10 border-primary" : "bg-muted"}`}>
+              {f.enabled ? "✓" : "○"} {f.flag}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3">
+        <div>
+          <div className="text-xs font-medium mb-1">Recent runs</div>
+          <ul className="text-xs space-y-1">
+            {runs.map((r) => (
+              <li key={r.id} className="flex justify-between border-b py-1">
+                <span>{new Date(r.started_at).toLocaleString()}</span>
+                <span>{r.status} · ✓{r.produced} ✗{r.rejected} ⊜{r.duplicates}</span>
+              </li>
+            ))}
+            {runs.length === 0 && <li className="text-muted-foreground">No runs yet.</li>}
+          </ul>
+        </div>
+        <div>
+          <div className="text-xs font-medium mb-1">Recent creatives</div>
+          <ul className="text-xs space-y-1 max-h-72 overflow-auto">
+            {creatives.map((c) => (
+              <li key={c.id} className="border-b py-1">
+                <div className="flex justify-between">
+                  <span><Badge variant={c.status === "draft" ? "default" : "secondary"}>{c.status}</Badge> {c.niche}</span>
+                  <span>{c.novelty_total ? Number(c.novelty_total).toFixed(1) : "—"}</span>
+                </div>
+                {c.reject_reason && <div className="text-muted-foreground">↳ {c.reject_reason}</div>}
+                <div className="text-muted-foreground truncate">{Object.entries(c.decisions ?? {}).map(([k,v]) => `${k}:${v}`).join(" · ")}</div>
+              </li>
+            ))}
+            {creatives.length === 0 && <li className="text-muted-foreground">No creatives yet.</li>}
           </ul>
         </div>
       </div>

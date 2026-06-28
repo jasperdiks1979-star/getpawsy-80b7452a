@@ -22029,6 +22029,728 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie_v2_attribute_weights: {
+        Row: {
+          attribute: string
+          confidence: number
+          ema_value: number
+          id: number
+          last_updated: string
+          observations: number
+          signal_slug: string
+          value_slug: string
+          weight: number
+        }
+        Insert: {
+          attribute: string
+          confidence?: number
+          ema_value?: number
+          id?: number
+          last_updated?: string
+          observations?: number
+          signal_slug: string
+          value_slug: string
+          weight?: number
+        }
+        Update: {
+          attribute?: string
+          confidence?: number
+          ema_value?: number
+          id?: number
+          last_updated?: string
+          observations?: number
+          signal_slug?: string
+          value_slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_camera_presets: {
+        Row: {
+          enabled: boolean
+          id: string
+          metadata: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight: number
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight?: number
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name?: string
+          prompt_fragment?: string
+          slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_combo_fingerprints: {
+        Row: {
+          creative_id: string | null
+          fingerprint: string
+          seen_at: string
+        }
+        Insert: {
+          creative_id?: string | null
+          fingerprint: string
+          seen_at?: string
+        }
+        Update: {
+          creative_id?: string | null
+          fingerprint?: string
+          seen_at?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_config: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      pcie_v2_creative_decisions: {
+        Row: {
+          attribute: string
+          creative_id: string
+          id: number
+          metadata: Json
+          source: string | null
+          value_id: string | null
+          value_slug: string
+          weight_used: number | null
+        }
+        Insert: {
+          attribute: string
+          creative_id: string
+          id?: number
+          metadata?: Json
+          source?: string | null
+          value_id?: string | null
+          value_slug: string
+          weight_used?: number | null
+        }
+        Update: {
+          attribute?: string
+          creative_id?: string
+          id?: number
+          metadata?: Json
+          source?: string | null
+          value_id?: string | null
+          value_slug?: string
+          weight_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_creative_decisions_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_creatives: {
+        Row: {
+          created_at: string
+          decisions: Json
+          fingerprint: string | null
+          id: string
+          image_url: string | null
+          model: string | null
+          negative_prompt: string | null
+          niche: string | null
+          novelty_total: number | null
+          pass_publish_gate: boolean
+          pinterest_pin_id: string | null
+          pinterest_queue_id: string | null
+          pipeline_trace: Json
+          product_id: string | null
+          product_slug: string | null
+          prompt: string | null
+          prompt_version: string | null
+          reject_reason: string | null
+          run_id: string | null
+          scores: Json
+          seed: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decisions?: Json
+          fingerprint?: string | null
+          id?: string
+          image_url?: string | null
+          model?: string | null
+          negative_prompt?: string | null
+          niche?: string | null
+          novelty_total?: number | null
+          pass_publish_gate?: boolean
+          pinterest_pin_id?: string | null
+          pinterest_queue_id?: string | null
+          pipeline_trace?: Json
+          product_id?: string | null
+          product_slug?: string | null
+          prompt?: string | null
+          prompt_version?: string | null
+          reject_reason?: string | null
+          run_id?: string | null
+          scores?: Json
+          seed?: number | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decisions?: Json
+          fingerprint?: string | null
+          id?: string
+          image_url?: string | null
+          model?: string | null
+          negative_prompt?: string | null
+          niche?: string | null
+          novelty_total?: number | null
+          pass_publish_gate?: boolean
+          pinterest_pin_id?: string | null
+          pinterest_queue_id?: string | null
+          pipeline_trace?: Json
+          product_id?: string | null
+          product_slug?: string | null
+          prompt?: string | null
+          prompt_version?: string | null
+          reject_reason?: string | null
+          run_id?: string | null
+          scores?: Json
+          seed?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_creatives_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_cta_styles: {
+        Row: {
+          enabled: boolean
+          id: string
+          metadata: Json
+          name: string
+          prompt_fragment: string | null
+          slug: string
+          text_template: string
+          verb_class: string | null
+          weight: number
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name: string
+          prompt_fragment?: string | null
+          slug: string
+          text_template: string
+          verb_class?: string | null
+          weight?: number
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name?: string
+          prompt_fragment?: string | null
+          slug?: string
+          text_template?: string
+          verb_class?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_emotions: {
+        Row: {
+          enabled: boolean
+          id: string
+          intensity: number
+          metadata: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight: number
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          intensity?: number
+          metadata?: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight?: number
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          intensity?: number
+          metadata?: Json
+          name?: string
+          prompt_fragment?: string
+          slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_events: {
+        Row: {
+          created_at: string
+          creative_id: string | null
+          event_type: string
+          id: number
+          payload: Json
+          run_id: string | null
+          stage: string | null
+        }
+        Insert: {
+          created_at?: string
+          creative_id?: string | null
+          event_type: string
+          id?: number
+          payload?: Json
+          run_id?: string | null
+          stage?: string | null
+        }
+        Update: {
+          created_at?: string
+          creative_id?: string | null
+          event_type?: string
+          id?: number
+          payload?: Json
+          run_id?: string | null
+          stage?: string | null
+        }
+        Relationships: []
+      }
+      pcie_v2_feature_flags: {
+        Row: {
+          enabled: boolean
+          flag: string
+          notes: string | null
+          rollout_pct: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          flag: string
+          notes?: string | null
+          rollout_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          flag?: string
+          notes?: string | null
+          rollout_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_hook_categories: {
+        Row: {
+          enabled: boolean
+          id: string
+          metadata: Json
+          name: string
+          pattern: string | null
+          slug: string
+          weight: number
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name: string
+          pattern?: string | null
+          slug: string
+          weight?: number
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name?: string
+          pattern?: string | null
+          slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_hooks: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          niche_tags: string[]
+          source: string | null
+          text: string
+          variables: Json
+          weight: number
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          niche_tags?: string[]
+          source?: string | null
+          text: string
+          variables?: Json
+          weight?: number
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          niche_tags?: string[]
+          source?: string | null
+          text?: string
+          variables?: Json
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_hooks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_hook_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_novelty_scores: {
+        Row: {
+          axis_slug: string
+          creative_id: string
+          evidence: Json
+          id: number
+          passed: boolean
+          score: number
+        }
+        Insert: {
+          axis_slug: string
+          creative_id: string
+          evidence?: Json
+          id?: number
+          passed: boolean
+          score: number
+        }
+        Update: {
+          axis_slug?: string
+          creative_id?: string
+          evidence?: Json
+          id?: number
+          passed?: boolean
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_novelty_scores_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_performance_signals: {
+        Row: {
+          config: Json
+          direction: string
+          enabled: boolean
+          id: string
+          name: string
+          slug: string
+          source: string | null
+          weight: number
+        }
+        Insert: {
+          config?: Json
+          direction?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          slug: string
+          source?: string | null
+          weight?: number
+        }
+        Update: {
+          config?: Json
+          direction?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          slug?: string
+          source?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_pipeline_stages: {
+        Row: {
+          config: Json
+          enabled: boolean
+          handler: string
+          id: string
+          name: string
+          order_index: number
+          slug: string
+        }
+        Insert: {
+          config?: Json
+          enabled?: boolean
+          handler: string
+          id?: string
+          name: string
+          order_index: number
+          slug: string
+        }
+        Update: {
+          config?: Json
+          enabled?: boolean
+          handler?: string
+          id?: string
+          name?: string
+          order_index?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      pcie_v2_runs: {
+        Row: {
+          config_snapshot: Json
+          duplicates: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          produced: number
+          rejected: number
+          requested: number
+          started_at: string
+          status: string
+          trigger: string | null
+        }
+        Insert: {
+          config_snapshot?: Json
+          duplicates?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          produced?: number
+          rejected?: number
+          requested?: number
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Update: {
+          config_snapshot?: Json
+          duplicates?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          produced?: number
+          rejected?: number
+          requested?: number
+          started_at?: string
+          status?: string
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      pcie_v2_scene_generators: {
+        Row: {
+          applies_to: Json
+          enabled: boolean
+          id: string
+          metadata: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight: number
+        }
+        Insert: {
+          applies_to?: Json
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          weight?: number
+        }
+        Update: {
+          applies_to?: Json
+          enabled?: boolean
+          id?: string
+          metadata?: Json
+          name?: string
+          prompt_fragment?: string
+          slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_scoring_axes: {
+        Row: {
+          config: Json
+          description: string | null
+          enabled: boolean
+          evaluator: string
+          hard_reject: boolean
+          id: string
+          max_score: number
+          min_score: number
+          name: string
+          pass_threshold: number
+          slug: string
+          weight: number
+        }
+        Insert: {
+          config?: Json
+          description?: string | null
+          enabled?: boolean
+          evaluator: string
+          hard_reject?: boolean
+          id?: string
+          max_score?: number
+          min_score?: number
+          name: string
+          pass_threshold?: number
+          slug: string
+          weight?: number
+        }
+        Update: {
+          config?: Json
+          description?: string | null
+          enabled?: boolean
+          evaluator?: string
+          hard_reject?: boolean
+          id?: string
+          max_score?: number
+          min_score?: number
+          name?: string
+          pass_threshold?: number
+          slug?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_style_families: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          family_group: string | null
+          id: string
+          metadata: Json
+          name: string
+          negative_fragment: string | null
+          prompt_fragment: string
+          slug: string
+          traits: Json
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          family_group?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          negative_fragment?: string | null
+          prompt_fragment: string
+          slug: string
+          traits?: Json
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          family_group?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          negative_fragment?: string | null
+          prompt_fragment?: string
+          slug?: string
+          traits?: Json
+          weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_typography_systems: {
+        Row: {
+          enabled: boolean
+          font_stack: Json
+          id: string
+          metadata: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          treatment: string | null
+          weight: number
+        }
+        Insert: {
+          enabled?: boolean
+          font_stack?: Json
+          id?: string
+          metadata?: Json
+          name: string
+          prompt_fragment: string
+          slug: string
+          treatment?: string | null
+          weight?: number
+        }
+        Update: {
+          enabled?: boolean
+          font_stack?: Json
+          id?: string
+          metadata?: Json
+          name?: string
+          prompt_fragment?: string
+          slug?: string
+          treatment?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
       pcie2_alg_runs: {
         Row: {
           actions: Json
