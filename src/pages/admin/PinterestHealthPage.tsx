@@ -120,6 +120,8 @@ function fmt(iso: string | null) {
 
 export default function PinterestHealthPage() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
+  const [growth, setGrowth] = useState<any | null>(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -203,9 +205,25 @@ export default function PinterestHealthPage() {
     }
   }
 
+  async function refreshGrowth(execute = false) {
+    setGrowthLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-growth-ai",
+        execute ? { body: {} } : { method: "GET" as any },
+      );
+      if (!error && data?.ok) setGrowth(data.snapshot);
+    } catch (_) {
+      /* silent — surfaced in panel */
+    } finally {
+      setGrowthLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
+    refreshGrowth(false);
     loadConnection();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
@@ -215,6 +233,7 @@ export default function PinterestHealthPage() {
     const t = setInterval(() => {
       refresh(false);
       refreshWatchdog(false);
+      refreshGrowth(false);
     }, 60_000);
     return () => clearInterval(t);
   }, []);
