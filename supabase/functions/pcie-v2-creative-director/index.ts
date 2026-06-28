@@ -219,6 +219,72 @@ const STAGE_HANDLERS: Record<string, (ctx: any) => Promise<void> | void> = {
     ctx.prompt = prompt;
     ctx.trace.push({ stage: "qa", out: { len: prompt.length } });
   },
+  async prompt_qa(ctx) {
+    // Deterministic checks — no LLM, fast.
+    const p = ctx.prompt || "";
+    const checks: { check_slug: string; passed: boolean; severity: string; detail?: string }[] = [
+      { check_slug: "product_in_prompt",     passed: p.toLowerCase().includes((ctx.product.title || ctx.product.niche || "").toLowerCase().split(" ")[0]), severity: "hard" },
+      { check_slug: "aspect_ratio_declared", passed: /1000x1500|2:3/i.test(p), severity: "hard" },
+      { check_slug: "headline_present",      passed: /Headline/.test(p) && (ctx.decisions.hook?.length ?? 0) <= 60, severity: "hard" },
+      { check_slug: "headline_length",       passed: (ctx.decisions.hook?.split(/\s+/).length ?? 0) >= 2 && (ctx.decisions.hook?.split(/\s+/).length ?? 0) <= 7, severity: "soft" },
+      { check_slug: "no_duplicate_concept",  passed: !ctx.duplicate, severity: "hard" },
+      { check_slug: "typography_safe",       passed: !!ctx.refs.typography, severity: "hard" },
+      { check_slug: "no_hallucinated_brand", passed: !/\b(apple|nike|disney|marvel)\b/i.test(p), severity: "hard" },
+      { check_slug: "pinterest_safe_layout", passed: !/collage|split[- ]screen|infographic/i.test(p), severity: "hard" },
+      { check_slug: "mobile_readable_overlay", passed: (ctx.decisions.hook?.length ?? 99) <= 40, severity: "soft" },
+    ];
+    ctx.prompt_qa = checks;
+    const hardFail = checks.find(c => !c.passed && c.severity === "hard");
+    if (hardFail) { ctx.prompt_qa_blocked = hardFail.check_slug; ctx.reject_reason = `prompt_qa:${hardFail.check_slug}`; }
+    ctx.trace.push({ stage: "prompt_qa", passed: !hardFail, fail: hardFail?.check_slug });
+  },
+  brand_safety(ctx) {
+    if (!ctx.cat.flags.pcie_v2_brand_safety) { ctx.trace.push({ stage: "brand_safety", skipped: true }); return; }
+    const p = ctx.prompt || "";
+    const must = ["premium", "natural light", "Pinterest", "lifestyle"];
+    const score = must.reduce((acc, k) => acc + (new RegExp(k, "i").test(p) ? 1 : 0), 0) / must.length;
+    ctx.brand_safety_score = Math.round(score * 100);
+    ctx.trace.push({ stage: "brand_safety", score: ctx.brand_safety_score });
+  },
+  async image_render(ctx) {
+    if (ctx.dry_run || ctx.prompt_qa_blocked || !ctx.cat.flags.pcie_v2_image_render) {
+      ctx.render_status = "skipped";
+      ctx.trace.push({ stage: "image_render", skipped: true, reason: ctx.dry_run ? "dry_run" : (ctx.prompt_qa_blocked ?? "disabled") });
+      return;
+    }
+    try {
+      const r = await renderWithFailover(ctx.supabase, ctx, ctx.candidate_no);
+      Object.assign(ctx, r);
+      ctx.render_status = "rendered";
+      ctx.trace.push({ stage: "image_render", ok: true, provider: r.provider_slug });
+    } catch (e) {
+      ctx.render_status = "failed";
+      ctx.reject_reason = ctx.reject_reason ?? "render_failed";
+      ctx.trace.push({ stage: "image_render", error: String(e) });
+    }
+  },
+  async render_qa(ctx) {
+    if (!ctx.image_url || !ctx.cat.flags.pcie_v2_render_qa) { ctx.trace.push({ stage: "render_qa", skipped: true }); return; }
+    // Lightweight deterministic QA: signed URL reachable + non-trivial byte size.
+    let okFetch = false; let size = 0;
+    try {
+      const r = await fetch(ctx.image_url, { method: "GET" });
+      okFetch = r.ok;
+      const buf = await r.arrayBuffer().catch(() => new ArrayBuffer(0));
+      size = buf.byteLength;
+    } catch { /* swallow */ }
+    const checks = [
+      { check_slug: "image_fetched",   passed: okFetch, score: okFetch ? 100 : 0 },
+      { check_slug: "image_size_ok",   passed: size > 30_000, score: Math.min(100, Math.round(size / 10_000)) },
+      { check_slug: "fingerprint_set", passed: !!ctx.image_fingerprint, score: 100 },
+    ];
+    ctx.render_qa = checks;
+    const minScore = Number(ctx.cat.config.render_qa_min_score ?? 70);
+    const avg = checks.reduce((a, c) => a + (c.score ?? 0), 0) / checks.length;
+    ctx.render_qa_score = Math.round(avg);
+    if (avg < minScore) { ctx.render_qa_blocked = true; ctx.reject_reason = ctx.reject_reason ?? "render_qa_low"; }
+    ctx.trace.push({ stage: "render_qa", score: ctx.render_qa_score, blocked: !!ctx.render_qa_blocked });
+  },
   async self_critique(ctx) {
     if (!ctx.cat.flags.pcie_v2_self_critique) { ctx.trace.push({ stage: "self_critique", skipped: true }); return; }
     try {
