@@ -1779,6 +1779,35 @@ async function markPosted(
     .update({ pinterest_last_posted_at: now, pinterest_status: "posted" })
     .eq("id", pin.product_id);
 
+  // ── Closed-loop lineage write-back ───────────────────────────────────────
+  // Propagate the real Pinterest pin id onto the originating pcie2_creatives
+  // row so the Collective Intelligence layer can deterministically join
+  // creative DNA → pinterest_pin_performance → revenue. Never invents a
+  // mapping; only writes when an explicit pcie2_creative_id is present.
+  try {
+    let creativeId: string | null = (pin as any).pcie2_creative_id ?? null;
+    if (!creativeId) {
+      const { data: q } = await sb
+        .from("pinterest_pin_queue")
+        .select("pcie2_creative_id")
+        .eq("id", pin.id)
+        .maybeSingle();
+      creativeId = (q as any)?.pcie2_creative_id ?? null;
+    }
+    if (creativeId) {
+      await sb
+        .from("pcie2_creatives")
+        .update({
+          pinterest_pin_id: externalId,
+          status: "published",
+          updated_at: now,
+        })
+        .eq("id", creativeId);
+    }
+  } catch (e) {
+    console.warn("[cron] pcie2_creatives lineage write-back failed:", (e as Error).message);
+  }
+
   await sb.from("pinterest_post_logs").insert({
     pin_queue_id: pin.id,
     action: "publish",
