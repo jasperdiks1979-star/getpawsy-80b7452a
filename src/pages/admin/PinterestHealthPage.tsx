@@ -498,6 +498,121 @@ export default function PinterestHealthPage() {
         </Card>
       )}
 
+      {snap?.content && (
+        <Card className="p-5">
+          <h2 className="font-semibold mb-2">Content Quality Engine</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <Stat label="Avg content score" value={snap.content.avgContentScore ?? "—"} />
+            <Stat label="Diversity (last 100)" value={`${Math.round(snap.content.contentDiversityScore * 100)}%`} />
+            <Stat label="Quality gate rejections (24h)" value={snap.content.qualityGateRejections24h} />
+            <Stat label="Expected weekly reach" value={snap.content.expectedWeeklyReach.toLocaleString()} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h3 className="font-semibold mb-1">Top performing boards</h3>
+              {snap.content.topBoards.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No published pins yet.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {snap.content.topBoards.map((b) => (
+                    <li key={b.board_name} className="flex justify-between border-b py-1">
+                      <span className="font-mono">{b.board_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {b.posted} pins · ctr {(b.ctr * 100).toFixed(2)}% · save {(b.saveRate * 100).toFixed(2)}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">Board performance ranking</h3>
+              {snap.content.boardRanking.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No 30d rollup yet — using cold-start keyword matching.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {snap.content.boardRanking.slice(0, 8).map((b) => (
+                    <li key={b.board_name} className="flex justify-between border-b py-1">
+                      <span className="font-mono">{b.board_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {b.score.toFixed(2)} · {b.classification ?? "—"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">Top headlines</h3>
+              {snap.content.topHeadlines.length === 0 ? (
+                <p className="text-xs text-muted-foreground">—</p>
+              ) : (
+                <ul className="space-y-1">
+                  {snap.content.topHeadlines.map((h, i) => (
+                    <li key={i} className="flex justify-between gap-2 border-b py-1">
+                      <span className="truncate">{h.headline}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {h.count}× · {h.avgScore ?? "—"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">Top hooks · CTAs</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <ul>
+                  {snap.content.topHooks.map((h, i) => (
+                    <li key={i} className="flex justify-between border-b py-1 text-xs">
+                      <span className="truncate">{h.hook}</span>
+                      <span className="text-muted-foreground">{h.count}</span>
+                    </li>
+                  ))}
+                </ul>
+                <ul>
+                  {snap.content.topCTAs.map((c, i) => (
+                    <li key={i} className="flex justify-between border-b py-1 text-xs">
+                      <span className="truncate">{c.cta}</span>
+                      <span className="text-muted-foreground">{c.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {snap.content.worstContent.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-semibold mb-1 text-sm">Worst performing content</h3>
+              <ul className="space-y-1 text-xs">
+                {snap.content.worstContent.map((w, i) => (
+                  <li key={i} className="flex justify-between border-b py-1">
+                    <span className="font-mono truncate">{w.pin_id}</span>
+                    <span className="text-muted-foreground">{w.reason} · {w.score ?? "—"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {snap.content.creativeEvolutionTrend.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-semibold mb-1 text-sm">Creative evolution (14d)</h3>
+              <div className="flex items-end gap-1 h-20">
+                {snap.content.creativeEvolutionTrend.map((d) => (
+                  <div key={d.day} className="flex-1 flex flex-col items-center" title={`${d.day} · avg ${d.avgScore} · ${d.published} pub`}>
+                    <div
+                      className="w-full bg-emerald-400/70 rounded-t"
+                      style={{ height: `${Math.min(100, d.avgScore)}%` }}
+                    />
+                    <span className="text-[10px] text-muted-foreground mt-1">{d.day.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card className="p-5">
         <h2 className="font-semibold mb-2">Recent incidents</h2>
         {incidents.length === 0 ? (
