@@ -251,6 +251,46 @@ export default function AosCommandCenterPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="resources">
+          <Card>
+            <CardHeader><CardTitle>Resource Manager</CardTitle></CardHeader>
+            <CardContent className="space-y-2 max-h-[600px] overflow-auto">
+              {resources.map(r => (
+                <div key={r.id} className="flex justify-between border rounded p-2 text-sm">
+                  <div>
+                    <div className="font-medium">{r.resource}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(r.recorded_at).toLocaleString()}</div>
+                  </div>
+                  <Badge variant={r.status === "critical" ? "destructive" : r.status === "warn" ? "secondary" : "default"}>
+                    {((Number(r.pct ?? 0)) * 100).toFixed(0)}% · {r.status}
+                  </Badge>
+                </div>
+              ))}
+              {resources.length === 0 && <p className="text-muted-foreground text-sm">No resource snapshots yet.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="failover">
+          <Card>
+            <CardHeader><CardTitle>Failover Events</CardTitle></CardHeader>
+            <CardContent className="space-y-2 max-h-[600px] overflow-auto">
+              {failovers.map(f => (
+                <div key={f.id} className="border rounded p-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{f.engine_key} · {f.failure_type}</span>
+                    <Badge variant={f.status === "open" ? "destructive" : "default"}>{f.status}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(f.detected_at).toLocaleString()} · action: {f.recovery_action ?? "—"}
+                  </div>
+                </div>
+              ))}
+              {failovers.length === 0 && <p className="text-muted-foreground text-sm">No failover events.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
