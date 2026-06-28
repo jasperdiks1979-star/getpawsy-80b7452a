@@ -16166,6 +16166,389 @@ export type Database = {
         }
         Relationships: []
       }
+      gbd_conflicts: {
+        Row: {
+          conflict_type: string
+          details: Json
+          detected_at: string
+          fact_ids: string[]
+          fact_key: string
+          id: string
+          module_key: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          topic: string
+        }
+        Insert: {
+          conflict_type: string
+          details?: Json
+          detected_at?: string
+          fact_ids: string[]
+          fact_key: string
+          id?: string
+          module_key: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          topic: string
+        }
+        Update: {
+          conflict_type?: string
+          details?: Json
+          detected_at?: string
+          fact_ids?: string[]
+          fact_key?: string
+          id?: string
+          module_key?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      gbd_engine_consultations: {
+        Row: {
+          api: string
+          args: Json
+          created_at: string
+          engine: string
+          id: string
+          latency_ms: number | null
+          result_summary: Json | null
+        }
+        Insert: {
+          api: string
+          args?: Json
+          created_at?: string
+          engine: string
+          id?: string
+          latency_ms?: number | null
+          result_summary?: Json | null
+        }
+        Update: {
+          api?: string
+          args?: Json
+          created_at?: string
+          engine?: string
+          id?: string
+          latency_ms?: number | null
+          result_summary?: Json | null
+        }
+        Relationships: []
+      }
+      gbd_fact_history: {
+        Row: {
+          change_reason: string | null
+          changed_by_engine: string | null
+          created_at: string
+          fact_id: string
+          fact_key: string
+          id: string
+          module_key: string
+          new_confidence: number | null
+          new_value: Json | null
+          prev_confidence: number | null
+          prev_value: Json | null
+          topic: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by_engine?: string | null
+          created_at?: string
+          fact_id: string
+          fact_key: string
+          id?: string
+          module_key: string
+          new_confidence?: number | null
+          new_value?: Json | null
+          prev_confidence?: number | null
+          prev_value?: Json | null
+          topic: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by_engine?: string | null
+          created_at?: string
+          fact_id?: string
+          fact_key?: string
+          id?: string
+          module_key?: string
+          new_confidence?: number | null
+          new_value?: Json | null
+          prev_confidence?: number | null
+          prev_value?: Json | null
+          topic?: string
+        }
+        Relationships: []
+      }
+      gbd_facts: {
+        Row: {
+          confidence: number
+          created_at: string
+          evidence: Json
+          fact_key: string
+          id: string
+          is_current: boolean
+          meta: Json
+          module_key: string
+          rationale: string | null
+          source: string
+          source_engine: string | null
+          status: string
+          superseded_by: string | null
+          tags: string[]
+          topic: string
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+          value: Json
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          fact_key: string
+          id?: string
+          is_current?: boolean
+          meta?: Json
+          module_key: string
+          rationale?: string | null
+          source?: string
+          source_engine?: string | null
+          status?: string
+          superseded_by?: string | null
+          tags?: string[]
+          topic: string
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+          value: Json
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          fact_key?: string
+          id?: string
+          is_current?: boolean
+          meta?: Json
+          module_key?: string
+          rationale?: string | null
+          source?: string
+          source_engine?: string | null
+          status?: string
+          superseded_by?: string | null
+          tags?: string[]
+          topic?: string
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+          value?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbd_facts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gbd_modules"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "gbd_facts_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "gbd_facts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbd_graph_edges: {
+        Row: {
+          attributes: Json
+          confidence: number
+          created_at: string
+          dst_id: string
+          id: string
+          relation: string
+          src_id: string
+          weight: number
+        }
+        Insert: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          dst_id: string
+          id?: string
+          relation: string
+          src_id: string
+          weight?: number
+        }
+        Update: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          dst_id?: string
+          id?: string
+          relation?: string
+          src_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbd_graph_edges_dst_id_fkey"
+            columns: ["dst_id"]
+            isOneToOne: false
+            referencedRelation: "gbd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gbd_graph_edges_src_id_fkey"
+            columns: ["src_id"]
+            isOneToOne: false
+            referencedRelation: "gbd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gbd_graph_nodes: {
+        Row: {
+          attributes: Json
+          confidence: number
+          created_at: string
+          id: string
+          label: string
+          node_key: string
+          node_type: string
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          id?: string
+          label: string
+          node_key: string
+          node_type: string
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          id?: string
+          label?: string
+          node_key?: string
+          node_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gbd_learnings: {
+        Row: {
+          actual_outcome: Json | null
+          confidence: number
+          created_at: string
+          decision_type: string
+          engine: string
+          evidence: Json
+          expected_outcome: Json | null
+          fact_updates: Json
+          id: string
+          learning: string | null
+          module_key: string | null
+          subject: string | null
+          why: string
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          confidence?: number
+          created_at?: string
+          decision_type: string
+          engine: string
+          evidence?: Json
+          expected_outcome?: Json | null
+          fact_updates?: Json
+          id?: string
+          learning?: string | null
+          module_key?: string | null
+          subject?: string | null
+          why: string
+        }
+        Update: {
+          actual_outcome?: Json | null
+          confidence?: number
+          created_at?: string
+          decision_type?: string
+          engine?: string
+          evidence?: Json
+          expected_outcome?: Json | null
+          fact_updates?: Json
+          id?: string
+          learning?: string | null
+          module_key?: string | null
+          subject?: string | null
+          why?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gbd_learnings_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gbd_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gbd_modules: {
+        Row: {
+          category: string
+          completeness: number
+          confidence: number
+          created_at: string
+          current_version: number
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          meta: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          completeness?: number
+          confidence?: number
+          created_at?: string
+          current_version?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          meta?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          completeness?: number
+          confidence?: number
+          created_at?: string
+          current_version?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          meta?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
@@ -48708,6 +49091,32 @@ export type Database = {
           p_valid: number
         }
         Returns: undefined
+      }
+      gbd_search_knowledge: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          confidence: number
+          fact_key: string
+          module_key: string
+          topic: string
+          value: Json
+          version: number
+        }[]
+      }
+      gbd_upsert_fact: {
+        Args: {
+          _change_reason: string
+          _confidence: number
+          _evidence: Json
+          _fact_key: string
+          _module_key: string
+          _rationale: string
+          _source: string
+          _source_engine: string
+          _topic: string
+          _value: Json
+        }
+        Returns: string
       }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       get_active_organic_confidence_model: {
