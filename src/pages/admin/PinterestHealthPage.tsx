@@ -1143,6 +1143,108 @@ export default function PinterestHealthPage() {
   );
 }
 
+function TasteEnginePanel() {
+  const [signals, setSignals] = useState<any[]>([]);
+  const [clusters, setClusters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [runs, setRuns] = useState<any[]>([]);
+
+  async function load() {
+    setLoading(true);
+    const [s, c, l] = await Promise.all([
+      (supabase as any).from("pinterest_taste_signals")
+        .select("dimension,value,lift_score,velocity_7d,momentum_30d,confidence,sample_n,status,expected_lifetime_days,computed_at")
+        .order("lift_score", { ascending: false }).limit(50),
+      (supabase as any).from("pinterest_taste_clusters")
+        .select("cluster_key,label,weight,momentum,sample_n,status,last_seen").order("weight", { ascending: false }),
+      (supabase as any).from("pinterest_evolution_log")
+        .select("created_at,decision_type,rationale,metrics,new_value")
+        .in("decision_type", ["taste_engine_run", "taste_engine_seed"])
+        .order("created_at", { ascending: false }).limit(5),
+    ]);
+    setSignals(s.data ?? []);
+    setClusters(c.data ?? []);
+    setRuns(l.data ?? []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const rising = signals.filter(s => s.status === "rising").slice(0, 10);
+  const declining = signals.filter(s => s.status === "declining").slice(0, 10);
+  const lastRun = runs[0];
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold">Pinterest Taste Engine V1</h2>
+        <button onClick={load} className="text-xs underline text-muted-foreground">{loading ? "…" : "refresh"}</button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">
+        Autonomous trend discovery from real Pinterest production data. Creative Factory + Evolution Engine consume these signals automatically.
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <Stat label="Active signals" value={signals.length} />
+        <Stat label="Rising" value={rising.length} />
+        <Stat label="Declining" value={declining.length} />
+        <Stat label="Visual DNA clusters" value={clusters.length} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        <div>
+          <h3 className="text-sm font-medium mb-2">Fastest rising taste signals</h3>
+          <div className="space-y-1 text-xs">
+            {rising.length === 0 && <p className="text-muted-foreground">No rising signals yet.</p>}
+            {rising.map((s) => (
+              <div key={`${s.dimension}-${s.value}`} className="flex justify-between border rounded px-2 py-1">
+                <span className="font-mono truncate">{s.dimension} · {s.value}</span>
+                <span className="text-emerald-600">+{(Number(s.lift_score) * 100).toFixed(0)}% · n={s.sample_n}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-medium mb-2">Declining taste signals</h3>
+          <div className="space-y-1 text-xs">
+            {declining.length === 0 && <p className="text-muted-foreground">No declining signals.</p>}
+            {declining.map((s) => (
+              <div key={`${s.dimension}-${s.value}`} className="flex justify-between border rounded px-2 py-1">
+                <span className="font-mono truncate">{s.dimension} · {s.value}</span>
+                <span className="text-rose-600">{(Number(s.lift_score) * 100).toFixed(0)}% · n={s.sample_n}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <h3 className="text-sm font-medium mb-2">Visual DNA clusters</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+          {clusters.map((c) => (
+            <div key={c.cluster_key} className="border rounded p-2">
+              <div className="flex justify-between">
+                <span className="font-medium">{c.label}</span>
+                <Badge variant="outline" className={
+                  c.status === "rising" ? "text-emerald-700 border-emerald-300" :
+                  c.status === "declining" ? "text-rose-700 border-rose-300" : ""
+                }>{c.status}</Badge>
+              </div>
+              <div className="text-muted-foreground mt-1">
+                weight {Number(c.weight).toFixed(2)} · momentum {(Number(c.momentum) * 100).toFixed(0)}% · n={c.sample_n}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {lastRun && (
+        <div className="mt-5 text-xs text-muted-foreground">
+          Last run: {new Date(lastRun.created_at).toLocaleString()} · {lastRun.rationale}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="border rounded-lg p-3">
