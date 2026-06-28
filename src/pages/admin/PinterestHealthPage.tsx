@@ -1141,6 +1141,7 @@ export default function PinterestHealthPage() {
       </Card>
       <TasteEnginePanel />
       <GrowthDirectorPanel />
+      <CollectiveIntelligencePanel />
     </div>
   );
 }
@@ -1244,6 +1245,104 @@ function TasteEnginePanel() {
         </div>
       )}
     </Card>
+  );
+}
+
+function CollectiveIntelligencePanel() {
+  const [run, setRun] = useState<any>(null);
+  const [signals, setSignals] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const [{ data: logs }, { data: sigs }] = await Promise.all([
+      (supabase as any).from("pinterest_evolution_log")
+        .select("created_at,rationale,metrics,new_value")
+        .eq("decision_type", "collective_intelligence_run")
+        .order("created_at", { ascending: false }).limit(1),
+      (supabase as any).from("pinterest_taste_signals")
+        .select("dimension,value,lift_score,confidence,sample_n,status,computed_at")
+        .like("dimension", "ci_%")
+        .order("lift_score", { ascending: false }).limit(40),
+    ]);
+    setRun(logs?.[0] ?? null);
+    setSignals(sigs ?? []);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function run_now(dry: boolean) {
+    setBusy(true);
+    try {
+      const { error } = await (supabase as any).functions.invoke(
+        "pinterest-collective-intelligence" + (dry ? "?dry_run=1" : ""),
+        { body: {} },
+      );
+      if (error) throw error;
+      await load();
+    } finally { setBusy(false); }
+  }
+
+  const winners = signals.filter((s) => s.status === "rising").slice(0, 10);
+  const losers = signals.filter((s) => s.status === "declining").slice(0, 10);
+  const m = run?.metrics ?? {};
+
+  return (
+    <Card className="p-5 mt-6 border-2 border-violet-300/60">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold">Collective Intelligence Layer</h2>
+          <p className="text-xs text-muted-foreground">One learning loop across Creative Factory · Evolution · Taste · Health. Every publish improves the system.</p>
+        </div>
+        <div className="flex gap-2">
+          <button disabled={busy} onClick={() => run_now(true)} className="text-xs px-2 py-1 rounded border">Dry run</button>
+          <button disabled={busy} onClick={() => run_now(false)} className="text-xs px-2 py-1 rounded bg-violet-600 text-white">Run cycle</button>
+        </div>
+      </div>
+      {run ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+          <CiStat label="Joinable pins" value={m.joinable_pins ?? 0} />
+          <CiStat label="DNA attributes" value={m.distinct_attributes ?? 0} />
+          <CiStat label="Winners" value={m.winners ?? 0} />
+          <CiStat label="Losers" value={m.losers ?? 0} />
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground mb-3">No cycles yet. Click "Run cycle".</p>
+      )}
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <h3 className="text-sm font-semibold mb-2 text-emerald-700">Winning DNA</h3>
+          <ul className="text-xs space-y-1">
+            {winners.length === 0 && <li className="text-muted-foreground">No statistically significant winners yet.</li>}
+            {winners.map((s, i) => (
+              <li key={i} className="flex justify-between gap-2 border-b border-border/40 py-1">
+                <span className="truncate"><span className="text-muted-foreground">{s.dimension.replace(/^ci_/, "")}</span> · {s.value}</span>
+                <span className="tabular-nums">{Number(s.lift_score).toFixed(2)}× · n={s.sample_n} · {Math.round(Number(s.confidence) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold mb-2 text-rose-700">Losing DNA</h3>
+          <ul className="text-xs space-y-1">
+            {losers.length === 0 && <li className="text-muted-foreground">No statistically significant losers yet.</li>}
+            {losers.map((s, i) => (
+              <li key={i} className="flex justify-between gap-2 border-b border-border/40 py-1">
+                <span className="truncate"><span className="text-muted-foreground">{s.dimension.replace(/^ci_/, "")}</span> · {s.value}</span>
+                <span className="tabular-nums">{Number(s.lift_score).toFixed(2)}× · n={s.sample_n} · {Math.round(Number(s.confidence) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function CiStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded border border-border/60 p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-base font-semibold tabular-nums">{value}</div>
+    </div>
   );
 }
 
