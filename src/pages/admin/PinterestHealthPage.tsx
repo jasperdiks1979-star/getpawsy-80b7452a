@@ -122,6 +122,8 @@ export default function PinterestHealthPage() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [growth, setGrowth] = useState<any | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
+  const [exp, setExp] = useState<any | null>(null);
+  const [expLoading, setExpLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -220,10 +222,26 @@ export default function PinterestHealthPage() {
     }
   }
 
+  async function refreshExperiments(execute = false) {
+    setExpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "pinterest-experiment-engine",
+        execute ? { body: {} } : { method: "GET" as any },
+      );
+      if (!error && data?.ok) setExp(data.snapshot);
+    } catch (_) {
+      /* silent — surfaced in panel */
+    } finally {
+      setExpLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh(false);
     refreshWatchdog(false);
     refreshGrowth(false);
+    refreshExperiments(false);
     loadConnection();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
@@ -234,6 +252,7 @@ export default function PinterestHealthPage() {
       refresh(false);
       refreshWatchdog(false);
       refreshGrowth(false);
+      refreshExperiments(false);
     }, 60_000);
     return () => clearInterval(t);
   }, []);
