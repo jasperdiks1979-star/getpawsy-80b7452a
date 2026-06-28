@@ -6,6 +6,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const STORAGE_BUCKET = "pcie-v2-creatives";
 
 type Catalogs = {
   config: Record<string, unknown>;
@@ -22,6 +23,7 @@ type Catalogs = {
   stages: any[];
   signals: any[];
   weights: Map<string, number>; // key: attr|value|signal
+  providers: any[];
 };
 
 function pickWeighted<T extends { slug: string; weight?: number; enabled?: boolean }>(
@@ -44,7 +46,7 @@ function pickWeighted<T extends { slug: string; weight?: number; enabled?: boole
 }
 
 async function loadCatalogs(supabase: any): Promise<Catalogs> {
-  const [cfg, flg, sf, ty, hc, hk, cam, em, cta, sc, ax, st, sig, wt] = await Promise.all([
+  const [cfg, flg, sf, ty, hc, hk, cam, em, cta, sc, ax, st, sig, wt, pr] = await Promise.all([
     supabase.from("pcie_v2_config").select("*"),
     supabase.from("pcie_v2_feature_flags").select("*"),
     supabase.from("pcie_v2_style_families").select("*").eq("enabled", true),
@@ -59,6 +61,7 @@ async function loadCatalogs(supabase: any): Promise<Catalogs> {
     supabase.from("pcie_v2_pipeline_stages").select("*").eq("enabled", true).order("order_index"),
     supabase.from("pcie_v2_performance_signals").select("*").eq("enabled", true),
     supabase.from("pcie_v2_attribute_weights").select("attribute,value_slug,signal_slug,weight"),
+    supabase.from("pcie_v2_render_providers").select("*").eq("enabled", true).order("priority"),
   ]);
   const config = Object.fromEntries((cfg.data ?? []).map((r: any) => [r.key, r.value]));
   const flags = Object.fromEntries((flg.data ?? []).map((r: any) => [r.flag, r.enabled]));
@@ -69,6 +72,7 @@ async function loadCatalogs(supabase: any): Promise<Catalogs> {
     style_families: sf.data ?? [], typography: ty.data ?? [], hook_categories: hc.data ?? [],
     hooks: hk.data ?? [], cameras: cam.data ?? [], emotions: em.data ?? [], ctas: cta.data ?? [],
     scenes: sc.data ?? [], axes: ax.data ?? [], stages: st.data ?? [], signals: sig.data ?? [], weights,
+    providers: pr.data ?? [],
   };
 }
 
