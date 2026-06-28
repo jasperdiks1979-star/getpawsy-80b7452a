@@ -396,6 +396,48 @@ export default function PinterestHealthPage() {
               <Stat label="Est. runtime (days)" value={snap.estRuntimeDays ?? 0} />
               <Stat label="Boards" value={snap.tokenStatus?.boardCount ?? 0} />
             </div>
+            {snap.verification && (
+              <div className="mt-5">
+                <h3 className="text-sm font-semibold mb-2">
+                  End-to-end verification (24h)
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    Production health score: <strong>{snap.verification.productionHealthScore}/100</strong>
+                  </span>
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+                  <Stat label="Verified" value={snap.verification.verified24h} />
+                  <Stat label="Failed" value={snap.verification.failed24h} />
+                  <Stat label="Waiting backlog" value={snap.verification.waitingBacklog} />
+                  <Stat
+                    label="Success rate %"
+                    value={snap.verification.successRate24h == null ? 0 : Math.round(snap.verification.successRate24h * 100)}
+                  />
+                  <Stat label="Avg score" value={snap.verification.avgScore24h ?? 0} />
+                  <Stat label="Avg verify (min)" value={snap.verification.avgVerificationMinutes ?? 0} />
+                  <Stat label="Auto recoveries" value={snap.verification.autoRecoveries24h} />
+                  <Stat
+                    label="Recovery %"
+                    value={snap.verification.recoverySuccessRate24h == null ? 0 : Math.round(snap.verification.recoverySuccessRate24h * 100)}
+                  />
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <Row label="Last verified" value={fmt(snap.verification.lastVerifiedAt)} />
+                  <Row label="Last failed" value={fmt(snap.verification.lastFailedAt)} />
+                </div>
+                {snap.verification.topFailureCauses.length > 0 && (
+                  <div className="mt-3 text-sm">
+                    <div className="font-medium mb-1">Top failure causes</div>
+                    <ul className="list-disc list-inside text-muted-foreground">
+                      {snap.verification.topFailureCauses.map((c) => (
+                        <li key={c.reason}>
+                          <code>{c.reason}</code> — {c.count}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <Row
                 label="Pinterest token"
