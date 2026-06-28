@@ -128,6 +128,63 @@ async function seedMissingMediaJobs(sb: Sb, limit: number, source: string) {
   return { discovered: rows.length, inserted: rows.length };
 }
 
+async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
+  const inv = await inventory(sb);
+  const deficit = Math.max(0, Math.min(target - Number(inv.ready_pins ?? 0), 30));
+  if (deficit <= 0) return { needed: 0, created: 0 };
+  const { data: products, error } = await sb
+    .from("products")
+    .select("id, slug, name, category, product_type, price, image_url, is_active")
+    .eq("is_active", true)
+    .not("image_url", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(deficit * 3);
+  if (error) throw error;
+  let created = 0;
+  for (const product of products ?? []) {
+    if (created >= deficit) break;
+    const { count } = await sb
+      .from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", product.id)
+      .in("status", ["queued", "draft"])
+      .is("pinterest_pin_id", null);
+    if ((count ?? 0) >= 3) continue;
+    const niche = detectNiche(product) as NicheKey;
+    const copy = buildPinCopy({ name: product.name, category: product.category ?? null, price: product.price ?? null, niche }, created);
+    const row = {
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name,
+      pin_title: copy.title,
+      pin_description: copy.description,
+      destination_link: `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_factory_inventory&utm_content=${niche}`,
+      priority: "medium",
+      status: "draft",
+      scheduled_at: new Date().toISOString(),
+      hook_group: niche,
+      category_key: niche,
+      overlay_text: copy.overlay,
+      meta: { creative_source: source, ai_generated: true, generator: "pinterest-creative-factory", inventory_seed: true, publish_allowed: true },
+    };
+    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue").insert(row).select("id").maybeSingle();
+    if (!insErr && pin?.id) {
+      created++;
+      await sb.from("pinterest_creative_factory_jobs").upsert({
+        pin_queue_id: pin.id,
+        product_id: product.id,
+        product_slug: product.slug,
+        product_name: product.name,
+        status: "pending",
+        stage: "planning",
+        priority: 80 + created,
+        source,
+      }, { onConflict: "pin_queue_id", ignoreDuplicates: true });
+    }
+  }
+  return { needed: deficit, created };
+}
+
 async function inventory(sb: Sb) {
   const [{ data: queueRows }, { data: jobs }, { data: settings }] = await Promise.all([
     sb.from("pinterest_pin_queue").select("status,pin_image_url", { count: "exact" }).in("status", ["queued", "draft", "blocked_legacy_source"]),
@@ -156,6 +213,11 @@ async function inventory(sb: Sb) {
 
 async function leaseJobs(sb: Sb, limit: number, owner: string) {
   const now = new Date().toISOString();
+  await sb
+    .from("pinterest_creative_factory_jobs")
+    .update({ status: "retry", lease_owner: null, error_message: "lease_expired_requeued" })
+    .eq("status", "running")
+    .lt("leased_until", now);
   const { data: candidates, error } = await sb
     .from("pinterest_creative_factory_jobs")
     .select("*")
@@ -467,6 +529,13 @@ Deno.serve(async (req) => {
       const seeded = await seedMissingMediaJobs(sb, Math.min(Number(body.limit ?? 250), 1000), "missing_pin_image_backfill");
       return json({ ok: true, traceId: traceId(), seeded, inventory: await inventory(sb) });
     }
+    if (action === "replenish") {
+      const inv = await inventory(sb);
+      const minReady = Number(inv.settings?.min_ready_pins ?? 100);
+      const drafts = await seedInventoryDrafts(sb, minReady, "creative_factory_inventory_replenish");
+      const seeded = await seedMissingMediaJobs(sb, Math.min(Number(body.limit ?? 250), 1000), "creative_factory_replenish_backfill");
+      return json({ ok: true, traceId: traceId(), drafts, seeded, inventory: await inventory(sb) });
+    }
     if (action === "work") return json({ ok: true, traceId: traceId(), ...(await work(sb, Number(body.limit ?? 1))) });
     if (action === "work_async") {
       const limit = Number(body.limit ?? 1);
@@ -475,6 +544,7 @@ Deno.serve(async (req) => {
     }
     if (action === "run_once") {
       const seeded = await seedMissingMediaJobs(sb, Math.min(Number(body.seed_limit ?? 250), 1000), "run_once_backfill");
+      await seedInventoryDrafts(sb, Number(body.min_ready_pins ?? 0), "run_once_inventory_replenish");
       const result = await work(sb, Number(body.limit ?? 1));
       return json({ ok: true, traceId: traceId(), seeded, result, inventory: await inventory(sb) });
     }
