@@ -1695,6 +1695,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="arie"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ArieCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
