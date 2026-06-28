@@ -16549,6 +16549,484 @@ export type Database = {
         }
         Relationships: []
       }
+      gcp_concept_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcp_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gcp_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gcp_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcp_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gcp_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gcp_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gcp_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gcp_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gcp_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gcp_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gcp_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gcp_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gcp_learnings: {
+        Row: {
+          applied: boolean
+          concept_key: string | null
+          confidence: number
+          created_at: string
+          delta_confidence: number | null
+          delta_weight: number | null
+          engine_source: string
+          evidence: Json
+          id: string
+          insight: string
+          module_key: string | null
+        }
+        Insert: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source: string
+          evidence?: Json
+          id?: string
+          insight: string
+          module_key?: string | null
+        }
+        Update: {
+          applied?: boolean
+          concept_key?: string | null
+          confidence?: number
+          created_at?: string
+          delta_confidence?: number | null
+          delta_weight?: number | null
+          engine_source?: string
+          evidence?: Json
+          id?: string
+          insight?: string
+          module_key?: string | null
+        }
+        Relationships: []
+      }
+      gcp_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gcp_predictions: {
+        Row: {
+          actual_value: number | null
+          confidence: number
+          created_at: string
+          engine_source: string | null
+          features: Json
+          id: string
+          model_version: number
+          outcome_at: string | null
+          predicted_value: number
+          prediction_type: string
+          subject_id: string | null
+          subject_type: string
+          visitor_id: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value: number
+          prediction_type: string
+          subject_id?: string | null
+          subject_type: string
+          visitor_id?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          confidence?: number
+          created_at?: string
+          engine_source?: string | null
+          features?: Json
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value?: number
+          prediction_type?: string
+          subject_id?: string | null
+          subject_type?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      gcp_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gcp_signals: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          session_id: string | null
+          signal_type: string
+          signal_value: number | null
+          source: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          signal_type: string
+          signal_value?: number | null
+          source?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          signal_type?: string
+          signal_value?: number | null
+          source?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      gcp_visitor_profiles: {
+        Row: {
+          confidence: number
+          created_at: string
+          emotion_scores: Json
+          id: string
+          intent_score: number
+          journey_stage: string | null
+          last_signal_at: string | null
+          metadata: Json
+          objection_scores: Json
+          predicted_ltv: number | null
+          price_sensitivity: number
+          segment_scores: Json
+          session_id: string | null
+          signal_count: number
+          trigger_scores: Json
+          trust_score: number
+          updated_at: string
+          urgency_score: number
+          visitor_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          emotion_scores?: Json
+          id?: string
+          intent_score?: number
+          journey_stage?: string | null
+          last_signal_at?: string | null
+          metadata?: Json
+          objection_scores?: Json
+          predicted_ltv?: number | null
+          price_sensitivity?: number
+          segment_scores?: Json
+          session_id?: string | null
+          signal_count?: number
+          trigger_scores?: Json
+          trust_score?: number
+          updated_at?: string
+          urgency_score?: number
+          visitor_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          emotion_scores?: Json
+          id?: string
+          intent_score?: number
+          journey_stage?: string | null
+          last_signal_at?: string | null
+          metadata?: Json
+          objection_scores?: Json
+          predicted_ltv?: number | null
+          price_sensitivity?: number
+          segment_scores?: Json
+          session_id?: string | null
+          signal_count?: number
+          trigger_scores?: Json
+          trust_score?: number
+          updated_at?: string
+          urgency_score?: number
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
@@ -49115,6 +49593,20 @@ export type Database = {
           _source_engine: string
           _topic: string
           _value: Json
+        }
+        Returns: string
+      }
+      gcp_refresh_module_rollups: { Args: never; Returns: undefined }
+      gcp_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
         }
         Returns: string
       }
