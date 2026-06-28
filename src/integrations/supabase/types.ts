@@ -30052,6 +30052,7 @@ export type Database = {
           live_pin_verified_at: string | null
           meta: Json | null
           overlay_text: string | null
+          pcie2_creative_id: string | null
           pin_description: string
           pin_external_id: string | null
           pin_image_phash: string | null
@@ -30123,6 +30124,7 @@ export type Database = {
           live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
+          pcie2_creative_id?: string | null
           pin_description: string
           pin_external_id?: string | null
           pin_image_phash?: string | null
@@ -30194,6 +30196,7 @@ export type Database = {
           live_pin_verified_at?: string | null
           meta?: Json | null
           overlay_text?: string | null
+          pcie2_creative_id?: string | null
           pin_description?: string
           pin_external_id?: string | null
           pin_image_phash?: string | null
