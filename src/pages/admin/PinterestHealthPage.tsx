@@ -1140,6 +1140,7 @@ export default function PinterestHealthPage() {
         )}
       </Card>
       <ExecutiveCouncilPanel />
+      <PcieV2Panel />
       <TasteEnginePanel />
       <GrowthDirectorPanel />
       <CollectiveIntelligencePanel />
