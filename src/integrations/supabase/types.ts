@@ -28104,6 +28104,157 @@ export type Database = {
           },
         ]
       }
+      pinterest_growth_director_decisions: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          dependencies: string[]
+          effort: string
+          evidence: Json
+          expected_impact_score: number
+          expected_revenue_cents_30d: number
+          id: string
+          rationale: string
+          run_id: string | null
+          status: string
+          target_kind: string | null
+          target_ref: string | null
+          title: string
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          dependencies?: string[]
+          effort?: string
+          evidence?: Json
+          expected_impact_score?: number
+          expected_revenue_cents_30d?: number
+          id?: string
+          rationale: string
+          run_id?: string | null
+          status?: string
+          target_kind?: string | null
+          target_ref?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          dependencies?: string[]
+          effort?: string
+          evidence?: Json
+          expected_impact_score?: number
+          expected_revenue_cents_30d?: number
+          id?: string
+          rationale?: string
+          run_id?: string | null
+          status?: string
+          target_kind?: string | null
+          target_ref?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_growth_director_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_growth_director_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_growth_director_runs: {
+        Row: {
+          boards_evaluated: number
+          decisions_emitted: number
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          opportunities_found: number
+          products_scored: number
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          boards_evaluated?: number
+          decisions_emitted?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          opportunities_found?: number
+          products_scored?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          boards_evaluated?: number
+          decisions_emitted?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          opportunities_found?: number
+          products_scored?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      pinterest_growth_director_snapshots: {
+        Row: {
+          account_kpis: Json
+          board_allocations: Json
+          bottlenecks: Json
+          computed_at: string
+          confidence: number
+          id: string
+          opportunities: Json
+          outlook_30d: Json
+          product_priorities: Json
+          run_id: string | null
+        }
+        Insert: {
+          account_kpis?: Json
+          board_allocations?: Json
+          bottlenecks?: Json
+          computed_at?: string
+          confidence?: number
+          id?: string
+          opportunities?: Json
+          outlook_30d?: Json
+          product_priorities?: Json
+          run_id?: string | null
+        }
+        Update: {
+          account_kpis?: Json
+          board_allocations?: Json
+          bottlenecks?: Json
+          computed_at?: string
+          confidence?: number
+          id?: string
+          opportunities?: Json
+          outlook_30d?: Json
+          product_priorities?: Json
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_growth_director_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_growth_director_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_growth_runs: {
         Row: {
           created_at: string
