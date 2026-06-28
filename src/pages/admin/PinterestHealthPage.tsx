@@ -1882,3 +1882,136 @@ function TraitList({ title, rows, showDelta = false, muted = false }: { title: s
     </div>
   );
 }
+
+function AdaptiveLearningGovernorPanel() {
+  const [state, setState] = useState<any>(null);
+  const [runs, setRuns] = useState<any[]>([]);
+  const [winners, setWinners] = useState<any[]>([]);
+  const [frozen, setFrozen] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    const [s, r, w, f] = await Promise.all([
+      (supabase as any).from("pcie2_alg_state").select("*").eq("scope", "global").maybeSingle(),
+      (supabase as any).from("pcie2_alg_runs").select("*").order("started_at", { ascending: false }).limit(10),
+      (supabase as any).from("pcie2_protected_winners").select("*").order("created_at", { ascending: false }).limit(10),
+      (supabase as any).from("pcie2_frozen_rules").select("*").order("created_at", { ascending: false }).limit(10),
+    ]);
+    setState(s.data ?? null);
+    setRuns(r.data ?? []);
+    setWinners(w.data ?? []);
+    setFrozen(f.data ?? []);
+    setLoading(false);
+  }
+
+  async function run() {
+    setLoading(true);
+    await (supabase as any).functions.invoke("pcie2-adaptive-learning-governor", { body: {} });
+    await load();
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const stateColor: Record<string, string> = {
+    LEARNING: "text-emerald-600",
+    CAUTIOUS: "text-amber-600",
+    PAUSED: "text-rose-600",
+    RECOVERY: "text-sky-600",
+  };
+  const s = state ?? {};
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Adaptive Learning Governor</h2>
+          <p className="text-xs text-muted-foreground">
+            Decides when to learn, slow, pause, or recover. Protects long-term winners and freezes rules during anomalies.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" onClick={run} disabled={loading}>Run governor</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <Stat label="State" value={
+          <span className={stateColor[s.state] ?? ""}>{s.state ?? "—"}</span>
+        } />
+        <Stat label="Learning speed" value={Number(s.learning_speed ?? 0).toFixed(2)} />
+        <Stat label="Confidence" value={Number(s.confidence ?? 0).toFixed(2)} />
+        <Stat label="Evidence drift" value={Number(s.evidence_drift ?? 0).toFixed(3)} />
+        <Stat label="CTR volatility" value={Number(s.ctr_volatility ?? 0).toFixed(3)} />
+        <Stat label="Save volatility" value={Number(s.save_volatility ?? 0).toFixed(3)} />
+        <Stat label="Purchase volatility" value={Number(s.purchase_volatility ?? 0).toFixed(3)} />
+        <Stat label="Revenue volatility" value={Number(s.revenue_volatility ?? 0).toFixed(3)} />
+        <Stat label="Season" value={s.season_tag ?? "none"} />
+        <Stat label="Outliers" value={String(s.outlier_count ?? 0)} />
+        <Stat label="Decay half-life" value={`${s.decay_half_life_days ?? 0}d`} />
+        <Stat label="Model confidence" value={Number(s.model_confidence ?? 0).toFixed(2)} />
+      </div>
+      {s.reason && (
+        <div className="text-xs text-muted-foreground">Reason: {s.reason}</div>
+      )}
+
+      <div className="grid md:grid-cols-3 gap-4 text-xs">
+        <div>
+          <div className="font-medium mb-1">Recent governor actions</div>
+          <ul className="space-y-1">
+            {runs.map((r) => (
+              <li key={r.id} className="border rounded p-2">
+                <div className="flex justify-between">
+                  <span>{r.prev_state} → <strong>{r.new_state}</strong></span>
+                  <span className="text-muted-foreground">{new Date(r.started_at).toLocaleString()}</span>
+                </div>
+                <div className="text-muted-foreground">{r.notes}</div>
+                {Array.isArray(r.actions) && r.actions.length > 0 && (
+                  <div className="text-muted-foreground">
+                    {r.actions.map((a: any) => a.type).join(", ")}
+                  </div>
+                )}
+              </li>
+            ))}
+            {runs.length === 0 && <li className="text-muted-foreground">No runs yet.</li>}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium mb-1">Protected winners</div>
+          <ul className="space-y-1">
+            {winners.map((w) => (
+              <li key={w.id} className="border rounded p-2">
+                <div>creative {String(w.creative_id ?? "").slice(0, 8)} · ${Number(w.lifetime_revenue ?? 0).toFixed(0)}</div>
+                <div className="text-muted-foreground">until {w.protected_until ? new Date(w.protected_until).toLocaleDateString() : "—"}</div>
+              </li>
+            ))}
+            {winners.length === 0 && <li className="text-muted-foreground">None.</li>}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium mb-1">Frozen rules</div>
+          <ul className="space-y-1">
+            {frozen.map((f) => (
+              <li key={f.id} className="border rounded p-2">
+                <div><strong>{f.rule_key}</strong></div>
+                <div className="text-muted-foreground">{f.reason}</div>
+                <div className="text-muted-foreground">until {f.frozen_until ? new Date(f.frozen_until).toLocaleDateString() : "—"}</div>
+              </li>
+            ))}
+            {frozen.length === 0 && <li className="text-muted-foreground">None.</li>}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="border rounded p-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="font-medium">{value}</div>
+    </div>
+  );
+}
