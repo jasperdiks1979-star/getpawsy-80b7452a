@@ -55,6 +55,7 @@ import {
   recordCreditEvent,
   isImageGenerationKilled,
 } from "../_shared/pinterest-credit-guard.ts";
+declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
