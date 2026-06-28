@@ -1740,6 +1740,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="business-dna"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BusinessDnaPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
