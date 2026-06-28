@@ -23,12 +23,13 @@ const MAX_ATTEMPTS = 3;
 type Mode = "drain" | "sample" | "report";
 
 async function loadAccessToken(sb: any): Promise<string | null> {
-  const { data } = await sb
+  const { data, error } = await sb
     .from("pinterest_connection")
-    .select("access_token, expires_at")
+    .select("access_token, token_expires_at")
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) console.warn("[verify-worker] loadAccessToken", error.message);
   return data?.access_token ?? null;
 }
 
