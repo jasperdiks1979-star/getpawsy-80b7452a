@@ -37600,6 +37600,30 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_pipeline_smoke_runs: {
+        Row: {
+          failed_stages: string[]
+          id: string
+          passed: boolean
+          ran_at: string
+          stages: Json
+        }
+        Insert: {
+          failed_stages?: string[]
+          id?: string
+          passed: boolean
+          ran_at?: string
+          stages: Json
+        }
+        Update: {
+          failed_stages?: string[]
+          id?: string
+          passed?: boolean
+          ran_at?: string
+          stages?: Json
+        }
+        Relationships: []
+      }
       review_requests: {
         Row: {
           completed_at: string | null
