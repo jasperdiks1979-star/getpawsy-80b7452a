@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { detectNiche, getStyleDNA, type NicheKey } from "../_shared/pinterest-style-dna.ts";
 import { buildPinCopy, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
