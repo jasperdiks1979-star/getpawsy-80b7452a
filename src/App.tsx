@@ -1839,6 +1839,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="strategy"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <StrategicPlanningPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
