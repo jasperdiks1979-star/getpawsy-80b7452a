@@ -1,83 +1,85 @@
-# Analytics Gold Standard — Implementation Plan
+## Self-Healing Intelligence Layer (SHIL) — v1
 
-Scope: make analytics trustworthy without changing any existing tracking behaviour. All new tables/events are additive. Existing dashboards keep working; new ones are added.
+**Architectural rule (permanent):** every critical subsystem registers a `probe → diagnose → recover → validate → learn` contract. SHIL is the single brain that runs that contract on a 5-minute heartbeat. It does **not** replace Guardian, Commander, ACOS, OIE, ODE, Production Validation or PCIE2 health surfaces — it consumes them and acts on top.
 
-## Phase A — Foundation (DB + classification)
+---
 
-1. **New tables** (additive, RLS locked to admin):
-   - `analytics_engagement_starts` — canonical "true human visit" event.
-   - `analytics_traffic_classification` — one row per session with `traffic_type` (human/prefetch/prerender/crawler/bot/internal), reason, UA, headers signature.
-   - `analytics_funnel_waterfall` — denormalised per-session timeline (click→purchase) with timestamps + drop-off flags.
-   - `analytics_session_quality` — score 0–100 + classification (Bot/Accidental/Bounce/Interested/Shopping/HighIntent/Buyer) + signal breakdown.
-   - `analytics_geo_quality` — provider_used, lookup_ms, fallback_level, confidence (High/Med/Low/Unknown).
-   - `analytics_health_checks` — minute-by-minute status per probe.
-   - `analytics_alerts` — open/closed alerts + suggested fix.
-   - `analytics_daily_validation` — nightly totals snapshot.
+### What's new (kept minimal, reusing existing telemetry)
 
-2. **Classification rules** (frontend + edge):
-   - Bot/crawler: UA regex (Googlebot, Bingbot, facebookexternalhit, Pinterestbot, TikTokBot, AhrefsBot, Cloudflare-Healthcheck, etc.).
-   - Prerender: `document.prerendering`, `navigation.type === 'prerender'`, `Sec-Purpose: prefetch;prerender`.
-   - Prefetch: `Sec-Purpose: prefetch`, `Purpose: prefetch`, `X-Moz: prefetch`, `X-Purpose`.
-   - Internal: admin IP allowlist + authed admin role.
-   - Human: passes engagement_start gate (DOM ready + visible + ≥2s active + not above).
+#### 1. Database — 6 new tables (prefix `shil_`)
+| table | purpose |
+|---|---|
+| `shil_subsystems` | registry of monitored components: name, type, probe ref, severity, owner, current status |
+| `shil_incidents` | every detected anomaly: subsystem, signature_id, severity, evidence_jsonb, detected_at, recovered_at, recovery_id, mttd_seconds, mttr_seconds, status |
+| `shil_signatures` | learned anomaly fingerprints (hashable JSON of the symptom) + known root cause + confidence |
+| `shil_playbooks` | named safe recovery actions (e.g. `restart_pinterest_worker`, `requeue_missing_pin_image_url`, `split_oversize_creative_job`) with required-evidence preconditions and a code-side handler key |
+| `shil_recoveries` | every recovery attempt: incident_id, playbook_id, started_at, finished_at, outcome, before_state, after_state, validation_passed |
+| `shil_metrics_daily` | rollup: MTTD, MTTR, auto-recovery rate, recurring-incident rate, false-positive rate, availability % per subsystem |
 
-## Phase B — Engagement Start event
+All with RLS: admin SELECT, service_role ALL. GRANTs explicit per cloud rule.
 
-- New module `src/lib/engagementStart.ts`:
-  - Waits for `DOMContentLoaded`, then `requestIdleCallback`.
-  - Verifies `visibilityState==='visible'`, not prerendering, no prefetch hints, not bot, then arms a 2 000 ms visible-only timer (paused on `visibilitychange`).
-  - On fire: POSTs to new edge function `analytics-engagement-start` with session_id, visitor_id, UTM cluster (incl. ttclid/fbclid/gclid), landing_page, device, browser, country (from existing geo hook), timestamp.
-- Wired from `SafeGlobalVisitorTracker` once per session (dedup via sessionStorage key `gp_engagement_started`).
-- Existing `page_view`/visitor_activity writes are NOT changed.
+#### 2. Edge functions (3, reuse pattern)
+- **`self-healing-orchestrator`** (cron every 5 min): runs all registered probes in parallel, classifies anomalies via `shil_signatures`, opens incidents, dispatches safe playbooks to the recoverer, updates metrics rollup.
+- **`self-healing-recoverer`**: executes a single named playbook with strict allow-list mapping → existing edge functions (e.g. `pinterest-cron-worker`, `pcie2-publish-assembler`, `pinterest-recovery-orchestrator`, `pinterest-creative-factory continuous_run`). Never invents actions; never publishes; never duplicates work. Captures before/after state.
+- **`self-healing-validator`**: after a recovery, re-runs the original probe + a 2nd-tier validation (Production Validation hook where relevant) and stamps `validation_passed`. If fail, escalates to a notification row in `guardian_notification_queue` (reuses existing).
 
-## Phase C — Funnel waterfall
+#### 3. Initial probe set (seeded — reuses existing tables)
+| probe | source of truth (no duplication) |
+|---|---|
+| Creative Director CPU/timeout | `pinterest_creative_factory_jobs` (stalled > 10 min) |
+| Pinterest Queue stall | `pcie2_publish_queue` (ready, no progress in 30 min) |
+| Missing `pin_image_url` | `pcie2_publish_queue` count where `status='queued' AND pin_image_url IS NULL` |
+| OAuth expired | `pinterest_connection` (token_expires_at < now()+1h) |
+| Edge function error spikes | `frontend_error_logs` + `pinterest_pipeline_failures` |
+| Cron stalled | `cron_job_logs` last_success > expected interval × 3 |
+| Checkout funnel collapse | `checkout_funnel_events` (begin_checkout > 0 AND complete_payment == 0 over 24h) |
+| Stripe sessions expiring | `orders` (status='expired' AND no payment_intent_id) trending |
+| Storage / media missing | `cj_media_asset_registry` 404 sample |
+| Analytics ingestion stale | `analytics_funnel_waterfall` last write > 30 min |
+| Worker heartbeats | `cinematic_worker_heartbeats`, `render_worker_heartbeats` |
 
-- Edge function `analytics-funnel-ingest`: accepts step events (`click,redirect,landing,engagement_start,page_view,scroll,view_item,add_to_cart,begin_checkout,payment,purchase`) and upserts row in `analytics_funnel_waterfall` keyed by session_id.
-- Hook into existing emitters (`funnelEvents.ts`, `/go` redirect log, checkout events) — additive listeners, no behaviour change.
-- Drop-off computed in a SQL view `analytics_funnel_dropoff_v` (no writes).
+#### 4. Seeded playbooks (safe by default)
+- `restart_pinterest_cron_worker` → invoke `pinterest-cron-worker`
+- `replenish_creative_factory` → invoke `pinterest-creative-factory` action `continuous_run`
+- `requeue_pcie2_missing_images` → invoke `pcie2-publish-assembler` refresh
+- `refresh_pinterest_oauth` → invoke `pinterest-recovery-orchestrator`
+- `unpause_premium_engine_if_safe` → set `premium_engine_paused = false` only if creative inventory > threshold AND health green (mirrors prior incident pattern)
+- `escalate_only` → no action, emit notification (used for checkout, Stripe, security)
 
-## Phase D — Session Quality score
+Everything destructive (publishing, paying, schema change, security) is **escalate_only**.
 
-- Client collector `src/lib/sessionQuality.ts` aggregates: time-on-page, max scroll %, mouse/touch counts, product/cart/checkout interactions, visibility ratio, page count, return-visit flag (localStorage).
-- Flushed every 15s + on `visibilitychange:hidden` to edge function `analytics-session-quality` which computes score + classification server-side (deterministic formula documented in function header).
+#### 5. Frontend — one admin page
+`src/pages/admin/SelfHealingPage.tsx` at `/admin/self-healing`:
+- Live subsystem grid (color-coded), incidents feed, MTTD/MTTR cards, learned signatures table, playbook history, manual "Run probes now" button (admin-only edge invoke).
 
-## Phase E — Admin pages (new routes, lazy)
+Plus a single nav entry under existing Commander cluster — no duplicate dashboards.
 
-- `/admin/analytics-health` — grid of probes (auto-refresh 60s), green/yellow/red, last success, avg latency, failure reason, suggested fix. Backed by `analytics-health-probe` edge function called from cron every minute.
-- `/admin/attribution-compare` — side-by-side table: TikTok / GA4 / Server / VisitorActivity / Pinterest / Meta × Clicks/LPV/PV/EngagementStart/Sessions/ATC/Checkout/Purchase. Discrepancies >10% highlighted.
-- `/admin/visitor-timeline/:sessionId` — chronological list of all events for a session (click → purchase).
-- Global **Traffic filter toggle** component (Human Only default; All / Bots / Prefetch / Crawler) — persisted in `localStorage`, consumed by VisitorWorldMap, CRO Command Center, Funnel views.
+#### 6. Cron
+`pg_cron`: `*/5 * * * *` invoking `self-healing-orchestrator` with anon key + admin internal header (matches existing pattern used by other orchestrators).
 
-## Phase F — Alerts + Nightly validation
+#### 7. Implementation report
+Per project memory rule, write `public/admin-reports/ai-implementation/SHIL_v1_2026-06-28.{pdf,json}` and update `manifest.json`.
 
-- Edge function `analytics-alert-evaluator` (cron every 5 min): checks rules from spec; inserts into `analytics_alerts`; surfaces in Health page + existing Commander alert bell.
-- Edge function `analytics-daily-validation` (cron 02:30 UTC): aggregates totals into `analytics_daily_validation`, writes markdown report to `public/admin-reports/analytics/`.
+---
 
-## Phase G — Performance guard
+### Out of scope for v1 (called out explicitly)
+- No new analytics events. Canonical events untouched.
+- No new auth flows.
+- No autonomous Stripe / publishing / security actions — all `escalate_only` until proven safe.
+- No video generation, no per-user notifications channel (reuses `guardian_notification_queue`).
+- No replacement of Guardian, Commander, ACOS dashboards — SHIL links to them.
 
-- New scripts are dynamic-imported after `requestIdleCallback`; no synchronous network on critical path; engagement_start uses `navigator.sendBeacon` where possible; no new render-blocking CSS/JS; Lighthouse CWV smoke test in repo unchanged.
+### Acceptance criteria
+1. `shil_subsystems` seeded with ≥ 15 components; all probes return a status row each cron tick.
+2. A synthetic injected failure (e.g. fake stalled creative job) opens an incident within ≤ 5 min and a recovery row within the same cycle.
+3. After recovery, validator stamps `validation_passed=true` and `mttr_seconds` recorded.
+4. Admin page renders live state with zero console errors.
+5. Implementation report PDF + JSON exist and `manifest.json` updated.
+6. No regressions in test suite (407 passed baseline holds).
 
-## Out of scope / not touched
-
-- Existing GA4/TikTok/Meta/Pinterest pixel firing logic.
-- Existing `visitor_activity`, `lp_funnel_events`, `checkout_funnel_events` writers.
-- Existing CRO dashboard, World Map (only adds filter consumption).
-- No schema changes to existing tables.
-
-## Technical details
-
-- 8 new tables, all `service_role` full + `authenticated` SELECT gated by `has_role(auth.uid(),'admin')`. No `anon` access.
-- 6 new edge functions (`analytics-engagement-start`, `analytics-funnel-ingest`, `analytics-session-quality`, `analytics-health-probe`, `analytics-alert-evaluator`, `analytics-daily-validation`). `verify_jwt=false` for ingest endpoints (visitor-side), JWT-verified for admin reads.
-- 3 cron jobs via `pg_cron`/`pg_net`: health (1 min), alerts (5 min), validation (daily 02:30).
-- New routes lazy-loaded under existing admin shell; added to AdminNav.
-- Bundle impact target: <8 KB gzipped on critical path (engagement_start collector inlined, rest dynamic-imported).
-
-## Rollout
-
-1. Migration (tables + RLS + grants).
-2. Edge functions + crons.
-3. Client collectors (feature-flagged via `app_config.analytics_gold_enabled`, default true after smoke).
-4. Admin pages + nav entries.
-5. 24-hour observation, then announce.
-
-Approve to proceed.
+### Technical notes
+- All new tables follow the `CREATE → GRANT → ENABLE RLS → POLICY` order.
+- All new edge functions: `verify_jwt = false` (default) with in-code admin-header check via `admin_secrets` for orchestrator/recoverer manual triggers; cron uses the standard cron header allow-list (matches existing orchestrators).
+- Recoverer maps playbook → handler via a static allow-list object — no dynamic eval, no user-supplied function names.
+- All probe outputs hashed into a deterministic `signature_hash` for learning + recurrence detection.
+- MTTR/MTTD computed from `detected_at` / `recovered_at` timestamps; rolled up nightly into `shil_metrics_daily`.
