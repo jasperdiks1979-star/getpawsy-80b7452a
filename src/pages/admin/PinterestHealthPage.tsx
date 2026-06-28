@@ -2289,3 +2289,158 @@ function MarketIntelligencePanel() {
     </Card>
   );
 }
+
+function ExecutiveCouncilPanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("aec-executive-council", { body: {}, method: "GET" });
+    if (data) setSnap(data);
+    setLoading(false);
+  }
+  async function call(action: string) {
+    setBusy(action);
+    await (supabase as any).functions.invoke("aec-executive-council", { body: { action } });
+    await load();
+    setBusy(null);
+  }
+  useEffect(() => { load(); }, []);
+
+  const lastRun = snap?.last_run;
+  const briefing = snap?.briefing;
+  const advisors: any[] = snap?.advisors ?? [];
+  const decisions: any[] = snap?.decisions ?? [];
+  const priorities: any[] = snap?.priorities ?? [];
+  const votes: any[] = snap?.votes ?? [];
+  const counts = snap?.counts ?? {};
+
+  const usd = (cents: number) => `$${((cents || 0) / 100).toFixed(0)}`;
+  const pct = (n: any) => n == null ? "—" : `${Math.round(Number(n) * 100)}%`;
+
+  const byKind = (k: string) => priorities.filter(p => p.kind === k).sort((a, b) => a.rank - b.rank);
+
+  const consensusColor =
+    lastRun?.council_consensus === "unanimous" ? "text-emerald-600"
+    : lastRun?.council_consensus === "weighted_majority" ? "text-amber-600"
+    : lastRun?.council_consensus === "conflict" ? "text-rose-600" : "";
+
+  return (
+    <Card className="p-4 space-y-3 border-2 border-primary/30">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">🏛 AI Executive Council</h2>
+          <p className="text-xs text-muted-foreground">
+            Highest decision layer — 13 specialist advisors vote, the Council weights by reliability, resolves conflicts and executes the highest expected lifetime-value action.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" onClick={() => call("run")} disabled={busy !== null}>Convene Council</Button>
+          <Button size="sm" variant="outline" onClick={() => call("briefing")} disabled={busy !== null}>CEO briefing</Button>
+          <Button size="sm" variant="outline" onClick={() => call("weekly_review")} disabled={busy !== null}>Weekly review</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+        <Stat label="Council Confidence" value={pct(lastRun?.council_confidence)} />
+        <Stat label="Consensus" value={<span className={consensusColor}>{lastRun?.council_consensus ?? "—"}</span> as any} />
+        <Stat label="Decision Quality" value={lastRun?.decision_quality_score != null ? `${lastRun.decision_quality_score}/100` : "—"} />
+        <Stat label="Projected Revenue" value={usd(lastRun?.projected_monthly_revenue_cents ?? 0) + "/mo"} />
+        <Stat label="Projected Growth" value={pct(lastRun?.projected_growth_pct)} />
+        <Stat label="Decisions" value={String(counts.decisions ?? 0)} />
+        <Stat label="Conflicts" value={String(counts.conflicts ?? 0)} />
+        <Stat label="Advisors active" value={`${counts.advisors_active ?? 0}/13`} />
+        <Stat label="Last run" value={lastRun ? new Date(lastRun.started_at).toLocaleString() : "—"} />
+        <Stat label="Briefing date" value={briefing?.for_date ?? "—"} />
+      </div>
+
+      {briefing && (
+        <div className="rounded-md border bg-muted/40 p-3">
+          <div className="font-medium text-sm mb-1">📋 Executive Briefing — {briefing.for_date}</div>
+          <ul className="list-disc pl-5 text-xs space-y-0.5">
+            {(briefing.bullets ?? []).map((b: string, i: number) => <li key={i}>{b}</li>)}
+          </ul>
+          <div className="text-[11px] text-muted-foreground mt-2">
+            Founder action: <span className={briefing.required_founder_action === "None" ? "text-emerald-600" : "text-amber-600 font-medium"}>{briefing.required_founder_action}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-3 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">🚀 Top Opportunities</div>
+          <ul className="space-y-1 max-h-60 overflow-y-auto pr-1 text-xs">
+            {byKind("opportunity").map(p => (
+              <li key={p.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2"><span className="truncate">#{p.rank} {p.title}</span><span className="text-muted-foreground">{pct(p.confidence)}</span></div>
+              </li>
+            ))}
+            {byKind("opportunity").length === 0 && <li className="text-muted-foreground">No opportunities ranked.</li>}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium text-sm mb-1">⚠ Top Risks</div>
+          <ul className="space-y-1 max-h-60 overflow-y-auto pr-1 text-xs">
+            {byKind("risk").map(p => (
+              <li key={p.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2"><span className="truncate">#{p.rank} {p.title}</span><span className="text-rose-600">{pct(p.score)}</span></div>
+              </li>
+            ))}
+            {byKind("risk").length === 0 && <li className="text-muted-foreground">No active risks.</li>}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium text-sm mb-1">🧪 Top Experiments</div>
+          <ul className="space-y-1 max-h-60 overflow-y-auto pr-1 text-xs">
+            {byKind("experiment").map(p => (
+              <li key={p.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2"><span className="truncate">#{p.rank} {p.title}</span><span className="text-muted-foreground">{pct(p.confidence)}</span></div>
+              </li>
+            ))}
+            {byKind("experiment").length === 0 && <li className="text-muted-foreground">No experiments queued.</li>}
+          </ul>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">🗳 Advisor Votes (last run)</div>
+          <div className="text-xs space-y-1 max-h-60 overflow-y-auto pr-1">
+            {advisors.map(a => {
+              const aVotes = votes.filter(v => v.advisor_key === a.advisor_key);
+              const totalW = aVotes.reduce((s, v) => s + Number(v.weight || 0), 0);
+              return (
+                <div key={a.advisor_key} className="flex items-center justify-between border rounded px-2 py-1">
+                  <span className="truncate">{a.display_name}</span>
+                  <span className="text-muted-foreground">
+                    w={Number(a.current_weight).toFixed(2)} · rel={pct(a.reliability_score)} · votes={aVotes.length} · Σw={totalW.toFixed(1)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div className="font-medium text-sm mb-1">⚖ Council Decisions</div>
+          <ul className="space-y-1 max-h-60 overflow-y-auto pr-1 text-xs">
+            {decisions.slice(0, 20).map(d => (
+              <li key={d.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="truncate font-medium">{d.final_action.toUpperCase()} · {d.decision_type}</span>
+                  <span className={d.consensus === "conflict" ? "text-rose-600" : d.consensus === "unanimous" ? "text-emerald-600" : "text-amber-600"}>{d.consensus}</span>
+                </div>
+                <div className="text-muted-foreground">
+                  conf {pct(d.council_confidence)} · ROI ~{usd(d.expected_revenue_cents)}/mo · risk {pct(d.expected_risk)} · {d.votes_for}✓ / {d.votes_against}✗
+                </div>
+              </li>
+            ))}
+            {decisions.length === 0 && <li className="text-muted-foreground">No Council decisions yet — click Convene Council.</li>}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
