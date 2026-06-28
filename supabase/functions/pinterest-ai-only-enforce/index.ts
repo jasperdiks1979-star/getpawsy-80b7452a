@@ -126,7 +126,7 @@ async function runAudit(sb: any) {
   };
 
   const cdStamped = await countFor(
-    sb.from("pinterest_pin_queue").eq("meta->>creative_source", "creative_director_v2"),
+    sb.from("pinterest_pin_queue").filter("meta->>creative_source", "eq", "creative_director_v2"),
   );
   const cdPath = await countFor(
     sb.from("pinterest_pin_queue").ilike("pin_image_url", "%/creative-director/%"),
