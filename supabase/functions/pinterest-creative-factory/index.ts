@@ -10,6 +10,13 @@ import {
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
+import {
+  buildMasterPrompt,
+  dimsSimilarity,
+  type MasterDims,
+  pickMasterDims,
+  scoreInspirationAi,
+} from "../_shared/pinterest-master-creative-director.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -405,27 +412,59 @@ function deterministicDiversitySeed(job: any): number {
   return n;
 }
 
-function buildPrompt(product: any, niche: NicheKey, overlay: string, job: any) {
+async function pickDiverseMasterDims(
+  sb: Sb,
+  product: any,
+  job: any,
+): Promise<MasterDims> {
+  // Pull dims from the last 30 pins for this product (or globally if none) to
+  // avoid back-to-back visual collisions. Reuses pinterest_pin_queue.meta.
+  const { data: recent } = await sb
+    .from("pinterest_pin_queue")
+    .select("meta")
+    .eq("product_id", product.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const recentDims: Partial<MasterDims>[] = (recent ?? [])
+    .map((r: any) => r?.meta?.intelligence?.master?.dims)
+    .filter(Boolean);
+  let bestSeed = deterministicDiversitySeed(job);
+  let bestDims = pickMasterDims(bestSeed);
+  let bestMaxSim = Math.max(
+    0,
+    ...recentDims.map((rd) => dimsSimilarity(bestDims, rd)),
+  );
+  // Try up to 6 alternate seeds; keep the one most different from recent history.
+  for (let attempt = 1; attempt <= 6 && bestMaxSim > 0.35; attempt++) {
+    const seed = (bestSeed ^ (attempt * 2654435761)) >>> 0;
+    const dims = pickMasterDims(seed);
+    const maxSim = Math.max(
+      0,
+      ...recentDims.map((rd) => dimsSimilarity(dims, rd)),
+    );
+    if (maxSim < bestMaxSim) {
+      bestMaxSim = maxSim;
+      bestSeed = seed;
+      bestDims = dims;
+    }
+  }
+  return bestDims;
+}
+
+function buildPrompt(
+  product: any,
+  niche: NicheKey,
+  overlay: string,
+  dims: MasterDims,
+) {
   const dna = getStyleDNA(niche);
-  const family = [
-    "luxury lifestyle room-as-hero",
-    "problem-solution calm home moment",
-    "product-in-use pet interaction",
-    "editorial close-up with negative space",
-    "seasonal warm-home story",
-  ][deterministicDiversitySeed(job) % 5];
-  return [
-    `Create a premium vertical 2:3 Pinterest lifestyle photograph for GetPawsy.`,
-    `Product to depict: ${conciseProductName(product.name)}.`,
-    `Niche: ${dna.label}. Creative family: ${family}.`,
-    `Scene: ${dna.environment}. Lighting: ${dna.light}. Mood: ${dna.mood}.`,
-    `Show the product naturally integrated in a real US pet parent's home with realistic pet behavior.`,
-    `Preserve product truth: do not change shape, color, material, size, tiers, or accessories from the source image.`,
-    `Mobile safe zone: subject centered, no important details in outer 15%, top 15%, or bottom 20%.`,
-    `Quiet premium aesthetic: natural wood, linen, warm sunlight, refined decor, generous negative space.`,
-    `Render exactly one small unobtrusive overlay reading "${overlay}" and a tiny GetPawsy wordmark.`,
-    `No prices, discounts, fake reviews, certification badges, comparison graphics, infographics, collages, CTA bars, clipart, or stock-photo look.`,
-  ].join(" ");
+  return buildMasterPrompt({
+    productName: conciseProductName(product.name),
+    nicheLabel: dna.label,
+    environment: `Niche backdrop hint: ${dna.environment}. Mood: ${dna.mood}.`,
+    overlay,
+    dims,
+  });
 }
 
 async function generateImage(
@@ -644,11 +683,12 @@ async function processJob(sb: Sb, job: any, settings: any) {
       throw new Error(`copy_validation_failed:${validation.errors.join(",")}`);
     }
 
-    const prompt = buildPrompt(product, niche, copy.overlay, job);
+    const masterDims = await pickDiverseMasterDims(sb, product, job);
+    const prompt = buildPrompt(product, niche, copy.overlay, masterDims);
     await timed("planning", metrics, async () => {
       await sb.from("pinterest_creative_factory_jobs").update({
         stage: "planned",
-        prompt: { text: prompt, niche, copy },
+        prompt: { text: prompt, niche, copy, master_dims: masterDims },
       }).eq("id", job.id);
       return true;
     });
@@ -710,15 +750,45 @@ async function processJob(sb: Sb, job: any, settings: any) {
       const fast = deterministicQuality(copy, bytes);
       if (!fast.ok) return fast;
       const ai = await validateWithAi(bytes, prompt, metrics);
+      const dataUrl = `data:image/png;base64,${bytesToBase64(bytes)}`;
+      const inspiration = await scoreInspirationAi({
+        apiKey: LOVABLE_API_KEY,
+        textModel: TEXT_MODEL,
+        dataUrl,
+        dims: masterDims,
+        productName: conciseProductName(product.name),
+      });
+      (metrics as any).inspiration = inspiration;
+      const inspirationFloor = Number(
+        settings?.inspiration_floor ??
+          Deno.env.get("PINTEREST_INSPIRATION_FLOOR") ?? 78,
+      );
+      const aiOk = ai.ok &&
+        ai.score >= Number(settings?.quality_threshold ?? 70);
+      const inspirationOk = inspiration.total >= inspirationFloor &&
+        inspiration.axes.ai_look_risk < 60;
       return {
-        ok: ai.ok && ai.score >= Number(settings?.quality_threshold ?? 70),
+        ok: aiOk && inspirationOk,
         scores: {
           ...fast.scores,
-          total: Math.round(ai.score),
+          total: Math.round((Number(ai.score) + inspiration.total) / 2),
           ai_visual: Math.round(ai.score),
+          inspiration: inspiration.total,
+          inspiration_axes: inspiration.axes,
+          inspiration_floor: inspirationFloor,
         },
-        reasons: ai.reasons ?? [],
-        notes: ai.notes ?? "",
+        reasons: [
+          ...(ai.reasons ?? []),
+          ...(inspirationOk ? [] : [
+            `inspiration_below_floor:${inspiration.total}/${inspirationFloor}`,
+            ...(inspiration.axes.ai_look_risk >= 60
+              ? [`ai_look_risk_high:${inspiration.axes.ai_look_risk}`]
+              : []),
+            ...inspiration.reasons.slice(0, 4),
+          ]),
+        ],
+        notes: [ai.notes ?? "", inspiration.notes ?? ""].filter(Boolean)
+          .join(" | "),
       };
     });
     if (!qc.ok) throw new Error(`quality_gate_failed:${qc.reasons.join(",")}`);
@@ -763,6 +833,10 @@ async function processJob(sb: Sb, job: any, settings: any) {
           scores: qc.scores,
           niche_key: niche,
           model: settings?.model ?? DEFAULT_MODEL,
+          master: {
+            dims: masterDims,
+            inspiration: (metrics as any).inspiration ?? null,
+          },
         },
       };
       const { error } = await sb.from("pinterest_pin_queue").update({

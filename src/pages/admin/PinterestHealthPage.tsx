@@ -135,6 +135,73 @@ export default function PinterestHealthPage() {
   const [reconnecting, setReconnecting] = useState(false);
   const [recovery, setRecovery] = useState<any>(null);
   const [recoveryRunning, setRecoveryRunning] = useState(false);
+  const [inspiration, setInspiration] = useState<{
+    sampleSize: number;
+    avgInspiration: number | null;
+    avgAiRisk: number | null;
+    avgAxes: Record<string, number>;
+    topRooms: Array<{ value: string; avg: number; n: number }>;
+    topStories: Array<{ value: string; avg: number; n: number }>;
+    recent: Array<{ id: string; inspiration: number; ai_risk: number; image_url: string | null; room: string | null; story: string | null }>;
+  } | null>(null);
+
+  async function loadInspiration() {
+    const { data } = await (supabase as any)
+      .from("pinterest_pin_queue")
+      .select("id, pin_image_url, meta, created_at")
+      .not("meta->intelligence->master", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const rows = (data ?? []) as any[];
+    if (rows.length === 0) {
+      setInspiration({ sampleSize: 0, avgInspiration: null, avgAiRisk: null, avgAxes: {}, topRooms: [], topStories: [], recent: [] });
+      return;
+    }
+    const axesKeys = ["save_likelihood","interior_quality","emotional_impact","composition","storytelling","visual_uniqueness","lifestyle_realism"];
+    const axesAgg: Record<string, { sum: number; n: number }> = {};
+    const roomAgg: Record<string, { sum: number; n: number }> = {};
+    const storyAgg: Record<string, { sum: number; n: number }> = {};
+    let insSum = 0, insN = 0, riskSum = 0, riskN = 0;
+    const recent: any[] = [];
+    for (const r of rows) {
+      const m = r?.meta?.intelligence?.master;
+      const ins = m?.inspiration;
+      if (!ins) continue;
+      const total = Number(ins.total ?? 0);
+      const risk = Number(ins.axes?.ai_look_risk ?? 0);
+      insSum += total; insN++;
+      riskSum += risk; riskN++;
+      for (const k of axesKeys) {
+        const v = Number(ins.axes?.[k] ?? 0);
+        axesAgg[k] = axesAgg[k] ?? { sum: 0, n: 0 };
+        axesAgg[k].sum += v; axesAgg[k].n++;
+      }
+      const room = m?.dims?.room ?? null;
+      const story = m?.dims?.story ?? null;
+      if (room) { roomAgg[room] = roomAgg[room] ?? { sum: 0, n: 0 }; roomAgg[room].sum += total; roomAgg[room].n++; }
+      if (story) { storyAgg[story] = storyAgg[story] ?? { sum: 0, n: 0 }; storyAgg[story].sum += total; storyAgg[story].n++; }
+      if (recent.length < 8) {
+        recent.push({ id: r.id, inspiration: total, ai_risk: risk, image_url: r.pin_image_url, room, story });
+      }
+    }
+    const avgAxes: Record<string, number> = {};
+    for (const [k, v] of Object.entries(axesAgg)) avgAxes[k] = Math.round(v.sum / Math.max(1, v.n));
+    const rank = (agg: Record<string, { sum: number; n: number }>) =>
+      Object.entries(agg)
+        .filter(([_, v]) => v.n >= 2)
+        .map(([value, v]) => ({ value, avg: Math.round(v.sum / v.n), n: v.n }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 5);
+    setInspiration({
+      sampleSize: insN,
+      avgInspiration: insN ? Math.round(insSum / insN) : null,
+      avgAiRisk: riskN ? Math.round(riskSum / riskN) : null,
+      avgAxes,
+      topRooms: rank(roomAgg),
+      topStories: rank(storyAgg),
+      recent,
+    });
+  }
 
   async function loadConnection() {
     const { data } = await (supabase as any).rpc("get_pinterest_connection_admin");
@@ -261,6 +328,7 @@ export default function PinterestHealthPage() {
     refreshExperiments(false);
     refreshEvolution(false);
     loadConnection();
+    loadInspiration();
     // Auto-run final recovery after a successful OAuth callback redirect
     const qs = new URLSearchParams(window.location.search);
     if (qs.get("oauth_success") === "true") {
@@ -272,6 +340,7 @@ export default function PinterestHealthPage() {
       refreshGrowth(false);
       refreshExperiments(false);
       refreshEvolution(false);
+      loadInspiration();
     }, 60_000);
     return () => clearInterval(t);
   }, []);
@@ -934,6 +1003,115 @@ export default function PinterestHealthPage() {
               </div>
             </div>
           </>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">Master Creative Director — Pinterest Inspiration Score</h2>
+          <Button size="sm" variant="outline" onClick={() => loadInspiration()}>
+            <RefreshCw className="h-4 w-4 mr-1" />Refresh
+          </Button>
+        </div>
+        {!inspiration ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : inspiration.sampleSize === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No Inspiration-scored pins yet. Run the Creative Factory to start populating Master Creative Director telemetry.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">Sample (recent)</div>
+                <div className="text-xl font-semibold">{inspiration.sampleSize}</div>
+              </div>
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">Avg Inspiration</div>
+                <div className="text-xl font-semibold">
+                  {inspiration.avgInspiration ?? "—"}
+                  <span className="text-xs text-muted-foreground"> /100</span>
+                </div>
+              </div>
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">Avg AI-look risk</div>
+                <div className={`text-xl font-semibold ${
+                  (inspiration.avgAiRisk ?? 0) >= 50 ? "text-red-600" : "text-emerald-700"
+                }`}>
+                  {inspiration.avgAiRisk ?? "—"}
+                  <span className="text-xs text-muted-foreground"> (lower=better)</span>
+                </div>
+              </div>
+              <div className="rounded border p-3">
+                <div className="text-xs text-muted-foreground">Floor (publish)</div>
+                <div className="text-xl font-semibold">78</div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold mb-1">Average axis scores</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                {Object.entries(inspiration.avgAxes).map(([k, v]) => (
+                  <div key={k} className="flex justify-between border rounded px-2 py-1">
+                    <span className="text-muted-foreground">{k.replace(/_/g, " ")}</span>
+                    <span className="font-mono">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-xs font-semibold mb-1">Top performing rooms (by Inspiration)</h3>
+                <ul className="text-xs space-y-1">
+                  {inspiration.topRooms.map((r) => (
+                    <li key={r.value} className="flex justify-between gap-2 border-b py-1">
+                      <span className="truncate">{r.value}</span>
+                      <span className="font-mono">{r.avg} · n={r.n}</span>
+                    </li>
+                  ))}
+                  {inspiration.topRooms.length === 0 && (
+                    <li className="text-muted-foreground">Need ≥2 samples per room.</li>
+                  )}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold mb-1">Top performing stories</h3>
+                <ul className="text-xs space-y-1">
+                  {inspiration.topStories.map((r) => (
+                    <li key={r.value} className="flex justify-between gap-2 border-b py-1">
+                      <span className="truncate">{r.value}</span>
+                      <span className="font-mono">{r.avg} · n={r.n}</span>
+                    </li>
+                  ))}
+                  {inspiration.topStories.length === 0 && (
+                    <li className="text-muted-foreground">Need ≥2 samples per story.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+            {inspiration.recent.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold mb-1">Latest scored pins</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {inspiration.recent.map((p) => (
+                    <div key={p.id} className="border rounded overflow-hidden">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt="" className="w-full h-32 object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-32 bg-muted" />
+                      )}
+                      <div className="p-2 text-[10px] space-y-0.5">
+                        <div className="flex justify-between font-mono">
+                          <span>Insp {p.inspiration}</span>
+                          <span className={p.ai_risk >= 50 ? "text-red-600" : "text-emerald-700"}>AI {p.ai_risk}</span>
+                        </div>
+                        {p.story && <div className="truncate text-muted-foreground">{p.story}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </Card>
 
