@@ -2431,6 +2431,642 @@ export type Database = {
         }
         Relationships: []
       }
+      aee_assignments: {
+        Row: {
+          assigned_at: string
+          experiment_id: string
+          id: string
+          subject_id: string
+          subject_type: string
+          variant_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          experiment_id: string
+          id?: string
+          subject_id: string
+          subject_type: string
+          variant_id: string
+        }
+        Update: {
+          assigned_at?: string
+          experiment_id?: string
+          id?: string
+          subject_id?: string
+          subject_type?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aee_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "aee_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_experiments: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          area: string
+          business_metric: string | null
+          created_at: string
+          design: string
+          ended_at: string | null
+          evaluated_at: string | null
+          expected_duration_days: number | null
+          governance_required: boolean
+          guardrail_metrics: Json
+          hypothesis_id: string | null
+          id: string
+          minimum_detectable_effect: number | null
+          minimum_sample_size: number | null
+          name: string
+          objective: string
+          primary_metric: string
+          risk_level: string
+          rollout_pct: number
+          started_at: string | null
+          status: string
+          submitted_by: string | null
+          target_audience: Json
+          traffic_allocation: Json
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          area: string
+          business_metric?: string | null
+          created_at?: string
+          design?: string
+          ended_at?: string | null
+          evaluated_at?: string | null
+          expected_duration_days?: number | null
+          governance_required?: boolean
+          guardrail_metrics?: Json
+          hypothesis_id?: string | null
+          id?: string
+          minimum_detectable_effect?: number | null
+          minimum_sample_size?: number | null
+          name: string
+          objective: string
+          primary_metric: string
+          risk_level?: string
+          rollout_pct?: number
+          started_at?: string | null
+          status?: string
+          submitted_by?: string | null
+          target_audience?: Json
+          traffic_allocation?: Json
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          area?: string
+          business_metric?: string | null
+          created_at?: string
+          design?: string
+          ended_at?: string | null
+          evaluated_at?: string | null
+          expected_duration_days?: number | null
+          governance_required?: boolean
+          guardrail_metrics?: Json
+          hypothesis_id?: string | null
+          id?: string
+          minimum_detectable_effect?: number | null
+          minimum_sample_size?: number | null
+          name?: string
+          objective?: string
+          primary_metric?: string
+          risk_level?: string
+          rollout_pct?: number
+          started_at?: string | null
+          status?: string
+          submitted_by?: string | null
+          target_audience?: Json
+          traffic_allocation?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_experiments_hypothesis_id_fkey"
+            columns: ["hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "aee_hypotheses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_failures: {
+        Row: {
+          alternative_explanations: Json
+          business_lessons: string | null
+          experiment_id: string
+          failed_at: string
+          id: string
+          lessons: string | null
+          unexpected_outcomes: Json
+          why_failed: string
+        }
+        Insert: {
+          alternative_explanations?: Json
+          business_lessons?: string | null
+          experiment_id: string
+          failed_at?: string
+          id?: string
+          lessons?: string | null
+          unexpected_outcomes?: Json
+          why_failed: string
+        }
+        Update: {
+          alternative_explanations?: Json
+          business_lessons?: string | null
+          experiment_id?: string
+          failed_at?: string
+          id?: string
+          lessons?: string | null
+          unexpected_outcomes?: Json
+          why_failed?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_failures_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: true
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_hypotheses: {
+        Row: {
+          alternative_explanations: Json
+          area: string
+          business_alignment: number
+          business_rationale: string | null
+          confidence: number
+          created_at: string
+          expected_customer_impact: number | null
+          expected_learning_value: number
+          expected_profit_usd: number | null
+          expected_revenue_usd: number | null
+          id: string
+          implementation_cost: number
+          opportunity_size: number
+          priority_score: number
+          risk: number
+          source_engine: string | null
+          statement: string
+          status: string
+          supporting_evidence: Json
+          updated_at: string
+        }
+        Insert: {
+          alternative_explanations?: Json
+          area: string
+          business_alignment?: number
+          business_rationale?: string | null
+          confidence?: number
+          created_at?: string
+          expected_customer_impact?: number | null
+          expected_learning_value?: number
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          implementation_cost?: number
+          opportunity_size?: number
+          priority_score?: number
+          risk?: number
+          source_engine?: string | null
+          statement: string
+          status?: string
+          supporting_evidence?: Json
+          updated_at?: string
+        }
+        Update: {
+          alternative_explanations?: Json
+          area?: string
+          business_alignment?: number
+          business_rationale?: string | null
+          confidence?: number
+          created_at?: string
+          expected_customer_impact?: number | null
+          expected_learning_value?: number
+          expected_profit_usd?: number | null
+          expected_revenue_usd?: number | null
+          id?: string
+          implementation_cost?: number
+          opportunity_size?: number
+          priority_score?: number
+          risk?: number
+          source_engine?: string | null
+          statement?: string
+          status?: string
+          supporting_evidence?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      aee_observations: {
+        Row: {
+          attributes: Json
+          experiment_id: string
+          exposure_delta: number
+          id: string
+          metric: string
+          observed_at: string
+          profit_delta: number
+          success_delta: number
+          value_delta: number
+          variant_id: string
+        }
+        Insert: {
+          attributes?: Json
+          experiment_id: string
+          exposure_delta?: number
+          id?: string
+          metric: string
+          observed_at?: string
+          profit_delta?: number
+          success_delta?: number
+          value_delta?: number
+          variant_id: string
+        }
+        Update: {
+          attributes?: Json
+          experiment_id?: string
+          exposure_delta?: number
+          id?: string
+          metric?: string
+          observed_at?: string
+          profit_delta?: number
+          success_delta?: number
+          value_delta?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_observations_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aee_observations_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "aee_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_playbooks: {
+        Row: {
+          applicability: string | null
+          area: string
+          business_lift_usd: number | null
+          created_at: string
+          derived_from: string | null
+          id: string
+          is_active: boolean
+          name: string
+          recipe: Json
+          reuse_count: number
+        }
+        Insert: {
+          applicability?: string | null
+          area: string
+          business_lift_usd?: number | null
+          created_at?: string
+          derived_from?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          recipe?: Json
+          reuse_count?: number
+        }
+        Update: {
+          applicability?: string | null
+          area?: string
+          business_lift_usd?: number | null
+          created_at?: string
+          derived_from?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          recipe?: Json
+          reuse_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_playbooks_derived_from_fkey"
+            columns: ["derived_from"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_recommendations: {
+        Row: {
+          area: string
+          confidence: number | null
+          created_at: string
+          expected_value_usd: number | null
+          hypothesis_id: string | null
+          id: string
+          priority_score: number | null
+          rationale: string
+          recommendation_type: string
+          status: string
+          title: string
+        }
+        Insert: {
+          area: string
+          confidence?: number | null
+          created_at?: string
+          expected_value_usd?: number | null
+          hypothesis_id?: string | null
+          id?: string
+          priority_score?: number | null
+          rationale: string
+          recommendation_type: string
+          status?: string
+          title: string
+        }
+        Update: {
+          area?: string
+          confidence?: number | null
+          created_at?: string
+          expected_value_usd?: number | null
+          hypothesis_id?: string | null
+          id?: string
+          priority_score?: number | null
+          rationale?: string
+          recommendation_type?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_recommendations_hypothesis_id_fkey"
+            columns: ["hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "aee_hypotheses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_results: {
+        Row: {
+          bayesian_prob_best: number | null
+          business_value_usd: number | null
+          ci_high: number | null
+          ci_low: number | null
+          conv_rate: number | null
+          evaluated_at: string
+          experiment_id: string
+          id: string
+          is_significant: boolean
+          lift: number | null
+          ltv_delta: number | null
+          mde: number | null
+          n: number
+          p_value: number | null
+          power: number | null
+          profit_usd: number | null
+          variant_id: string
+          z: number | null
+        }
+        Insert: {
+          bayesian_prob_best?: number | null
+          business_value_usd?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          conv_rate?: number | null
+          evaluated_at?: string
+          experiment_id: string
+          id?: string
+          is_significant?: boolean
+          lift?: number | null
+          ltv_delta?: number | null
+          mde?: number | null
+          n: number
+          p_value?: number | null
+          power?: number | null
+          profit_usd?: number | null
+          variant_id: string
+          z?: number | null
+        }
+        Update: {
+          bayesian_prob_best?: number | null
+          business_value_usd?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          conv_rate?: number | null
+          evaluated_at?: string
+          experiment_id?: string
+          id?: string
+          is_significant?: boolean
+          lift?: number | null
+          ltv_delta?: number | null
+          mde?: number | null
+          n?: number
+          p_value?: number | null
+          power?: number | null
+          profit_usd?: number | null
+          variant_id?: string
+          z?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_results_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aee_results_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "aee_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_safety_log: {
+        Row: {
+          action_taken: string
+          created_at: string
+          details: Json
+          experiment_id: string
+          id: string
+          trigger: string
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          details?: Json
+          experiment_id: string
+          id?: string
+          trigger: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          details?: Json
+          experiment_id?: string
+          id?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_safety_log_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      aee_variants: {
+        Row: {
+          config: Json
+          created_at: string
+          experiment_id: string
+          exposure: number
+          id: string
+          is_control: boolean
+          label: string
+          profit_sum: number
+          successes: number
+          value_sum: number
+          variant_key: string
+          weight: number
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          experiment_id: string
+          exposure?: number
+          id?: string
+          is_control?: boolean
+          label: string
+          profit_sum?: number
+          successes?: number
+          value_sum?: number
+          variant_key: string
+          weight?: number
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          experiment_id?: string
+          exposure?: number
+          id?: string
+          is_control?: boolean
+          label?: string
+          profit_sum?: number
+          successes?: number
+          value_sum?: number
+          variant_key?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aee_winners: {
+        Row: {
+          bayesian_prob_best: number | null
+          business_lift_pct: number | null
+          confidence: number | null
+          declared_at: string
+          experiment_id: string
+          id: string
+          profit_lift_usd: number | null
+          recommended_action: string | null
+          revenue_lift_usd: number | null
+          winning_variant: string
+        }
+        Insert: {
+          bayesian_prob_best?: number | null
+          business_lift_pct?: number | null
+          confidence?: number | null
+          declared_at?: string
+          experiment_id: string
+          id?: string
+          profit_lift_usd?: number | null
+          recommended_action?: string | null
+          revenue_lift_usd?: number | null
+          winning_variant: string
+        }
+        Update: {
+          bayesian_prob_best?: number | null
+          business_lift_pct?: number | null
+          confidence?: number | null
+          declared_at?: string
+          experiment_id?: string
+          id?: string
+          profit_lift_usd?: number | null
+          recommended_action?: string | null
+          revenue_lift_usd?: number | null
+          winning_variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aee_winners_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: true
+            referencedRelation: "aee_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aee_winners_winning_variant_fkey"
+            columns: ["winning_variant"]
+            isOneToOne: false
+            referencedRelation: "aee_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agal_anomalies: {
         Row: {
           anomaly_type: string
@@ -54590,6 +55226,11 @@ export type Database = {
       }
     }
     Functions: {
+      aee_evaluate_zscore: {
+        Args: { c_n: number; c_succ: number; t_n: number; t_succ: number }
+        Returns: Json
+      }
+      aee_priority_score: { Args: { p: string }; Returns: number }
       apply_pinterest_perf_weights: { Args: never; Returns: Json }
       apply_pinterest_pin_repair: {
         Args: {
