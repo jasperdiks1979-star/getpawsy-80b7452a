@@ -26467,6 +26467,350 @@ export type Database = {
         }
         Relationships: []
       }
+      pei_attribution_rollup: {
+        Row: {
+          add_to_cart: number | null
+          checkouts: number | null
+          closeups: number | null
+          computed_at: string
+          ctr: number | null
+          dna_id: string | null
+          id: string
+          impressions: number | null
+          landing_views: number | null
+          ltv_pred_cents: number | null
+          outbound_clicks: number | null
+          pinterest_pin_id: string | null
+          profit_cents: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          roas: number | null
+          saves: number | null
+          window_days: number
+        }
+        Insert: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          closeups?: number | null
+          computed_at?: string
+          ctr?: number | null
+          dna_id?: string | null
+          id?: string
+          impressions?: number | null
+          landing_views?: number | null
+          ltv_pred_cents?: number | null
+          outbound_clicks?: number | null
+          pinterest_pin_id?: string | null
+          profit_cents?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          saves?: number | null
+          window_days?: number
+        }
+        Update: {
+          add_to_cart?: number | null
+          checkouts?: number | null
+          closeups?: number | null
+          computed_at?: string
+          ctr?: number | null
+          dna_id?: string | null
+          id?: string
+          impressions?: number | null
+          landing_views?: number | null
+          ltv_pred_cents?: number | null
+          outbound_clicks?: number | null
+          pinterest_pin_id?: string | null
+          profit_cents?: number | null
+          purchases?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          saves?: number | null
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pei_attribution_rollup_dna_id_fkey"
+            columns: ["dna_id"]
+            isOneToOne: false
+            referencedRelation: "pei_creative_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pei_creative_dna: {
+        Row: {
+          board_id: string | null
+          category: string | null
+          country: string | null
+          created_at: string
+          creative_id: string | null
+          destination_url: string | null
+          genome: Json
+          id: string
+          image_fingerprint: string | null
+          image_url: string | null
+          pin_url: string | null
+          pinterest_pin_id: string | null
+          product_id: string | null
+          published_at: string | null
+          retired_at: string | null
+          retired_reason: string | null
+          scores: Json
+          season: string | null
+          source_engine: string
+          updated_at: string
+        }
+        Insert: {
+          board_id?: string | null
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          destination_url?: string | null
+          genome?: Json
+          id?: string
+          image_fingerprint?: string | null
+          image_url?: string | null
+          pin_url?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          published_at?: string | null
+          retired_at?: string | null
+          retired_reason?: string | null
+          scores?: Json
+          season?: string | null
+          source_engine: string
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string | null
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          creative_id?: string | null
+          destination_url?: string | null
+          genome?: Json
+          id?: string
+          image_fingerprint?: string | null
+          image_url?: string | null
+          pin_url?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string | null
+          published_at?: string | null
+          retired_at?: string | null
+          retired_reason?: string | null
+          scores?: Json
+          season?: string | null
+          source_engine?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pei_engine_runs: {
+        Row: {
+          action: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          records_processed: number | null
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          action: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          records_processed?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          action?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          records_processed?: number | null
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
+      }
+      pei_evolution_reports: {
+        Row: {
+          briefing: string | null
+          country: string
+          created_at: string
+          declining_genes: Json | null
+          id: string
+          profit_insights: Json | null
+          recommended_mutations: Json | null
+          revenue_insights: Json | null
+          rising_genes: Json | null
+          seasonal_shifts: Json | null
+          top_performers: Json | null
+          week_start: string
+          worst_performers: Json | null
+        }
+        Insert: {
+          briefing?: string | null
+          country?: string
+          created_at?: string
+          declining_genes?: Json | null
+          id?: string
+          profit_insights?: Json | null
+          recommended_mutations?: Json | null
+          revenue_insights?: Json | null
+          rising_genes?: Json | null
+          seasonal_shifts?: Json | null
+          top_performers?: Json | null
+          week_start: string
+          worst_performers?: Json | null
+        }
+        Update: {
+          briefing?: string | null
+          country?: string
+          created_at?: string
+          declining_genes?: Json | null
+          id?: string
+          profit_insights?: Json | null
+          recommended_mutations?: Json | null
+          revenue_insights?: Json | null
+          rising_genes?: Json | null
+          seasonal_shifts?: Json | null
+          top_performers?: Json | null
+          week_start?: string
+          worst_performers?: Json | null
+        }
+        Relationships: []
+      }
+      pei_gene_performance: {
+        Row: {
+          alpha: number
+          beta: number
+          country: string
+          gene_dimension: string
+          gene_value: string
+          id: string
+          last_updated: string
+          profit_cents: number | null
+          revenue_cents: number | null
+          sample_count: number
+          season: string | null
+          weight: number
+        }
+        Insert: {
+          alpha?: number
+          beta?: number
+          country?: string
+          gene_dimension: string
+          gene_value: string
+          id?: string
+          last_updated?: string
+          profit_cents?: number | null
+          revenue_cents?: number | null
+          sample_count?: number
+          season?: string | null
+          weight?: number
+        }
+        Update: {
+          alpha?: number
+          beta?: number
+          country?: string
+          gene_dimension?: string
+          gene_value?: string
+          id?: string
+          last_updated?: string
+          profit_cents?: number | null
+          revenue_cents?: number | null
+          sample_count?: number
+          season?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      pei_predicted_winners: {
+        Row: {
+          confidence: number | null
+          country: string | null
+          created_at: string
+          expected_ctr: number | null
+          expected_cvr: number | null
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          expected_roas: number | null
+          id: string
+          product_id: string | null
+          rationale: string | null
+          reason_codes: Json | null
+          recommended_genome: Json | null
+          season: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          expected_ctr?: number | null
+          expected_cvr?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          expected_roas?: number | null
+          id?: string
+          product_id?: string | null
+          rationale?: string | null
+          reason_codes?: Json | null
+          recommended_genome?: Json | null
+          season?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          expected_ctr?: number | null
+          expected_cvr?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          expected_roas?: number | null
+          id?: string
+          product_id?: string | null
+          rationale?: string | null
+          reason_codes?: Json | null
+          recommended_genome?: Json | null
+          season?: string | null
+        }
+        Relationships: []
+      }
+      pei_weight_snapshots: {
+        Row: {
+          country: string
+          id: string
+          notes: string | null
+          snapshot: Json
+          taken_at: string
+        }
+        Insert: {
+          country?: string
+          id?: string
+          notes?: string | null
+          snapshot?: Json
+          taken_at?: string
+        }
+        Update: {
+          country?: string
+          id?: string
+          notes?: string | null
+          snapshot?: Json
+          taken_at?: string
+        }
+        Relationships: []
+      }
       performance_alerts: {
         Row: {
           created_at: string
