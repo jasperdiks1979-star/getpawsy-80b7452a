@@ -1704,6 +1704,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="growth-director"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthDirectorPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
