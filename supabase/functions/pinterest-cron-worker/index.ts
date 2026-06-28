@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
+import { verifyPinFull } from "../_shared/pinterest-verify.ts";
 import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
 import { sanitizeAndValidatePinterestPayload } from "../_shared/pinterest-payload-safety.ts";
@@ -1483,6 +1484,34 @@ Deno.serve(async (req) => {
         const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinData.id);
         console.log("[pinterest] verify", { pin_id: pinData.id, ...verification });
         await markPosted(sb, pin, pinData.id, verification);
+        // E2E first pass: re-read /pins/{id} with full field check. The
+        // background verify-worker handles retries/recovery; here we just
+        // capture an initial score so the dashboard reflects reality on
+        // the very first publish.
+        try {
+          const e2e = await verifyPinFull(accessToken, apiBase, {
+            id: pin.id,
+            pinterest_pin_id: pinData.id,
+            pin_title: pin.pin_title,
+            pin_description: pin.pin_description,
+            pin_image_url: pin.pin_image_url,
+            destination_link: destinationLink,
+            final_resolved_url: destinationLink,
+            board_id: boardId,
+            board_name: pin.board_name,
+            alt_text: (pin as any).alt_text,
+          });
+          await sb.from("pinterest_pin_queue").update({
+            verification_state: e2e.state === "verified_success" ? "verified_success" : "waiting_verification",
+            verification_score: e2e.score,
+            verification_checks: e2e.checks,
+            verification_attempts: 1,
+            verification_failure_reason: e2e.failureReason,
+            last_verified_at: new Date().toISOString(),
+          }).eq("id", pin.id);
+        } catch (e) {
+          console.warn(`[cron] e2e first-pass verify failed pin=${pin.id}:`, (e as Error).message);
+        }
         // ── Stamp real pin_id onto the outbound link via PATCH so click-side
         // attribution (pinterest-track → gi_attribution_events) can resolve
         // pin → board → product → revenue for every future visit.
@@ -1634,6 +1663,10 @@ async function markPosted(
       pin_verified: verification.ok,
       pin_verification_reason: verification.reason,
       pin_verified_at: now,
+      // E2E verification: start in waiting state. Worker upgrades to
+      // verified_success / verification_failed after Pinterest re-read.
+      verification_state: "waiting_verification",
+      verification_attempts: 0,
     })
     .eq("id", pin.id);
 
