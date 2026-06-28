@@ -389,7 +389,12 @@ function deterministicQuality(copy: any, bytes: Uint8Array) {
 }
 
 async function processJob(sb: Sb, job: any, settings: any) {
-  const metrics: Record<string, unknown> = { stages: [], started_at: new Date().toISOString() };
+  const startedMs = Date.now();
+  const metrics: Record<string, unknown> = {
+    stages: [],
+    started_at: new Date().toISOString(),
+    memory_start_mb: Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024),
+  };
   try {
     const { data: pin, error: pinErr } = await timed("queue_lookup", metrics, async () => sb
       .from("pinterest_pin_queue")
@@ -438,7 +443,35 @@ async function processJob(sb: Sb, job: any, settings: any) {
       return true;
     });
 
-    const bytes = await timed("image_generation", metrics, async () => generateImage(prompt, product.image_url ?? null, settings?.model ?? DEFAULT_MODEL, metrics));
+    let bytes: Uint8Array;
+    let imageUrl: string | null = job.media_url ?? null;
+    let mediaHash: string | null = job.media_hash ?? null;
+    if (imageUrl) {
+      bytes = await timed("storage_resume", metrics, async () => {
+        const resp = await fetch(imageUrl!);
+        if (!resp.ok) throw new Error(`resume_media_fetch_failed:${resp.status}`);
+        return new Uint8Array(await resp.arrayBuffer());
+      });
+    } else {
+      bytes = await timed("image_generation", metrics, async () => generateImage(prompt, product.image_url ?? null, settings?.model ?? DEFAULT_MODEL, metrics));
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      mediaHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+      const path = `creative-factory/${product.slug}/${stamp}_${job.id}.png`;
+      await timed("storage_upload", metrics, async () => {
+        const up = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: "image/png", cacheControl: "31536000", upsert: true });
+        if (up.error) throw up.error;
+        return true;
+      });
+      const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
+      imageUrl = pub.publicUrl;
+      await sb.from("pinterest_creative_factory_jobs").update({
+        stage: "storage_upload",
+        media_url: imageUrl,
+        media_hash: mediaHash,
+        metrics,
+      }).eq("id", job.id);
+    }
     const qc = await timed("quality_control", metrics, async () => {
       const fast = deterministicQuality(copy, bytes);
       if (!fast.ok) return fast;
@@ -452,18 +485,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
     });
     if (!qc.ok) throw new Error(`quality_gate_failed:${qc.reasons.join(",")}`);
 
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    const mediaHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
     const phash = await computePhashFromBytes(bytes).catch(() => null);
-    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
-    const path = `creative-factory/${product.slug}/${stamp}_${job.id}.png`;
-    await timed("storage_upload", metrics, async () => {
-      const up = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: "image/png", cacheControl: "31536000", upsert: true });
-      if (up.error) throw up.error;
-      return true;
-    });
-    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
-    const imageUrl = pub.publicUrl;
     const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_factory&utm_content=${niche}`;
 
     const integrity = await timed("integrity_guard", metrics, async () => verifyPinIntegrity(sb, {
@@ -472,7 +494,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
       product_name: product.name,
       pin_title: copy.title,
       pin_description: copy.description,
-      pin_image_url: imageUrl,
+      pin_image_url: imageUrl!,
       destination_link: destination,
       niche_or_category: niche,
     }));
@@ -511,6 +533,8 @@ async function processJob(sb: Sb, job: any, settings: any) {
     });
 
     metrics.finished_at = new Date().toISOString();
+    metrics.duration_ms = Date.now() - startedMs;
+    metrics.memory_end_mb = Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024);
     await sb.from("pinterest_creative_factory_jobs").update({
       status: "completed",
       stage: "queue",
@@ -523,16 +547,20 @@ async function processJob(sb: Sb, job: any, settings: any) {
       completed_at: new Date().toISOString(),
       error_message: null,
     }).eq("id", job.id);
-    return { ok: true, media_url: imageUrl, score: qc.scores.total };
+    return { ok: true, media_url: imageUrl, score: qc.scores.total, duration_ms: metrics.duration_ms, memory_mb: metrics.memory_end_mb };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     metrics.finished_at = new Date().toISOString();
+    metrics.duration_ms = Date.now() - startedMs;
+    metrics.memory_end_mb = Math.round((Deno.memoryUsage?.().rss ?? 0) / 1024 / 1024);
     const nextStatus = Number(job.attempt_count ?? 0) + 1 >= Number(job.max_attempts ?? 3) ? "failed" : "retry";
+    const regenerateNext = message.startsWith("quality_gate_failed") || message.startsWith("integrity_guard_failed") || message.startsWith("copy_validation_failed");
     await sb.from("pinterest_creative_factory_jobs").update({
       status: nextStatus,
       stage: "failed",
       error_message: message.slice(0, 500),
       metrics,
+      ...(regenerateNext ? { media_url: null, media_hash: null } : {}),
       lease_owner: null,
       leased_until: new Date(Date.now() + 20 * 60_000).toISOString(),
     }).eq("id", job.id);
