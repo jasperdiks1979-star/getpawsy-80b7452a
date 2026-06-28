@@ -121,32 +121,41 @@ async function runAudit(sb: any) {
     .maybeSingle();
 
   const countFor = async (q: any) => {
-    const { count } = await q.select("id", { count: "exact", head: true });
+    const { count } = await q;
     return count ?? 0;
   };
 
   const cdStamped = await countFor(
-    sb.from("pinterest_pin_queue").filter("meta->>creative_source", "eq", "creative_director_v2"),
+    sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
+      .filter("meta->>creative_source", "eq", "creative_director_v2"),
   );
   const cdPath = await countFor(
-    sb.from("pinterest_pin_queue").ilike("pin_image_url", "%/creative-director/%"),
+    sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
+      .ilike("pin_image_url", "%/creative-director/%"),
   );
   // Rows with the CD path but no stamp — should be 0 after enforce
   const cdPathUnstamped = await countFor(
     sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
       .ilike("pin_image_url", "%/creative-director/%")
       .or("meta->>creative_source.is.null,meta->>creative_source.neq.creative_director_v2"),
   );
   const legacyBlocked = await countFor(
-    sb.from("pinterest_pin_queue").eq("status", "blocked_legacy_source"),
+    sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "blocked_legacy_source"),
   );
   const nextPublishableAi = await countFor(
     sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
       .eq("status", "queued")
       .ilike("pin_image_url", "%/creative-director/%"),
   );
   const legacyStillPublishable = await countFor(
     sb.from("pinterest_pin_queue")
+      .select("id", { count: "exact", head: true })
       .in("status", ["queued","scheduled"])
       .not("pin_image_url", "ilike", "%/creative-director/%"),
   );
