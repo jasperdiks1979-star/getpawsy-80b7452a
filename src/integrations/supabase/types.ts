@@ -27012,6 +27012,159 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_creative_factory_jobs: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lease_owner: string | null
+          leased_until: string | null
+          max_attempts: number
+          media_hash: string | null
+          media_url: string | null
+          metrics: Json
+          pin_queue_id: string | null
+          priority: number
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          prompt: Json
+          quality: Json
+          source: string
+          stage: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lease_owner?: string | null
+          leased_until?: string | null
+          max_attempts?: number
+          media_hash?: string | null
+          media_url?: string | null
+          metrics?: Json
+          pin_queue_id?: string | null
+          priority?: number
+          product_id?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          prompt?: Json
+          quality?: Json
+          source?: string
+          stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lease_owner?: string | null
+          leased_until?: string | null
+          max_attempts?: number
+          media_hash?: string | null
+          media_url?: string | null
+          metrics?: Json
+          pin_queue_id?: string | null
+          priority?: number
+          product_id?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          prompt?: Json
+          quality?: Json
+          source?: string
+          stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_creative_factory_settings: {
+        Row: {
+          enabled: boolean
+          id: number
+          max_concurrency: number
+          max_jobs_per_run: number
+          min_ready_media: number
+          min_ready_pins: number
+          min_ready_prompts: number
+          model: string
+          quality_threshold: number
+          retry_backoff_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          max_concurrency?: number
+          max_jobs_per_run?: number
+          min_ready_media?: number
+          min_ready_pins?: number
+          min_ready_prompts?: number
+          model?: string
+          quality_threshold?: number
+          retry_backoff_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          max_concurrency?: number
+          max_jobs_per_run?: number
+          min_ready_media?: number
+          min_ready_pins?: number
+          min_ready_prompts?: number
+          model?: string
+          quality_threshold?: number
+          retry_backoff_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_creative_intents: {
         Row: {
           audience_intent: string | null

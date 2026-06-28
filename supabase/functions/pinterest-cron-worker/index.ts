@@ -234,6 +234,28 @@ async function getLatestPinterestConnection(sb: any) {
   return data || null;
 }
 
+async function wakeCreativeFactory(reason: string, limit = 1) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pinterest-creative-factory`;
+    const headers = {
+      Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      "Content-Type": "application/json",
+    };
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "seed_backfill", limit: 250, reason }),
+    }).catch(() => null);
+    EdgeRuntime.waitUntil(fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "work_async", limit, reason }),
+    }).catch(() => null));
+  } catch (e) {
+    console.warn("[cron] failed to wake creative factory", reason, e);
+  }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -386,6 +408,22 @@ Deno.serve(async (req) => {
     }
 
     // ── 1. Fetch due pins ──
+    // Creative Factory replenishment: publishing is intentionally dumb. If due
+    // rows are missing media, wake the asynchronous factory and skip those rows
+    // rather than burning publish attempts on invalid payloads.
+    try {
+      const { count: missingMediaDue } = await sb
+        .from("pinterest_pin_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "queued")
+        .is("pin_image_url", null);
+      if ((missingMediaDue ?? 0) > 0) {
+        await wakeCreativeFactory(`cron_detected_${missingMediaDue}_missing_media`, 1);
+      }
+    } catch (e) {
+      console.warn("[cron] creative factory preflight failed (non-fatal):", e);
+    }
+
     // Pre-publish board_id repair: never let NULL board_id stall the queue.
     try {
       // NOTE: supabase-js v2 rpc() returns a PostgrestFilterBuilder which is thenable
@@ -427,6 +465,7 @@ Deno.serve(async (req) => {
       .from("pinterest_pin_queue")
       .select("*")
       .eq("status", "queued")
+      .not("pin_image_url", "is", null)
       .or("profit_state.is.null,profit_state.neq.kill")
       .lte("scheduled_at", new Date().toISOString())
       .lt("retries", MAX_RETRIES);
