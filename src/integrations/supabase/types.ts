@@ -29527,6 +29527,120 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_market_intel_runs: {
+        Row: {
+          competition_index: number | null
+          finished_at: string | null
+          id: string
+          market_score: number | null
+          notes: Json | null
+          opportunities_expired: number | null
+          opportunities_new: number | null
+          opportunities_updated: number | null
+          signals_seen: number | null
+          started_at: string
+          status: string
+          xai_emitted: number | null
+        }
+        Insert: {
+          competition_index?: number | null
+          finished_at?: string | null
+          id?: string
+          market_score?: number | null
+          notes?: Json | null
+          opportunities_expired?: number | null
+          opportunities_new?: number | null
+          opportunities_updated?: number | null
+          signals_seen?: number | null
+          started_at?: string
+          status?: string
+          xai_emitted?: number | null
+        }
+        Update: {
+          competition_index?: number | null
+          finished_at?: string | null
+          id?: string
+          market_score?: number | null
+          notes?: Json | null
+          opportunities_expired?: number | null
+          opportunities_new?: number | null
+          opportunities_updated?: number | null
+          signals_seen?: number | null
+          started_at?: string
+          status?: string
+          xai_emitted?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_market_opportunities: {
+        Row: {
+          commercial_intent: number | null
+          competition_index: number | null
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_reach: number | null
+          expected_revenue_cents: number | null
+          growth_velocity: number | null
+          id: string
+          lifecycle: string
+          niche: string | null
+          opportunity_score: number
+          rationale: string | null
+          recommended_action: string | null
+          saturation: number | null
+          seasonality: number | null
+          signal_key: string
+          signal_kind: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commercial_intent?: number | null
+          competition_index?: number | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_reach?: number | null
+          expected_revenue_cents?: number | null
+          growth_velocity?: number | null
+          id?: string
+          lifecycle: string
+          niche?: string | null
+          opportunity_score?: number
+          rationale?: string | null
+          recommended_action?: string | null
+          saturation?: number | null
+          seasonality?: number | null
+          signal_key: string
+          signal_kind: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commercial_intent?: number | null
+          competition_index?: number | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_reach?: number | null
+          expected_revenue_cents?: number | null
+          growth_velocity?: number | null
+          id?: string
+          lifecycle?: string
+          niche?: string | null
+          opportunity_score?: number
+          rationale?: string | null
+          recommended_action?: string | null
+          saturation?: number | null
+          seasonality?: number | null
+          signal_key?: string
+          signal_kind?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_metadata_repair_log: {
         Row: {
           after_alt_text: string | null
