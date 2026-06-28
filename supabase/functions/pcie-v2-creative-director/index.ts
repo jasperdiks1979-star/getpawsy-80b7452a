@@ -459,7 +459,7 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
   const { data: creative, error } = await supabase.from("pcie_v2_creatives").insert({
     run_id, product_id: product.id, product_slug: product.slug, niche: product.niche,
     status, reject_reason: ctx.reject_reason, prompt: ctx.prompt,
-    prompt_version: "pcie_v2.1", model: cat.config.default_image_model,
+    prompt_version: "pcie_v2.2-ppe", model: cat.config.default_image_model,
     fingerprint: fp, novelty_total: ctx.novelty_total,
     pass_publish_gate: ctx.pass_publish_gate,
     decisions: ctx.decisions, scores: ctx.scores, pipeline_trace: ctx.trace,
@@ -467,6 +467,7 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
     seed: ctx.seed ?? null, provider_slug: ctx.provider_slug ?? null,
     render_settings: ctx.render_settings ?? {}, candidate_set_id: opts.candidate_set_id,
     replay_of_creative_id: opts.replay_of ?? null, dry_run: opts.dry_run, render_status: ctx.render_status ?? "skipped",
+    ppe_payload: ctx.ppe_payload ?? {}, ppe_composite: ctx.ppe_composite ?? null,
   }).select("id").single();
   if (error) throw error;
 
@@ -494,9 +495,38 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
     creative_id: creative.id, run_id, stage: "pipeline_complete",
     event_type: status, payload: { reject_reason: ctx.reject_reason, novelty_total: ctx.novelty_total },
   });
+  // PPE candidate score row (best-effort).
+  if (ctx.cat.flags.ppe_enabled && ctx.ppe_payload) {
+    const p = ctx.ppe_payload;
+    const s = p?.predict?.scores ?? {};
+    await supabase.from("ppe_candidate_scores").insert({
+      creative_id: creative.id,
+      candidate_set_id: opts.candidate_set_id,
+      product_slug: product.slug, niche: product.niche,
+      ctr_prediction: s.ctr_prediction ?? null,
+      save_prediction: s.save_prediction ?? null,
+      purchase_prediction: s.purchase_prediction ?? null,
+      product_visibility: s.product_visibility ?? null,
+      scroll_stop: s.scroll_stop ?? null,
+      novelty: s.novelty ?? null,
+      us_relevance: s.us_relevance ?? null,
+      composite: p.composite ?? null,
+      attention_map: p?.attention_map ?? {},
+      rejection_reasons: ctx.reject_reason ? [ctx.reject_reason] : [],
+      badge_text: p.badge ?? null,
+      story: p?.profile?.story ?? null,
+      primary_emotion: p?.profile?.primary_emotion ?? null,
+      competitor_verdict: p?.predict?.competitor_verdict ?? null,
+      raw: p,
+    });
+    if (p.badge && ctx.ppe?.badge?.id) {
+      await supabase.from("ppe_badge_usage").insert({ badge_id: ctx.ppe.badge.id, creative_id: creative.id });
+    }
+  }
   return {
     creative_id: creative.id, status, novelty_total: ctx.novelty_total, reject_reason: ctx.reject_reason,
     image_url: ctx.image_url ?? null, provider_slug: ctx.provider_slug ?? null,
+    ppe_composite: ctx.ppe_composite ?? null,
   };
 }
 
@@ -526,7 +556,13 @@ Deno.serve(async (req) => {
     }
 
     // ---- Multi-candidate generation
-    const candidatesPerRun = Number(body.candidates ?? cat.config.candidates_per_run ?? 3);
+    const ppeOn = !!cat.flags.ppe_enabled && cat.flags.ppe_multi_candidate !== false;
+    const ppeMin = Number(cat.config.ppe_min_candidates ?? 8);
+    const ppeMax = Number(cat.config.ppe_max_candidates ?? 12);
+    const baseCandidates = Number(body.candidates ?? cat.config.candidates_per_run ?? 3);
+    const candidatesPerRun = ppeOn
+      ? Math.min(ppeMax, Math.max(ppeMin, baseCandidates))
+      : baseCandidates;
     const count = Math.min(20, Math.max(1, Number(body.count ?? 1)));
     const niche = String(body.niche ?? "cat_litter");
     const dry_run = body.dry_run ?? cat.config.dry_run_default ?? false;
@@ -545,10 +581,12 @@ Deno.serve(async (req) => {
       }
       const winner = candidates
         .filter((c) => c.status === "draft")
-        .sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0]
+        .sort((a, b) => (b.ppe_composite ?? b.novelty_total ?? 0) - (a.ppe_composite ?? a.novelty_total ?? 0))[0]
         ?? candidates.sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0];
       if (winner) {
         await supabase.from("pcie_v2_candidate_sets").update({ winner_creative_id: winner.creative_id, winner_score: winner.novelty_total }).eq("id", set!.id);
+        await supabase.from("pcie_v2_creatives").update({ ppe_winner: true }).eq("id", winner.creative_id);
+        await supabase.from("ppe_candidate_scores").update({ winner: true }).eq("creative_id", winner.creative_id);
       }
       results.push({ candidate_set_id: set!.id, winner_creative_id: winner?.creative_id, winner_score: winner?.novelty_total, candidates });
       for (const r of candidates) {
