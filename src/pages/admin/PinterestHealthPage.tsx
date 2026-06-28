@@ -2544,3 +2544,121 @@ function PcieV2Panel() {
     </Card>
   );
 }
+
+function UsGeoIntelligencePanel() {
+  const [snap, setSnap] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [dry, setDry] = useState<any[] | null>(null);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-geo-intelligence", { body: { action: "snapshot" } });
+    if (data?.us_geo) setSnap(data.us_geo);
+    setLoading(false);
+  }
+  async function runScan() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-geo-intelligence", { body: { action: "scan", limit: 200 } });
+    if (data?.snapshot) setSnap(data.snapshot);
+    setLoading(false);
+  }
+  async function runDry() {
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-geo-intelligence", { body: { action: "dry_run", limit: 25 } });
+    setDry(data?.results ?? []);
+    setLoading(false);
+  }
+  async function runRepair() {
+    if (!confirm("Apply metadata repairs to up to 50 draft/queued pins?")) return;
+    setLoading(true);
+    const { data } = await (supabase as any).functions.invoke("pinterest-geo-intelligence", { body: { action: "repair", limit: 50 } });
+    if (data?.snapshot) setSnap(data.snapshot);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">US Organic Geo Intelligence</h2>
+          <p className="text-xs text-muted-foreground">
+            US Relevance Score, Rich-Pin readiness and metadata repair for organic Pinterest. Floor {snap?.floor ?? 92}/100; reject &lt; {snap?.reject_below ?? 80}.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>Refresh</Button>
+          <Button size="sm" variant="outline" onClick={runDry} disabled={loading}>Dry-run 25</Button>
+          <Button size="sm" variant="outline" onClick={runScan} disabled={loading}>Scan 200</Button>
+          <Button size="sm" onClick={runRepair} disabled={loading}>Repair 50</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <Stat label="Target" value={`${snap?.target_market?.country ?? "US"} · ${snap?.target_market?.currency ?? "USD"}`} />
+        <Stat label="Avg score 24h" value={snap?.avg_score_24h != null ? `${snap.avg_score_24h}/100` : "—"} />
+        <Stat label="Avg score 7d" value={snap?.avg_score_7d != null ? `${snap.avg_score_7d}/100` : "—"} />
+        <Stat label="Sample 7d" value={String(snap?.sample_7d ?? 0)} />
+        <Stat label="Blocked by gate 7d" value={String(snap?.blocked_by_gate_7d ?? 0)} />
+        <Stat label="Repaired 7d" value={String(snap?.repaired_7d ?? 0)} />
+        <Stat label="% USD" value={`${snap?.pct_usd ?? 0}%`} />
+        <Stat label="% US English" value={`${snap?.pct_us_english ?? 0}%`} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="font-medium text-sm mb-1">Top failing dimensions (24h)</div>
+          <ul className="space-y-1 text-xs max-h-56 overflow-y-auto pr-1">
+            {(snap?.top_failing_dimensions ?? []).map((d: any) => (
+              <li key={d.dimension} className="flex justify-between border rounded p-2">
+                <span>{d.dimension}</span><span className="text-muted-foreground">{d.count}</span>
+              </li>
+            ))}
+            {(!snap?.top_failing_dimensions || snap.top_failing_dimensions.length === 0) && (
+              <li className="text-muted-foreground">No failures — clean window.</li>
+            )}
+          </ul>
+        </div>
+        <div>
+          <div className="font-medium text-sm mb-1">Recent repairs (before → after)</div>
+          <ul className="space-y-1 text-xs max-h-56 overflow-y-auto pr-1">
+            {(snap?.recent_repairs ?? []).map((r: any) => (
+              <li key={r.id} className="border rounded p-2">
+                <div className="truncate"><span className="text-muted-foreground">was:</span> {r.before_title}</div>
+                <div className="truncate font-medium">→ {r.after_title}</div>
+                <div className="text-muted-foreground">{r.score_before ?? "—"} → {r.score_after}</div>
+              </li>
+            ))}
+            {(!snap?.recent_repairs || snap.recent_repairs.length === 0) && (
+              <li className="text-muted-foreground">No repairs yet — run "Repair 50".</li>
+            )}
+          </ul>
+        </div>
+      </div>
+
+      {dry && (
+        <div>
+          <div className="font-medium text-sm mb-1">Dry-run preview · {dry.length} pins (no writes)</div>
+          <ul className="space-y-1 text-xs max-h-72 overflow-y-auto pr-1">
+            {dry.map((r) => (
+              <li key={r.id} className="border rounded p-2">
+                <div className="flex justify-between gap-2">
+                  <span className="font-medium truncate">{r.slug}</span>
+                  <span className="text-muted-foreground">
+                    {r.before.score} → {r.after.score} · <em>{r.after.decision}</em>
+                  </span>
+                </div>
+                <div className="truncate"><span className="text-muted-foreground">title:</span> {r.before.title} → <strong>{r.after.title}</strong></div>
+                <div className="text-muted-foreground truncate">{r.explanation}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="text-[11px] text-muted-foreground border-t pt-2">
+        Publish windows ET: {(snap?.publish_windows_et ?? []).map((w: any) => `${w.start}-${w.end}`).join(" · ")} · Last refresh {snap?.last_run ? new Date(snap.last_run).toLocaleTimeString() : "—"}
+      </div>
+    </Card>
+  );
+}
