@@ -279,6 +279,7 @@ async function fetchSnapshot(sb: any): Promise<Snapshot> {
     tokenStatus,
     cronJobs,
     verification: await fetchVerificationKpis(sb),
+    content: await fetchContentKpis(sb),
   };
 }
 
