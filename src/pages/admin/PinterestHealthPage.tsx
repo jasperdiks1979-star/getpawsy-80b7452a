@@ -1139,6 +1139,7 @@ export default function PinterestHealthPage() {
           </div>
         )}
       </Card>
+      <ExecutiveCouncilPanel />
       <TasteEnginePanel />
       <GrowthDirectorPanel />
       <CollectiveIntelligencePanel />
