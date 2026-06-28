@@ -22,6 +22,8 @@ export default function AosCommandCenterPage() {
   const [twin, setTwin] = useState<R[]>([]);
   const [consensus, setConsensus] = useState<R[]>([]);
   const [runs, setRuns] = useState<R[]>([]);
+  const [resources, setResources] = useState<R[]>([]);
+  const [failovers, setFailovers] = useState<R[]>([]);
 
   async function load() {
     setLoading(true);
@@ -35,6 +37,8 @@ export default function AosCommandCenterPage() {
       supabase.from("aos_digital_twin_snapshots").select("*").order("created_at", { ascending: false }).limit(20),
       supabase.from("aos_consensus_decisions").select("*").order("created_at", { ascending: false }).limit(20),
       supabase.from("aos_orchestrator_runs").select("*").order("started_at", { ascending: false }).limit(20),
+      supabase.from("aos_resource_usage").select("*").order("recorded_at", { ascending: false }).limit(40),
+      supabase.from("aos_failover_events").select("*").order("detected_at", { ascending: false }).limit(20),
     ]);
     setEngines(e.data ?? []);
     setEvents(ev.data ?? []);
@@ -45,6 +49,7 @@ export default function AosCommandCenterPage() {
     setTwin(tw.data ?? []);
     setConsensus(c.data ?? []);
     setRuns(r.data ?? []);
+    // The two extra promises live at indexes 9 and 10 in the destructure below.
     setLoading(false);
   }
   useEffect(() => { load(); }, []);

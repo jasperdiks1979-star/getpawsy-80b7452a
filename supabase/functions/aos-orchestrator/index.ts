@@ -235,6 +235,25 @@ async function runOrchestrator(trigger: string) {
   await generateDailyStrategy();
   await supabase.from("aos_orchestrator_steps").insert({ run_id: runId, step: "strategy", status: "ok", duration_ms: Date.now() - t3 });
 
+  // Phase 2: fan out to specialist functions (best-effort, non-blocking semantics).
+  const fanout = ["aos-engine-integrator", "aos-resource-monitor", "aos-failover", "aos-twin-evaluator"];
+  for (const fn of fanout) {
+    const tF = Date.now();
+    try {
+      const r = await supabase.functions.invoke(fn, { body: { trigger: "aos" } });
+      await supabase.from("aos_orchestrator_steps").insert({
+        run_id: runId, step: `fanout:${fn}`,
+        status: r.error ? "error" : "ok", duration_ms: Date.now() - tF,
+        details: r.error ? { error: String(r.error.message) } : (r.data ?? {}),
+      });
+    } catch (e) {
+      await supabase.from("aos_orchestrator_steps").insert({
+        run_id: runId, step: `fanout:${fn}`, status: "error",
+        duration_ms: Date.now() - tF, details: { error: String(e) },
+      });
+    }
+  }
+
   await supabase.from("aos_orchestrator_runs").update({
     ended_at: new Date().toISOString(), status: "ok",
     events_ingested: events, tasks_scheduled: tasks, health_score: health,
