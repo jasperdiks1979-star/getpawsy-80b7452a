@@ -21,39 +21,59 @@ import {
   type StyleDNA,
 } from "../_shared/pinterest-style-dna.ts";
 import {
-  PATTERN_LIBRARY,
   getPattern,
-  selectPatternsForNiche,
-  patternQualityReasons,
+  PATTERN_LIBRARY,
   type PatternId,
+  patternQualityReasons,
   type PinterestPattern,
+  selectPatternsForNiche,
 } from "../_shared/pinterest-patterns.ts";
 import {
-  pickStrategy,
   type CreativeStrategy,
-  type LearningWeight,
   type HookCategory,
+  type LearningWeight,
+  pickStrategy,
 } from "../_shared/pinterest-hooks.ts";
 import {
-  generateProductHooks,
-  scoreHookRelevance,
   deriveBenefits,
-  type ProductHook,
+  generateProductHooks,
   type HookArchetype,
+  type ProductHook,
+  scoreHookRelevance,
 } from "../_shared/pinterest-product-hooks.ts";
-import { scorePin, QUALITY_THRESHOLD, MAX_RETRIES } from "../_shared/pinterest-quality.ts";
-import { scoreCtrIntent, scoreOutboundIntent } from "../_shared/pinterest-diversity-guard.ts";
-import { buildVisualPlan, type VisualPlan } from "../_shared/pinterest-visual-intelligence.ts";
+import {
+  MAX_RETRIES,
+  QUALITY_THRESHOLD,
+  scorePin,
+} from "../_shared/pinterest-quality.ts";
+import {
+  scoreCtrIntent,
+  scoreOutboundIntent,
+} from "../_shared/pinterest-diversity-guard.ts";
+import {
+  buildVisualPlan,
+  type VisualPlan,
+} from "../_shared/pinterest-visual-intelligence.ts";
 import { getPinMode, type PinModeKey } from "../_shared/pinterest-pin-modes.ts";
 import { buildCollagePromptSuffix } from "../_shared/pinterest-collage.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
-import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
-import { buildPinCopy, sanitizePinText, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
-import { checkGovernor, governorRejectReason } from "../_shared/pinterest-governor.ts";
+import {
+  DiversityGuard,
+  normaliseCategoryKey,
+} from "../_shared/pinterest-diversity-guard.ts";
+import {
+  buildPinCopy,
+  sanitizePinText,
+  validatePinCopy,
+} from "../_shared/pinterest-board-templates.ts";
+import {
+  checkGovernor,
+  governorRejectReason,
+} from "../_shared/pinterest-governor.ts";
 import {
   isCreditPaused,
-  recordCreditEvent,
   isImageGenerationKilled,
+  recordCreditEvent,
 } from "../_shared/pinterest-credit-guard.ts";
 declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 
@@ -118,11 +138,10 @@ async function tagGatewayResp(resp: Response, fnTag: string): Promise<void> {
     }
   } catch (_) { /* best effort */ }
 }
-const IMAGE_MODEL =
-  Deno.env.get("PINTEREST_CD_IMAGE_MODEL") ||
+const IMAGE_MODEL = Deno.env.get("PINTEREST_CD_IMAGE_MODEL") ||
   "google/gemini-3-pro-image-preview";
-const TEXT_MODEL =
-  Deno.env.get("PINTEREST_CD_TEXT_MODEL") || "google/gemini-3-flash-preview";
+const TEXT_MODEL = Deno.env.get("PINTEREST_CD_TEXT_MODEL") ||
+  "google/gemini-3-flash-preview";
 
 // 2026-06-17 cost hardening: cap to exactly ONE image render per brief.
 // Any guard failure (diversity / quality / fidelity) rejects the candidate
@@ -144,7 +163,11 @@ function ok(body: Record<string, unknown>, status = 200) {
   });
 }
 
-function fail(message: string, status = 400, extra: Record<string, unknown> = {}) {
+function fail(
+  message: string,
+  status = 400,
+  extra: Record<string, unknown> = {},
+) {
   return new Response(
     JSON.stringify({ ok: false, message, traceId: traceId(), ...extra }),
     {
@@ -156,7 +179,9 @@ function fail(message: string, status = 400, extra: Record<string, unknown> = {}
 
 function safeText(s: string, max: number) {
   const trimmed = (s || "").replace(/\s+/g, " ").trim();
-  return trimmed.length > max ? trimmed.slice(0, max - 1).trimEnd() + "…" : trimmed;
+  return trimmed.length > max
+    ? trimmed.slice(0, max - 1).trimEnd() + "…"
+    : trimmed;
 }
 
 function containsBanned(s: string, banned: string[]): string | null {
@@ -175,9 +200,15 @@ function predictCtr(brief: SceneBrief, scores: Record<string, number>): number {
   const r = Number(brief.hook_relevance ?? 80);
   const base = 0.012 + (q / 100) * 0.018 + (r / 100) * 0.012; // 1.2% – 4.2%
   const archBoost: Record<string, number> = {
-    problem: 0.003, outcome: 0.002, benefit: 0.002, curiosity: 0.0015, emotional: 0.001,
+    problem: 0.003,
+    outcome: 0.002,
+    benefit: 0.002,
+    curiosity: 0.0015,
+    emotional: 0.001,
   };
-  return Math.round((base + (archBoost[brief.hook_archetype ?? ""] ?? 0)) * 10000) / 100;
+  return Math.round(
+    (base + (archBoost[brief.hook_archetype ?? ""] ?? 0)) * 10000,
+  ) / 100;
 }
 
 // Decode base64 (data URL or raw) into Uint8Array
@@ -230,7 +261,9 @@ async function loadOrBuildProfile(
 ): Promise<{ niche: NicheKey; dna: StyleDNA; product: any; cached: boolean }> {
   const { data: product, error } = await supabase
     .from("products")
-    .select("id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price")
+    .select(
+      "id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price",
+    )
     .eq("id", productId)
     .maybeSingle();
   if (error) throw new Error(`product lookup failed: ${error.message}`);
@@ -289,15 +322,17 @@ async function generateBriefs(
 ): Promise<SceneBrief[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-  const patterns = (patternIds && patternIds.length === count
-    ? patternIds
-    : selectPatternsForNiche(dna.niche_key as any, count)
-  ).map((id) => getPattern(id));
+  const patterns =
+    (patternIds && patternIds.length === count
+      ? patternIds
+      : selectPatternsForNiche(dna.niche_key as any, count)).map((id) =>
+        getPattern(id)
+      );
 
   // Pick a hook strategy per brief BEFORE we call the model so the AI just
   // executes a locked plan and can't go off-brand.
   const strategies: CreativeStrategy[] = patterns.map((p) =>
-    pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights }),
+    pickStrategy({ niche: dna.niche_key as any, dna, pattern: p, weights })
   );
 
   // PRODUCT-TRUTHFUL HEADLINES: generate N hooks straight from the
@@ -306,11 +341,14 @@ async function generateBriefs(
   // CATEGORY (for analytics + learning), but the actual headline copy is
   // now grounded in this specific product instead of a generic niche bank.
   // Normalize product features + benefits coming out of the products table.
-  const featureList = [product.key_feature, ...(Array.isArray(product.description_bullets)
-    ? product.description_bullets
-    : typeof product.description_bullets === "string"
+  const featureList = [
+    product.key_feature,
+    ...(Array.isArray(product.description_bullets)
+      ? product.description_bullets
+      : typeof product.description_bullets === "string"
       ? product.description_bullets.split(/\n|•|\u2022|;|\|/)
-      : [])]
+      : []),
+  ]
     .map((s) => (s ?? "").toString().trim())
     .filter((s) => s.length > 0)
     .slice(0, 8);
@@ -325,7 +363,9 @@ async function generateBriefs(
     features: featureList,
     benefits: benefitList,
   };
-  const derivedBenefits = benefitList.length ? benefitList : deriveBenefits(hookInput, dna.niche_key);
+  const derivedBenefits = benefitList.length
+    ? benefitList
+    : deriveBenefits(hookInput, dna.niche_key);
   const productHooks = await generateProductHooks({
     product: { ...hookInput, benefits: derivedBenefits },
     niche: dna.niche_key,
@@ -336,7 +376,7 @@ async function generateBriefs(
   // Pin-mode plan per brief (rotates through niche affinity for variety).
   const plans: VisualPlan[] = patterns.map((_, i) =>
     visualPlans[i] ??
-    buildVisualPlan({ name: product.name, rotateSeed: i }),
+      buildVisualPlan({ name: product.name, rotateSeed: i })
   );
 
   const sys = [
@@ -486,29 +526,32 @@ async function generateBriefs(
     },
   ];
 
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
+  const resp = await fetch(
+    "https://ai.gateway.lovable.dev/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages: [
+          { role: "system", content: sys },
+          {
+            role: "user",
+            content:
+              `Generate exactly ${count} unique scene briefs for this product. ` +
+              `Each brief must use a different composition and emotional hook. ` +
+              `Input:\n` +
+              JSON.stringify(user, null, 2),
+          },
+        ],
+        tools,
+        tool_choice: { type: "function", function: { name: "scene_briefs" } },
+      }),
     },
-    body: JSON.stringify({
-      model: TEXT_MODEL,
-      messages: [
-        { role: "system", content: sys },
-        {
-          role: "user",
-          content:
-            `Generate exactly ${count} unique scene briefs for this product. ` +
-            `Each brief must use a different composition and emotional hook. ` +
-            `Input:\n` +
-            JSON.stringify(user, null, 2),
-        },
-      ],
-      tools,
-      tool_choice: { type: "function", function: { name: "scene_briefs" } },
-    }),
-  });
+  );
 
   await tagGatewayResp(resp, "creative-director:briefs");
   if (!resp.ok) {
@@ -557,7 +600,10 @@ async function generateBriefs(
 
 // ── 3. render scene ────────────────────────────────────────────────────────
 
-async function renderScene(brief: SceneBrief, dna: StyleDNA): Promise<Uint8Array> {
+async function renderScene(
+  brief: SceneBrief,
+  dna: StyleDNA,
+): Promise<Uint8Array> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
   return await renderSceneWithSource(brief, dna, null, null);
 }
@@ -582,7 +628,9 @@ async function renderSceneWithSource(
   // WITHOUT charging any AI gateway credits.
   const killed = await isImageGenerationKilled(creditClient() as any);
   if (killed.killed) {
-    throw new Error(`image_generation_killed:${killed.reason ?? "kill_switch"}`);
+    throw new Error(
+      `image_generation_killed:${killed.reason ?? "kill_switch"}`,
+    );
   }
 
   const pattern = brief.pattern_id ? getPattern(brief.pattern_id) : null;
@@ -596,15 +644,19 @@ async function renderSceneWithSource(
   const modeDirective = mode
     ? `\nPinterest pin mode — ${mode.label}: ${mode.composition_rule} ` +
       `Palette: ${mode.palette}. ` +
-      `${mode.is_collage ? "This MUST be a tasteful multi-tile composition (split or moodboard), not a single hero shot. " : ""}` +
+      `${
+        mode.is_collage
+          ? "This MUST be a tasteful multi-tile composition (split or moodboard), not a single hero shot. "
+          : ""
+      }` +
       `Strictly avoid: ${mode.must_avoid.join(", ")}.`
     : "";
 
   const collageDirective = mode
     ? buildCollagePromptSuffix(mode, dna, {
-        subject: brief.subject,
-        environment_summary: brief.environment_summary,
-      })
+      subject: brief.subject,
+      environment_summary: brief.environment_summary,
+    })
     : "";
 
   const overlayDirective = overlay
@@ -637,11 +689,10 @@ async function renderSceneWithSource(
 
   // For collage modes, replace the anti-collage clause with the explicit
   // collage contract so the image model isn't given contradictory directives.
-  const styleSuffixForMode = mode?.is_collage
-    ? styleSuffix
-    : styleSuffix;
+  const styleSuffixForMode = mode?.is_collage ? styleSuffix : styleSuffix;
 
-  const prompt = `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
+  const prompt =
+    `${brief.full_prompt}\n\nDirection: ${styleSuffixForMode}${patternDirective}${modeDirective}${collageDirective}`;
   // SPEC §6 — Image grounding: explicitly inject product truth into the
   // image prompt so the visual model can't drift to generic stock scenes.
   const benefitLine = (brief.product_benefits || []).slice(0, 4).join(", ");
@@ -653,8 +704,7 @@ async function renderSceneWithSource(
       "ONLY change the surrounding lifestyle context: room, set dressing, lighting, camera angle, pet presence, decor. " +
       "Place THIS EXACT product into the new scene as if photographed there. "
     : "";
-  const groundedPrompt =
-    sourceLock +
+  const groundedPrompt = sourceLock +
     `Product: ${brief.subject || ""}. ` +
     (benefitLine ? `Benefits to show: ${benefitLine}. ` : "") +
     (featureLine ? `Key features: ${featureLine}. ` : "") +
@@ -667,28 +717,34 @@ async function renderSceneWithSource(
     try {
       sourceDataUrl = await fetchAsDataUrl(productImageUrl);
     } catch (e) {
-      console.warn("[creative-director] source image fetch failed", (e as Error).message);
+      console.warn(
+        "[creative-director] source image fetch failed",
+        (e as Error).message,
+      );
     }
   }
   const userContent: unknown = sourceDataUrl
     ? [
-        { type: "image_url", image_url: { url: sourceDataUrl } },
-        { type: "text", text: groundedPrompt },
-      ]
+      { type: "image_url", image_url: { url: sourceDataUrl } },
+      { type: "text", text: groundedPrompt },
+    ]
     : groundedPrompt;
 
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
+  const resp = await fetch(
+    "https://ai.gateway.lovable.dev/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: IMAGE_MODEL,
+        messages: [{ role: "user", content: userContent }],
+        modalities: ["image", "text"],
+      }),
     },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      messages: [{ role: "user", content: userContent }],
-      modalities: ["image", "text"],
-    }),
-  });
+  );
 
   await tagGatewayResp(resp, "creative-director:image");
   if (!resp.ok) {
@@ -696,8 +752,8 @@ async function renderSceneWithSource(
     throw new Error(`image model ${resp.status}: ${t.slice(0, 200)}`);
   }
   const data = await resp.json();
-  const url: string | undefined =
-    data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  const url: string | undefined = data?.choices?.[0]?.message?.images?.[0]
+    ?.image_url?.url;
   if (!url) throw new Error("image model returned no image");
   const { bytes } = decodeBase64Image(url);
   return bytes;
@@ -731,12 +787,18 @@ async function auditProductFidelity(
   generatedBytes: Uint8Array,
   productImageUrl: string,
 ): Promise<{ score: number; notes: string; sourceUsed: string }> {
-  if (!LOVABLE_API_KEY) return { score: 0, notes: "no_api_key", sourceUsed: productImageUrl };
+  if (!LOVABLE_API_KEY) {
+    return { score: 0, notes: "no_api_key", sourceUsed: productImageUrl };
+  }
   let sourceDataUrl: string;
   try {
     sourceDataUrl = await fetchAsDataUrl(productImageUrl);
   } catch (e) {
-    return { score: 0, notes: `source_fetch_failed:${(e as Error).message}`, sourceUsed: productImageUrl };
+    return {
+      score: 0,
+      notes: `source_fetch_failed:${(e as Error).message}`,
+      sourceUsed: productImageUrl,
+    };
   }
   let bin = "";
   const CHUNK = 0x8000;
@@ -750,11 +812,16 @@ async function auditProductFidelity(
       type: "function",
       function: {
         name: "rate_fidelity",
-        description: "Score how faithfully the generated lifestyle pin preserves the exact product from the reference photo.",
+        description:
+          "Score how faithfully the generated lifestyle pin preserves the exact product from the reference photo.",
         parameters: {
           type: "object",
           properties: {
-            score: { type: "number", description: "0-100. 100 = identical product, only context changed. <90 = product is a different model/color/structure/redesign." },
+            score: {
+              type: "number",
+              description:
+                "0-100. 100 = identical product, only context changed. <90 = product is a different model/color/structure/redesign.",
+            },
             shape_match: { type: "number" },
             color_match: { type: "number" },
             structure_match: { type: "number" },
@@ -766,46 +833,70 @@ async function auditProductFidelity(
     },
   ];
   try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const resp = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: FIDELITY_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a strict QA inspector for a DTC pet brand's Pinterest ads. The FIRST image is the canonical Shopify product photo (the SKU we sell). The SECOND image is an AI-generated lifestyle pin that is supposed to feature the SAME exact product. Compare them on shape, silhouette, proportions, color, materials, levels/tiers, and accessory presence. Lifestyle context (room, lighting, pets, decor) is allowed to differ — only product identity matters. Use the rate_fidelity tool. Score 100 if the depicted product would be indistinguishable from the source SKU. Score below 90 if shape, color, materials, or structure differ enough that a buyer would feel misled.",
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text:
+                    "Image 1 = canonical product photo. Image 2 = generated Pinterest pin. Rate product fidelity.",
+                },
+                { type: "image_url", image_url: { url: sourceDataUrl } },
+                { type: "image_url", image_url: { url: genDataUrl } },
+              ],
+            },
+          ],
+          tools,
+          tool_choice: {
+            type: "function",
+            function: { name: "rate_fidelity" },
+          },
+        }),
       },
-      body: JSON.stringify({
-        model: FIDELITY_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a strict QA inspector for a DTC pet brand's Pinterest ads. The FIRST image is the canonical Shopify product photo (the SKU we sell). The SECOND image is an AI-generated lifestyle pin that is supposed to feature the SAME exact product. Compare them on shape, silhouette, proportions, color, materials, levels/tiers, and accessory presence. Lifestyle context (room, lighting, pets, decor) is allowed to differ — only product identity matters. Use the rate_fidelity tool. Score 100 if the depicted product would be indistinguishable from the source SKU. Score below 90 if shape, color, materials, or structure differ enough that a buyer would feel misled.",
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Image 1 = canonical product photo. Image 2 = generated Pinterest pin. Rate product fidelity." },
-              { type: "image_url", image_url: { url: sourceDataUrl } },
-              { type: "image_url", image_url: { url: genDataUrl } },
-            ],
-          },
-        ],
-        tools,
-        tool_choice: { type: "function", function: { name: "rate_fidelity" } },
-      }),
-    });
+    );
     await tagGatewayResp(resp, "creative-director:fidelity");
     if (!resp.ok) {
       const t = await resp.text();
-      return { score: 0, notes: `auditor_${resp.status}:${t.slice(0, 120)}`, sourceUsed: productImageUrl };
+      return {
+        score: 0,
+        notes: `auditor_${resp.status}:${t.slice(0, 120)}`,
+        sourceUsed: productImageUrl,
+      };
     }
     const data = await resp.json();
     const call = data?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) return { score: 0, notes: "no_tool_call", sourceUsed: productImageUrl };
+    if (!call) {
+      return { score: 0, notes: "no_tool_call", sourceUsed: productImageUrl };
+    }
     const parsed = JSON.parse(call.function.arguments || "{}");
     const score = Math.max(0, Math.min(100, Number(parsed.score ?? 0)));
-    return { score, notes: String(parsed.notes || ""), sourceUsed: productImageUrl };
+    return {
+      score,
+      notes: String(parsed.notes || ""),
+      sourceUsed: productImageUrl,
+    };
   } catch (e) {
-    return { score: 0, notes: `audit_error:${(e as Error).message}`, sourceUsed: productImageUrl };
+    return {
+      score: 0,
+      notes: `audit_error:${(e as Error).message}`,
+      sourceUsed: productImageUrl,
+    };
   }
 }
 
@@ -841,7 +932,9 @@ async function loadLearningWeights(
 ): Promise<LearningWeight[]> {
   const { data } = await supabase
     .from("pinterest_pattern_weights")
-    .select("pattern_id, hook_category, niche_key, composite_score, sample_size")
+    .select(
+      "pattern_id, hook_category, niche_key, composite_score, sample_size",
+    )
     .eq("niche_key", niche)
     .order("composite_score", { ascending: false })
     .limit(50);
@@ -868,10 +961,16 @@ async function loadWinnerPinModes(
       .order("composite_score", { ascending: false })
       .limit(10);
     return (data ?? [])
-      .map((r) => ({ pin_mode: r.pin_mode as PinModeKey, score: Number(r.composite_score ?? 0) }))
+      .map((r) => ({
+        pin_mode: r.pin_mode as PinModeKey,
+        score: Number(r.composite_score ?? 0),
+      }))
       .filter((r) => !!r.pin_mode);
   } catch (e) {
-    console.warn("[creative-director] loadWinnerPinModes failed", (e as Error).message);
+    console.warn(
+      "[creative-director] loadWinnerPinModes failed",
+      (e as Error).message,
+    );
     return [];
   }
 }
@@ -894,7 +993,8 @@ async function loadStrategyAndTrends(
   const pinModeBoost: Record<string, number> = {};
   try {
     const [{ data: state }, { data: trends }] = await Promise.all([
-      supabase.from("pinterest_strategy_state").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("pinterest_strategy_state").select("*").eq("id", 1)
+        .maybeSingle(),
       supabase.from("pinterest_trend_signals")
         .select("pin_mode, weight, niche_key")
         .eq("is_active", true)
@@ -905,10 +1005,15 @@ async function loadStrategyAndTrends(
     if (state) {
       exploitRatio = Number(state.exploit_ratio ?? 0.8);
       qualityThreshold = Number(state.quality_threshold ?? 0) || null;
-      const archetypeBoosts = (state.archetype_boosts ?? {}) as Record<string, number>;
+      const archetypeBoosts = (state.archetype_boosts ?? {}) as Record<
+        string,
+        number
+      >;
       for (const [k, v] of Object.entries(archetypeBoosts)) {
         const [n, mode] = k.split(":");
-        if (n === niche && mode) pinModeBoost[mode] = Math.max(pinModeBoost[mode] ?? 0, Number(v));
+        if (n === niche && mode) {
+          pinModeBoost[mode] = Math.max(pinModeBoost[mode] ?? 0, Number(v));
+        }
       }
     }
     for (const t of trends ?? []) {
@@ -920,7 +1025,10 @@ async function loadStrategyAndTrends(
       }
     }
   } catch (e) {
-    console.warn("[creative-director] loadStrategyAndTrends failed", (e as Error).message);
+    console.warn(
+      "[creative-director] loadStrategyAndTrends failed",
+      (e as Error).message,
+    );
   }
   return { exploitRatio, qualityThreshold, pinModeBoost };
 }
@@ -960,7 +1068,10 @@ async function logRenderAttempt(
       },
     });
   } catch (e) {
-    console.warn("[creative-director] logRenderAttempt failed", (e as Error).message);
+    console.warn(
+      "[creative-director] logRenderAttempt failed",
+      (e as Error).message,
+    );
   }
 }
 
@@ -1010,14 +1121,24 @@ async function pickLandingSlug(
       .maybeSingle();
     if (nicheOnly?.slug) return nicheOnly.slug as string;
   } catch (e) {
-    console.warn("[creative-director] pickLandingSlug failed", (e as Error).message);
+    console.warn(
+      "[creative-director] pickLandingSlug failed",
+      (e as Error).message,
+    );
   }
   return null;
 }
 
 async function uploadAndInsertDraft(
   supabase: ReturnType<typeof createClient>,
-  product: { id: string; slug: string; name: string; price?: number | null; benefit?: string | null; category?: string | null },
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    price?: number | null;
+    benefit?: string | null;
+    category?: string | null;
+  },
   niche: NicheKey,
   brief: SceneBrief,
   bytes: Uint8Array,
@@ -1063,7 +1184,9 @@ async function uploadAndInsertDraft(
     console.warn("[creative-director] phash failed", (e as Error).message);
   }
 
-  const patternTag = brief.pattern_id ? `_${brief.pattern_id.slice(0, 12)}` : "";
+  const patternTag = brief.pattern_id
+    ? `_${brief.pattern_id.slice(0, 12)}`
+    : "";
   const variant = `cd_${niche}${patternTag}_${stamp}_${brief.id.slice(-6)}`;
 
   // Destination URL safety policy (2026-06):
@@ -1074,7 +1197,8 @@ async function uploadAndInsertDraft(
   // before publish via the shared destination validator.
   const landingSlug: string | null = null;
   const hookParam = encodeURIComponent(brief.emotional_hook.slice(0, 40));
-  const destination = `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
+  const destination =
+    `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_director&utm_content=${niche}&hook=${hookParam}`;
 
   // ── Deterministic board-template copy (no random AI fluff) ──────────────
   const copy = buildPinCopy(
@@ -1115,56 +1239,58 @@ async function uploadAndInsertDraft(
     pin_image_phash: pinPhash,
     meta: intelligence
       ? {
-          creative_source: "creative_director_v2",
-          ai_generated: true,
-          generator: "pinterest-creative-director",
-          quality_tier: "premium",
-          legacy_feed: false,
-          publish_allowed: true,
-          pin_type:
-            (brief as any).pin_mode === "problem_solution" ? "problem_solution" :
-            (brief as any).pin_mode === "listicle" ? "listicle" :
-            (brief as any).pin_mode === "product_showcase" ? "product_showcase" :
-            "lifestyle",
-          intelligence: {
-            scores: intelligence.scores,
-            attempt_count: intelligence.attempt_count,
-            hook_category: intelligence.hook_category ?? null,
-            pattern_id: brief.pattern_id ?? null,
-              pin_mode: brief.pin_mode ?? null,
-            rationale: intelligence.rationale ?? null,
-            hook_source: brief.hook_source ?? "fallback_bank",
-            hook_relevance: brief.hook_relevance ?? null,
-            hook_archetype: brief.hook_archetype ?? null,
-            niche_key: niche,
-            predicted_ctr: predictCtr(brief, intelligence.scores),
-            product_benefits: brief.product_benefits ?? null,
-            product_features: brief.product_features ?? null,
-            engine_version: "v2.2",
-            ctr_intent: scoreCtrIntent({
-              headline: copy.overlay,
-              cta: copy.cta,
-              hook: brief.emotional_hook ?? null,
-            }),
-            outbound_intent: scoreOutboundIntent(null, {
-              headline: copy.overlay,
-              cta: copy.cta,
-              hook: brief.emotional_hook ?? null,
-            }),
-          },
-          emotional_hook: brief.emotional_hook,
-          headline: brief.headline,
-          cta: brief.cta,
-        }
-      : {
-          creative_source: "creative_director_v2",
-          ai_generated: true,
-          generator: "pinterest-creative-director",
-          quality_tier: "premium",
-          legacy_feed: false,
-          publish_allowed: true,
-          pin_type: "lifestyle",
+        creative_source: "creative_director_v2",
+        ai_generated: true,
+        generator: "pinterest-creative-director",
+        quality_tier: "premium",
+        legacy_feed: false,
+        publish_allowed: true,
+        pin_type: (brief as any).pin_mode === "problem_solution"
+          ? "problem_solution"
+          : (brief as any).pin_mode === "listicle"
+          ? "listicle"
+          : (brief as any).pin_mode === "product_showcase"
+          ? "product_showcase"
+          : "lifestyle",
+        intelligence: {
+          scores: intelligence.scores,
+          attempt_count: intelligence.attempt_count,
+          hook_category: intelligence.hook_category ?? null,
+          pattern_id: brief.pattern_id ?? null,
+          pin_mode: brief.pin_mode ?? null,
+          rationale: intelligence.rationale ?? null,
+          hook_source: brief.hook_source ?? "fallback_bank",
+          hook_relevance: brief.hook_relevance ?? null,
+          hook_archetype: brief.hook_archetype ?? null,
+          niche_key: niche,
+          predicted_ctr: predictCtr(brief, intelligence.scores),
+          product_benefits: brief.product_benefits ?? null,
+          product_features: brief.product_features ?? null,
+          engine_version: "v2.2",
+          ctr_intent: scoreCtrIntent({
+            headline: copy.overlay,
+            cta: copy.cta,
+            hook: brief.emotional_hook ?? null,
+          }),
+          outbound_intent: scoreOutboundIntent(null, {
+            headline: copy.overlay,
+            cta: copy.cta,
+            hook: brief.emotional_hook ?? null,
+          }),
         },
+        emotional_hook: brief.emotional_hook,
+        headline: brief.headline,
+        cta: brief.cta,
+      }
+      : {
+        creative_source: "creative_director_v2",
+        ai_generated: true,
+        generator: "pinterest-creative-director",
+        quality_tier: "premium",
+        legacy_feed: false,
+        publish_allowed: true,
+        pin_type: "lifestyle",
+      },
   };
 
   // ── Validate every generated pin BEFORE insert ────────────────────────────
@@ -1218,7 +1344,9 @@ async function uploadAndInsertDraft(
   // ── PERMANENT INTEGRITY GUARD ─────────────────────────────────────────────
   // Image-vs-title, species, and destination URL checks. Confidence < 95%
   // blocks publication automatically. No opt-out, no emergency override.
-  const { verifyPinIntegrity } = await import("../_shared/pinterest-integrity-guard.ts");
+  const { verifyPinIntegrity } = await import(
+    "../_shared/pinterest-integrity-guard.ts"
+  );
   const integrity = await verifyPinIntegrity(supabase, {
     product_id: product.id,
     product_slug: product.slug,
@@ -1238,7 +1366,9 @@ async function uploadAndInsertDraft(
       checks: integrity.checks,
     });
     throw new Error(
-      `integrity_guard_blocked:conf=${integrity.confidence.toFixed(2)}:${integrity.blocking_reasons.join(",")}`,
+      `integrity_guard_blocked:conf=${integrity.confidence.toFixed(2)}:${
+        integrity.blocking_reasons.join(",")
+      }`,
     );
   }
 
@@ -1279,7 +1409,9 @@ async function uploadAndInsertDraft(
 // ── handler ────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
   if (req.method !== "POST") return fail("method not allowed", 405);
 
   let body: any;
@@ -1317,7 +1449,10 @@ Deno.serve(async (req) => {
         credit_state: guard.state,
         last_402_at: guard.last_402_at,
       }),
-      { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -1338,7 +1473,8 @@ Deno.serve(async (req) => {
     // Honor loser blocklist — skip generation for products marked as losers.
     if (!force) {
       const slugForCheck = productSlug ?? (await supabase
-        .from("products").select("slug").eq("id", resolvedId).maybeSingle()).data?.slug;
+        .from("products").select("slug").eq("id", resolvedId).maybeSingle())
+        .data?.slug;
       if (slugForCheck) {
         const { data: blocked } = await supabase
           .from("pinterest_loser_blocklist")
@@ -1347,7 +1483,12 @@ Deno.serve(async (req) => {
           .gt("blocked_until", new Date().toISOString())
           .limit(1);
         if (blocked && blocked.length) {
-          return ok({ traceId: trace, skipped: true, reason: "loser_blocklist", details: blocked[0] });
+          return ok({
+            traceId: trace,
+            skipped: true,
+            reason: "loser_blocklist",
+            details: blocked[0],
+          });
         }
       }
     }
@@ -1377,8 +1518,12 @@ Deno.serve(async (req) => {
     // canonical entrypoint, but delegate heavy media work to the resumable AI
     // Creative Factory. The old path is only available for explicit diagnostic
     // calls with use_legacy_sync=true.
-    if ((action === "render_pins" || action === "run_full") && body?.use_legacy_sync !== true) {
-      const factoryUrl = `${SUPABASE_URL}/functions/v1/pinterest-creative-factory`;
+    if (
+      (action === "render_pins" || action === "run_full") &&
+      body?.use_legacy_sync !== true
+    ) {
+      const factoryUrl =
+        `${SUPABASE_URL}/functions/v1/pinterest-creative-factory`;
       const headers = {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         "Content-Type": "application/json",
@@ -1396,17 +1541,30 @@ Deno.serve(async (req) => {
       });
       const enqueue = await enqueueResp.json().catch(() => ({}));
       if (!enqueueResp.ok || enqueue?.ok === false) {
-        return fail(`creative_factory_enqueue_failed:${enqueue?.error ?? enqueueResp.status}`, 502, { traceId: trace, enqueue });
+        return fail(
+          `creative_factory_enqueue_failed:${
+            enqueue?.error ?? enqueueResp.status
+          }`,
+          502,
+          { traceId: trace, enqueue },
+        );
       }
-      EdgeRuntime.waitUntil(fetch(factoryUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ action: "work_async", limit: Math.min(1, count), reason: "creative_director_delegated_factory" }),
-      }).catch(() => null));
+      EdgeRuntime.waitUntil(
+        fetch(factoryUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "work_async",
+            limit: Math.min(1, count),
+            reason: "creative_director_delegated_factory",
+          }),
+        }).catch(() => null),
+      );
       return ok({
         traceId: trace,
         delegated: true,
-        message: "Creative Director delegated rendering to the resumable AI Creative Factory",
+        message:
+          "Creative Director delegated rendering to the resumable AI Creative Factory",
         product_id: resolvedId,
         product_slug: productSlug,
         requested: count,
@@ -1415,18 +1573,30 @@ Deno.serve(async (req) => {
     }
 
     if (action === "profile_product") {
-      const { niche, dna, cached } = await loadOrBuildProfile(supabase, resolvedId, force);
+      const { niche, dna, cached } = await loadOrBuildProfile(
+        supabase,
+        resolvedId,
+        force,
+      );
       return ok({ traceId: trace, niche, cached, dna });
     }
 
     if (action === "generate_briefs") {
-      const { dna, product } = await loadOrBuildProfile(supabase, resolvedId, force);
+      const { dna, product } = await loadOrBuildProfile(
+        supabase,
+        resolvedId,
+        force,
+      );
       const briefs = await generateBriefs(product, dna, count);
       return ok({ traceId: trace, niche: dna.niche_key, briefs });
     }
 
     if (action === "render_pins" || action === "run_full") {
-      const { dna, product, niche } = await loadOrBuildProfile(supabase, resolvedId, force);
+      const { dna, product, niche } = await loadOrBuildProfile(
+        supabase,
+        resolvedId,
+        force,
+      );
       // ── Stage-by-stage rejection log (2026-06-21) ────────────────────
       // Records every decision point so the growth-engine response can
       // surface why a product produced zero drafts.
@@ -1456,25 +1626,42 @@ Deno.serve(async (req) => {
       });
       const weights = await loadLearningWeights(supabase, niche);
       const winnerModes = await loadWinnerPinModes(supabase, niche);
-      const { exploitRatio, pinModeBoost } = await loadStrategyAndTrends(supabase, niche);
+      const { exploitRatio, pinModeBoost } = await loadStrategyAndTrends(
+        supabase,
+        niche,
+      );
       // Phase 5/8/10 — merge winner pin_modes with current trend bias and
       // archetype boosts from pinterest_strategy_state, then exploit the top
       // archetype with the evolved exploit ratio (default 0.8).
       const blended = new Map<string, number>();
-      for (const w of winnerModes) blended.set(w.pin_mode, (blended.get(w.pin_mode) ?? 0) + w.score);
+      for (const w of winnerModes) {
+        blended.set(w.pin_mode, (blended.get(w.pin_mode) ?? 0) + w.score);
+      }
       for (const [mode, boost] of Object.entries(pinModeBoost)) {
         blended.set(mode, (blended.get(mode) ?? 0) + Number(boost) * 100);
       }
-      const exploitFirst = [...blended.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] as PinModeKey | undefined;
-      const visualPlans: VisualPlan[] = Array.from({ length: count }).map((_, i) => {
-        const useWinner = i === 0 && exploitFirst && Math.random() < exploitRatio;
-        return buildVisualPlan({
-          name: product.name,
-          rotateSeed: i,
-          pin_mode: useWinner ? exploitFirst : undefined,
-        });
-      });
-      let briefs = await generateBriefs(product, dna, count, undefined, weights, {}, visualPlans);
+      const exploitFirst = [...blended.entries()].sort((a, b) => b[1] - a[1])[0]
+        ?.[0] as PinModeKey | undefined;
+      const visualPlans: VisualPlan[] = Array.from({ length: count }).map(
+        (_, i) => {
+          const useWinner = i === 0 && exploitFirst &&
+            Math.random() < exploitRatio;
+          return buildVisualPlan({
+            name: product.name,
+            rotateSeed: i,
+            pin_mode: useWinner ? exploitFirst : undefined,
+          });
+        },
+      );
+      let briefs = await generateBriefs(
+        product,
+        dna,
+        count,
+        undefined,
+        weights,
+        {},
+        visualPlans,
+      );
       stages.push({
         stage: "brief_generated",
         status: briefs.length ? "ok" : "rejected",
@@ -1491,7 +1678,10 @@ Deno.serve(async (req) => {
       try {
         await guard.load(supabase);
       } catch (e) {
-        console.warn("[creative-director] diversity guard load failed", (e as Error).message);
+        console.warn(
+          "[creative-director] diversity guard load failed",
+          (e as Error).message,
+        );
       }
       const fidelityAudit: Array<{
         product_slug: string;
@@ -1502,7 +1692,10 @@ Deno.serve(async (req) => {
       }> = [];
       const productImageUrl: string | null = (product as any).image_url ?? null;
       if (!productImageUrl) {
-        console.warn("[creative-director] product has no image_url — falling back to text-only render", product.slug);
+        console.warn(
+          "[creative-director] product has no image_url — falling back to text-only render",
+          product.slug,
+        );
       }
 
       // Deterministic board overlay (1 short benefit + GetPawsy wordmark).
@@ -1570,24 +1763,38 @@ Deno.serve(async (req) => {
                 reasons: lastReasons,
               });
               if (attempt > EFFECTIVE_MAX_RETRIES) {
-                rejected.push({ brief, reasons: lastReasons, scores: lastScores, diversity: preGuard, pre_render_skip: true });
+                rejected.push({
+                  brief,
+                  reasons: lastReasons,
+                  scores: lastScores,
+                  diversity: preGuard,
+                  pre_render_skip: true,
+                });
                 break;
               }
               // Regen the brief with the diversity reasons so the model picks
               // a different angle/headline/CTA next time. No image was rendered.
               const single = await generateBriefs(
-                product, dna, 1,
+                product,
+                dna,
+                1,
                 [brief.pattern_id!] as PatternId[],
                 weights,
                 { 0: preGuard.reasons },
               );
-              brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+              brief = {
+                ...single[0],
+                id: brief.id,
+                pattern_id: brief.pattern_id,
+              };
               continue;
             }
             // Apply any cheap pool replacements the guard suggested so the
             // overlay we render matches what we'll insert.
             if (Object.keys(preGuard.replacedFromPool).length) {
-              if (preGuard.replacedFromPool.headline) brief.headline = preGuard.final.headline;
+              if (preGuard.replacedFromPool.headline) {
+                brief.headline = preGuard.final.headline;
+              }
               if (preGuard.replacedFromPool.cta) brief.cta = preGuard.final.cta;
               if (preGuard.replacedFromPool.hook && preGuard.final.hook) {
                 (brief as any).hook_category = preGuard.final.hook;
@@ -1642,7 +1849,11 @@ Deno.serve(async (req) => {
                 weights,
                 { 0: qc.reasons },
               );
-              brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+              brief = {
+                ...single[0],
+                id: brief.id,
+                pattern_id: brief.pattern_id,
+              };
               continue;
             }
 
@@ -1667,21 +1878,35 @@ Deno.serve(async (req) => {
                   brief_index: i,
                   attempt,
                   reason: "fidelity_score_too_low",
-                  details: { score: fidelityScore, threshold: PRODUCT_FIDELITY_THRESHOLD, notes: fidelityNotes },
+                  details: {
+                    score: fidelityScore,
+                    threshold: PRODUCT_FIDELITY_THRESHOLD,
+                    notes: fidelityNotes,
+                  },
                 });
                 lastReasons = [
                   ...(qc.reasons ?? []),
-                  `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${fidelityNotes.slice(0, 80)}`,
+                  `product_fidelity_${fidelityScore}<${PRODUCT_FIDELITY_THRESHOLD}:${
+                    fidelityNotes.slice(0, 80)
+                  }`,
                 ];
                 if (attempt > EFFECTIVE_MAX_RETRIES) break;
                 // Retry: regen this brief, source-lock still applied next loop.
                 const single = await generateBriefs(
-                  product, dna, 1,
+                  product,
+                  dna,
+                  1,
                   [brief.pattern_id!] as PatternId[],
                   weights,
-                  { 0: [`product fidelity ${fidelityScore} — ${fidelityNotes}`] },
+                  {
+                    0: [`product fidelity ${fidelityScore} — ${fidelityNotes}`],
+                  },
                 );
-                brief = { ...single[0], id: brief.id, pattern_id: brief.pattern_id };
+                brief = {
+                  ...single[0],
+                  id: brief.id,
+                  pattern_id: brief.pattern_id,
+                };
                 continue;
               }
             }
@@ -1722,8 +1947,12 @@ Deno.serve(async (req) => {
               break;
             }
             if (Object.keys(guardResult.replacedFromPool).length) {
-              if (guardResult.replacedFromPool.headline) brief.headline = guardResult.final.headline;
-              if (guardResult.replacedFromPool.cta) brief.cta = guardResult.final.cta;
+              if (guardResult.replacedFromPool.headline) {
+                brief.headline = guardResult.final.headline;
+              }
+              if (guardResult.replacedFromPool.cta) {
+                brief.cta = guardResult.final.cta;
+              }
               if (guardResult.replacedFromPool.hook && guardResult.final.hook) {
                 (brief as any).hook_category = guardResult.final.hook;
               }
@@ -1757,8 +1986,15 @@ Deno.serve(async (req) => {
               boardName,
             );
             drafts.push({
-              ...inserted, brief, scores: lastScores, attempts: attempt,
-              product_fidelity: { score: fidelityScore, source: productImageUrl, notes: fidelityNotes },
+              ...inserted,
+              brief,
+              scores: lastScores,
+              attempts: attempt,
+              product_fidelity: {
+                score: fidelityScore,
+                source: productImageUrl,
+                notes: fidelityNotes,
+              },
             });
             stages.push({
               stage: "queue_insert",
@@ -1768,7 +2004,12 @@ Deno.serve(async (req) => {
               details: { pin_queue_id: (inserted as any)?.id ?? null },
             });
             guard.register(
-              { headline: brief.headline, cta: brief.cta, hook: brief.hook_category ?? null, product_id: product.id },
+              {
+                headline: brief.headline,
+                cta: brief.cta,
+                hook: brief.hook_category ?? null,
+                product_id: product.id,
+              },
               niche,
             );
             accepted = true;
@@ -1791,25 +2032,31 @@ Deno.serve(async (req) => {
 
         if (!accepted) {
           const lastRejection = [...stages].reverse().find(
-            (s) => s.brief_index === i && (s.status === "rejected" || s.status === "error"),
+            (s) =>
+              s.brief_index === i &&
+              (s.status === "rejected" || s.status === "error"),
           );
           rejected.push({ brief, reasons: lastReasons, scores: lastScores });
           stages.push({
             stage: "queue_insert",
             status: "rejected",
             brief_index: i,
-            reason: lastRejection?.reason ?? (lastReasons[0] || "max_retries_exceeded"),
+            reason: lastRejection?.reason ??
+              (lastReasons[0] || "max_retries_exceeded"),
             details: { reasons: lastReasons },
           });
         }
       }
 
       const approvedCount = fidelityAudit.filter((a) => a.approved).length;
-      const rejectedByFidelity = fidelityAudit.filter((a) => !a.approved).length;
+      const rejectedByFidelity = fidelityAudit.filter((a) =>
+        !a.approved
+      ).length;
 
       return ok({
         traceId: trace,
-        message: `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
+        message:
+          `Generated ${drafts.length}/${briefs.length} pins (${rejected.length} rejected)`,
         niche,
         product_id: resolvedId,
         product_slug: product.slug,
@@ -1817,10 +2064,10 @@ Deno.serve(async (req) => {
         stages,
         drafts_count: drafts.length,
         rejected_count: rejected.length,
-        primary_rejection_reason:
-          drafts.length > 0
-            ? null
-            : (stages.filter((s) => s.status !== "ok").slice(-1)[0]?.reason ?? "unknown_rejection"),
+        primary_rejection_reason: drafts.length > 0
+          ? null
+          : (stages.filter((s) => s.status !== "ok").slice(-1)[0]?.reason ??
+            "unknown_rejection"),
         approved_required: true,
         threshold: QUALITY_THRESHOLD,
         product_truth: {
