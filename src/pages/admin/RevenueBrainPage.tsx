@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { recordDecision } from "@/lib/governanceLedger";
 
 type ScoreRow = {
   product_id: string;
@@ -48,6 +49,18 @@ export default function RevenueBrainPage() {
       if (error) throw error;
       toast.success(`${action}${dry ? " (dry)" : ""}: ${data?.products_scanned ?? data?.promoted ?? "ok"}`);
       await load();
+      // Governance Ledger: log this strategic move once (deduped by run timestamp).
+      if (!dry) {
+        await recordDecision({
+          sourceEngine: "revenue_ai",
+          decisionType: `revenue_brain_${action}`,
+          proposal: { action, products_scanned: data?.products_scanned, promoted: data?.promoted },
+          expectedMetric: "revenue_cents",
+          expectedValue: 0,
+          confidence: 0.6,
+          dedupeKey: `revenue_brain:${action}:${new Date().toISOString().slice(0,13)}`,
+        });
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
