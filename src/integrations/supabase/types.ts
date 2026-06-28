@@ -26003,6 +26003,566 @@ export type Database = {
         }
         Relationships: []
       }
+      gvcae_audit_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          stats: Json
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          started_at?: string
+          stats?: Json
+          status?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          stats?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      gvcae_audit_steps: {
+        Row: {
+          finished_at: string | null
+          id: string
+          payload: Json
+          run_id: string
+          started_at: string
+          status: string
+          step: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          payload?: Json
+          run_id: string
+          started_at?: string
+          status?: string
+          step: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          payload?: Json
+          run_id?: string
+          started_at?: string
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gvcae_audit_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gvcae_audit_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gvcae_change_impact: {
+        Row: {
+          business_impact: number | null
+          change_title: string
+          created_at: string
+          evidence: Json
+          id: string
+          migration_effort: string | null
+          modules_affected: string[]
+          operational_impact: string | null
+          performance_impact: string | null
+          recommendation: string | null
+          revenue_impact: string | null
+          risk_score: number | null
+          rollback_complexity: string | null
+        }
+        Insert: {
+          business_impact?: number | null
+          change_title: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          migration_effort?: string | null
+          modules_affected: string[]
+          operational_impact?: string | null
+          performance_impact?: string | null
+          recommendation?: string | null
+          revenue_impact?: string | null
+          risk_score?: number | null
+          rollback_complexity?: string | null
+        }
+        Update: {
+          business_impact?: number | null
+          change_title?: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          migration_effort?: string | null
+          modules_affected?: string[]
+          operational_impact?: string | null
+          performance_impact?: string | null
+          recommendation?: string | null
+          revenue_impact?: string | null
+          risk_score?: number | null
+          rollback_complexity?: string | null
+        }
+        Relationships: []
+      }
+      gvcae_dependencies: {
+        Row: {
+          created_at: string
+          criticality: number
+          dep_type: string
+          from_module: string
+          id: string
+          is_critical_path: boolean
+          is_single_point_of_failure: boolean
+          metadata: Json
+          to_module: string
+        }
+        Insert: {
+          created_at?: string
+          criticality?: number
+          dep_type?: string
+          from_module: string
+          id?: string
+          is_critical_path?: boolean
+          is_single_point_of_failure?: boolean
+          metadata?: Json
+          to_module: string
+        }
+        Update: {
+          created_at?: string
+          criticality?: number
+          dep_type?: string
+          from_module?: string
+          id?: string
+          is_critical_path?: boolean
+          is_single_point_of_failure?: boolean
+          metadata?: Json
+          to_module?: string
+        }
+        Relationships: []
+      }
+      gvcae_duplicates: {
+        Row: {
+          category: string
+          detected_at: string
+          evidence: Json
+          id: string
+          members: string[]
+          recommendation: string | null
+          similarity: number | null
+          status: string
+        }
+        Insert: {
+          category: string
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          members: string[]
+          recommendation?: string | null
+          similarity?: number | null
+          status?: string
+        }
+        Update: {
+          category?: string
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          members?: string[]
+          recommendation?: string | null
+          similarity?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
+      gvcae_health_scores: {
+        Row: {
+          captured_at: string
+          complexity: number | null
+          coupling: number | null
+          documentation: number | null
+          duplication: number | null
+          health: number | null
+          id: string
+          maintainability: number | null
+          module_key: string
+          notes: Json
+          observability: number | null
+          overall: number | null
+          performance: number | null
+          reliability: number | null
+          reuse: number | null
+          security: number | null
+          testability: number | null
+        }
+        Insert: {
+          captured_at?: string
+          complexity?: number | null
+          coupling?: number | null
+          documentation?: number | null
+          duplication?: number | null
+          health?: number | null
+          id?: string
+          maintainability?: number | null
+          module_key: string
+          notes?: Json
+          observability?: number | null
+          overall?: number | null
+          performance?: number | null
+          reliability?: number | null
+          reuse?: number | null
+          security?: number | null
+          testability?: number | null
+        }
+        Update: {
+          captured_at?: string
+          complexity?: number | null
+          coupling?: number | null
+          documentation?: number | null
+          duplication?: number | null
+          health?: number | null
+          id?: string
+          maintainability?: number | null
+          module_key?: string
+          notes?: Json
+          observability?: number | null
+          overall?: number | null
+          performance?: number | null
+          reliability?: number | null
+          reuse?: number | null
+          security?: number | null
+          testability?: number | null
+        }
+        Relationships: []
+      }
+      gvcae_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          domain: string | null
+          id: string
+          key: string
+          kind: string
+          metadata: Json
+          name: string
+          owner: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          domain?: string | null
+          id?: string
+          key: string
+          kind: string
+          metadata?: Json
+          name: string
+          owner?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          domain?: string | null
+          id?: string
+          key?: string
+          kind?: string
+          metadata?: Json
+          name?: string
+          owner?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gvcae_reviews: {
+        Row: {
+          became_better: Json
+          became_worse: Json
+          created_at: string
+          id: string
+          never_should_have: Json
+          obsolete: Json
+          period: string
+          summary: string | null
+          to_merge: Json
+          to_remove: Json
+          to_rewrite: Json
+        }
+        Insert: {
+          became_better?: Json
+          became_worse?: Json
+          created_at?: string
+          id?: string
+          never_should_have?: Json
+          obsolete?: Json
+          period: string
+          summary?: string | null
+          to_merge?: Json
+          to_remove?: Json
+          to_rewrite?: Json
+        }
+        Update: {
+          became_better?: Json
+          became_worse?: Json
+          created_at?: string
+          id?: string
+          never_should_have?: Json
+          obsolete?: Json
+          period?: string
+          summary?: string | null
+          to_merge?: Json
+          to_remove?: Json
+          to_rewrite?: Json
+        }
+        Relationships: []
+      }
+      gvcae_scorecards: {
+        Row: {
+          captured_at: string
+          documentation: number | null
+          id: string
+          knowledge_reuse: number | null
+          maintainability: number | null
+          modularity: number | null
+          notes: Json
+          observability: number | null
+          overall_score: number | null
+          performance: number | null
+          period: string
+          reliability: number | null
+          scalability: number | null
+          security: number | null
+          testability: number | null
+        }
+        Insert: {
+          captured_at?: string
+          documentation?: number | null
+          id?: string
+          knowledge_reuse?: number | null
+          maintainability?: number | null
+          modularity?: number | null
+          notes?: Json
+          observability?: number | null
+          overall_score?: number | null
+          performance?: number | null
+          period: string
+          reliability?: number | null
+          scalability?: number | null
+          security?: number | null
+          testability?: number | null
+        }
+        Update: {
+          captured_at?: string
+          documentation?: number | null
+          id?: string
+          knowledge_reuse?: number | null
+          maintainability?: number | null
+          modularity?: number | null
+          notes?: Json
+          observability?: number | null
+          overall_score?: number | null
+          performance?: number | null
+          period?: string
+          reliability?: number | null
+          scalability?: number | null
+          security?: number | null
+          testability?: number | null
+        }
+        Relationships: []
+      }
+      gvcae_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gvcae_simplification_proposals: {
+        Row: {
+          decided_at: string | null
+          decided_by: string | null
+          effort: string | null
+          evidence: Json
+          expected_benefit: string | null
+          id: string
+          proposal_type: string
+          proposed_at: string
+          risk: string | null
+          status: string
+          summary: string
+          targets: string[]
+        }
+        Insert: {
+          decided_at?: string | null
+          decided_by?: string | null
+          effort?: string | null
+          evidence?: Json
+          expected_benefit?: string | null
+          id?: string
+          proposal_type: string
+          proposed_at?: string
+          risk?: string | null
+          status?: string
+          summary: string
+          targets: string[]
+        }
+        Update: {
+          decided_at?: string | null
+          decided_by?: string | null
+          effort?: string | null
+          evidence?: Json
+          expected_benefit?: string | null
+          id?: string
+          proposal_type?: string
+          proposed_at?: string
+          risk?: string | null
+          status?: string
+          summary?: string
+          targets?: string[]
+        }
+        Relationships: []
+      }
+      gvcae_tech_debt: {
+        Row: {
+          business_risk: number | null
+          category: string
+          complexity: number | null
+          created_at: string
+          evidence: Json
+          expected_roi: number | null
+          id: string
+          maintenance_cost: number | null
+          module_key: string | null
+          operational_risk: number | null
+          performance_impact: number | null
+          priority_score: number | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_risk?: number | null
+          category: string
+          complexity?: number | null
+          created_at?: string
+          evidence?: Json
+          expected_roi?: number | null
+          id?: string
+          maintenance_cost?: number | null
+          module_key?: string | null
+          operational_risk?: number | null
+          performance_impact?: number | null
+          priority_score?: number | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_risk?: number | null
+          category?: string
+          complexity?: number | null
+          created_at?: string
+          evidence?: Json
+          expected_roi?: number | null
+          id?: string
+          maintenance_cost?: number | null
+          module_key?: string | null
+          operational_risk?: number | null
+          performance_impact?: number | null
+          priority_score?: number | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gvcae_value_analysis: {
+        Row: {
+          ai_credit_cost: number | null
+          business_value: number | null
+          captured_at: string
+          dev_cost: number | null
+          id: string
+          infra_cost: number | null
+          learning_contribution: number | null
+          maintenance_cost: number | null
+          module_key: string
+          net_value: number | null
+          operational_cost: number | null
+          rationale: string | null
+          revenue_contribution: number | null
+          risk: number | null
+          verdict: string | null
+        }
+        Insert: {
+          ai_credit_cost?: number | null
+          business_value?: number | null
+          captured_at?: string
+          dev_cost?: number | null
+          id?: string
+          infra_cost?: number | null
+          learning_contribution?: number | null
+          maintenance_cost?: number | null
+          module_key: string
+          net_value?: number | null
+          operational_cost?: number | null
+          rationale?: string | null
+          revenue_contribution?: number | null
+          risk?: number | null
+          verdict?: string | null
+        }
+        Update: {
+          ai_credit_cost?: number | null
+          business_value?: number | null
+          captured_at?: string
+          dev_cost?: number | null
+          id?: string
+          infra_cost?: number | null
+          learning_contribution?: number | null
+          maintenance_cost?: number | null
+          module_key?: string
+          net_value?: number | null
+          operational_cost?: number | null
+          rationale?: string | null
+          revenue_contribution?: number | null
+          risk?: number | null
+          verdict?: string | null
+        }
+        Relationships: []
+      }
       homepage_variant_events: {
         Row: {
           created_at: string
