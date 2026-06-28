@@ -1143,6 +1143,7 @@ export default function PinterestHealthPage() {
       <GrowthDirectorPanel />
       <CollectiveIntelligencePanel />
       <EvidenceGovernorPanel />
+      <AdaptiveLearningGovernorPanel />
     </div>
   );
 }
