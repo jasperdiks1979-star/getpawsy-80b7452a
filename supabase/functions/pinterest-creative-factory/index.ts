@@ -10,6 +10,13 @@ import {
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
+import {
+  buildMasterPrompt,
+  dimsSimilarity,
+  type MasterDims,
+  pickMasterDims,
+  scoreInspirationAi,
+} from "../_shared/pinterest-master-creative-director.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
