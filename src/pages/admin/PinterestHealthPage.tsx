@@ -35,6 +35,18 @@ type Snapshot = {
   nextPublishAt: string | null;
   incidents: Array<{ condition: string; severity: string; detail: any }>;
   recovery?: any;
+  successRate24h?: number | null;
+  avgPublishIntervalMin?: number | null;
+  factoryThroughput24h?: number;
+  queueGrowthRate24h?: number;
+  estRuntimeDays?: number | null;
+  tokenStatus?: {
+    connected: boolean;
+    expiresAt: string | null;
+    minutesUntilExpiry: number | null;
+    boardCount: number | null;
+  };
+  cronJobs?: Array<{ name: string; minutesSinceRun: number | null; ok: boolean }>;
 };
 
 type WatchdogPayload = {
