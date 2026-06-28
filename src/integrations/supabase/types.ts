@@ -18887,6 +18887,498 @@ export type Database = {
         }
         Relationships: []
       }
+      gaee_competitive_threats: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          impact: number | null
+          likelihood: number | null
+          mitigation: string | null
+          moat_action: string | null
+          status: string | null
+          threat: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          impact?: number | null
+          likelihood?: number | null
+          mitigation?: string | null
+          moat_action?: string | null
+          status?: string | null
+          threat: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          impact?: number | null
+          likelihood?: number | null
+          mitigation?: string | null
+          moat_action?: string | null
+          status?: string | null
+          threat?: string
+        }
+        Relationships: []
+      }
+      gaee_genesis_updates: {
+        Row: {
+          applied: boolean
+          applied_at: string | null
+          created_at: string
+          id: string
+          layer: string
+          patch: Json
+          proposal_id: string | null
+        }
+        Insert: {
+          applied?: boolean
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          layer: string
+          patch?: Json
+          proposal_id?: string | null
+        }
+        Update: {
+          applied?: boolean
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          layer?: string
+          patch?: Json
+          proposal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_genesis_updates_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaee_observations: {
+        Row: {
+          id: string
+          metric: string | null
+          observed_at: string
+          payload: Json | null
+          run_id: string | null
+          source: string
+          subject: string
+          value: number | null
+        }
+        Insert: {
+          id?: string
+          metric?: string | null
+          observed_at?: string
+          payload?: Json | null
+          run_id?: string | null
+          source: string
+          subject: string
+          value?: number | null
+        }
+        Update: {
+          id?: string
+          metric?: string | null
+          observed_at?: string
+          payload?: Json | null
+          run_id?: string | null
+          source?: string
+          subject?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_observations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaee_proposals: {
+        Row: {
+          business_value: number | null
+          change_type: string
+          complexity_delta: number | null
+          confidence: number | null
+          created_at: string
+          decision_reason: string | null
+          domain: string
+          evolution_score: number | null
+          expected_learning: number | null
+          expected_roi: number | null
+          id: string
+          proposed_change: Json
+          rationale: string | null
+          reviewed_at: string | null
+          reviewer: string | null
+          risk: number | null
+          run_id: string | null
+          status: string
+          strategic_alignment: number | null
+          target: string
+          time_horizon_days: number | null
+          title: string
+        }
+        Insert: {
+          business_value?: number | null
+          change_type: string
+          complexity_delta?: number | null
+          confidence?: number | null
+          created_at?: string
+          decision_reason?: string | null
+          domain: string
+          evolution_score?: number | null
+          expected_learning?: number | null
+          expected_roi?: number | null
+          id?: string
+          proposed_change?: Json
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewer?: string | null
+          risk?: number | null
+          run_id?: string | null
+          status?: string
+          strategic_alignment?: number | null
+          target: string
+          time_horizon_days?: number | null
+          title: string
+        }
+        Update: {
+          business_value?: number | null
+          change_type?: string
+          complexity_delta?: number | null
+          confidence?: number | null
+          created_at?: string
+          decision_reason?: string | null
+          domain?: string
+          evolution_score?: number | null
+          expected_learning?: number | null
+          expected_roi?: number | null
+          id?: string
+          proposed_change?: Json
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewer?: string | null
+          risk?: number | null
+          run_id?: string | null
+          status?: string
+          strategic_alignment?: number | null
+          target?: string
+          time_horizon_days?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_proposals_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaee_reflections: {
+        Row: {
+          created_at: string
+          id: string
+          keep: Json | null
+          merge: Json | null
+          narrative: string | null
+          no_value: Json | null
+          obsolete: Json | null
+          period: string
+          redesign: Json | null
+          remove: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          keep?: Json | null
+          merge?: Json | null
+          narrative?: string | null
+          no_value?: Json | null
+          obsolete?: Json | null
+          period: string
+          redesign?: Json | null
+          remove?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          keep?: Json | null
+          merge?: Json | null
+          narrative?: string | null
+          no_value?: Json | null
+          obsolete?: Json | null
+          period?: string
+          redesign?: Json | null
+          remove?: Json | null
+        }
+        Relationships: []
+      }
+      gaee_results: {
+        Row: {
+          actual_profit_delta: number | null
+          actual_revenue_delta: number | null
+          actual_risk: number | null
+          id: string
+          learning_notes: string | null
+          measured_at: string
+          payload: Json | null
+          prediction_error: number | null
+          proposal_id: string | null
+        }
+        Insert: {
+          actual_profit_delta?: number | null
+          actual_revenue_delta?: number | null
+          actual_risk?: number | null
+          id?: string
+          learning_notes?: string | null
+          measured_at?: string
+          payload?: Json | null
+          prediction_error?: number | null
+          proposal_id?: string | null
+        }
+        Update: {
+          actual_profit_delta?: number | null
+          actual_revenue_delta?: number | null
+          actual_risk?: number | null
+          id?: string
+          learning_notes?: string | null
+          measured_at?: string
+          payload?: Json | null
+          prediction_error?: number | null
+          proposal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_results_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaee_rollouts: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          metrics: Json | null
+          proposal_id: string | null
+          rollback_reason: string | null
+          stage: string
+          started_at: string | null
+          status: string
+          traffic_pct: number | null
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          metrics?: Json | null
+          proposal_id?: string | null
+          rollback_reason?: string | null
+          stage?: string
+          started_at?: string | null
+          status?: string
+          traffic_pct?: number | null
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          metrics?: Json | null
+          proposal_id?: string | null
+          rollback_reason?: string | null
+          stage?: string
+          started_at?: string | null
+          status?: string
+          traffic_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_rollouts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gaee_runs: {
+        Row: {
+          cycle: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          summary: Json | null
+          trigger: string | null
+        }
+        Insert: {
+          cycle: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+          trigger?: string | null
+        }
+        Update: {
+          cycle?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+          trigger?: string | null
+        }
+        Relationships: []
+      }
+      gaee_scorecards: {
+        Row: {
+          automation: number | null
+          brand_strength: number | null
+          clv: number | null
+          created_at: string
+          customer_trust: number | null
+          developer_productivity: number | null
+          enterprise_value: number | null
+          execution_speed: number | null
+          id: string
+          learning_rate: number | null
+          maintainability: number | null
+          overall: number | null
+          period: string
+          prediction_accuracy: number | null
+          profit: number | null
+          simplicity: number | null
+        }
+        Insert: {
+          automation?: number | null
+          brand_strength?: number | null
+          clv?: number | null
+          created_at?: string
+          customer_trust?: number | null
+          developer_productivity?: number | null
+          enterprise_value?: number | null
+          execution_speed?: number | null
+          id?: string
+          learning_rate?: number | null
+          maintainability?: number | null
+          overall?: number | null
+          period: string
+          prediction_accuracy?: number | null
+          profit?: number | null
+          simplicity?: number | null
+        }
+        Update: {
+          automation?: number | null
+          brand_strength?: number | null
+          clv?: number | null
+          created_at?: string
+          customer_trust?: number | null
+          developer_productivity?: number | null
+          enterprise_value?: number | null
+          execution_speed?: number | null
+          id?: string
+          learning_rate?: number | null
+          maintainability?: number | null
+          overall?: number | null
+          period?: string
+          prediction_accuracy?: number | null
+          profit?: number | null
+          simplicity?: number | null
+        }
+        Relationships: []
+      }
+      gaee_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gaee_simulations: {
+        Row: {
+          ai_credit_impact: number | null
+          assumptions: Json | null
+          created_at: string
+          csat_impact: number | null
+          eng_cost_impact: number | null
+          expected_learning: number | null
+          id: string
+          ops_cost_impact: number | null
+          profit_impact: number | null
+          proposal_id: string | null
+          revenue_impact: number | null
+          risk_score: number | null
+        }
+        Insert: {
+          ai_credit_impact?: number | null
+          assumptions?: Json | null
+          created_at?: string
+          csat_impact?: number | null
+          eng_cost_impact?: number | null
+          expected_learning?: number | null
+          id?: string
+          ops_cost_impact?: number | null
+          profit_impact?: number | null
+          proposal_id?: string | null
+          revenue_impact?: number | null
+          risk_score?: number | null
+        }
+        Update: {
+          ai_credit_impact?: number | null
+          assumptions?: Json | null
+          created_at?: string
+          csat_impact?: number | null
+          eng_cost_impact?: number | null
+          expected_learning?: number | null
+          id?: string
+          ops_cost_impact?: number | null
+          profit_impact?: number | null
+          proposal_id?: string | null
+          revenue_impact?: number | null
+          risk_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gaee_simulations_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "gaee_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gbd_conflicts: {
         Row: {
           conflict_type: string
