@@ -756,6 +756,17 @@ const Checkout = () => {
           currency: 'USD',
           destination_url: data.url,
         });
+        // Canonical funnel `payment` step — fires the instant we hand the
+        // visitor off to Stripe. Without this, analytics_funnel_waterfall
+        // shows 0 payments even though the prior audit confirmed real
+        // Stripe sessions are being created. Non-blocking; never throws.
+        try {
+          const m = await import('@/lib/analyticsFunnel');
+          m.recordFunnelStep('payment', {
+            value: Number(stripeChargedTotal.toFixed(2)),
+            currency: 'USD',
+          });
+        } catch { /* swallow */ }
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
