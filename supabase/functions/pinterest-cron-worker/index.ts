@@ -1224,7 +1224,48 @@ Deno.serve(async (req) => {
         if (activeBoardOverride) {
           boardId = activeBoardOverride.id;
         } else {
-          const boardRef = pin.board_name || "";
+          // ── Board Intelligence: pick the highest-EV publishable board
+          //    using historical CTR/save/purchase × keyword similarity.
+          //    Falls back to keyword match when 30d perf rollup is empty.
+          let chosenBoardName = pin.board_name || "";
+          try {
+            const pick = await pickBestBoard(sb, {
+              category_key: (pin as any).category_key ?? null,
+              niche: (pin as any).niche_key ?? (pin as any).category_key ?? null,
+              product_name: (pin as any).product_name ?? (pin as any).product_slug ?? null,
+              current_board_name: pin.board_name ?? null,
+              current_board_id: (pin as any).board_id ?? null,
+            });
+            if (pick.picked) {
+              chosenBoardName = pick.picked.name;
+              boardIdCache.set(chosenBoardName, pick.picked.id);
+              // Persist + log if the intelligence migrated the pin.
+              if (pick.migrated) {
+                await sb.from("pinterest_pin_queue").update({
+                  board_id: pick.picked.id,
+                  board_name: pick.picked.name,
+                  updated_at: new Date().toISOString(),
+                }).eq("id", pin.id);
+                await sb.from("pinterest_post_logs").insert({
+                  pin_queue_id: pin.id,
+                  action: "board_intelligence_migrate",
+                  status: "ok",
+                  response_data: {
+                    from: pin.board_name,
+                    to: pick.picked.name,
+                    reason: pick.reason,
+                    score: pick.picked.score,
+                    alternatives: pick.alternatives.slice(0, 3),
+                  },
+                });
+                pin.board_name = pick.picked.name;
+                (pin as any).board_id = pick.picked.id;
+              }
+            }
+          } catch (e) {
+            console.warn("[cron] board-intelligence failed, falling back to static name:", e);
+          }
+          const boardRef = chosenBoardName;
           boardId = boardIdCache.has(boardRef)
             ? boardIdCache.get(boardRef)!
             : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
