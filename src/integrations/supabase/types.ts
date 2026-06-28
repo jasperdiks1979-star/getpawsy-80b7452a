@@ -22363,6 +22363,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_evidence_runs: {
+        Row: {
+          avg_confidence: number | null
+          finished_at: string | null
+          id: string
+          learning_velocity: number | null
+          started_at: string
+          summary: Json | null
+          traits_demoted: number | null
+          traits_evaluated: number | null
+          traits_observed: number | null
+          traits_promoted: number | null
+        }
+        Insert: {
+          avg_confidence?: number | null
+          finished_at?: string | null
+          id?: string
+          learning_velocity?: number | null
+          started_at?: string
+          summary?: Json | null
+          traits_demoted?: number | null
+          traits_evaluated?: number | null
+          traits_observed?: number | null
+          traits_promoted?: number | null
+        }
+        Update: {
+          avg_confidence?: number | null
+          finished_at?: string | null
+          id?: string
+          learning_velocity?: number | null
+          started_at?: string
+          summary?: Json | null
+          traits_demoted?: number | null
+          traits_evaluated?: number | null
+          traits_observed?: number | null
+          traits_promoted?: number | null
+        }
+        Relationships: []
+      }
       pcie2_experiment_variants: {
         Row: {
           confidence: number
@@ -23331,6 +23370,114 @@ export type Database = {
           started_at?: string
           status?: string
           totals?: Json
+        }
+        Relationships: []
+      }
+      pcie2_trait_weight_history: {
+        Row: {
+          created_at: string
+          delta: number
+          dimension: string
+          evidence: Json | null
+          id: string
+          new_weight: number
+          old_weight: number
+          reason: string
+          run_id: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          dimension: string
+          evidence?: Json | null
+          id?: string
+          new_weight: number
+          old_weight: number
+          reason: string
+          run_id?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          dimension?: string
+          evidence?: Json | null
+          id?: string
+          new_weight?: number
+          old_weight?: number
+          reason?: string
+          run_id?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
+      pcie2_trait_weights: {
+        Row: {
+          confidence: number
+          ctr_lift: number | null
+          dimension: string
+          evidence_age_days: number | null
+          evidence_window_days: number | null
+          first_seen_at: string
+          id: string
+          last_evaluated_at: string
+          last_reason: string | null
+          prev_weight: number
+          purchase_lift: number | null
+          rev_lift: number | null
+          sample_n: number
+          save_lift: number | null
+          stability: number | null
+          status: string
+          trend: number | null
+          updated_at: string
+          value: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          ctr_lift?: number | null
+          dimension: string
+          evidence_age_days?: number | null
+          evidence_window_days?: number | null
+          first_seen_at?: string
+          id?: string
+          last_evaluated_at?: string
+          last_reason?: string | null
+          prev_weight?: number
+          purchase_lift?: number | null
+          rev_lift?: number | null
+          sample_n?: number
+          save_lift?: number | null
+          stability?: number | null
+          status?: string
+          trend?: number | null
+          updated_at?: string
+          value: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          ctr_lift?: number | null
+          dimension?: string
+          evidence_age_days?: number | null
+          evidence_window_days?: number | null
+          first_seen_at?: string
+          id?: string
+          last_evaluated_at?: string
+          last_reason?: string | null
+          prev_weight?: number
+          purchase_lift?: number | null
+          rev_lift?: number | null
+          sample_n?: number
+          save_lift?: number | null
+          stability?: number | null
+          status?: string
+          trend?: number | null
+          updated_at?: string
+          value?: string
+          weight?: number
         }
         Relationships: []
       }

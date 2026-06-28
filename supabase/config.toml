@@ -452,3 +452,6 @@ verify_jwt = false
 
 [functions.pinterest-taste-engine]
 verify_jwt = false
+
+[functions.pcie2-evidence-governor]
+verify_jwt = false
