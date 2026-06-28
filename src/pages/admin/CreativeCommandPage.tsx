@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { recordDecision } from "@/lib/governanceLedger";
 
 type Run = {
   id: string;
@@ -75,6 +76,16 @@ export default function CreativeCommandPage() {
     } as any);
     if (error) { toast({ title: "Queue insert failed", description: error.message, variant: "destructive" }); return; }
     await supabase.from("creative_assets").update({ status: "queued", routed_to: "pinterest_queue", approved_at: new Date().toISOString() }).eq("id", id);
+    // Governance Ledger: every approval is one decision row.
+    await recordDecision({
+      sourceEngine: "commander",
+      decisionType: "creative_approve_to_pinterest",
+      proposal: { creative_asset_id: id, hook: d.hook, category: d.category_slug, score: d.priority_score },
+      expectedMetric: "pinterest_clicks",
+      expectedValue: Number(d.priority_score ?? 0),
+      confidence: 0.7,
+      dedupeKey: `creative_approve:${id}`,
+    });
     toast({ title: "Approved to Pinterest queue" });
     refresh();
   }
