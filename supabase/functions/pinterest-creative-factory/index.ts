@@ -599,6 +599,30 @@ async function work(sb: Sb, requestedLimit: number) {
   return { ok: true, owner, leased: leased.length, completed: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results };
 }
 
+async function continuousWork(sb: Sb, requestedLimit: number, depth: number, reason: string) {
+  const result = await work(sb, requestedLimit);
+  const inv = await inventory(sb);
+  const shouldContinue = depth > 0 && (
+    Number(inv.jobs_pending ?? 0) > 0 ||
+    Number(inv.jobs_running ?? 0) > 0 ||
+    Number(inv.missing_media ?? 0) > 0 ||
+    Number(inv.ready_pins ?? 0) < Number(inv.settings?.min_ready_pins ?? 100)
+  );
+  if (shouldContinue) {
+    await seedMissingMediaJobs(sb, 250, `continuous_${reason}`);
+    if (Number(inv.ready_pins ?? 0) < Number(inv.settings?.min_ready_pins ?? 100)) {
+      await seedInventoryDrafts(sb, Number(inv.settings?.min_ready_pins ?? 100), `continuous_${reason}`);
+    }
+    const url = `${SUPABASE_URL}/functions/v1/pinterest-creative-factory`;
+    EdgeRuntime.waitUntil(fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SERVICE_ROLE}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "work_async", limit: requestedLimit, continuous: true, depth: depth - 1, reason }),
+    }).catch(() => null));
+  }
+  return { result, inventory: inv, continuing: shouldContinue, remaining_depth: Math.max(0, depth) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, traceId: traceId(), message: "method_not_allowed" }, 405);
@@ -630,8 +654,18 @@ Deno.serve(async (req) => {
     if (action === "work") return json({ traceId: traceId(), ...(await work(sb, Number(body.limit ?? 1))) });
     if (action === "work_async") {
       const limit = Number(body.limit ?? 1);
-      EdgeRuntime.waitUntil(work(sb, limit));
+      if (body.continuous === true) {
+        EdgeRuntime.waitUntil(continuousWork(sb, limit, Math.min(Number(body.depth ?? 50), 200), String(body.reason ?? "continuous")));
+      } else {
+        EdgeRuntime.waitUntil(work(sb, limit));
+      }
       return json({ ok: true, traceId: traceId(), accepted: true, message: "creative_factory_work_started" }, 202);
+    }
+    if (action === "continuous_run") {
+      await seedMissingMediaJobs(sb, Math.min(Number(body.seed_limit ?? 250), 1000), "continuous_run_backfill");
+      await seedInventoryDrafts(sb, Number(body.min_ready_pins ?? 100), "continuous_run_inventory");
+      EdgeRuntime.waitUntil(continuousWork(sb, Number(body.limit ?? 1), Math.min(Number(body.depth ?? 120), 300), "continuous_run"));
+      return json({ ok: true, traceId: traceId(), accepted: true, inventory: await inventory(sb) }, 202);
     }
     if (action === "run_once") {
       const seeded = await seedMissingMediaJobs(sb, Math.min(Number(body.seed_limit ?? 250), 1000), "run_once_backfill");
