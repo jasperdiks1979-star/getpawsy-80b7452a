@@ -444,6 +444,25 @@ async function detectIncidents(snap: Snapshot, sb: any) {
     }
   }
 
+  // 9. E2E verification: <95% success rate (with ≥10 verified pins)
+  const v = snap.verification;
+  if (v && v.successRate24h !== null && v.verified24h + v.failed24h >= 10 && v.successRate24h < 0.95) {
+    inc.push({
+      condition: "verification_success_rate_low",
+      severity: "critical",
+      detail: { success_rate: v.successRate24h, failed: v.failed24h, verified: v.verified24h },
+    });
+  }
+
+  // 10. Verification backlog stuck (>25 waiting OR oldest waited >2h)
+  if (v && v.waitingBacklog > 25) {
+    inc.push({
+      condition: "verification_backlog_high",
+      severity: "warning",
+      detail: { waiting: v.waitingBacklog },
+    });
+  }
+
   return inc;
 }
 
@@ -511,6 +530,20 @@ async function attemptRecovery(incidents: Snapshot["incidents"]) {
       result.factory_refill = { status: r.status, body: await r.json().catch(() => null) };
     } catch (e) {
       result.factory_refill = { error: String(e) };
+    }
+  }
+
+  // Auto-drain verification backlog (no new schedule needed — monitor pokes
+  // the verify worker whenever there's work).
+  if (conds.has("verification_backlog_high") || conds.has("verification_success_rate_low")) {
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/functions/v1/pinterest-verify-worker`,
+        { method: "POST", headers, body: JSON.stringify({ mode: "drain", limit: 50 }) },
+      );
+      result.verify_worker = { status: r.status, body: await r.json().catch(() => null) };
+    } catch (e) {
+      result.verify_worker = { error: String(e) };
     }
   }
 
