@@ -105,6 +105,108 @@ export default function FounderReviewPage() {
             </CardContent>
           </Card>
 
+          {review.evidence?.forecast && (
+            <Card>
+              <CardHeader><CardTitle>Mission Zero Forecast</CardTitle></CardHeader>
+              <CardContent className="grid grid-cols-5 gap-3 text-xs">
+                {(["to_10","to_25","to_100","to_500","to_1000"] as const).map(key => {
+                  const f = review.evidence.forecast[key];
+                  return (
+                    <div key={key} className="border rounded p-2">
+                      <div className="text-muted-foreground">{f.target} sales</div>
+                      <div className="text-lg font-semibold">{f.weeks_to_target}w</div>
+                      <div className="text-[10px] uppercase">{f.confidence}</div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {(review as any).biggest_wins?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Biggest Wins</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {(review as any).biggest_wins.map((w: any, i: number) => (
+                  <div key={i} className="border-l-4 border-green-500 pl-3">
+                    <div className="font-medium">{w.title}</div>
+                    <div className="text-muted-foreground">{w.reason}</div>
+                    <div className="text-xs">Impact: {w.business_impact}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {(review as any).biggest_losses?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Biggest Losses</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {(review as any).biggest_losses.map((l: any, i: number) => (
+                  <div key={i} className="border-l-4 border-red-500 pl-3">
+                    <div className="font-medium">{l.title}</div>
+                    <div className="text-xs text-muted-foreground">Root cause: {l.root_cause}</div>
+                    <div className="text-xs">Difficulty: {l.difficulty} · Time to fix: {l.time_to_fix} · ROI: {l.roi}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {review.evidence?.competitor_intel?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Competitor Intelligence</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {review.evidence.competitor_intel.map((c: any, i: number) => (
+                  <div key={i}>• {c.observation} <span className="text-muted-foreground">— {c.reverse_engineered_why}</span></div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {review.evidence?.organic_intelligence?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Organic Intelligence — Why products succeed</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {review.evidence.organic_intelligence.map((o: any, i: number) => (
+                  <div key={i}><strong>{o.product_id}</strong> — {o.why} <span className="text-xs text-muted-foreground">(conf {o.confidence})</span></div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {review.evidence?.top_10_opportunities?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Top 10 Revenue Opportunities</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {review.evidence.top_10_opportunities.map((o: any, i: number) => (
+                  <div key={i} className="border-b pb-2">
+                    <div className="font-medium">{i+1}. {o.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Expected: {String(o.expected_revenue)} · Conf: {o.confidence} · Risk: {o.risk} · ETA: {o.implementation_time}
+                    </div>
+                    <div className="text-xs">Why: {o.why}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {review.evidence?.execution_plan?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Execution Plan</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {review.evidence.execution_plan.map((p: any, i: number) => (
+                  <div key={i} className="border-l-2 border-primary pl-3">
+                    <div className="font-medium">{p.action}</div>
+                    <div className="text-xs">Owner: {p.owner} · KPI: {p.expected_kpi} · Deadline: {p.deadline}</div>
+                    <div className="text-xs text-muted-foreground">Validation: {p.validation_method} · Rollback: {p.rollback_strategy}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           <details className="border rounded-md p-4">
             <summary className="cursor-pointer text-sm font-medium">Full markdown</summary>
             <pre className="text-xs whitespace-pre-wrap mt-3">{review.markdown}</pre>
