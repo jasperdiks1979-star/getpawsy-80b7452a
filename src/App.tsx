@@ -3317,6 +3317,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pie"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PieEnginePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-report"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
