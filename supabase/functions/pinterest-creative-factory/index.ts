@@ -50,6 +50,11 @@ function memorySnapshot() {
   }
 }
 
+function memoryRssMb() {
+  const snap = memorySnapshot();
+  return Math.round(((snap?.rss ?? 0) as number) / 1024 / 1024);
+}
+
 async function timed<T>(name: string, metrics: Record<string, unknown>, fn: () => Promise<T>): Promise<T> {
   const started = Date.now();
   const before = memorySnapshot();
@@ -394,7 +399,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
   const metrics: Record<string, unknown> = {
     stages: [],
     started_at: new Date().toISOString(),
-    memory_start_mb: Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024),
+    memory_start_mb: memoryRssMb(),
   };
   try {
     const { data: pin, error: pinErr } = await timed("queue_lookup", metrics, async () => sb
@@ -455,7 +460,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
       });
     } else {
       bytes = await timed("image_generation", metrics, async () => generateImage(prompt, product.image_url ?? null, settings?.model ?? DEFAULT_MODEL, metrics));
-      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      const digest = await crypto.subtle.digest("SHA-256", bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
       mediaHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
       const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
       const path = `creative-factory/${product.slug}/${stamp}_${job.id}.png`;
@@ -535,7 +540,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
 
     metrics.finished_at = new Date().toISOString();
     metrics.duration_ms = Date.now() - startedMs;
-    metrics.memory_end_mb = Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024);
+    metrics.memory_end_mb = memoryRssMb();
     await sb.from("pinterest_creative_factory_jobs").update({
       status: "completed",
       stage: "queue",
@@ -553,7 +558,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
     const message = e instanceof Error ? e.message : String(e);
     metrics.finished_at = new Date().toISOString();
     metrics.duration_ms = Date.now() - startedMs;
-    metrics.memory_end_mb = Math.round((memorySnapshot().rss ?? 0) / 1024 / 1024);
+    metrics.memory_end_mb = memoryRssMb();
     const nextStatus = Number(job.attempt_count ?? 0) + 1 >= Number(job.max_attempts ?? 3) ? "failed" : "retry";
     const regenerateNext = message.startsWith("quality_gate_failed") || message.startsWith("integrity_guard_failed") || message.startsWith("copy_validation_failed");
     await sb.from("pinterest_creative_factory_jobs").update({
@@ -622,7 +627,7 @@ Deno.serve(async (req) => {
       );
       return json({ ok: true, traceId: traceId(), drafts, inventory: await inventory(sb) });
     }
-    if (action === "work") return json({ ok: true, traceId: traceId(), ...(await work(sb, Number(body.limit ?? 1))) });
+    if (action === "work") return json({ traceId: traceId(), ...(await work(sb, Number(body.limit ?? 1))) });
     if (action === "work_async") {
       const limit = Number(body.limit ?? 1);
       EdgeRuntime.waitUntil(work(sb, limit));
