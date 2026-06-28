@@ -185,6 +185,54 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
   return { needed: deficit, created };
 }
 
+async function seedProductDrafts(sb: Sb, productRef: { productId?: string; productSlug?: string }, count: number, source: string) {
+  let q = sb
+    .from("products")
+    .select("id, slug, name, category, product_type, price, image_url, is_active")
+    .eq("is_active", true)
+    .limit(1);
+  if (productRef.productId) q = q.eq("id", productRef.productId);
+  else if (productRef.productSlug) q = q.eq("slug", productRef.productSlug);
+  else throw new Error("productId_or_productSlug_required");
+  const { data: products, error } = await q;
+  if (error) throw error;
+  const product = products?.[0];
+  if (!product?.id) throw new Error("product_not_found");
+  const niche = detectNiche(product) as NicheKey;
+  const created: string[] = [];
+  for (let i = 0; i < Math.max(1, Math.min(count, 8)); i++) {
+    const copy = buildPinCopy({ name: product.name, category: product.category ?? null, price: product.price ?? null, niche }, i);
+    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue").insert({
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name,
+      pin_title: copy.title,
+      pin_description: copy.description,
+      destination_link: `${BASE_URL}/products/${product.slug}?utm_source=pinterest&utm_medium=social&utm_campaign=creative_factory_product&utm_content=${niche}`,
+      priority: "medium",
+      status: "draft",
+      scheduled_at: new Date().toISOString(),
+      hook_group: niche,
+      category_key: niche,
+      overlay_text: copy.overlay,
+      meta: { creative_source: source, ai_generated: true, generator: "pinterest-creative-factory", inventory_seed: true, publish_allowed: true },
+    }).select("id").maybeSingle();
+    if (insErr || !pin?.id) continue;
+    created.push(pin.id as string);
+    await sb.from("pinterest_creative_factory_jobs").upsert({
+      pin_queue_id: pin.id,
+      product_id: product.id,
+      product_slug: product.slug,
+      product_name: product.name,
+      status: "pending",
+      stage: "planning",
+      priority: 90 + i,
+      source,
+    }, { onConflict: "pin_queue_id", ignoreDuplicates: true });
+  }
+  return { product_id: product.id, product_slug: product.slug, requested: count, created: created.length, pin_queue_ids: created };
+}
+
 async function inventory(sb: Sb) {
   const [{ data: queueRows }, { data: jobs }, { data: settings }] = await Promise.all([
     sb.from("pinterest_pin_queue").select("status,pin_image_url", { count: "exact" }).in("status", ["queued", "draft", "blocked_legacy_source"]),
@@ -535,6 +583,15 @@ Deno.serve(async (req) => {
       const drafts = await seedInventoryDrafts(sb, minReady, "creative_factory_inventory_replenish");
       const seeded = await seedMissingMediaJobs(sb, Math.min(Number(body.limit ?? 250), 1000), "creative_factory_replenish_backfill");
       return json({ ok: true, traceId: traceId(), drafts, seeded, inventory: await inventory(sb) });
+    }
+    if (action === "enqueue_product") {
+      const drafts = await seedProductDrafts(
+        sb,
+        { productId: body.productId ? String(body.productId) : undefined, productSlug: body.productSlug ? String(body.productSlug) : undefined },
+        Number(body.count ?? 1),
+        "creative_director_delegated_factory",
+      );
+      return json({ ok: true, traceId: traceId(), drafts, inventory: await inventory(sb) });
     }
     if (action === "work") return json({ ok: true, traceId: traceId(), ...(await work(sb, Number(body.limit ?? 1))) });
     if (action === "work_async") {
