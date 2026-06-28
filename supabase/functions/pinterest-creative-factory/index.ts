@@ -15,7 +15,7 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const BASE_URL = "https://getpawsy.pet";
 const BUCKET = "pinterest-ads";
-const DEFAULT_MODEL = "google/gemini-3.1-flash-image";
+const DEFAULT_MODEL = Deno.env.get("PINTEREST_FACTORY_IMAGE_MODEL") || Deno.env.get("PINTEREST_CD_IMAGE_MODEL") || "google/gemini-3-pro-image-preview";
 const TEXT_MODEL = Deno.env.get("PINTEREST_FACTORY_TEXT_MODEL") || "google/gemini-2.5-flash";
 
 type Sb = ReturnType<typeof createClient>;
@@ -218,7 +218,7 @@ async function generateImage(prompt: string, productImageUrl: string | null, mod
     ? [{ type: "image_url", image_url: { url: source } }, { type: "text", text: prompt }]
     : prompt;
   const started = Date.now();
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, messages: [{ role: "user", content }], modalities: ["image", "text"], stream: false }),
@@ -227,7 +227,7 @@ async function generateImage(prompt: string, productImageUrl: string | null, mod
   const text = await resp.text();
   if (!resp.ok) throw new Error(`image_gateway_${resp.status}:${text.slice(0, 240)}`);
   const data = JSON.parse(text);
-  const b64 = data?.data?.[0]?.b64_json ?? data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  const b64 = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? data?.data?.[0]?.b64_json;
   if (!b64) throw new Error("image_gateway_no_image");
   return base64ToBytes(String(b64));
 }
