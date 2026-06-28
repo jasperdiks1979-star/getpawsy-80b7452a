@@ -683,11 +683,12 @@ async function processJob(sb: Sb, job: any, settings: any) {
       throw new Error(`copy_validation_failed:${validation.errors.join(",")}`);
     }
 
-    const prompt = buildPrompt(product, niche, copy.overlay, job);
+    const masterDims = await pickDiverseMasterDims(sb, product, job);
+    const prompt = buildPrompt(product, niche, copy.overlay, masterDims);
     await timed("planning", metrics, async () => {
       await sb.from("pinterest_creative_factory_jobs").update({
         stage: "planned",
-        prompt: { text: prompt, niche, copy },
+        prompt: { text: prompt, niche, copy, master_dims: masterDims },
       }).eq("id", job.id);
       return true;
     });
