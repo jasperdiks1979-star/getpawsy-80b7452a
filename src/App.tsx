@@ -427,6 +427,7 @@ const GrowthCommandPage = lazyWithRetry(() => import("./pages/admin/GrowthComman
 const MediaIntelligencePage = lazyWithRetry(() => import("./pages/admin/MediaIntelligencePage"));
 const CreativeCommandPage = lazyWithRetry(() => import("./pages/admin/CreativeCommandPage"));
 const CreativeIntelligencePage = lazyWithRetry(() => import("./pages/admin/CreativeIntelligencePage"));
+const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
 const AutonomousCommercePage = lazyWithRetry(() => import("./pages/admin/AutonomousCommercePage"));
 const CommanderPage = lazyWithRetry(() => import("./pages/admin/CommanderPage"));
