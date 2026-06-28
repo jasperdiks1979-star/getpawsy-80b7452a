@@ -109,7 +109,7 @@ async function persistResult(sb: any, pin: any, result: any, attempts: number, r
 async function drain(sb: any, accessToken: string, limit: number) {
   const { data: pins } = await sb
     .from("pinterest_pin_queue")
-    .select("id, pinterest_pin_id, pin_title, pin_description, pin_image_url, destination_link, final_resolved_url, board_id, board_name, alt_text, verification_attempts")
+    .select("id, pinterest_pin_id, pin_title, pin_description, pin_image_url, destination_link, final_resolved_url, board_id, board_name, verification_attempts")
     .eq("status", "posted")
     .in("verification_state", ["waiting_verification"])
     .not("pinterest_pin_id", "is", null)
@@ -153,7 +153,7 @@ async function sampleLiveAccount(sb: any, accessToken: string) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
   const { data: candidates } = await sb
     .from("pinterest_pin_queue")
-    .select("id, pinterest_pin_id, pin_title, pin_description, pin_image_url, destination_link, final_resolved_url, board_id, board_name, alt_text")
+    .select("id, pinterest_pin_id, pin_title, pin_description, pin_image_url, destination_link, final_resolved_url, board_id, board_name")
     .eq("status", "posted")
     .gte("posted_at", sevenDaysAgo)
     .not("pinterest_pin_id", "is", null)
