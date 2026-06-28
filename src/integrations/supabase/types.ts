@@ -22099,6 +22099,13 @@ export type Database = {
             referencedRelation: "pcie2_creatives"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pcie2_creative_jobs_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["creative_id"]
+          },
         ]
       }
       pcie2_creatives: {
@@ -22993,6 +23000,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pcie2_creatives"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcie2_pin_performance_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["creative_id"]
           },
         ]
       }
@@ -25191,6 +25205,13 @@ export type Database = {
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pin_wave2_audits_pin_id_fkey"
+            columns: ["pin_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
         ]
       }
       pin_wave2_runs: {
@@ -27199,6 +27220,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pinterest_creative_factory_jobs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
+          {
             foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -27485,6 +27513,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -28935,6 +28970,13 @@ export type Database = {
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pinterest_live_pin_repair_queue_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
         ]
       }
       pinterest_loser_blocklist: {
@@ -29706,6 +29748,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pinterest_pin_audit_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
+          {
             foreignKeyName: "pinterest_pin_audit_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -29869,6 +29918,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_image_match_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -30243,6 +30299,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_queue_replacement_for_pin_id_fkey"
+            columns: ["replacement_for_pin_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -30656,6 +30719,13 @@ export type Database = {
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pinterest_post_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
         ]
       }
       pinterest_posting_windows: {
@@ -30991,6 +31061,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_publish_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -31479,6 +31556,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -41453,6 +41537,13 @@ export type Database = {
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
+          },
         ]
       }
       pinterest_revenue_funnel_daily: {
@@ -41556,6 +41647,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -42197,6 +42295,40 @@ export type Database = {
           term?: string | null
           video_id?: string | null
           visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      v_creative_revenue_lineage: {
+        Row: {
+          attributed_add_to_carts: number | null
+          attributed_orders: number | null
+          attributed_purchases: number | null
+          attributed_revenue_cents: number | null
+          attributed_roas: number | null
+          board_id: string | null
+          board_name: string | null
+          category_key: string | null
+          creative_dna: Json | null
+          creative_id: string | null
+          creative_status: string | null
+          ctr: number | null
+          destination_link: string | null
+          headline: string | null
+          hook: string | null
+          hook_group: string | null
+          image_url: string | null
+          impressions: number | null
+          pin_clicks: number | null
+          pin_variant: string | null
+          pinterest_pin_id: string | null
+          posted_at: string | null
+          product_id: string | null
+          queue_id: string | null
+          save_rate: number | null
+          saves: number | null
+          scores: Json | null
+          sessions_count: number | null
+          verification_state: string | null
         }
         Relationships: []
       }
