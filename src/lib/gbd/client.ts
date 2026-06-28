@@ -39,4 +39,5 @@ export type GbdModule = {
   confidence: number;
   current_version: number;
   updated_at: string;
+  is_active?: boolean;
 };
