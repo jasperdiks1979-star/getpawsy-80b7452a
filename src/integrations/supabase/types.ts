@@ -19328,6 +19328,944 @@ export type Database = {
         }
         Relationships: []
       }
+      gmd_assumption_log: {
+        Row: {
+          assumption: string
+          concept_key: string | null
+          created_at: string
+          evidence: Json
+          id: string
+          module_key: string | null
+          reason: string | null
+          retired_at: string | null
+          status: string
+        }
+        Insert: {
+          assumption: string
+          concept_key?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          module_key?: string | null
+          reason?: string | null
+          retired_at?: string | null
+          status?: string
+        }
+        Update: {
+          assumption?: string
+          concept_key?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          module_key?: string | null
+          reason?: string | null
+          retired_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      gmd_categories: {
+        Row: {
+          competition: number | null
+          demand: number | null
+          growth: number | null
+          id: string
+          key: string
+          metadata: Json
+          name: string
+          profitability: number | null
+          region_code: string | null
+          seasonality: Json
+          trend_strength: number | null
+          updated_at: string
+        }
+        Insert: {
+          competition?: number | null
+          demand?: number | null
+          growth?: number | null
+          id?: string
+          key: string
+          metadata?: Json
+          name: string
+          profitability?: number | null
+          region_code?: string | null
+          seasonality?: Json
+          trend_strength?: number | null
+          updated_at?: string
+        }
+        Update: {
+          competition?: number | null
+          demand?: number | null
+          growth?: number | null
+          id?: string
+          key?: string
+          metadata?: Json
+          name?: string
+          profitability?: number | null
+          region_code?: string | null
+          seasonality?: Json
+          trend_strength?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gmd_competitor_observations: {
+        Row: {
+          competitor_id: string | null
+          confidence: number
+          evidence: Json
+          id: string
+          observation_type: string
+          observed_at: string
+          principle: string | null
+          summary: string
+        }
+        Insert: {
+          competitor_id?: string | null
+          confidence?: number
+          evidence?: Json
+          id?: string
+          observation_type: string
+          observed_at?: string
+          principle?: string | null
+          summary: string
+        }
+        Update: {
+          competitor_id?: string | null
+          confidence?: number
+          evidence?: Json
+          id?: string
+          observation_type?: string
+          observed_at?: string
+          principle?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmd_competitor_observations_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "gmd_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gmd_competitors: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          metadata: Json
+          name: string
+          region_code: string | null
+          tier: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          region_code?: string | null
+          tier?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          region_code?: string | null
+          tier?: string | null
+        }
+        Relationships: []
+      }
+      gmd_concept_history: {
+        Row: {
+          concept_id: string
+          concept_key: string
+          confidence: number | null
+          created_at: string
+          evidence_count: number | null
+          id: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          concept_id: string
+          concept_key: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key: string
+          snapshot: Json
+          version: number
+          weight?: number | null
+        }
+        Update: {
+          concept_id?: string
+          concept_key?: string
+          confidence?: number | null
+          created_at?: string
+          evidence_count?: number | null
+          id?: string
+          module_key?: string
+          snapshot?: Json
+          version?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmd_concept_history_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "gmd_concepts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gmd_concepts: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          evidence_count: number
+          id: string
+          is_active: boolean
+          key: string
+          last_evidence_at: string | null
+          metadata: Json
+          module_key: string
+          name: string
+          negative_evidence: number
+          positive_evidence: number
+          tags: string[]
+          updated_at: string
+          version: number
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key: string
+          name: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          evidence_count?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_evidence_at?: string | null
+          metadata?: Json
+          module_key?: string
+          name?: string
+          negative_evidence?: number
+          positive_evidence?: number
+          tags?: string[]
+          updated_at?: string
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmd_concepts_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "gmd_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gmd_economic_signals: {
+        Row: {
+          business_impact_score: number | null
+          direction: string | null
+          evidence: Json
+          id: string
+          observed_at: string
+          region_code: string | null
+          signal_type: string
+          unit: string | null
+          value: number | null
+        }
+        Insert: {
+          business_impact_score?: number | null
+          direction?: string | null
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          region_code?: string | null
+          signal_type: string
+          unit?: string | null
+          value?: number | null
+        }
+        Update: {
+          business_impact_score?: number | null
+          direction?: string | null
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          region_code?: string | null
+          signal_type?: string
+          unit?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
+      gmd_engine_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gmd_forecasts: {
+        Row: {
+          actual_value: number | null
+          ci_high: number | null
+          ci_low: number | null
+          confidence: number
+          created_at: string
+          features: Json
+          forecast_type: string
+          horizon_days: number
+          id: string
+          model_version: number
+          outcome_at: string | null
+          predicted_value: number
+          region_code: string | null
+          subject_key: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          features?: Json
+          forecast_type: string
+          horizon_days?: number
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value: number
+          region_code?: string | null
+          subject_key?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number
+          created_at?: string
+          features?: Json
+          forecast_type?: string
+          horizon_days?: number
+          id?: string
+          model_version?: number
+          outcome_at?: string | null
+          predicted_value?: number
+          region_code?: string | null
+          subject_key?: string | null
+        }
+        Relationships: []
+      }
+      gmd_graph_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          metadata: Json
+          relation: string
+          to_node: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          metadata?: Json
+          relation: string
+          to_node: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          metadata?: Json
+          relation?: string
+          to_node?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmd_graph_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gmd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gmd_graph_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gmd_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gmd_graph_nodes: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label: string
+          node_type: string
+          ref_id: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          label?: string
+          node_type?: string
+          ref_id?: string
+        }
+        Relationships: []
+      }
+      gmd_modules: {
+        Row: {
+          avg_confidence: number
+          category: string
+          concept_count: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          metadata: Json
+          name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          avg_confidence?: number
+          category: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          avg_confidence?: number
+          category?: string
+          concept_count?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gmd_opportunities: {
+        Row: {
+          category_key: string | null
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_revenue_usd: number | null
+          id: string
+          label: string
+          opportunity_type: string
+          rank_score: number
+          region_code: string | null
+          status: string
+        }
+        Insert: {
+          category_key?: string | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_revenue_usd?: number | null
+          id?: string
+          label: string
+          opportunity_type: string
+          rank_score?: number
+          region_code?: string | null
+          status?: string
+        }
+        Update: {
+          category_key?: string | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_revenue_usd?: number | null
+          id?: string
+          label?: string
+          opportunity_type?: string
+          rank_score?: number
+          region_code?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      gmd_pricing_landscape: {
+        Row: {
+          average_price: number | null
+          budget_price: number | null
+          category_key: string
+          dispersion: number | null
+          elasticity: number | null
+          evidence: Json
+          id: string
+          mid_price: number | null
+          observed_at: string
+          premium_price: number | null
+          price_war_intensity: number | null
+          promo_windows: Json
+          region_code: string | null
+        }
+        Insert: {
+          average_price?: number | null
+          budget_price?: number | null
+          category_key: string
+          dispersion?: number | null
+          elasticity?: number | null
+          evidence?: Json
+          id?: string
+          mid_price?: number | null
+          observed_at?: string
+          premium_price?: number | null
+          price_war_intensity?: number | null
+          promo_windows?: Json
+          region_code?: string | null
+        }
+        Update: {
+          average_price?: number | null
+          budget_price?: number | null
+          category_key?: string
+          dispersion?: number | null
+          elasticity?: number | null
+          evidence?: Json
+          id?: string
+          mid_price?: number | null
+          observed_at?: string
+          premium_price?: number | null
+          price_war_intensity?: number | null
+          promo_windows?: Json
+          region_code?: string | null
+        }
+        Relationships: []
+      }
+      gmd_regional_profiles: {
+        Row: {
+          buying_habits: Json
+          climate: string | null
+          housing: Json
+          id: string
+          lifestyle: Json
+          outdoor_behavior: Json
+          pet_ownership_pct: number | null
+          region_code: string
+          seasonality: Json
+          sub_region: string
+          updated_at: string
+        }
+        Insert: {
+          buying_habits?: Json
+          climate?: string | null
+          housing?: Json
+          id?: string
+          lifestyle?: Json
+          outdoor_behavior?: Json
+          pet_ownership_pct?: number | null
+          region_code: string
+          seasonality?: Json
+          sub_region: string
+          updated_at?: string
+        }
+        Update: {
+          buying_habits?: Json
+          climate?: string | null
+          housing?: Json
+          id?: string
+          lifestyle?: Json
+          outdoor_behavior?: Json
+          pet_ownership_pct?: number | null
+          region_code?: string
+          seasonality?: Json
+          sub_region?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gmd_regions: {
+        Row: {
+          code: string
+          id: string
+          name: string
+          pet_ownership_pct: number | null
+          population_millions: number | null
+          profile: Json
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          name: string
+          pet_ownership_pct?: number | null
+          population_millions?: number | null
+          profile?: Json
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          name?: string
+          pet_ownership_pct?: number | null
+          population_millions?: number | null
+          profile?: Json
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gmd_risks: {
+        Row: {
+          created_at: string
+          evidence: Json
+          expected_business_impact_usd: number | null
+          id: string
+          label: string
+          probability: number
+          risk_type: string
+          severity: number
+          status: string
+          time_horizon_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          expected_business_impact_usd?: number | null
+          id?: string
+          label: string
+          probability?: number
+          risk_type: string
+          severity?: number
+          status?: string
+          time_horizon_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          expected_business_impact_usd?: number | null
+          id?: string
+          label?: string
+          probability?: number
+          risk_type?: string
+          severity?: number
+          status?: string
+          time_horizon_days?: number | null
+        }
+        Relationships: []
+      }
+      gmd_search_signals: {
+        Row: {
+          commercial_intent: number | null
+          difficulty: number | null
+          evidence: Json
+          growth_pct: number | null
+          id: string
+          observed_at: string
+          query: string
+          region_code: string | null
+          related_products: string[]
+          seasonality: Json
+          source: string
+          volume: number | null
+        }
+        Insert: {
+          commercial_intent?: number | null
+          difficulty?: number | null
+          evidence?: Json
+          growth_pct?: number | null
+          id?: string
+          observed_at?: string
+          query: string
+          region_code?: string | null
+          related_products?: string[]
+          seasonality?: Json
+          source: string
+          volume?: number | null
+        }
+        Update: {
+          commercial_intent?: number | null
+          difficulty?: number | null
+          evidence?: Json
+          growth_pct?: number | null
+          id?: string
+          observed_at?: string
+          query?: string
+          region_code?: string | null
+          related_products?: string[]
+          seasonality?: Json
+          source?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      gmd_season_recommendations: {
+        Row: {
+          category_key: string | null
+          created_at: string
+          evidence: Json
+          id: string
+          priority: number
+          recommendation: string
+          recommendation_type: string
+          season_key: string
+          status: string
+        }
+        Insert: {
+          category_key?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          priority?: number
+          recommendation: string
+          recommendation_type: string
+          season_key: string
+          status?: string
+        }
+        Update: {
+          category_key?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          priority?: number
+          recommendation?: string
+          recommendation_type?: string
+          season_key?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmd_season_recommendations_season_key_fkey"
+            columns: ["season_key"]
+            isOneToOne: false
+            referencedRelation: "gmd_seasons"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      gmd_seasons: {
+        Row: {
+          demand_curve: Json
+          end_doy: number | null
+          id: string
+          key: string
+          metadata: Json
+          name: string
+          region_code: string | null
+          start_doy: number | null
+          updated_at: string
+        }
+        Insert: {
+          demand_curve?: Json
+          end_doy?: number | null
+          id?: string
+          key: string
+          metadata?: Json
+          name: string
+          region_code?: string | null
+          start_doy?: number | null
+          updated_at?: string
+        }
+        Update: {
+          demand_curve?: Json
+          end_doy?: number | null
+          id?: string
+          key?: string
+          metadata?: Json
+          name?: string
+          region_code?: string | null
+          start_doy?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gmd_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gmd_social_trends: {
+        Row: {
+          confidence: number
+          creative_dna_links: Json
+          evidence: Json
+          id: string
+          observed_at: string
+          signal_strength: number
+          status: string
+          trend_label: string
+          visual_type: string
+        }
+        Insert: {
+          confidence?: number
+          creative_dna_links?: Json
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          signal_strength?: number
+          status?: string
+          trend_label: string
+          visual_type: string
+        }
+        Update: {
+          confidence?: number
+          creative_dna_links?: Json
+          evidence?: Json
+          id?: string
+          observed_at?: string
+          signal_strength?: number
+          status?: string
+          trend_label?: string
+          visual_type?: string
+        }
+        Relationships: []
+      }
+      gmd_trends: {
+        Row: {
+          business_impact_usd: number | null
+          category_key: string | null
+          confidence: number
+          evidence: Json
+          expected_duration_days: number | null
+          first_seen_at: string
+          id: string
+          label: string
+          last_seen_at: string
+          region_code: string | null
+          revenue_opportunity_usd: number | null
+          signal_strength: number
+          status: string
+          trend_type: string
+        }
+        Insert: {
+          business_impact_usd?: number | null
+          category_key?: string | null
+          confidence?: number
+          evidence?: Json
+          expected_duration_days?: number | null
+          first_seen_at?: string
+          id?: string
+          label: string
+          last_seen_at?: string
+          region_code?: string | null
+          revenue_opportunity_usd?: number | null
+          signal_strength?: number
+          status?: string
+          trend_type: string
+        }
+        Update: {
+          business_impact_usd?: number | null
+          category_key?: string | null
+          confidence?: number
+          evidence?: Json
+          expected_duration_days?: number | null
+          first_seen_at?: string
+          id?: string
+          label?: string
+          last_seen_at?: string
+          region_code?: string | null
+          revenue_opportunity_usd?: number | null
+          signal_strength?: number
+          status?: string
+          trend_type?: string
+        }
+        Relationships: []
+      }
       google_sheets_exports: {
         Row: {
           created_at: string
@@ -53065,6 +54003,20 @@ export type Database = {
           view_to_atc: number
           view_to_purchase: number
         }[]
+      }
+      gmd_refresh_module_rollups: { Args: never; Returns: undefined }
+      gmd_upsert_concept: {
+        Args: {
+          p_confidence: number
+          p_description?: string
+          p_key: string
+          p_metadata?: Json
+          p_module: string
+          p_name: string
+          p_tags?: string[]
+          p_weight: number
+        }
+        Returns: string
       }
       gov_record_decision: {
         Args: {
