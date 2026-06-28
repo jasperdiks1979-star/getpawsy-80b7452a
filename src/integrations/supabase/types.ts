@@ -13337,6 +13337,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fos_reviews: {
+        Row: {
+          biggest_losses: Json | null
+          biggest_wins: Json | null
+          ceo_summary: string | null
+          evidence: Json | null
+          generated_at: string
+          id: string
+          kpis: Json
+          markdown: string | null
+          top_3_actions: Json | null
+          trigger: string | null
+          week_start: string
+        }
+        Insert: {
+          biggest_losses?: Json | null
+          biggest_wins?: Json | null
+          ceo_summary?: string | null
+          evidence?: Json | null
+          generated_at?: string
+          id?: string
+          kpis?: Json
+          markdown?: string | null
+          top_3_actions?: Json | null
+          trigger?: string | null
+          week_start: string
+        }
+        Update: {
+          biggest_losses?: Json | null
+          biggest_wins?: Json | null
+          ceo_summary?: string | null
+          evidence?: Json | null
+          generated_at?: string
+          id?: string
+          kpis?: Json
+          markdown?: string | null
+          top_3_actions?: Json | null
+          trigger?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
       frontend_error_logs: {
         Row: {
           component_name: string | null

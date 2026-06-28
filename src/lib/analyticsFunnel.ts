@@ -10,10 +10,29 @@ export type FunnelStep =
   | "scroll" | "view_item" | "add_to_cart" | "view_cart" | "remove_from_cart"
   | "begin_checkout" | "payment" | "purchase";
 
+/**
+ * Lazy-initialize a session_id so funnel steps fired BEFORE the engagement
+ * gate runs (e.g. fast add-to-cart from a Pinterest landing) still land in
+ * analytics_funnel_waterfall. Without this, the waterfall reports 0 rows
+ * for real customers and every downstream decision (FOS, SHIL, AI CEO) is
+ * blind. Evidence: 7d funnel had 0 add_to_cart despite 14 real orders.
+ */
+function ensureSessionId(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    let id = sessionStorage.getItem(SESSION_KEY);
+    if (!id) {
+      id = (crypto?.randomUUID?.() ?? `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
+      sessionStorage.setItem(SESSION_KEY, id);
+    }
+    return id;
+  } catch { return null; }
+}
+
 export function recordFunnelStep(step: FunnelStep, extra?: Record<string, unknown>): void {
   try {
     if (typeof window === "undefined" || !PROJECT) return;
-    const session_id = sessionStorage.getItem(SESSION_KEY);
+    const session_id = ensureSessionId();
     if (!session_id) return;
     const body = JSON.stringify({
       session_id, step,
