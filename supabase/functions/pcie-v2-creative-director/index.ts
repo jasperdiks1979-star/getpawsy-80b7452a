@@ -2,6 +2,15 @@
 // Every stage reads its catalog from the database. No hardcoded limits.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import {
+  buildStoryProfile,
+  pickRotatingBadge,
+  rewriteSupplierTitle,
+  buildAttentionMap,
+  predictCandidate,
+  compositePpeScore,
+  ppeFloors,
+} from "../_shared/ppe-engine.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -310,7 +319,7 @@ const STAGE_HANDLERS: Record<string, (ctx: any) => Promise<void> | void> = {
     const axes = ctx.cat.axes;
     let total = 0, wsum = 0; const breakdown: any[] = []; let hardFail = false;
     for (const ax of axes) {
-      const s = Number(ctx.scores?.[ax.slug] ?? 50);
+      const s = Number(ctx.scores?.[ax.slug] ?? ctx.ppe_scores?.[ax.slug.replace(/^ppe_/, "")] ?? 50);
       total += s * Number(ax.weight); wsum += Number(ax.weight);
       const passed = s >= Number(ax.pass_threshold);
       if (!passed && ax.hard_reject) hardFail = true;
@@ -320,12 +329,114 @@ const STAGE_HANDLERS: Record<string, (ctx: any) => Promise<void> | void> = {
     ctx.axis_breakdown = breakdown;
     const threshold = Number(ctx.cat.config.publish_gate_threshold ?? 95);
     ctx.pass_publish_gate = !hardFail && ctx.novelty_total >= threshold && !ctx.duplicate;
+    // PPE hard gate
+    if (ctx.cat.flags.ppe_enabled && ctx.cat.flags.ppe_hard_gate && ctx.ppe_scores) {
+      const f = ppeFloors(ctx.cat.config);
+      const fails: string[] = [];
+      if ((ctx.ppe_scores.product_visibility ?? 0) < f.visibility) fails.push("product_visibility");
+      if ((ctx.ppe_scores.ctr_prediction ?? 0) < f.ctr) fails.push("ctr_prediction");
+      if ((ctx.ppe_scores.novelty ?? 0) < f.novelty) fails.push("novelty");
+      if ((ctx.ppe_composite ?? 0) < f.composite) fails.push("composite");
+      if (fails.length) { ctx.pass_publish_gate = false; ctx.reject_reason = ctx.reject_reason ?? `ppe_gate:${fails.join(",")}`; }
+    }
     if (!ctx.reject_reason) {
       ctx.reject_reason = hardFail ? "hard_axis_failure" : ctx.duplicate ? "duplicate_fingerprint" : (!ctx.pass_publish_gate ? "below_threshold" : null);
     }
     if (ctx.prompt_qa_blocked || ctx.render_qa_blocked || ctx.render_status === "failed") ctx.pass_publish_gate = false;
     ctx.trace.push({ stage: "publish", novelty_total: ctx.novelty_total, pass: ctx.pass_publish_gate, reject: ctx.reject_reason });
   },
+};
+
+// ---------- PPE handlers (registered into STAGE_HANDLERS) ----------
+STAGE_HANDLERS.ppe_story_profile = (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) { ctx.trace.push({ stage: "ppe_story_profile", skipped: true }); return; }
+  const profile = buildStoryProfile({ niche: ctx.product.niche, title: ctx.product.title, slug: ctx.product.slug });
+  ctx.ppe = ctx.ppe || {};
+  ctx.ppe.profile = profile;
+  ctx.story = profile.story; // override generic story
+  ctx.decisions.story_niche = profile.niche_key;
+  ctx.decisions.primary_emotion = profile.primary_emotion;
+  ctx.decisions.secondary_emotion = profile.secondary_emotion;
+  ctx.trace.push({ stage: "ppe_story_profile", out: { niche_key: profile.niche_key, primary: profile.primary_emotion } });
+};
+
+STAGE_HANDLERS.ppe_badge = async (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  const b = await pickRotatingBadge(ctx.supabase).catch(() => null);
+  ctx.ppe = ctx.ppe || {};
+  ctx.ppe.badge = b;
+  if (b) ctx.decisions.badge = b.text;
+  ctx.trace.push({ stage: "ppe_badge", choice: b?.text ?? null });
+};
+
+STAGE_HANDLERS.ppe_title_rewrite = (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  const original = ctx.product.title;
+  const rewritten = rewriteSupplierTitle(original, ctx.product.niche);
+  ctx.ppe = ctx.ppe || {};
+  ctx.ppe.title_original = original;
+  ctx.ppe.title_rewritten = rewritten;
+  ctx.product.title = rewritten;
+  ctx.trace.push({ stage: "ppe_title_rewrite", before: original, after: rewritten });
+};
+
+STAGE_HANDLERS.ppe_attention_map = (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  const map = buildAttentionMap({
+    hookLen: ctx.decisions.hook?.length ?? 0,
+    productHero: /hero product/i.test(ctx.prompt || ""),
+    hasBadge: !!ctx.ppe?.badge,
+    hasCta: !!ctx.cta_text,
+  });
+  ctx.ppe = ctx.ppe || {};
+  ctx.ppe.attention_map = map;
+  ctx.trace.push({ stage: "ppe_attention_map", balance: map.balance });
+};
+
+STAGE_HANDLERS.ppe_predict = async (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  if (ctx.prompt_qa_blocked) { ctx.trace.push({ stage: "ppe_predict", skipped: "prompt_qa_blocked" }); return; }
+  const r = await predictCandidate({
+    product: { title: ctx.product.title, niche: ctx.product.niche, slug: ctx.product.slug },
+    decisions: ctx.decisions,
+    story: ctx.story,
+    primary_emotion: ctx.ppe?.profile?.primary_emotion ?? "",
+    hook: ctx.decisions.hook ?? "",
+    cta: ctx.cta_text ?? "",
+    badge: ctx.ppe?.badge?.text ?? null,
+    prompt: ctx.prompt ?? "",
+  });
+  ctx.ppe = ctx.ppe || {};
+  ctx.ppe.predict = r;
+  ctx.ppe_scores = r.scores;
+  ctx.ppe_composite = compositePpeScore(r.scores);
+  // also surface as PCIE axes
+  for (const [k, v] of Object.entries(r.scores)) ctx.scores[`ppe_${k}`] = v;
+  ctx.trace.push({ stage: "ppe_predict", composite: ctx.ppe_composite, verdict: r.competitor_verdict, click: r.would_click });
+};
+
+STAGE_HANDLERS.ppe_competitor_sim = (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  const verdict = ctx.ppe?.predict?.competitor_verdict ?? "ties";
+  if (verdict === "loses") {
+    ctx.reject_reason = ctx.reject_reason ?? "competitor_sim:loses";
+  }
+  ctx.trace.push({ stage: "ppe_competitor_sim", verdict });
+};
+
+STAGE_HANDLERS.ppe_persist = async (ctx) => {
+  if (!ctx.cat.flags.ppe_enabled) return;
+  // Persist into candidate_scores row deferred until creative is inserted (we have candidate_set_id only).
+  // The director persists creative; we stash payload onto ctx and persist after insert via runPipeline.
+  ctx.ppe_payload = {
+    profile: ctx.ppe?.profile,
+    badge: ctx.ppe?.badge?.text ?? null,
+    title_rewrite: { before: ctx.ppe?.title_original, after: ctx.ppe?.title_rewritten },
+    attention_map: ctx.ppe?.attention_map,
+    predict: ctx.ppe?.predict,
+    composite: ctx.ppe_composite ?? null,
+  };
+  ctx.trace.push({ stage: "ppe_persist", staged: true });
 };
 
 async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product: any, opts: { dry_run: boolean; candidate_set_id: string; candidate_no: number; replay_of?: string | null }) {
@@ -348,7 +459,7 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
   const { data: creative, error } = await supabase.from("pcie_v2_creatives").insert({
     run_id, product_id: product.id, product_slug: product.slug, niche: product.niche,
     status, reject_reason: ctx.reject_reason, prompt: ctx.prompt,
-    prompt_version: "pcie_v2.1", model: cat.config.default_image_model,
+    prompt_version: "pcie_v2.2-ppe", model: cat.config.default_image_model,
     fingerprint: fp, novelty_total: ctx.novelty_total,
     pass_publish_gate: ctx.pass_publish_gate,
     decisions: ctx.decisions, scores: ctx.scores, pipeline_trace: ctx.trace,
@@ -356,6 +467,7 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
     seed: ctx.seed ?? null, provider_slug: ctx.provider_slug ?? null,
     render_settings: ctx.render_settings ?? {}, candidate_set_id: opts.candidate_set_id,
     replay_of_creative_id: opts.replay_of ?? null, dry_run: opts.dry_run, render_status: ctx.render_status ?? "skipped",
+    ppe_payload: ctx.ppe_payload ?? {}, ppe_composite: ctx.ppe_composite ?? null,
   }).select("id").single();
   if (error) throw error;
 
@@ -383,9 +495,38 @@ async function runPipeline(supabase: any, cat: Catalogs, run_id: string, product
     creative_id: creative.id, run_id, stage: "pipeline_complete",
     event_type: status, payload: { reject_reason: ctx.reject_reason, novelty_total: ctx.novelty_total },
   });
+  // PPE candidate score row (best-effort).
+  if (ctx.cat.flags.ppe_enabled && ctx.ppe_payload) {
+    const p = ctx.ppe_payload;
+    const s = p?.predict?.scores ?? {};
+    await supabase.from("ppe_candidate_scores").insert({
+      creative_id: creative.id,
+      candidate_set_id: opts.candidate_set_id,
+      product_slug: product.slug, niche: product.niche,
+      ctr_prediction: s.ctr_prediction ?? null,
+      save_prediction: s.save_prediction ?? null,
+      purchase_prediction: s.purchase_prediction ?? null,
+      product_visibility: s.product_visibility ?? null,
+      scroll_stop: s.scroll_stop ?? null,
+      novelty: s.novelty ?? null,
+      us_relevance: s.us_relevance ?? null,
+      composite: p.composite ?? null,
+      attention_map: p?.attention_map ?? {},
+      rejection_reasons: ctx.reject_reason ? [ctx.reject_reason] : [],
+      badge_text: p.badge ?? null,
+      story: p?.profile?.story ?? null,
+      primary_emotion: p?.profile?.primary_emotion ?? null,
+      competitor_verdict: p?.predict?.competitor_verdict ?? null,
+      raw: p,
+    });
+    if (p.badge && ctx.ppe?.badge?.id) {
+      await supabase.from("ppe_badge_usage").insert({ badge_id: ctx.ppe.badge.id, creative_id: creative.id });
+    }
+  }
   return {
     creative_id: creative.id, status, novelty_total: ctx.novelty_total, reject_reason: ctx.reject_reason,
     image_url: ctx.image_url ?? null, provider_slug: ctx.provider_slug ?? null,
+    ppe_composite: ctx.ppe_composite ?? null,
   };
 }
 
@@ -415,7 +556,13 @@ Deno.serve(async (req) => {
     }
 
     // ---- Multi-candidate generation
-    const candidatesPerRun = Number(body.candidates ?? cat.config.candidates_per_run ?? 3);
+    const ppeOn = !!cat.flags.ppe_enabled && cat.flags.ppe_multi_candidate !== false;
+    const ppeMin = Number(cat.config.ppe_min_candidates ?? 8);
+    const ppeMax = Number(cat.config.ppe_max_candidates ?? 12);
+    const baseCandidates = Number(body.candidates ?? cat.config.candidates_per_run ?? 3);
+    const candidatesPerRun = ppeOn
+      ? Math.min(ppeMax, Math.max(ppeMin, baseCandidates))
+      : baseCandidates;
     const count = Math.min(20, Math.max(1, Number(body.count ?? 1)));
     const niche = String(body.niche ?? "cat_litter");
     const dry_run = body.dry_run ?? cat.config.dry_run_default ?? false;
@@ -434,10 +581,12 @@ Deno.serve(async (req) => {
       }
       const winner = candidates
         .filter((c) => c.status === "draft")
-        .sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0]
+        .sort((a, b) => (b.ppe_composite ?? b.novelty_total ?? 0) - (a.ppe_composite ?? a.novelty_total ?? 0))[0]
         ?? candidates.sort((a, b) => (b.novelty_total ?? 0) - (a.novelty_total ?? 0))[0];
       if (winner) {
         await supabase.from("pcie_v2_candidate_sets").update({ winner_creative_id: winner.creative_id, winner_score: winner.novelty_total }).eq("id", set!.id);
+        await supabase.from("pcie_v2_creatives").update({ ppe_winner: true }).eq("id", winner.creative_id);
+        await supabase.from("ppe_candidate_scores").update({ winner: true }).eq("creative_id", winner.creative_id);
       }
       results.push({ candidate_set_id: set!.id, winner_creative_id: winner?.creative_id, winner_score: winner?.novelty_total, candidates });
       for (const r of candidates) {
