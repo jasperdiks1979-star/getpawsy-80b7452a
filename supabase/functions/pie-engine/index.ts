@@ -4,6 +4,7 @@
 // "daily AI meeting", and exposes admin actions.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { aosHeartbeat, aosEvent, aosKnowledge, aosTask } from "../_shared/aos-bus.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -341,6 +342,15 @@ Deno.serve(async (req) => {
   const runId = runRow!.id;
   const summary: Record<string, any> = { dry };
 
+  // AOS: heartbeat + run started event
+  await aosHeartbeat("pie", "ok");
+  await aosEvent({
+    event_type: "engine.run.started",
+    source_engine: "pie",
+    subject: runId,
+    payload: { action, dry },
+  });
+
   try {
     if (action === "score_all" || action === "run_full") {
       summary.score = await scoreAll(sb, runId);
@@ -371,6 +381,110 @@ Deno.serve(async (req) => {
       finished_at: new Date().toISOString(),
     }).eq("id", runId);
 
+    // AOS integration: publish events, knowledge, and follow-up tasks.
+    try {
+      const { data: winners } = await sb
+        .from("pie_product_scores")
+        .select("product_id, opportunity_score, tier, projected_revenue_cents, projected_margin, block_reasons, confidence")
+        .order("opportunity_score", { ascending: false })
+        .limit(20);
+
+      const top = winners ?? [];
+      const promote = top.filter((w: any) => w.tier === "winner" || w.tier === "high_opp");
+
+      // Per-winner events + follow-up creative tasks for the top 5.
+      for (let i = 0; i < promote.length; i++) {
+        const w: any = promote[i];
+        await aosEvent({
+          event_type: "opportunity.high",
+          source_engine: "pie",
+          subject: String(w.product_id),
+          payload: {
+            opportunity_score: w.opportunity_score,
+            tier: w.tier,
+            projected_revenue_cents: w.projected_revenue_cents,
+            projected_margin: w.projected_margin,
+            confidence: w.confidence,
+          },
+          severity: w.tier === "winner" ? "info" : "info",
+        });
+        if (i < 5) {
+          await aosTask({
+            title: `Generate creatives for top opportunity ${w.product_id}`,
+            category: "creative.generate",
+            owner_engine: "pcie_v2",
+            priority: Math.min(95, 60 + Math.round(Number(w.opportunity_score) / 4)),
+            payload: {
+              product_id: w.product_id,
+              opportunity_score: w.opportunity_score,
+              tier: w.tier,
+              source: "pie",
+              run_id: runId,
+            },
+          });
+        }
+      }
+
+      // Knowledge: rolling Top 10 opportunities (superseded each run).
+      await aosKnowledge({
+        topic: "product.opportunities",
+        key: "top10",
+        publisher_engine: "pie",
+        kind: "ranking",
+        confidence: 0.85,
+        tags: ["pie", "opportunity"],
+        payload: {
+          generated_at: new Date().toISOString(),
+          run_id: runId,
+          items: top.slice(0, 10).map((w: any) => ({
+            product_id: w.product_id,
+            opportunity_score: w.opportunity_score,
+            tier: w.tier,
+            projected_revenue_cents: w.projected_revenue_cents,
+            blocked: (w.block_reasons ?? []).length > 0,
+          })),
+        },
+      });
+
+      // Knowledge: daily AI meeting briefing as plain English.
+      if (summary.meeting?.briefing) {
+        const today = new Date().toISOString().slice(0, 10);
+        await aosKnowledge({
+          topic: "pie.daily_briefing",
+          key: today,
+          publisher_engine: "pie",
+          kind: "briefing",
+          confidence: 0.9,
+          tags: ["pie", "briefing"],
+          payload: {
+            date: today,
+            briefing: summary.meeting.briefing,
+            winners: summary.meeting.winners ?? 0,
+            gems: summary.meeting.gems ?? 0,
+            run_id: runId,
+          },
+        });
+      }
+
+      // Run-complete event with concise summary for the bus consumers.
+      await aosEvent({
+        event_type: "engine.run.complete",
+        source_engine: "pie",
+        subject: runId,
+        payload: {
+          action,
+          scored: summary.score?.scored ?? 0,
+          decisions: summary.decide?.decisions ?? 0,
+          scheduled: summary.calendar?.scheduled ?? 0,
+          winners: summary.meeting?.winners ?? promote.filter((p: any) => p.tier === "winner").length,
+        },
+      });
+      await aosHeartbeat("pie", "ok");
+    } catch (busErr) {
+      // Bus failures must never break the engine.
+      console.warn("[pie-engine] AOS bus publish failed", busErr);
+    }
+
     return new Response(JSON.stringify({ ok: true, run_id: runId, ...summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -378,6 +492,14 @@ Deno.serve(async (req) => {
     await sb.from("pie_engine_runs").update({
       status: "error", error: (e as Error).message, finished_at: new Date().toISOString(),
     }).eq("id", runId);
+    await aosEvent({
+      event_type: "engine.run.failed",
+      source_engine: "pie",
+      subject: runId,
+      payload: { action, error: (e as Error).message },
+      severity: "critical",
+    });
+    await aosHeartbeat("pie", "degraded");
     return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
