@@ -1370,6 +1370,49 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Production recovery 2026-06: the legacy synchronous render path chains
+    // text planning + image generation + multimodal QC + fidelity audit in one
+    // request and can exceed Edge CPU/wall limits. Keep Creative Director as the
+    // canonical entrypoint, but delegate heavy media work to the resumable AI
+    // Creative Factory. The old path is only available for explicit diagnostic
+    // calls with use_legacy_sync=true.
+    if ((action === "render_pins" || action === "run_full") && body?.use_legacy_sync !== true) {
+      const factoryUrl = `${SUPABASE_URL}/functions/v1/pinterest-creative-factory`;
+      const headers = {
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        "Content-Type": "application/json",
+      };
+      const enqueueResp = await fetch(factoryUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "enqueue_product",
+          productId: resolvedId,
+          productSlug,
+          count,
+          reason: "creative_director_delegated_factory",
+        }),
+      });
+      const enqueue = await enqueueResp.json().catch(() => ({}));
+      if (!enqueueResp.ok || enqueue?.ok === false) {
+        return fail(`creative_factory_enqueue_failed:${enqueue?.error ?? enqueueResp.status}`, 502, { traceId: trace, enqueue });
+      }
+      EdgeRuntime.waitUntil(fetch(factoryUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ action: "work_async", limit: Math.min(1, count), reason: "creative_director_delegated_factory" }),
+      }).catch(() => null));
+      return ok({
+        traceId: trace,
+        delegated: true,
+        message: "Creative Director delegated rendering to the resumable AI Creative Factory",
+        product_id: resolvedId,
+        product_slug: productSlug,
+        requested: count,
+        factory: enqueue,
+      });
+    }
+
     if (action === "profile_product") {
       const { niche, dna, cached } = await loadOrBuildProfile(supabase, resolvedId, force);
       return ok({ traceId: trace, niche, cached, dna });
