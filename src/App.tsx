@@ -2220,6 +2220,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pcie-v2-revenue-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PcieV2RevenueIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="autonomous-growth"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
