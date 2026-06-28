@@ -22211,13 +22211,161 @@ export type Database = {
           },
         ]
       }
+      pcie_v2_creative_dna: {
+        Row: {
+          cohort: string | null
+          created_at: string
+          creative_id: string
+          fingerprint: string
+          generation: number
+          id: string
+          parent_dna_fingerprint: string | null
+          performance_score: number
+          prompt_version: string | null
+          provider_slug: string | null
+          seed: number | null
+          traits: Json
+          updated_at: string
+        }
+        Insert: {
+          cohort?: string | null
+          created_at?: string
+          creative_id: string
+          fingerprint: string
+          generation?: number
+          id?: string
+          parent_dna_fingerprint?: string | null
+          performance_score?: number
+          prompt_version?: string | null
+          provider_slug?: string | null
+          seed?: number | null
+          traits?: Json
+          updated_at?: string
+        }
+        Update: {
+          cohort?: string | null
+          created_at?: string
+          creative_id?: string
+          fingerprint?: string
+          generation?: number
+          id?: string
+          parent_dna_fingerprint?: string | null
+          performance_score?: number
+          prompt_version?: string | null
+          provider_slug?: string | null
+          seed?: number | null
+          traits?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_creative_dna_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: true
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_creative_performance: {
+        Row: {
+          ad_spend_cents: number
+          add_to_cart: number
+          aov_cents: number
+          cac_cents: number | null
+          checkout: number
+          cohort: string | null
+          created_at: string
+          creative_id: string
+          ctr: number | null
+          cvr: number | null
+          ga4_sessions: number
+          id: string
+          impressions: number
+          meta: Json
+          outbound_clicks: number
+          profit_cents: number
+          purchases: number
+          revenue_cents: number
+          roas: number | null
+          save_rate: number | null
+          saves: number
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          ad_spend_cents?: number
+          add_to_cart?: number
+          aov_cents?: number
+          cac_cents?: number | null
+          checkout?: number
+          cohort?: string | null
+          created_at?: string
+          creative_id: string
+          ctr?: number | null
+          cvr?: number | null
+          ga4_sessions?: number
+          id?: string
+          impressions?: number
+          meta?: Json
+          outbound_clicks?: number
+          profit_cents?: number
+          purchases?: number
+          revenue_cents?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          updated_at?: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          ad_spend_cents?: number
+          add_to_cart?: number
+          aov_cents?: number
+          cac_cents?: number | null
+          checkout?: number
+          cohort?: string | null
+          created_at?: string
+          creative_id?: string
+          ctr?: number | null
+          cvr?: number | null
+          ga4_sessions?: number
+          id?: string
+          impressions?: number
+          meta?: Json
+          outbound_clicks?: number
+          profit_cents?: number
+          purchases?: number
+          revenue_cents?: number
+          roas?: number | null
+          save_rate?: number | null
+          saves?: number
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_creative_performance_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pcie_v2_creatives: {
         Row: {
           candidate_set_id: string | null
           created_at: string
           decisions: Json
+          dna_fingerprint: string | null
           dry_run: boolean
+          explanation: Json
           fingerprint: string | null
+          generation: number
           id: string
           image_fingerprint: string | null
           image_url: string | null
@@ -22225,6 +22373,7 @@ export type Database = {
           negative_prompt: string | null
           niche: string | null
           novelty_total: number | null
+          parent_creative_id: string | null
           pass_publish_gate: boolean
           pinterest_pin_id: string | null
           pinterest_queue_id: string | null
@@ -22238,6 +22387,7 @@ export type Database = {
           render_settings: Json | null
           render_status: string | null
           replay_of_creative_id: string | null
+          retired_at: string | null
           run_id: string | null
           scores: Json
           seed: number | null
@@ -22247,8 +22397,11 @@ export type Database = {
           candidate_set_id?: string | null
           created_at?: string
           decisions?: Json
+          dna_fingerprint?: string | null
           dry_run?: boolean
+          explanation?: Json
           fingerprint?: string | null
+          generation?: number
           id?: string
           image_fingerprint?: string | null
           image_url?: string | null
@@ -22256,6 +22409,7 @@ export type Database = {
           negative_prompt?: string | null
           niche?: string | null
           novelty_total?: number | null
+          parent_creative_id?: string | null
           pass_publish_gate?: boolean
           pinterest_pin_id?: string | null
           pinterest_queue_id?: string | null
@@ -22269,6 +22423,7 @@ export type Database = {
           render_settings?: Json | null
           render_status?: string | null
           replay_of_creative_id?: string | null
+          retired_at?: string | null
           run_id?: string | null
           scores?: Json
           seed?: number | null
@@ -22278,8 +22433,11 @@ export type Database = {
           candidate_set_id?: string | null
           created_at?: string
           decisions?: Json
+          dna_fingerprint?: string | null
           dry_run?: boolean
+          explanation?: Json
           fingerprint?: string | null
+          generation?: number
           id?: string
           image_fingerprint?: string | null
           image_url?: string | null
@@ -22287,6 +22445,7 @@ export type Database = {
           negative_prompt?: string | null
           niche?: string | null
           novelty_total?: number | null
+          parent_creative_id?: string | null
           pass_publish_gate?: boolean
           pinterest_pin_id?: string | null
           pinterest_queue_id?: string | null
@@ -22300,12 +22459,20 @@ export type Database = {
           render_settings?: Json | null
           render_status?: string | null
           replay_of_creative_id?: string | null
+          retired_at?: string | null
           run_id?: string | null
           scores?: Json
           seed?: number | null
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pcie_v2_creatives_parent_creative_id_fkey"
+            columns: ["parent_creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pcie_v2_creatives_run_id_fkey"
             columns: ["run_id"]
@@ -22411,6 +22578,115 @@ export type Database = {
           payload?: Json
           run_id?: string | null
           stage?: string | null
+        }
+        Relationships: []
+      }
+      pcie_v2_evolution_lineage: {
+        Row: {
+          child_creative_id: string | null
+          created_at: string
+          expected_lift: number | null
+          id: string
+          inherited_traits: Json
+          mutated_traits: Json
+          parent_creative_id: string | null
+          rationale: string | null
+          run_id: string | null
+        }
+        Insert: {
+          child_creative_id?: string | null
+          created_at?: string
+          expected_lift?: number | null
+          id?: string
+          inherited_traits?: Json
+          mutated_traits?: Json
+          parent_creative_id?: string | null
+          rationale?: string | null
+          run_id?: string | null
+        }
+        Update: {
+          child_creative_id?: string | null
+          created_at?: string
+          expected_lift?: number | null
+          id?: string
+          inherited_traits?: Json
+          mutated_traits?: Json
+          parent_creative_id?: string | null
+          rationale?: string | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie_v2_evolution_lineage_child_creative_id_fkey"
+            columns: ["child_creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcie_v2_evolution_lineage_parent_creative_id_fkey"
+            columns: ["parent_creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_creatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcie_v2_evolution_lineage_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pcie_v2_evolution_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcie_v2_evolution_runs: {
+        Row: {
+          creatives_evaluated: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          learning_speed: number | null
+          losers_retired: number
+          mutation_rate: number | null
+          mutations_queued: number
+          notes: Json
+          started_at: string
+          status: string
+          trends_detected: number
+          weights_updated: number
+          winners_selected: number
+        }
+        Insert: {
+          creatives_evaluated?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          learning_speed?: number | null
+          losers_retired?: number
+          mutation_rate?: number | null
+          mutations_queued?: number
+          notes?: Json
+          started_at?: string
+          status?: string
+          trends_detected?: number
+          weights_updated?: number
+          winners_selected?: number
+        }
+        Update: {
+          creatives_evaluated?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          learning_speed?: number | null
+          losers_retired?: number
+          mutation_rate?: number | null
+          mutations_queued?: number
+          notes?: Json
+          started_at?: string
+          status?: string
+          trends_detected?: number
+          weights_updated?: number
+          winners_selected?: number
         }
         Relationships: []
       }
@@ -22763,6 +23039,93 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie_v2_retired_dna: {
+        Row: {
+          fingerprint: string
+          id: string
+          performance_score: number | null
+          reason: string
+          retired_at: string
+          sample_size: number | null
+          traits: Json
+        }
+        Insert: {
+          fingerprint: string
+          id?: string
+          performance_score?: number | null
+          reason: string
+          retired_at?: string
+          sample_size?: number | null
+          traits?: Json
+        }
+        Update: {
+          fingerprint?: string
+          id?: string
+          performance_score?: number | null
+          reason?: string
+          retired_at?: string
+          sample_size?: number | null
+          traits?: Json
+        }
+        Relationships: []
+      }
+      pcie_v2_revenue_snapshots: {
+        Row: {
+          created_at: string
+          ctr_per_hook: Json
+          evolution_graph: Json
+          id: string
+          learning_speed: number | null
+          mutation_rate: number | null
+          revenue_per_style: Json
+          roas_per_family: Json
+          snapshot_date: string
+          top_dna: Json
+          totals: Json
+          winning_emotions: Json
+          winning_hooks: Json
+          winning_scenes: Json
+          winning_typography: Json
+          worst_dna: Json
+        }
+        Insert: {
+          created_at?: string
+          ctr_per_hook?: Json
+          evolution_graph?: Json
+          id?: string
+          learning_speed?: number | null
+          mutation_rate?: number | null
+          revenue_per_style?: Json
+          roas_per_family?: Json
+          snapshot_date?: string
+          top_dna?: Json
+          totals?: Json
+          winning_emotions?: Json
+          winning_hooks?: Json
+          winning_scenes?: Json
+          winning_typography?: Json
+          worst_dna?: Json
+        }
+        Update: {
+          created_at?: string
+          ctr_per_hook?: Json
+          evolution_graph?: Json
+          id?: string
+          learning_speed?: number | null
+          mutation_rate?: number | null
+          revenue_per_style?: Json
+          roas_per_family?: Json
+          snapshot_date?: string
+          top_dna?: Json
+          totals?: Json
+          winning_emotions?: Json
+          winning_hooks?: Json
+          winning_scenes?: Json
+          winning_typography?: Json
+          worst_dna?: Json
+        }
+        Relationships: []
+      }
       pcie_v2_runs: {
         Row: {
           config_snapshot: Json
@@ -22922,6 +23285,42 @@ export type Database = {
           slug?: string
           traits?: Json
           weight?: number
+        }
+        Relationships: []
+      }
+      pcie_v2_trend_signals: {
+        Row: {
+          confidence: number
+          detected_at: string
+          evidence: Json
+          expires_at: string | null
+          id: string
+          influence: number
+          source: string | null
+          trend_key: string
+          trend_type: string
+        }
+        Insert: {
+          confidence?: number
+          detected_at?: string
+          evidence?: Json
+          expires_at?: string | null
+          id?: string
+          influence?: number
+          source?: string | null
+          trend_key: string
+          trend_type: string
+        }
+        Update: {
+          confidence?: number
+          detected_at?: string
+          evidence?: Json
+          expires_at?: string | null
+          id?: string
+          influence?: number
+          source?: string | null
+          trend_key?: string
+          trend_type?: string
         }
         Relationships: []
       }
