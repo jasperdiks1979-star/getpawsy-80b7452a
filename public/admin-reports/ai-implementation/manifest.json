@@ -1,5 +1,13 @@
 [
   {
+    "id": "profit-cycle-001-2026-06-28",
+    "title": "Profit Cycle 001 \u2014 Restore Funnel Truth",
+    "date": "2026-06-28",
+    "pdf": "/admin-reports/ai-implementation/PROFIT_CYCLE_001_2026-06-28.pdf",
+    "json": "/admin-reports/ai-implementation/PROFIT_CYCLE_001_2026-06-28.json",
+    "summary": "Doctrine switch from build to profit. Ruled out geo-gate (0 events/14d) and edge-function CORS. Shipped 3 additive funnel hooks (add_to_cart, payment, purchase) so the waterfall stops lying. Next cycle: Stripe-page autopsy from US-origin context."
+  },
+  {
     "id": "shil-v1-2026-06-28",
     "title": "Self-Healing Intelligence Layer (SHIL) v1",
     "date": "2026-06-28",
