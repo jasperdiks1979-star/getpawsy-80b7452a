@@ -887,10 +887,6 @@ export default function PinterestHealthPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-semibold mb-2">Recent incidents</h2>
-      </Card>
-
-      <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Creative Evolution Engine — Creative Genome</h2>
           <div className="flex gap-2">
