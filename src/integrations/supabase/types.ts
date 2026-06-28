@@ -19328,6 +19328,544 @@ export type Database = {
         }
         Relationships: []
       }
+      gkg_consultations: {
+        Row: {
+          action: string
+          created_at: string
+          engine_source: string
+          id: string
+          latency_ms: number | null
+          query: Json
+          response_summary: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          engine_source: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          engine_source?: string
+          id?: string
+          latency_ms?: number | null
+          query?: Json
+          response_summary?: Json
+        }
+        Relationships: []
+      }
+      gkg_contradictions: {
+        Row: {
+          conflicting_edges: string[]
+          conflicting_memories: string[]
+          description: string
+          detected_at: string
+          id: string
+          resolution_note: string | null
+          resolution_status: string
+          resolved_at: string | null
+          severity: number
+        }
+        Insert: {
+          conflicting_edges?: string[]
+          conflicting_memories?: string[]
+          description: string
+          detected_at?: string
+          id?: string
+          resolution_note?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          severity?: number
+        }
+        Update: {
+          conflicting_edges?: string[]
+          conflicting_memories?: string[]
+          description?: string
+          detected_at?: string
+          id?: string
+          resolution_note?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          severity?: number
+        }
+        Relationships: []
+      }
+      gkg_counterfactuals: {
+        Row: {
+          baseline: Json
+          confidence: number
+          created_at: string
+          expected_impact_usd: number | null
+          id: string
+          intervention: Json
+          predicted_outcome: Json
+          risk_score: number
+          scenario: string
+          status: string
+        }
+        Insert: {
+          baseline?: Json
+          confidence?: number
+          created_at?: string
+          expected_impact_usd?: number | null
+          id?: string
+          intervention?: Json
+          predicted_outcome?: Json
+          risk_score?: number
+          scenario: string
+          status?: string
+        }
+        Update: {
+          baseline?: Json
+          confidence?: number
+          created_at?: string
+          expected_impact_usd?: number | null
+          id?: string
+          intervention?: Json
+          predicted_outcome?: Json
+          risk_score?: number
+          scenario?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      gkg_decision_briefs: {
+        Row: {
+          alternatives: Json
+          confidence: number
+          created_at: string
+          decision_topic: string
+          evidence: Json
+          expected_business_value_usd: number | null
+          id: string
+          recommendation: string
+          risks: Json
+          status: string
+          summary: string
+          target_consumer: string
+        }
+        Insert: {
+          alternatives?: Json
+          confidence?: number
+          created_at?: string
+          decision_topic: string
+          evidence?: Json
+          expected_business_value_usd?: number | null
+          id?: string
+          recommendation: string
+          risks?: Json
+          status?: string
+          summary: string
+          target_consumer: string
+        }
+        Update: {
+          alternatives?: Json
+          confidence?: number
+          created_at?: string
+          decision_topic?: string
+          evidence?: Json
+          expected_business_value_usd?: number | null
+          id?: string
+          recommendation?: string
+          risks?: Json
+          status?: string
+          summary?: string
+          target_consumer?: string
+        }
+        Relationships: []
+      }
+      gkg_edge_history: {
+        Row: {
+          created_at: string
+          edge_id: string
+          id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          edge_id: string
+          id?: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          edge_id?: string
+          id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gkg_edge_history_edge_id_fkey"
+            columns: ["edge_id"]
+            isOneToOne: false
+            referencedRelation: "gkg_edges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gkg_edges: {
+        Row: {
+          attributes: Json
+          confidence: number
+          created_at: string
+          evidence_count: number
+          from_node: string
+          id: string
+          is_active: boolean
+          negative_evidence: number
+          positive_evidence: number
+          relation: string
+          source_dna: string | null
+          to_node: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+          version: number
+          weight: number
+        }
+        Insert: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          evidence_count?: number
+          from_node: string
+          id?: string
+          is_active?: boolean
+          negative_evidence?: number
+          positive_evidence?: number
+          relation: string
+          source_dna?: string | null
+          to_node: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+          weight?: number
+        }
+        Update: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          evidence_count?: number
+          from_node?: string
+          id?: string
+          is_active?: boolean
+          negative_evidence?: number
+          positive_evidence?: number
+          relation?: string
+          source_dna?: string | null
+          to_node?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gkg_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "gkg_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gkg_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "gkg_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gkg_hypotheses: {
+        Row: {
+          alternatives: Json
+          confidence: number
+          counter_evidence: Json
+          created_at: string
+          evidence: Json
+          expected_impact_usd: number | null
+          hypothesis: string
+          id: string
+          question: string
+          resolved_at: string | null
+          source_engine: string | null
+          status: string
+          validation_plan: string | null
+        }
+        Insert: {
+          alternatives?: Json
+          confidence?: number
+          counter_evidence?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact_usd?: number | null
+          hypothesis: string
+          id?: string
+          question: string
+          resolved_at?: string | null
+          source_engine?: string | null
+          status?: string
+          validation_plan?: string | null
+        }
+        Update: {
+          alternatives?: Json
+          confidence?: number
+          counter_evidence?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact_usd?: number | null
+          hypothesis?: string
+          id?: string
+          question?: string
+          resolved_at?: string | null
+          source_engine?: string | null
+          status?: string
+          validation_plan?: string | null
+        }
+        Relationships: []
+      }
+      gkg_memory: {
+        Row: {
+          body: string
+          confidence: number
+          created_at: string
+          embedding: Json | null
+          evidence: Json
+          id: string
+          importance: number
+          last_accessed_at: string | null
+          memory_type: string
+          related_nodes: string[]
+          tags: string[]
+          title: string
+        }
+        Insert: {
+          body: string
+          confidence?: number
+          created_at?: string
+          embedding?: Json | null
+          evidence?: Json
+          id?: string
+          importance?: number
+          last_accessed_at?: string | null
+          memory_type: string
+          related_nodes?: string[]
+          tags?: string[]
+          title: string
+        }
+        Update: {
+          body?: string
+          confidence?: number
+          created_at?: string
+          embedding?: Json | null
+          evidence?: Json
+          id?: string
+          importance?: number
+          last_accessed_at?: string | null
+          memory_type?: string
+          related_nodes?: string[]
+          tags?: string[]
+          title?: string
+        }
+        Relationships: []
+      }
+      gkg_node_history: {
+        Row: {
+          created_at: string
+          id: string
+          node_id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          node_id: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          node_id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gkg_node_history_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "gkg_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gkg_nodes: {
+        Row: {
+          attributes: Json
+          confidence: number
+          created_at: string
+          description: string | null
+          id: string
+          importance: number
+          is_active: boolean
+          label: string
+          node_type: string
+          ref_id: string
+          source_dna: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          importance?: number
+          is_active?: boolean
+          label: string
+          node_type: string
+          ref_id: string
+          source_dna?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          attributes?: Json
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          importance?: number
+          is_active?: boolean
+          label?: string
+          node_type?: string
+          ref_id?: string
+          source_dna?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      gkg_reasoning_traces: {
+        Row: {
+          actual_outcome: Json | null
+          alternatives: Json
+          conclusion: string
+          confidence: number
+          consulted_dna: string[]
+          created_at: string
+          evidence: Json
+          expected_outcome: Json
+          id: string
+          learning: string | null
+          outcome_at: string | null
+          question: string
+          reasoning_chain: Json
+          source_engine: string | null
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          alternatives?: Json
+          conclusion: string
+          confidence?: number
+          consulted_dna?: string[]
+          created_at?: string
+          evidence?: Json
+          expected_outcome?: Json
+          id?: string
+          learning?: string | null
+          outcome_at?: string | null
+          question: string
+          reasoning_chain?: Json
+          source_engine?: string | null
+        }
+        Update: {
+          actual_outcome?: Json | null
+          alternatives?: Json
+          conclusion?: string
+          confidence?: number
+          consulted_dna?: string[]
+          created_at?: string
+          evidence?: Json
+          expected_outcome?: Json
+          id?: string
+          learning?: string | null
+          outcome_at?: string | null
+          question?: string
+          reasoning_chain?: Json
+          source_engine?: string | null
+        }
+        Relationships: []
+      }
+      gkg_root_causes: {
+        Row: {
+          cause_chain: Json
+          confidence: number
+          detected_at: string
+          evidence_chain: Json
+          id: string
+          related_nodes: string[]
+          resolved_at: string | null
+          root_cause: string
+          status: string
+          symptom: string
+        }
+        Insert: {
+          cause_chain?: Json
+          confidence?: number
+          detected_at?: string
+          evidence_chain?: Json
+          id?: string
+          related_nodes?: string[]
+          resolved_at?: string | null
+          root_cause: string
+          status?: string
+          symptom: string
+        }
+        Update: {
+          cause_chain?: Json
+          confidence?: number
+          detected_at?: string
+          evidence_chain?: Json
+          id?: string
+          related_nodes?: string[]
+          resolved_at?: string | null
+          root_cause?: string
+          status?: string
+          symptom?: string
+        }
+        Relationships: []
+      }
+      gkg_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       gmd_assumption_log: {
         Row: {
           assumption: string
@@ -54003,6 +54541,34 @@ export type Database = {
           view_to_atc: number
           view_to_purchase: number
         }[]
+      }
+      gkg_evolve: { Args: never; Returns: Json }
+      gkg_upsert_edge: {
+        Args: {
+          p_attributes?: Json
+          p_confidence?: number
+          p_from: string
+          p_negative?: number
+          p_positive?: number
+          p_relation: string
+          p_source_dna?: string
+          p_to: string
+          p_weight?: number
+        }
+        Returns: string
+      }
+      gkg_upsert_node: {
+        Args: {
+          p_attributes?: Json
+          p_confidence?: number
+          p_description?: string
+          p_importance?: number
+          p_label: string
+          p_ref_id: string
+          p_source_dna?: string
+          p_type: string
+        }
+        Returns: string
       }
       gmd_refresh_module_rollups: { Args: never; Returns: undefined }
       gmd_upsert_concept: {
