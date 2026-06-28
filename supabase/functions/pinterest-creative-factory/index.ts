@@ -750,15 +750,45 @@ async function processJob(sb: Sb, job: any, settings: any) {
       const fast = deterministicQuality(copy, bytes);
       if (!fast.ok) return fast;
       const ai = await validateWithAi(bytes, prompt, metrics);
+      const dataUrl = `data:image/png;base64,${bytesToBase64(bytes)}`;
+      const inspiration = await scoreInspirationAi({
+        apiKey: LOVABLE_API_KEY,
+        textModel: TEXT_MODEL,
+        dataUrl,
+        dims: masterDims,
+        productName: conciseProductName(product.name),
+      });
+      (metrics as any).inspiration = inspiration;
+      const inspirationFloor = Number(
+        settings?.inspiration_floor ??
+          Deno.env.get("PINTEREST_INSPIRATION_FLOOR") ?? 78,
+      );
+      const aiOk = ai.ok &&
+        ai.score >= Number(settings?.quality_threshold ?? 70);
+      const inspirationOk = inspiration.total >= inspirationFloor &&
+        inspiration.axes.ai_look_risk < 60;
       return {
-        ok: ai.ok && ai.score >= Number(settings?.quality_threshold ?? 70),
+        ok: aiOk && inspirationOk,
         scores: {
           ...fast.scores,
-          total: Math.round(ai.score),
+          total: Math.round((Number(ai.score) + inspiration.total) / 2),
           ai_visual: Math.round(ai.score),
+          inspiration: inspiration.total,
+          inspiration_axes: inspiration.axes,
+          inspiration_floor: inspirationFloor,
         },
-        reasons: ai.reasons ?? [],
-        notes: ai.notes ?? "",
+        reasons: [
+          ...(ai.reasons ?? []),
+          ...(inspirationOk ? [] : [
+            `inspiration_below_floor:${inspiration.total}/${inspirationFloor}`,
+            ...(inspiration.axes.ai_look_risk >= 60
+              ? [`ai_look_risk_high:${inspiration.axes.ai_look_risk}`]
+              : []),
+            ...inspiration.reasons.slice(0, 4),
+          ]),
+        ],
+        notes: [ai.notes ?? "", inspiration.notes ?? ""].filter(Boolean)
+          .join(" | "),
       };
     });
     if (!qc.ok) throw new Error(`quality_gate_failed:${qc.reasons.join(",")}`);
