@@ -1,250 +1,197 @@
 import { useEffect, useState } from "react";
-import { Helmet } from "react-helmet-async";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { GAEE } from "@/lib/gaee/client";
 
-type Run = {
-  id: string;
-  kind: string;
-  status: string;
-  started_at: string;
-  finished_at: string | null;
-  duration_ms: number | null;
-  stats: Record<string, unknown>;
-  error: string | null;
-};
-
-type Setting = { key: string; value: unknown; description: string | null };
-type ProductRow = { product_id: string; pins_count: number; impressions_total: number; revenue_total: number; composite_score: number | null };
-type BoardRow = { board_id: string; pins_count: number; impressions_total: number; avg_ctr: number | null; composite_score: number | null };
-type PredictionRow = {
-  id: string;
-  pin_id: string | null;
-  predicted_ctr: number | null;
-  actual_ctr: number | null;
-  predicted_revenue: number | null;
-  actual_revenue: number | null;
-  confidence: number | null;
-  created_at: string;
-};
+type Row = Record<string, any>;
 
 export default function EvolutionEnginePage() {
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [settings, setSettings] = useState<Setting[]>([]);
-  const [products, setProducts] = useState<ProductRow[]>([]);
-  const [boards, setBoards] = useState<BoardRow[]>([]);
-  const [predictions, setPredictions] = useState<PredictionRow[]>([]);
-  const [counts, setCounts] = useState<{ history: number; events: number; vectors: number }>({ history: 0, events: 0, vectors: 0 });
   const [busy, setBusy] = useState<string | null>(null);
+  const [runs, setRuns] = useState<Row[]>([]);
+  const [proposals, setProposals] = useState<Row[]>([]);
+  const [sims, setSims] = useState<Row[]>([]);
+  const [rollouts, setRollouts] = useState<Row[]>([]);
+  const [reflections, setReflections] = useState<Row[]>([]);
+  const [threats, setThreats] = useState<Row[]>([]);
+  const [scorecards, setScorecards] = useState<Row[]>([]);
+  const [observations, setObservations] = useState<Row[]>([]);
+  const [status, setStatus] = useState<any>(null);
 
-  async function load() {
-    const [r, s, p, b, pr, h, e, v] = await Promise.all([
-      (supabase.from as any)("ee_runs").select("*").order("started_at", { ascending: false }).limit(20),
-      (supabase.from as any)("ee_settings").select("*").order("key"),
-      (supabase.from as any)("ee_learning_products").select("*").order("composite_score", { ascending: false, nullsFirst: false }).limit(20),
-      (supabase.from as any)("ee_learning_boards").select("*").order("composite_score", { ascending: false, nullsFirst: false }).limit(20),
-      (supabase.from as any)("ee_predictions").select("*").order("created_at", { ascending: false }).limit(50),
-      (supabase.from as any)("ee_learning_history").select("id", { count: "exact", head: true }),
-      (supabase.from as any)("ee_learning_events").select("id", { count: "exact", head: true }),
-      (supabase.from as any)("ee_learning_vectors").select("id", { count: "exact", head: true }),
+  const refresh = async () => {
+    const [r, p, s, ro, rf, t, sc, ob] = await Promise.all([
+      supabase.from("gaee_runs").select("*").order("started_at", { ascending: false }).limit(20),
+      supabase.from("gaee_proposals").select("*").order("evolution_score", { ascending: false }).limit(100),
+      supabase.from("gaee_simulations").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("gaee_rollouts").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("gaee_reflections").select("*").order("created_at", { ascending: false }).limit(12),
+      supabase.from("gaee_competitive_threats").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("gaee_scorecards").select("*").order("period", { ascending: false }).limit(12),
+      supabase.from("gaee_observations").select("*").order("observed_at", { ascending: false }).limit(50),
     ]);
     setRuns(r.data ?? []);
-    setSettings(s.data ?? []);
-    setProducts(p.data ?? []);
-    setBoards(b.data ?? []);
-    setPredictions(pr.data ?? []);
-    setCounts({ history: h.count ?? 0, events: e.count ?? 0, vectors: v.count ?? 0 });
-  }
+    setProposals(p.data ?? []);
+    setSims(s.data ?? []);
+    setRollouts(ro.data ?? []);
+    setReflections(rf.data ?? []);
+    setThreats(t.data ?? []);
+    setScorecards(sc.data ?? []);
+    setObservations(ob.data ?? []);
+    try { setStatus(await GAEE.status()); } catch { /* noop */ }
+  };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { refresh(); }, []);
 
-  async function trigger(fn: string) {
-    setBusy(fn);
-    try {
-      const { data, error } = await supabase.functions.invoke(fn, { body: { triggered_by: "evolution-engine-ui" } });
-      if (error) throw error;
-      toast.success(`${fn} ok`, { description: JSON.stringify(data).slice(0, 200) });
-      await load();
-    } catch (e: any) {
-      toast.error(`${fn} failed`, { description: e?.message ?? String(e) });
-    } finally {
-      setBusy(null);
-    }
-  }
+  const run = async (label: string, fn: () => Promise<any>) => {
+    setBusy(label);
+    try { const out = await fn(); toast.success(`${label} ok`); console.log(label, out); await refresh(); }
+    catch (e: any) { toast.error(`${label} failed: ${e.message ?? e}`); }
+    finally { setBusy(null); }
+  };
 
-  const mode = settings.find((x) => x.key === "mode")?.value as string | undefined;
+  const decide = async (id: string, approve: boolean) => {
+    await run(approve ? "approve" : "reject", () => approve ? GAEE.approve(id) : GAEE.reject(id));
+  };
+
+  const latest = scorecards[0];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Helmet>
-        <title>Evolution Engine — Phase 1 (Observation Only)</title>
-        <meta name="description" content="GetPawsy Evolution Engine V1 — autonomous marketing brain, observation-only Phase 1 dashboard." />
-      </Helmet>
-
-      <header className="flex items-center justify-between">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Evolution Engine</h1>
-          <p className="text-muted-foreground text-sm">Autonomous AI Marketing Brain — Phase 1 foundation</p>
+          <h1 className="text-2xl font-bold">Autonomous Evolution Engine</h1>
+          <p className="text-sm text-muted-foreground">Observe → Reason → Propose → Simulate → Approve → Roll out → Learn → Update Genesis.</p>
         </div>
-        <Badge variant={mode === "auto" ? "destructive" : "secondary"}>MODE: {String(mode ?? "observation_only").toUpperCase()}</Badge>
-      </header>
-
-      <Card className="border-amber-500/40 bg-amber-500/5">
-        <CardContent className="pt-6 text-sm text-amber-200">
-          <strong>Observation-only.</strong> The Evolution Engine cannot publish, gate, or mutate the Publish Queue, Guardian, CI Layer, OAuth, or Recovery Engine. It reads production signals and writes only to <code>ee_*</code> tables.
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Stat label="Learning History rows" value={counts.history} />
-        <Stat label="Learning Events" value={counts.events} />
-        <Stat label="Feature Vectors" value={counts.vectors} />
-        <Stat label="Predictions" value={predictions.length} />
+        <div className="flex gap-2">
+          <Button disabled={!!busy} onClick={() => run("cycle", () => GAEE.runCycle("manual"))}>Run cycle</Button>
+          <Button variant="outline" disabled={!!busy} onClick={() => run("reflect", () => GAEE.reflect())}>Monthly reflection</Button>
+          <Button variant="outline" disabled={!!busy} onClick={() => run("scorecard", () => GAEE.scorecard())}>Refresh scorecard</Button>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Manual triggers</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button disabled={!!busy} onClick={() => trigger("evolution-learning-ingest")}>
-            {busy === "evolution-learning-ingest" ? "Running…" : "Run Learning Ingest"}
-          </Button>
-          <Button disabled={!!busy} variant="secondary" onClick={() => trigger("evolution-nightly-rollup")}>
-            {busy === "evolution-nightly-rollup" ? "Running…" : "Run Nightly Rollup"}
-          </Button>
-          <Button disabled={!!busy} variant="outline" onClick={() => trigger("evolution-predictive-score")}>
-            {busy === "evolution-predictive-score" ? "Running…" : "Score Recent Drafts"}
-          </Button>
-          <Button disabled={!!busy} variant="ghost" onClick={load}>Refresh</Button>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle>Top Products (by composite score)</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>Pins</TableHead><TableHead>Impr.</TableHead><TableHead>Revenue</TableHead><TableHead>Score</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {products.length === 0 && (<TableRow><TableCell colSpan={5} className="text-muted-foreground text-center">No data yet — run Learning Ingest.</TableCell></TableRow>)}
-                {products.map((p) => (
-                  <TableRow key={p.product_id}>
-                    <TableCell className="font-mono text-xs">{p.product_id.slice(0, 8)}…</TableCell>
-                    <TableCell>{p.pins_count}</TableCell>
-                    <TableCell>{p.impressions_total}</TableCell>
-                    <TableCell>€{Number(p.revenue_total).toFixed(2)}</TableCell>
-                    <TableCell>{p.composite_score?.toFixed(3) ?? "—"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Top Boards</CardTitle></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader><TableRow><TableHead>Board</TableHead><TableHead>Pins</TableHead><TableHead>Impr.</TableHead><TableHead>CTR</TableHead><TableHead>Score</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {boards.length === 0 && (<TableRow><TableCell colSpan={5} className="text-muted-foreground text-center">No data yet.</TableCell></TableRow>)}
-                {boards.map((b) => (
-                  <TableRow key={b.board_id}>
-                    <TableCell className="font-mono text-xs">{b.board_id}</TableCell>
-                    <TableCell>{b.pins_count}</TableCell>
-                    <TableCell>{b.impressions_total}</TableCell>
-                    <TableCell>{b.avg_ctr != null ? (Number(b.avg_ctr) * 100).toFixed(2) + "%" : "—"}</TableCell>
-                    <TableCell>{b.composite_score?.toFixed(3) ?? "—"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          ["Open proposals", status?.open_proposals ?? proposals.filter(p => p.status === "proposed").length],
+          ["Approved", proposals.filter(p => p.status === "approved").length],
+          ["Rollouts", rollouts.length],
+          ["Threats open", threats.filter(t => t.status === "open").length],
+          ["Overall score", latest?.overall ?? "—"],
+          ["Last run", status?.last_run?.status ?? "—"],
+        ].map(([k, v]) => (
+          <Card key={k as string}><CardContent className="p-4">
+            <div className="text-xs text-muted-foreground">{k}</div>
+            <div className="text-xl font-semibold">{String(v)}</div>
+          </CardContent></Card>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader><CardTitle>Predictions vs Actuals (latest 50)</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pin</TableHead><TableHead>Pred CTR</TableHead><TableHead>Act CTR</TableHead><TableHead>Pred Rev</TableHead><TableHead>Act Rev</TableHead><TableHead>Conf</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {predictions.length === 0 && (<TableRow><TableCell colSpan={6} className="text-muted-foreground text-center">No predictions yet.</TableCell></TableRow>)}
-              {predictions.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-mono text-xs">{p.pin_id ?? "—"}</TableCell>
-                  <TableCell>{p.predicted_ctr != null ? (Number(p.predicted_ctr) * 100).toFixed(2) + "%" : "—"}</TableCell>
-                  <TableCell>{p.actual_ctr != null ? (Number(p.actual_ctr) * 100).toFixed(2) + "%" : "—"}</TableCell>
-                  <TableCell>{p.predicted_revenue != null ? `€${Number(p.predicted_revenue).toFixed(2)}` : "—"}</TableCell>
-                  <TableCell>{p.actual_revenue != null ? `€${Number(p.actual_revenue).toFixed(2)}` : "—"}</TableCell>
-                  <TableCell>{p.confidence != null ? (Number(p.confidence) * 100).toFixed(0) + "%" : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="proposals">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="proposals">Proposals</TabsTrigger>
+          <TabsTrigger value="simulations">Simulations</TabsTrigger>
+          <TabsTrigger value="rollouts">Rollouts</TabsTrigger>
+          <TabsTrigger value="observations">Observations</TabsTrigger>
+          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
+          <TabsTrigger value="reflections">Reflections</TabsTrigger>
+          <TabsTrigger value="threats">Competitive</TabsTrigger>
+          <TabsTrigger value="runs">Runs</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader><CardTitle>Run log</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Kind</TableHead><TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Duration</TableHead><TableHead>Stats / Error</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {runs.length === 0 && (<TableRow><TableCell colSpan={5} className="text-muted-foreground text-center">No runs yet.</TableCell></TableRow>)}
-              {runs.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.kind}</TableCell>
-                  <TableCell><Badge variant={r.status === "ok" ? "default" : r.status === "running" ? "secondary" : "destructive"}>{r.status}</Badge></TableCell>
-                  <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
-                  <TableCell>{r.duration_ms ? `${r.duration_ms}ms` : "—"}</TableCell>
-                  <TableCell className="text-xs font-mono max-w-md truncate">{r.error ?? JSON.stringify(r.stats)}</TableCell>
-                </TableRow>
+        <TabsContent value="proposals">
+          <Card><CardHeader><CardTitle>Ranked proposals</CardTitle></CardHeader><CardContent>
+            <div className="space-y-3">
+              {proposals.map((p) => (
+                <div key={p.id} className="border rounded p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-medium">{p.title}</div>
+                    <div className="flex gap-2 items-center">
+                      <Badge variant="outline">{p.domain}</Badge>
+                      <Badge>{p.change_type}</Badge>
+                      <Badge variant="secondary">score {p.evolution_score}</Badge>
+                      <Badge variant={p.status === "approved" ? "default" : p.status === "rejected" ? "destructive" : "outline"}>{p.status}</Badge>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">{p.rationale}</div>
+                  <div className="text-xs grid grid-cols-2 md:grid-cols-4 gap-2 text-muted-foreground">
+                    <span>ROI {p.expected_roi}</span><span>Risk {p.risk}</span>
+                    <span>Conf {p.confidence}</span><span>ΔComplexity {p.complexity_delta}</span>
+                  </div>
+                  {(p.status === "proposed" || p.status === "needs_review") && (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => decide(p.id, true)}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => decide(p.id, false)}>Reject</Button>
+                    </div>
+                  )}
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!proposals.length && <div className="text-sm text-muted-foreground">No proposals yet. Run a cycle.</div>}
+            </div>
+          </CardContent></Card>
+        </TabsContent>
 
-      <Card>
-        <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Key</TableHead><TableHead>Value</TableHead><TableHead>Description</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {settings.map((s) => (
-                <TableRow key={s.key}>
-                  <TableCell className="font-mono">{s.key}</TableCell>
-                  <TableCell className="font-mono">{JSON.stringify(s.value)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{s.description ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <TabsContent value="simulations">
+          <Card><CardContent className="p-4 overflow-auto">
+            <pre className="text-xs">{JSON.stringify(sims.slice(0, 20), null, 2)}</pre>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="rollouts">
+          <Card><CardContent className="p-4 space-y-2">
+            {rollouts.map(r => (
+              <div key={r.id} className="flex justify-between border-b py-2 text-sm">
+                <span>{r.proposal_id?.slice(0, 8)} • {r.stage} • {r.traffic_pct}%</span>
+                <Badge variant="outline">{r.status}</Badge>
+              </div>
+            ))}
+            {!rollouts.length && <div className="text-sm text-muted-foreground">No rollouts yet.</div>}
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="observations">
+          <Card><CardContent className="p-4 overflow-auto">
+            <pre className="text-xs">{JSON.stringify(observations, null, 2)}</pre>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="scorecard">
+          <Card><CardContent className="p-4 overflow-auto">
+            <pre className="text-xs">{JSON.stringify(scorecards, null, 2)}</pre>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="reflections">
+          <Card><CardContent className="p-4 space-y-3">
+            {reflections.map(r => (
+              <div key={r.id} className="border rounded p-3">
+                <div className="font-medium">{r.period}</div>
+                <div className="text-sm text-muted-foreground">{r.narrative}</div>
+              </div>
+            ))}
+            {!reflections.length && <div className="text-sm text-muted-foreground">No reflections yet.</div>}
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="threats">
+          <Card><CardContent className="p-4 space-y-2">
+            {threats.map(t => (
+              <div key={t.id} className="border-b py-2">
+                <div className="font-medium text-sm">{t.threat}</div>
+                <div className="text-xs text-muted-foreground">Mitigation: {t.mitigation ?? "—"}</div>
+              </div>
+            ))}
+            {!threats.length && <div className="text-sm text-muted-foreground">No threats tracked.</div>}
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="runs">
+          <Card><CardContent className="p-4 overflow-auto">
+            <pre className="text-xs">{JSON.stringify(runs, null, 2)}</pre>
+          </CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="text-xs uppercase text-muted-foreground">{label}</div>
-        <div className="text-3xl font-bold">{value.toLocaleString()}</div>
-      </CardContent>
-    </Card>
   );
 }
