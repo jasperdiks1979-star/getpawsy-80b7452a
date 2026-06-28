@@ -1635,6 +1635,10 @@ async function markPosted(
       pin_verified: verification.ok,
       pin_verification_reason: verification.reason,
       pin_verified_at: now,
+      // E2E verification: start in waiting state. Worker upgrades to
+      // verified_success / verification_failed after Pinterest re-read.
+      verification_state: "waiting_verification",
+      verification_attempts: 0,
     })
     .eq("id", pin.id);
 
