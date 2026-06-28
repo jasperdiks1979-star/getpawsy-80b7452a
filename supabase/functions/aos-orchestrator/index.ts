@@ -111,35 +111,48 @@ async function computeHealth() {
   // Pull lightweight signals; missing tables degrade gracefully.
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
-  const [{ count: errCnt }, { data: agalTrust }, { data: arieInc }, { count: ordersCnt }, { count: pinFails }] = await Promise.all([
+  const [errRes, agalRes, arieRes, ordRes, pinRes, gaRes, resRes] = await Promise.all([
     supabase.from("frontend_error_logs").select("id", { count: "exact", head: true }).gte("created_at", since),
     supabase.from("agal_trust_scores").select("overall_trust").gte("created_at", since),
     supabase.from("arie_incidents").select("severity,status").eq("status", "open"),
     supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", since),
-    supabase.from("pinterest_pipeline_failures").select("id", { count: "exact", head: true }).gte("created_at", since).then((r:any)=>r).catch(()=>({count:0})),
+    supabase.from("pinterest_pipeline_failures").select("id", { count: "exact", head: true }).gte("created_at", since).then((r: any) => r).catch(() => ({ count: 0 })),
+    supabase.from("ga4_daily_snapshots").select("sessions,users,conversions").order("snapshot_date", { ascending: false }).limit(1).maybeSingle().then((r: any) => r).catch(() => ({ data: null })),
+    supabase.from("aos_resource_usage").select("resource,pct,status").gte("recorded_at", since).then((r: any) => r).catch(() => ({ data: [] })),
   ] as any);
 
-  const infra = clamp01(1 - Math.min(1, (errCnt ?? 0) / 200));
-  const ai = clamp01(((agalTrust ?? []).reduce((s: number, r: any) => s + Number(r.overall_trust ?? 0), 0) / Math.max(1, (agalTrust ?? []).length)) || 0.7);
-  const tracking = clamp01(1 - Math.min(1, (arieInc ?? []).length / 5));
-  const revenue = clamp01(Math.min(1, (ordersCnt ?? 0) / 20));
-  const creative = clamp01(1 - Math.min(1, (pinFails ?? 0) / 50));
-  const traffic = revenue; // proxy until GA4 wired here
+  const errCnt = (errRes as any).count ?? 0;
+  const agalTrust = (agalRes as any).data ?? [];
+  const arieInc = (arieRes as any).data ?? [];
+  const ordersCnt = (ordRes as any).count ?? 0;
+  const pinFails = (pinRes as any).count ?? 0;
+  const ga = (gaRes as any).data ?? {};
+  const resUse = (resRes as any).data ?? [];
+
+  const infra = clamp01(1 - Math.min(1, errCnt / 200));
+  const ai = clamp01((agalTrust.reduce((s: number, r: any) => s + Number(r.overall_trust ?? 0), 0) / Math.max(1, agalTrust.length)) || 0.7);
+  const tracking = clamp01(1 - Math.min(1, arieInc.length / 5));
+  const revenue = clamp01(Math.min(1, ordersCnt / 20));
+  const creative = clamp01(1 - Math.min(1, pinFails / 50));
+  const sessions = Number(ga?.sessions ?? 0);
+  const traffic = sessions > 0 ? clamp01(Math.min(1, sessions / 2000)) : revenue;
+  const resCritical = resUse.filter((r: any) => r.status === "critical").length;
+  const infraAdj = clamp01(infra * (1 - Math.min(0.5, resCritical * 0.1)));
   const business = (revenue + creative) / 2;
-  const cx = clamp01(1 - Math.min(1, (errCnt ?? 0) / 500));
+  const cx = clamp01(1 - Math.min(1, errCnt / 500));
 
   const settings = await loadSettings();
   const w = settings.health_weights ?? {};
   const overall =
     ai * (w.ai ?? 0.1) + business * (w.business ?? 0.2) + traffic * (w.traffic ?? 0.1) +
     creative * (w.creative ?? 0.1) + revenue * (w.revenue ?? 0.2) + tracking * (w.tracking ?? 0.1) +
-    infra * (w.infra ?? 0.1) + cx * (w.cx ?? 0.1);
+    infraAdj * (w.infra ?? 0.1) + cx * (w.cx ?? 0.1);
 
   const { data } = await supabase.from("aos_health_snapshots").insert({
     ai_health: ai, business_health: business, traffic_health: traffic, creative_health: creative,
-    revenue_health: revenue, tracking_health: tracking, infra_health: infra, cx_health: cx,
+    revenue_health: revenue, tracking_health: tracking, infra_health: infraAdj, cx_health: cx,
     overall_score: overall,
-    details: { errors_24h: errCnt, open_incidents: (arieInc ?? []).length, orders_24h: ordersCnt, pin_failures_24h: pinFails },
+    details: { errors_24h: errCnt, open_incidents: arieInc.length, orders_24h: ordersCnt, pin_failures_24h: pinFails, sessions, resource_critical: resCritical },
   }).select("overall_score").single();
   return data?.overall_score ?? overall;
 }
