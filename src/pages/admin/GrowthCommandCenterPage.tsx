@@ -352,6 +352,9 @@ export default function GrowthCommandCenterPage() {
         <Card className="border-destructive"><CardContent className="p-4 text-sm text-destructive">{error}</CardContent></Card>
       )}
 
+      {/* Genesis V3.4 — Autonomous First Sale Mode */}
+      <AutonomousFirstSaleStrip />
+
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
         <CardHeader>
