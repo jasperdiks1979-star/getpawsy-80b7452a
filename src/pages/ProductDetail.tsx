@@ -994,25 +994,31 @@ const ProductDetail = () => {
   const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
-    trackCci('add_to_cart_click', { product_id: product?.id, funnel_stage: 'add_to_cart' });
     // NEVER block ATC on geo. Final shipping eligibility is enforced at
     // checkout (`ShippingPrecheck` + `create-checkout` server validation).
-    // If geo is unknown OR positively unsupported we still write the cart
-    // and emit a soft signal so the funnel stays observable.
+    // Single click event per tap — fold geo metadata into the one emission so
+    // we stay observable without duplicating the funnel step.
+    const clickMeta: Record<string, unknown> = {};
+    if (!visitorCountry) {
+      clickMeta.shipping_eligibility = 'unknown_pending_checkout';
+      clickMeta.warehouse = productWarehouse;
+    } else if (geoBlocked) {
+      clickMeta.shipping_eligibility = 'region_warning';
+      clickMeta.destination_country = visitorCountry;
+      clickMeta.warehouse = productWarehouse;
+    }
+    trackCci('add_to_cart_click', {
+      product_id: product?.id,
+      funnel_stage: 'add_to_cart',
+      ...(Object.keys(clickMeta).length ? { meta: clickMeta } : {}),
+    });
+    // Soft signal for unknown-geo so the funnel stays observable.
     if (!visitorCountry) {
       trackCci('geo_lookup_failed', {
         product_id: product?.id,
         meta: { stage: 'pdp_atc', shipping_eligibility: 'unknown_pending_checkout' },
       });
     } else if (geoBlocked) {
-      trackCci('add_to_cart_click', {
-        product_id: product?.id,
-        meta: {
-          shipping_eligibility: 'region_warning',
-          destination_country: visitorCountry,
-          warehouse: productWarehouse,
-        },
-      });
       toast.message('Limited shipping to your region — we\'ll confirm at checkout.');
     }
     // Prevent adding out-of-stock items
