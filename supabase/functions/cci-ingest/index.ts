@@ -11,7 +11,7 @@ const ALLOWED = new Set([
   'reviews_section_visible','faq_section_visible','sticky_atc_visible',
   'add_to_cart_click','add_to_cart_success','add_to_cart_error',
   'cart_open','cart_quantity_change','checkout_click','checkout_loaded',
-  'checkout_error','payment_redirect_started','payment_success',
+  'checkout_error','checkout_abandoned','payment_redirect_started','payment_success',
   'purchase_confirmed',
 ]);
 
@@ -23,7 +23,10 @@ Deno.serve(async (req) => {
     });
   }
   let body: Record<string, unknown> = {};
-  try { body = await req.json(); } catch { /* tolerate */ }
+  try {
+    const raw = await req.text();
+    if (raw) body = JSON.parse(raw);
+  } catch { /* tolerate non-JSON / empty */ }
   const event_name = String(body.event_name ?? '');
   const session_id = String(body.session_id ?? '');
   if (!event_name || !ALLOWED.has(event_name) || !session_id) {
