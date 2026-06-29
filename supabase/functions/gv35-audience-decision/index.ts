@@ -32,15 +32,20 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().slice(0, 10);
   let queued = 0;
   for (const row of top ?? []) {
-    const dedupe = await sha1Hex(`${row.persona_id}|${row.product_id}|${today}`);
+    const dedupe = await sha1Hex(`audience_target|${row.persona_id}|${row.product_id}|${today}`);
+    const conf = Number(row.buying_probability ?? 0);
+    const rev = Number(row.expected_revenue ?? 0);
+    const priority = conf >= 0.9 ? "CRITICAL" : conf >= 0.7 ? "HIGH" : conf >= 0.5 ? "MEDIUM" : "LOW";
     const { error: insErr } = await supabase.from("autopilot_actions").insert({
-      action_kind: "audience_target",
-      target_id: row.product_id,
+      kind: "audience_target",
+      product_id: row.product_id,
       dedupe_hash: dedupe,
       status: "queued",
-      confidence: row.buying_probability,
-      expected_revenue: row.expected_revenue,
-      metadata: {
+      priority,
+      confidence: conf,
+      expected_revenue_eur: rev,
+      expected_roi: rev > 0 && conf > 0 ? rev * conf : 0,
+      invocation_payload: {
         persona_id: row.persona_id,
         match_score: row.match_score,
         why: "gv35 audience-first ranked opportunity",
