@@ -19,6 +19,7 @@ import {
   runAutoRepair,
   fetchAutoRepairs,
   runSyntheticNightly,
+  fetchMetricMismatches,
 } from "@/lib/cie/client";
 
 type Row = Record<string, any>;
@@ -27,6 +28,12 @@ function scoreColor(n: number) {
   if (n >= 90) return "text-emerald-600";
   if (n >= 70) return "text-amber-600";
   return "text-rose-600";
+}
+
+function deltaTone(absPct: number, idMatchRate: number) {
+  if (idMatchRate < 0.9 || absPct > 5) return "destructive" as const;
+  if (absPct > 1) return "outline" as const;
+  return "secondary" as const;
 }
 
 export default function ConversionIntegrityPage() {
@@ -45,9 +52,10 @@ export default function ConversionIntegrityPage() {
   const [revenue, setRevenue] = useState<Row[]>([]);
   const [synthetic, setSynthetic] = useState<Row[]>([]);
   const [repairs, setRepairs] = useState<Row[]>([]);
+  const [mismatches, setMismatches] = useState<Row[]>([]);
 
   async function refresh() {
-    const [h, c, f, i, a, r, s, ar] = await Promise.all([
+    const [h, c, f, i, a, r, s, ar, mm] = await Promise.all([
       fetchHealthSnapshots(1),
       fetchConfidence(),
       fetchFunnelSnapshots(12),
@@ -56,6 +64,7 @@ export default function ConversionIntegrityPage() {
       fetchRevenueTruth(8),
       fetchSyntheticRuns(10),
       fetchAutoRepairs(25),
+      fetchMetricMismatches(),
     ]);
     setHealth(h[0] ?? null);
     setConfidence(c);
@@ -65,6 +74,7 @@ export default function ConversionIntegrityPage() {
     setRevenue(r);
     setSynthetic(s);
     setRepairs(ar);
+    setMismatches(mm);
   }
 
   useEffect(() => { refresh().catch((e) => toast.error(e.message)); }, []);
@@ -206,6 +216,64 @@ export default function ConversionIntegrityPage() {
                   </span>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Mismatch Breakdown</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                GA4 events reconciled against internal orders by transaction id and revenue.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {mismatches.length === 0 && (
+                <p className="text-muted-foreground">No breakdown yet — click Sync GA4.</p>
+              )}
+              {mismatches.map((m) => {
+                const b = (m.breakdown ?? {}) as Record<string, any>;
+                const deltaPct = Number(b.revenue_delta_pct ?? 0);
+                const idRate = Number(b.id_match_rate ?? 0);
+                const tone = deltaTone(Math.abs(deltaPct), idRate);
+                return (
+                  <div key={`${m.metric}-${m.scope}`} className="border-b pb-2 last:border-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-medium">{m.metric}</span>
+                      <Badge variant={tone}>
+                        {idRate >= 0.9 && Math.abs(deltaPct) <= 1
+                          ? "in sync"
+                          : Math.abs(deltaPct) > 5 || idRate < 0.9
+                          ? "diverged"
+                          : "drifting"}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div>Matched: <span className="font-medium">{b.matched ?? 0}</span></div>
+                      <div>ID match: <span className="font-medium">{(idRate * 100).toFixed(1)}%</span></div>
+                      <div>GA4 only: <span className="font-medium text-rose-600">{b.ga4_only ?? 0}</span></div>
+                      <div>Orders only: <span className="font-medium text-amber-600">{b.orders_only ?? 0}</span></div>
+                      <div>GA4 revenue: <span className="font-medium">${((Number(b.revenue_ga4_cents ?? 0)) / 100).toFixed(2)}</span></div>
+                      <div>Orders revenue: <span className="font-medium">${((Number(b.revenue_orders_cents ?? 0)) / 100).toFixed(2)}</span></div>
+                      <div className="col-span-2">
+                        Revenue Δ: <span className={`font-medium ${Math.abs(deltaPct) <= 1 ? "text-emerald-600" : Math.abs(deltaPct) <= 5 ? "text-amber-600" : "text-rose-600"}`}>{deltaPct.toFixed(2)}%</span>
+                      </div>
+                    </div>
+                    {(Array.isArray(b.sample_ga4_only) && b.sample_ga4_only.length > 0) && (
+                      <p className="text-[10px] text-muted-foreground mt-1 truncate">
+                        GA4-only ids: {b.sample_ga4_only.slice(0, 5).join(", ")}
+                      </p>
+                    )}
+                    {(Array.isArray(b.sample_orders_only) && b.sample_orders_only.length > 0) && (
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        Orders-only ids: {b.sample_orders_only.slice(0, 5).join(", ")}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      window {m.window_hours}h · evaluated {new Date(m.evaluated_at).toLocaleString()}
+                    </p>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
 
