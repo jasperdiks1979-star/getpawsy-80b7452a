@@ -18,6 +18,7 @@ import {
   fetchSyntheticRuns,
   runAutoRepair,
   fetchAutoRepairs,
+  runSyntheticNightly,
 } from "@/lib/cie/client";
 
 type Row = Record<string, any>;
@@ -35,6 +36,7 @@ export default function ConversionIntegrityPage() {
   const [ttBusy, setTtBusy] = useState(false);
   const [repairBusy, setRepairBusy] = useState(false);
   const [repairDryRun, setRepairDryRun] = useState(false);
+  const [synthBusy, setSynthBusy] = useState(false);
   const [health, setHealth] = useState<Row | null>(null);
   const [confidence, setConfidence] = useState<Row[]>([]);
   const [funnel, setFunnel] = useState<Row[]>([]);
@@ -133,6 +135,19 @@ export default function ConversionIntegrityPage() {
     } finally { setRepairBusy(false); }
   }
 
+  async function runSyntheticNow() {
+    setSynthBusy(true);
+    try {
+      const res: any = await runSyntheticNightly();
+      if (res?.ok === false) throw new Error(res.message ?? "Synthetic run failed");
+      if (res?.passed) toast.success(`Synthetic funnel passed (${res.steps_count} steps, ${res.duration_ms}ms)`);
+      else toast.error(`Synthetic funnel failed — ${res.failures_count}/${res.steps_count} steps. Incident opened.`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setSynthBusy(false); }
+  }
+
   const overall = Number(health?.overall ?? 0);
 
   return (
@@ -161,6 +176,9 @@ export default function ConversionIntegrityPage() {
               {repairDryRun ? "🔒 Dry-run on" : "🛠️ Dry-run off"}
             </Button>
             <Button onClick={runCycle} disabled={busy}>{busy ? "Running…" : "Run CIE Cycle"}</Button>
+            <Button variant="outline" onClick={runSyntheticNow} disabled={synthBusy}>
+              {synthBusy ? "Running synthetic…" : "Run Synthetic Funnel"}
+            </Button>
           </div>
         </header>
 
