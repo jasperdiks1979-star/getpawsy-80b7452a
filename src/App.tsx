@@ -1875,6 +1875,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="conversion-integrity"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ConversionIntegrityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
