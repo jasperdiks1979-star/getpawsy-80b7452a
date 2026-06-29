@@ -103,6 +103,14 @@ export async function syncTikTok(days = 1) {
   return data;
 }
 
+export async function syncMeta(days = 1) {
+  const { data, error } = await supabase.functions.invoke("cie-meta-adapter", {
+    body: { days },
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function runAutoRepair(opts: { hours?: number; dry_run?: boolean } = {}) {
   const { data, error } = await supabase.functions.invoke("cie-auto-repair", { body: opts });
   if (error) throw error;
