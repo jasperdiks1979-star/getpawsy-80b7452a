@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
 import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
+import { trackCci } from '@/lib/cci';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CartUpsell } from '@/components/cart/CartUpsell';
@@ -54,6 +55,7 @@ const Cart = () => {
         item_count: items.length,
         source_component: 'cart_page',
       });
+      trackCci('cart_open', { funnel_stage: 'cart', meta: { item_count: items.length } });
     } catch {
       /* analytics never breaks UX */
     }
