@@ -59857,6 +59857,7 @@ export type Database = {
           dup_sessions: number
         }[]
       }
+      cci_check_geo_unknown_funnel: { Args: never; Returns: Json }
       check_and_restore_batch_gates: {
         Args: { _batch_tag: string }
         Returns: Json
