@@ -124,6 +124,7 @@ async function getAccessToken(creds: { client_email: string; private_key: string
 
 async function ga4EventCounts(token: string, propertyId: string, days: number) {
   const startDate = `${days}daysAgo`;
+  const startedAt = Date.now();
   const res = await fetchWithRetry(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
     {
@@ -147,7 +148,9 @@ async function ga4EventCounts(token: string, propertyId: string, days: number) {
   );
   const j = await res.json();
   if (!res.ok) throw new Error(`ga4_report_failed: ${j.error?.message ?? res.status}`);
-  return parseEventCountsResponse(j);
+  const parsed = parseEventCountsResponse(j);
+  (parsed as any).__latency_ms = Date.now() - startedAt;
+  return parsed;
 }
 
 async function ga4PurchaseTransactions(token: string, propertyId: string, days: number) {
