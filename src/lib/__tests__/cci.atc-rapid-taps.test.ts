@@ -66,7 +66,8 @@ const decodeBeaconBodies = async (): Promise<Array<Record<string, unknown>>> => 
   const bodies: Array<Record<string, unknown>> = [];
   for (const call of sendBeaconSpy.mock.calls) {
     const blob = call[1] as Blob;
-    const text = await blob.text();
+    // jsdom's Blob lacks .text(); read via Response which wraps the blob stream.
+    const text = await new Response(blob).text();
     bodies.push(JSON.parse(text) as Record<string, unknown>);
   }
   return bodies;
