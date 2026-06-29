@@ -2845,11 +2845,11 @@ function ProductRelevanceEnginePanel() {
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 my-4 text-sm">
-          <Stat label="Evals 24h" value={stats.total} />
-          <Stat label="Passed" value={stats.passed} tone="ok" />
-          <Stat label="Rejected" value={stats.rejected} tone="bad" />
-          <Stat label="Pass rate" value={`${Math.round((stats.pass_rate ?? 0) * 100)}%`} />
-          <Stat label="Avg score" value={stats.avg_score} />
+          <PreStat label="Evals 24h" value={stats.total} />
+          <PreStat label="Passed" value={stats.passed} tone="ok" />
+          <PreStat label="Rejected" value={stats.rejected} tone="bad" />
+          <PreStat label="Pass rate" value={`${Math.round((stats.pass_rate ?? 0) * 100)}%`} />
+          <PreStat label="Avg score" value={stats.avg_score} />
         </div>
       )}
 
@@ -2939,7 +2939,7 @@ function ProductRelevanceEnginePanel() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: any; tone?: "ok" | "bad" }) {
+function PreStat({ label, value, tone }: { label: string; value: any; tone?: "ok" | "bad" }) {
   return (
     <div className="border rounded p-3">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
