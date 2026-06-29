@@ -1,73 +1,77 @@
 
-# Genesis V3.4 — Self-Optimizing First Sale Engine
+# Genesis V3.5 — Pinterest Audience Intelligence OS
 
-**Goal:** Maximize probability of GetPawsy's first sale via an autonomous hourly loop that reuses existing engines. No new dashboards, no duplicate logic, no placeholder AI.
-
----
-
-## Reuse Inventory (no duplicates)
-
-- Reads: `canonical_*`, `gv3_pi_scores`, `gv3_pin_growth_scores`, `gv3_mi_first_sale_plan_v`, `mi_*`, `market_*`
-- Writes: `autopilot_actions`, `autopilot_outcomes_*`
-- Functions reused: `market-signal-ingest`, `mi-feedback-loop`, `autopilot-dispatch`, `pcie2-publish-assembler`, Pinterest Creative Director, Recovery Governor
-- SDKs: `src/lib/canonicalAnalytics.ts`, `src/lib/marketIntelligence.ts`, `src/lib/governanceLedger.ts`
+**Shift:** Optimize for **people** (US Pinterest users), not products. One thin audience layer on top of existing engines — no duplicate analytics, no placeholder AI.
 
 ---
 
-## Phase 1 — Connector Health Verifier (new edge fn)
+## Reuse inventory (no duplicates)
 
-`gv34-connector-health-audit`: probes each external MI signal source and writes one row per connector to a new small table `gv34_connector_health` (last_run, reachable, auth_ok, response_bytes, parsed_rows, dedupe_ok, last_signal_ts, error_step, repair_action).
-
-If a step fails: auto-repair (re-trigger ingest with cleared cursor) then re-probe. No new dashboards — surfaces in existing Market Intelligence "Engine" tab.
-
-## Phase 2 — Hourly Decision Loop (new edge fn)
-
-`gv34-decision-loop` (hourly cron): for each of the 10 opportunity classes, pick the top candidate from existing scoring tables, dedupe vs open `autopilot_actions` (hash of `{kind, product_id, payload_signature}`), and enqueue. Confidence-gated execution uses the existing `autopilot-dispatch`.
-
-## Phase 3 — Creative Diversity Guard (new edge fn)
-
-`gv34-creative-diversity`: scans recent Pinterest creatives, computes a similarity score across lighting/angle/breed/room/palette/headline/CTA/layout using existing PCIE2 metadata + perceptual hash. Writes diversity score to existing creative rows; only regenerates rows scoring below threshold AND with no positive outcome.
-
-## Phase 4 — First Sale Hunter
-
-SQL view `gv34_first_sale_hunter_v` built on existing `gv3_mi_first_sale_plan_v` + canonical funnel + ATC/checkout signals + inventory/shipping. Single prioritized list; consumed by the decision loop.
-
-## Phase 5 — Learning Engine (new edge fn + cron)
-
-`gv34-learning-evaluator` (every 6h): for each executed autopilot action, evaluate at 24h/72h/7d/30d windows using canonical events. Update `autopilot_actions.confidence` via Wilson lower bound with min sample gate. Decreases on repeated under-performance.
-
-## Phase 6 — Resource Optimizer
-
-`gv34_ai_credit_efficiency_v`: expected lift/revenue/first-sale-probability per AI credit per action class, derived from learning history. Decision loop reads this and re-ranks before queueing.
-
-## Phase 7 — Execution Safety
-
-Single Postgres unique index on `autopilot_actions (action_kind, target_id, dedupe_hash)` where `status in ('queued','executing')`. All inserts use `ON CONFLICT DO NOTHING`. Creative & CRO functions check existing recent run hashes before regenerating.
-
-## Phase 8 — Autonomous First Sale Mode
-
-Toggle flag in `governance_decision_log` (`mode='first_sale_autonomous'`). When ON, hourly cron orchestrates: connector audit → decision loop → diversity guard → learning evaluator. Each queued action records `why/data/expected_lift/confidence/ai_cost/expected_revenue` in its payload — already supported by `autopilot_actions.metadata`.
+- **Personas:** `gcp_concepts` (`customer_segments`, `emotional_drivers`, `buying_triggers`) + `mi_audience_clusters` already in production. We extend, not replace.
+- **Reads:** `canonical_events/sessions`, `gv3_pi_scores`, `gv3_pin_growth_scores`, `gv3_mi_first_sale_plan_v`, `pinterest_pin_performance`, `pcie2_visual_dna`, `pcie2_creatives.duplicate_score` (from V3.4 diversity guard).
+- **Writes Autopilot:** existing `autopilot_actions` with new `action_kind='audience_target'`.
+- **Reuse functions:** `gv34-decision-loop`, `gv34-creative-diversity`, `pinterest-collective-intelligence`, `pcie2-publish-assembler`, `gcp-api`.
 
 ---
+
+## New surfaces (minimal)
+
+### Tables (1 migration)
+- `gv35_audience_personas` — versioned persona definitions (name, intent, motivation, pains, dream, lifestyle, budget, pin_behavior jsonb, primary_emotion, confidence, evidence_count, evidence_sources jsonb). RLS admin-only; service_role write.
+- `gv35_product_audience_match` — per product × persona: match_score, save_prob, click_prob, purchase_prob, rank (best/second/emerging/wrong/lost/untapped), updated_at. Composite PK.
+- `gv35_audience_signals_daily` — daily rollup per persona: impressions, saves, clicks, atc, purchases, revenue, expected_revenue, status. Derived from canonical + pinterest_pin_performance via SQL.
+- `gv35_settings` — toggle `audience_first_mode` (default false).
+
+### Views (read-only, invoker)
+- `gv35_audience_performance_v` — joins persona × canonical sessions × pin performance using existing `pcie2_creatives.persona_id`/hook_family mapping.
+- `gv35_untapped_audiences_v` — personas with high external signal but low published coverage (uses `mi_trend_signals` + `pin_creative_scores`).
+- `gv35_audience_timing_v` — best US hour per persona from `canonical_sessions` + `pinterest_posting_windows`.
+
+### Edge functions (4 new, hourly/6h crons)
+1. `gv35-persona-discovery` (daily 03:00 UTC) — Builds/refreshes personas from `mi_audience_clusters` + `gcp_concepts(customer_segments)` + recent canonical conversions. Writes to `gv35_audience_personas` with Wilson-bounded confidence; never overwrites human-locked rows. Emits learnings to `gcp_learnings`.
+2. `gv35-audience-matcher` (every 6h) — For each product, compute persona probabilities via existing PI V3 + Pin Growth + canonical features. Writes `gv35_product_audience_match` with `ON CONFLICT DO UPDATE`. Dedup by `(product_id, persona_id)`.
+3. `gv35-audience-evaluator` (6h) — Updates persona confidence from realized outcomes (canonical purchases joined via `pcie2_creatives.persona_id`). Adjusts `gv35_audience_signals_daily` and feeds `gcp_learnings`.
+4. `gv35-audience-decision` (hourly, chained after `gv34-decision-loop`) — Picks top persona×product opportunities, enqueues into `autopilot_actions` with `dedupe_hash = sha1(persona_id|product_id|day)` and confidence-gated execution via `autopilot-dispatch`. No new dispatcher.
+
+### Creative integration (no new pipeline)
+- Add `persona_id` + `primary_emotion` columns to existing `pcie2_creatives` (additive, nullable) so Creative Director already in place can stamp briefs per persona. `pcie2-publish-assembler` reads them when present; falls back to current behavior otherwise.
+- Diversity guard (`gv34-creative-diversity`) extended to also penalize persona-cluster repetition (one extra dimension in existing scorer — no new function).
+
+### UI (1 tab added, no new page)
+- New tab inside existing `src/pages/admin/MarketIntelligencePage.tsx`: **Pinterest Audience Intelligence**, file `src/components/admin/market-intelligence/tabs/AudienceIntelligenceTab.tsx`, with:
+  - Top audiences today / Fastest growing / Best converting / Highest save / Highest purchase / Untapped
+  - Audience overlap matrix, Creative diversity score, Emotion heatmap, Confidence column
+  - "Next audience to target" + "Highest expected revenue audience" derived from `gv35_audience_decision` queue
+  - Pull-through to existing `AudienceClusterTab` data; no duplicate fetches.
+
+---
+
+## Confidence methodology (single shared definition)
+- Wilson lower bound at 90% on persona→purchase conversions from canonical events.
+- Floor: `min_evidence = max(5 purchases, 200 sessions)` (from `gcp_settings.learning.min_evidence`).
+- EMA decay per day from `gcp_settings.learning.decay_per_day`.
+- Anything `<0.90` is non-executable (CIE rule). Surfaced but not auto-published.
+
+## Execution safety
+- Reuses V3.4 unique partial index on `autopilot_actions (action_kind, target_id, dedupe_hash) WHERE status IN ('queued','executing')`.
+- All inserts `ON CONFLICT DO NOTHING`.
+- No new cron names; piggyback on V3.4 hourly + 6h orchestrators where possible; one new daily 03:00 UTC for persona discovery.
+
+## Quality gate
+- `tsgo --noEmit` clean
+- `canonical_validate_consistency()` 0% drift (no canonical edits)
+- Linter: no new RLS violations, admin-only on every new table
+- No new analytics events; reads-only against canonical
+- Dedupe test: duplicate `audience_target` insert returns 0 rows affected
 
 ## Deliverables
-
-- 1 migration: `gv34_connector_health` table, `gv34_first_sale_hunter_v` view, `gv34_ai_credit_efficiency_v` view, dedupe unique index, GRANTs
-- 4 edge functions: `gv34-connector-health-audit`, `gv34-decision-loop`, `gv34-creative-diversity`, `gv34-learning-evaluator`
-- 1 orchestrator cron (hourly) + 1 learning cron (6h)
-- Small UI: a single "Autonomous First Sale Mode" toggle + status strip added to existing `GrowthCommandCenterPage` (no new page)
-- Deployment report posted in chat: connector health, scheduler health, AI credit efficiency, learning status, autonomy status, first-sale probability, blockers
-
-## Validation gates
-
-- `tsgo --noEmit` clean
-- `canonical_validate_consistency()` still 0% drift
-- No edits to canonical_* tables/views
-- Dedupe index present; manual duplicate insert returns 0 rows affected
-- Connector health table has ≥1 row per known source after first run
+1. One migration (4 tables, 3 views, 2 column adds, GRANTs, RLS, indexes).
+2. Four edge functions above + one cron.
+3. One new admin tab + small extension to MI page.
+4. Deployment report: persona count, evidence backing, reused components, diversity delta, untapped audiences discovered, production readiness, blockers.
 
 ## Out of scope
-
-- New dashboards/pages
-- Re-implementing scoring already in PI V3 / Pin Growth V3 / MI V3.3
-- Video generation, direct publishing changes
+- New dashboards/pages beyond the MI tab
+- Replacing or duplicating GCP / MI / PCIE2 logic
+- Direct publishing changes; everything continues to flow through existing Autopilot + assembler
+- External signal scrapers (still the V3.4 blocker)
