@@ -25,8 +25,9 @@ function admin() {
 async function requireAdmin(req: Request): Promise<{ ok: boolean; userId?: string; status?: number; message?: string }> {
   // Internal cron / service-to-service bypass: signed with INTERNAL_FUNCTION_SECRET.
   const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
+  const cron = Deno.env.get("CIE_CRON_SECRET") ?? "";
   const provided = req.headers.get("x-internal-secret") ?? "";
-  if (internal && provided && provided === internal) {
+  if (provided && ((internal && provided === internal) || (cron && provided === cron))) {
     return { ok: true, userId: "internal-cron" };
   }
   const authHeader = req.headers.get("Authorization") ?? "";
