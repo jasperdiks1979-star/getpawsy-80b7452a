@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { getCanonicalFunnelSessions, summarizeCanonicalSessions, type CanonicalSessionRow } from "@/lib/canonicalAnalytics";
 
 const ACTIVITY_COLORS = {
   browsing: "#3b82f6", // blue
@@ -58,6 +59,29 @@ export const RealtimeVisitorMap = () => {
   const [config, setConfig] = useState<MapConfig>(getStoredConfig);
   
   const { locations, locationStats, isLoading } = useVisitorLocations(15000, config.timeRange);
+
+  // Canonical funnel totals for the same time window — keeps map badges aligned with Funnel/Traffic dashboards.
+  const [canonicalTotals, setCanonicalTotals] = useState<{ sessions: number; atc: number; checkout: number; purchase: number } | null>(null);
+  useEffect(() => {
+    const hours =
+      config.timeRange === "15m" ? 1 :
+      config.timeRange === "1h" ? 1 :
+      config.timeRange === "6h" ? 6 :
+      config.timeRange === "24h" ? 24 :
+      24 * 7;
+    let cancelled = false;
+    (async () => {
+      try {
+        const sess: CanonicalSessionRow[] = await getCanonicalFunnelSessions({ hours });
+        if (cancelled) return;
+        const s = summarizeCanonicalSessions(sess);
+        setCanonicalTotals({ sessions: s.sessions, atc: s.add_to_carts, checkout: s.checkouts, purchase: s.purchases });
+      } catch {
+        if (!cancelled) setCanonicalTotals(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [config.timeRange]);
 
   // Persist config to localStorage
   useEffect(() => {
@@ -416,8 +440,19 @@ export const RealtimeVisitorMap = () => {
           
           {/* Stats overlay */}
           {mapLoaded && locations.length > 0 && (
-            <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 text-xs border">
+            <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm rounded-lg p-2 text-xs border space-y-1">
               <div className="font-semibold">{locations.length} locaties</div>
+              {canonicalTotals && (
+                <div className="text-muted-foreground flex items-center gap-2">
+                  <span title="Canonical sessions">{canonicalTotals.sessions}s</span>
+                  <span className="text-orange-600" title="Canonical add-to-cart sessions">
+                    <ShoppingCart className="inline w-2.5 h-2.5 mr-0.5" />{canonicalTotals.atc}
+                  </span>
+                  <span className="text-green-600" title="Canonical checkout sessions">
+                    <Target className="inline w-2.5 h-2.5 mr-0.5" />{canonicalTotals.checkout}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
