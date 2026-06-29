@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getCanonicalFunnel, CANONICAL_STAGE_LABEL, type CanonicalFunnelRow } from "@/lib/canonicalAnalytics";
 
 interface RunRow {
   id: string;
@@ -71,7 +72,7 @@ export default function ConversionRealityPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [segments, setSegments] = useState<SegmentRow[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [cci, setCci] = useState<Record<string, number>>({});
+  const [canonical, setCanonical] = useState<CanonicalFunnelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
@@ -108,19 +109,10 @@ export default function ConversionRealityPage() {
         .order("opened_at", { ascending: false })
         .limit(10);
       setIncidents((inc as unknown as Incident[]) || []);
+      // Genesis V2.6: read the funnel from the canonical layer (single source of truth)
       try {
-        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-        const { data: ev } = await supabase
-          .from('cci_events')
-          .select('event_name')
-          .gte('created_at', since)
-          .limit(5000);
-        const counts: Record<string, number> = {};
-        (ev || []).forEach((r: { event_name: string }) => {
-          counts[r.event_name] = (counts[r.event_name] || 0) + 1;
-        });
-        setCci(counts);
-      } catch { /* table newly created; ignore */ }
+        setCanonical(await getCanonicalFunnel(24));
+      } catch { /* canonical layer optional during bootstrap */ }
     } finally {
       setLoading(false);
     }
@@ -284,19 +276,19 @@ export default function ConversionRealityPage() {
           </>
         )}
         <Card>
-          <CardHeader><CardTitle>CCI deep funnel events (last 24h)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Canonical funnel (last 24h, single source of truth)</CardTitle></CardHeader>
           <CardContent>
-            {Object.keys(cci).length === 0 ? (
+            {canonical.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No CCI events yet. Storefront emits them via <code>trackCci()</code> on ATC click/success/error,
-                cart open, and checkout load.
+                No canonical events in the last 24h. The canonical layer ingests every 2 minutes
+                from <code>cci_events</code>, <code>checkout_funnel_events</code>, and paid orders.
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {Object.entries(cci).sort((a,b) => b[1]-a[1]).map(([k,v]) => (
-                  <div key={k} className="border rounded p-2 text-sm flex items-center justify-between">
-                    <span className="text-muted-foreground">{k}</span>
-                    <span className="font-mono">{v}</span>
+                {canonical.map((row) => (
+                  <div key={row.stage} className="border rounded p-2 text-sm flex items-center justify-between">
+                    <span className="text-muted-foreground">{CANONICAL_STAGE_LABEL[row.stage]}</span>
+                    <span className="font-mono">{row.count.toLocaleString()}</span>
                   </div>
                 ))}
               </div>

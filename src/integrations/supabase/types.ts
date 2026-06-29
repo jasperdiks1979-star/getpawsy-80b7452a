@@ -8663,6 +8663,51 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_consistency_alerts: {
+        Row: {
+          actual: number | null
+          alert_key: string
+          details: Json
+          diff_pct: number | null
+          expected: number | null
+          first_detected_at: string
+          id: string
+          is_active: boolean
+          last_detected_at: string
+          metric: string
+          resolved_at: string | null
+          severity: string
+        }
+        Insert: {
+          actual?: number | null
+          alert_key: string
+          details?: Json
+          diff_pct?: number | null
+          expected?: number | null
+          first_detected_at?: string
+          id?: string
+          is_active?: boolean
+          last_detected_at?: string
+          metric: string
+          resolved_at?: string | null
+          severity?: string
+        }
+        Update: {
+          actual?: number | null
+          alert_key?: string
+          details?: Json
+          diff_pct?: number | null
+          expected?: number | null
+          first_detected_at?: string
+          id?: string
+          is_active?: boolean
+          last_detected_at?: string
+          metric?: string
+          resolved_at?: string | null
+          severity?: string
+        }
+        Relationships: []
+      }
       canonical_events: {
         Row: {
           browser: string | null
@@ -17213,6 +17258,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "disputes_order_id_fkey"
             columns: ["order_id"]
@@ -33865,6 +33917,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "packaging_inventory"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packaging_inventory_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "packaging_inventory_logs_order_id_fkey"
@@ -53051,6 +53110,13 @@ export type Database = {
             foreignKeyName: "referral_uses_referred_order_id_fkey"
             columns: ["referred_order_id"]
             isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "referral_uses_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
             referencedRelation: "canonical_revenue"
             referencedColumns: ["order_id"]
           },
@@ -53417,6 +53483,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "replenishment_reminders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "replenishment_reminders_order_id_fkey"
             columns: ["order_id"]
@@ -53993,6 +54066,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "review_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "review_requests_order_id_fkey"
             columns: ["order_id"]
@@ -56521,6 +56601,13 @@ export type Database = {
             foreignKeyName: "sms_alert_logs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "sms_alert_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "canonical_revenue"
             referencedColumns: ["order_id"]
           },
@@ -58918,6 +59005,128 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_attribution: {
+        Row: {
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          medium: string | null
+          order_id: string | null
+          session_id: string | null
+          source: string | null
+          stripe_session_id: string | null
+          utm_campaign: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          medium?: never
+          order_id?: string | null
+          session_id?: string | null
+          source?: never
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          medium?: never
+          order_id?: string | null
+          session_id?: string | null
+          source?: never
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      canonical_funnel: {
+        Row: {
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          order_id: string | null
+          reached_add_to_cart: boolean | null
+          reached_cart: boolean | null
+          reached_checkout: boolean | null
+          reached_page_view: boolean | null
+          reached_product_view: boolean | null
+          reached_purchase: boolean | null
+          session_id: string | null
+          stripe_session_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Relationships: []
+      }
+      canonical_heatmap: {
+        Row: {
+          day: string | null
+          event_count: number | null
+          page_path: string | null
+          stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          unique_sessions: number | null
+        }
+        Relationships: []
+      }
+      canonical_kpis_hourly: {
+        Row: {
+          add_to_carts: number | null
+          bucket: string | null
+          checkouts: number | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
+      canonical_orders: {
+        Row: {
+          country: string | null
+          currency: string | null
+          device: string | null
+          ga_client_id: string | null
+          order_id: string | null
+          paid_at: string | null
+          session_id: string | null
+          status: string | null
+          stripe_session_id: string | null
+          total_amount: number | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Relationships: []
+      }
+      canonical_products: {
+        Row: {
+          add_to_carts: number | null
+          checkouts: number | null
+          day: string | null
+          product_id: string | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+        }
+        Relationships: []
+      }
       canonical_revenue: {
         Row: {
           currency: string | null
@@ -58948,6 +59157,16 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           total_amount?: number | null
+        }
+        Relationships: []
+      }
+      canonical_sources: {
+        Row: {
+          day: string | null
+          medium: string | null
+          purchases: number | null
+          sessions: number | null
+          source: string | null
         }
         Relationships: []
       }
@@ -60107,6 +60326,16 @@ export type Database = {
       }
     }
     Functions: {
+      _canonical_upsert_alert: {
+        Args: {
+          p_actual: number
+          p_expected: number
+          p_key: string
+          p_metric: string
+          p_window_start: string
+        }
+        Returns: undefined
+      }
       _cci_setting_int: {
         Args: { p_default: number; p_key: string }
         Returns: number
@@ -60150,6 +60379,7 @@ export type Database = {
         Args: { since: string }
         Returns: undefined
       }
+      canonical_validate_consistency: { Args: never; Returns: Json }
       cci_check_atc_click_duplicates: {
         Args: never
         Returns: {
