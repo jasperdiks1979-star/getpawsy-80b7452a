@@ -8663,6 +8663,178 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_events: {
+        Row: {
+          browser: string | null
+          canonical_name: Database["public"]["Enums"]["canonical_event_name"]
+          city: string | null
+          country: string | null
+          currency: string | null
+          dedup_key: string
+          device: string | null
+          ga_client_id: string | null
+          id: string
+          ingested_at: string
+          landing_page: string | null
+          meta: Json
+          occurred_at: string
+          order_id: string | null
+          os: string | null
+          page_path: string | null
+          product_id: string | null
+          referrer: string | null
+          session_id: string | null
+          source_event_id: string | null
+          source_system: Database["public"]["Enums"]["canonical_source_system"]
+          stripe_session_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          value_cents: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          canonical_name: Database["public"]["Enums"]["canonical_event_name"]
+          city?: string | null
+          country?: string | null
+          currency?: string | null
+          dedup_key: string
+          device?: string | null
+          ga_client_id?: string | null
+          id?: string
+          ingested_at?: string
+          landing_page?: string | null
+          meta?: Json
+          occurred_at: string
+          order_id?: string | null
+          os?: string | null
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          source_event_id?: string | null
+          source_system: Database["public"]["Enums"]["canonical_source_system"]
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          canonical_name?: Database["public"]["Enums"]["canonical_event_name"]
+          city?: string | null
+          country?: string | null
+          currency?: string | null
+          dedup_key?: string
+          device?: string | null
+          ga_client_id?: string | null
+          id?: string
+          ingested_at?: string
+          landing_page?: string | null
+          meta?: Json
+          occurred_at?: string
+          order_id?: string | null
+          os?: string | null
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          source_event_id?: string | null
+          source_system?: Database["public"]["Enums"]["canonical_source_system"]
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      canonical_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          first_seen_at: string
+          ga_client_id: string | null
+          landing_page: string | null
+          last_seen_at: string
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          order_id: string | null
+          os: string | null
+          referrer: string | null
+          session_id: string
+          stripe_session_id: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          first_seen_at: string
+          ga_client_id?: string | null
+          landing_page?: string | null
+          last_seen_at: string
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          session_id: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string
+          ga_client_id?: string | null
+          landing_page?: string | null
+          last_seen_at?: string
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          session_id?: string
+          stripe_session_id?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -17041,6 +17213,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "disputes_order_id_fkey"
             columns: ["order_id"]
@@ -33686,6 +33865,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "packaging_inventory"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packaging_inventory_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
           },
           {
             foreignKeyName: "packaging_inventory_logs_order_id_fkey"
@@ -52865,6 +53051,13 @@ export type Database = {
             foreignKeyName: "referral_uses_referred_order_id_fkey"
             columns: ["referred_order_id"]
             isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "referral_uses_referred_order_id_fkey"
+            columns: ["referred_order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -53224,6 +53417,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "replenishment_reminders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "replenishment_reminders_order_id_fkey"
             columns: ["order_id"]
@@ -53793,6 +53993,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "review_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "review_requests_order_id_fkey"
             columns: ["order_id"]
@@ -56314,6 +56521,13 @@ export type Database = {
             foreignKeyName: "sms_alert_logs_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "sms_alert_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -58704,6 +58918,39 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_revenue: {
+        Row: {
+          currency: string | null
+          ga_client_id: string | null
+          items: Json | null
+          order_id: string | null
+          paid_at: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          currency?: string | null
+          ga_client_id?: string | null
+          items?: Json | null
+          order_id?: string | null
+          paid_at?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          currency?: string | null
+          ga_client_id?: string | null
+          items?: Json | null
+          order_id?: string | null
+          paid_at?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       cinematic_ad_failure_breakdown: {
         Row: {
           category: string | null
@@ -58917,6 +59164,45 @@ export type Database = {
           priority_score?: number | null
           product_id?: string | null
           product_title?: string | null
+        }
+        Relationships: []
+      }
+      mv_canonical_funnel_hourly: {
+        Row: {
+          bucket: string | null
+          canonical_name:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          event_count: number | null
+          unique_sessions: number | null
+          unique_visitors: number | null
+        }
+        Relationships: []
+      }
+      mv_canonical_product_performance_daily: {
+        Row: {
+          atc: number | null
+          checkout: number | null
+          day: string | null
+          product_id: string | null
+          purchases: number | null
+          revenue_cents: number | null
+          unique_views: number | null
+          views: number | null
+        }
+        Relationships: []
+      }
+      mv_canonical_traffic_source_daily: {
+        Row: {
+          atc: number | null
+          checkout: number | null
+          day: string | null
+          medium: string | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+          source: string | null
         }
         Relationships: []
       }
@@ -59858,6 +60144,7 @@ export type Database = {
           skipped_policy_unsafe: number
         }[]
       }
+      canonical_refresh_all: { Args: never; Returns: undefined }
       cci_check_atc_click_duplicates: {
         Args: never
         Returns: {
@@ -60947,6 +61234,25 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "customer"
+      canonical_event_name:
+        | "CANONICAL_PAGE_VIEW"
+        | "CANONICAL_PRODUCT_VIEW"
+        | "CANONICAL_ADD_TO_CART"
+        | "CANONICAL_CART"
+        | "CANONICAL_CHECKOUT"
+        | "CANONICAL_PURCHASE"
+        | "CANONICAL_ENGAGEMENT"
+      canonical_source_system:
+        | "cci"
+        | "cie"
+        | "lp_funnel"
+        | "checkout_funnel"
+        | "orders"
+        | "ga4"
+        | "stripe"
+        | "pinterest"
+        | "tiktok"
+        | "meta"
       pcie2_module_status: "pass" | "fail" | "skip" | "warn"
       pcie2_reject_reason:
         | "irrelevant_headline"
@@ -61090,6 +61396,27 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "customer"],
+      canonical_event_name: [
+        "CANONICAL_PAGE_VIEW",
+        "CANONICAL_PRODUCT_VIEW",
+        "CANONICAL_ADD_TO_CART",
+        "CANONICAL_CART",
+        "CANONICAL_CHECKOUT",
+        "CANONICAL_PURCHASE",
+        "CANONICAL_ENGAGEMENT",
+      ],
+      canonical_source_system: [
+        "cci",
+        "cie",
+        "lp_funnel",
+        "checkout_funnel",
+        "orders",
+        "ga4",
+        "stripe",
+        "pinterest",
+        "tiktok",
+        "meta",
+      ],
       pcie2_module_status: ["pass", "fail", "skip", "warn"],
       pcie2_reject_reason: [
         "irrelevant_headline",
