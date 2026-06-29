@@ -77,7 +77,7 @@ export default function TrafficIntelligencePage() {
         .order("classified_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      setRows((data || []) as EnrichmentRow[]);
+      setRows((data || []) as unknown as EnrichmentRow[]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to load enrichment");
     } finally {
