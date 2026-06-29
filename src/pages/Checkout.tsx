@@ -833,6 +833,7 @@ const Checkout = () => {
             },
           });
         } catch { /* swallow */ }
+        try { sessionStorage.removeItem('gp_cci_checkout_active'); } catch {}
         // Canonical funnel `payment` step — fires the instant we hand the
         // visitor off to Stripe. Without this, analytics_funnel_waterfall
         // shows 0 payments even though the prior audit confirmed real
