@@ -1,0 +1,51 @@
+name: ATC Dedup Regression Guard
+
+# Always runs on every PR (no path filters) so the add_to_cart_click
+# deduplication invariant in src/pages/ProductDetail.tsx cannot regress
+# silently when unrelated files change.
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  atc-dedup:
+    name: ProductDetail ATC dedup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-20-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-modules-
+
+      - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Run ATC dedup regression test
+        run: npx vitest run src/pages/__tests__/ProductDetail.atc-dedup.test.ts --reporter=verbose
+
+      - name: Failure hint
+        if: failure()
+        run: |
+          echo "::error::ProductDetail add_to_cart_click dedup regression detected."
+          echo "See src/pages/ProductDetail.tsx :: handleAddToCart and the test at"
+          echo "src/pages/__tests__/ProductDetail.atc-dedup.test.ts"
