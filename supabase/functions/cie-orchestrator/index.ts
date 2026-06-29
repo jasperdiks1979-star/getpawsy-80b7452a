@@ -142,10 +142,16 @@ async function confidence(c: ReturnType<typeof admin>) {
   const { count: sesCount } = await c.from("cie_sessions").select("id", { count: "exact", head: true });
   const baseTracking = Math.min(100, ((evCount ?? 0) > 50 ? 95 : (evCount ?? 0) * 1.8));
   const baseSessions = Math.min(100, ((sesCount ?? 0) > 20 ? 95 : (sesCount ?? 0) * 4));
+  // Pull GA4 confidence that cie-ga4-adapter wrote earlier this cycle.
+  const { data: ga4Row } = await c
+    .from("cie_confidence_scores")
+    .select("confidence, rationale")
+    .eq("metric", "ga4").eq("scope", "global").maybeSingle();
+  const ga4Conf = Number((ga4Row as any)?.confidence ?? 0);
   const metrics = [
     { metric: "tracking", confidence: baseTracking, rationale: "event volume heuristic" },
     { metric: "sessions", confidence: baseSessions, rationale: "session volume heuristic" },
-    { metric: "ga4", confidence: 0, rationale: "adapter pending" },
+    { metric: "ga4", confidence: ga4Conf, rationale: ga4Conf > 0 ? ((ga4Row as any)?.rationale ?? "GA4 adapter live") : "GA4 adapter no data" },
     { metric: "pinterest", confidence: 0, rationale: "adapter pending" },
     { metric: "tiktok", confidence: 0, rationale: "adapter pending" },
     { metric: "revenue", confidence: 100, rationale: "internal orders are authoritative" },
