@@ -67,8 +67,8 @@ export function AudienceIntelligenceTab() {
       supabase.from("gv35_settings").select("value").eq("key", "audience_first_mode").maybeSingle(),
     ]);
     setPersonas((p.data ?? []) as Persona[]);
-    setPerf((v.data ?? []) as PerfRow[]);
-    setUntapped((u.data ?? []) as UntappedRow[]);
+    setPerf(((v.data ?? []) as unknown) as PerfRow[]);
+    setUntapped(((u.data ?? []) as unknown) as UntappedRow[]);
     setMatches((m.data ?? []) as MatchRow[]);
     setAutopilot(!!(s.data?.value as any)?.enabled);
   }
