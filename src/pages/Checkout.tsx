@@ -804,6 +804,16 @@ const Checkout = () => {
           currency: 'USD',
           destination_url: data.url,
         });
+        try {
+          trackCci('payment_redirect_started', {
+            funnel_stage: 'payment_redirect',
+            meta: {
+              value: Number(stripeChargedTotal.toFixed(2)),
+              currency: 'USD',
+              provider: 'stripe',
+            },
+          });
+        } catch { /* swallow */ }
         // Canonical funnel `payment` step — fires the instant we hand the
         // visitor off to Stripe. Without this, analytics_funnel_waterfall
         // shows 0 payments even though the prior audit confirmed real
