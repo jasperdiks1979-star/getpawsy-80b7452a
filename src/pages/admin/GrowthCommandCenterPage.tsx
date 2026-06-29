@@ -245,6 +245,12 @@ export default function GrowthCommandCenterPage() {
   );
   const activeAlerts = alerts.filter((a) => a.is_active);
 
+  const firstSaleBrief = useMemo(() => {
+    return buildFirstSaleBrief({
+      exec, liveSummary, productAgg, piScores, pinScores, piProducts, pinProducts,
+    });
+  }, [exec, liveSummary, productAgg, piScores, pinScores, piProducts, pinProducts]);
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -263,6 +269,31 @@ export default function GrowthCommandCenterPage() {
       {error && (
         <Card className="border-destructive"><CardContent className="p-4 text-sm text-destructive">{error}</CardContent></Card>
       )}
+
+      {/* Genesis V3.1 — First Sale Mission brief */}
+      <Card className="border-primary">
+        <CardHeader>
+          <CardTitle>🔥 First Sale Brief · next 24–72h</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Analyzing…</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <BriefRow icon="🔥" label="Best product today" value={firstSaleBrief.bestProduct} />
+              <BriefRow icon="💰" label="Highest revenue opportunity" value={firstSaleBrief.revenueOpportunity} />
+              <BriefRow icon="📌" label="Best Pinterest opportunity" value={firstSaleBrief.pinOpportunity} />
+              <BriefRow icon="⚠️" label="Worst converter" value={firstSaleBrief.worstConverter} />
+              <BriefRow icon="⏸️" label="Pause" value={firstSaleBrief.toPause} />
+              <BriefRow icon="🚀" label="Scale" value={firstSaleBrief.toScale} />
+              <BriefRow icon="🎨" label="Regenerate creative" value={firstSaleBrief.regenerateCreative} />
+              <BriefRow icon="🕐" label="Best posting times" value={firstSaleBrief.postingTimes} />
+              <BriefRow icon="🎯" label="Sales probability (24–72h)" value={firstSaleBrief.salesProbability} />
+              <BriefRow icon="💵" label="Estimated revenue potential" value={firstSaleBrief.revenuePotential} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Live (last 24h) */}
       <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
