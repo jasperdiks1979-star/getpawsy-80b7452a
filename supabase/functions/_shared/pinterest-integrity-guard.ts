@@ -15,6 +15,8 @@
 //
 // Returns a structured verdict so callers can log + persist the reason.
 
+import { evaluateProductRelevance, preEnabled } from "./pre-product-relevance.ts";
+
 export type IntegrityVerdict = {
   passed: boolean;
   confidence: number; // 0..1
@@ -175,6 +177,42 @@ export async function verifyPinIntegrity(
       reasons.push("media_integrity_contaminated");
     } else {
       checks.media_integrity = { ok: true };
+    }
+  }
+
+  // 7. Genesis V2 — Product Relevance Engine (PRE). Vision-based gate that
+  //    rejects pins whose creative does not actually match the product.
+  //    Hard rule: NO pin publishes if PRE fails. Cannot be skipped.
+  if (imgOk && input.pin_image_url && (await preEnabled(supabase))) {
+    try {
+      const pre = await evaluateProductRelevance(supabase, {
+        product_id: input.product_id,
+        product_slug: input.product_slug,
+        product_name: input.product_name,
+        product_description: (product as any).description ?? null,
+        product_image_url: product.image_url ?? null,
+        product_primary_species: product.primary_species ?? null,
+        product_category: input.niche_or_category ?? null,
+        pin_title: input.pin_title,
+        pin_description: input.pin_description,
+        pin_image_url: input.pin_image_url,
+        destination_link: input.destination_link,
+      });
+      if (!pre.passed) {
+        checks.product_relevance = {
+          ok: false,
+          reason: `PRE ${pre.overall_score}/100: ${pre.blocking_reasons.slice(0, 3).join(", ")}`,
+        };
+        reasons.push("pre_relevance_failed");
+      } else {
+        checks.product_relevance = { ok: true };
+      }
+    } catch (err) {
+      checks.product_relevance = {
+        ok: false,
+        reason: `PRE error: ${(err as Error).message}`,
+      };
+      reasons.push("pre_error");
     }
   }
 
