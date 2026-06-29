@@ -209,9 +209,25 @@ Deno.serve(async (req) => {
     if (action === "cycle") {
       const funnel = await snapshotFunnel(c, body.hours ?? 24);
       const truth = await revenueTruth(c, body.hours ?? 24);
+      // Pull GA4 evidence before computing confidence so the ga4 score is fresh.
+      let ga4: any = { ok: false, message: "skipped" };
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/cie-ga4-adapter`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+          },
+          body: JSON.stringify({ days: Math.max(1, Math.ceil((body.hours ?? 24) / 24)) }),
+        });
+        ga4 = await r.json();
+      } catch (e) {
+        ga4 = { ok: false, message: (e as Error).message };
+      }
       const metrics = await confidence(c);
       const health = await healthSnapshot(c);
-      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, metrics, health }), {
+      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, metrics, health }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
