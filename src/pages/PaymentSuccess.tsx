@@ -13,6 +13,7 @@ import { fireMarketingAsync } from '@/lib/marketingClient';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { firePaymentSuccess } from '@/lib/funnelEvents';
+import { trackCci } from '@/lib/cci';
 import { useBundleABTest } from '@/hooks/useBundleABTest';
 import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
@@ -70,6 +71,26 @@ const PaymentSuccess = () => {
         currency: 'USD',
         stripe_session_id: sessionId,
       });
+      try {
+        sessionStorage.removeItem('gp_cci_checkout_active');
+        trackCci('payment_success', {
+          funnel_stage: 'payment_success',
+          meta: {
+            order_total: typeof totalPrice === 'number' ? totalPrice : undefined,
+            currency: 'USD',
+            stripe_session_id: sessionId,
+          },
+        });
+        trackCci('purchase_confirmed', {
+          funnel_stage: 'purchase_confirmed',
+          meta: {
+            order_total: typeof totalPrice === 'number' ? totalPrice : undefined,
+            currency: 'USD',
+            stripe_session_id: sessionId,
+            item_count: items.length,
+          },
+        });
+      } catch { /* swallow */ }
       // Canonical waterfall `purchase` step — the ONLY way
       // analytics_funnel_waterfall.purchase_at gets stamped. Without this
       // the funnel reports 0 purchases even when Stripe confirms revenue.

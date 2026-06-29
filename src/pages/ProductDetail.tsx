@@ -760,6 +760,17 @@ const ProductDetail = () => {
           })
         )
         .catch(() => {});
+      try {
+        trackCci('product_view', {
+          product_id: currentProductId,
+          funnel_stage: 'product_view',
+          meta: {
+            slug: product.slug ?? null,
+            price: Number(product.price) || 0,
+            currency: 'USD',
+          },
+        });
+      } catch { /* swallow */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProductId]);
