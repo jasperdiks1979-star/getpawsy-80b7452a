@@ -1,14 +1,13 @@
 /**
- * /admin/products-performance — per-product funnel & revenue.
+ * /admin/products-performance — per-product funnel & revenue (Canonical).
  *
- * Source: lp_funnel_events grouped by product_id/product_name,
- * counting unique sessions per step (view → atc → checkout → purchase).
- * Revenue is summed from `value` on payment_success rows where available.
- * No mock data. Empty buckets render "—".
+ * Genesis V2.6 Wave 2: reads from canonical_products (daily per-product rollup).
+ * Revenue cents come from canonical_orders aggregation in the SQL view, so it
+ * always matches the global Revenue dashboard.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalProducts, type CanonicalProductRow } from '@/lib/canonicalAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,18 +17,8 @@ import { Loader2, Package, AlertTriangle, ArrowUpDown } from 'lucide-react';
 type Range = '24h' | '7d' | '30d' | '90d';
 type SortKey = 'views' | 'atc' | 'checkout' | 'purchase' | 'cvr' | 'revenue';
 
-interface Row {
-  event_name: string;
-  session_id: string;
-  product_id: string | null;
-  product_name: string | null;
-  value: number | null;
-  is_bot: boolean | null;
-}
-
-function rangeStart(r: Range): string {
-  const days = r === '24h' ? 1 : r === '7d' ? 7 : r === '30d' ? 30 : 90;
-  return new Date(Date.now() - days * 24 * 3600e3).toISOString();
+function rangeDays(r: Range): number {
+  return r === '24h' ? 1 : r === '7d' ? 7 : r === '30d' ? 30 : 90;
 }
 function pct(n: number, d: number): string {
   if (!d) return '—';
@@ -41,53 +30,48 @@ function money(n: number): string {
 
 export default function ProductsPerformance() {
   const [range, setRange] = useState<Range>('30d');
+  // Bots never reach canonical_products — toggle is informational.
   const [excludeBots, setExcludeBots] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('views');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<CanonicalProductRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    const { data, error } = await supabase
-      .from('lp_funnel_events')
-      .select('event_name, session_id, product_id, product_name, value, is_bot')
-      .gte('created_at', rangeStart(range))
-      .eq('qa', false)
-      .in('event_name', ['view_item', 'pdp_view', 'add_to_cart', 'begin_checkout', 'payment_success'])
-      .limit(50000);
-    if (error) { setError(error.message); setRows([]); }
-    else setRows((data ?? []) as Row[]);
+    try {
+      const data = await getCanonicalProducts(rangeDays(range));
+      setRows(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Canonical query failed');
+      setRows([]);
+    }
     setLoading(false);
   }, [range]);
 
   useEffect(() => { load(); }, [load]);
 
   const products = useMemo(() => {
-    type Bucket = { key: string; name: string; views: Set<string>; atc: Set<string>; checkout: Set<string>; purchase: Set<string>; revenue: number };
-    const buckets = new Map<string, Bucket>();
+    // Roll up daily canonical rows into per-product totals for the selected window.
+    type Agg = { key: string; name: string; views: number; atc: number; checkout: number; purchase: number; revenue: number };
+    const buckets = new Map<string, Agg>();
     for (const r of rows) {
-      if (excludeBots && r.is_bot === true) continue;
-      const key = r.product_id || r.product_name || '(unknown)';
-      let b = buckets.get(key);
-      if (!b) { b = { key, name: r.product_name || key, views: new Set(), atc: new Set(), checkout: new Set(), purchase: new Set(), revenue: 0 }; buckets.set(key, b); }
-      if (r.event_name === 'view_item' || r.event_name === 'pdp_view') b.views.add(r.session_id);
-      if (r.event_name === 'add_to_cart') b.atc.add(r.session_id);
-      if (r.event_name === 'begin_checkout') b.checkout.add(r.session_id);
-      if (r.event_name === 'payment_success') {
-        b.purchase.add(r.session_id);
-        b.revenue += Number(r.value ?? 0);
-      }
+      const key = r.product_id || '(unknown)';
+      const b = buckets.get(key) ?? { key, name: key, views: 0, atc: 0, checkout: 0, purchase: 0, revenue: 0 };
+      b.views += Number(r.product_views || 0);
+      b.atc += Number(r.add_to_carts || 0);
+      b.checkout += Number(r.checkouts || 0);
+      b.purchase += Number(r.purchases || 0);
+      b.revenue += Number(r.revenue_cents || 0) / 100;
+      buckets.set(key, b);
     }
     const list = [...buckets.values()].map((b) => ({
-      key: b.key, name: b.name,
-      views: b.views.size, atc: b.atc.size, checkout: b.checkout.size,
-      purchase: b.purchase.size, revenue: b.revenue,
-      cvr: b.views.size ? b.purchase.size / b.views.size : 0,
+      ...b,
+      cvr: b.views ? b.purchase / b.views : 0,
     }));
     list.sort((a, b) => (b[sortKey] as number) - (a[sortKey] as number));
     return list.slice(0, 200);
-  }, [rows, excludeBots, sortKey]);
+  }, [rows, sortKey]);
 
   return (
     <>
@@ -103,7 +87,7 @@ export default function ProductsPerformance() {
               Products Performance
             </h1>
             <p className="text-sm text-muted-foreground">
-              Per-product views, ATCs, checkouts, purchases, CVR and revenue. Source: lp_funnel_events.
+              Per-product views, ATCs, checkouts, purchases, CVR and revenue. Source: canonical_products.
             </p>
           </div>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">

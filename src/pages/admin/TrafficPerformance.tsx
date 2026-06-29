@@ -1,15 +1,16 @@
 /**
- * /admin/traffic-performance — per-source visitors, ATCs, purchases, revenue, ROAS.
+ * /admin/traffic-performance — per-source visitors, ATCs, purchases, revenue, ROAS (Canonical).
  *
- * Source: lp_funnel_events + orders. Sessions are classified by utm_source.
- * Revenue is joined from `orders.status='paid'` via stripe_session_id when present;
- * otherwise falls back to payment_success.value from lp_funnel_events.
- * Ad spend is unknown server-side, so ROAS column reads "—" unless a spend value
- * is entered in the input box (kept local to the page; no persistence yet).
+ * Genesis V2.6 Wave 2: reads from canonical_funnel + canonical_orders.
+ * Revenue is Stripe-verified paid orders only. Ad spend is entered manually.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  getCanonicalFunnelSessions, getCanonicalOrders,
+  classifyCanonicalSource,
+  type CanonicalSessionRow, type CanonicalOrderRow, type CanonicalSource,
+} from '@/lib/canonicalAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,63 +19,37 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Radio, AlertTriangle } from 'lucide-react';
 
 type Range = '24h' | '7d' | '30d' | '90d';
-type Source = 'tiktok' | 'pinterest' | 'google' | 'meta' | 'email' | 'direct' | 'referral' | 'other';
+type Source = CanonicalSource;
 
-interface LpRow { event_name: string; session_id: string; utm_source: string | null; utm_campaign: string | null; value: number | null; is_bot: boolean | null; }
-interface CheckoutRow { step: string; session_id: string; stripe_session_id: string | null; is_bot: boolean | null; }
-interface OrderRow { status: string; total_amount: number | null; stripe_session_id: string | null; }
-
-function rangeStart(r: Range): string {
-  const days = r === '24h' ? 1 : r === '7d' ? 7 : r === '30d' ? 30 : 90;
-  return new Date(Date.now() - days * 24 * 3600e3).toISOString();
+function rangeHours(r: Range): number {
+  return r === '24h' ? 24 : r === '7d' ? 24 * 7 : r === '30d' ? 24 * 30 : 24 * 90;
 }
 function pct(n: number, d: number): string { if (!d) return '—'; return ((n / d) * 100).toFixed(2) + '%'; }
 function money(n: number): string { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n); }
 
-function classify(s: string | null | undefined): Source {
-  if (!s) return 'direct';
-  const v = s.toLowerCase();
-  if (v.includes('tiktok')) return 'tiktok';
-  if (v.includes('pinterest')) return 'pinterest';
-  if (v.includes('google')) return 'google';
-  if (v.includes('facebook') || v.includes('meta') || v.includes('instagram')) return 'meta';
-  if (v.includes('email') || v.includes('newsletter') || v.includes('klaviyo')) return 'email';
-  if (v === 'direct') return 'direct';
-  if (v === 'referral') return 'referral';
-  return 'other';
-}
-
 export default function TrafficPerformance() {
   const [range, setRange] = useState<Range>('30d');
+  // Canonical layer excludes bots/QA at ingest. Toggle kept for UI parity.
   const [excludeBots, setExcludeBots] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lp, setLp] = useState<LpRow[]>([]);
-  const [ck, setCk] = useState<CheckoutRow[]>([]);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [sessions, setSessions] = useState<CanonicalSessionRow[]>([]);
+  const [orders, setOrders] = useState<CanonicalOrderRow[]>([]);
   const [spend, setSpend] = useState<Record<Source, string>>({ tiktok: '', pinterest: '', google: '', meta: '', email: '', direct: '', referral: '', other: '' });
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
-    const since = rangeStart(range);
-    const [lpRes, ckRes, ordRes] = await Promise.all([
-      supabase.from('lp_funnel_events')
-        .select('event_name, session_id, utm_source, utm_campaign, value, is_bot')
-        .gte('created_at', since).eq('qa', false)
-        .in('event_name', ['view_item', 'pdp_view', 'add_to_cart', 'begin_checkout', 'payment_success'])
-        .limit(50000),
-      supabase.from('checkout_funnel_events')
-        .select('step, session_id, stripe_session_id, is_bot')
-        .gte('created_at', since).eq('qa', false).limit(50000),
-      supabase.from('orders').select('status, total_amount, stripe_session_id').gte('created_at', since).limit(10000),
-    ]);
-    if (lpRes.error || ckRes.error || ordRes.error) {
-      setError(lpRes.error?.message || ckRes.error?.message || ordRes.error?.message || 'Query failed');
-      setLp([]); setCk([]); setOrders([]);
-    } else {
-      setLp((lpRes.data ?? []) as LpRow[]);
-      setCk((ckRes.data ?? []) as CheckoutRow[]);
-      setOrders((ordRes.data ?? []) as OrderRow[]);
+    try {
+      const hours = rangeHours(range);
+      const [sess, ord] = await Promise.all([
+        getCanonicalFunnelSessions({ hours }),
+        getCanonicalOrders({ hours }),
+      ]);
+      setSessions(sess);
+      setOrders(ord);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Canonical query failed');
+      setSessions([]); setOrders([]);
     }
     setLoading(false);
   }, [range]);
@@ -82,68 +57,30 @@ export default function TrafficPerformance() {
   useEffect(() => { load(); }, [load]);
 
   const bySource = useMemo(() => {
-    const sidSource = new Map<string, Source>();
-    const sidBot = new Map<string, boolean>();
-    for (const r of lp) {
-      if (!sidSource.has(r.session_id)) sidSource.set(r.session_id, classify(r.utm_source));
-      if (r.is_bot === true) sidBot.set(r.session_id, true);
-    }
-    type B = { sessions: Set<string>; views: Set<string>; atc: Set<string>; checkout: Set<string>; purchase: Set<string>; revenue: number };
+    type B = { sessions: number; views: number; atc: number; checkout: number; purchase: number; revenue: number };
     const buckets = new Map<Source, B>();
-    const mk = (): B => ({ sessions: new Set(), views: new Set(), atc: new Set(), checkout: new Set(), purchase: new Set(), revenue: 0 });
-    for (const [sid, src] of sidSource.entries()) {
-      if (excludeBots && sidBot.get(sid)) continue;
+    const mk = (): B => ({ sessions: 0, views: 0, atc: 0, checkout: 0, purchase: 0, revenue: 0 });
+    for (const s of sessions) {
+      const src = classifyCanonicalSource(s.utm_source);
       const b = buckets.get(src) ?? mk();
-      b.sessions.add(sid);
+      b.sessions++;
+      if (s.reached_product_view) b.views++;
+      if (s.reached_add_to_cart) b.atc++;
+      if (s.reached_checkout) b.checkout++;
+      if (s.reached_purchase) b.purchase++;
       buckets.set(src, b);
     }
-    for (const r of lp) {
-      if (excludeBots && r.is_bot === true) continue;
-      const src = sidSource.get(r.session_id);
-      if (!src) continue;
-      const b = buckets.get(src); if (!b) continue;
-      if (r.event_name === 'view_item' || r.event_name === 'pdp_view') b.views.add(r.session_id);
-      if (r.event_name === 'add_to_cart') b.atc.add(r.session_id);
-      if (r.event_name === 'begin_checkout') b.checkout.add(r.session_id);
-      if (r.event_name === 'payment_success') { b.purchase.add(r.session_id); b.revenue += Number(r.value ?? 0); }
-    }
-    // Augment from checkout funnel
-    const stripeToSid = new Map<string, string>();
-    for (const r of ck) {
-      if (excludeBots && r.is_bot === true) continue;
-      const src = sidSource.get(r.session_id);
-      if (src) {
-        const b = buckets.get(src);
-        if (b) {
-          if (r.step === 'begin_checkout' || r.step === 'checkout_click') b.checkout.add(r.session_id);
-          if (r.step === 'payment_success' || r.step === 'checkout_redirect_success') b.purchase.add(r.session_id);
-        }
-      }
-      if (r.stripe_session_id) stripeToSid.set(r.stripe_session_id, r.session_id);
-    }
-    // Replace revenue with paid-order ground truth when available
-    const paid = orders.filter((o) => o.status === 'paid' && (o.total_amount ?? 0) > 0);
-    if (paid.length) {
-      for (const b of buckets.values()) b.revenue = 0;
-      for (const o of paid) {
-        const sid = o.stripe_session_id ? stripeToSid.get(o.stripe_session_id) : undefined;
-        const src: Source = (sid ? sidSource.get(sid) : undefined) ?? 'direct';
-        const b = buckets.get(src);
-        if (b) b.revenue += Number(o.total_amount ?? 0);
-      }
+    // Revenue from canonical_orders (Stripe-verified) only.
+    for (const o of orders) {
+      const src = classifyCanonicalSource(o.utm_source);
+      const b = buckets.get(src) ?? mk();
+      b.revenue += Number(o.total_amount || 0);
+      buckets.set(src, b);
     }
     return [...buckets.entries()]
-      .map(([source, b]) => ({
-        source,
-        sessions: b.sessions.size,
-        views: b.views.size,
-        atc: b.atc.size,
-        checkout: b.checkout.size,
-        purchase: b.purchase.size,
-        revenue: b.revenue,
-      }))
+      .map(([source, b]) => ({ source, ...b }))
       .sort((a, b) => b.sessions - a.sessions);
-  }, [lp, ck, orders, excludeBots]);
+  }, [sessions, orders]);
 
   return (
     <>
@@ -159,7 +96,7 @@ export default function TrafficPerformance() {
               Traffic Performance
             </h1>
             <p className="text-sm text-muted-foreground">
-              Per-source visitors, ATCs, checkouts, purchases, revenue and ROAS. Revenue uses paid orders when available; ad spend is entered manually.
+              Per-source visitors, ATCs, checkouts, purchases, revenue and ROAS. Source: canonical_funnel + canonical_orders. Ad spend is entered manually.
             </p>
           </div>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">

@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalFunnelSessions, summarizeCanonicalSessions } from '@/lib/canonicalAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -71,6 +72,15 @@ function rangeStart(r: Range): string {
   return d.toISOString();
 }
 
+function rangeHoursMs(r: Range): number {
+  if (r === '1h') return 1;
+  if (r === '24h') return 24;
+  if (r === '7d') return 24 * 7;
+  // today
+  const d = new Date(); const start = new Date(); start.setHours(0,0,0,0);
+  return Math.max(1, Math.ceil((d.getTime() - start.getTime()) / 3600_000));
+}
+
 /** Clean = real human traffic only. Bots, QA, and unknown-quality excluded. */
 function isClean(row: { classification: string | null; qa: boolean | null; is_bot: boolean | null }): boolean {
   if (row.is_bot) return false;
@@ -117,6 +127,7 @@ export default function FunnelHealth() {
   const [loading, setLoading] = useState(true);
   const [qaRunning, setQaRunning] = useState<string | null>(null);
   const [qaResult, setQaResult] = useState<string | null>(null);
+  const [canonicalSummary, setCanonicalSummary] = useState<{ sessions: number; atc: number; checkout: number; purchase: number } | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -137,6 +148,11 @@ export default function FunnelHealth() {
     ]);
     setLpRows((lp.data ?? []) as LpRow[]);
     setCkRows((ck.data ?? []) as CkRow[]);
+    try {
+      const sess = await getCanonicalFunnelSessions({ hours: rangeHoursMs(range) });
+      const s = summarizeCanonicalSessions(sess);
+      setCanonicalSummary({ sessions: s.sessions, atc: s.add_to_carts, checkout: s.checkouts, purchase: s.purchases });
+    } catch { setCanonicalSummary(null); }
     setLoading(false);
   }, [range]);
 
@@ -328,6 +344,23 @@ export default function FunnelHealth() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Canonical parity panel — Genesis V2.6 single source of truth. */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Canonical funnel (parity check)</CardTitle>
+          <CardDescription>
+            Unique-session counts from canonical_funnel for the same range. Clean-mode raw counts
+            should be ≤ canonical counts (raw can include events without a canonical session).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Canonical sessions" value={canonicalSummary?.sessions.toLocaleString() ?? '—'} />
+          <Stat label="Canonical ATC" value={canonicalSummary?.atc.toLocaleString() ?? '—'} hint={`Clean ATC: ${stats.atc}`} />
+          <Stat label="Canonical checkout" value={canonicalSummary?.checkout.toLocaleString() ?? '—'} hint={`Clean ck clicks: ${stats.ckClick}`} />
+          <Stat label="Canonical purchases" value={canonicalSummary?.purchase.toLocaleString() ?? '—'} hint={`Clean payment: ${stats.pay}`} />
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getCanonicalOrders, type CanonicalOrderRow } from "@/lib/canonicalAnalytics";
 
 type Totals = { sessions: number; purchases: number; revenue_cents: number };
 type ReportData = {
@@ -17,6 +18,7 @@ const fmtUsd = (cents: number) => `$${(cents / 100).toLocaleString(undefined, { 
 export default function RevenueReportPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [busy, setBusy] = useState(false);
+  const [canonical, setCanonical] = useState<{ d7: number; d30: number; d90: number; o7: number; o30: number; o90: number } | null>(null);
 
   async function load() {
     setBusy(true);
@@ -24,6 +26,19 @@ export default function RevenueReportPage() {
       const { data: r, error } = await supabase.functions.invoke("pinterest-revenue-brain", { body: { action: "report" } });
       if (error) throw error;
       setData(r as ReportData);
+      // Canonical truth (Stripe-verified paid orders only) — for parity comparison.
+      const orders90: CanonicalOrderRow[] = await getCanonicalOrders({ hours: 24 * 90 });
+      const now = Date.now();
+      const sumCents = (h: number) =>
+        orders90
+          .filter((o) => new Date(o.paid_at).getTime() >= now - h * 3600_000)
+          .reduce((a, o) => a + Math.round(Number(o.total_amount || 0) * 100), 0);
+      const cnt = (h: number) =>
+        orders90.filter((o) => new Date(o.paid_at).getTime() >= now - h * 3600_000).length;
+      setCanonical({
+        d7: sumCents(24 * 7), d30: sumCents(24 * 30), d90: sumCents(24 * 90),
+        o7: cnt(24 * 7), o30: cnt(24 * 30), o90: cnt(24 * 90),
+      });
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -79,6 +94,26 @@ export default function RevenueReportPage() {
           );
         })}
       </div>
+
+      {/* Canonical truth — Stripe-verified paid orders. Single source of revenue truth. */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Canonical revenue (paid orders, Stripe-verified)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          {(["d7", "d30", "d90"] as const).map((k) => {
+            const cents = canonical?.[k] ?? 0;
+            const orders = canonical?.[(`o${k.slice(1)}` as "o7" | "o30" | "o90")] ?? 0;
+            return (
+              <div key={k} className="rounded-md border p-3">
+                <div className="text-muted-foreground text-xs uppercase">{k}</div>
+                <div className="text-2xl font-bold">{fmtUsd(cents)}</div>
+                <div className="text-muted-foreground">{orders.toLocaleString()} paid orders</div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Top 20 winners likely to generate revenue in the next 30 days</CardTitle></CardHeader>

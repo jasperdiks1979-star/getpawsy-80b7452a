@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalEventCounts, CANONICAL_STAGE_LABEL, type CanonicalStage } from '@/lib/canonicalAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,19 +41,24 @@ export default function TrackingHealth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
+  const [canonical, setCanonical] = useState<Record<CanonicalStage, number> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     const since = new Date(Date.now() - 24 * 3600e3).toISOString();
-    const { data, error } = await supabase
-      .from('lp_funnel_events')
-      .select('event_name, created_at, degraded, validation_status')
-      .gte('created_at', since)
-      .eq('qa', false)
-      .limit(50000)
-      .order('created_at', { ascending: false });
-    if (error) { setError(error.message); setRows([]); }
-    else setRows((data ?? []) as Row[]);
+    const [rawRes, canon] = await Promise.all([
+      supabase
+        .from('lp_funnel_events')
+        .select('event_name, created_at, degraded, validation_status')
+        .gte('created_at', since)
+        .eq('qa', false)
+        .limit(50000)
+        .order('created_at', { ascending: false }),
+      getCanonicalEventCounts(24).catch(() => null),
+    ]);
+    if (rawRes.error) { setError(rawRes.error.message); setRows([]); }
+    else setRows((rawRes.data ?? []) as Row[]);
+    setCanonical(canon);
     setLoading(false);
   }, []);
 
@@ -128,6 +134,32 @@ export default function TrackingHealth() {
           <Kpi label="Degraded rows" value={summary.degradedTotal.toLocaleString()} />
           <Kpi label="Other event types" value={summary.other.length.toLocaleString()} />
         </div>
+
+        {/* Canonical Layer heartbeat — Genesis V2.6 parity panel. */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Canonical Analytics heartbeat (24h)</CardTitle>
+            <CardDescription>
+              Counts come from canonical_events. If any stage is 0 while the raw event above is healthy,
+              the canonical mapper is degraded.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!canonical ? (
+              <p className="text-sm text-muted-foreground">Canonical layer unavailable.</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                {(Object.keys(canonical) as CanonicalStage[]).map((stage) => (
+                  <Kpi
+                    key={stage}
+                    label={CANONICAL_STAGE_LABEL[stage]}
+                    value={canonical[stage].toLocaleString()}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="pb-3">
