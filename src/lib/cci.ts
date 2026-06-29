@@ -12,7 +12,7 @@ export type CciEvent =
   | 'reviews_section_visible' | 'faq_section_visible' | 'sticky_atc_visible'
   | 'add_to_cart_click' | 'add_to_cart_success' | 'add_to_cart_error'
   | 'cart_open' | 'cart_quantity_change' | 'checkout_click' | 'checkout_loaded'
-  | 'checkout_error' | 'payment_redirect_started' | 'payment_success'
+  | 'checkout_error' | 'checkout_abandoned' | 'payment_redirect_started' | 'payment_success'
   | 'purchase_confirmed';
 
 function ensureSessionId(): string | null {
