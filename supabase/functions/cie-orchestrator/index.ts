@@ -7,6 +7,7 @@
 //
 // All write paths use the service role. JWT is validated in code; admin only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { aggregateFunnel, computeRevenueStatus } from "./lib.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,11 +46,6 @@ async function requireAdmin(req: Request): Promise<{ ok: boolean; userId?: strin
   return { ok: true, userId: u.user.id };
 }
 
-function pct(num: number, den: number): number {
-  if (!den) return 0;
-  return Math.round((num / den) * 10000) / 100;
-}
-
 async function snapshotFunnel(c: ReturnType<typeof admin>, hours = 24) {
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const until = new Date().toISOString();
@@ -60,35 +56,9 @@ async function snapshotFunnel(c: ReturnType<typeof admin>, hours = 24) {
     .select("step, channel")
     .gte("ts", since)
     .limit(50000);
-
-  const byChannel = new Map<string, Record<string, number>>();
-  for (const r of rows ?? []) {
-    const ch = (r as any).channel || "unknown";
-    const s = (r as any).step || "page_view";
-    if (!byChannel.has(ch)) byChannel.set(ch, {});
-    byChannel.get(ch)![s] = (byChannel.get(ch)![s] ?? 0) + 1;
-  }
-
-  const inserts: any[] = [];
-  for (const [channel, steps] of byChannel) {
-    const sessions = steps["page_view"] ?? 0;
-    const product_views = steps["view_item"] ?? 0;
-    const atc = steps["add_to_cart"] ?? 0;
-    const checkout = steps["begin_checkout"] ?? 0;
-    const payment = steps["payment"] ?? 0;
-    const purchase = steps["purchase"] ?? 0;
-    const cvr = sessions ? purchase / sessions : 0;
-    const anomalies: string[] = [];
-    if (atc > 0 && checkout === 0) anomalies.push("atc_without_checkout");
-    if (checkout > 0 && payment === 0) anomalies.push("checkout_without_payment");
-    if (sessions > 100 && product_views === 0) anomalies.push("no_product_views");
-    inserts.push({
-      window_start: since, window_end: until,
-      channel, sessions, product_views,
-      add_to_cart: atc, checkout, payment, purchase,
-      cvr, anomalies,
-    });
-  }
+  const inserts = aggregateFunnel((rows ?? []) as Array<{ step?: string | null; channel?: string | null }>).map((f) => ({
+    window_start: since, window_end: until, ...f,
+  }));
   if (inserts.length) await c.from("cie_funnel_snapshots").insert(inserts);
   return inserts;
 }
@@ -114,15 +84,12 @@ async function revenueTruth(c: ReturnType<typeof admin>, hours = 24) {
   const tiktok_cents = 0;
   const ledger_cents = orders_cents;
 
-  const values = [stripe_cents, orders_cents, ledger_cents].filter((v) => v > 0);
-  let max_div = 0;
-  if (values.length >= 2) {
-    const max = Math.max(...values), min = Math.min(...values);
-    max_div = max ? ((max - min) / max) * 100 : 0;
-  }
   const { data: s } = await c.from("cie_settings").select("revenue_divergence_tolerance_pct").limit(1).maybeSingle();
   const tol = Number(s?.revenue_divergence_tolerance_pct ?? 1);
-  const status = max_div > tol ? "diverged" : (ga4_cents === 0 && pinterest_cents === 0 ? "partial" : "ok");
+  const { max_div, status } = computeRevenueStatus({
+    stripe_cents, orders_cents, ledger_cents,
+    ga4_cents, pinterest_cents, tolerance_pct: tol,
+  });
 
   await c.from("cie_revenue_truth").insert({
     window_start: since, window_end: until,
