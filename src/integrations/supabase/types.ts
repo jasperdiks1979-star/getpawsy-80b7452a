@@ -60145,6 +60145,10 @@ export type Database = {
         }[]
       }
       canonical_refresh_all: { Args: never; Returns: undefined }
+      canonical_session_upsert_recent: {
+        Args: { since: string }
+        Returns: undefined
+      }
       cci_check_atc_click_duplicates: {
         Args: never
         Returns: {
