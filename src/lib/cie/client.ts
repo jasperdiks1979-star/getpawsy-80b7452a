@@ -102,3 +102,19 @@ export async function syncTikTok(days = 1) {
   if (error) throw error;
   return data;
 }
+
+export async function runAutoRepair(opts: { hours?: number; dry_run?: boolean } = {}) {
+  const { data, error } = await supabase.functions.invoke("cie-auto-repair", { body: opts });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchAutoRepairs(limit = 25) {
+  const { data, error } = await supabase
+    .from("cie_auto_repairs")
+    .select("*")
+    .order("applied_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
