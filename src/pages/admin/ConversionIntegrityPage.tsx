@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import {
   runCie,
   syncGa4,
+  syncPinterest,
+  syncTikTok,
   fetchHealthSnapshots,
   fetchConfidence,
   fetchFunnelSnapshots,
@@ -27,6 +29,8 @@ function scoreColor(n: number) {
 export default function ConversionIntegrityPage() {
   const [busy, setBusy] = useState(false);
   const [ga4Busy, setGa4Busy] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [ttBusy, setTtBusy] = useState(false);
   const [health, setHealth] = useState<Row | null>(null);
   const [confidence, setConfidence] = useState<Row[]>([]);
   const [funnel, setFunnel] = useState<Row[]>([]);
@@ -80,6 +84,32 @@ export default function ConversionIntegrityPage() {
     } finally { setGa4Busy(false); }
   }
 
+  async function syncPinterestNow() {
+    setPinBusy(true);
+    try {
+      const res: any = await syncPinterest(1);
+      if (res?.ok === false) throw new Error(res.message ?? "Pinterest sync failed");
+      const r = res?.pinterest_reported ?? {};
+      toast.success(`Pinterest synced — clicks ${r.pin_clicks ?? 0}, saves ${r.saves ?? 0}, outbound ${r.outbound_clicks ?? 0}, internal sessions ${res?.internal_pinterest_sessions ?? 0}`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setPinBusy(false); }
+  }
+
+  async function syncTikTokNow() {
+    setTtBusy(true);
+    try {
+      const res: any = await syncTikTok(1);
+      if (res?.ok === false) throw new Error(res.message ?? "TikTok sync failed");
+      const c = res?.counts ?? {};
+      toast.success(`TikTok synced — VC ${c.view_content?.ok ?? 0}, ATC ${c.add_to_cart?.ok ?? 0}, IC ${c.initiate_checkout?.ok ?? 0}, PUR ${c.purchase?.ok ?? 0}, delivery ${(Number(res?.delivery_rate ?? 0) * 100).toFixed(1)}%`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setTtBusy(false); }
+  }
+
   const overall = Number(health?.overall ?? 0);
 
   return (
@@ -94,6 +124,12 @@ export default function ConversionIntegrityPage() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={syncGa4Now} disabled={ga4Busy}>
               {ga4Busy ? "Syncing GA4…" : "Sync GA4"}
+            </Button>
+            <Button variant="outline" onClick={syncPinterestNow} disabled={pinBusy}>
+              {pinBusy ? "Syncing Pinterest…" : "Sync Pinterest"}
+            </Button>
+            <Button variant="outline" onClick={syncTikTokNow} disabled={ttBusy}>
+              {ttBusy ? "Syncing TikTok…" : "Sync TikTok"}
             </Button>
             <Button onClick={runCycle} disabled={busy}>{busy ? "Running…" : "Run CIE Cycle"}</Button>
           </div>
