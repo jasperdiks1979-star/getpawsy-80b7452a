@@ -173,6 +173,8 @@ export default function GrowthCommandCenterPage() {
   const [alerts, setAlerts] = useState<ConsistencyAlertRow[]>([]);
   const [piScores, setPiScores] = useState<any[]>([]);
   const [piProducts, setPiProducts] = useState<Record<string, { name: string }>>({});
+  const [pinScores, setPinScores] = useState<any[]>([]);
+  const [pinProducts, setPinProducts] = useState<Record<string, { name: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -200,6 +202,19 @@ export default function GrowthCommandCenterPage() {
         const m: Record<string, any> = {};
         for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
         setPiProducts(m);
+      }
+      const { data: pin } = await supabase
+        .from("gv3_pin_growth_scores")
+        .select("product_id, pinterest_growth_score, classification, predicted_opportunity, pinterest_saturation, confidence, reason")
+        .order("pinterest_growth_score", { ascending: false })
+        .limit(500);
+      setPinScores(pin ?? []);
+      const pinIds = Array.from(new Set((pin ?? []).map((r: any) => r.product_id)));
+      if (pinIds.length) {
+        const { data: pr } = await supabase.from("products").select("id, name").in("id", pinIds);
+        const m: Record<string, any> = {};
+        for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
+        setPinProducts(m);
       }
     } catch (err: any) {
       setError(err?.message ?? "Failed to load growth data");
@@ -382,6 +397,54 @@ export default function GrowthCommandCenterPage() {
         </CardContent>
       </Card>
 
+      {/* Pinterest Growth (Genesis V3 · Phase 3) */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Pinterest Growth (V3)</CardTitle>
+          <Link to="/admin/pinterest-growth-v3" className="text-xs underline">Open dashboard →</Link>
+        </CardHeader>
+        <CardContent>
+          {pinScores.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No Pinterest Growth run yet. Open the dashboard and click “Run Now”.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Kpi label="Scored" value={pinScores.length} />
+                <Kpi label="Promote today" value={pinScores.filter(p=>p.classification==="Promote Immediately").length} highlight />
+                <Kpi label="Needs creative" value={pinScores.filter(p=>["Needs New Creative","Needs Better Images","Needs Better Copy"].includes(p.classification)).length} />
+                <Kpi label="Do not promote" value={pinScores.filter(p=>p.classification==="Do Not Promote").length} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <PinList
+                  title="Top opportunities"
+                  rows={[...pinScores]
+                    .filter(p=>!["Do Not Promote","Hold","Low Confidence"].includes(p.classification))
+                    .sort((a,b)=>b.predicted_opportunity-a.predicted_opportunity)
+                    .slice(0,6)}
+                  products={pinProducts}
+                  metric="predicted_opportunity"
+                  metricLabel="opp"
+                />
+                <PinList
+                  title="Publish today"
+                  rows={pinScores.filter(p=>p.classification==="Promote Immediately").slice(0,6)}
+                  products={pinProducts}
+                  metric="pinterest_growth_score"
+                  metricLabel="PGS"
+                />
+                <PinList
+                  title="Needs new creative"
+                  rows={pinScores.filter(p=>["Needs New Creative","Needs Better Images","Needs Better Copy"].includes(p.classification)).slice(0,6)}
+                  products={pinProducts}
+                  metric="pinterest_growth_score"
+                  metricLabel="PGS"
+                />
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle>Critical alerts</CardTitle></CardHeader>
         <CardContent>
@@ -424,6 +487,32 @@ function PiList({ title, rows, products }: { title: string; rows: any[]; product
             <li key={r.product_id} className="flex items-center justify-between gap-2">
               <span className="truncate">{products[r.product_id]?.name || r.product_id.slice(0, 8)}</span>
               <span className="text-xs text-muted-foreground">{Math.round(r.overall_score)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function PinList({
+  title, rows, products, metric, metricLabel,
+}: {
+  title: string;
+  rows: any[];
+  products: Record<string, { name: string }>;
+  metric: "predicted_opportunity" | "pinterest_growth_score";
+  metricLabel: string;
+}) {
+  return (
+    <div className="rounded border p-3">
+      <div className="text-xs uppercase text-muted-foreground mb-2">{title}</div>
+      {rows.length === 0 ? <div className="text-xs text-muted-foreground">—</div> : (
+        <ul className="space-y-1 text-sm">
+          {rows.map((r) => (
+            <li key={r.product_id} className="flex items-center justify-between gap-2">
+              <span className="truncate">{products[r.product_id]?.name || r.product_id.slice(0, 8)}</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{Math.round(Number(r[metric] ?? 0))} {metricLabel}</span>
             </li>
           ))}
         </ul>
