@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   runCie,
+  syncGa4,
   fetchHealthSnapshots,
   fetchConfidence,
   fetchFunnelSnapshots,
@@ -25,6 +26,7 @@ function scoreColor(n: number) {
 
 export default function ConversionIntegrityPage() {
   const [busy, setBusy] = useState(false);
+  const [ga4Busy, setGa4Busy] = useState(false);
   const [health, setHealth] = useState<Row | null>(null);
   const [confidence, setConfidence] = useState<Row[]>([]);
   const [funnel, setFunnel] = useState<Row[]>([]);
@@ -65,6 +67,19 @@ export default function ConversionIntegrityPage() {
     } finally { setBusy(false); }
   }
 
+  async function syncGa4Now() {
+    setGa4Busy(true);
+    try {
+      const res: any = await syncGa4(1);
+      if (res?.ok === false) throw new Error(res.message ?? "GA4 sync failed");
+      const c = res?.counts ?? {};
+      toast.success(`GA4 synced — page_view ${c.page_view?.count ?? 0}, session_start ${c.session_start?.count ?? 0}, purchase ${c.purchase?.count ?? 0}`);
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setGa4Busy(false); }
+  }
+
   const overall = Number(health?.overall ?? 0);
 
   return (
@@ -76,7 +91,12 @@ export default function ConversionIntegrityPage() {
             <h1 className="text-3xl font-bold">Conversion Integrity Engine</h1>
             <p className="text-sm text-muted-foreground">Genesis V2 — single source of truth for tracking, attribution, funnel and revenue</p>
           </div>
-          <Button onClick={runCycle} disabled={busy}>{busy ? "Running…" : "Run CIE Cycle"}</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={syncGa4Now} disabled={ga4Busy}>
+              {ga4Busy ? "Syncing GA4…" : "Sync GA4"}
+            </Button>
+            <Button onClick={runCycle} disabled={busy}>{busy ? "Running…" : "Run CIE Cycle"}</Button>
+          </div>
         </header>
 
         <Card>
