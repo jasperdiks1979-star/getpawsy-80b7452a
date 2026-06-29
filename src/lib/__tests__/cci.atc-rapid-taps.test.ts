@@ -37,6 +37,18 @@ beforeEach(async () => {
     value: sendBeaconSpy,
   });
   vi.stubGlobal("fetch", fetchSpy);
+
+  // jsdom's Blob.text() / Response(blob).text() are unreliable; stub Blob to
+  // expose the original string parts so the test can decode payloads cleanly.
+  class TestBlob {
+    public readonly _text: string;
+    public readonly type: string;
+    constructor(parts: Array<string>, opts?: { type?: string }) {
+      this._text = parts.join("");
+      this.type = opts?.type ?? "";
+    }
+  }
+  vi.stubGlobal("Blob", TestBlob as unknown as typeof Blob);
 });
 
 const fireRapidly = async (
@@ -65,9 +77,8 @@ const callsFor = (event: string) =>
 const decodeBeaconBodies = async (): Promise<Array<Record<string, unknown>>> => {
   const bodies: Array<Record<string, unknown>> = [];
   for (const call of sendBeaconSpy.mock.calls) {
-    const blob = call[1] as Blob;
-    // jsdom's Blob lacks .text(); read via Response which wraps the blob stream.
-    const text = await new Response(blob).text();
+    const blob = call[1] as unknown as { _text: string };
+    const text = blob._text;
     bodies.push(JSON.parse(text) as Record<string, unknown>);
   }
   return bodies;
