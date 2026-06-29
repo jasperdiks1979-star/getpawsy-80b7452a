@@ -266,11 +266,11 @@ serve(async (req) => {
 
     // ── Auto-incidents ────────────────────────────────────────────────
     const openIncident = async (
-      category: string, severity: string, summary: string, evidence: Record<string, unknown>,
+      category: string, severity: string, title: string, evidence: Record<string, unknown>,
     ) => {
       try {
         await admin.from("cie_incidents").insert({
-          category, severity, status: "open", summary, evidence,
+          category, severity, status: "open", title, evidence,
         });
       } catch (e) {
         console.error("[CRA] incident insert failed:", e);
