@@ -1140,6 +1140,7 @@ export default function PinterestHealthPage() {
         )}
       </Card>
       <ExecutiveCouncilPanel />
+      <ProductRelevanceEnginePanel />
       <PcieV2Panel />
       <PinterestPsychologyEnginePanel />
       <TasteEnginePanel />
@@ -1155,6 +1156,7 @@ export default function PinterestHealthPage() {
 }
 
 function TasteEnginePanel() {
+/* injected below */
   const [signals, setSignals] = useState<any[]>([]);
   const [clusters, setClusters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
