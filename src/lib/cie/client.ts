@@ -118,3 +118,9 @@ export async function fetchAutoRepairs(limit = 25) {
   if (error) throw error;
   return data ?? [];
 }
+
+export async function runSyntheticNightly() {
+  const { data, error } = await supabase.functions.invoke("cie-synthetic-nightly", { body: {} });
+  if (error) throw error;
+  return data;
+}
