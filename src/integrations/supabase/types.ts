@@ -59850,6 +59850,13 @@ export type Database = {
           skipped_policy_unsafe: number
         }[]
       }
+      cci_check_atc_click_duplicates: {
+        Args: never
+        Returns: {
+          dup_pairs: number
+          dup_sessions: number
+        }[]
+      }
       check_and_restore_batch_gates: {
         Args: { _batch_tag: string }
         Returns: Json
