@@ -59821,6 +59821,14 @@ export type Database = {
       }
     }
     Functions: {
+      _cci_setting_int: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
+      }
+      _cci_setting_num: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
+      }
       aee_evaluate_zscore: {
         Args: { c_n: number; c_succ: number; t_n: number; t_succ: number }
         Returns: Json
