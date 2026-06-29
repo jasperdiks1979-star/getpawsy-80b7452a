@@ -8809,6 +8809,615 @@ export type Database = {
         }
         Relationships: []
       }
+      cie_attribution_incidents: {
+        Row: {
+          actual_medium: string | null
+          actual_source: string | null
+          click_id: string | null
+          created_at: string
+          detected_at: string
+          evidence: Json
+          expected_medium: string | null
+          expected_source: string | null
+          id: string
+          reason: string
+          resolved_at: string | null
+          session_id: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          actual_medium?: string | null
+          actual_source?: string | null
+          click_id?: string | null
+          created_at?: string
+          detected_at?: string
+          evidence?: Json
+          expected_medium?: string | null
+          expected_source?: string | null
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          session_id?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          actual_medium?: string | null
+          actual_source?: string | null
+          click_id?: string | null
+          created_at?: string
+          detected_at?: string
+          evidence?: Json
+          expected_medium?: string | null
+          expected_source?: string | null
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          session_id?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      cie_auto_repairs: {
+        Row: {
+          after_state: Json
+          applied_at: string
+          before_state: Json
+          confidence: number
+          created_at: string
+          id: string
+          notes: string | null
+          rca_id: string | null
+          repair_type: string
+          status: string
+          target: string | null
+        }
+        Insert: {
+          after_state?: Json
+          applied_at?: string
+          before_state?: Json
+          confidence?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rca_id?: string | null
+          repair_type: string
+          status?: string
+          target?: string | null
+        }
+        Update: {
+          after_state?: Json
+          applied_at?: string
+          before_state?: Json
+          confidence?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          rca_id?: string | null
+          repair_type?: string
+          status?: string
+          target?: string | null
+        }
+        Relationships: []
+      }
+      cie_confidence_scores: {
+        Row: {
+          confidence: number
+          created_at: string
+          evaluated_at: string
+          gating_ok: boolean
+          id: string
+          metric: string
+          rationale: string | null
+          scope: string | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          evaluated_at?: string
+          gating_ok?: boolean
+          id?: string
+          metric: string
+          rationale?: string | null
+          scope?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evaluated_at?: string
+          gating_ok?: boolean
+          id?: string
+          metric?: string
+          rationale?: string | null
+          scope?: string | null
+        }
+        Relationships: []
+      }
+      cie_events: {
+        Row: {
+          browser: string | null
+          campaign: string | null
+          client_id: string | null
+          confidence: number
+          consistency: string
+          country: string | null
+          created_at: string
+          device: string | null
+          emitted_at: string
+          emitted_by: string
+          event_name: string
+          id: string
+          landing_page: string | null
+          medium: string | null
+          payload: Json
+          session_id: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          campaign?: string | null
+          client_id?: string | null
+          confidence?: number
+          consistency?: string
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          emitted_at?: string
+          emitted_by?: string
+          event_name: string
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          payload?: Json
+          session_id?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          campaign?: string | null
+          client_id?: string | null
+          confidence?: number
+          consistency?: string
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          emitted_at?: string
+          emitted_by?: string
+          event_name?: string
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          payload?: Json
+          session_id?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cie_funnel_snapshots: {
+        Row: {
+          add_to_cart: number
+          anomalies: Json
+          channel: string | null
+          checkout: number
+          created_at: string
+          cvr: number | null
+          id: string
+          payment: number
+          product_views: number
+          purchase: number
+          sessions: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          add_to_cart?: number
+          anomalies?: Json
+          channel?: string | null
+          checkout?: number
+          created_at?: string
+          cvr?: number | null
+          id?: string
+          payment?: number
+          product_views?: number
+          purchase?: number
+          sessions?: number
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          add_to_cart?: number
+          anomalies?: Json
+          channel?: string | null
+          checkout?: number
+          created_at?: string
+          cvr?: number | null
+          id?: string
+          payment?: number
+          product_views?: number
+          purchase?: number
+          sessions?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      cie_health_snapshots: {
+        Row: {
+          captured_at: string
+          checkout: number
+          created_at: string
+          details: Json
+          ga4: number
+          id: string
+          meta: number
+          overall: number
+          pinterest: number
+          pixel: number
+          purchase: number
+          revenue: number
+          tiktok: number
+          tracking: number
+        }
+        Insert: {
+          captured_at?: string
+          checkout?: number
+          created_at?: string
+          details?: Json
+          ga4?: number
+          id?: string
+          meta?: number
+          overall?: number
+          pinterest?: number
+          pixel?: number
+          purchase?: number
+          revenue?: number
+          tiktok?: number
+          tracking?: number
+        }
+        Update: {
+          captured_at?: string
+          checkout?: number
+          created_at?: string
+          details?: Json
+          ga4?: number
+          id?: string
+          meta?: number
+          overall?: number
+          pinterest?: number
+          pixel?: number
+          purchase?: number
+          revenue?: number
+          tiktok?: number
+          tracking?: number
+        }
+        Relationships: []
+      }
+      cie_incidents: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          evidence: Json
+          id: string
+          opened_at: string
+          owner_engine: string | null
+          resolution: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          evidence?: Json
+          id?: string
+          opened_at?: string
+          owner_engine?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          evidence?: Json
+          id?: string
+          opened_at?: string
+          owner_engine?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cie_journey_steps: {
+        Row: {
+          created_at: string
+          id: string
+          latency_ms: number | null
+          meta: Json
+          occurred_at: string
+          page_path: string | null
+          session_id: string
+          status: string
+          step: string
+          step_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          meta?: Json
+          occurred_at?: string
+          page_path?: string | null
+          session_id: string
+          status?: string
+          step: string
+          step_order: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          meta?: Json
+          occurred_at?: string
+          page_path?: string | null
+          session_id?: string
+          status?: string
+          step?: string
+          step_order?: number
+        }
+        Relationships: []
+      }
+      cie_revenue_truth: {
+        Row: {
+          created_at: string
+          details: Json
+          ga4_cents: number
+          id: string
+          ledger_cents: number
+          max_divergence_pct: number | null
+          orders_cents: number
+          pinterest_cents: number
+          status: string
+          stripe_cents: number
+          tiktok_cents: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          ga4_cents?: number
+          id?: string
+          ledger_cents?: number
+          max_divergence_pct?: number | null
+          orders_cents?: number
+          pinterest_cents?: number
+          status?: string
+          stripe_cents?: number
+          tiktok_cents?: number
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          ga4_cents?: number
+          id?: string
+          ledger_cents?: number
+          max_divergence_pct?: number | null
+          orders_cents?: number
+          pinterest_cents?: number
+          status?: string
+          stripe_cents?: number
+          tiktok_cents?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      cie_root_cause_analyses: {
+        Row: {
+          auto_repairable: boolean
+          category: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          hypothesis: string
+          id: string
+          incident_id: string | null
+          status: string
+          subject: string
+          suggested_fix: string | null
+        }
+        Insert: {
+          auto_repairable?: boolean
+          category: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          hypothesis: string
+          id?: string
+          incident_id?: string | null
+          status?: string
+          subject: string
+          suggested_fix?: string | null
+        }
+        Update: {
+          auto_repairable?: boolean
+          category?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          hypothesis?: string
+          id?: string
+          incident_id?: string | null
+          status?: string
+          subject?: string
+          suggested_fix?: string | null
+        }
+        Relationships: []
+      }
+      cie_sessions: {
+        Row: {
+          browser: string | null
+          campaign: string | null
+          click_ids: Json
+          confidence: number
+          country: string | null
+          created_at: string
+          device: string | null
+          ended_at: string | null
+          id: string
+          landing_page: string | null
+          medium: string | null
+          meta: Json
+          referrer: string | null
+          session_id: string
+          source: string | null
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string | null
+          utm: Json
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          campaign?: string | null
+          click_ids?: Json
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          ended_at?: string | null
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          meta?: Json
+          referrer?: string | null
+          session_id: string
+          source?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          utm?: Json
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          campaign?: string | null
+          click_ids?: Json
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          ended_at?: string | null
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          meta?: Json
+          referrer?: string | null
+          session_id?: string
+          source?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          utm?: Json
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      cie_settings: {
+        Row: {
+          ai_training_min_confidence: number
+          autorepair_min_confidence: number
+          created_at: string
+          funnel_anomaly_zscore: number
+          gating_enabled: boolean
+          id: string
+          notes: string | null
+          revenue_divergence_tolerance_pct: number
+          synthetic_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          ai_training_min_confidence?: number
+          autorepair_min_confidence?: number
+          created_at?: string
+          funnel_anomaly_zscore?: number
+          gating_enabled?: boolean
+          id?: string
+          notes?: string | null
+          revenue_divergence_tolerance_pct?: number
+          synthetic_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ai_training_min_confidence?: number
+          autorepair_min_confidence?: number
+          created_at?: string
+          funnel_anomaly_zscore?: number
+          gating_enabled?: boolean
+          id?: string
+          notes?: string | null
+          revenue_divergence_tolerance_pct?: number
+          synthetic_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cie_synthetic_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          failures: Json
+          id: string
+          passed: boolean
+          ran_at: string
+          scenario: string
+          steps: Json
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          failures?: Json
+          id?: string
+          passed?: boolean
+          ran_at?: string
+          scenario: string
+          steps?: Json
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          failures?: Json
+          id?: string
+          passed?: boolean
+          ran_at?: string
+          scenario?: string
+          steps?: Json
+        }
+        Relationships: []
+      }
       cinematic_ad_alert_log: {
         Row: {
           alert_type: string
