@@ -1,100 +1,73 @@
-# Genesis V3.3 — Market Intelligence OS
 
-A real, production-grade market intelligence layer that sits on top of Canonical Analytics, Product Intelligence (PI V3), and Pinterest Growth (V3) — never duplicating them. Everything is admin-only, derived from real production data or real external APIs (no placeholders, no fabricated AI scores).
+# Genesis V3.4 — Self-Optimizing First Sale Engine
 
-## Architecture (reuses existing Genesis stack)
+**Goal:** Maximize probability of GetPawsy's first sale via an autonomous hourly loop that reuses existing engines. No new dashboards, no duplicate logic, no placeholder AI.
 
-```text
-External APIs ──► gv3_mi_signals (raw, timestamped)
-                       │
-                       ▼
-                gv3_mi_trends (normalized, scored)
-                       │
-                       ├──► gv3_mi_competitors (patterns only)
-                       │
-                       ├──► gv3_mi_opportunities  ◄── gv3_pi_scores (PI V3)
-                       │                          ◄── gv3_pin_growth_scores
-                       │                          ◄── canonical_* views
-                       │
-                       ├──► gv3_mi_creative_diversity ◄── pcie2 / pinterest_pins
-                       │
-                       └──► gv3_mi_first_sale_plan (daily ranked plan)
-                                       │
-                                       ▼
-                            autopilot_actions (existing queue — no auto-publish)
-                                       │
-                                       ▼
-                            autopilot_outcomes_24h / 72h / 7d / 30d
-                                       │
-                                       ▼
-                            gv3_mi_learning (confidence calibration)
-```
+---
 
-## Phase 1 — Market Intelligence Engine
-- New tables: `gv3_mi_signals` (raw per source), `gv3_mi_trends` (normalized).
-- Edge function `gv3-mi-collect` (daily cron 06:00 UTC) pulls real signals from:
-  - Pinterest Trends + Search Suggestions (existing Pinterest OAuth connection)
-  - Google Trends (public daily trends JSON, US)
-  - Google Shopping (via Firecrawl scrape of shopping SERPs for pet queries)
-  - Amazon Best Sellers + Movers & Shakers (Firecrawl, pet category)
-  - Chewy Popular (Firecrawl)
-  - Reddit (`/r/pets`, `/r/dogs`, `/r/cats` JSON — no key)
-  - TikTok discover signals (existing TikTok connection where available)
-  - US Holidays (static USA calendar table seeded once)
-  - Weather (Open-Meteo, free, no key, top-10 US metros)
-- Each row stores: strength, velocity (7d EMA), confidence (source agreement), est_lifetime, competition, seasonality, category, color/material/price/content trends, intent, urgency.
-- Confidence methodology: weighted multi-source agreement + signal recency decay; never fabricated, sources logged in `evidence` JSONB.
+## Reuse Inventory (no duplicates)
 
-## Phase 2 — Competitor Intelligence
-- New table `gv3_mi_competitors` (domain, pattern_type, value, frequency, last_seen).
-- `gv3-mi-competitors` cron (daily 04:00 UTC) uses Firecrawl on a curated competitor allowlist (Chewy, Petco, BarkBox, etc.). Extracts patterns only — pricing ranges, headline structures, CTA styles, image style classification via Lovable AI Gateway vision (gemini-2.5-flash). No copying — patterns + statistics only.
+- Reads: `canonical_*`, `gv3_pi_scores`, `gv3_pin_growth_scores`, `gv3_mi_first_sale_plan_v`, `mi_*`, `market_*`
+- Writes: `autopilot_actions`, `autopilot_outcomes_*`
+- Functions reused: `market-signal-ingest`, `mi-feedback-loop`, `autopilot-dispatch`, `pcie2-publish-assembler`, Pinterest Creative Director, Recovery Governor
+- SDKs: `src/lib/canonicalAnalytics.ts`, `src/lib/marketIntelligence.ts`, `src/lib/governanceLedger.ts`
 
-## Phase 3 — Trend Matching Engine
-- New table `gv3_mi_opportunities` (product_id, trend_id, opportunity_score, gap_type, evidence).
-- `gv3-mi-match` cron (daily 07:00 UTC) joins `gv3_mi_trends` × `products` × `gv3_pi_scores` × `gv3_pin_growth_scores`. Detects: already selling, missing opportunity, wrong pricing, wrong creative, missing Pinterest, missing video, etc. Opportunity Score is deterministic — derived from real internal metrics + trend strength.
+---
 
-## Phase 4 — Creative Evolution Engine
-- New table `gv3_mi_creative_diversity` (creative_id, cluster_id, traits JSONB, diversity_score).
-- `gv3-mi-creative-diversity` reuses existing `pinterest_pins` + PCIE2 artifacts. Uses Lovable AI vision to tag traits (lighting, palette, angle, environment, season, etc.) and clusters via cosine similarity on trait vectors. Enforces hard diversity rule via a Postgres function `gv3_mi_can_publish(creative_id)` that publish-assembler will consult.
+## Phase 1 — Connector Health Verifier (new edge fn)
 
-## Phase 5 — First Sale AI
-- New table `gv3_mi_first_sale_plan` (day, rank, product_id, lane, score, expected_revenue, evidence).
-- `gv3-mi-first-sale` cron (daily 07:30 UTC) consolidates Phase 3 opportunities into a single ranked daily execution plan across 8 lanes (probability, revenue, Pinterest, Google, seasonal, impulse, repeat, urgency).
+`gv34-connector-health-audit`: probes each external MI signal source and writes one row per connector to a new small table `gv34_connector_health` (last_run, reachable, auth_ok, response_bytes, parsed_rows, dedupe_ok, last_signal_ts, error_step, repair_action).
 
-## Phase 6 — Autonomous Actions
-- `gv3-mi-first-sale` writes proposed actions into the **existing** `autopilot_actions` queue with `source='market_intelligence'`. Never auto-publishes. CRITICAL/HIGH only spend credits (existing rule).
+If a step fails: auto-repair (re-trigger ingest with cleared cursor) then re-probe. No new dashboards — surfaces in existing Market Intelligence "Engine" tab.
 
-## Phase 7 — Learning Loop
-- New view `gv3_mi_action_outcomes` joining `autopilot_actions` (MI-sourced) with `canonical_events` at 24h/72h/7d/30d windows.
-- New table `gv3_mi_learning` (signal_source, category, predicted, actual, delta, calibrated_weight).
-- `gv3-mi-learn` cron (daily 03:00 UTC) updates per-source confidence weights (EMA) that feed Phase 1.
+## Phase 2 — Hourly Decision Loop (new edge fn)
 
-## Phase 8 — Executive Dashboard
-- New page `/admin/market-intelligence` (`MarketIntelligencePage.tsx`).
-- Sections: US Market Health, Trend Radar, Emerging Opportunities, Top Competitors, Creative Diversity, Trend Timeline, Product Opportunity Matrix, Seasonality, US Holiday Countdown, Weather Impact, Trending Colors/Materials/Categories/Keywords, Creative Alerts, Competitor Alerts, Recommended Actions (deep-link to Autopilot Queue in Growth Command Center), AI Confidence, Learning Progress.
-- All reads via the Canonical SDK + new typed helpers in `src/lib/marketIntelligence.ts`. No duplicated analytics.
+`gv34-decision-loop` (hourly cron): for each of the 10 opportunity classes, pick the top candidate from existing scoring tables, dedupe vs open `autopilot_actions` (hash of `{kind, product_id, payload_signature}`), and enqueue. Confidence-gated execution uses the existing `autopilot-dispatch`.
 
-## Phase 9 — Safety
-- All `gv3_mi_*` tables: RLS enabled, admin-SELECT via `has_role`, service_role full. No anon. GRANTs included in same migration.
-- Edge functions: `verify_jwt = false` with in-code admin/service-role enforcement, Zod validation, rate-limited via existing infra.
-- Reuses Canonical SDK, PI V3, Pinterest Growth, Autopilot, cron infra. No duplicate analytics tables.
+## Phase 3 — Creative Diversity Guard (new edge fn)
 
-## Phase 10 — Success Criteria & Quality Gate
-- Verifications run at end: `tsgo` clean, `canonical_validate_consistency() = 0.00%` drift, RLS linter clean, no placeholder values, all dashboards return real rows.
-- Deployment report: services, crons, sources, learning pipeline, AI models (Lovable Gemini 2.5 Flash for vision/text), confidence methodology, security validation, perf impact (all heavy work in cron), production readiness score.
+`gv34-creative-diversity`: scans recent Pinterest creatives, computes a similarity score across lighting/angle/breed/room/palette/headline/CTA/layout using existing PCIE2 metadata + perceptual hash. Writes diversity score to existing creative rows; only regenerates rows scoring below threshold AND with no positive outcome.
 
-## Technical Details
-- **AI:** Lovable AI Gateway (`google/gemini-2.5-flash` for vision tagging and pattern extraction; `google/gemini-2.5-flash-lite` for cheap bulk classification). No external paid LLM keys.
-- **Scraping:** Firecrawl connector (already linked) for Amazon/Chewy/Google Shopping/competitor pages.
-- **Open APIs (no key):** Reddit JSON, Open-Meteo, Google Trends daily RSS.
-- **Pinterest/TikTok:** existing OAuth connections.
-- **Cron:** pg_cron via the existing scheduler pattern.
-- **No new public endpoints. No duplicate SQL. No fake metrics.**
+## Phase 4 — First Sale Hunter
 
-## What I will NOT do
-- No demo dashboards, no seed/placeholder rows.
-- No duplicating `canonical_*`, `gv3_pi_*`, or `gv3_pin_growth_*`.
-- No auto-publishing — everything routes through the existing Autopilot Queue.
-- No client-side secrets; Firecrawl/Pinterest/TikTok stay server-side.
+SQL view `gv34_first_sale_hunter_v` built on existing `gv3_mi_first_sale_plan_v` + canonical funnel + ATC/checkout signals + inventory/shipping. Single prioritized list; consumed by the decision loop.
 
-Proceed?
+## Phase 5 — Learning Engine (new edge fn + cron)
+
+`gv34-learning-evaluator` (every 6h): for each executed autopilot action, evaluate at 24h/72h/7d/30d windows using canonical events. Update `autopilot_actions.confidence` via Wilson lower bound with min sample gate. Decreases on repeated under-performance.
+
+## Phase 6 — Resource Optimizer
+
+`gv34_ai_credit_efficiency_v`: expected lift/revenue/first-sale-probability per AI credit per action class, derived from learning history. Decision loop reads this and re-ranks before queueing.
+
+## Phase 7 — Execution Safety
+
+Single Postgres unique index on `autopilot_actions (action_kind, target_id, dedupe_hash)` where `status in ('queued','executing')`. All inserts use `ON CONFLICT DO NOTHING`. Creative & CRO functions check existing recent run hashes before regenerating.
+
+## Phase 8 — Autonomous First Sale Mode
+
+Toggle flag in `governance_decision_log` (`mode='first_sale_autonomous'`). When ON, hourly cron orchestrates: connector audit → decision loop → diversity guard → learning evaluator. Each queued action records `why/data/expected_lift/confidence/ai_cost/expected_revenue` in its payload — already supported by `autopilot_actions.metadata`.
+
+---
+
+## Deliverables
+
+- 1 migration: `gv34_connector_health` table, `gv34_first_sale_hunter_v` view, `gv34_ai_credit_efficiency_v` view, dedupe unique index, GRANTs
+- 4 edge functions: `gv34-connector-health-audit`, `gv34-decision-loop`, `gv34-creative-diversity`, `gv34-learning-evaluator`
+- 1 orchestrator cron (hourly) + 1 learning cron (6h)
+- Small UI: a single "Autonomous First Sale Mode" toggle + status strip added to existing `GrowthCommandCenterPage` (no new page)
+- Deployment report posted in chat: connector health, scheduler health, AI credit efficiency, learning status, autonomy status, first-sale probability, blockers
+
+## Validation gates
+
+- `tsgo --noEmit` clean
+- `canonical_validate_consistency()` still 0% drift
+- No edits to canonical_* tables/views
+- Dedupe index present; manual duplicate insert returns 0 rows affected
+- Connector health table has ≥1 row per known source after first run
+
+## Out of scope
+
+- New dashboards/pages
+- Re-implementing scoring already in PI V3 / Pin Growth V3 / MI V3.3
+- Video generation, direct publishing changes
