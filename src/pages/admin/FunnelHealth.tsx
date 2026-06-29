@@ -127,6 +127,7 @@ export default function FunnelHealth() {
   const [loading, setLoading] = useState(true);
   const [qaRunning, setQaRunning] = useState<string | null>(null);
   const [qaResult, setQaResult] = useState<string | null>(null);
+  const [canonicalSummary, setCanonicalSummary] = useState<{ sessions: number; atc: number; checkout: number; purchase: number } | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -147,6 +148,11 @@ export default function FunnelHealth() {
     ]);
     setLpRows((lp.data ?? []) as LpRow[]);
     setCkRows((ck.data ?? []) as CkRow[]);
+    try {
+      const sess = await getCanonicalFunnelSessions({ hours: rangeHoursMs(range) });
+      const s = summarizeCanonicalSessions(sess);
+      setCanonicalSummary({ sessions: s.sessions, atc: s.add_to_carts, checkout: s.checkouts, purchase: s.purchases });
+    } catch { setCanonicalSummary(null); }
     setLoading(false);
   }, [range]);
 
