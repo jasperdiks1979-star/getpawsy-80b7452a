@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AudienceIntelligenceTab } from "@/components/admin/market-intelligence/tabs/AudienceIntelligenceTab";
 import { useToast } from "@/components/ui/use-toast";
 import DataQualityWarning from "@/components/admin/analytics/DataQualityWarning";
@@ -26,6 +27,7 @@ import {
   fetchRecentAutopilotActions,
   promoteRecommendationToAutopilot,
   type MiRecommendation,
+  type FirstSalePlanRow,
 } from "@/lib/marketIntelligence";
 
 const US_HOLIDAYS: { name: string; date: string }[] = [
@@ -86,6 +88,9 @@ function FirstSalePlan() {
     <Card>
       <CardHeader>
         <CardTitle>First Sale AI — Today's Ranked Plan</CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Click <span className="font-medium">Why</span> on any row to see the exact signals (trend, competition, intent, margin, confidence) that produced the score.
+        </p>
       </CardHeader>
       <CardContent>
         {isLoading ? <Skeleton className="h-40" /> : (
@@ -104,6 +109,7 @@ function FirstSalePlan() {
                   <th className="text-right p-2">Urgency</th>
                   <th className="text-right p-2">Conf</th>
                   <th className="text-right p-2">Est. €</th>
+                  <th className="text-right p-2">Why</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,10 +130,11 @@ function FirstSalePlan() {
                     <td className="p-2 text-right">{row.lane_urgency.toFixed(0)}</td>
                     <td className="p-2 text-right">{Math.round(row.min_confidence)}%</td>
                     <td className="p-2 text-right">€{row.expected_revenue_eur.toFixed(0)}</td>
+                    <td className="p-2 text-right"><ExplainCell row={row} /></td>
                   </tr>
                 ))}
                 {!data?.length && (
-                  <tr><td colSpan={11} className="p-4 text-center text-muted-foreground text-sm">No scored products yet — run Product Intelligence and Pinterest Growth first.</td></tr>
+                  <tr><td colSpan={12} className="p-4 text-center text-muted-foreground text-sm">No scored products yet — run Product Intelligence and Pinterest Growth first.</td></tr>
                 )}
               </tbody>
             </table>
@@ -135,6 +142,103 @@ function FirstSalePlan() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ── Per-row explainability ──────────────────────────────────────────────
+// Every value comes from the real `gv3_mi_first_sale_plan_v` row — no fabrication.
+function ExplainCell({ row }: { row: FirstSalePlanRow }) {
+  const trendStrength = Math.max(row.pi_pinterest_score, row.pin_growth_score, row.predicted_opportunity);
+  const competition = row.pin_saturation; // 0 = empty market, 1 = saturated
+  const intentVolume = (row.add_to_carts ?? 0) + (row.purchases ?? 0);
+  const ctr = row.product_views > 0 ? row.add_to_carts / row.product_views : 0;
+  const marginEur = row.price ?? 0;
+  const driver = (() => {
+    const lanes: Array<[string, number]> = [
+      ["Probability", row.lane_probability],
+      ["Revenue", row.lane_revenue],
+      ["Pinterest", row.lane_pinterest],
+      ["Google", row.lane_google],
+      ["Impulse", row.lane_impulse],
+      ["Urgency", row.lane_urgency],
+    ];
+    lanes.sort((a, b) => b[1] - a[1]);
+    return lanes[0];
+  })();
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">Why</Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96">
+        <div className="space-y-3 text-xs">
+          <div>
+            <div className="text-sm font-semibold">{row.title ?? row.handle ?? row.product_id.slice(0, 8)}</div>
+            <div className="text-muted-foreground">
+              Top driver: <span className="font-medium">{driver[0]}</span> lane @ {driver[1].toFixed(0)} ·
+              composite {row.composite_score.toFixed(1)} · confidence {Math.round(row.min_confidence)}%
+            </div>
+          </div>
+
+          <ExplainSection title="Trend strength">
+            <Row k="Pinterest growth score" v={row.pin_growth_score.toFixed(1)} />
+            <Row k="Predicted opportunity" v={row.predicted_opportunity.toFixed(1)} />
+            <Row k="PI Pinterest signal" v={row.pi_pinterest_score.toFixed(1)} />
+            <Row k="PI SEO signal" v={row.pi_seo_score.toFixed(1)} />
+            <Row k="Effective strength" v={trendStrength.toFixed(1)} highlight />
+          </ExplainSection>
+
+          <ExplainSection title="Competition">
+            <Row k="Pinterest saturation" v={`${(competition * 100).toFixed(0)}%`} />
+            <Row k="Headroom (1 − saturation)" v={`${((1 - competition) * 100).toFixed(0)}%`} highlight />
+            <Row k="Pinterest classification" v={row.pin_classification ?? "—"} />
+          </ExplainSection>
+
+          <ExplainSection title="Intent (real funnel)">
+            <Row k="Product views" v={row.product_views} />
+            <Row k="Add-to-carts" v={row.add_to_carts} />
+            <Row k="Purchases" v={row.purchases} />
+            <Row k="ATC rate" v={`${(ctr * 100).toFixed(1)}%`} />
+            <Row k="Intent volume" v={intentVolume} highlight />
+          </ExplainSection>
+
+          <ExplainSection title="Margin / economics">
+            <Row k="Price" v={row.price != null ? `€${marginEur.toFixed(2)}` : "—"} />
+            <Row k="Revenue (30d)" v={`€${(row.revenue_cents / 100).toFixed(0)}`} />
+            <Row k="Expected revenue (next cycle)" v={`€${row.expected_revenue_eur.toFixed(0)}`} highlight />
+          </ExplainSection>
+
+          <ExplainSection title="Confidence components">
+            <Row k="PI confidence" v={`${Math.round(row.pi_confidence * 100)}%`} />
+            <Row k="Pinterest confidence" v={`${Math.round(row.pin_confidence * 100)}%`} />
+            <Row k="Min (gate used)" v={`${Math.round(row.min_confidence)}%`} highlight />
+            <Row k="PI classification" v={row.pi_classification ?? "—"} />
+          </ExplainSection>
+
+          <p className="text-[10px] text-muted-foreground border-t pt-2">
+            All values read directly from <code>gv3_mi_first_sale_plan_v</code>. No synthetic metrics.
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ExplainSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{title}</div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
+function Row({ k, v, highlight }: { k: string; v: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 ${highlight ? "font-medium" : ""}`}>
+      <span className="text-muted-foreground">{k}</span>
+      <span>{v}</span>
+    </div>
   );
 }
 
