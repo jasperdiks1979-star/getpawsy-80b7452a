@@ -35,6 +35,22 @@ interface CheckoutRequest {
     zip: string;
     country: string;
   };
+  /**
+   * GA4 client id (gtag get … client_id) captured in the browser.
+   * Stamped into Stripe session metadata so the webhook can fire a
+   * server-side `purchase` event via Measurement Protocol if the client
+   * `trackPurchase` misses (refresh / clearCart / ad-blocker).
+   */
+  gaClientId?: string;
+  gaSessionId?: string;
+  /** Attribution context captured at PDP / cart. */
+  utm?: {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    content?: string;
+    term?: string;
+  };
 }
 
 // Coupon code → discount percent. Kept server-side so Stripe is charged
