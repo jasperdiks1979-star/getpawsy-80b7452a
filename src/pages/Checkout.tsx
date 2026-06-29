@@ -211,6 +211,23 @@ const Checkout = () => {
   useEffect(() => {
     ensureGeoClassified();
     try { trackCci('checkout_loaded', { funnel_stage: 'begin_checkout' }); } catch {}
+    // Mark checkout as in-progress; cleared when we hand off to Stripe or
+    // when /payment-success mounts. If the page unloads or the visitor
+    // navigates away while still set, fire `checkout_abandoned`.
+    let abandoned = false;
+    try { sessionStorage.setItem('gp_cci_checkout_active', '1'); } catch {}
+    const fireAbandon = () => {
+      if (abandoned) return;
+      try {
+        if (sessionStorage.getItem('gp_cci_checkout_active') !== '1') return;
+        abandoned = true;
+        sessionStorage.removeItem('gp_cci_checkout_active');
+        trackCci('checkout_abandoned', { funnel_stage: 'checkout_abandoned' });
+      } catch { /* swallow */ }
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') fireAbandon(); };
+    window.addEventListener('pagehide', fireAbandon);
+    document.addEventListener('visibilitychange', onHide);
     const tryRead = () => {
       const raw = (getCachedGeoCountry() || '').toUpperCase();
       if (raw && SUPPORTED_COUNTRIES.some((c) => c.code === raw)) {
@@ -227,6 +244,8 @@ const Checkout = () => {
     return () => {
       window.clearInterval(iv);
       window.clearTimeout(to);
+      window.removeEventListener('pagehide', fireAbandon);
+      document.removeEventListener('visibilitychange', onHide);
     };
   }, []);
 
