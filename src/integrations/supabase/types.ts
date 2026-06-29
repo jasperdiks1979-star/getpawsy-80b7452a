@@ -49142,6 +49142,117 @@ export type Database = {
         }
         Relationships: []
       }
+      pre_evaluations: {
+        Row: {
+          blocking_reasons: string[]
+          click_intent_score: number | null
+          created_at: string
+          destination_link: string | null
+          detected_species: string | null
+          detected_use_case: string | null
+          expectation_match_score: number | null
+          id: string
+          landing_match_score: number | null
+          latency_ms: number | null
+          overall_score: number | null
+          passed: boolean
+          pin_description: string | null
+          pin_image_url: string | null
+          pin_queue_id: string | null
+          pin_title: string | null
+          product_id: string | null
+          product_occupancy_pct: number | null
+          product_slug: string | null
+          product_visibility_score: number | null
+          promise_match_score: number | null
+          raw_response: Json | null
+          regenerate_brief: Json | null
+          shopping_match_score: number | null
+          species_match_ok: boolean | null
+          use_case_match_ok: boolean | null
+          vision_model: string | null
+          visual_focus_score: number | null
+        }
+        Insert: {
+          blocking_reasons?: string[]
+          click_intent_score?: number | null
+          created_at?: string
+          destination_link?: string | null
+          detected_species?: string | null
+          detected_use_case?: string | null
+          expectation_match_score?: number | null
+          id?: string
+          landing_match_score?: number | null
+          latency_ms?: number | null
+          overall_score?: number | null
+          passed?: boolean
+          pin_description?: string | null
+          pin_image_url?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          product_id?: string | null
+          product_occupancy_pct?: number | null
+          product_slug?: string | null
+          product_visibility_score?: number | null
+          promise_match_score?: number | null
+          raw_response?: Json | null
+          regenerate_brief?: Json | null
+          shopping_match_score?: number | null
+          species_match_ok?: boolean | null
+          use_case_match_ok?: boolean | null
+          vision_model?: string | null
+          visual_focus_score?: number | null
+        }
+        Update: {
+          blocking_reasons?: string[]
+          click_intent_score?: number | null
+          created_at?: string
+          destination_link?: string | null
+          detected_species?: string | null
+          detected_use_case?: string | null
+          expectation_match_score?: number | null
+          id?: string
+          landing_match_score?: number | null
+          latency_ms?: number | null
+          overall_score?: number | null
+          passed?: boolean
+          pin_description?: string | null
+          pin_image_url?: string | null
+          pin_queue_id?: string | null
+          pin_title?: string | null
+          product_id?: string | null
+          product_occupancy_pct?: number | null
+          product_slug?: string | null
+          product_visibility_score?: number | null
+          promise_match_score?: number | null
+          raw_response?: Json | null
+          regenerate_brief?: Json | null
+          shopping_match_score?: number | null
+          species_match_ok?: boolean | null
+          use_case_match_ok?: boolean | null
+          vision_model?: string | null
+          visual_focus_score?: number | null
+        }
+        Relationships: []
+      }
+      pre_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       prie_brain_snapshots: {
         Row: {
           ai_confidence: number
