@@ -1,8 +1,10 @@
 // CIE ↔ GA4 Adapter
-// Pulls page_view, session_start, and purchase counts from GA4 (Data API),
+// Pulls page_view, session_start, begin_checkout, and purchase counts from GA4
+// (Data API),
 // writes rollup rows into cie_events (source='ga4') and refreshes
 // cie_confidence_scores for metrics: ga4, ga4_page_view, ga4_session_start,
-// ga4_purchase. This is the GA4 evidence feeder for the Conversion Integrity
+// ga4_begin_checkout, ga4_purchase. This is the GA4 evidence feeder for the
+// Conversion Integrity
 // Engine — orchestrator reads what we write here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -134,7 +136,9 @@ async function ga4EventCounts(token: string, propertyId: string, days: number) {
         dimensionFilter: {
           filter: {
             fieldName: "eventName",
-            inListFilter: { values: ["page_view", "session_start", "purchase"] },
+            inListFilter: {
+              values: ["page_view", "session_start", "begin_checkout", "purchase"],
+            },
           },
         },
         limit: 50,
@@ -307,7 +311,7 @@ Deno.serve(async (req) => {
     const avg = Math.round(scoreRows.reduce((s, r) => s + r.confidence, 0) / Math.max(1, scoreRows.length));
     scoreRows.push({
       metric: "ga4", scope: "global", confidence: avg, gating_ok: avg >= min,
-      rationale: `mean of page_view/session_start/purchase (${days}d)`,
+      rationale: `mean of page_view/session_start/begin_checkout/purchase (${days}d)`,
       evaluated_at: nowIso,
     });
     for (const row of scoreRows) {
