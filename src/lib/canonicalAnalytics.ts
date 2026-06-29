@@ -110,7 +110,7 @@ export async function getCanonicalKpisHourly(hours = 48): Promise<CanonicalKpiRo
     .gte("bucket", since(hours))
     .order("bucket", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as CanonicalKpiRow[];
+  return ((data ?? []) as unknown) as CanonicalKpiRow[];
 }
 
 /** Verified Stripe-backed paid revenue, last N rows. */
@@ -121,7 +121,7 @@ export async function getCanonicalRevenue(limit = 50): Promise<CanonicalRevenueR
     .order("paid_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []) as CanonicalRevenueRow[];
+  return ((data ?? []) as unknown) as CanonicalRevenueRow[];
 }
 
 /** Per-source per-day rollup. */
@@ -133,7 +133,7 @@ export async function getCanonicalSources(days = 30): Promise<CanonicalSourceRow
     .gte("day", from)
     .order("day", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as CanonicalSourceRow[];
+  return ((data ?? []) as unknown) as CanonicalSourceRow[];
 }
 
 /** Per-product per-day rollup. */
@@ -145,7 +145,7 @@ export async function getCanonicalProducts(days = 30): Promise<CanonicalProductR
     .gte("day", from)
     .order("revenue_cents", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as CanonicalProductRow[];
+  return ((data ?? []) as unknown) as CanonicalProductRow[];
 }
 
 /** Heatmap rollup by page_path × stage. */
@@ -156,7 +156,7 @@ export async function getCanonicalHeatmap(days = 7): Promise<CanonicalHeatmapRow
     .select("*")
     .gte("day", from);
   if (error) throw error;
-  return (data ?? []) as CanonicalHeatmapRow[];
+  return ((data ?? []) as unknown) as CanonicalHeatmapRow[];
 }
 
 /** Open consistency alerts surfaced by canonical_validate_consistency. */
@@ -167,7 +167,7 @@ export async function getConsistencyAlerts(): Promise<ConsistencyAlertRow[]> {
     .order("last_detected_at", { ascending: false })
     .limit(50);
   if (error) throw error;
-  return (data ?? []) as ConsistencyAlertRow[];
+  return ((data ?? []) as unknown) as ConsistencyAlertRow[];
 }
 
 /** Force an ingest + refresh + validate cycle. Admin-only via DB RPCs. */
