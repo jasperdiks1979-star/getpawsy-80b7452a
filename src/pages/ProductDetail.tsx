@@ -2439,10 +2439,10 @@ const ProductDetail = () => {
                 className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={!inStock || geoBlocked}
+                disabled={!inStock}
               >
                 <ShoppingCart className="w-4 h-4" />
-                {geoBlocked ? 'Unavailable in region' : 'Add to Cart'}
+                Add to Cart
               </Button>
 
               {/* Wishlist Button */}
