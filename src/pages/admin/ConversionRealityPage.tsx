@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getCanonicalFunnel, CANONICAL_STAGE_LABEL, type CanonicalFunnelRow } from "@/lib/canonicalAnalytics";
 
 interface RunRow {
   id: string;
@@ -71,7 +72,7 @@ export default function ConversionRealityPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [segments, setSegments] = useState<SegmentRow[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [cci, setCci] = useState<Record<string, number>>({});
+  const [canonical, setCanonical] = useState<CanonicalFunnelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
@@ -108,19 +109,10 @@ export default function ConversionRealityPage() {
         .order("opened_at", { ascending: false })
         .limit(10);
       setIncidents((inc as unknown as Incident[]) || []);
+      // Genesis V2.6: read the funnel from the canonical layer (single source of truth)
       try {
-        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-        const { data: ev } = await supabase
-          .from('cci_events')
-          .select('event_name')
-          .gte('created_at', since)
-          .limit(5000);
-        const counts: Record<string, number> = {};
-        (ev || []).forEach((r: { event_name: string }) => {
-          counts[r.event_name] = (counts[r.event_name] || 0) + 1;
-        });
-        setCci(counts);
-      } catch { /* table newly created; ignore */ }
+        setCanonical(await getCanonicalFunnel(24));
+      } catch { /* canonical layer optional during bootstrap */ }
     } finally {
       setLoading(false);
     }
