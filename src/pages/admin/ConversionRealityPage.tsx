@@ -276,19 +276,19 @@ export default function ConversionRealityPage() {
           </>
         )}
         <Card>
-          <CardHeader><CardTitle>CCI deep funnel events (last 24h)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Canonical funnel (last 24h, single source of truth)</CardTitle></CardHeader>
           <CardContent>
-            {Object.keys(cci).length === 0 ? (
+            {canonical.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No CCI events yet. Storefront emits them via <code>trackCci()</code> on ATC click/success/error,
-                cart open, and checkout load.
+                No canonical events in the last 24h. The canonical layer ingests every 2 minutes
+                from <code>cci_events</code>, <code>checkout_funnel_events</code>, and paid orders.
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {Object.entries(cci).sort((a,b) => b[1]-a[1]).map(([k,v]) => (
-                  <div key={k} className="border rounded p-2 text-sm flex items-center justify-between">
-                    <span className="text-muted-foreground">{k}</span>
-                    <span className="font-mono">{v}</span>
+                {canonical.map((row) => (
+                  <div key={row.stage} className="border rounded p-2 text-sm flex items-center justify-between">
+                    <span className="text-muted-foreground">{CANONICAL_STAGE_LABEL[row.stage]}</span>
+                    <span className="font-mono">{row.count.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
