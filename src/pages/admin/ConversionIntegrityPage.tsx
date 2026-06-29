@@ -16,6 +16,8 @@ import {
   fetchRevenueTruth,
   fetchAttributionIncidents,
   fetchSyntheticRuns,
+  runAutoRepair,
+  fetchAutoRepairs,
 } from "@/lib/cie/client";
 
 type Row = Record<string, any>;
@@ -31,6 +33,8 @@ export default function ConversionIntegrityPage() {
   const [ga4Busy, setGa4Busy] = useState(false);
   const [pinBusy, setPinBusy] = useState(false);
   const [ttBusy, setTtBusy] = useState(false);
+  const [repairBusy, setRepairBusy] = useState(false);
+  const [repairDryRun, setRepairDryRun] = useState(false);
   const [health, setHealth] = useState<Row | null>(null);
   const [confidence, setConfidence] = useState<Row[]>([]);
   const [funnel, setFunnel] = useState<Row[]>([]);
@@ -38,9 +42,10 @@ export default function ConversionIntegrityPage() {
   const [attribution, setAttribution] = useState<Row[]>([]);
   const [revenue, setRevenue] = useState<Row[]>([]);
   const [synthetic, setSynthetic] = useState<Row[]>([]);
+  const [repairs, setRepairs] = useState<Row[]>([]);
 
   async function refresh() {
-    const [h, c, f, i, a, r, s] = await Promise.all([
+    const [h, c, f, i, a, r, s, ar] = await Promise.all([
       fetchHealthSnapshots(1),
       fetchConfidence(),
       fetchFunnelSnapshots(12),
@@ -48,6 +53,7 @@ export default function ConversionIntegrityPage() {
       fetchAttributionIncidents(20),
       fetchRevenueTruth(8),
       fetchSyntheticRuns(10),
+      fetchAutoRepairs(25),
     ]);
     setHealth(h[0] ?? null);
     setConfidence(c);
@@ -56,6 +62,7 @@ export default function ConversionIntegrityPage() {
     setAttribution(a);
     setRevenue(r);
     setSynthetic(s);
+    setRepairs(ar);
   }
 
   useEffect(() => { refresh().catch((e) => toast.error(e.message)); }, []);
@@ -110,6 +117,22 @@ export default function ConversionIntegrityPage() {
     } finally { setTtBusy(false); }
   }
 
+  async function runRepairNow() {
+    setRepairBusy(true);
+    try {
+      const res: any = await runAutoRepair({ hours: 24, dry_run: repairDryRun });
+      if (res?.ok === false) throw new Error(res.message ?? "Auto-repair failed");
+      if (res?.skipped) {
+        toast.message(`Auto-repair skipped: ${res.skipped}`);
+      } else {
+        toast.success(`Auto-repair: applied ${res.applied}, proposed ${res.proposed}, failed ${res.failed} (threshold ${res.threshold})`);
+      }
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setRepairBusy(false); }
+  }
+
   const overall = Number(health?.overall ?? 0);
 
   return (
@@ -130,6 +153,12 @@ export default function ConversionIntegrityPage() {
             </Button>
             <Button variant="outline" onClick={syncTikTokNow} disabled={ttBusy}>
               {ttBusy ? "Syncing TikTok…" : "Sync TikTok"}
+            </Button>
+            <Button variant="outline" onClick={runRepairNow} disabled={repairBusy}>
+              {repairBusy ? "Repairing…" : repairDryRun ? "Auto-Repair (dry-run)" : "Auto-Repair"}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setRepairDryRun((v) => !v)}>
+              {repairDryRun ? "🔒 Dry-run on" : "🛠️ Dry-run off"}
             </Button>
             <Button onClick={runCycle} disabled={busy}>{busy ? "Running…" : "Run CIE Cycle"}</Button>
           </div>
@@ -253,6 +282,36 @@ export default function ConversionIntegrityPage() {
                   {s.duration_ms ? `${s.duration_ms}ms · ` : ""}
                   <Badge variant={s.passed ? "secondary" : "destructive"}>{s.passed ? "pass" : "fail"}</Badge>
                 </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Auto-Repair Log</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Only repairs with confidence ≥ threshold are applied. All actions are logged with before/after state.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {repairs.length === 0 && <p className="text-muted-foreground">No auto-repairs recorded yet.</p>}
+            {repairs.map((r) => (
+              <div key={r.id} className="border-b pb-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">{r.repair_type}</span>
+                  <span className="flex items-center gap-2">
+                    <span className={scoreColor(Number(r.confidence))}>{Number(r.confidence).toFixed(0)}</span>
+                    <Badge variant={r.status === "applied" ? "secondary" : r.status === "failed" ? "destructive" : "outline"}>
+                      {r.status}
+                    </Badge>
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{r.target}</p>
+                {r.notes && <p className="text-xs">{r.notes}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  before: {JSON.stringify(r.before_state)} → after: {JSON.stringify(r.after_state)}
+                </p>
               </div>
             ))}
           </CardContent>
