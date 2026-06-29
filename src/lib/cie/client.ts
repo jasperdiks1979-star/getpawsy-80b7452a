@@ -86,3 +86,19 @@ export async function syncGa4(days = 1) {
   if (error) throw error;
   return data;
 }
+
+export async function syncPinterest(days = 1) {
+  const { data, error } = await supabase.functions.invoke("cie-pinterest-adapter", {
+    body: { days },
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function syncTikTok(days = 1) {
+  const { data, error } = await supabase.functions.invoke("cie-tiktok-adapter", {
+    body: { days },
+  });
+  if (error) throw error;
+  return data;
+}
