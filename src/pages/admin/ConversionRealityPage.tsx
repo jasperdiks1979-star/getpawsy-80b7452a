@@ -44,7 +44,7 @@ interface SegmentRow {
 }
 interface Incident {
   id: string; category: string; severity: string; status: string;
-  summary: string; opened_at: string;
+  title: string; opened_at: string;
 }
 
 function Kpi({ label, value, sub, tone = "neutral" }: { label: string; value: string; sub?: string; tone?: "good" | "warn" | "bad" | "neutral" }) {
@@ -102,11 +102,11 @@ export default function ConversionRealityPage() {
       }
       const { data: inc } = await supabase
         .from("cie_incidents")
-        .select("id, category, severity, status, summary, opened_at")
+        .select("id, category, severity, status, title, opened_at")
         .in("category", ["conversion_reality", "traffic_quality", "attribution"])
         .order("opened_at", { ascending: false })
         .limit(10);
-      setIncidents((inc as Incident[]) || []);
+      setIncidents((inc as unknown as Incident[]) || []);
     } finally {
       setLoading(false);
     }
@@ -255,7 +255,7 @@ export default function ConversionRealityPage() {
                   <div className="space-y-2">
                     {incidents.map(i => (
                       <div key={i.id} className="border rounded p-2 text-sm flex items-center justify-between">
-                        <span>{i.summary}</span>
+                        <span>{i.title}</span>
                         <Badge variant={i.severity === "high" ? "destructive" : "secondary"}>{i.severity}</Badge>
                       </div>
                     ))}
