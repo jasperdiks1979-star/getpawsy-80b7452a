@@ -1,129 +1,100 @@
+# Genesis V3.3 — Market Intelligence OS
 
-## Goal
+A real, production-grade market intelligence layer that sits on top of Canonical Analytics, Product Intelligence (PI V3), and Pinterest Growth (V3) — never duplicating them. Everything is admin-only, derived from real production data or real external APIs (no placeholders, no fabricated AI scores).
 
-Turn every line of the First Sale Brief into a one-click, audited action — without rebuilding any analytics or duplicating existing engines.
+## Architecture (reuses existing Genesis stack)
 
-## Scope (this iteration)
-
-In:
-1. A single backend action dispatcher that translates "what the brief recommends" into calls against engines we already have.
-2. An `autopilot_actions` audit table (the only new table) — records every queued / executed / undone action with confidence, AI-credit estimate, expected revenue impact, status, result.
-3. UI in Growth Command Center: each Brief row gets `Execute`, `Preview`, `Undo`, confidence chip, credit cost, revenue-impact estimate, and last-run status.
-4. A "Today's autopilot queue" panel ordered by **expected revenue per AI credit**.
-
-Out (explicit non-goals to keep this shippable):
-- No new scoring models. Sales priority (CRITICAL/HIGH/MEDIUM/LOW) is derived from existing `gv3_pi_scores.overall_score` + `gv3_pin_growth_scores.classification` + canonical funnel — no new table.
-- No new cron. Manual + on-demand only this iteration; daily scheduler comes after we verify dispatch is safe.
-- No new creative pipelines. We invoke existing edge functions only (`pinterest-creative-director`, `pcie-v2-creative-director`, `pinterest-growth-run`, `product-intelligence-run`, `pinterest-revenue-brain`).
-- No new learning model. Outcomes are written to `autopilot_actions.result` and read back on next ranking; that is the learning loop for v1.
-
-## Action catalog (Phase 1)
-
-Each action = (kind, target_product_id, payload, invokes). All map to existing endpoints:
-
-| Action kind | Invokes (existing) | AI cost est. |
-|---|---|---|
-| `pin.publish_today` | `pinterest-growth-run` + `pinterest-creative-director` (action=run_full) | 2–4 |
-| `pin.regenerate_creative` | `pinterest-creative-director` (force=true) | 2–3 |
-| `pin.rewrite_copy` | `pcie-v2-creative-director` (rewrite stage) | <1 |
-| `product.promote` | `pinterest-revenue-brain` (auto_promote) | 1 |
-| `product.pause` | flip `pinterest_publish_governor` + tag in `gv3_pi_recommendations` | 0 |
-| `product.rescore` | `product-intelligence-run` (single product) | <1 |
-| `pdp.optimize_plan` | `cro-audit` (existing) + write findings to brief | <1 |
-
-Anything not in this catalog is hidden from the UI (no placeholder buttons).
-
-## Sales priority derivation (Phase 2, no new table)
-
+```text
+External APIs ──► gv3_mi_signals (raw, timestamped)
+                       │
+                       ▼
+                gv3_mi_trends (normalized, scored)
+                       │
+                       ├──► gv3_mi_competitors (patterns only)
+                       │
+                       ├──► gv3_mi_opportunities  ◄── gv3_pi_scores (PI V3)
+                       │                          ◄── gv3_pin_growth_scores
+                       │                          ◄── canonical_* views
+                       │
+                       ├──► gv3_mi_creative_diversity ◄── pcie2 / pinterest_pins
+                       │
+                       └──► gv3_mi_first_sale_plan (daily ranked plan)
+                                       │
+                                       ▼
+                            autopilot_actions (existing queue — no auto-publish)
+                                       │
+                                       ▼
+                            autopilot_outcomes_24h / 72h / 7d / 30d
+                                       │
+                                       ▼
+                            gv3_mi_learning (confidence calibration)
 ```
-priority = f(
-  pi.overall_score,
-  pi.confidence_score,
-  pin.classification,
-  canonical.purchases_24h,
-  canonical.atc_rate,
-  product.margin_pct,
-  product.in_stock,
-)
-→ CRITICAL  ≥90 score & ≥90 conf & in_stock
-→ HIGH      ≥80 score & ≥80 conf
-→ MEDIUM    ≥60
-→ LOW       else
-```
-Only CRITICAL/HIGH actions are allowed to spend AI credits — enforced server-side in the dispatcher, not just the UI.
 
-## Expected revenue per credit (Phase 3)
+## Phase 1 — Market Intelligence Engine
+- New tables: `gv3_mi_signals` (raw per source), `gv3_mi_trends` (normalized).
+- Edge function `gv3-mi-collect` (daily cron 06:00 UTC) pulls real signals from:
+  - Pinterest Trends + Search Suggestions (existing Pinterest OAuth connection)
+  - Google Trends (public daily trends JSON, US)
+  - Google Shopping (via Firecrawl scrape of shopping SERPs for pet queries)
+  - Amazon Best Sellers + Movers & Shakers (Firecrawl, pet category)
+  - Chewy Popular (Firecrawl)
+  - Reddit (`/r/pets`, `/r/dogs`, `/r/cats` JSON — no key)
+  - TikTok discover signals (existing TikTok connection where available)
+  - US Holidays (static USA calendar table seeded once)
+  - Weather (Open-Meteo, free, no key, top-10 US metros)
+- Each row stores: strength, velocity (7d EMA), confidence (source agreement), est_lifetime, competition, seasonality, category, color/material/price/content trends, intent, urgency.
+- Confidence methodology: weighted multi-source agreement + signal recency decay; never fabricated, sources logged in `evidence` JSONB.
 
-```
-expected_revenue = aov_eur
-  × baseline_cvr
-  × predicted_lift(action_kind, pi_score, pin_score)
-  × expected_sessions_24_72h
-roi = expected_revenue / ai_credit_cost
-```
-`predicted_lift` table is a flat constant map shipped in code (e.g. `regenerate_creative` on score≥85 → +12%) — honest heuristic, clearly labeled "v1 heuristic, refined by outcome logging in Phase 9". No fake AI confidence scores.
+## Phase 2 — Competitor Intelligence
+- New table `gv3_mi_competitors` (domain, pattern_type, value, frequency, last_seen).
+- `gv3-mi-competitors` cron (daily 04:00 UTC) uses Firecrawl on a curated competitor allowlist (Chewy, Petco, BarkBox, etc.). Extracts patterns only — pricing ranges, headline structures, CTA styles, image style classification via Lovable AI Gateway vision (gemini-2.5-flash). No copying — patterns + statistics only.
 
-## New table (the only one)
+## Phase 3 — Trend Matching Engine
+- New table `gv3_mi_opportunities` (product_id, trend_id, opportunity_score, gap_type, evidence).
+- `gv3-mi-match` cron (daily 07:00 UTC) joins `gv3_mi_trends` × `products` × `gv3_pi_scores` × `gv3_pin_growth_scores`. Detects: already selling, missing opportunity, wrong pricing, wrong creative, missing Pinterest, missing video, etc. Opportunity Score is deterministic — derived from real internal metrics + trend strength.
 
-```sql
-autopilot_actions (
-  id uuid pk,
-  kind text,             -- pin.publish_today, pin.regenerate_creative, ...
-  product_id uuid,
-  priority text,         -- CRITICAL|HIGH|MEDIUM|LOW
-  confidence numeric,    -- 0..1 (derived, not invented)
-  ai_credit_cost numeric,
-  expected_revenue_eur numeric,
-  expected_roi numeric,
-  status text,           -- queued|running|done|failed|undone
-  invoked_function text,
-  invocation_payload jsonb,
-  invocation_result jsonb,
-  outcome_metrics jsonb, -- filled by Phase 9 reader (ctr/atc/checkout deltas)
-  created_by uuid,
-  created_at timestamptz,
-  executed_at timestamptz,
-  undone_at timestamptz
-)
-```
-Admin-only RLS, service_role full. GRANTs as required.
+## Phase 4 — Creative Evolution Engine
+- New table `gv3_mi_creative_diversity` (creative_id, cluster_id, traits JSONB, diversity_score).
+- `gv3-mi-creative-diversity` reuses existing `pinterest_pins` + PCIE2 artifacts. Uses Lovable AI vision to tag traits (lighting, palette, angle, environment, season, etc.) and clusters via cosine similarity on trait vectors. Enforces hard diversity rule via a Postgres function `gv3_mi_can_publish(creative_id)` that publish-assembler will consult.
 
-## Edge function: `autopilot-dispatch`
+## Phase 5 — First Sale AI
+- New table `gv3_mi_first_sale_plan` (day, rank, product_id, lane, score, expected_revenue, evidence).
+- `gv3-mi-first-sale` cron (daily 07:30 UTC) consolidates Phase 3 opportunities into a single ranked daily execution plan across 8 lanes (probability, revenue, Pinterest, Google, seasonal, impulse, repeat, urgency).
 
-Single function, admin JWT required. Endpoints:
-- `POST /preview` — returns the resolved action (invoked function, payload, cost, revenue est, ROI) without executing.
-- `POST /execute` — inserts row status=running, calls the existing edge function, updates status + result.
-- `POST /undo` — best-effort reversal per action kind (pause→unpause; regenerate→mark draft rejected; publish→remove from queue if still queued).
-- `GET /today` — returns today's ranked queue (CRITICAL/HIGH only) sorted by expected revenue per credit.
+## Phase 6 — Autonomous Actions
+- `gv3-mi-first-sale` writes proposed actions into the **existing** `autopilot_actions` queue with `source='market_intelligence'`. Never auto-publishes. CRITICAL/HIGH only spend credits (existing rule).
 
-All it does is orchestrate existing functions. No new business logic lives here beyond ranking + credit gating.
+## Phase 7 — Learning Loop
+- New view `gv3_mi_action_outcomes` joining `autopilot_actions` (MI-sourced) with `canonical_events` at 24h/72h/7d/30d windows.
+- New table `gv3_mi_learning` (signal_source, category, predicted, actual, delta, calibrated_weight).
+- `gv3-mi-learn` cron (daily 03:00 UTC) updates per-source confidence weights (EMA) that feed Phase 1.
 
-## UI changes
+## Phase 8 — Executive Dashboard
+- New page `/admin/market-intelligence` (`MarketIntelligencePage.tsx`).
+- Sections: US Market Health, Trend Radar, Emerging Opportunities, Top Competitors, Creative Diversity, Trend Timeline, Product Opportunity Matrix, Seasonality, US Holiday Countdown, Weather Impact, Trending Colors/Materials/Categories/Keywords, Creative Alerts, Competitor Alerts, Recommended Actions (deep-link to Autopilot Queue in Growth Command Center), AI Confidence, Learning Progress.
+- All reads via the Canonical SDK + new typed helpers in `src/lib/marketIntelligence.ts`. No duplicated analytics.
 
-`GrowthCommandCenterPage.tsx`:
-- First Sale Brief rows: add `Execute`/`Preview`/`Undo` controls + chips (priority, confidence, credits, est. revenue, last status).
-- New "Today's autopilot queue" card under the brief: list of queued actions ordered by ROI, with batch execute (CRITICAL only).
-- New "Execution history (24h)" card pulling from `autopilot_actions` — status, when, outcome delta if available.
+## Phase 9 — Safety
+- All `gv3_mi_*` tables: RLS enabled, admin-SELECT via `has_role`, service_role full. No anon. GRANTs included in same migration.
+- Edge functions: `verify_jwt = false` with in-code admin/service-role enforcement, Zod validation, rate-limited via existing infra.
+- Reuses Canonical SDK, PI V3, Pinterest Growth, Autopilot, cron infra. No duplicate analytics tables.
 
-No new pages. No new routes.
+## Phase 10 — Success Criteria & Quality Gate
+- Verifications run at end: `tsgo` clean, `canonical_validate_consistency() = 0.00%` drift, RLS linter clean, no placeholder values, all dashboards return real rows.
+- Deployment report: services, crons, sources, learning pipeline, AI models (Lovable Gemini 2.5 Flash for vision/text), confidence methodology, security validation, perf impact (all heavy work in cron), production readiness score.
 
-## Phase 9 learning loop (this iteration)
+## Technical Details
+- **AI:** Lovable AI Gateway (`google/gemini-2.5-flash` for vision tagging and pattern extraction; `google/gemini-2.5-flash-lite` for cheap bulk classification). No external paid LLM keys.
+- **Scraping:** Firecrawl connector (already linked) for Amazon/Chewy/Google Shopping/competitor pages.
+- **Open APIs (no key):** Reddit JSON, Open-Meteo, Google Trends daily RSS.
+- **Pinterest/TikTok:** existing OAuth connections.
+- **Cron:** pg_cron via the existing scheduler pattern.
+- **No new public endpoints. No duplicate SQL. No fake metrics.**
 
-Outcome reader = a small SQL view that joins `autopilot_actions` (executed_at) with canonical_events deltas for that product over the next 24h. Read on next ranking, used to nudge `predicted_lift` constants — surfaced as "observed lift vs predicted" column. No retraining, no model. Honest baseline → real lift logging → manual tuning later.
+## What I will NOT do
+- No demo dashboards, no seed/placeholder rows.
+- No duplicating `canonical_*`, `gv3_pi_*`, or `gv3_pin_growth_*`.
+- No auto-publishing — everything routes through the existing Autopilot Queue.
+- No client-side secrets; Firecrawl/Pinterest/TikTok stay server-side.
 
-## Out of scope / explicitly deferred
-
-- Cinematic video queueing (already governed by `cinematic_v3_dispatch_queue`; we won't add another path).
-- Auto-cron daily execution — added in v3.3 once we trust the dispatcher with manual runs.
-- Multi-step "plans" (chains of actions). v1 is one action per row.
-- Any UI outside Growth Command Center.
-
-## Why this is safe
-
-- One new table, admin-only.
-- One new edge function that only calls existing ones.
-- AI-credit gating enforced server-side.
-- Every action has Preview + Undo before/after execute.
-- All numbers shown to user (confidence, est. revenue, ROI) are derived from real data in PI/Pin Growth/Canonical SDK or labeled "v1 heuristic" — no synthetic scores anywhere.
-
-Approve and I'll ship in this order: migration → dispatcher edge function → GCC UI wiring → smoke test with a single `product.rescore` action end-to-end.
+Proceed?
