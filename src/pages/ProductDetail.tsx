@@ -1811,10 +1811,10 @@ const ProductDetail = () => {
                 size="lg"
                 className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
                 onClick={handleAddToCart}
-                disabled={!inStock || geoBlocked}
+                disabled={!inStock}
               >
                 <ShoppingCart className="w-5 h-5" />
-                {geoBlocked ? 'Unavailable in your region' : 'Add to Cart'}
+                Add to Cart
               </Button>
 
               {/* Wishlist */}
@@ -1829,10 +1829,10 @@ const ProductDetail = () => {
             </motion.div>
             {geoBlocked && (
               <div
-                role="alert"
-                className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+                role="status"
+                className="mt-2 rounded-lg border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
               >
-                This product is currently only available in the United States and Canada.
+                Limited shipping availability for your region — we'll confirm eligibility at checkout.
               </div>
             )}
 
