@@ -345,6 +345,23 @@ export default function FunnelHealth() {
         </Alert>
       )}
 
+      {/* Canonical parity panel — Genesis V2.6 single source of truth. */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Canonical funnel (parity check)</CardTitle>
+          <CardDescription>
+            Unique-session counts from canonical_funnel for the same range. Clean-mode raw counts
+            should be ≤ canonical counts (raw can include events without a canonical session).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Canonical sessions" value={canonicalSummary?.sessions.toLocaleString() ?? '—'} />
+          <Stat label="Canonical ATC" value={canonicalSummary?.atc.toLocaleString() ?? '—'} hint={`Clean ATC: ${stats.atc}`} />
+          <Stat label="Canonical checkout" value={canonicalSummary?.checkout.toLocaleString() ?? '—'} hint={`Clean ck clicks: ${stats.ckClick}`} />
+          <Stat label="Canonical purchases" value={canonicalSummary?.purchase.toLocaleString() ?? '—'} hint={`Clean payment: ${stats.pay}`} />
+        </CardContent>
+      </Card>
+
       {loading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
