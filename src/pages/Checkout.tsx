@@ -714,10 +714,15 @@ const Checkout = () => {
           // Measurement Protocol even when /payment-success misses it.
           gaClientId: await (async () => {
             try {
+              // Canonical GA4 web stream — see src/lib/deferred-analytics.ts.
+              // Falling back to the hardcoded ID guarantees gtag('get','client_id')
+              // resolves even when no env override is set, so the server-side
+              // Measurement Protocol `purchase` event in stripe-webhook can be
+              // attributed to the same GA4 session as the client page_view.
               const measurementId =
                 (window as any).GA_MEASUREMENT_ID ||
                 (import.meta as any).env?.VITE_GA4_MEASUREMENT_ID ||
-                '';
+                'G-5WYL8RJDZF';
               if (typeof window.gtag !== 'function' || !measurementId) return '';
               return await new Promise<string>((resolve) => {
                 const t = setTimeout(() => resolve(''), 600);
