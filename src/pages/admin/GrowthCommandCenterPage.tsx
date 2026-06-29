@@ -23,6 +23,7 @@ import {
 } from "@/lib/canonicalAnalytics";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -177,6 +178,12 @@ export default function GrowthCommandCenterPage() {
   const [pinProducts, setPinProducts] = useState<Record<string, { name: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
+  // Autopilot state
+  const [autopilotQueue, setAutopilotQueue] = useState<any[]>([]);
+  const [autopilotHistory, setAutopilotHistory] = useState<any[]>([]);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<any | null>(null);
+
   async function load() {
     setLoading(true); setError(null);
     try {
@@ -216,10 +223,85 @@ export default function GrowthCommandCenterPage() {
         for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
         setPinProducts(m);
       }
+      await loadAutopilot();
     } catch (err: any) {
       setError(err?.message ?? "Failed to load growth data");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAutopilot() {
+    try {
+      const [todayRes, historyRes] = await Promise.all([
+        supabase.functions.invoke("autopilot-dispatch?op=today", { body: {} }),
+        supabase.from("autopilot_actions")
+          .select("id, kind, product_id, priority, confidence, ai_credit_cost, expected_revenue_eur, expected_roi, status, executed_at, created_at, error_message, invocation_result")
+          .order("created_at", { ascending: false })
+          .limit(25),
+      ]);
+      setAutopilotQueue((todayRes.data as any)?.queue ?? []);
+      setAutopilotHistory(historyRes.data ?? []);
+    } catch (e) {
+      // non-fatal — autopilot is optional surface
+    }
+  }
+
+  async function callDispatch(op: "preview" | "execute" | "undo", body: any) {
+    const url = `${(supabase as any).functionsUrl ?? ""}/autopilot-dispatch?op=${op}`;
+    // Use supabase.functions.invoke with query-string via path
+    const { data, error: invokeErr } = await supabase.functions.invoke(
+      `autopilot-dispatch?op=${op}`,
+      { body },
+    );
+    if (invokeErr) throw new Error(invokeErr.message);
+    return data;
+  }
+
+  async function onPreview(action: { kind: string; product_id?: string | null }) {
+    setBusyAction(`preview:${action.kind}:${action.product_id ?? ""}`);
+    try {
+      const data = await callDispatch("preview", action);
+      setPreviewing(data);
+    } catch (e: any) {
+      toast({ title: "Preview failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function onExecute(action: { kind: string; product_id?: string | null }) {
+    const key = `exec:${action.kind}:${action.product_id ?? ""}`;
+    setBusyAction(key);
+    try {
+      const data: any = await callDispatch("execute", action);
+      if (data?.result?.ok) {
+        toast({ title: "Action executed", description: `${action.kind} · ROI ${data?.preview?.expected_roi ?? 0}` });
+      } else {
+        toast({
+          title: "Action did not run",
+          description: data?.result?.error ?? "Unknown error",
+          variant: "destructive",
+        });
+      }
+      await loadAutopilot();
+    } catch (e: any) {
+      toast({ title: "Execute failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function onUndo(action_id: string) {
+    setBusyAction(`undo:${action_id}`);
+    try {
+      await callDispatch("undo", { action_id });
+      toast({ title: "Undo requested" });
+      await loadAutopilot();
+    } catch (e: any) {
+      toast({ title: "Undo failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBusyAction(null);
     }
   }
 
@@ -290,6 +372,96 @@ export default function GrowthCommandCenterPage() {
               <BriefRow icon="🕐" label="Best posting times" value={firstSaleBrief.postingTimes} />
               <BriefRow icon="🎯" label="Sales probability (24–72h)" value={firstSaleBrief.salesProbability} />
               <BriefRow icon="💵" label="Estimated revenue potential" value={firstSaleBrief.revenuePotential} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Genesis V3.2 — Autopilot today's queue */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>⚡ Today's Autopilot Queue · CRITICAL + HIGH only</CardTitle>
+          <Button variant="outline" size="sm" onClick={loadAutopilot}>Reload queue</Button>
+        </CardHeader>
+        <CardContent>
+          {autopilotQueue.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No qualified actions. Increase scoring confidence to unlock AI-credit spend.</p>
+          ) : (
+            <div className="space-y-2">
+              {autopilotQueue.map((q, i) => {
+                const name = piProducts[q.product_id]?.name || pinProducts[q.product_id]?.name || q.product_id?.slice(0, 8) || "—";
+                const key = `exec:${q.kind}:${q.product_id ?? ""}`;
+                return (
+                  <div key={`${q.kind}-${q.product_id}-${i}`} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border rounded p-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{q.kind} · {name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{q.reason}</div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={q.priority === "CRITICAL" ? "destructive" : "default"}>{q.priority}</Badge>
+                      <Badge variant="secondary">{q.ai_credit_cost} cr</Badge>
+                      <Badge variant="outline">+{Math.round(q.expected_lift_pct)}% lift</Badge>
+                      <Button size="sm" variant="outline" disabled={busyAction === key} onClick={() => onPreview({ kind: q.kind, product_id: q.product_id })}>Preview</Button>
+                      <Button size="sm" disabled={busyAction === key} onClick={() => onExecute({ kind: q.kind, product_id: q.product_id })}>{busyAction === key ? "…" : "Execute"}</Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {previewing && (
+            <div className="mt-4 border rounded p-3 bg-muted/40 text-xs space-y-1">
+              <div className="font-medium text-sm">Preview · {previewing.kind}</div>
+              <div>Priority: <strong>{previewing.priority}</strong> · Confidence: {(previewing.confidence * 100).toFixed(0)}%</div>
+              <div>AI cost: {previewing.ai_credit_cost} credits · Expected revenue: €{previewing.expected_revenue_eur} · ROI: {previewing.expected_roi}</div>
+              <div>Invokes: <code>{previewing.invoked_function ?? "n/a"}</code></div>
+              {previewing.credit_gated && <div className="text-destructive">Blocked: priority too low to spend AI credits.</div>}
+              <Button size="sm" variant="ghost" onClick={() => setPreviewing(null)}>Dismiss</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Genesis V3.2 — Autopilot execution history */}
+      <Card>
+        <CardHeader><CardTitle>🧾 Autopilot Execution History (last 25)</CardTitle></CardHeader>
+        <CardContent>
+          {autopilotHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No actions executed yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="text-left text-muted-foreground">
+                  <tr>
+                    <th className="py-1">When</th>
+                    <th className="py-1">Kind</th>
+                    <th className="py-1">Priority</th>
+                    <th className="py-1">Status</th>
+                    <th className="py-1 text-right">Credits</th>
+                    <th className="py-1 text-right">€ est.</th>
+                    <th className="py-1">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {autopilotHistory.map((h: any) => (
+                    <tr key={h.id} className="border-t">
+                      <td className="py-1 whitespace-nowrap">{new Date(h.executed_at ?? h.created_at).toLocaleTimeString()}</td>
+                      <td className="py-1">{h.kind}</td>
+                      <td className="py-1">{h.priority}</td>
+                      <td className="py-1">
+                        <Badge variant={h.status === "failed" ? "destructive" : h.status === "done" ? "default" : "secondary"}>{h.status}</Badge>
+                      </td>
+                      <td className="py-1 text-right">{Number(h.ai_credit_cost).toFixed(1)}</td>
+                      <td className="py-1 text-right">{Number(h.expected_revenue_eur).toFixed(2)}</td>
+                      <td className="py-1">
+                        {h.status === "done" && (
+                          <Button size="sm" variant="ghost" disabled={busyAction === `undo:${h.id}`} onClick={() => onUndo(h.id)}>Undo</Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

@@ -8380,6 +8380,69 @@ export type Database = {
         }
         Relationships: []
       }
+      autopilot_actions: {
+        Row: {
+          ai_credit_cost: number
+          confidence: number
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          executed_at: string | null
+          expected_revenue_eur: number
+          expected_roi: number
+          id: string
+          invocation_payload: Json
+          invocation_result: Json
+          invoked_function: string | null
+          kind: string
+          outcome_metrics: Json
+          priority: string
+          product_id: string | null
+          status: string
+          undone_at: string | null
+        }
+        Insert: {
+          ai_credit_cost?: number
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          expected_revenue_eur?: number
+          expected_roi?: number
+          id?: string
+          invocation_payload?: Json
+          invocation_result?: Json
+          invoked_function?: string | null
+          kind: string
+          outcome_metrics?: Json
+          priority: string
+          product_id?: string | null
+          status?: string
+          undone_at?: string | null
+        }
+        Update: {
+          ai_credit_cost?: number
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          expected_revenue_eur?: number
+          expected_roi?: number
+          id?: string
+          invocation_payload?: Json
+          invocation_result?: Json
+          invoked_function?: string | null
+          kind?: string
+          outcome_metrics?: Json
+          priority?: string
+          product_id?: string | null
+          status?: string
+          undone_at?: string | null
+        }
+        Relationships: []
+      }
       background_jobs: {
         Row: {
           cancel_requested: boolean
@@ -59476,6 +59539,23 @@ export type Database = {
           landed: number | null
           purchased: number | null
           viewed_item: number | null
+        }
+        Relationships: []
+      }
+      autopilot_outcomes_24h: {
+        Row: {
+          action_id: string | null
+          atc_24h: number | null
+          checkout_24h: number | null
+          executed_at: string | null
+          expected_revenue_eur: number | null
+          expected_roi: number | null
+          kind: string | null
+          priority: string | null
+          product_id: string | null
+          purchases_24h: number | null
+          revenue_eur_24h: number | null
+          views_24h: number | null
         }
         Relationships: []
       }
