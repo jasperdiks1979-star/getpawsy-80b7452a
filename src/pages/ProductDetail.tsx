@@ -43,6 +43,7 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import { PinchZoomImage } from "@/components/ui/pinch-zoom-image";
 import { useCart } from "@/contexts/CartContext";
 import { useCartAnimation } from "@/contexts/CartAnimationContext";
+import { trackCci } from "@/lib/cci";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
@@ -982,13 +983,16 @@ const ProductDetail = () => {
   const inStock = availabilityResult.isInStock;
 
   const handleAddToCart = () => {
+    trackCci('add_to_cart_click', { product_id: product?.id, funnel_stage: 'add_to_cart' });
     if (geoBlocked) {
       toast.error('This product is currently only available in the United States and Canada.');
+      trackCci('add_to_cart_error', { product_id: product?.id, meta: { reason: 'geo_blocked' } });
       return;
     }
     // Prevent adding out-of-stock items
     if (!inStock) {
       toast.error("This product is out of stock");
+      trackCci('add_to_cart_error', { product_id: product?.id, meta: { reason: 'out_of_stock' } });
       return;
     }
 
@@ -1022,6 +1026,12 @@ const ProductDetail = () => {
 
     const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : "";
     toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
+    trackCci('add_to_cart_success', {
+      product_id: product?.id,
+      variant_id: selectedVariant?.vid ? String(selectedVariant.vid) : null,
+      funnel_stage: 'add_to_cart',
+      meta: { quantity, price: Math.round(cartPrice * 100) / 100 },
+    });
   };
 
   const handleWishlistToggle = () => {

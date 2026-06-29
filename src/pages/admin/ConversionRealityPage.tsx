@@ -71,6 +71,7 @@ export default function ConversionRealityPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [segments, setSegments] = useState<SegmentRow[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [cci, setCci] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
 
@@ -107,6 +108,19 @@ export default function ConversionRealityPage() {
         .order("opened_at", { ascending: false })
         .limit(10);
       setIncidents((inc as unknown as Incident[]) || []);
+      try {
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const { data: ev } = await supabase
+          .from('cci_events')
+          .select('event_name')
+          .gte('created_at', since)
+          .limit(5000);
+        const counts: Record<string, number> = {};
+        (ev || []).forEach((r: { event_name: string }) => {
+          counts[r.event_name] = (counts[r.event_name] || 0) + 1;
+        });
+        setCci(counts);
+      } catch { /* table newly created; ignore */ }
     } finally {
       setLoading(false);
     }
@@ -269,6 +283,26 @@ export default function ConversionRealityPage() {
             </div>
           </>
         )}
+        <Card>
+          <CardHeader><CardTitle>CCI deep funnel events (last 24h)</CardTitle></CardHeader>
+          <CardContent>
+            {Object.keys(cci).length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No CCI events yet. Storefront emits them via <code>trackCci()</code> on ATC click/success/error,
+                cart open, and checkout load.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.entries(cci).sort((a,b) => b[1]-a[1]).map(([k,v]) => (
+                  <div key={k} className="border rounded p-2 text-sm flex items-center justify-between">
+                    <span className="text-muted-foreground">{k}</span>
+                    <span className="font-mono">{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </>
   );

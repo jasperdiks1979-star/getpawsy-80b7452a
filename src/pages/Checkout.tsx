@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError, fireCheckoutEvent } from '@/lib/funnelEvents';
+import { trackCci } from '@/lib/cci';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
@@ -209,6 +210,7 @@ const Checkout = () => {
   const [visitorCountry, setVisitorCountry] = useState<CountryCode | null>(null);
   useEffect(() => {
     ensureGeoClassified();
+    try { trackCci('checkout_loaded', { funnel_stage: 'begin_checkout' }); } catch {}
     const tryRead = () => {
       const raw = (getCachedGeoCountry() || '').toUpperCase();
       if (raw && SUPPORTED_COUNTRIES.some((c) => c.code === raw)) {

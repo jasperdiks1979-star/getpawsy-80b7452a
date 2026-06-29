@@ -8707,6 +8707,105 @@ export type Database = {
           },
         ]
       }
+      cci_events: {
+        Row: {
+          campaign: string | null
+          confidence: number | null
+          country: string | null
+          created_at: string
+          device: string | null
+          event_name: string
+          funnel_stage: string | null
+          id: string
+          landing_page: string | null
+          medium: string | null
+          meta: Json
+          page_path: string | null
+          product_id: string | null
+          referrer: string | null
+          session_id: string
+          source: string | null
+          variant_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          event_name: string
+          funnel_stage?: string | null
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          meta?: Json
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id: string
+          source?: string | null
+          variant_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          event_name?: string
+          funnel_stage?: string | null
+          id?: string
+          landing_page?: string | null
+          medium?: string | null
+          meta?: Json
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id?: string
+          source?: string | null
+          variant_id?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      cci_repair_log: {
+        Row: {
+          after: Json | null
+          applied_by: string
+          before: Json | null
+          created_at: string
+          id: string
+          kind: string
+          notes: string | null
+          reversible: boolean
+          target: string | null
+        }
+        Insert: {
+          after?: Json | null
+          applied_by?: string
+          before?: Json | null
+          created_at?: string
+          id?: string
+          kind: string
+          notes?: string | null
+          reversible?: boolean
+          target?: string | null
+        }
+        Update: {
+          after?: Json | null
+          applied_by?: string
+          before?: Json | null
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          reversible?: boolean
+          target?: string | null
+        }
+        Relationships: []
+      }
       checkout_funnel_events: {
         Row: {
           bot_reason: string | null
