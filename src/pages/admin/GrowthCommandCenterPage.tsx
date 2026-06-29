@@ -581,3 +581,113 @@ function ProductTable({ rows, empty }: { rows: ProductAgg[]; empty: string }) {
     </table>
   );
 }
+
+function BriefRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2 border rounded p-3">
+      <span className="text-lg leading-none">{icon}</span>
+      <div className="min-w-0">
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="text-sm font-medium truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+interface FirstSaleBriefInput {
+  exec: CanonicalExecKpis | null;
+  liveSummary: ReturnType<typeof summarizeCanonicalSessions>;
+  productAgg: ProductAgg[];
+  piScores: any[];
+  pinScores: any[];
+  piProducts: Record<string, { name: string }>;
+  pinProducts: Record<string, { name: string }>;
+}
+
+function buildFirstSaleBrief(input: FirstSaleBriefInput) {
+  const { exec, liveSummary, productAgg, piScores, pinScores, piProducts, pinProducts } = input;
+  const nameOf = (id: string) => piProducts[id]?.name || pinProducts[id]?.name || id.slice(0, 8);
+
+  // Best product today: highest PI overall_score with confidence >= 90 (Phase 9 gate)
+  const piRanked = [...piScores]
+    .filter((p) => (p.confidence_score ?? 0) >= 90 && (p.overall_score ?? 0) >= 90)
+    .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0));
+  const bestProduct = piRanked[0]
+    ? `${nameOf(piRanked[0].product_id)} · score ${Math.round(piRanked[0].overall_score)}`
+    : "No product clears the 90/90 gate — hold publishing";
+
+  // Revenue opportunity: PDP views × no purchase × high PI score (latent demand)
+  const revOpp = [...piScores]
+    .filter((p) => (p.product_views ?? 0) >= 50 && (p.purchases ?? 0) === 0)
+    .sort((a, b) => (b.overall_score ?? 0) * (b.product_views ?? 0) - (a.overall_score ?? 0) * (a.product_views ?? 0))[0];
+  const revenueOpportunity = revOpp
+    ? `${nameOf(revOpp.product_id)} · ${revOpp.product_views} views, 0 sales`
+    : "Catalog converting — no latent opp";
+
+  // Pinterest opportunity: highest predicted_opportunity among Promote Immediately
+  const pinOpp = [...pinScores]
+    .filter((p) => p.classification === "Promote Immediately" && (p.confidence ?? 0) >= 0.9)
+    .sort((a, b) => (b.predicted_opportunity ?? 0) - (a.predicted_opportunity ?? 0))[0];
+  const pinOpportunity = pinOpp
+    ? `${nameOf(pinOpp.product_id)} · opp ${Math.round(pinOpp.predicted_opportunity ?? 0)}`
+    : "No high-confidence Pinterest promotion candidate";
+
+  // Worst converter: highest views with 0 purchases (canonical 30d)
+  const worst = [...productAgg]
+    .filter((p) => p.product_views >= 150 && p.purchases === 0)
+    .sort((a, b) => b.product_views - a.product_views)[0];
+  const worstConverter = worst
+    ? `${worst.product_id.slice(0, 12)}… · ${worst.product_views} views, 0 sales`
+    : "Nothing flagged";
+
+  // Pause: classifications "Do Not Promote" + "Needs CRO" with 0 purchases
+  const pauseList = piScores
+    .filter((p) => (p.classification === "Do Not Promote" || p.classification === "Needs CRO") && (p.purchases ?? 0) === 0)
+    .slice(0, 3)
+    .map((p) => nameOf(p.product_id));
+  const toPause = pauseList.length ? `${pauseList.length} products: ${pauseList.join(", ")}` : "Nothing to pause";
+
+  // Scale: PI Winners with confidence >= 90
+  const scaleList = piScores
+    .filter((p) => p.classification === "Winner" && (p.confidence_score ?? 0) >= 90)
+    .slice(0, 3)
+    .map((p) => nameOf(p.product_id));
+  const toScale = scaleList.length ? scaleList.join(", ") : "No winners qualified yet";
+
+  // Regenerate creative: Pinterest "Needs New Creative" classifications
+  const regenList = pinScores
+    .filter((p) => ["Needs New Creative", "Needs Better Images", "Needs Better Copy"].includes(p.classification))
+    .slice(0, 3)
+    .map((p) => nameOf(p.product_id));
+  const regenerateCreative = regenList.length ? regenList.join(", ") : "Creative inventory healthy";
+
+  // Posting times: US Pinterest peak windows (well-known: weekday 8-11pm ET, Sat morning)
+  const postingTimes = "20:00–23:00 ET weekdays · 09:00–11:00 ET Saturday";
+
+  // Sales probability: derived from live 24h funnel signal
+  const liveSig = liveSummary.add_to_carts + liveSummary.checkouts * 3 + liveSummary.purchases * 10;
+  const promotables = piRanked.length + (pinOpp ? 1 : 0);
+  const probScore = Math.min(95, liveSig * 5 + promotables * 8 + (exec?.purchases ?? 0) * 3);
+  const salesProbability =
+    probScore >= 70 ? `HIGH (${probScore}%) — push top product now`
+    : probScore >= 40 ? `MEDIUM (${probScore}%) — needs traffic + qualified creative`
+    : `LOW (${probScore}%) — qualify creative first, then drive Pinterest traffic`;
+
+  // Revenue potential: AOV × expected purchases from promotables
+  const aov = exec?.aov_eur && exec.aov_eur > 0 ? exec.aov_eur : 35;
+  const expectedPurch = Math.max(0, Math.round((probScore / 100) * (promotables * 2 + 1)));
+  const revenuePotential = `~${expectedPurch} sale${expectedPurch === 1 ? "" : "s"} · €${(expectedPurch * aov).toFixed(0)} at €${aov.toFixed(0)} AOV`;
+
+  return {
+    bestProduct,
+    revenueOpportunity,
+    pinOpportunity,
+    worstConverter,
+    toPause,
+    toScale,
+    regenerateCreative,
+    postingTimes,
+    salesProbability,
+    revenuePotential,
+  };
+}
