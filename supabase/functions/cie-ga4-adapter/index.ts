@@ -121,20 +121,130 @@ async function ga4EventCounts(token: string, propertyId: string, days: number) {
   return out;
 }
 
-function confidenceFor(eventName: string, count: number, ordersPurchaseCount: number): { confidence: number; rationale: string } {
-  if (count <= 0) return { confidence: 0, rationale: "no events received from GA4" };
-  if (eventName === "purchase") {
-    if (ordersPurchaseCount === 0) {
-      return { confidence: Math.min(80, 40 + Math.log10(count + 1) * 15), rationale: "GA4 purchases present, no internal orders to compare" };
-    }
-    const ratio = count / ordersPurchaseCount;
-    const dev = Math.abs(1 - ratio);
-    const conf = Math.max(0, Math.round(100 - dev * 100));
-    return { confidence: conf, rationale: `GA4/orders purchase ratio ${ratio.toFixed(2)} (deviation ${(dev * 100).toFixed(1)}%)` };
+async function ga4PurchaseTransactions(token: string, propertyId: string, days: number) {
+  const startDate = `${days}daysAgo`;
+  const res = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        dateRanges: [{ startDate, endDate: "today" }],
+        dimensions: [{ name: "transactionId" }],
+        metrics: [{ name: "eventCount" }, { name: "totalRevenue" }],
+        dimensionFilter: {
+          filter: { fieldName: "eventName", stringFilter: { value: "purchase" } },
+        },
+        limit: 10000,
+      }),
+    },
+  );
+  const j = await res.json();
+  if (!res.ok) throw new Error(`ga4_tx_report_failed: ${j.error?.message ?? res.status}`);
+  const rows: { transactionId: string; count: number; revenue: number }[] = [];
+  for (const row of j.rows ?? []) {
+    const tx = String(row.dimensionValues?.[0]?.value ?? "").trim();
+    rows.push({
+      transactionId: tx,
+      count: Number(row.metricValues?.[0]?.value ?? 0),
+      revenue: Number(row.metricValues?.[1]?.value ?? 0),
+    });
   }
-  // page_view / session_start: log-scaled volume confidence
+  return rows;
+}
+
+function volumeConfidence(count: number): { confidence: number; rationale: string } {
+  if (count <= 0) return { confidence: 0, rationale: "no events received from GA4" };
   const conf = Math.min(100, Math.round(60 + Math.log10(count) * 10));
   return { confidence: conf, rationale: `event volume ${count} over window` };
+}
+
+type PurchaseRecon = {
+  ga4_count: number;
+  orders_count: number;
+  matched: number;
+  ga4_only: number;
+  orders_only: number;
+  id_match_rate: number;
+  count_match_rate: number;
+  revenue_ga4_cents: number;
+  revenue_orders_cents: number;
+  revenue_delta_pct: number;
+  sample_ga4_only: string[];
+  sample_orders_only: string[];
+};
+
+function purchaseConfidence(r: PurchaseRecon): { confidence: number; rationale: string } {
+  if (r.ga4_count <= 0 && r.orders_count <= 0) {
+    return { confidence: 0, rationale: "no GA4 or internal purchases in window" };
+  }
+  if (r.ga4_count <= 0) {
+    return { confidence: 0, rationale: `0 GA4 purchases vs ${r.orders_count} internal orders` };
+  }
+  const idScore = r.id_match_rate; // 0..1
+  const revScore = Math.max(0, 1 - Math.abs(r.revenue_delta_pct) / 10); // 10% delta → 0
+  const countScore = r.count_match_rate; // 0..1
+  const blended = idScore * 0.5 + revScore * 0.3 + countScore * 0.2;
+  const conf = Math.max(0, Math.min(100, Math.round(blended * 100)));
+  const rationale =
+    `id-match ${(idScore * 100).toFixed(0)}% · revenue Δ ${r.revenue_delta_pct.toFixed(2)}% ` +
+    `· count parity ${(countScore * 100).toFixed(0)}% ` +
+    `(GA4 ${r.ga4_count}/$${(r.revenue_ga4_cents / 100).toFixed(2)} vs orders ${r.orders_count}/$${(r.revenue_orders_cents / 100).toFixed(2)})`;
+  return { confidence: conf, rationale };
+}
+
+function reconcilePurchases(
+  ga4Rows: { transactionId: string; count: number; revenue: number }[],
+  orders: { id: string; stripe_session_id: string | null; stripe_payment_intent_id: string | null; total_amount: number | null }[],
+): PurchaseRecon {
+  const orderByKey = new Map<string, typeof orders[number]>();
+  for (const o of orders) {
+    for (const k of [o.id, o.stripe_session_id, o.stripe_payment_intent_id]) {
+      if (k) orderByKey.set(String(k), o);
+    }
+  }
+  const matchedOrderIds = new Set<string>();
+  let matched = 0;
+  let ga4_only = 0;
+  let revenue_ga4_cents = 0;
+  const sample_ga4_only: string[] = [];
+  for (const r of ga4Rows) {
+    revenue_ga4_cents += Math.round(r.revenue * 100);
+    const o = r.transactionId ? orderByKey.get(r.transactionId) : undefined;
+    if (o) {
+      matched += 1;
+      matchedOrderIds.add(o.id);
+    } else {
+      ga4_only += 1;
+      if (sample_ga4_only.length < 10) sample_ga4_only.push(r.transactionId || "(empty)");
+    }
+  }
+  const orders_only_list = orders.filter((o) => !matchedOrderIds.has(o.id));
+  const orders_only = orders_only_list.length;
+  const revenue_orders_cents = orders.reduce((s, o) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
+  const ga4_count = ga4Rows.length;
+  const orders_count = orders.length;
+  const id_match_rate = ga4_count > 0 ? matched / ga4_count : 0;
+  const count_match_rate =
+    Math.max(ga4_count, orders_count) > 0
+      ? Math.min(ga4_count, orders_count) / Math.max(ga4_count, orders_count)
+      : 1;
+  const denom = Math.max(revenue_orders_cents, 1);
+  const revenue_delta_pct = ((revenue_ga4_cents - revenue_orders_cents) / denom) * 100;
+  return {
+    ga4_count,
+    orders_count,
+    matched,
+    ga4_only,
+    orders_only,
+    id_match_rate,
+    count_match_rate,
+    revenue_ga4_cents,
+    revenue_orders_cents,
+    revenue_delta_pct,
+    sample_ga4_only,
+    sample_orders_only: orders_only_list.slice(0, 10).map((o) => o.id),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -160,36 +270,53 @@ Deno.serve(async (req) => {
     const creds = JSON.parse(svc);
     const token = await getAccessToken(creds);
     const counts = await ga4EventCounts(token, propertyId, days);
+    const ga4Tx = await ga4PurchaseTransactions(token, propertyId, days);
 
     const c = admin();
     const sinceIso = new Date(Date.now() - days * 86400_000).toISOString();
 
-    // Compare GA4 purchases to internal orders for purchase confidence
-    const { count: ordersPurchaseCount } = await c
+    // Pull orders for the same window so we can reconcile per transaction
+    const { data: orderRows } = await c
       .from("orders")
-      .select("id", { count: "exact", head: true })
+      .select("id, stripe_session_id, stripe_payment_intent_id, total_amount, status, created_at")
       .gte("created_at", sinceIso)
       .in("status", ["paid", "completed", "fulfilled"]);
-    const orderCount = Number(ordersPurchaseCount ?? 0);
+    const orders = (orderRows ?? []) as any[];
+    const orderCount = orders.length;
+    const recon = reconcilePurchases(ga4Tx, orders);
+    const purchaseScore = purchaseConfidence(recon);
 
     // Rollup events into cie_events for evidence trail
     const nowIso = new Date().toISOString();
-    const rollup = Object.entries(counts).map(([event_name, v]) => ({
-      event_name,
-      source: "ga4",
-      emitted_by: "cie-ga4-adapter",
-      consistency: "rollup",
-      confidence: confidenceFor(event_name, v.count, orderCount).confidence,
-      payload: { count: v.count, revenue: v.revenue, days, traceId },
-      emitted_at: nowIso,
-    }));
+    const rollup = Object.entries(counts).map(([event_name, v]) => {
+      const conf =
+        event_name === "purchase"
+          ? purchaseScore.confidence
+          : volumeConfidence(v.count).confidence;
+      return {
+        event_name,
+        source: "ga4",
+        emitted_by: "cie-ga4-adapter",
+        consistency: "rollup",
+        confidence: conf,
+        payload: {
+          count: v.count,
+          revenue: v.revenue,
+          days,
+          traceId,
+          ...(event_name === "purchase" ? { reconciliation: recon } : {}),
+        },
+        emitted_at: nowIso,
+      };
+    });
     if (rollup.length) await c.from("cie_events").insert(rollup);
 
     // Upsert confidence scores
     const { data: s } = await c.from("cie_settings").select("ai_training_min_confidence").limit(1).maybeSingle();
     const min = Number((s as any)?.ai_training_min_confidence ?? 90);
     const scoreRows = Object.entries(counts).map(([event_name, v]) => {
-      const { confidence, rationale } = confidenceFor(event_name, v.count, orderCount);
+      const { confidence, rationale } =
+        event_name === "purchase" ? purchaseScore : volumeConfidence(v.count);
       return {
         metric: `ga4_${event_name}`,
         scope: "global",
@@ -210,9 +337,24 @@ Deno.serve(async (req) => {
       await c.from("cie_confidence_scores").upsert(row, { onConflict: "metric,scope" });
     }
 
-    return new Response(JSON.stringify({ ok: true, traceId, days, counts, orderCount, scores: scoreRows }), {
+    // Persist mismatch breakdown for the dashboard
+    await c.from("cie_metric_mismatches").upsert(
+      {
+        metric: "ga4_purchase",
+        scope: "global",
+        window_hours: days * 24,
+        breakdown: recon as unknown as Record<string, unknown>,
+        evaluated_at: nowIso,
+      },
+      { onConflict: "metric,scope" },
+    );
+
+    return new Response(
+      JSON.stringify({ ok: true, traceId, days, counts, orderCount, scores: scoreRows, reconciliation: recon }),
+      {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      },
+    );
   } catch (err) {
     return new Response(JSON.stringify({ ok: false, traceId, message: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
