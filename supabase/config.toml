@@ -461,3 +461,15 @@ verify_jwt = false
 
 [functions.cie-ga4-adapter]
 verify_jwt = false
+
+[functions.gv35-persona-discovery]
+verify_jwt = true
+
+[functions.gv35-audience-matcher]
+verify_jwt = true
+
+[functions.gv35-audience-evaluator]
+verify_jwt = true
+
+[functions.gv35-audience-decision]
+verify_jwt = true

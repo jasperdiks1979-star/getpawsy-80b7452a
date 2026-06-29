@@ -28460,6 +28460,253 @@ export type Database = {
         }
         Relationships: []
       }
+      gv35_audience_personas: {
+        Row: {
+          budget_band: string | null
+          buying_triggers: Json
+          confidence: number
+          content_preferences: Json
+          created_at: string
+          dream_outcome: string | null
+          evidence_count: number
+          evidence_sources: Json
+          human_locked: boolean
+          id: string
+          intent: string | null
+          lifestyle: string | null
+          motivation: string | null
+          name: string
+          pain_points: Json
+          pinterest_behavior: Json
+          primary_emotion: string | null
+          shopping_behavior: Json
+          slug: string
+          source_cohort_key: string | null
+          source_concept_key: string | null
+          status: string
+          updated_at: string
+          version: number
+          visual_preferences: Json
+        }
+        Insert: {
+          budget_band?: string | null
+          buying_triggers?: Json
+          confidence?: number
+          content_preferences?: Json
+          created_at?: string
+          dream_outcome?: string | null
+          evidence_count?: number
+          evidence_sources?: Json
+          human_locked?: boolean
+          id?: string
+          intent?: string | null
+          lifestyle?: string | null
+          motivation?: string | null
+          name: string
+          pain_points?: Json
+          pinterest_behavior?: Json
+          primary_emotion?: string | null
+          shopping_behavior?: Json
+          slug: string
+          source_cohort_key?: string | null
+          source_concept_key?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+          visual_preferences?: Json
+        }
+        Update: {
+          budget_band?: string | null
+          buying_triggers?: Json
+          confidence?: number
+          content_preferences?: Json
+          created_at?: string
+          dream_outcome?: string | null
+          evidence_count?: number
+          evidence_sources?: Json
+          human_locked?: boolean
+          id?: string
+          intent?: string | null
+          lifestyle?: string | null
+          motivation?: string | null
+          name?: string
+          pain_points?: Json
+          pinterest_behavior?: Json
+          primary_emotion?: string | null
+          shopping_behavior?: Json
+          slug?: string
+          source_cohort_key?: string | null
+          source_concept_key?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+          visual_preferences?: Json
+        }
+        Relationships: []
+      }
+      gv35_audience_signals_daily: {
+        Row: {
+          atc: number
+          day: string
+          expected_revenue: number
+          impressions: number
+          outbound_clicks: number
+          persona_id: string
+          purchases: number
+          revenue: number
+          saves: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          atc?: number
+          day: string
+          expected_revenue?: number
+          impressions?: number
+          outbound_clicks?: number
+          persona_id: string
+          purchases?: number
+          revenue?: number
+          saves?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          atc?: number
+          day?: string
+          expected_revenue?: number
+          impressions?: number
+          outbound_clicks?: number
+          persona_id?: string
+          purchases?: number
+          revenue?: number
+          saves?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv35_audience_signals_daily_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv35_audience_signals_daily_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv35_audience_signals_daily_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_timing_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv35_audience_signals_daily_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+        ]
+      }
+      gv35_product_audience_match: {
+        Row: {
+          buying_probability: number
+          click_prob: number
+          evidence: Json
+          expected_revenue: number
+          match_score: number
+          persona_id: string
+          product_id: string
+          purchase_prob: number
+          rank: string
+          save_prob: number
+          updated_at: string
+        }
+        Insert: {
+          buying_probability?: number
+          click_prob?: number
+          evidence?: Json
+          expected_revenue?: number
+          match_score?: number
+          persona_id: string
+          product_id: string
+          purchase_prob?: number
+          rank?: string
+          save_prob?: number
+          updated_at?: string
+        }
+        Update: {
+          buying_probability?: number
+          click_prob?: number
+          evidence?: Json
+          expected_revenue?: number
+          match_score?: number
+          persona_id?: string
+          product_id?: string
+          purchase_prob?: number
+          rank?: string
+          save_prob?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv35_product_audience_match_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv35_product_audience_match_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv35_product_audience_match_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_timing_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv35_product_audience_match_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+        ]
+      }
+      gv35_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       gvcae_audit_runs: {
         Row: {
           error: string | null
@@ -37192,6 +37439,7 @@ export type Database = {
           negative_prompt: string | null
           perceptual_hash: string | null
           performance: Json
+          persona_id: string | null
           pet_pose: string | null
           pinterest_pin_id: string | null
           pinterest_score: number | null
@@ -37249,6 +37497,7 @@ export type Database = {
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
+          persona_id?: string | null
           pet_pose?: string | null
           pinterest_pin_id?: string | null
           pinterest_score?: number | null
@@ -37306,6 +37555,7 @@ export type Database = {
           negative_prompt?: string | null
           perceptual_hash?: string | null
           performance?: Json
+          persona_id?: string | null
           pet_pose?: string | null
           pinterest_pin_id?: string | null
           pinterest_score?: number | null
@@ -37327,7 +37577,36 @@ export type Database = {
           visual_fingerprint?: string | null
           visual_style?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_timing_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+        ]
       }
       pcie2_cta_families: {
         Row: {
@@ -60697,6 +60976,61 @@ export type Database = {
           shipping_score: number | null
           title: string | null
           us_stock: number | null
+        }
+        Relationships: []
+      }
+      gv35_audience_performance_v: {
+        Row: {
+          atc_30d: number | null
+          clicks_30d: number | null
+          confidence: number | null
+          ctr_30d: number | null
+          cvr_30d: number | null
+          impressions_30d: number | null
+          name: string | null
+          persona_id: string | null
+          primary_emotion: string | null
+          purchases_30d: number | null
+          revenue_30d: number | null
+          saves_30d: number | null
+          slug: string | null
+        }
+        Relationships: []
+      }
+      gv35_audience_timing_v: {
+        Row: {
+          hour_et: number | null
+          persona_id: string | null
+          purchases: number | null
+          sessions: number | null
+          slug: string | null
+        }
+        Relationships: []
+      }
+      gv35_untapped_audiences_v: {
+        Row: {
+          confidence: number | null
+          name: string | null
+          persona_id: string | null
+          published_creatives: number | null
+          purchases_30d: number | null
+          slug: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          name?: string | null
+          persona_id?: string | null
+          published_creatives?: never
+          purchases_30d?: never
+          slug?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          name?: string | null
+          persona_id?: string | null
+          published_creatives?: never
+          purchases_30d?: never
+          slug?: string | null
         }
         Relationships: []
       }
