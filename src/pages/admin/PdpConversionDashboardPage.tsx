@@ -16,6 +16,7 @@ import { useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalProducts } from '@/lib/canonicalAnalytics';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -44,71 +45,38 @@ function usd(n: number) {
 }
 
 async function loadRows(): Promise<Row[]> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  // Pull funnel events for the window (views + atc + begin_checkout).
-  const { data: funnel, error: funnelErr } = await supabase
-    .from('lp_funnel_events')
-    .select('event_name, product_id, product_name')
-    .in('event_name', ['pdp_view', 'add_to_cart', 'begin_checkout'])
-    .eq('is_bot', false)
-    .gte('created_at', sevenDaysAgo)
-    .limit(50000);
-
-  if (funnelErr) throw funnelErr;
-
-  // Pull recent purchases for revenue.
-  const { data: purchases, error: purchasesErr } = await supabase
-    .from('visitor_activity')
-    .select('product_id, product_name, order_value')
-    .eq('activity_type', 'purchase')
-    .gte('created_at', sevenDaysAgo)
-    .limit(50000);
-
-  if (purchasesErr) throw purchasesErr;
-
+  // Canonical V2.7 — single source of truth via canonical_products daily rollup.
+  const daily = await getCanonicalProducts(7);
   const byId = new Map<string, Row>();
-  const ensure = (id: string, name: string | null) => {
-    let r = byId.get(id);
+  for (const d of daily) {
+    let r = byId.get(d.product_id);
     if (!r) {
       r = {
-        productId: id,
-        productName: name || id,
-        views: 0,
-        atc: 0,
-        checkout: 0,
-        orders: 0,
-        revenue: 0,
-        atcRate: 0,
-        checkoutRate: 0,
-        score: 0,
-        lowTraffic: true,
+        productId: d.product_id,
+        productName: d.product_id,
+        views: 0, atc: 0, checkout: 0, orders: 0, revenue: 0,
+        atcRate: 0, checkoutRate: 0, score: 0, lowTraffic: true,
       };
-      byId.set(id, r);
-    } else if (name && !r.productName) {
-      r.productName = name;
+      byId.set(d.product_id, r);
     }
-    return r;
-  };
-
-  for (const e of funnel || []) {
-    const id = (e as { product_id?: string | null }).product_id;
-    if (!id) continue;
-    const row = ensure(id, (e as { product_name?: string | null }).product_name ?? null);
-    if (e.event_name === 'pdp_view') row.views += 1;
-    else if (e.event_name === 'add_to_cart') row.atc += 1;
-    else if (e.event_name === 'begin_checkout') row.checkout += 1;
+    r.views += d.product_views;
+    r.atc += d.add_to_carts;
+    r.checkout += d.checkouts;
+    r.orders += d.purchases;
+    r.revenue += (d.revenue_cents || 0) / 100;
   }
-
-  for (const p of purchases || []) {
-    const id = (p as { product_id?: string | null }).product_id;
-    if (!id) continue;
-    const row = ensure(id, (p as { product_name?: string | null }).product_name ?? null);
-    row.orders += 1;
-    const v = Number((p as { order_value?: number | null }).order_value || 0);
-    if (Number.isFinite(v)) row.revenue += v;
+  // Hydrate display names from the products catalog.
+  const ids = Array.from(byId.keys());
+  if (ids.length) {
+    const { data: prods } = await supabase
+      .from('products')
+      .select('id, name')
+      .in('id', ids);
+    for (const p of prods ?? []) {
+      const row = byId.get((p as any).id);
+      if (row) row.productName = (p as any).name || row.productId;
+    }
   }
-
   const rows = Array.from(byId.values()).map((r) => {
     r.atcRate = r.views > 0 ? r.atc / r.views : 0;
     r.checkoutRate = r.views > 0 ? r.checkout / r.views : 0;

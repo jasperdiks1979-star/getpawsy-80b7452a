@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalFunnelSessions, getCanonicalOrders, type CanonicalSessionRow, type CanonicalOrderRow } from '@/lib/canonicalAnalytics';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -31,27 +31,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 type Range = '24h' | '7d' | '30d';
-type GeoTier = 'all' | 'verified_us' | 'probable_us' | 'non_us' | 'unknown';
-type Classification = 'all' | 'verified_user' | 'probable_user' | 'unknown';
+type GeoTier = 'all' | 'us' | 'non_us' | 'unknown';
 type Device = 'all' | 'mobile' | 'desktop' | 'tablet' | 'unknown';
-
-interface Row {
-  event_name: string;
-  session_id: string;
-  is_bot: boolean | null;
-  classification: string | null;
-  geo_tier: string | null;
-  device: string | null;
-  qa: boolean | null;
-  value: number | null;
-}
 
 const FUNNEL_STEPS = ['view_item', 'add_to_cart', 'checkout_click', 'payment_success'] as const;
 type Step = typeof FUNNEL_STEPS[number];
 
-function rangeStart(r: Range): string {
-  const days = r === '24h' ? 1 : r === '7d' ? 7 : 30;
-  return new Date(Date.now() - days * 24 * 3600e3).toISOString();
+function rangeHours(r: Range): number {
+  return r === '24h' ? 24 : r === '7d' ? 24 * 7 : 24 * 30;
 }
 
 function pct(n: number, d: number): string {
@@ -62,97 +49,86 @@ function pct(n: number, d: number): string {
 export default function CleanKpiDashboard() {
   const [range, setRange] = useState<Range>('7d');
   const [geoTier, setGeoTier] = useState<GeoTier>('all');
-  const [classification, setClassification] = useState<Classification>('all');
   const [device, setDevice] = useState<Device>('all');
-  const [excludeBots, setExcludeBots] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [sessions, setSessions] = useState<CanonicalSessionRow[]>([]);
+  const [orders, setOrders] = useState<CanonicalOrderRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase
-      .from('lp_funnel_events')
-      .select('event_name, session_id, is_bot, classification, geo_tier, device, qa, value')
-      .gte('created_at', rangeStart(range))
-      .eq('qa', false)
-      .in('event_name', [...FUNNEL_STEPS])
-      .limit(50000);
-    if (error) {
-      setError(error.message);
-      setRows([]);
-    } else {
-      setRows((data ?? []) as Row[]);
+    try {
+      const hours = rangeHours(range);
+      const [s, o] = await Promise.all([
+        getCanonicalFunnelSessions({ hours }),
+        getCanonicalOrders({ hours }),
+      ]);
+      setSessions(s);
+      setOrders(o);
+    } catch (e: any) {
+      setError(e?.message ?? String(e));
+      setSessions([]);
+      setOrders([]);
     }
     setLoading(false);
   }, [range]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Apply admin filters to compute the Clean slice.
+  // Apply admin filters (canonical V2.7 — bots/qa never enter canonical_events).
   const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (excludeBots && r.is_bot === true) return false;
-      if (geoTier !== 'all' && (r.geo_tier ?? 'unknown') !== geoTier) return false;
-      if (classification !== 'all' && (r.classification ?? 'unknown') !== classification) return false;
-      if (device !== 'all' && (r.device ?? 'unknown') !== device) return false;
+    return sessions.filter((s) => {
+      const country = s.country ?? 'unknown';
+      const tier: GeoTier = country === 'US' ? 'us' : country === 'unknown' ? 'unknown' : 'non_us';
+      if (geoTier !== 'all' && tier !== geoTier) return false;
+      if (device !== 'all' && (s.device ?? 'unknown') !== device) return false;
       return true;
     });
-  }, [rows, excludeBots, geoTier, classification, device]);
+  }, [sessions, geoTier, device]);
 
-  // Funnel: unique sessions per step.
+  // Funnel: unique sessions per step from canonical reached_* flags.
   const funnel = useMemo(() => {
-    const sets: Record<Step, Set<string>> = {
-      view_item: new Set(), add_to_cart: new Set(),
-      checkout_click: new Set(), payment_success: new Set(),
-    };
-    let revenue = 0;
-    for (const r of filtered) {
-      const step = r.event_name as Step;
-      if (step in sets) sets[step].add(r.session_id);
-      if (step === 'payment_success' && typeof r.value === 'number') revenue += r.value;
+    const counts: Record<Step, number> = { view_item: 0, add_to_cart: 0, checkout_click: 0, payment_success: 0 };
+    const filteredIds = new Set(filtered.map((s) => s.session_id).filter(Boolean) as string[]);
+    for (const s of filtered) {
+      if (s.reached_product_view) counts.view_item++;
+      if (s.reached_add_to_cart) counts.add_to_cart++;
+      if (s.reached_checkout) counts.checkout_click++;
+      if (s.reached_purchase) counts.payment_success++;
     }
-    return {
-      counts: {
-        view_item: sets.view_item.size,
-        add_to_cart: sets.add_to_cart.size,
-        checkout_click: sets.checkout_click.size,
-        payment_success: sets.payment_success.size,
-      },
-      revenue,
-    };
-  }, [filtered]);
+    const revenue = orders
+      .filter((o) => !o.session_id || filteredIds.has(o.session_id))
+      .reduce((acc, o) => acc + Number(o.total_amount || 0), 0);
+    return { counts, revenue };
+  }, [filtered, orders]);
 
-  // Envelope coverage — how much of the raw data carries the new columns.
+  // Coverage — canonical session metadata completeness.
   const coverage = useMemo(() => {
-    const total = rows.length;
-    if (!total) return { total: 0, geo: 0, cls: 0, dev: 0 };
-    let geo = 0, cls = 0, dev = 0;
-    for (const r of rows) {
-      if (r.geo_tier) geo++;
-      if (r.classification) cls++;
-      if (r.device) dev++;
+    const total = sessions.length;
+    if (!total) return { total: 0, geo: 0, cls: total, dev: 0 };
+    let geo = 0, dev = 0;
+    for (const s of sessions) {
+      if (s.country) geo++;
+      if (s.device) dev++;
     }
-    return { total, geo, cls, dev };
-  }, [rows]);
+    return { total, geo, cls: total, dev };
+  }, [sessions]);
 
-  // Per-segment breakdown by geo_tier.
+  // Per-segment breakdown by canonical country tier.
   const geoBreakdown = useMemo(() => {
-    const buckets = new Map<string, { sessions: Set<string>; atc: Set<string>; purchases: Set<string> }>();
-    for (const r of filtered) {
-      const k = r.geo_tier ?? 'unknown';
+    const buckets = new Map<string, { sessions: number; add_to_cart: number; purchases: number }>();
+    for (const s of filtered) {
+      const country = s.country ?? 'unknown';
+      const k = country === 'US' ? 'us' : country === 'unknown' ? 'unknown' : 'non_us';
       let b = buckets.get(k);
-      if (!b) { b = { sessions: new Set(), atc: new Set(), purchases: new Set() }; buckets.set(k, b); }
-      b.sessions.add(r.session_id);
-      if (r.event_name === 'add_to_cart') b.atc.add(r.session_id);
-      if (r.event_name === 'payment_success') b.purchases.add(r.session_id);
+      if (!b) { b = { sessions: 0, add_to_cart: 0, purchases: 0 }; buckets.set(k, b); }
+      b.sessions++;
+      if (s.reached_add_to_cart) b.add_to_cart++;
+      if (s.reached_purchase) b.purchases++;
     }
     return [...buckets.entries()]
-      .map(([k, v]) => ({
-        geo_tier: k, sessions: v.sessions.size,
-        add_to_cart: v.atc.size, purchases: v.purchases.size,
-      }))
+      .map(([k, v]) => ({ geo_tier: k, ...v }))
       .sort((a, b) => b.sessions - a.sessions);
   }, [filtered]);
 
@@ -193,15 +169,8 @@ export default function CleanKpiDashboard() {
             ]} />
             <FilterSelect label="Geo tier" value={geoTier} onChange={(v) => setGeoTier(v as GeoTier)} options={[
               { v: 'all', l: 'All' },
-              { v: 'verified_us', l: 'Verified US' },
-              { v: 'probable_us', l: 'Probable US' },
+              { v: 'us', l: 'US' },
               { v: 'non_us', l: 'Non-US' },
-              { v: 'unknown', l: 'Unknown' },
-            ]} />
-            <FilterSelect label="Classification" value={classification} onChange={(v) => setClassification(v as Classification)} options={[
-              { v: 'all', l: 'All' },
-              { v: 'verified_user', l: 'Verified user' },
-              { v: 'probable_user', l: 'Probable user' },
               { v: 'unknown', l: 'Unknown' },
             ]} />
             <FilterSelect label="Device" value={device} onChange={(v) => setDevice(v as Device)} options={[
@@ -210,10 +179,6 @@ export default function CleanKpiDashboard() {
               { v: 'desktop', l: 'Desktop' },
               { v: 'tablet', l: 'Tablet' },
               { v: 'unknown', l: 'Unknown' },
-            ]} />
-            <FilterSelect label="Bots" value={excludeBots ? 'exclude' : 'include'} onChange={(v) => setExcludeBots(v === 'exclude')} options={[
-              { v: 'exclude', l: 'Exclude bots' },
-              { v: 'include', l: 'Include bots' },
             ]} />
           </CardContent>
         </Card>

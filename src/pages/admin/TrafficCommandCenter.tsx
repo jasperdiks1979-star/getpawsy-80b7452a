@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalEventCounts, type CanonicalStage } from "@/lib/canonicalAnalytics";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,21 +24,24 @@ const TrafficCommandCenter = () => {
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
     const since7 = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const [{ data: ev }, { data: va }, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
-      supabase.from("lp_funnel_events").select("event_name").gte("created_at", since).eq("qa", false),
+    const [canonCounts, { data: va }, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
+      getCanonicalEventCounts(30 * 24),
       supabase.from("visitor_activity").select("referrer_category, session_id").gte("created_at", since7),
       supabase.from("pinterest_pin_queue").select("status, created_at").gte("created_at", since7),
       supabase.from("orders").select("status, total_amount, created_at").gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("pinterest_credit_state").select("*").eq("id", 1).maybeSingle(),
     ]);
 
-    const counts: Record<string, number> = {};
-    (ev || []).forEach((r: any) => (counts[r.event_name] = (counts[r.event_name] || 0) + 1));
-    setFunnel(
-      ["lp_view", "view_item", "pdp_view", "sticky_atc_visible", "add_to_cart", "begin_checkout", "payment_success"].map(
-        (k) => ({ stage: k, count: counts[k] || 0 })
-      )
-    );
+    // Canonical truth: derive funnel from canonical_events (Genesis V2.7).
+    const stageMap: Array<{ stage: string; key: CanonicalStage }> = [
+      { stage: "page_view",       key: "CANONICAL_PAGE_VIEW" },
+      { stage: "product_view",    key: "CANONICAL_PRODUCT_VIEW" },
+      { stage: "add_to_cart",     key: "CANONICAL_ADD_TO_CART" },
+      { stage: "cart_open",       key: "CANONICAL_CART" },
+      { stage: "checkout",        key: "CANONICAL_CHECKOUT" },
+      { stage: "payment_success", key: "CANONICAL_PURCHASE" },
+    ];
+    setFunnel(stageMap.map(({ stage, key }) => ({ stage, count: canonCounts[key] ?? 0 })));
 
     const bySrc: Record<string, Set<string>> = {};
     (va || []).forEach((r: any) => {
@@ -75,7 +79,7 @@ const TrafficCommandCenter = () => {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   const atc = funnel.find((f) => f.stage === "add_to_cart")?.count || 0;
-  const view = funnel.find((f) => f.stage === "view_item")?.count || 0;
+  const view = funnel.find((f) => f.stage === "product_view")?.count || 0;
   const atcRate = view ? ((atc / view) * 100).toFixed(2) : "0.00";
   const paid = orders.filter((o) => o.status === "paid").length;
 
