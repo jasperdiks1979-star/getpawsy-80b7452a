@@ -1893,6 +1893,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="canonical-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CanonicalAnalyticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-recovery"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
