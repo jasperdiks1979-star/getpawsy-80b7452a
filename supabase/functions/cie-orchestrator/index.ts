@@ -10,7 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -23,6 +23,13 @@ function admin() {
 }
 
 async function requireAdmin(req: Request): Promise<{ ok: boolean; userId?: string; status?: number; message?: string }> {
+  // Internal cron / service-to-service bypass: signed with INTERNAL_FUNCTION_SECRET.
+  const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
+  const cron = Deno.env.get("CIE_CRON_SECRET") ?? "";
+  const provided = req.headers.get("x-internal-secret") ?? "";
+  if (provided && ((internal && provided === internal) || (cron && provided === cron))) {
+    return { ok: true, userId: "internal-cron" };
+  }
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return { ok: false, status: 401, message: "missing bearer" };
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
