@@ -78,3 +78,11 @@ export async function fetchSyntheticRuns(limit = 20) {
   if (error) throw error;
   return data ?? [];
 }
+
+export async function syncGa4(days = 1) {
+  const { data, error } = await supabase.functions.invoke("cie-ga4-adapter", {
+    body: { days },
+  });
+  if (error) throw error;
+  return data;
+}
