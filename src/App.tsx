@@ -570,6 +570,7 @@ const AiCompanyOsPage = lazyWithRetry(() => import("./pages/admin/AiCompanyOsPag
 const ArchitecturePage = lazyWithRetry(() => import("./pages/admin/ArchitecturePage"));
 const ProductionExcellencePage = lazyWithRetry(() => import("./pages/admin/ProductionExcellencePage"));
 const ConversionIntegrityPage = lazyWithRetry(() => import("./pages/admin/ConversionIntegrityPage"));
+const ConversionRealityPage = lazyWithRetry(() => import("./pages/admin/ConversionRealityPage"));
 const PieEnginePage = lazyWithRetry(() => import("./pages/admin/PieEnginePage"));
 const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/EvolutionIntelligencePage"));
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
