@@ -995,10 +995,25 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     trackCci('add_to_cart_click', { product_id: product?.id, funnel_stage: 'add_to_cart' });
-    if (geoBlocked) {
-      toast.error('This product is currently only available in the United States and Canada.');
-      trackCci('add_to_cart_error', { product_id: product?.id, meta: { reason: 'geo_blocked' } });
-      return;
+    // NEVER block ATC on geo. Final shipping eligibility is enforced at
+    // checkout (`ShippingPrecheck` + `create-checkout` server validation).
+    // If geo is unknown OR positively unsupported we still write the cart
+    // and emit a soft signal so the funnel stays observable.
+    if (!visitorCountry) {
+      trackCci('geo_lookup_failed', {
+        product_id: product?.id,
+        meta: { stage: 'pdp_atc', shipping_eligibility: 'unknown_pending_checkout' },
+      });
+    } else if (geoBlocked) {
+      trackCci('add_to_cart_click', {
+        product_id: product?.id,
+        meta: {
+          shipping_eligibility: 'region_warning',
+          destination_country: visitorCountry,
+          warehouse: productWarehouse,
+        },
+      });
+      toast.message('Limited shipping to your region — we\'ll confirm at checkout.');
     }
     // Prevent adding out-of-stock items
     if (!inStock) {
