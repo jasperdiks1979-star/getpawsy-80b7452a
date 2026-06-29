@@ -89,6 +89,17 @@ const Cart = () => {
         currency: 'USD',
       });
     } catch { /* analytics never breaks UX */ }
+    try {
+      trackCci('checkout_click', {
+        funnel_stage: 'checkout_intent',
+        meta: {
+          source_component,
+          item_count: items.reduce((s, i) => s + i.quantity, 0),
+          value: Number(total.toFixed(2)),
+          currency: 'USD',
+        },
+      });
+    } catch { /* swallow */ }
   };
 
   if (items.length === 0) {
