@@ -106,6 +106,7 @@ export function parseEventCountsResponse(j: { rows?: unknown[] }): Ga4EventCount
   const out: Ga4EventCounts = {
     page_view: { count: 0, revenue: 0 },
     session_start: { count: 0, revenue: 0 },
+    begin_checkout: { count: 0, revenue: 0 },
     purchase: { count: 0, revenue: 0 },
   };
   for (const row of (j.rows ?? []) as Array<Record<string, any>>) {
