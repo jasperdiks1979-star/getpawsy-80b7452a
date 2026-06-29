@@ -27705,6 +27705,480 @@ export type Database = {
         }
         Relationships: []
       }
+      gv3_pi_recommendations: {
+        Row: {
+          classification: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          expected_impact: string | null
+          id: string
+          priority: number
+          product_id: string
+          reason: string | null
+          recommended_action: string
+          run_id: string | null
+          status: string
+        }
+        Insert: {
+          classification: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_impact?: string | null
+          id?: string
+          priority?: number
+          product_id: string
+          reason?: string | null
+          recommended_action: string
+          run_id?: string | null
+          status?: string
+        }
+        Update: {
+          classification?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          expected_impact?: string | null
+          id?: string
+          priority?: number
+          product_id?: string
+          reason?: string | null
+          recommended_action?: string
+          run_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gv3_pi_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gv3_pi_runs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          products_scored: number
+          products_targeted: number
+          recommendations_written: number
+          report: Json
+          started_at: string | null
+          status: string
+          trigger_source: string
+          triggered_by: string | null
+          window_days: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scored?: number
+          products_targeted?: number
+          recommendations_written?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+          window_days?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          products_scored?: number
+          products_targeted?: number
+          recommendations_written?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+          window_days?: number
+        }
+        Relationships: []
+      }
+      gv3_pi_scores: {
+        Row: {
+          add_to_carts: number
+          aov_cents: number
+          aov_score: number
+          atc_score: number
+          checkout_score: number
+          checkouts: number
+          classification: string | null
+          components: Json
+          confidence_score: number
+          cro_risk_score: number
+          evidence: Json
+          last_scored_at: string
+          overall_score: number
+          pinterest_score: number
+          product_id: string
+          product_views: number
+          profit_score: number
+          purchase_score: number
+          purchases: number
+          reason: string | null
+          revenue_cents: number
+          revenue_score: number
+          run_id: string | null
+          seo_score: number
+          sessions: number
+          tiktok_score: number
+          traffic_score: number
+          updated_at: string
+          view_score: number
+          window_days: number
+        }
+        Insert: {
+          add_to_carts?: number
+          aov_cents?: number
+          aov_score?: number
+          atc_score?: number
+          checkout_score?: number
+          checkouts?: number
+          classification?: string | null
+          components?: Json
+          confidence_score?: number
+          cro_risk_score?: number
+          evidence?: Json
+          last_scored_at?: string
+          overall_score?: number
+          pinterest_score?: number
+          product_id: string
+          product_views?: number
+          profit_score?: number
+          purchase_score?: number
+          purchases?: number
+          reason?: string | null
+          revenue_cents?: number
+          revenue_score?: number
+          run_id?: string | null
+          seo_score?: number
+          sessions?: number
+          tiktok_score?: number
+          traffic_score?: number
+          updated_at?: string
+          view_score?: number
+          window_days?: number
+        }
+        Update: {
+          add_to_carts?: number
+          aov_cents?: number
+          aov_score?: number
+          atc_score?: number
+          checkout_score?: number
+          checkouts?: number
+          classification?: string | null
+          components?: Json
+          confidence_score?: number
+          cro_risk_score?: number
+          evidence?: Json
+          last_scored_at?: string
+          overall_score?: number
+          pinterest_score?: number
+          product_id?: string
+          product_views?: number
+          profit_score?: number
+          purchase_score?: number
+          purchases?: number
+          reason?: string | null
+          revenue_cents?: number
+          revenue_score?: number
+          run_id?: string | null
+          seo_score?: number
+          sessions?: number
+          tiktok_score?: number
+          traffic_score?: number
+          updated_at?: string
+          view_score?: number
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gv3_pi_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gv3_pin_growth_recommendations: {
+        Row: {
+          classification: string
+          confidence: number
+          content_strategy: Json
+          created_at: string
+          evidence: Json
+          expected_impact: string | null
+          id: string
+          priority: number
+          product_id: string
+          reason: string | null
+          recommended_action: string
+          run_id: string | null
+          status: string
+        }
+        Insert: {
+          classification: string
+          confidence?: number
+          content_strategy?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact?: string | null
+          id?: string
+          priority?: number
+          product_id: string
+          reason?: string | null
+          recommended_action: string
+          run_id?: string | null
+          status?: string
+        }
+        Update: {
+          classification?: string
+          confidence?: number
+          content_strategy?: Json
+          created_at?: string
+          evidence?: Json
+          expected_impact?: string | null
+          id?: string
+          priority?: number
+          product_id?: string
+          reason?: string | null
+          recommended_action?: string
+          run_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gv3_pin_growth_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gv3_pin_growth_runs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          products_analyzed: number
+          products_promoted: number
+          recommendations_written: number
+          report: Json
+          started_at: string | null
+          status: string
+          trigger_source: string
+          window_days: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          products_analyzed?: number
+          products_promoted?: number
+          recommendations_written?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          window_days?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          products_analyzed?: number
+          products_promoted?: number
+          recommendations_written?: number
+          report?: Json
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          window_days?: number
+        }
+        Relationships: []
+      }
+      gv3_pin_growth_scores: {
+        Row: {
+          classification: string | null
+          components: Json
+          confidence: number
+          evidence: Json
+          last_scored_at: string
+          pinterest_growth_score: number
+          pinterest_saturation: number
+          predicted_opportunity: number
+          product_id: string
+          reason: string | null
+          run_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          classification?: string | null
+          components?: Json
+          confidence?: number
+          evidence?: Json
+          last_scored_at?: string
+          pinterest_growth_score?: number
+          pinterest_saturation?: number
+          predicted_opportunity?: number
+          product_id: string
+          reason?: string | null
+          run_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          classification?: string | null
+          components?: Json
+          confidence?: number
+          evidence?: Json
+          last_scored_at?: string
+          pinterest_growth_score?: number
+          pinterest_saturation?: number
+          predicted_opportunity?: number
+          product_id?: string
+          reason?: string | null
+          run_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "gv3_pin_growth_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gvcae_audit_runs: {
         Row: {
           error: string | null
