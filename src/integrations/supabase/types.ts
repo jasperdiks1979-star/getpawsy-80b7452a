@@ -59855,6 +59855,9 @@ export type Database = {
         Returns: {
           dup_pairs: number
           dup_sessions: number
+          miss_rate_pct: number
+          missing_success: number
+          total_clicks: number
         }[]
       }
       cci_check_geo_unknown_funnel: { Args: never; Returns: Json }
