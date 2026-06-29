@@ -1140,6 +1140,7 @@ export default function PinterestHealthPage() {
         )}
       </Card>
       <ExecutiveCouncilPanel />
+      <ProductRelevanceEnginePanel />
       <PcieV2Panel />
       <PinterestPsychologyEnginePanel />
       <TasteEnginePanel />
@@ -1155,6 +1156,7 @@ export default function PinterestHealthPage() {
 }
 
 function TasteEnginePanel() {
+/* PRE panel injected above TasteEnginePanel */
   const [signals, setSignals] = useState<any[]>([]);
   const [clusters, setClusters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -2793,5 +2795,155 @@ function PinterestPsychologyEnginePanel() {
         )}
       </div>
     </Card>
+  );
+}
+
+function ProductRelevanceEnginePanel() {
+  const [stats, setStats] = useState<any>(null);
+  const [recent, setRecent] = useState<any[]>([]);
+  const [pinId, setPinId] = useState("");
+  const [running, setRunning] = useState(false);
+  const [lastVerdict, setLastVerdict] = useState<any>(null);
+
+  async function load() {
+    const [s, r] = await Promise.all([
+      supabase.functions.invoke("pre-product-relevance", { body: { action: "stats" } }),
+      supabase.functions.invoke("pre-product-relevance", { body: { action: "recent", limit: 20 } }),
+    ]);
+    setStats((s.data as any)?.stats ?? null);
+    setRecent(((r.data as any)?.evaluations) ?? []);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function evaluateQueued() {
+    if (!pinId.trim()) return;
+    setRunning(true);
+    setLastVerdict(null);
+    try {
+      const { data } = await supabase.functions.invoke("pre-product-relevance", {
+        body: { action: "evaluate_pin_queue", id: pinId.trim() },
+      });
+      setLastVerdict((data as any)?.verdict ?? data);
+      await load();
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <Card className="p-6 mt-6">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h2 className="text-lg font-semibold">Product Relevance Engine (PRE)</h2>
+          <p className="text-xs text-muted-foreground">
+            Genesis V2 — vision gate. NO Pinterest pin publishes unless the creative truly matches the product.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={load}>Refresh</Button>
+      </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 my-4 text-sm">
+          <PreStat label="Evals 24h" value={stats.total} />
+          <PreStat label="Passed" value={stats.passed} tone="ok" />
+          <PreStat label="Rejected" value={stats.rejected} tone="bad" />
+          <PreStat label="Pass rate" value={`${Math.round((stats.pass_rate ?? 0) * 100)}%`} />
+          <PreStat label="Avg score" value={stats.avg_score} />
+        </div>
+      )}
+
+      {stats?.top_reasons?.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Top blocking reasons (24h)</div>
+          <div className="flex flex-wrap gap-2">
+            {stats.top_reasons.map(([reason, count]: [string, number]) => (
+              <Badge key={reason} variant="outline" className="text-xs">{reason} · {count}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-4">
+        <input
+          value={pinId}
+          onChange={(e) => setPinId(e.target.value)}
+          placeholder="pinterest_pin_queue.id to dry-run"
+          className="flex-1 px-3 py-2 border rounded text-sm font-mono"
+        />
+        <Button size="sm" onClick={evaluateQueued} disabled={running || !pinId.trim()}>
+          {running ? "Evaluating…" : "Evaluate"}
+        </Button>
+      </div>
+
+      {lastVerdict && (
+        <div className="border rounded p-3 mb-4 text-sm bg-muted/30">
+          <div className="flex gap-2 items-center mb-2">
+            <Badge className={lastVerdict.passed ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}>
+              {lastVerdict.passed ? "PASS" : "REJECT"}
+            </Badge>
+            <span className="font-bold">{lastVerdict.overall_score}/100</span>
+            <span className="text-xs text-muted-foreground">
+              vis {lastVerdict.scores?.product_visibility} · click {lastVerdict.scores?.click_intent} · occupancy {lastVerdict.scores?.product_occupancy_pct}%
+            </span>
+          </div>
+          {lastVerdict.blocking_reasons?.length > 0 && (
+            <div className="text-xs"><strong>Blocking:</strong> {lastVerdict.blocking_reasons.join(", ")}</div>
+          )}
+          {lastVerdict.regenerate_brief?.why_failed && (
+            <div className="text-xs mt-1"><strong>Why:</strong> {lastVerdict.regenerate_brief.why_failed}</div>
+          )}
+        </div>
+      )}
+
+      <div className="border rounded overflow-hidden">
+        <table className="w-full text-xs">
+          <thead className="bg-muted">
+            <tr>
+              <th className="text-left p-2">Slug</th>
+              <th className="text-left p-2">Verdict</th>
+              <th className="text-left p-2">Score</th>
+              <th className="text-left p-2">Species/Use</th>
+              <th className="text-left p-2">Reasons</th>
+              <th className="text-left p-2">When</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.map((e) => (
+              <tr key={e.id} className="border-t align-top">
+                <td className="p-2 font-mono">{e.product_slug}</td>
+                <td className="p-2">
+                  <Badge className={e.passed ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}>
+                    {e.passed ? "PASS" : "REJECT"}
+                  </Badge>
+                </td>
+                <td className="p-2 font-bold">{e.overall_score ?? "—"}</td>
+                <td className="p-2">{e.detected_species} / {e.detected_use_case}</td>
+                <td className="p-2">
+                  <div className="flex flex-wrap gap-1">
+                    {(e.blocking_reasons ?? []).slice(0, 3).map((r: string, i: number) => (
+                      <span key={i} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">{r}</span>
+                    ))}
+                  </div>
+                </td>
+                <td className="p-2 text-muted-foreground">{new Date(e.created_at).toLocaleString()}</td>
+              </tr>
+            ))}
+            {recent.length === 0 && (
+              <tr><td colSpan={6} className="p-4 text-center text-muted-foreground">No evaluations yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+function PreStat({ label, value, tone }: { label: string; value: any; tone?: "ok" | "bad" }) {
+  return (
+    <div className="border rounded p-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold ${tone === "ok" ? "text-emerald-600" : tone === "bad" ? "text-red-600" : ""}`}>{value}</div>
+    </div>
   );
 }
