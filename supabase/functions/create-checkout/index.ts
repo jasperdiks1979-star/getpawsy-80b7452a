@@ -35,6 +35,22 @@ interface CheckoutRequest {
     zip: string;
     country: string;
   };
+  /**
+   * GA4 client id (gtag get … client_id) captured in the browser.
+   * Stamped into Stripe session metadata so the webhook can fire a
+   * server-side `purchase` event via Measurement Protocol if the client
+   * `trackPurchase` misses (refresh / clearCart / ad-blocker).
+   */
+  gaClientId?: string;
+  gaSessionId?: string;
+  /** Attribution context captured at PDP / cart. */
+  utm?: {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    content?: string;
+    term?: string;
+  };
 }
 
 // Coupon code → discount percent. Kept server-side so Stripe is charged
@@ -131,7 +147,16 @@ serve(async (req) => {
     );
 
     // Parse request body
-    const { items, customerEmail, discountCode, shippingAddress, shippingCountry }: CheckoutRequest = await req.json();
+    const {
+      items,
+      customerEmail,
+      discountCode,
+      shippingAddress,
+      shippingCountry,
+      gaClientId,
+      gaSessionId,
+      utm,
+    }: CheckoutRequest = await req.json();
     const destinationCountry = (shippingCountry || shippingAddress?.country || "")
       .toUpperCase()
       .trim();
@@ -309,6 +334,14 @@ serve(async (req) => {
       coupon_amount: (couponDeductionCents / 100).toFixed(2),
       shipping_amount: (shippingCents / 100).toFixed(2),
       total_value: totalAmount.toFixed(2),
+      // ── Conversion Reality / GA4 server-side fallback ──
+      ga_client_id: (gaClientId || "").slice(0, 100),
+      ga_session_id: (gaSessionId || "").slice(0, 100),
+      utm_source: (utm?.source || "").slice(0, 100),
+      utm_medium: (utm?.medium || "").slice(0, 100),
+      utm_campaign: (utm?.campaign || "").slice(0, 100),
+      utm_content: (utm?.content || "").slice(0, 100),
+      utm_term: (utm?.term || "").slice(0, 100),
     };
 
     // Build ONE one-off coupon for the combined deduction so Stripe charges

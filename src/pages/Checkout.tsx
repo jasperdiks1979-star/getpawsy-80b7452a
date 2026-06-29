@@ -709,6 +709,47 @@ const Checkout = () => {
           customerEmail: finalEmail,
           discountCode: discountApplied || undefined,
           shippingCountry,
+          // Conversion Reality: capture GA4 client/session + UTMs so the
+          // Stripe webhook can fire a server-side `purchase` event via
+          // Measurement Protocol even when /payment-success misses it.
+          gaClientId: await (async () => {
+            try {
+              const measurementId =
+                (window as any).GA_MEASUREMENT_ID ||
+                (import.meta as any).env?.VITE_GA4_MEASUREMENT_ID ||
+                '';
+              if (typeof window.gtag !== 'function' || !measurementId) return '';
+              return await new Promise<string>((resolve) => {
+                const t = setTimeout(() => resolve(''), 600);
+                try {
+                  (window.gtag as unknown as (
+                    cmd: string, id: string, field: string, cb: (v: string) => void,
+                  ) => void)('get', measurementId, 'client_id', (id: string) => {
+                    clearTimeout(t);
+                    resolve(typeof id === 'string' ? id : '');
+                  });
+                } catch { clearTimeout(t); resolve(''); }
+              });
+            } catch { return ''; }
+          })(),
+          gaSessionId: (() => {
+            try {
+              const m = document.cookie.match(/_ga_[A-Z0-9]+=GS\d+\.\d+\.(\d+)\./);
+              return m ? m[1] : '';
+            } catch { return ''; }
+          })(),
+          utm: (() => {
+            try {
+              const sp = new URLSearchParams(window.location.search);
+              return {
+                source: sp.get('utm_source') || '',
+                medium: sp.get('utm_medium') || '',
+                campaign: sp.get('utm_campaign') || '',
+                content: sp.get('utm_content') || '',
+                term: sp.get('utm_term') || '',
+              };
+            } catch { return {}; }
+          })(),
         },
       });
 

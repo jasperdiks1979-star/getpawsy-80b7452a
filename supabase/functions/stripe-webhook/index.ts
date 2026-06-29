@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
 import { runPostPaymentTracking, sendFailureAlert } from "../_shared/post-payment-tracking.ts";
+import { sendGa4PurchaseMp } from "../_shared/ga4-measurement-protocol.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -682,6 +683,49 @@ serve(async (req) => {
           });
         } catch (e) {
           console.error("[STRIPE-WEBHOOK] post-payment tracking failed:", e);
+        }
+
+        // ── GA4 Measurement Protocol — server-side `purchase` event ──
+        // Idempotent via orders.ga4_mp_sent_at so retries / duplicate
+        // webhook deliveries can't double-count. Closes the blind spot
+        // when the client `/payment-success` page misses (refresh /
+        // clearCart / ad-blocker / in-app browser).
+        try {
+          const md = (session.metadata || {}) as Record<string, string>;
+          const { data: orderRow } = await supabaseAdmin
+            .from("orders")
+            .select("id, ga4_mp_sent_at")
+            .eq("id", orderId)
+            .maybeSingle();
+          if (orderRow && !orderRow.ga4_mp_sent_at) {
+            const mpRes = await sendGa4PurchaseMp({
+              clientId: md.ga_client_id || null,
+              sessionId: md.ga_session_id || null,
+              orderId,
+              value: totalValue,
+              currency: session.currency || "usd",
+              items: (items || []).map((it: any) => ({
+                id: it.id, name: it.name, price: it.price, quantity: it.quantity,
+              })),
+              source: md.utm_source || null,
+              medium: md.utm_medium || null,
+              campaign: md.utm_campaign || null,
+            });
+            if (mpRes.ok) {
+              await supabaseAdmin
+                .from("orders")
+                .update({
+                  ga4_mp_sent_at: new Date().toISOString(),
+                  ga_client_id: md.ga_client_id || null,
+                })
+                .eq("id", orderId);
+              console.log("[STRIPE-WEBHOOK] GA4 MP purchase sent:", orderId);
+            } else {
+              console.warn("[STRIPE-WEBHOOK] GA4 MP skipped/failed:", mpRes.reason, mpRes.status);
+            }
+          }
+        } catch (e) {
+          console.error("[STRIPE-WEBHOOK] GA4 MP error:", e);
         }
 
         break;
