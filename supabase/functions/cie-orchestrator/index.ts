@@ -149,18 +149,25 @@ async function confidence(c: ReturnType<typeof admin>) {
   const { count: sesCount } = await c.from("cie_sessions").select("id", { count: "exact", head: true });
   const baseTracking = Math.min(100, ((evCount ?? 0) > 50 ? 95 : (evCount ?? 0) * 1.8));
   const baseSessions = Math.min(100, ((sesCount ?? 0) > 20 ? 95 : (sesCount ?? 0) * 4));
-  // Pull GA4 confidence that cie-ga4-adapter wrote earlier this cycle.
-  const { data: ga4Row } = await c
+  // Pull confidence rows the adapters wrote earlier in this cycle.
+  const { data: adapterRows } = await c
     .from("cie_confidence_scores")
-    .select("confidence, rationale")
-    .eq("metric", "ga4").eq("scope", "global").maybeSingle();
-  const ga4Conf = Number((ga4Row as any)?.confidence ?? 0);
+    .select("metric, confidence, rationale")
+    .in("metric", ["ga4", "pinterest", "tiktok"])
+    .eq("scope", "global");
+  const adapter: Record<string, { c: number; r: string }> = {};
+  for (const r of adapterRows ?? []) {
+    adapter[(r as any).metric] = { c: Number((r as any).confidence ?? 0), r: String((r as any).rationale ?? "") };
+  }
+  const ga4Conf = adapter.ga4?.c ?? 0;
+  const pinConf = adapter.pinterest?.c ?? 0;
+  const ttConf = adapter.tiktok?.c ?? 0;
   const metrics = [
     { metric: "tracking", confidence: baseTracking, rationale: "event volume heuristic" },
     { metric: "sessions", confidence: baseSessions, rationale: "session volume heuristic" },
-    { metric: "ga4", confidence: ga4Conf, rationale: ga4Conf > 0 ? ((ga4Row as any)?.rationale ?? "GA4 adapter live") : "GA4 adapter no data" },
-    { metric: "pinterest", confidence: 0, rationale: "adapter pending" },
-    { metric: "tiktok", confidence: 0, rationale: "adapter pending" },
+    { metric: "ga4", confidence: ga4Conf, rationale: ga4Conf > 0 ? (adapter.ga4?.r ?? "GA4 adapter live") : "GA4 adapter no data" },
+    { metric: "pinterest", confidence: pinConf, rationale: pinConf > 0 ? (adapter.pinterest?.r ?? "Pinterest adapter live") : "Pinterest adapter no data" },
+    { metric: "tiktok", confidence: ttConf, rationale: ttConf > 0 ? (adapter.tiktok?.r ?? "TikTok adapter live") : "TikTok adapter no data" },
     { metric: "revenue", confidence: 100, rationale: "internal orders are authoritative" },
     { metric: "checkout", confidence: baseTracking, rationale: "derived from event volume" },
     { metric: "purchase", confidence: 100, rationale: "internal orders are authoritative" },
@@ -216,25 +223,32 @@ Deno.serve(async (req) => {
     if (action === "cycle") {
       const funnel = await snapshotFunnel(c, body.hours ?? 24);
       const truth = await revenueTruth(c, body.hours ?? 24);
-      // Pull GA4 evidence before computing confidence so the ga4 score is fresh.
-      let ga4: any = { ok: false, message: "skipped" };
-      try {
-        const r = await fetch(`${SUPABASE_URL}/functions/v1/cie-ga4-adapter`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
-            Authorization: `Bearer ${SERVICE_ROLE}`,
-          },
-          body: JSON.stringify({ days: Math.max(1, Math.ceil((body.hours ?? 24) / 24)) }),
-        });
-        ga4 = await r.json();
-      } catch (e) {
-        ga4 = { ok: false, message: (e as Error).message };
-      }
+      // Refresh evidence from each channel adapter before computing confidence.
+      const days = Math.max(1, Math.ceil((body.hours ?? 24) / 24));
+      const callAdapter = async (fn: string) => {
+        try {
+          const r = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
+              Authorization: `Bearer ${SERVICE_ROLE}`,
+            },
+            body: JSON.stringify({ days }),
+          });
+          return await r.json();
+        } catch (e) {
+          return { ok: false, message: (e as Error).message };
+        }
+      };
+      const [ga4, pinterest, tiktok] = await Promise.all([
+        callAdapter("cie-ga4-adapter"),
+        callAdapter("cie-pinterest-adapter"),
+        callAdapter("cie-tiktok-adapter"),
+      ]);
       const metrics = await confidence(c);
       const health = await healthSnapshot(c);
-      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, metrics, health }), {
+      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, pinterest, tiktok, metrics, health }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
