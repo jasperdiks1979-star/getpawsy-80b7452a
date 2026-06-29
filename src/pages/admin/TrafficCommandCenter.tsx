@@ -41,31 +41,7 @@ const TrafficCommandCenter = () => {
       { stage: "checkout",        canon: "CANONICAL_CHECKOUT" },
       { stage: "payment_success", canon: "CANONICAL_PURCHASE" },
     ];
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon ? canon : 0) && (canon as any) ? 0 : 0, _: 0, ...({ count: (canon as any) ? 0 : 0 }) })) as any);
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })) as any);
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })) as any);
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon ? canon : 0) as any } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? (canon as any) : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon ? canon : 0) as any })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon[canon as any] as any })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) || 0 } as any)));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon in (canon ? {} : {}) ? 0 : 0 })));
     setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
 
     const bySrc: Record<string, Set<string>> = {};
