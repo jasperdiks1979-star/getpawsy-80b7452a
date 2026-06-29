@@ -124,3 +124,12 @@ export async function runSyntheticNightly() {
   if (error) throw error;
   return data;
 }
+
+export async function fetchMetricMismatches() {
+  const { data, error } = await supabase
+    .from("cie_metric_mismatches")
+    .select("*")
+    .order("metric");
+  if (error) throw error;
+  return data ?? [];
+}
