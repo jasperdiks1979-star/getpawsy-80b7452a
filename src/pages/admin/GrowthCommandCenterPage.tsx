@@ -21,6 +21,8 @@ import {
   type CanonicalSourceRow,
   type ConsistencyAlertRow,
 } from "@/lib/canonicalAnalytics";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -169,6 +171,8 @@ export default function GrowthCommandCenterPage() {
   const [products, setProducts] = useState<CanonicalProductRow[]>([]);
   const [orders30, setOrders30] = useState<CanonicalOrderRow[]>([]);
   const [alerts, setAlerts] = useState<ConsistencyAlertRow[]>([]);
+  const [piScores, setPiScores] = useState<any[]>([]);
+  const [piProducts, setPiProducts] = useState<Record<string, { name: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -184,6 +188,19 @@ export default function GrowthCommandCenterPage() {
       ]);
       setExec(e); setLive(liveRows); setSources(srcRows);
       setProducts(prodRows); setOrders30(ordRows); setAlerts(alertRows);
+      const { data: pi } = await supabase
+        .from("gv3_pi_scores")
+        .select("product_id, overall_score, classification, confidence_score, sessions, product_views, add_to_carts, checkouts, purchases, revenue_cents, pinterest_score, cro_risk_score")
+        .order("overall_score", { ascending: false })
+        .limit(500);
+      setPiScores(pi ?? []);
+      const ids = Array.from(new Set((pi ?? []).map((r: any) => r.product_id)));
+      if (ids.length) {
+        const { data: pr } = await supabase.from("products").select("id, name").in("id", ids);
+        const m: Record<string, any> = {};
+        for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
+        setPiProducts(m);
+      }
     } catch (err: any) {
       setError(err?.message ?? "Failed to load growth data");
     } finally {
@@ -340,6 +357,31 @@ export default function GrowthCommandCenterPage() {
       </div>
 
       {/* Critical alerts */}
+      {/* Product Intelligence (Genesis V3 · Phase 2) */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Product Intelligence (V3)</CardTitle>
+          <Link to="/admin/product-intelligence-v3" className="text-xs underline">Open dashboard →</Link>
+        </CardHeader>
+        <CardContent>
+          {piScores.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No Product Intelligence run yet. Open the dashboard and click “Run Now”.</p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <PiList title="Top winners" rows={piScores.filter(p=>p.classification==="Winner").slice(0,5)} products={piProducts} />
+              <PiList title="To promote" rows={piScores.filter(p=>p.classification==="Candidate to Promote"||p.classification==="Promising").slice(0,5)} products={piProducts} />
+              <PiList title="Needs CRO" rows={piScores.filter(p=>p.classification==="Needs CRO").slice(0,5)} products={piProducts} />
+              <PiList title="Traffic but no purchases" rows={piScores.filter(p=>p.product_views>=150 && p.purchases===0).slice(0,5)} products={piProducts} />
+              <PiList title="ATC but no checkout" rows={piScores.filter(p=>p.add_to_carts>0 && p.checkouts===0).slice(0,5)} products={piProducts} />
+              <PiList title="Checkout but no purchase" rows={piScores.filter(p=>p.checkouts>0 && p.purchases===0).slice(0,5)} products={piProducts} />
+              <PiList title="Low confidence" rows={piScores.filter(p=>p.classification==="Low Confidence").slice(0,5)} products={piProducts} />
+              <PiList title="Top Pinterest opportunities" rows={[...piScores].sort((a,b)=>b.pinterest_score-a.pinterest_score).slice(0,5)} products={piProducts} />
+              <PiList title="Highest CRO risk" rows={[...piScores].sort((a,b)=>b.cro_risk_score-a.cro_risk_score).slice(0,5)} products={piProducts} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle>Critical alerts</CardTitle></CardHeader>
         <CardContent>
@@ -369,6 +411,24 @@ function Kpi({ label, value, highlight = false }: { label: string; value: number
         <div className="text-xl font-semibold">{typeof value === "number" ? value.toLocaleString() : value}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function PiList({ title, rows, products }: { title: string; rows: any[]; products: Record<string, { name: string }> }) {
+  return (
+    <div className="rounded border p-3">
+      <div className="text-xs uppercase text-muted-foreground mb-2">{title}</div>
+      {rows.length === 0 ? <div className="text-xs text-muted-foreground">—</div> : (
+        <ul className="space-y-1 text-sm">
+          {rows.map((r) => (
+            <li key={r.product_id} className="flex items-center justify-between gap-2">
+              <span className="truncate">{products[r.product_id]?.name || r.product_id.slice(0, 8)}</span>
+              <span className="text-xs text-muted-foreground">{Math.round(r.overall_score)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
