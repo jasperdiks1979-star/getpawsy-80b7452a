@@ -2406,6 +2406,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="growth-command-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="media-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
