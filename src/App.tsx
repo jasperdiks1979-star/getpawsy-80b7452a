@@ -425,6 +425,7 @@ const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExec
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
 const GrowthCommandPage = lazyWithRetry(() => import("./pages/admin/GrowthCommandPage"));
 const GrowthCommandCenterPage = lazyWithRetry(() => import("./pages/admin/GrowthCommandCenterPage"));
+const TrafficIntelligencePage = lazyWithRetry(() => import("./pages/admin/TrafficIntelligencePage"));
 const ProductIntelligenceV3Page = lazyWithRetry(() => import("./pages/admin/ProductIntelligenceV3Page"));
 const PinterestGrowthV3Page = lazyWithRetry(() => import("./pages/admin/PinterestGrowthPage"));
 const MediaIntelligencePage = lazyWithRetry(() => import("./pages/admin/MediaIntelligencePage"));
@@ -2412,6 +2413,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GrowthCommandCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="traffic-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <TrafficIntelligencePage />
                                 </Suspense>
                               }
                             />

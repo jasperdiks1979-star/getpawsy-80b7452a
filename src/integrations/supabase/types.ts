@@ -59045,6 +59045,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tsi_session_enrichment: {
+        Row: {
+          bucket: string
+          classification: string
+          classified_at: string
+          confidence: number
+          evidence: Json
+          is_bot: boolean
+          is_internal: boolean
+          is_recovered: boolean
+          original_medium: string | null
+          original_source: string | null
+          reason: string | null
+          recovered_source: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          bucket: string
+          classification: string
+          classified_at?: string
+          confidence?: number
+          evidence?: Json
+          is_bot?: boolean
+          is_internal?: boolean
+          is_recovered?: boolean
+          original_medium?: string | null
+          original_source?: string | null
+          reason?: string | null
+          recovered_source: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          classification?: string
+          classified_at?: string
+          confidence?: number
+          evidence?: Json
+          is_bot?: boolean
+          is_internal?: boolean
+          is_recovered?: boolean
+          original_medium?: string | null
+          original_source?: string | null
+          reason?: string | null
+          recovered_source?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
