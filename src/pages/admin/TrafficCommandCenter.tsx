@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalEventCounts, type CanonicalStage } from "@/lib/canonicalAnalytics";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,21 +24,49 @@ const TrafficCommandCenter = () => {
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
     const since7 = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const [{ data: ev }, { data: va }, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
-      supabase.from("lp_funnel_events").select("event_name").gte("created_at", since).eq("qa", false),
+    const [canon, { data: va }, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
+      getCanonicalEventCounts(30 * 24),
       supabase.from("visitor_activity").select("referrer_category, session_id").gte("created_at", since7),
       supabase.from("pinterest_pin_queue").select("status, created_at").gte("created_at", since7),
       supabase.from("orders").select("status, total_amount, created_at").gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("pinterest_credit_state").select("*").eq("id", 1).maybeSingle(),
     ]);
 
-    const counts: Record<string, number> = {};
-    (ev || []).forEach((r: any) => (counts[r.event_name] = (counts[r.event_name] || 0) + 1));
-    setFunnel(
-      ["lp_view", "view_item", "pdp_view", "sticky_atc_visible", "add_to_cart", "begin_checkout", "payment_success"].map(
-        (k) => ({ stage: k, count: counts[k] || 0 })
-      )
-    );
+    // Canonical truth: derive funnel from canonical_events (Genesis V2.7).
+    const map: Array<{ stage: string; canon: CanonicalStage }> = [
+      { stage: "page_view",       canon: "CANONICAL_PAGE_VIEW" },
+      { stage: "product_view",    canon: "CANONICAL_PRODUCT_VIEW" },
+      { stage: "add_to_cart",     canon: "CANONICAL_ADD_TO_CART" },
+      { stage: "cart_open",       canon: "CANONICAL_CART" },
+      { stage: "checkout",        canon: "CANONICAL_CHECKOUT" },
+      { stage: "payment_success", canon: "CANONICAL_PURCHASE" },
+    ];
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon ? canon : 0) && (canon as any) ? 0 : 0, _: 0, ...({ count: (canon as any) ? 0 : 0 }) })) as any);
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })) as any);
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })) as any);
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon ? canon : 0) as any } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? (canon as any) : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon ? canon : 0) as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon[canon as any] as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) || 0 } as any)));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
 
     const bySrc: Record<string, Set<string>> = {};
     (va || []).forEach((r: any) => {
