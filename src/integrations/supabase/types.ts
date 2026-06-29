@@ -59999,6 +59999,10 @@ export type Database = {
         Args: { p_minutes?: number; p_top_pages?: number }
         Returns: Json
       }
+      get_dispute_admin_notes: {
+        Args: { _dispute_id: string }
+        Returns: string
+      }
       get_lp_funnel_report: {
         Args: {
           p_campaign?: string
