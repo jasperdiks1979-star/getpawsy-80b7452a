@@ -148,9 +148,8 @@ async function ga4EventCounts(token: string, propertyId: string, days: number) {
   );
   const j = await res.json();
   if (!res.ok) throw new Error(`ga4_report_failed: ${j.error?.message ?? res.status}`);
-  const parsed = parseEventCountsResponse(j);
-  (parsed as any).__latency_ms = Date.now() - startedAt;
-  return parsed;
+  const counts = parseEventCountsResponse(j);
+  return { counts, latency_ms: Date.now() - startedAt };
 }
 
 async function ga4PurchaseTransactions(token: string, propertyId: string, days: number) {
@@ -216,13 +215,26 @@ Deno.serve(async (req) => {
       await openIncident("ga4_token", e, { traceId }, "critical");
       throw e;
     }
-    let counts: Awaited<ReturnType<typeof ga4EventCounts>>;
+    let countsResult: Awaited<ReturnType<typeof ga4EventCounts>>;
     try {
-      counts = await ga4EventCounts(token, propertyId, days);
+      countsResult = await ga4EventCounts(token, propertyId, days);
     } catch (e) {
       await openIncident("ga4_event_report", e, { traceId, days }, "high");
+      // Record an unreachable health snapshot so structural outages are visible.
+      try {
+        await admin().from("cie_ga4_api_health").insert({
+          trace_id: traceId,
+          days,
+          data_api_reachable: false,
+          purchase_available: false,
+          failure_reason: e instanceof Error ? e.message.slice(0, 500) : String(e).slice(0, 500),
+          evidence: { phase: "ga4_event_report" },
+        });
+      } catch (_) { /* swallow */ }
       throw e;
     }
+    const counts = countsResult.counts;
+    const apiLatencyMs = countsResult.latency_ms;
     let ga4Tx: Awaited<ReturnType<typeof ga4PurchaseTransactions>>;
     try {
       ga4Tx = await ga4PurchaseTransactions(token, propertyId, days);
@@ -339,8 +351,68 @@ Deno.serve(async (req) => {
     );
     if (misErr) await openIncident("mismatch_upsert", misErr.message, { traceId });
 
+    // ---- GA4 Data API health check ----
+    // Record per-cycle whether the Data API responded and whether purchase
+    // events were materially available. If the last N consecutive checks all
+    // report 0 purchases (and there is no internal-order explanation), open a
+    // structural incident so the outage is visible in /admin/conversion-integrity.
+    const purchaseAvailable = (counts.purchase?.count ?? 0) > 0;
+    const healthRow = {
+      trace_id: traceId,
+      days,
+      data_api_reachable: true,
+      latency_ms: apiLatencyMs,
+      page_view_count: counts.page_view?.count ?? 0,
+      session_start_count: counts.session_start?.count ?? 0,
+      begin_checkout_count: counts.begin_checkout?.count ?? 0,
+      purchase_count: counts.purchase?.count ?? 0,
+      purchase_available: purchaseAvailable,
+      failure_reason: null,
+      evidence: { ga4_tx_rows: ga4Tx.length, order_count: orderCount },
+    };
+    const { error: healthErr } = await c.from("cie_ga4_api_health").insert(healthRow);
+    if (healthErr) await openIncident("ga4_api_health_insert", healthErr.message, { traceId });
+
+    // Structural-zero detection: include this run + the previous 4 reachable
+    // runs. If all 5 show 0 purchase events AND there is at least one paid
+    // internal order in any of those windows, this is a Data API blind spot
+    // (mapping break, missing measurement, or revoked Data API access).
+    const { data: recentHealth } = await c
+      .from("cie_ga4_api_health")
+      .select("purchase_count, data_api_reachable, days, evidence, checked_at")
+      .eq("data_api_reachable", true)
+      .order("checked_at", { ascending: false })
+      .limit(5);
+    if ((recentHealth?.length ?? 0) >= 5 && recentHealth!.every((r: any) => (r.purchase_count ?? 0) === 0)) {
+      // Cross-check internal orders across the same horizon as a proof there
+      // should have been purchases visible.
+      const maxDays = Math.max(...recentHealth!.map((r: any) => Number(r.days || 1)));
+      const horizonIso = new Date(Date.now() - maxDays * 86400_000).toISOString();
+      const { count: paidOrders } = await c
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", horizonIso)
+        .in("status", ["paid", "completed", "fulfilled"]);
+      if ((paidOrders ?? 0) > 0) {
+        await openIncident(
+          "structural_zero_purchase",
+          `GA4 Data API returned 0 purchase events across last 5 cycles while ${paidOrders} internal paid order(s) exist in window`,
+          {
+            traceId,
+            cycles_checked: recentHealth!.length,
+            window_days: maxDays,
+            paid_orders_in_window: paidOrders,
+          },
+          "critical",
+        );
+      }
+    }
+
     return new Response(
-      JSON.stringify({ ok: true, traceId, days, counts, orderCount, scores: scoreRows, reconciliation: recon }),
+      JSON.stringify({
+        ok: true, traceId, days, counts, orderCount, scores: scoreRows, reconciliation: recon,
+        data_api_health: { reachable: true, latency_ms: apiLatencyMs, purchase_available: purchaseAvailable },
+      }),
       {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
