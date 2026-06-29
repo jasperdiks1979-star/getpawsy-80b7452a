@@ -402,6 +402,9 @@ export default function MarketIntelligencePage() {
           <TabsContent value="engine" className="space-y-4 mt-4">
             <MarketIntelligenceEngine />
           </TabsContent>
+          <TabsContent value="audience" className="space-y-4 mt-4">
+            <AudienceIntelligenceTab />
+          </TabsContent>
         </Tabs>
       </div>
     </>
