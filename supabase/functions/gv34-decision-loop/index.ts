@@ -102,12 +102,12 @@ Deno.serve(async (req) => {
       const dedupe_hash = sha1Short(`${kind}|${productId}|${today}`);
 
       const priority = confidence >= 0.85
-        ? "critical"
+        ? "CRITICAL"
         : confidence >= 0.7
-          ? "high"
+          ? "HIGH"
           : confidence >= 0.5
-            ? "medium"
-            : "low";
+            ? "MEDIUM"
+            : "LOW";
 
       const ai_cost = ["creative_regenerate", "seo_optimize", "pricing_adjust"].includes(kind) ? 2 : 1;
 
