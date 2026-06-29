@@ -14537,6 +14537,187 @@ export type Database = {
           },
         ]
       }
+      conversion_reality_products: {
+        Row: {
+          add_to_carts: number
+          atc_to_checkout_pct: number
+          begin_checkouts: number
+          confidence: number
+          created_at: string
+          id: string
+          leak_severity: number
+          leak_step: string | null
+          pdp_to_atc_pct: number
+          pdp_views: number
+          product_id: string
+          product_slug: string | null
+          purchases: number
+          recommended_fix: string | null
+          run_id: string | null
+        }
+        Insert: {
+          add_to_carts?: number
+          atc_to_checkout_pct?: number
+          begin_checkouts?: number
+          confidence?: number
+          created_at?: string
+          id?: string
+          leak_severity?: number
+          leak_step?: string | null
+          pdp_to_atc_pct?: number
+          pdp_views?: number
+          product_id: string
+          product_slug?: string | null
+          purchases?: number
+          recommended_fix?: string | null
+          run_id?: string | null
+        }
+        Update: {
+          add_to_carts?: number
+          atc_to_checkout_pct?: number
+          begin_checkouts?: number
+          confidence?: number
+          created_at?: string
+          id?: string
+          leak_severity?: number
+          leak_step?: string | null
+          pdp_to_atc_pct?: number
+          pdp_views?: number
+          product_id?: string
+          product_slug?: string | null
+          purchases?: number
+          recommended_fix?: string | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_reality_products_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_reality_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversion_reality_runs: {
+        Row: {
+          add_to_carts: number
+          begin_checkouts: number
+          checkout_start_pct: number
+          created_at: string
+          id: string
+          mismatch_rate_pct: number
+          pageviews_total: number
+          pdp_conversion_pct: number
+          pdp_views: number
+          purchases: number
+          ran_at: string
+          revenue_usd: number
+          sessions_total: number
+          summary: Json
+          traffic_quality_score: number
+          window_hours: number
+        }
+        Insert: {
+          add_to_carts?: number
+          begin_checkouts?: number
+          checkout_start_pct?: number
+          created_at?: string
+          id?: string
+          mismatch_rate_pct?: number
+          pageviews_total?: number
+          pdp_conversion_pct?: number
+          pdp_views?: number
+          purchases?: number
+          ran_at?: string
+          revenue_usd?: number
+          sessions_total?: number
+          summary?: Json
+          traffic_quality_score?: number
+          window_hours?: number
+        }
+        Update: {
+          add_to_carts?: number
+          begin_checkouts?: number
+          checkout_start_pct?: number
+          created_at?: string
+          id?: string
+          mismatch_rate_pct?: number
+          pageviews_total?: number
+          pdp_conversion_pct?: number
+          pdp_views?: number
+          purchases?: number
+          ran_at?: string
+          revenue_usd?: number
+          sessions_total?: number
+          summary?: Json
+          traffic_quality_score?: number
+          window_hours?: number
+        }
+        Relationships: []
+      }
+      conversion_reality_segments: {
+        Row: {
+          add_to_carts: number
+          campaign: string | null
+          conversion_pct: number
+          country: string | null
+          created_at: string
+          device: string | null
+          id: string
+          medium: string | null
+          mismatch_pct: number
+          pdp_views: number
+          purchases: number
+          run_id: string | null
+          sessions: number
+          source: string | null
+          traffic_quality_score: number
+        }
+        Insert: {
+          add_to_carts?: number
+          campaign?: string | null
+          conversion_pct?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          medium?: string | null
+          mismatch_pct?: number
+          pdp_views?: number
+          purchases?: number
+          run_id?: string | null
+          sessions?: number
+          source?: string | null
+          traffic_quality_score?: number
+        }
+        Update: {
+          add_to_carts?: number
+          campaign?: string | null
+          conversion_pct?: number
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          medium?: string | null
+          mismatch_pct?: number
+          pdp_views?: number
+          purchases?: number
+          run_id?: string | null
+          sessions?: number
+          source?: string | null
+          traffic_quality_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_reality_segments_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_reality_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cpe_asset_versions: {
         Row: {
           asset_id: string | null
@@ -32874,6 +33055,8 @@ export type Database = {
           created_at: string
           currency: string
           customer_email: string | null
+          ga_client_id: string | null
+          ga4_mp_sent_at: string | null
           id: string
           is_klarna: boolean
           items: Json
@@ -32898,6 +33081,8 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_email?: string | null
+          ga_client_id?: string | null
+          ga4_mp_sent_at?: string | null
           id?: string
           is_klarna?: boolean
           items: Json
@@ -32922,6 +33107,8 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_email?: string | null
+          ga_client_id?: string | null
+          ga4_mp_sent_at?: string | null
           id?: string
           is_klarna?: boolean
           items?: Json
