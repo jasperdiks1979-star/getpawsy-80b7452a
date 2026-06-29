@@ -9184,6 +9184,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cie_metric_mismatches: {
+        Row: {
+          breakdown: Json
+          created_at: string
+          evaluated_at: string
+          id: string
+          metric: string
+          scope: string
+          window_hours: number
+        }
+        Insert: {
+          breakdown?: Json
+          created_at?: string
+          evaluated_at?: string
+          id?: string
+          metric: string
+          scope?: string
+          window_hours?: number
+        }
+        Update: {
+          breakdown?: Json
+          created_at?: string
+          evaluated_at?: string
+          id?: string
+          metric?: string
+          scope?: string
+          window_hours?: number
+        }
+        Relationships: []
+      }
       cie_revenue_truth: {
         Row: {
           created_at: string
