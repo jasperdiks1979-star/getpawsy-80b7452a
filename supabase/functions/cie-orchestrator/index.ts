@@ -120,7 +120,7 @@ async function confidence(c: ReturnType<typeof admin>) {
   const { data: adapterRows } = await c
     .from("cie_confidence_scores")
     .select("metric, confidence, rationale")
-    .in("metric", ["ga4", "pinterest", "tiktok"])
+    .in("metric", ["ga4", "pinterest", "tiktok", "meta"])
     .eq("scope", "global");
   const adapter: Record<string, { c: number; r: string }> = {};
   for (const r of adapterRows ?? []) {
@@ -129,12 +129,14 @@ async function confidence(c: ReturnType<typeof admin>) {
   const ga4Conf = adapter.ga4?.c ?? 0;
   const pinConf = adapter.pinterest?.c ?? 0;
   const ttConf = adapter.tiktok?.c ?? 0;
+  const metaConf = adapter.meta?.c ?? 0;
   const metrics = [
     { metric: "tracking", confidence: baseTracking, rationale: "event volume heuristic" },
     { metric: "sessions", confidence: baseSessions, rationale: "session volume heuristic" },
     { metric: "ga4", confidence: ga4Conf, rationale: ga4Conf > 0 ? (adapter.ga4?.r ?? "GA4 adapter live") : "GA4 adapter no data" },
     { metric: "pinterest", confidence: pinConf, rationale: pinConf > 0 ? (adapter.pinterest?.r ?? "Pinterest adapter live") : "Pinterest adapter no data" },
     { metric: "tiktok", confidence: ttConf, rationale: ttConf > 0 ? (adapter.tiktok?.r ?? "TikTok adapter live") : "TikTok adapter no data" },
+    { metric: "meta", confidence: metaConf, rationale: metaConf > 0 ? (adapter.meta?.r ?? "Meta adapter live") : (adapter.meta?.r ?? "Meta adapter pending") },
     { metric: "revenue", confidence: 100, rationale: "internal orders are authoritative" },
     { metric: "checkout", confidence: baseTracking, rationale: "derived from event volume" },
     { metric: "purchase", confidence: 100, rationale: "internal orders are authoritative" },
@@ -166,7 +168,7 @@ async function healthSnapshot(c: ReturnType<typeof admin>) {
     ga4: lookup.ga4 ?? 0,
     pinterest: lookup.pinterest ?? 0,
     tiktok: lookup.tiktok ?? 0,
-    meta: 0,
+    meta: lookup.meta ?? 0,
     checkout: lookup.checkout ?? 0,
     purchase: lookup.purchase ?? 0,
     details: lookup,
@@ -233,16 +235,17 @@ Deno.serve(async (req) => {
           return { ok: false, message: (e as Error).message };
         }
       };
-      const [ga4, pinterest, tiktok] = await Promise.all([
+      const [ga4, pinterest, tiktok, meta] = await Promise.all([
         callAdapter("cie-ga4-adapter"),
         callAdapter("cie-pinterest-adapter"),
         callAdapter("cie-tiktok-adapter"),
+        callAdapter("cie-meta-adapter"),
       ]);
       const metrics = await confidence(c);
       const health = await healthSnapshot(c);
       // Auto-repair runs after confidence is recomputed so it uses fresh signals.
       const autorepair = await callAdapter("cie-auto-repair");
-      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, pinterest, tiktok, metrics, health, autorepair }), {
+      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, pinterest, tiktok, meta, metrics, health, autorepair }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
