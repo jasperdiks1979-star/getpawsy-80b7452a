@@ -21,4 +21,8 @@ type: constraint
 
 ## Adapter status (Phase 1)
 
-`tracking`, `sessions`, `revenue`, `checkout`, `purchase` are wired against internal data. GA4, Pinterest, TikTok, Meta revenue and event-parity adapters are pending; their confidence is reported as 0 with rationale `adapter pending` and they intentionally fail the AI-training gate until wired.
+`tracking`, `sessions`, `revenue`, `checkout`, `purchase` are wired against internal data. GA4, Pinterest and TikTok adapters are live and write per-channel confidence + evidence. Meta adapter (`cie-meta-adapter`) is wired into the orchestrator and reports 0 confidence with rationale `meta adapter pending: missing META_ACCESS_TOKEN or META_AD_ACCOUNT_ID` until those secrets are set — it intentionally keeps Meta-driven AI training paused.
+
+## Guardian revenue-truth alert
+
+An `AFTER INSERT` trigger on `cie_revenue_truth` queues a Guardian email in `guardian_notification_queue` whenever a snapshot is written with `status = 'diverged'`. The drained-by `guardian-notify-drain` worker delivers it via the standard transactional email path.
