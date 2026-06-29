@@ -1,0 +1,623 @@
+{
+  "generated_at": "2026-06-29T06:37:47.440048Z",
+  "summary": {
+    "total_public_tables": 1184,
+    "table_prefixes": 170,
+    "edge_functions": 754,
+    "admin_pages": 311,
+    "cron_jobs_total": 222,
+    "cron_jobs_active": 222,
+    "cold_tables_zero_writes": 594,
+    "cold_table_pct": 50.2
+  },
+  "top_20_prefixes_by_table_count": [
+    {
+      "prefix": "pinterest",
+      "tables": 163
+    },
+    {
+      "prefix": "pcie2",
+      "tables": 41
+    },
+    {
+      "prefix": "cinematic",
+      "tables": 39
+    },
+    {
+      "prefix": "pcie",
+      "tables": 32
+    },
+    {
+      "prefix": "growth",
+      "tables": 27
+    },
+    {
+      "prefix": "acos",
+      "tables": 24
+    },
+    {
+      "prefix": "gmd",
+      "tables": 23
+    },
+    {
+      "prefix": "product",
+      "tables": 22
+    },
+    {
+      "prefix": "gpd",
+      "tables": 21
+    },
+    {
+      "prefix": "ee",
+      "tables": 21
+    },
+    {
+      "prefix": "aci",
+      "tables": 20
+    },
+    {
+      "prefix": "pin",
+      "tables": 20
+    },
+    {
+      "prefix": "monitoring",
+      "tables": 19
+    },
+    {
+      "prefix": "pe",
+      "tables": 19
+    },
+    {
+      "prefix": "market",
+      "tables": 18
+    },
+    {
+      "prefix": "mi",
+      "tables": 18
+    },
+    {
+      "prefix": "gad",
+      "tables": 18
+    },
+    {
+      "prefix": "agal",
+      "tables": 17
+    },
+    {
+      "prefix": "aicos",
+      "tables": 16
+    },
+    {
+      "prefix": "spe",
+      "tables": 15
+    }
+  ],
+  "top_40_write_tables_7d": [
+    {
+      "table": "cj_webhook_logs",
+      "writes_7d": 9915926,
+      "live_rows": 9801278
+    },
+    {
+      "table": "cinematic_ad_jobs",
+      "writes_7d": 596787,
+      "live_rows": 296
+    },
+    {
+      "table": "pinterest_revenue_forecasts",
+      "writes_7d": 534405,
+      "live_rows": 1800
+    },
+    {
+      "table": "cinematic_ad_job_events",
+      "writes_7d": 307587,
+      "live_rows": 305590
+    },
+    {
+      "table": "cinematic_worker_heartbeats",
+      "writes_7d": 296835,
+      "live_rows": 86
+    },
+    {
+      "table": "render_worker_heartbeats",
+      "writes_7d": 296829,
+      "live_rows": 86
+    },
+    {
+      "table": "pcie2_assembly_results",
+      "writes_7d": 277680,
+      "live_rows": 277680
+    },
+    {
+      "table": "pinterest_analytics_daily",
+      "writes_7d": 249680,
+      "live_rows": 15359
+    },
+    {
+      "table": "pinterest_pin_dimensions",
+      "writes_7d": 245113,
+      "live_rows": 1200
+    },
+    {
+      "table": "pinterest_revenue_opportunity_scores",
+      "writes_7d": 178135,
+      "live_rows": 600
+    },
+    {
+      "table": "pinterest_revenue_attribution_v3",
+      "writes_7d": 158589,
+      "live_rows": 177
+    },
+    {
+      "table": "pinterest_revenue_product_tiers",
+      "writes_7d": 132238,
+      "live_rows": 589
+    },
+    {
+      "table": "cinematic_autopilot_state",
+      "writes_7d": 91615,
+      "live_rows": 1
+    },
+    {
+      "table": "visitor_activity",
+      "writes_7d": 83090,
+      "live_rows": 87318
+    },
+    {
+      "table": "pinterest_credit_state",
+      "writes_7d": 60950,
+      "live_rows": 1
+    },
+    {
+      "table": "shil_subsystems",
+      "writes_7d": 53258,
+      "live_rows": 16
+    },
+    {
+      "table": "products",
+      "writes_7d": 45684,
+      "live_rows": 1052
+    },
+    {
+      "table": "frontend_error_logs",
+      "writes_7d": 36202,
+      "live_rows": 72220
+    },
+    {
+      "table": "cron_job_logs",
+      "writes_7d": 32701,
+      "live_rows": 23638
+    },
+    {
+      "table": "pinterest_credit_events",
+      "writes_7d": 32133,
+      "live_rows": 32133
+    },
+    {
+      "table": "pinterest_pin_queue",
+      "writes_7d": 31824,
+      "live_rows": 2569
+    },
+    {
+      "table": "lp_funnel_events",
+      "writes_7d": 26199,
+      "live_rows": 20653
+    },
+    {
+      "table": "shil_recoveries",
+      "writes_7d": 25190,
+      "live_rows": 10871
+    },
+    {
+      "table": "shil_incidents",
+      "writes_7d": 23432,
+      "live_rows": 2967
+    },
+    {
+      "table": "pcie2_creative_jobs",
+      "writes_7d": 22422,
+      "live_rows": 7420
+    },
+    {
+      "table": "market_product_scores",
+      "writes_7d": 22063,
+      "live_rows": 19043
+    },
+    {
+      "table": "keyword_rankings",
+      "writes_7d": 21891,
+      "live_rows": 69955
+    },
+    {
+      "table": "pinterest_revenue_scores",
+      "writes_7d": 21000,
+      "live_rows": 2608
+    },
+    {
+      "table": "product_creative_profiles",
+      "writes_7d": 19104,
+      "live_rows": 471
+    },
+    {
+      "table": "growth_product_scores",
+      "writes_7d": 19028,
+      "live_rows": 19028
+    },
+    {
+      "table": "analytics_health_checks",
+      "writes_7d": 16878,
+      "live_rows": 16878
+    },
+    {
+      "table": "pin_headline_bank",
+      "writes_7d": 16500,
+      "live_rows": 16203
+    },
+    {
+      "table": "pinterest_render_attempts",
+      "writes_7d": 16090,
+      "live_rows": 16090
+    },
+    {
+      "table": "tracking_anomalies",
+      "writes_7d": 15898,
+      "live_rows": 687
+    },
+    {
+      "table": "pcie2_concept_graph",
+      "writes_7d": 14519,
+      "live_rows": 12799
+    },
+    {
+      "table": "hot_product_scores",
+      "writes_7d": 13892,
+      "live_rows": 13892
+    },
+    {
+      "table": "shil_signatures",
+      "writes_7d": 13314,
+      "live_rows": 6
+    },
+    {
+      "table": "sync_progress",
+      "writes_7d": 10729,
+      "live_rows": 1
+    },
+    {
+      "table": "cj_sync_items",
+      "writes_7d": 9187,
+      "live_rows": 9187
+    },
+    {
+      "table": "pinterest_video_function_logs",
+      "writes_7d": 8264,
+      "live_rows": 10709
+    }
+  ],
+  "genesis_classification": [
+    {
+      "pillar": "CIE Conversion Integrity",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Supreme gate; GA4 cron live; needs Pinterest/TikTok/Meta adapters."
+    },
+    {
+      "pillar": "PRE Product Relevance",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Fail-closed vision gate already wired."
+    },
+    {
+      "pillar": "Pinterest Integrity Guard",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Pre-publish guard, no override."
+    },
+    {
+      "pillar": "PCIE2 Creative Engine",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Canonical creative pipeline."
+    },
+    {
+      "pillar": "PCIE / PCIEv2 / GCD / CPE",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Overlapping creative stacks; collapse into PCIE2."
+    },
+    {
+      "pillar": "AGD Growth Director",
+      "status": "stub-cron",
+      "recommendation": "merge",
+      "rationale": "Reasons over same DNA as MIL/EDE/AEC; fold into Council."
+    },
+    {
+      "pillar": "MIL Meta-Intelligence",
+      "status": "stub-cron",
+      "recommendation": "merge",
+      "rationale": "Grades engines that lack outcome data; fold into Council."
+    },
+    {
+      "pillar": "EDE Executive Decision",
+      "status": "stub-cron",
+      "recommendation": "keep",
+      "rationale": "Use as Council shell."
+    },
+    {
+      "pillar": "AEC Executive Council",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Merge into EDE; 3 separate crons today."
+    },
+    {
+      "pillar": "AGAL Audit & Governance",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Canonical decision ledger."
+    },
+    {
+      "pillar": "Evidence Governor (PCIE2)",
+      "status": "implemented",
+      "recommendation": "merge",
+      "rationale": "Promote into AGAL as evidence subsystem."
+    },
+    {
+      "pillar": "KGRE Knowledge Graph",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Canonical knowledge memory."
+    },
+    {
+      "pillar": "AOS Orchestrator + knowledge",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Knowledge \u2192 KGRE; orchestration \u2192 AICOS."
+    },
+    {
+      "pillar": "AICOS Company OS",
+      "status": "stub",
+      "recommendation": "defer",
+      "rationale": "Workflow value unclear; revisit after consolidation."
+    },
+    {
+      "pillar": "GAEE Evolution Engine",
+      "status": "stub",
+      "recommendation": "defer",
+      "rationale": "Useful only with KGRE+CIE evidence flowing first."
+    },
+    {
+      "pillar": "TRPE Production Reliability",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Use as canonical /admin/health shell."
+    },
+    {
+      "pillar": "GVCAE Architecture Evolution",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Audit + dependency map host."
+    },
+    {
+      "pillar": "ARIE Funnel Intelligence",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Collapse into CIE adapters."
+    },
+    {
+      "pillar": "GI Growth Intelligence (gi_*)",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Collapse into CIE adapters."
+    },
+    {
+      "pillar": "ROE Revenue Optimization",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Wire outputs into PCIE2 product selection."
+    },
+    {
+      "pillar": "SPE Strategic Planning",
+      "status": "stub",
+      "recommendation": "defer",
+      "rationale": "Low evidence base today."
+    },
+    {
+      "pillar": "AEE Experimentation Engine",
+      "status": "implemented",
+      "recommendation": "keep",
+      "rationale": "Reuse for all Wave-2 KPI tests."
+    },
+    {
+      "pillar": "Genesis DNAs (7)",
+      "status": "implemented",
+      "recommendation": "merge",
+      "rationale": "Become KGRE views; retire separate gad_/gpi_/gpd_/gcp_/gcd_/gmd_/gbd_ knowledge tables."
+    },
+    {
+      "pillar": "PEI / PIE / ODE / OIE / FOS",
+      "status": "low-traffic",
+      "recommendation": "defer",
+      "rationale": "No measured outcome; keep tables, freeze new spend."
+    },
+    {
+      "pillar": "Commander / CMDR / ACI",
+      "status": "duplicate",
+      "recommendation": "merge",
+      "rationale": "Pick one (CMDR) or retire."
+    },
+    {
+      "pillar": "Cinematic stacks (v3/v4/cv5)",
+      "status": "active",
+      "recommendation": "keep",
+      "rationale": "Out of consolidation scope this round."
+    }
+  ],
+  "overlap_collapse_targets": {
+    "intelligence_decision": [
+      "AGD",
+      "MIL",
+      "EDE",
+      "AEC",
+      "AGAL",
+      "AOS",
+      "GAEE",
+      "AICOS",
+      "KGRE"
+    ],
+    "creative_engines": [
+      "PCIE",
+      "PCIE2",
+      "PCIEv2",
+      "GCD",
+      "CPE"
+    ],
+    "health_scorecards": [
+      "TRPE",
+      "GVCAE",
+      "AOS health",
+      "CIE health",
+      "Pinterest Health",
+      "ARIE health",
+      "commander"
+    ],
+    "attribution_funnel": [
+      "ARIE",
+      "GI",
+      "CIE"
+    ],
+    "governance_audit": [
+      "AGAL",
+      "Evidence Governor"
+    ],
+    "knowledge_memory": [
+      "KGRE",
+      "AOS knowledge",
+      "Genesis DNA graph edges"
+    ],
+    "notifications": [
+      "Guardian",
+      "commander_alerts",
+      "monitoring_alerts",
+      "analytics_alerts",
+      "github_sync_alerts"
+    ],
+    "experimentation": [
+      "AEE",
+      "pcie2_experiments",
+      "mi_experiments",
+      "aee_experiments",
+      "ee_p2_experiments"
+    ]
+  },
+  "execution_waves": {
+    "wave1_revenue_reliability": [
+      "Add CIE adapters for Pinterest / TikTok / Meta (currently 0 confidence \u2192 blocks AI training).",
+      "Wire cie_revenue_truth divergence > tolerance into Guardian notification bus.",
+      "Cull 12 duplicate nightly DNA-snapshot crons (target ~40% AI credit reduction).",
+      "Add SLO: PRE + Integrity Guard false-reject rate < 2%, measured per 7d."
+    ],
+    "wave2_commercial": [
+      "Freeze writes on PCIE / PCIEv2 / GCD; PCIE2 canonical.",
+      "Collapse 7 Pinterest panels \u2192 4 tabs on /admin/pinterest-health.",
+      "Wire ROE pricing/profit recs into PCIE2 product selection."
+    ],
+    "wave3_knowledge": [
+      "Route all engine learnings to KGRE only.",
+      "Convert Genesis DNA modules to KGRE views.",
+      "Mark gad_/aos_/mil_ knowledge tables read-only (30d \u2192 archive)."
+    ],
+    "wave4_executive": [
+      "Single Council service replacing AGD+MIL+EDE+AEC.",
+      "Single /admin/health (TRPE shell) absorbing GVCAE + AOS health panels."
+    ],
+    "wave5_evolution": [
+      "GAEE acts only on KGRE evidence with CIE gating_ok=true.",
+      "Automate quarterly architecture review via GVCAE."
+    ]
+  },
+  "cold_tables_sample": [
+    "aci_competitor_gaps",
+    "aci_competitor_snapshots",
+    "aci_competitors",
+    "aci_forecasts",
+    "aci_rollbacks",
+    "aci_signals",
+    "acos_ads_recommendations",
+    "acos_board_intelligence",
+    "acos_commander_chats",
+    "acos_creative_families",
+    "acos_creative_fatigue",
+    "acos_decisions",
+    "acos_dispatch_log",
+    "acos_diversity_state",
+    "acos_landing_audits",
+    "acos_learning_insights",
+    "acos_loser_signals",
+    "acos_orchestrator_runs",
+    "acos_orchestrator_steps",
+    "acos_pin_seo_variants",
+    "acos_predictions",
+    "acos_product_forecasts",
+    "acos_product_metrics_hourly",
+    "acos_product_scores",
+    "acos_trend_opportunities",
+    "acos_video_expansion_jobs",
+    "acos_winner_signals",
+    "admin_resources",
+    "aec_reliability_ledger",
+    "aee_assignments",
+    "aee_experiments",
+    "aee_failures",
+    "aee_hypotheses",
+    "aee_observations",
+    "aee_playbooks",
+    "aee_recommendations",
+    "aee_results",
+    "aee_safety_log",
+    "aee_settings",
+    "aee_variants",
+    "aee_winners",
+    "agal_anomalies",
+    "agal_bias_signals",
+    "agal_compliance_checks",
+    "agal_decision_ledger",
+    "agal_executive_reports",
+    "agal_forensic_investigations",
+    "agal_incidents",
+    "agal_reasoning_audits",
+    "agal_risk_assessments",
+    "agal_root_cause_validations",
+    "agal_trust_scores",
+    "agal_truth_validations",
+    "agal_version_snapshots",
+    "agd_experiments",
+    "agd_knowledge_edges",
+    "agd_knowledge_nodes",
+    "agd_memory",
+    "agm_actions",
+    "agm_config"
+  ],
+  "deferred_capabilities_low_roi": [
+    "AICOS",
+    "SPE",
+    "GAEE",
+    "PEI",
+    "PIE",
+    "ODE",
+    "OIE",
+    "FOS",
+    "Commander/ACI duplicates"
+  ],
+  "non_negotiable_keep": [
+    "CIE",
+    "PRE",
+    "Pinterest Integrity Guard",
+    "PCIE2",
+    "KGRE",
+    "AGAL",
+    "TRPE",
+    "GVCAE",
+    "AEE",
+    "ROE"
+  ]
+}
