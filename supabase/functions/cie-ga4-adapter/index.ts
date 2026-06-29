@@ -6,6 +6,15 @@
 // Engine — orchestrator reads what we write here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  fetchWithRetry,
+  parseEventCountsResponse,
+  parseTxResponse,
+  purchaseConfidence,
+  reconcilePurchases,
+  volumeConfidence,
+  type PurchaseRecon,
+} from "./lib.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,7 +95,7 @@ async function getAccessToken(creds: { client_email: string; private_key: string
 
 async function ga4EventCounts(token: string, propertyId: string, days: number) {
   const startDate = `${days}daysAgo`;
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
     {
       method: "POST",
@@ -107,23 +116,12 @@ async function ga4EventCounts(token: string, propertyId: string, days: number) {
   );
   const j = await res.json();
   if (!res.ok) throw new Error(`ga4_report_failed: ${j.error?.message ?? res.status}`);
-  const out: Record<string, { count: number; revenue: number }> = {
-    page_view: { count: 0, revenue: 0 },
-    session_start: { count: 0, revenue: 0 },
-    purchase: { count: 0, revenue: 0 },
-  };
-  for (const row of j.rows ?? []) {
-    const name = row.dimensionValues?.[0]?.value as string;
-    const count = Number(row.metricValues?.[0]?.value ?? 0);
-    const revenue = Number(row.metricValues?.[1]?.value ?? 0);
-    if (out[name]) out[name] = { count, revenue };
-  }
-  return out;
+  return parseEventCountsResponse(j);
 }
 
 async function ga4PurchaseTransactions(token: string, propertyId: string, days: number) {
   const startDate = `${days}daysAgo`;
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
     {
       method: "POST",
@@ -141,110 +139,7 @@ async function ga4PurchaseTransactions(token: string, propertyId: string, days: 
   );
   const j = await res.json();
   if (!res.ok) throw new Error(`ga4_tx_report_failed: ${j.error?.message ?? res.status}`);
-  const rows: { transactionId: string; count: number; revenue: number }[] = [];
-  for (const row of j.rows ?? []) {
-    const tx = String(row.dimensionValues?.[0]?.value ?? "").trim();
-    rows.push({
-      transactionId: tx,
-      count: Number(row.metricValues?.[0]?.value ?? 0),
-      revenue: Number(row.metricValues?.[1]?.value ?? 0),
-    });
-  }
-  return rows;
-}
-
-function volumeConfidence(count: number): { confidence: number; rationale: string } {
-  if (count <= 0) return { confidence: 0, rationale: "no events received from GA4" };
-  const conf = Math.min(100, Math.round(60 + Math.log10(count) * 10));
-  return { confidence: conf, rationale: `event volume ${count} over window` };
-}
-
-type PurchaseRecon = {
-  ga4_count: number;
-  orders_count: number;
-  matched: number;
-  ga4_only: number;
-  orders_only: number;
-  id_match_rate: number;
-  count_match_rate: number;
-  revenue_ga4_cents: number;
-  revenue_orders_cents: number;
-  revenue_delta_pct: number;
-  sample_ga4_only: string[];
-  sample_orders_only: string[];
-};
-
-function purchaseConfidence(r: PurchaseRecon): { confidence: number; rationale: string } {
-  if (r.ga4_count <= 0 && r.orders_count <= 0) {
-    return { confidence: 0, rationale: "no GA4 or internal purchases in window" };
-  }
-  if (r.ga4_count <= 0) {
-    return { confidence: 0, rationale: `0 GA4 purchases vs ${r.orders_count} internal orders` };
-  }
-  const idScore = r.id_match_rate; // 0..1
-  const revScore = Math.max(0, 1 - Math.abs(r.revenue_delta_pct) / 10); // 10% delta → 0
-  const countScore = r.count_match_rate; // 0..1
-  const blended = idScore * 0.5 + revScore * 0.3 + countScore * 0.2;
-  const conf = Math.max(0, Math.min(100, Math.round(blended * 100)));
-  const rationale =
-    `id-match ${(idScore * 100).toFixed(0)}% · revenue Δ ${r.revenue_delta_pct.toFixed(2)}% ` +
-    `· count parity ${(countScore * 100).toFixed(0)}% ` +
-    `(GA4 ${r.ga4_count}/$${(r.revenue_ga4_cents / 100).toFixed(2)} vs orders ${r.orders_count}/$${(r.revenue_orders_cents / 100).toFixed(2)})`;
-  return { confidence: conf, rationale };
-}
-
-function reconcilePurchases(
-  ga4Rows: { transactionId: string; count: number; revenue: number }[],
-  orders: { id: string; stripe_session_id: string | null; stripe_payment_intent_id: string | null; total_amount: number | null }[],
-): PurchaseRecon {
-  const orderByKey = new Map<string, typeof orders[number]>();
-  for (const o of orders) {
-    for (const k of [o.id, o.stripe_session_id, o.stripe_payment_intent_id]) {
-      if (k) orderByKey.set(String(k), o);
-    }
-  }
-  const matchedOrderIds = new Set<string>();
-  let matched = 0;
-  let ga4_only = 0;
-  let revenue_ga4_cents = 0;
-  const sample_ga4_only: string[] = [];
-  for (const r of ga4Rows) {
-    revenue_ga4_cents += Math.round(r.revenue * 100);
-    const o = r.transactionId ? orderByKey.get(r.transactionId) : undefined;
-    if (o) {
-      matched += 1;
-      matchedOrderIds.add(o.id);
-    } else {
-      ga4_only += 1;
-      if (sample_ga4_only.length < 10) sample_ga4_only.push(r.transactionId || "(empty)");
-    }
-  }
-  const orders_only_list = orders.filter((o) => !matchedOrderIds.has(o.id));
-  const orders_only = orders_only_list.length;
-  const revenue_orders_cents = orders.reduce((s, o) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
-  const ga4_count = ga4Rows.length;
-  const orders_count = orders.length;
-  const id_match_rate = ga4_count > 0 ? matched / ga4_count : 0;
-  const count_match_rate =
-    Math.max(ga4_count, orders_count) > 0
-      ? Math.min(ga4_count, orders_count) / Math.max(ga4_count, orders_count)
-      : 1;
-  const denom = Math.max(revenue_orders_cents, 1);
-  const revenue_delta_pct = ((revenue_ga4_cents - revenue_orders_cents) / denom) * 100;
-  return {
-    ga4_count,
-    orders_count,
-    matched,
-    ga4_only,
-    orders_only,
-    id_match_rate,
-    count_match_rate,
-    revenue_ga4_cents,
-    revenue_orders_cents,
-    revenue_delta_pct,
-    sample_ga4_only,
-    sample_orders_only: orders_only_list.slice(0, 10).map((o) => o.id),
-  };
+  return parseTxResponse(j);
 }
 
 Deno.serve(async (req) => {
