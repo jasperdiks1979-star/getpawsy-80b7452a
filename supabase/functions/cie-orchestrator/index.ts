@@ -248,7 +248,9 @@ Deno.serve(async (req) => {
       ]);
       const metrics = await confidence(c);
       const health = await healthSnapshot(c);
-      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, pinterest, tiktok, metrics, health }), {
+      // Auto-repair runs after confidence is recomputed so it uses fresh signals.
+      const autorepair = await callAdapter("cie-auto-repair");
+      return new Response(JSON.stringify({ ok: true, traceId, funnel, truth, ga4, pinterest, tiktok, metrics, health, autorepair }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
