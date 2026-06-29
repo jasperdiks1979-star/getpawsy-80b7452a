@@ -722,7 +722,9 @@ const Checkout = () => {
               return await new Promise<string>((resolve) => {
                 const t = setTimeout(() => resolve(''), 600);
                 try {
-                  window.gtag('get', measurementId, 'client_id', (id: string) => {
+                  (window.gtag as unknown as (
+                    cmd: string, id: string, field: string, cb: (v: string) => void,
+                  ) => void)('get', measurementId, 'client_id', (id: string) => {
                     clearTimeout(t);
                     resolve(typeof id === 'string' ? id : '');
                   });
