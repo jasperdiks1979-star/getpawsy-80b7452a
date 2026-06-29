@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { sendGa4BeginCheckoutMp } from "../_shared/ga4-measurement-protocol.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -490,6 +491,33 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
+
+    // ── Server-side GA4 mirror of `begin_checkout` ─────────────────────
+    // Fires to the canonical GA4 stream via Measurement Protocol so the
+    // funnel reconciles even when the client gtag event is blocked. Uses
+    // the Stripe session id as the deterministic event id so GA4 dedupes
+    // client + server events when they share client_id/session_id.
+    try {
+      const mp = await sendGa4BeginCheckoutMp({
+        clientId: gaClientId || null,
+        sessionId: gaSessionId || null,
+        checkoutSessionId: session.id,
+        value: totalAmount,
+        currency: "usd",
+        items: items.map((i) => ({
+          id: i.id, name: i.name, price: i.price, quantity: i.quantity,
+        })),
+        source: utm?.source ?? null,
+        medium: utm?.medium ?? null,
+        campaign: utm?.campaign ?? null,
+      });
+      if (!mp.ok) {
+        console.warn("[CREATE-CHECKOUT] GA4 MP begin_checkout skipped", mp);
+      }
+    } catch (e) {
+      // Never let analytics fail checkout.
+      console.warn("[CREATE-CHECKOUT] GA4 MP begin_checkout threw", e);
+    }
 
     // Generate access token for guest orders (when no userId)
     const generateAccessToken = () => {
