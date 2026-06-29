@@ -9349,6 +9349,10 @@ export type Database = {
       cie_settings: {
         Row: {
           ai_training_min_confidence: number
+          auto_repair_circuit_failures_1h: number
+          auto_repair_dry_run: boolean
+          auto_repair_enabled: boolean
+          auto_repair_max_per_cycle: number
           autorepair_min_confidence: number
           created_at: string
           funnel_anomaly_zscore: number
@@ -9361,6 +9365,10 @@ export type Database = {
         }
         Insert: {
           ai_training_min_confidence?: number
+          auto_repair_circuit_failures_1h?: number
+          auto_repair_dry_run?: boolean
+          auto_repair_enabled?: boolean
+          auto_repair_max_per_cycle?: number
           autorepair_min_confidence?: number
           created_at?: string
           funnel_anomaly_zscore?: number
@@ -9373,6 +9381,10 @@ export type Database = {
         }
         Update: {
           ai_training_min_confidence?: number
+          auto_repair_circuit_failures_1h?: number
+          auto_repair_dry_run?: boolean
+          auto_repair_enabled?: boolean
+          auto_repair_max_per_cycle?: number
           autorepair_min_confidence?: number
           created_at?: string
           funnel_anomaly_zscore?: number
