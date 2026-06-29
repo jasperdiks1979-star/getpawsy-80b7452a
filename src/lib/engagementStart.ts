@@ -33,16 +33,17 @@ async function postEngagementStart(payload: Record<string, unknown>) {
   if (!PROJECT) return;
   const url = `https://${PROJECT}.supabase.co/functions/v1/analytics-engagement-start`;
   const body = JSON.stringify(payload);
+  const SAFE_TYPE = "text/plain;charset=UTF-8";
   try {
     if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "application/json" });
-      navigator.sendBeacon(url, blob);
-      return;
+      const blob = new Blob([body], { type: SAFE_TYPE });
+      const ok = navigator.sendBeacon(url, blob);
+      if (ok) return;
     }
   } catch { /* fall through to fetch */ }
   try {
     await fetch(url, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": SAFE_TYPE },
       body, keepalive: true,
     });
   } catch { /* swallow */ }
