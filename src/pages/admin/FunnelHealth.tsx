@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalFunnelSessions, summarizeCanonicalSessions } from '@/lib/canonicalAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -69,6 +70,15 @@ function rangeStart(r: Range): string {
   else if (r === '7d') d.setDate(d.getDate() - 7);
   else d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+function rangeHoursMs(r: Range): number {
+  if (r === '1h') return 1;
+  if (r === '24h') return 24;
+  if (r === '7d') return 24 * 7;
+  // today
+  const d = new Date(); const start = new Date(); start.setHours(0,0,0,0);
+  return Math.max(1, Math.ceil((d.getTime() - start.getTime()) / 3600_000));
 }
 
 /** Clean = real human traffic only. Bots, QA, and unknown-quality excluded. */
