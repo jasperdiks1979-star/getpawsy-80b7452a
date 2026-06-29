@@ -495,6 +495,32 @@ function PiList({ title, rows, products }: { title: string; rows: any[]; product
   );
 }
 
+function PinList({
+  title, rows, products, metric, metricLabel,
+}: {
+  title: string;
+  rows: any[];
+  products: Record<string, { name: string }>;
+  metric: "predicted_opportunity" | "pinterest_growth_score";
+  metricLabel: string;
+}) {
+  return (
+    <div className="rounded border p-3">
+      <div className="text-xs uppercase text-muted-foreground mb-2">{title}</div>
+      {rows.length === 0 ? <div className="text-xs text-muted-foreground">—</div> : (
+        <ul className="space-y-1 text-sm">
+          {rows.map((r) => (
+            <li key={r.product_id} className="flex items-center justify-between gap-2">
+              <span className="truncate">{products[r.product_id]?.name || r.product_id.slice(0, 8)}</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{Math.round(Number(r[metric] ?? 0))} {metricLabel}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ProductTable({ rows, empty }: { rows: ProductAgg[]; empty: string }) {
   if (rows.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">{empty}</p>;
   return (
