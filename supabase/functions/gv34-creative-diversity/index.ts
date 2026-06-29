@@ -88,14 +88,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Persist findings (one row per run, single jsonb)
-    await sb.from("pcie2_ci_diversity_log").insert({
-      run_at: new Date().toISOString(),
-      scanned: creatives.length,
-      avg_diversity: findings.reduce((a, b) => a + b.diversity_score, 0) / findings.length,
-      to_regenerate: findings.filter((f) => f.regenerate).length,
-      payload: findings,
-    } as any);
+    // Update duplicate_score on affected creatives (1 - diversity_score).
+    // Winners are protected and skipped.
+    const updates = findings.filter((f) => !f.is_winner);
+    for (const f of updates) {
+      await sb
+        .from("pcie2_creatives")
+        .update({ duplicate_score: Number((1 - f.diversity_score).toFixed(3)) })
+        .eq("id", f.creative_id);
+    }
 
     return new Response(
       JSON.stringify({
