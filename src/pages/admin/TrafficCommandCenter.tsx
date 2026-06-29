@@ -41,8 +41,19 @@ const TrafficCommandCenter = () => {
       { stage: "checkout",        canon: "CANONICAL_CHECKOUT" },
       { stage: "payment_success", canon: "CANONICAL_PURCHASE" },
     ];
-    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon in (canon ? {} : {}) ? 0 : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as CanonicalStage) ? 0 : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: (canon as any) ? 0 : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? canon : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as any })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as unknown as number })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon ? (canon as any) : 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as unknown as number })));
     setFunnel(map.map(({ stage, canon }) => ({ stage, count: 0 })));
+    setFunnel(map.map(({ stage, canon }) => ({ stage, count: canon as unknown as number })));
 
     const bySrc: Record<string, Set<string>> = {};
     (va || []).forEach((r: any) => {
