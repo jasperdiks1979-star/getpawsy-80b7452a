@@ -173,6 +173,8 @@ export default function GrowthCommandCenterPage() {
   const [alerts, setAlerts] = useState<ConsistencyAlertRow[]>([]);
   const [piScores, setPiScores] = useState<any[]>([]);
   const [piProducts, setPiProducts] = useState<Record<string, { name: string }>>({});
+  const [pinScores, setPinScores] = useState<any[]>([]);
+  const [pinProducts, setPinProducts] = useState<Record<string, { name: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -200,6 +202,19 @@ export default function GrowthCommandCenterPage() {
         const m: Record<string, any> = {};
         for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
         setPiProducts(m);
+      }
+      const { data: pin } = await supabase
+        .from("gv3_pin_growth_scores")
+        .select("product_id, pinterest_growth_score, classification, predicted_opportunity, pinterest_saturation, confidence, reason")
+        .order("pinterest_growth_score", { ascending: false })
+        .limit(500);
+      setPinScores(pin ?? []);
+      const pinIds = Array.from(new Set((pin ?? []).map((r: any) => r.product_id)));
+      if (pinIds.length) {
+        const { data: pr } = await supabase.from("products").select("id, name").in("id", pinIds);
+        const m: Record<string, any> = {};
+        for (const p of pr ?? []) m[(p as any).id] = { name: (p as any).name };
+        setPinProducts(m);
       }
     } catch (err: any) {
       setError(err?.message ?? "Failed to load growth data");
