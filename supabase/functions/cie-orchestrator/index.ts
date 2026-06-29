@@ -203,8 +203,33 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({ days }),
           });
-          return await r.json();
+          const json = await r.json().catch(() => ({ ok: false, message: `non-json response ${r.status}` }));
+          if (!r.ok || json?.ok === false) {
+            try {
+              await c.from("cie_incidents").insert({
+                title: `Adapter failure: ${fn}`,
+                category: "adapter_failure",
+                severity: "high",
+                status: "open",
+                owner_engine: fn,
+                description: String(json?.message ?? `HTTP ${r.status}`).slice(0, 1000),
+                evidence: { traceId, fn, status: r.status, response: json },
+              });
+            } catch (_) { /* never let audit logging crash the loop */ }
+          }
+          return json;
         } catch (e) {
+          try {
+            await c.from("cie_incidents").insert({
+              title: `Adapter unreachable: ${fn}`,
+              category: "adapter_failure",
+              severity: "critical",
+              status: "open",
+              owner_engine: fn,
+              description: (e as Error).message.slice(0, 1000),
+              evidence: { traceId, fn },
+            });
+          } catch (_) { /* swallow */ }
           return { ok: false, message: (e as Error).message };
         }
       };
