@@ -13,7 +13,8 @@ export type CciEvent =
   | 'add_to_cart_click' | 'add_to_cart_success' | 'add_to_cart_error'
   | 'cart_open' | 'cart_quantity_change' | 'checkout_click' | 'checkout_loaded'
   | 'checkout_error' | 'checkout_abandoned' | 'payment_redirect_started' | 'payment_success'
-  | 'purchase_confirmed';
+  | 'purchase_confirmed'
+  | 'geo_lookup_failed';
 
 function ensureSessionId(): string | null {
   try {
