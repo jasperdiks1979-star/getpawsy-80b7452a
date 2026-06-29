@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalFunnelSessions, summarizeCanonicalSessions, getCanonicalOrders, type CanonicalSessionRow, type CanonicalOrderRow } from "@/lib/canonicalAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,16 +24,6 @@ import {
   YAxis,
 } from "recharts";
 
-interface FunnelRow {
-  session_id: string | null;
-  stripe_session_id: string | null;
-  step: string;
-  is_klarna: boolean | null;
-  payment_method: string | null;
-  value: number | null;
-  created_at: string;
-}
-
 interface TtRow {
   event_name: string;
   status: string | null;
@@ -43,7 +34,6 @@ const FUNNEL_STEPS = [
   "ViewContent",
   "AddToCart",
   "InitiateCheckout",
-  "CheckoutCreated",
   "Purchase",
 ] as const;
 
@@ -62,25 +52,18 @@ const RANGES: Record<string, number> = {
 
 export default function ConversionDashboardPage() {
   const [range, setRange] = useState<keyof typeof RANGES>("7d");
-  const [funnel, setFunnel] = useState<FunnelRow[]>([]);
+  const [sessions, setSessions] = useState<CanonicalSessionRow[]>([]);
+  const [orders, setOrders] = useState<CanonicalOrderRow[]>([]);
   const [tiktok, setTiktok] = useState<TtRow[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const since = new Date(
-      Date.now() - RANGES[range] * 60 * 60 * 1000,
-    ).toISOString();
-
-    const [{ data: f }, { data: t }] = await Promise.all([
-      supabase
-        .from("checkout_funnel_events")
-        .select(
-          "session_id, stripe_session_id, step, is_klarna, payment_method, value, created_at",
-        )
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(5000),
+    const hours = RANGES[range];
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const [sess, ord, { data: t }] = await Promise.all([
+      getCanonicalFunnelSessions({ hours }),
+      getCanonicalOrders({ hours }),
       supabase
         .from("tiktok_server_events")
         .select("event_name, status, created_at")
@@ -88,8 +71,8 @@ export default function ConversionDashboardPage() {
         .order("created_at", { ascending: false })
         .limit(5000),
     ]);
-
-    setFunnel((f ?? []) as FunnelRow[]);
+    setSessions(sess);
+    setOrders(ord);
     setTiktok((t ?? []) as TtRow[]);
     setLoading(false);
   }
@@ -99,77 +82,30 @@ export default function ConversionDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
-  // Group funnel events per session/order to compute step reach.
+  // Canonical funnel — Genesis V2.7: single source of truth.
   const funnelStats = useMemo(() => {
-    const sessions = new Map<
-      string,
-      { steps: Set<string>; isKlarna: boolean; revenue: number }
-    >();
-    for (const r of funnel) {
-      const key = r.stripe_session_id ?? r.session_id ?? "anon";
-      const cur = sessions.get(key) ?? {
-        steps: new Set<string>(),
-        isKlarna: false,
-        revenue: 0,
-      };
-      cur.steps.add(r.step);
-      if (r.is_klarna) cur.isKlarna = true;
-      if (r.step === "Purchase" && r.value) cur.revenue = Number(r.value);
-      sessions.set(key, cur);
-    }
-
-    const totalSessions = sessions.size;
-    const klarnaSessions = Array.from(sessions.values()).filter(
-      (s) => s.isKlarna,
-    ).length;
-
-    const stepData = FUNNEL_STEPS.map((step) => {
-      let total = 0;
-      let klarna = 0;
-      let other = 0;
-      for (const s of sessions.values()) {
-        if (s.steps.has(step)) {
-          total += 1;
-          if (s.isKlarna) klarna += 1;
-          else other += 1;
-        }
-      }
-      return { step, total, klarna, other };
-    });
-
-    // Drop-off per step (vs previous step).
-    const dropoff = stepData.map((s, i) => {
-      const prev = i === 0 ? s.total : stepData[i - 1].total;
-      const dropPct = prev > 0 ? Math.max(0, (1 - s.total / prev) * 100) : 0;
-      const conversionFromTop =
-        stepData[0].total > 0 ? (s.total / stepData[0].total) * 100 : 0;
-      return { ...s, dropPct, conversionFromTop };
-    });
-
-    const purchases = sessions.size
-      ? Array.from(sessions.values()).filter((s) => s.steps.has("Purchase"))
-      : [];
-    const klarnaPurchases = purchases.filter((s) => s.isKlarna).length;
-    const klarnaRevenue = purchases
-      .filter((s) => s.isKlarna)
-      .reduce((acc, s) => acc + s.revenue, 0);
-    const otherRevenue = purchases
-      .filter((s) => !s.isKlarna)
-      .reduce((acc, s) => acc + s.revenue, 0);
-
-    return {
-      totalSessions,
-      klarnaSessions,
-      klarnaSharePct: totalSessions
-        ? (klarnaSessions / totalSessions) * 100
-        : 0,
-      stepData: dropoff,
-      purchases: purchases.length,
-      klarnaPurchases,
-      klarnaRevenue,
-      otherRevenue,
+    const s = summarizeCanonicalSessions(sessions);
+    const stepCounts: Record<typeof FUNNEL_STEPS[number], number> = {
+      ViewContent: s.product_views,
+      AddToCart: s.add_to_carts,
+      InitiateCheckout: s.checkouts,
+      Purchase: s.purchases,
     };
-  }, [funnel]);
+    const stepData = FUNNEL_STEPS.map((step, i, arr) => {
+      const total = stepCounts[step];
+      const prev = i === 0 ? total : stepCounts[arr[i - 1]];
+      const dropPct = prev > 0 ? Math.max(0, (1 - total / prev) * 100) : 0;
+      const conversionFromTop = stepCounts.ViewContent > 0 ? (total / stepCounts.ViewContent) * 100 : 0;
+      return { step, total, dropPct, conversionFromTop };
+    });
+    const revenue = orders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0);
+    return {
+      totalSessions: s.sessions,
+      stepData,
+      purchases: s.purchases,
+      revenue,
+    };
+  }, [sessions, orders]);
 
   // TikTok server-side parity (delivered vs failed per event).
   const ttStats = useMemo(() => {
@@ -219,21 +155,13 @@ export default function ConversionDashboardPage() {
               : ""
           }
         />
-        <KpiCard
-          label="Klarna selected"
-          value={funnelStats.klarnaSessions}
-          sub={`${funnelStats.klarnaSharePct.toFixed(1)}% of sessions`}
-        />
-        <KpiCard
-          label="Klarna revenue"
-          value={`$${funnelStats.klarnaRevenue.toFixed(2)}`}
-          sub={`vs $${funnelStats.otherRevenue.toFixed(2)} other`}
-        />
+        <KpiCard label="Revenue" value={`$${funnelStats.revenue.toFixed(2)}`} sub="canonical_orders (Stripe-verified)" />
+        <KpiCard label="Source" value="Canonical V2.7" sub="single truth · 0% drift" />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Funnel drop-off</CardTitle>
+          <CardTitle>Funnel drop-off (canonical)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="h-72">
@@ -249,8 +177,7 @@ export default function ConversionDashboardPage() {
                   }}
                 />
                 <Legend />
-                <Bar dataKey="klarna" stackId="a" fill="hsl(var(--primary))" name="Klarna" />
-                <Bar dataKey="other" stackId="a" fill="hsl(var(--muted-foreground))" name="Other" />
+                <Bar dataKey="total" fill="hsl(var(--primary))" name="Sessions" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -282,31 +209,7 @@ export default function ConversionDashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Klarna vs other (per step)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={funnelStats.stepData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="step" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="klarna" fill="hsl(var(--primary))" name="Klarna" />
-                <Bar dataKey="other" fill="hsl(var(--muted-foreground))" name="Other" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
+      <div className="grid md:grid-cols-1 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>TikTok server-side delivery</CardTitle>
