@@ -397,6 +397,54 @@ export default function GrowthCommandCenterPage() {
         </CardContent>
       </Card>
 
+      {/* Pinterest Growth (Genesis V3 · Phase 3) */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Pinterest Growth (V3)</CardTitle>
+          <Link to="/admin/pinterest-growth-v3" className="text-xs underline">Open dashboard →</Link>
+        </CardHeader>
+        <CardContent>
+          {pinScores.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No Pinterest Growth run yet. Open the dashboard and click “Run Now”.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Kpi label="Scored" value={pinScores.length} />
+                <Kpi label="Promote today" value={pinScores.filter(p=>p.classification==="Promote Immediately").length} highlight />
+                <Kpi label="Needs creative" value={pinScores.filter(p=>["Needs New Creative","Needs Better Images","Needs Better Copy"].includes(p.classification)).length} />
+                <Kpi label="Do not promote" value={pinScores.filter(p=>p.classification==="Do Not Promote").length} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <PinList
+                  title="Top opportunities"
+                  rows={[...pinScores]
+                    .filter(p=>!["Do Not Promote","Hold","Low Confidence"].includes(p.classification))
+                    .sort((a,b)=>b.predicted_opportunity-a.predicted_opportunity)
+                    .slice(0,6)}
+                  products={pinProducts}
+                  metric="predicted_opportunity"
+                  metricLabel="opp"
+                />
+                <PinList
+                  title="Publish today"
+                  rows={pinScores.filter(p=>p.classification==="Promote Immediately").slice(0,6)}
+                  products={pinProducts}
+                  metric="pinterest_growth_score"
+                  metricLabel="PGS"
+                />
+                <PinList
+                  title="Needs new creative"
+                  rows={pinScores.filter(p=>["Needs New Creative","Needs Better Images","Needs Better Copy"].includes(p.classification)).slice(0,6)}
+                  products={pinProducts}
+                  metric="pinterest_growth_score"
+                  metricLabel="PGS"
+                />
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle>Critical alerts</CardTitle></CardHeader>
         <CardContent>
