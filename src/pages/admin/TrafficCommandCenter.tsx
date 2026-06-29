@@ -79,7 +79,7 @@ const TrafficCommandCenter = () => {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   const atc = funnel.find((f) => f.stage === "add_to_cart")?.count || 0;
-  const view = funnel.find((f) => f.stage === "view_item")?.count || 0;
+  const view = funnel.find((f) => f.stage === "product_view")?.count || 0;
   const atcRate = view ? ((atc / view) * 100).toFixed(2) : "0.00";
   const paid = orders.filter((o) => o.status === "paid").length;
 
