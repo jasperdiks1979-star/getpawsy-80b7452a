@@ -9046,6 +9046,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cie_ga4_api_health: {
+        Row: {
+          begin_checkout_count: number
+          checked_at: string
+          data_api_reachable: boolean
+          days: number
+          evidence: Json
+          failure_reason: string | null
+          id: string
+          latency_ms: number | null
+          page_view_count: number
+          purchase_available: boolean
+          purchase_count: number
+          session_start_count: number
+          trace_id: string | null
+        }
+        Insert: {
+          begin_checkout_count?: number
+          checked_at?: string
+          data_api_reachable: boolean
+          days: number
+          evidence?: Json
+          failure_reason?: string | null
+          id?: string
+          latency_ms?: number | null
+          page_view_count?: number
+          purchase_available?: boolean
+          purchase_count?: number
+          session_start_count?: number
+          trace_id?: string | null
+        }
+        Update: {
+          begin_checkout_count?: number
+          checked_at?: string
+          data_api_reachable?: boolean
+          days?: number
+          evidence?: Json
+          failure_reason?: string | null
+          id?: string
+          latency_ms?: number | null
+          page_view_count?: number
+          purchase_available?: boolean
+          purchase_count?: number
+          session_start_count?: number
+          trace_id?: string | null
+        }
+        Relationships: []
+      }
       cie_health_snapshots: {
         Row: {
           captured_at: string
