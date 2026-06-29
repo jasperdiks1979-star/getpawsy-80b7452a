@@ -41,12 +41,13 @@ export function recordFunnelStep(step: FunnelStep, extra?: Record<string, unknow
       ...extra,
     });
     const url = `https://${PROJECT}.supabase.co/functions/v1/analytics-funnel-ingest`;
+    const SAFE_TYPE = "text/plain;charset=UTF-8";
     try {
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(url, new Blob([body], { type: "application/json" }));
-        return;
+        const ok = navigator.sendBeacon(url, new Blob([body], { type: SAFE_TYPE }));
+        if (ok) return;
       }
     } catch {}
-    void fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+    void fetch(url, { method: "POST", headers: { "Content-Type": SAFE_TYPE }, body, keepalive: true }).catch(() => {});
   } catch { /* swallow */ }
 }
