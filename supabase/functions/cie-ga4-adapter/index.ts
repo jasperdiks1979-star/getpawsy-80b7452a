@@ -31,6 +31,33 @@ function admin() {
   return createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 }
 
+/**
+ * Log an auditable incident in cie_incidents so every GA4 ingestion or mapping
+ * failure is visible in /admin/conversion-integrity. Failures here are swallowed
+ * — we never want incident logging to mask the original error.
+ */
+async function openIncident(
+  phase: string,
+  err: unknown,
+  extra: Record<string, unknown> = {},
+  severity: "low" | "medium" | "high" | "critical" = "high",
+) {
+  try {
+    const message = err instanceof Error ? err.message : String(err);
+    await admin().from("cie_incidents").insert({
+      title: `GA4 adapter: ${phase}`,
+      category: "ga4_ingestion",
+      severity,
+      status: "open",
+      owner_engine: "cie-ga4-adapter",
+      description: message.slice(0, 1000),
+      evidence: { phase, error: message, ...extra },
+    });
+  } catch (_) {
+    // swallow — do not let audit logging crash the pipeline
+  }
+}
+
 async function authorize(req: Request): Promise<{ ok: boolean; status?: number; message?: string }> {
   const internal = req.headers.get("x-internal-secret") ?? "";
   if (INTERNAL && internal && internal === INTERNAL) return { ok: true };
@@ -158,28 +185,80 @@ Deno.serve(async (req) => {
     const propertyId = Deno.env.get("GA4_PROPERTY_ID");
     const svc = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!propertyId || !svc) {
+      await openIncident(
+        "configuration",
+        "GA4 not configured (missing GA4_PROPERTY_ID or GOOGLE_SERVICE_ACCOUNT_JSON)",
+        { traceId, has_property_id: Boolean(propertyId), has_service_account: Boolean(svc) },
+        "critical",
+      );
       return new Response(JSON.stringify({ ok: false, traceId, message: "GA4 not configured" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const creds = JSON.parse(svc);
-    const token = await getAccessToken(creds);
-    const counts = await ga4EventCounts(token, propertyId, days);
-    const ga4Tx = await ga4PurchaseTransactions(token, propertyId, days);
+    let creds: { client_email: string; private_key: string };
+    try {
+      creds = JSON.parse(svc);
+    } catch (e) {
+      await openIncident("credentials_parse", e, { traceId }, "critical");
+      throw e;
+    }
+    let token: string;
+    try {
+      token = await getAccessToken(creds);
+    } catch (e) {
+      await openIncident("ga4_token", e, { traceId }, "critical");
+      throw e;
+    }
+    let counts: Awaited<ReturnType<typeof ga4EventCounts>>;
+    try {
+      counts = await ga4EventCounts(token, propertyId, days);
+    } catch (e) {
+      await openIncident("ga4_event_report", e, { traceId, days }, "high");
+      throw e;
+    }
+    let ga4Tx: Awaited<ReturnType<typeof ga4PurchaseTransactions>>;
+    try {
+      ga4Tx = await ga4PurchaseTransactions(token, propertyId, days);
+    } catch (e) {
+      await openIncident("ga4_transactions_report", e, { traceId, days }, "high");
+      throw e;
+    }
 
     const c = admin();
     const sinceIso = new Date(Date.now() - days * 86400_000).toISOString();
 
     // Pull orders for the same window so we can reconcile per transaction
-    const { data: orderRows } = await c
+    const { data: orderRows, error: orderErr } = await c
       .from("orders")
       .select("id, stripe_session_id, stripe_payment_intent_id, total_amount, status, created_at")
       .gte("created_at", sinceIso)
       .in("status", ["paid", "completed", "fulfilled"]);
+    if (orderErr) {
+      await openIncident("orders_lookup", orderErr.message, { traceId, days });
+    }
     const orders = (orderRows ?? []) as any[];
     const orderCount = orders.length;
     const recon = reconcilePurchases(ga4Tx, orders);
     const purchaseScore = purchaseConfidence(recon);
+
+    // Mapping integrity: if GA4 reports purchases but none reconcile against
+    // internal orders, that's an attribution/mapping break — open an incident
+    // so the dashboard surfaces it.
+    if (ga4Tx.length > 0 && recon.matched === 0) {
+      await openIncident(
+        "purchase_mapping_break",
+        `GA4 reported ${ga4Tx.length} purchases but 0 matched internal orders`,
+        { traceId, days, ga4_tx: ga4Tx.length, order_count: orderCount, reconciliation: recon },
+        "critical",
+      );
+    } else if (ga4Tx.length > 0 && recon.matched / ga4Tx.length < 0.5) {
+      await openIncident(
+        "purchase_mapping_low_match",
+        `Only ${recon.matched}/${ga4Tx.length} GA4 purchases matched internal orders`,
+        { traceId, days, reconciliation: recon },
+        "medium",
+      );
+    }
 
     // Rollup events into cie_events for evidence trail
     const nowIso = new Date().toISOString();
@@ -204,7 +283,10 @@ Deno.serve(async (req) => {
         emitted_at: nowIso,
       };
     });
-    if (rollup.length) await c.from("cie_events").insert(rollup);
+    if (rollup.length) {
+      const { error: insErr } = await c.from("cie_events").insert(rollup);
+      if (insErr) await openIncident("cie_events_insert", insErr.message, { traceId });
+    }
 
     // Upsert confidence scores
     const { data: s } = await c.from("cie_settings").select("ai_training_min_confidence").limit(1).maybeSingle();
@@ -229,11 +311,16 @@ Deno.serve(async (req) => {
       evaluated_at: nowIso,
     });
     for (const row of scoreRows) {
-      await c.from("cie_confidence_scores").upsert(row, { onConflict: "metric,scope" });
+      const { error: upErr } = await c
+        .from("cie_confidence_scores")
+        .upsert(row, { onConflict: "metric,scope" });
+      if (upErr) {
+        await openIncident("confidence_upsert", upErr.message, { traceId, metric: row.metric });
+      }
     }
 
     // Persist mismatch breakdown for the dashboard
-    await c.from("cie_metric_mismatches").upsert(
+    const { error: misErr } = await c.from("cie_metric_mismatches").upsert(
       {
         metric: "ga4_purchase",
         scope: "global",
@@ -243,6 +330,7 @@ Deno.serve(async (req) => {
       },
       { onConflict: "metric,scope" },
     );
+    if (misErr) await openIncident("mismatch_upsert", misErr.message, { traceId });
 
     return new Response(
       JSON.stringify({ ok: true, traceId, days, counts, orderCount, scores: scoreRows, reconciliation: recon }),
@@ -251,6 +339,7 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
+    await openIncident("unhandled", err, { traceId }, "critical");
     return new Response(JSON.stringify({ ok: false, traceId, message: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
