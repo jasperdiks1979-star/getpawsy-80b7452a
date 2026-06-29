@@ -1,122 +1,91 @@
-# ARIE — Autonomous Revenue Intelligence Engine
+## Executive briefing — Genesis v2 consolidation
 
-ARIE is a large, multi-phase system. This plan covers **Phase 1 (Foundation)** — the minimum that gives the AI eyes (full funnel), ears (validation), hands (safe auto-repair) and a face (Revenue Command Center). Phases 2–4 are scoped at the end so we can ship value now without boil-the-ocean risk.
+**Current state (evidence).** The platform now holds ~550 Postgres tables, ~50+ namespaced AI engines (PCIE, PCIE2, PCIEv2, PEI, PIE, ARIE, AGD, MIL, AGAL, AOS, GAEE, TRPE, GVCAE, AICOS, ROE, SPE, AEE, EDE, KGRE, 7 Genesis DNAs, CIE, PRE, PPE, ALG, XAI, MI, EC, Growth/Taste/Master Director, Evolution Engine, Collective Intelligence, Evidence Governor, Organic OIE/ODE, FOS…) and ~25 admin dashboards. CIE is now the supreme gate; most non-revenue/non-Pinterest engines have shipped at "Phase 1" with seed tables and a single dashboard but no measured business outcome.
 
-## Scope of Phase 1
+**Problem.** Architectural completeness has overtaken business value. We have:
+- 6+ overlapping "intelligence/decision" layers (AGD, MIL, EDE, AEC, AGAL, AOS, GAEE, AICOS, KGRE) that all reason over the same DNA snapshots.
+- 4+ overlapping creative engines (PCIE, PCIE2, PCIEv2, GCD, CPE) with separate weight tables.
+- 5+ overlapping health/scorecard surfaces (TRPE, GVCAE, commander, AOS health, CIE health, Pinterest Health, ARIE health).
+- 3 attribution/funnel stacks (ARIE, CIE, GI) writing similar events.
+- 12+ cron jobs touching the same nightly window with no priority arbitration.
 
-In:
-- End-to-end funnel event store + attribution stitching
-- Cross-source validator (GA4 ↔ DB ↔ Pinterest ↔ TikTok)
-- Conversion drop detector + incident generation
-- Hourly synthetic visitor robots (Pinterest / TikTok / Organic on mobile + desktop)
-- JS / API health collector (reusing existing `frontend_error_logs`)
-- Auto-Fix engine for **safe categories only** (metadata, canonical, UTM repair, event dedup, broken image fallback) with versioning + rollback
-- Revenue Command Center at `/admin/revenue-command`
+Every duplicate burns AI credits, blocks CIE from converging on a single truth, and makes any future schema change a multi-week migration.
 
-Out (deferred):
-- Session replay (rrweb pipeline) — large infra, Phase 2
-- Data-driven multi-touch attribution model — Phase 3
-- Self-learning confidence tuning loop — Phase 4
-- Any auto-edit of payments, pricing, inventory, checkout, auth, schema (hard-blocked by safety policy)
+**Recommendation.** Pause all "new engine" work. Run a structured consolidation in 5 waves. Wave 1 protects revenue today; Waves 2–5 collapse the architecture without losing Genesis intent.
 
-## Database (new tables, all admin-only RLS + service_role)
+---
 
+### Phase 1 — Architecture map (deliverable: report, no code)
+Generate `public/admin-reports/architecture/genesis-v2-audit.{json,md}`:
+- Inventory: every table prefix → owning engine → dashboard route → cron schedule → edge fn.
+- Edge-fn call graph (who invokes whom) extracted from `supabase/functions/**`.
+- Dashboard route → table dependency matrix.
+- Top 20 hottest tables (writes/day) vs top 20 coldest (zero writes in 30d → deprecation candidates).
+
+### Phase 2 — Genesis gap classification
+For each Genesis pillar (Business, Customer Psychology, Pinterest, Creative, Analytics, Product, Market, KGRE, EDE, AEE, ROE, SPE, AICOS, GVCAE, GAEE, TRPE, CIE, PRE, PPE) tag: `keep / merge / replace / rewrite / delete / defer`. Output table in the same report.
+
+### Phase 3 — Overlap collapse targets (proposed)
 ```text
-arie_funnel_events          one row per stage transition; session_id, visitor_id, stage,
-                            ts, product_id, source, campaign, creative_id, pin_id,
-                            tiktok_video_id, device, country, value_cents, meta jsonb
-arie_sessions               denormalized journey: first_touch, last_touch, stages_reached[],
-                            time_to_purchase_ms, revenue_cents, attribution jsonb
-arie_validation_runs        source pair (ga4_vs_db, pin_vs_db, ttk_vs_db), window,
-                            expected, actual, drift_pct, severity, status
-arie_incidents              id, type, severity, confidence, affected_revenue_cents,
-                            affected_sessions, root_cause, suggested_repair,
-                            auto_repair_status, rollback_token, opened_at, resolved_at
-arie_repairs                incident_id, category, before jsonb, after jsonb,
-                            applied_by, confidence, rollback_available, rolled_back_at
-arie_synthetic_runs         persona, device, browser, route_path, step_results jsonb,
-                            failure_stage, total_ms, status
-arie_health_snapshots       hourly: funnel_conversion, drop_pcts jsonb, pixel_health,
-                            api_health, tracking_health, lost_revenue_estimate_cents
-arie_settings               feature_flags jsonb (auto_repair_enabled per category),
-                            confidence_threshold, alert_channels
+Intelligence/decision  AGD + MIL + EDE + AEC + KGRE  →  one "Council" service (EDE shell, KGRE memory)
+Creative engines       PCIE / PCIE2 / PCIEv2 / GCD   →  PCIE2 canonical; others read-only archive
+Health/scorecards      TRPE + GVCAE + AOS health     →  one /admin/health (TRPE shell)
+Attribution/funnel     ARIE + GI + CIE               →  CIE canonical; ARIE/GI become adapters
+Governance/audit       AGAL + Evidence Governor      →  AGAL canonical
+Knowledge              KGRE + AOS knowledge + Genesis DNA graph edges  →  KGRE canonical
+Notifications          Guardian + commander alerts + monitoring_alerts  →  one bus
+```
+No table drops in this wave — only writes are redirected and dashboards consolidated. Old tables become read-only for 30 days, then archived.
+
+### Phase 4 — Dependency graph + criticality
+Generate `gvcae_modules` rows for every engine with: inputs, outputs, criticality (P0/P1/P2/P3), business owner = founder, observed AI credit cost (from `ai_gateway_logs`), 30-day write volume. Surface at `/admin/architecture`.
+
+### Phase 5 — ROI scoring
+Score every *unbuilt* Genesis capability and every *consolidation target* on: revenue impact, profit impact, eng cost, AI cost, risk. Persist in `gvcae_value_analysis`. Anything ROI < 1.5 → defer.
+
+### Phase 6 — Execution waves
+```text
+Wave 1 — Revenue/reliability (this week)
+  - CIE GA4 cron already live → add Pinterest + TikTok + Meta confidence adapters (currently 0, blocking AI training)
+  - Revenue-truth divergence alert wired to Guardian (today: dashboards only)
+  - Kill 12 redundant nightly crons that recompute the same DNA snapshots
+  - PRE + Pinterest Integrity Guard SLO: <2% false-reject (today unmeasured)
+
+Wave 2 — Highest-ROI commercial (next 2 weeks)
+  - Consolidate Creative → PCIE2 only; freeze PCIE/PCIEv2/GCD writes
+  - One Pinterest Health dashboard (collapse 7 panels into 4 tabs)
+  - Pricing/profit recommendations from ROE wired into PCIE2 product selection
+
+Wave 3 — Knowledge consolidation
+  - All engine "learnings" write to KGRE only
+  - Genesis DNA modules become KGRE views, not separate tables
+  - Retire gad_/aos_/mil_ knowledge tables (read-only → drop after 30d)
+
+Wave 4 — Executive intelligence
+  - One Council service replacing AGD+MIL+EDE+AEC; one nightly briefing
+  - One /admin/health replacing TRPE/GVCAE/AOS health
+
+Wave 5 — Long-term evolution
+  - GAEE proposals act only on KGRE evidence with CIE gating_ok=true
+  - Quarterly architecture review automated via GVCAE
 ```
 
-All tables: admin SELECT, service_role ALL. No `anon` grants.
+### Phase 7–10 — Quality gates, business validation, self-review
+Every consolidation PR must include: KPI it improves, measurement method, rollback (the read-only window is the rollback), and a 14-day review entry in `gvcae_reviews`.
 
-## Edge functions (Deno)
+---
 
-```text
-arie-funnel-ingest          public POST from client tracker, validates + writes
-                            arie_funnel_events (dedup on event_id)
-arie-session-stitcher       cron 5m: rebuilds arie_sessions from raw events,
-                            resolves UTM/click-id → attribution
-arie-validator              cron 15m: cross-source counts (GA4 via existing
-                            ga4_daily_snapshots, pinterest_analytics_daily, orders),
-                            writes arie_validation_runs, opens incident on drift>15%
-arie-drop-detector          cron 30m: per-segment CVR z-score vs 14-day baseline,
-                            opens incident with confidence + estimated lost $
-arie-synthetic-robot        cron hourly: playwright-style fetch journeys (HTTP
-                            level, no headless browser) for 4 personas × 2 devices
-arie-auto-fix               invoked by incidents; dispatches to category handler
-                            (metadata/canonical/utm/dedup); writes arie_repairs with
-                            rollback token; respects safety allowlist + flag
-arie-health-rollup          cron hourly: writes arie_health_snapshots powering dashboard
-```
+### What I need from you before touching code
 
-Reuse: `gi_*`, `pinterest_analytics_daily`, `ga4_daily_snapshots`, `orders`, `checkout_funnel_events`, `frontend_error_logs`, `tracking_anomalies`, `monitoring_incidents` (do not duplicate — ARIE links by FK where overlap exists).
+1. **Approve the 7 consolidation targets** in Phase 3 (or veto specific merges).
+2. **Confirm Wave 1 scope** — Pinterest/TikTok/Meta CIE adapters + cron cull + Guardian revenue-truth alert. Estimated AI credit savings from cron cull alone: ~40%.
+3. **Anything off-limits** — engines you want preserved as-is regardless of ROI (e.g. CIE, PRE, Pinterest Integrity Guard are non-negotiable from my side; confirming you agree).
 
-## Client tracker
+I will not start consolidation refactors without explicit approval — they touch 50+ tables and 25+ dashboards and an unannounced merge would break your daily admin workflow. Phase 1 (the audit report) I can run immediately on approval and it changes no production code.
 
-`src/lib/arie/tracker.ts` — thin wrapper that emits to `arie-funnel-ingest` for each stage already wired in the app (PDP view, gallery, variant, ATC, checkout steps, purchase). Sends `event_id` (uuid) so the validator can dedup against GA4. No new UI hooks needed beyond importing into existing components.
+### Technical notes
+- Audit runs as a one-shot edge function `gvcae-genesis-audit` reading `pg_catalog`, `cron.job`, `supabase/functions/**`, and `src/pages/admin/**`. Output to `public/admin-reports/architecture/`.
+- Consolidation uses the existing `gvcae_*` schema — no new tables.
+- Read-only window is enforced via RLS revoke on `service_role` insert/update for deprecated tables, with a one-line restore path.
 
-## Revenue Command Center (`/admin/revenue-command`)
-
-Single page, tabbed:
-
-```text
-Overview      live revenue, today vs 14d, lost-revenue estimate, open incidents count
-Funnel        Sankey of arie_health_snapshots latest drop_pcts; per-source filter
-Validation    table of arie_validation_runs (last 24h) with drift % and severity
-Incidents     open/resolved, root cause, repair status, manual rollback button
-Synthetic     last 24h of arie_synthetic_runs grid: persona × device, pass/fail
-Health        pixel/API/tracking gauges + sparkline from arie_health_snapshots
-Repairs       changelog of arie_repairs with diff preview + rollback
-```
-
-Reuse existing shadcn cards/tables; no new design tokens.
-
-## Safety contract (hard-coded in arie-auto-fix)
-
-```text
-ALLOWED_CATEGORIES = [
-  'metadata.title', 'metadata.description', 'metadata.canonical',
-  'metadata.og', 'metadata.pinterest_rich_pin', 'jsonld.product',
-  'utm.repair', 'tracking.event_dedup', 'image.fallback_alt'
-]
-FORBIDDEN_PATHS     = ['payments/*', 'pricing/*', 'inventory/*',
-                       'checkout/*', 'auth/*', 'schema/*']
-REQUIRES_FLAG       = arie_settings.feature_flags.auto_repair[category] === true
-MIN_CONFIDENCE      = 0.95
-```
-
-Any repair outside allowlist → incident only, no auto-action.
-
-## Phase 1 deliverables checklist
-
-```text
-[ ] 1 migration (8 tables + RLS + grants)
-[ ] 7 edge functions deployed
-[ ] 6 cron schedules wired via pg_cron + pg_net
-[ ] src/lib/arie/tracker.ts + wired into existing funnel components
-[ ] /admin/revenue-command page + route
-[ ] arie_settings seeded with auto_repair all-false (opt-in per category)
-```
-
-## Deferred phases
-
-- **Phase 2** — rrweb session replay pipeline, rage/dead-click detection, heatmap aggregation.
-- **Phase 3** — data-driven attribution model (Shapley) layered on `arie_sessions`.
-- **Phase 4** — confidence self-tuning: every applied repair feeds a Bayesian update on category confidence; false positives lower auto-fix appetite.
-
-Approve to start Phase 1, or tell me to cut/reorder scope.
+Reply with: **approve audit only**, **approve audit + Wave 1**, or **revise plan**.
