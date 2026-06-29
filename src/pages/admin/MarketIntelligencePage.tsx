@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AudienceIntelligenceTab } from "@/components/admin/market-intelligence/tabs/AudienceIntelligenceTab";
 import { useToast } from "@/components/ui/use-toast";
 import DataQualityWarning from "@/components/admin/analytics/DataQualityWarning";
 import { MarketIntelligenceEngine } from "@/components/admin/market-intelligence/MarketIntelligenceEngine";
@@ -370,6 +371,7 @@ export default function MarketIntelligencePage() {
         <Tabs defaultValue="executive" className="w-full">
           <TabsList>
             <TabsTrigger value="executive">Executive</TabsTrigger>
+            <TabsTrigger value="audience">Audience</TabsTrigger>
             <TabsTrigger value="trends">Trends</TabsTrigger>
             <TabsTrigger value="competitors">Competitors</TabsTrigger>
             <TabsTrigger value="actions">Actions</TabsTrigger>
