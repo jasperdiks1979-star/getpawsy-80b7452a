@@ -60144,6 +60144,7 @@ export type Database = {
           skipped_policy_unsafe: number
         }[]
       }
+      canonical_ingest_recent: { Args: { hours?: number }; Returns: Json }
       canonical_refresh_all: { Args: never; Returns: undefined }
       canonical_session_upsert_recent: {
         Args: { since: string }
