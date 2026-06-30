@@ -5852,6 +5852,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generation_locks: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          function_name: string | null
+          lane: string
+          product_slug: string
+          run_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          function_name?: string | null
+          lane: string
+          product_slug: string
+          run_id: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          function_name?: string | null
+          lane?: string
+          product_slug?: string
+          run_id?: string
+        }
+        Relationships: []
+      }
       ai_homepage_variants: {
         Row: {
           active: boolean
@@ -6029,6 +6056,72 @@ export type Database = {
           title?: string
           traffic_size?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_probe_backoff_state: {
+        Row: {
+          consecutive_failures: number
+          id: number
+          last_attempt_at: string | null
+          last_status_code: number | null
+          next_allowed_at: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          id?: number
+          last_attempt_at?: string | null
+          last_status_code?: number | null
+          next_allowed_at?: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          id?: number
+          last_attempt_at?: string | null
+          last_status_code?: number | null
+          next_allowed_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_prompt_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          credits_saved_estimate: number
+          expires_at: string
+          function_name: string | null
+          hit_count: number
+          last_hit_at: string | null
+          model: string
+          product_slug: string | null
+          response_json: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          credits_saved_estimate?: number
+          expires_at: string
+          function_name?: string | null
+          hit_count?: number
+          last_hit_at?: string | null
+          model: string
+          product_slug?: string | null
+          response_json: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          credits_saved_estimate?: number
+          expires_at?: string
+          function_name?: string | null
+          hit_count?: number
+          last_hit_at?: string | null
+          model?: string
+          product_slug?: string | null
+          response_json?: Json
         }
         Relationships: []
       }
@@ -64526,6 +64619,7 @@ export type Database = {
       pinterest_scheduler_health: { Args: never; Returns: Json }
       prie_kick: { Args: { p_trigger: string }; Returns: undefined }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
+      purge_expired_ai_cache: { Args: never; Returns: number }
       purge_old_monitoring_runs: { Args: never; Returns: number }
       pvq_destination_matches_slug: {
         Args: { dest: string; slug: string }
