@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldAlert, ShieldCheck, RefreshCw, Ban } from "lucide-react";
+import { Loader2, ShieldAlert, ShieldCheck, RefreshCw, Ban, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type ScrubResult = {
@@ -32,6 +32,7 @@ export default function PinterestQualityPage() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [scrub, setScrub] = useState<ScrubResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [gate, setGate] = useState<any | null>(null);
 
   async function loadCounts() {
     setBusy("counts");
@@ -89,6 +90,27 @@ export default function PinterestQualityPage() {
     }
   }
 
+  async function runGate(dryRun: boolean) {
+    setBusy(dryRun ? "gate-dry" : "gate-apply");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-native-prepublish-gate", {
+        body: { dryRun, sampleSize: 300, minScore: 55 },
+      });
+      if (error) throw error;
+      setGate(data);
+      toast.success(
+        dryRun
+          ? `Simulated ${data.sampleSize} pins • avg native ${data.avgNativeScore} • ${data.counts.reject} reject, ${data.counts.downrank} downrank`
+          : `Rebalanced: ${data.applied.rejects} rejected, ${data.applied.downranks} downranked`,
+      );
+      await loadCounts();
+    } catch (e) {
+      toast.error(`Gate failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   useEffect(() => {
     void loadCounts();
   }, []);
@@ -132,6 +154,54 @@ export default function PinterestQualityPage() {
             <div className="w-full text-sm text-muted-foreground">
               Last run <code>{scrub.traceId.slice(0, 8)}</code> — {scrub.dryRun ? "dry-run" : "applied"}.
               Autopilot disabled: <Badge variant={scrub.autopilot_disabled ? "default" : "secondary"}>{String(scrub.autopilot_disabled)}</Badge>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5" /> Pre-publish Native Score Gate</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Simulates the latest 300 pins on Helpful / Lifestyle / Educational axes,
+            then auto-rebalances drafts that fail (rejects low-native showcase or over-represented buckets,
+            downranks the rest).
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" disabled={busy !== null} onClick={() => runGate(true)}>
+              {busy === "gate-dry" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />} Simulate (dry-run)
+            </Button>
+            <Button disabled={busy !== null} onClick={() => runGate(false)}>
+              {busy === "gate-apply" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />} Apply rebalance
+            </Button>
+          </div>
+          {gate && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-sm">
+              <div>
+                <div className="font-medium mb-1">Mix vs target</div>
+                <ul className="space-y-0.5">
+                  {Object.entries(gate.mix as Record<string, { share: number; target: number; over: boolean }>).map(([k, v]) => (
+                    <li key={k} className="flex justify-between gap-2">
+                      <span>{k}</span>
+                      <span className={v.over ? "text-destructive" : "text-muted-foreground"}>
+                        {(v.share * 100).toFixed(1)}% / {(v.target * 100).toFixed(0)}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="font-medium mb-1">Summary</div>
+                <ul className="space-y-0.5 text-muted-foreground">
+                  <li>Avg native score: <span className="text-foreground font-medium">{gate.avgNativeScore}</span></li>
+                  <li>Drafts evaluated: {gate.drafts}</li>
+                  <li>Planned reject: {gate.counts.reject} • downrank: {gate.counts.downrank} • keep: {gate.counts.keep}</li>
+                  <li>Applied: {gate.applied.rejects} rejected, {gate.applied.downranks} downranked</li>
+                  <li>Over-share categories: {Object.keys(gate.overCategories).join(", ") || "none"}</li>
+                </ul>
+              </div>
             </div>
           )}
         </CardContent>
