@@ -62749,6 +62749,28 @@ export type Database = {
         }
         Relationships: []
       }
+      v_pin_queue_daily_breakdown: {
+        Row: {
+          day: string | null
+          pin_count: number | null
+          product_count: number | null
+          rejection_reason: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_pin_queue_daily_by_product: {
+        Row: {
+          day: string | null
+          pin_count: number | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          rejection_reason: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _canonical_upsert_alert: {
@@ -63107,6 +63129,28 @@ export type Database = {
           pdp_view: number
           placement: string
           utm_campaign: string
+        }[]
+      }
+      get_pin_queue_daily_breakdown: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          pin_count: number
+          product_count: number
+          rejection_reason: string
+          status: string
+        }[]
+      }
+      get_pin_queue_daily_by_product: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          day: string
+          pin_count: number
+          product_id: string
+          product_name: string
+          product_slug: string
+          rejection_reason: string
+          status: string
         }[]
       }
       get_pinterest_connection_admin: {
