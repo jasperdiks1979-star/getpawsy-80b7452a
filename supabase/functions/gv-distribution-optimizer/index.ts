@@ -74,16 +74,16 @@ Deno.serve(async (req) => {
     // First Sale Mode — exploratory floors only while FSM is active. Visibility,
     // landing-match, brand-safety and Pinterest-safety floors stay untouched.
     const fsm = await getFirstSaleStatus(supabase);
-    // Baselines (production). Exploratory floors are derived from FSM thresholds
-    // by linearly scaling against the production publish_gate (95).
+    // Baselines (production). Exploratory floors scale by the FSM composite ratio
+    // (active: 55/92 ≈ 0.60; inactive: 1.0 → unchanged production behaviour).
     const BASE_CTR_FLOOR = 60;
     const BASE_SAVE_FLOOR = 55;
-    const scale = (base: number, fsmFloor: number) =>
-      Math.max(0, Math.round((fsmFloor / 95) * base));
-    const ctrFloor = fsm.active ? scale(BASE_CTR_FLOOR, fsm.ppe.ctr_floor) : BASE_CTR_FLOOR;
-    const saveFloor = fsm.active ? scale(BASE_SAVE_FLOOR, fsm.ppe.composite_floor) : BASE_SAVE_FLOOR;
-    // Publish gate translated to distScore (max ≈ 100). Auto-restores to 95 when FSM exits.
-    const distFloor = fsm.ppe.publish_gate_threshold * 0.60; // ~53 in FSM, ~57 baseline
+    const PROD_COMPOSITE = 92;
+    const compositeRatio = fsm.ppe.composite_floor / PROD_COMPOSITE; // 1.0 prod, ~0.60 FSM
+    const ctrFloor = Math.max(0, Math.round(BASE_CTR_FLOOR * compositeRatio));
+    const saveFloor = Math.max(0, Math.round(BASE_SAVE_FLOOR * compositeRatio));
+    // Publish gate translated to distScore (heuristic max ≈ 100).
+    const distFloor = fsm.ppe.publish_gate_threshold * 0.55; // ~48 FSM, ~52 prod
 
     // 1) Load up to 200 draft pins.
     const { data: draftsRaw, error: dErr } = await supabase
