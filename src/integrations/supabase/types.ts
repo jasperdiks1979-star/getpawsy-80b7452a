@@ -29122,6 +29122,87 @@ export type Database = {
         }
         Relationships: []
       }
+      gv6_first_sale_scores: {
+        Row: {
+          components: Json
+          computed_at: string
+          created_at: string
+          fsps: number
+          id: string
+          mode: string
+          product_id: string
+          product_name: string | null
+          product_slug: string | null
+          rank: number | null
+          updated_at: string
+        }
+        Insert: {
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          fsps?: number
+          id?: string
+          mode?: string
+          product_id: string
+          product_name?: string | null
+          product_slug?: string | null
+          rank?: number | null
+          updated_at?: string
+        }
+        Update: {
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          fsps?: number
+          id?: string
+          mode?: string
+          product_id?: string
+          product_name?: string | null
+          product_slug?: string | null
+          rank?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gv6_runs: {
+        Row: {
+          completed_at: string | null
+          details: Json
+          error: string | null
+          estimated_hours_to_first_sale: number | null
+          id: string
+          reprioritized_count: number
+          scored_count: number
+          started_at: string
+          status: string
+          top_products: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          details?: Json
+          error?: string | null
+          estimated_hours_to_first_sale?: number | null
+          id?: string
+          reprioritized_count?: number
+          scored_count?: number
+          started_at?: string
+          status?: string
+          top_products?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          details?: Json
+          error?: string | null
+          estimated_hours_to_first_sale?: number | null
+          id?: string
+          reprioritized_count?: number
+          scored_count?: number
+          started_at?: string
+          status?: string
+          top_products?: Json
+        }
+        Relationships: []
+      }
       gvcae_audit_runs: {
         Row: {
           error: string | null
