@@ -27,6 +27,10 @@ Deno.test("classify: falls back to meta.content_type", () => {
   assertEquals(classify(row({ content_type: "product", meta: { content_type: "seasonal" } })), "seasonal");
 });
 
+Deno.test("classify: falls back to meta.pin_type when content_type is absent", () => {
+  assertEquals(classify(row({ content_type: "product", meta: { pin_type: "entertainment" } })), "entertainment");
+});
+
 Deno.test("classify: default is product_showcase when nothing tags it", () => {
   assertEquals(classify(row({ content_type: "product" })), "product_showcase");
   assertEquals(classify(row()), "product_showcase");
@@ -49,6 +53,21 @@ Deno.test("nativeScore: helpful + lifestyle + edu copy scores high", () => {
     hashtags: ["catbehavior", "training"],
   }));
   assert(score >= 70, `expected high native score, got ${score}`);
+});
+
+Deno.test("nativeScore: rewards substantive long-form descriptions", () => {
+  const short = nativeScore(row({
+    pin_title: "How to stop scratching",
+    pin_description: "Tips for a calm living room.",
+    hashtags: ["guide"],
+  }));
+  const long = nativeScore(row({
+    pin_title: "How to stop scratching",
+    pin_description:
+      "Tips for a calm living room. Keep the same helpful signals while adding enough context for a saved Pinterest idea that explains placement, timing, and pet parent routines.",
+    hashtags: ["guide"],
+  }));
+  assertEquals(long.score, short.score + 10);
 });
 
 Deno.test("nativeScore: bounded 0..100", () => {
@@ -84,5 +103,11 @@ Deno.test("decideAction: low-score over-type is rejected with reason chain", () 
   const d = decideAction({ score: 30, minScore: 55, type: "lifestyle", overType: true, overCat: true });
   assertEquals(d.action, "reject");
   assert(d.reason.includes("over_type(lifestyle)"));
+  assert(d.reason.includes("over_category"));
+});
+
+Deno.test("decideAction: low-score over-category non-showcase is rejected", () => {
+  const d = decideAction({ score: 40, minScore: 55, type: "educational", overType: false, overCat: true });
+  assertEquals(d.action, "reject");
   assert(d.reason.includes("over_category"));
 });
