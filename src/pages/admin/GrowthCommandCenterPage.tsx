@@ -26,6 +26,7 @@ import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { AutonomousFirstSaleStrip } from "@/components/admin/AutonomousFirstSaleStrip";
 import { FirstSaleWarRoom } from "@/components/admin/FirstSaleWarRoom";
+import { CreativeIntelligenceV4Card } from "@/components/admin/CreativeIntelligenceV4Card";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -357,6 +358,7 @@ export default function GrowthCommandCenterPage() {
       {/* Genesis V3.4 — Autonomous First Sale Mode */}
       <AutonomousFirstSaleStrip />
       <FirstSaleWarRoom />
+      <CreativeIntelligenceV4Card />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">

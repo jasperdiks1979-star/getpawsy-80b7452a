@@ -1,84 +1,75 @@
-# First Sale Sprint — Execution Plan
 
-Single KPI: **First Verified Purchase**. No new dashboards, no placeholders, no duplicate systems. Everything below extends the engines already running.
+# Genesis V4 — Creative Intelligence Engine (CIE-V4)
 
-## Scope guardrails
-- Reuse: Canonical Analytics, PI V3 (`gv3_pi_*`), Pinterest Growth V3 (`gv3_pin_growth_*`), MI V3 (`gv3_mi_first_sale_plan_v`), Audience V3.5 (`gv35_*`), Genesis V3.6 attribution (`gv36_*`), First Sale Autopilot (`gv34_*` + `autopilot_actions`), Creative Diversity (`gv34-creative-diversity`), PCIE-V2 creative pipeline (`pcie_v2_*` + `pcie-v2-creative-director`), Pinterest publish pipeline (`pcie2-publish-assembler`, `pinterest_pin_queue`).
-- No new admin pages. One new card on the existing **Growth Command Center**.
-- No fake scores: every metric ties to a real signal in canonical/PCIE/PI tables.
+Single mission: continuously learn **why** creatives stop / save / click / buy, and feed that learning back into generation. **Zero new analytics**. Everything is glue on top of what already ships.
 
-## Phase 1 — Creative Diversity Governor V2 (backend)
-New edge function `gv-diversity-governor-v2` invoked as a **pre-render gate** by the PCIE-V2 pipeline (added as a stage before `image_render`/publish).
-- Inputs: candidate decisions (scene, lighting, composition, interior, human, animal, headline, hook, cta, emotion, product, camera) + last 90 published `pcie2_creatives` and last 90 `pcie_v2_creatives`.
-- 12-axis similarity using existing fingerprint catalogs (`pcie_v2_combo_fingerprints`, `pcie2_creatives.headline/cta/emotion_id/style_id/persona_id`) plus simple Jaccard on tokenized headline/hook/cta and per-attribute exact-match on the rest.
-- If **max axis similarity > 0.70** OR overall > 0.55 → return `regenerate` with a forced "different world" hint drawn from the 30-world catalog seeded below. Hard reject after 3 regen attempts.
-- Logs into `pcie_v2_events` (`event_type='diversity_v2_reject'`) for auditability — no new table.
+## Reuse map (nothing new where these already exist)
 
-### 30-world catalog
-Seed `pcie_v2_scene_generators` (existing table, already used by pipeline) with the 30 worlds from the brief if missing, tagged `world_family`. Diversity governor uses a rolling 7-day per-world cap so feed never repeats a world more than twice in a row.
+| Capability | Existing system (reuse, do NOT duplicate) |
+|---|---|
+| Creative DNA storage | `gcd_creatives`, `gcd_visual_dna` (58 cols), `gcd_genes`, `gcd_concepts`, `gcd_performance`, `gcd_predictions`, `gcd_learnings`, `gcd_settings` |
+| Performance / attribution | `canonical_events`, `canonical_sessions`, `gv36_attribution_links`, `gv36_combo_performance`, `gv36_creative_performance_v`, `gv36_persona_performance_v`, `pcie2_pin_performance` |
+| Genome maths | `pei_creative_dna`, `pei_gene_performance`, `pei_weight_snapshots`, `pei_predicted_winners` |
+| Generation pipeline | `pcie-v2-creative-director` + `pcie_v2_*` catalogs + `gv-diversity-governor-v2` |
+| Distribution / diversity | `gv-distribution-optimizer`, `pinterest_board_performance`, `pinterest_posting_windows` |
+| Personas / audiences | `gv35_audience_personas`, `gv35_product_audience_match` |
+| Loop / explainability | `pcie2_xai_decisions`, `pcie2_evidence_runs`, `pcie2_trait_weights` |
 
-## Phase 2 — Product Prioritization
-No new table. Create SQL view `gv_first_sale_priority_v` that joins:
-- `gv3_mi_first_sale_plan_v` (already encodes PI/Pinterest/audience confidence, margin, intent)
-- `gv34_first_sale_hunter_v` (US inventory, mobile PDP health)
-- `gv36_combo_performance` (existing engagement)
-Output: ranked product list with `priority_score` and `gate_passed` (all 9 criteria) — consumed by the autopilot dispatcher and the War Room card.
+Net new artifacts: **2 edge functions + 1 view + 1 dashboard card**. No new tables.
 
-## Phase 3 — Multi-Creative Strategy
-Extend `pcie-v2-creative-director` action `run_full`:
-- For each `gate_passed` product, request **N=8 creative briefs** drawn from 8 distinct story archetypes (lifestyle, UGC, review, educational, infographic, comparison, funny, before/after) — archetypes already live in `pcie_v2_style_families`; just enforce one-per-archetype selection via the diversity governor.
+## Phase 1 — DNA Auto-Tagger (extend, don't replace)
+- Add `image_dna_tag` pipeline stage to `pcie-v2-creative-director`. Every published creative is registered via `GCD.upsertCreative({genome, visual_dna})` using `gcd_visual_dna`'s 58 columns (covers all 40+ traits in the brief: emotion, story, room, palette, brightness, contrast, warmth, luxury_score, minimalism_score, outdoor, family, humor, educational, ugc, professional, camera angle/distance, focus, human/pet/product visibility, headline type, cta type, typography, complexity, negative_space, platform_style, intent, scroll_stop/save/ctr/purchase estimates).
+- For backfill of historic pins: new edge function `cie-v4-dna-backfill` reads `pcie2_creatives` + `pcie2_pin_performance` rows missing a `gcd_visual_dna` row, runs a Gemini-2.5-flash vision pass (via Lovable AI Gateway, multimodal `image_url`), persists into `gcd_visual_dna`. Idempotent, batched 25/run, hourly cron.
 
-## Phase 4 — Distribution Optimizer
-New edge function `gv-distribution-optimizer` (hourly cron, replaces ad-hoc selection in the publish assembler call path):
-- Pulls `pinterest_pin_queue` drafts where `status='draft'`.
-- Scores each candidate on: title token novelty vs last 50, description novelty, keyword novelty, board diversity (vs `pinterest_board_performance` 7-day publish counts), audience novelty (`gv35_product_audience_match`), visual similarity (reuses governor), freshness, topic spread.
-- Picks the next N to publish (N from `gv34_settings.publish_cadence` if present, else 6/hr). Writes the picks back as `pcie2_publish_queue` rows and lets the existing assembler send them.
+## Phase 2 — Winner & Loser Genome (no new table)
+- New SQL view `gv4_genome_v` on top of `gcd_performance` ⋈ `gcd_visual_dna` ⋈ `gv36_creative_performance_v` returning per-trait Wilson-confidence-weighted `success_score` and `failure_score`, ranked. Trait dimensions = every categorical/scored column in `gcd_visual_dna`.
+- View also exposes "top X / bottom X" rows for: color, emotion, story, layout, hook, headline, product, persona, board, hour, day, US state, device, camera_angle, cta_style, lighting, interior_style, category, lifestyle_theme — sourced from the joined real tables.
 
-## Phase 5 & 6 — CTR + Save Optimizer
-Use existing per-candidate scorers `scoreCtrIntent` and `scoreOutboundIntent` (already wired in `pinterest-creative-director`). Extend them with a deterministic save-intent scorer (inspiration/aspiration/education/lifestyle/emotion keyword weights). The distribution optimizer's CTR/save scores become a hard floor (≥70) before publishing.
+## Phase 3 — AI Director consultation (rewire, don't rebuild)
+- `pcie-v2-creative-director` already calls `pickWeighted()` on `pcie_v2_attribute_weights`. Add a pre-stage `gcd_consult` that calls `GCD.recommend(family)` and merges Winner Genome top-decile traits into the candidate set, then **hard-rejects** any candidate matching ≥2 Loser Genome bottom-decile traits. Logged into `gcd_engine_consultations` + `pcie2_xai_decisions`.
 
-## Phase 7 — Landing Page Match
-Add a check inside the distribution optimizer: pin headline+promise+hero must align with the product's PDP. Reuses `pin_landing_validations`. Reject if score <80 (existing threshold).
+## Phase 4 — Hourly self-learning loop
+- New edge function `cie-v4-learn` (cron every hour):
+  1. `refresh materialized view` on the canonical perf MVs (already exist).
+  2. Recompute `gcd_genes` EMA + Wilson confidence for every trait surfaced by `gv4_genome_v`.
+  3. Promote/demote `pcie_v2_attribute_weights` rows accordingly (uses existing genetic-learning hook).
+  4. Update `pinterest_posting_windows`, `pinterest_board_performance` rankings (these are already cron'd — just trigger refresh, don't duplicate).
+  5. Write a `gcd_learnings` evidence row per material delta (audit trail).
+  6. Snapshot to `pei_weight_snapshots` for evolution timeline.
 
-## Phase 8 — First Click Optimizer
-Frontend-only addition to **PDP mobile** (`src/pages/ProductDetail.tsx`): when the visitor arrives from a Pinterest UTM, ensure the trust strip above the ATC shows: Free Shipping (if applicable), Fast US Delivery, In Stock, Secure Checkout, Money-Back, Social Proof. All values come from existing product fields — no new copy, no placeholders.
+## Phase 5 — Predicted Winners / Failures
+- Reuse `pei_predicted_winners` + `gcd_predictions`. `cie-v4-learn` writes predictions for every draft in `pinterest_pin_queue` using current genome weights. No model retrain — Bayesian update only.
 
-## Phase 9 — Autopilot
-Schedule via existing pg_cron infra:
-- `gv-diversity-governor-v2`: invoked per generation request (no cron).
-- `gv-distribution-optimizer`: every 1h.
-- `gv34-decision-loop`, `gv34-creative-diversity`, `gv34-learning-evaluator`, `gv36-attribution-stitcher`, `gv36-learning-loop`: already cron'd; verify and re-enable if disabled.
+## Phase 6 — Distribution health (reuse)
+- No new code. `gv-distribution-optimizer` already enforces freshness/topic/visual/keyword/board/audience/creative diversity. The new dashboard card just reads its outputs.
 
-## Phase 10 — First Sale War Room (single Executive Card)
-Add **one** card `<FirstSaleWarRoom />` to `src/pages/admin/GrowthCommandCenterPage.tsx` (the existing dashboard). Reads only from existing views:
-- Best product today → `gv_first_sale_priority_v` top row
-- Best audience → `gv35_audience_signals_daily` top persona for that product
-- Best creative → `gv36_creative_performance_v` top row by `perf_score`
-- Best board → `pinterest_board_performance` top 7-day saves
-- Best posting window → `pinterest_posting_windows` highest engagement slot
-- Purchase probability → existing `gv36_first_sale_memory` Bayesian P from V3.6 learning loop (no new math)
-- Pause list → products with `gv36_combo_performance.status='retire'`
-- Regenerate list → products with all combos `status IN ('declining','needs_refresh')`
-- Top 5 actions → top 5 queued `autopilot_actions` by `priority_score`
+## Phase 7 — Executive panel (ONE card)
+- Add `<CreativeIntelligenceV4Card />` to existing `GrowthCommandCenterPage.tsx`. Reads only:
+  - Top 10 Winner DNA traits → `gv4_genome_v` (winner side).
+  - Top 10 Loser DNA traits → `gv4_genome_v` (loser side).
+  - Emerging patterns → `gcd_learnings` last 24h, sorted by delta magnitude.
+  - Creative evolution timeline → `pei_weight_snapshots` last 30 days.
+  - Predicted winners/failures → `gcd_predictions` joined to drafts.
+  - Diversity score → `gv-distribution-optimizer`'s last run summary.
+  - Pinterest distribution health → existing `pinterest_pipeline_health_snapshots`.
+  - Expected purchase probability → `gv36_first_sale_memory.bayes_p` (existing).
+- ~250 LOC, one file. No new route.
 
-No new tables, no new routes.
-
-## Verification (final step)
+## Phase 8 — Verification
 1. `tsgo` typecheck.
-2. Edge function smoke: invoke `gv-distribution-optimizer` once, confirm it enqueues real publish rows.
-3. Read back the War Room card data via canonical SDK to confirm zero placeholders.
-4. Run `gv34-connector-health-audit` + `gv36-learning-loop` to confirm pipeline is green.
-5. Trigger one PCIE-V2 generation through the new governor and verify it lands in `pinterest_pin_queue` with `engine_version >= v2.3` and a diverse world tag.
+2. Smoke `cie-v4-dna-backfill` (returns batch_size + tagged count).
+3. Smoke `cie-v4-learn` (returns updated_genes + new_predictions + snapshots count).
+4. Verify card renders against real `gv4_genome_v` rows (no placeholders).
+5. Trigger one PCIE-V2 generation, confirm `gcd_engine_consultations` row written and final creative blocked if Loser DNA detected.
 
-## Technical notes
-- Diversity governor uses pure TypeScript Jaccard + categorical equality; no ML, no LLM calls — deterministic, cheap, hourly-safe.
-- All new SQL is one view (`gv_first_sale_priority_v`) — no new tables, so no GRANT/RLS churn beyond `GRANT SELECT ... TO authenticated`.
-- Edge functions follow project conventions (CORS via `npm:@supabase/supabase-js@2/cors`, admin JWT guard, Zod body validation).
-- War Room card lives in `src/components/admin/FirstSaleWarRoom.tsx` and is imported once into `GrowthCommandCenterPage.tsx`. ~250 LOC, no new routes.
+## Hard rules
+- No new tables, no new dashboard pages, no new attribution tracking — every metric ties to an existing canonical/PCIE/GCD/GV36/PEI row.
+- No synthetic confidence: every score uses Wilson lower bound + min sample size (already defined in `gcd_settings`).
+- Vision tagging uses the existing AI Gateway multimodal path (`google/gemini-2.5-flash`, `image_url` blocks) — no new secrets.
+- Loop cadence is hourly; nothing more frequent (Pinterest sampling noise).
 
 ## What this plan explicitly does NOT do
-- No new dashboards or admin pages.
-- No new "AI" scorers without a real signal source.
-- No duplication of Canonical Analytics, MI, PI, Pinterest Growth, or V3.6 attribution.
-- No video pipeline changes.
-- No new secrets.
+- Does **not** create a parallel "v4_*" table tree.
+- Does **not** duplicate Canonical Analytics, V3.6 attribution, or PEI evolution.
+- Does **not** add a new admin page or route.
+- Does **not** touch the video pipeline.

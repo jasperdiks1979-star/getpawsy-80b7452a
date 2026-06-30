@@ -61739,6 +61739,22 @@ export type Database = {
         }
         Relationships: []
       }
+      gv4_genome_v: {
+        Row: {
+          impressions: number | null
+          loser_wilson: number | null
+          losses: number | null
+          net_score: number | null
+          purchases: number | null
+          revenue: number | null
+          sample_n: number | null
+          trait_dim: string | null
+          trait_value: string | null
+          winner_wilson: number | null
+          wins: number | null
+        }
+        Relationships: []
+      }
       mv_canonical_funnel_hourly: {
         Row: {
           bucket: string | null
@@ -63389,6 +63405,10 @@ export type Database = {
           p_weight: number
         }
         Returns: string
+      }
+      gv4_wilson_lower: {
+        Args: { n: number; successes: number; z?: number }
+        Returns: number
       }
       has_role: {
         Args: {
