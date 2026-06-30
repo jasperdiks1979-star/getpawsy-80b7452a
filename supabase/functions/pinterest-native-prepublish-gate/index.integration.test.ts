@@ -42,25 +42,31 @@ Deno.test("dry-run POST returns 200 with expected JSON shape", async () => {
   const json = await res.json();
   assertEquals(res.status, 200, `unexpected status: ${res.status}`);
   assertEquals(typeof json, "object");
-  assert(typeof json.ok === "boolean", "missing ok");
-  if (json.ok) {
-    assert("traceId" in json, "missing traceId");
-    assert("nativeScore" in json || "summary" in json || "decisions" in json,
-      "missing score/summary/decisions key");
+  // Documented response shape of the pre-publish gate.
+  for (const key of ["actions", "applied", "avgNativeScore", "counts", "drafts", "traceId"]) {
+    assert(key in json, `response missing '${key}'`);
   }
+  assert(Array.isArray(json.actions), "actions must be array");
+  assert(typeof json.avgNativeScore === "number", "avgNativeScore must be number");
+  assertEquals(typeof json.counts, "object");
+  for (const k of ["downrank", "keep", "reject"]) assert(k in json.counts, `counts.${k} missing`);
+  assertEquals(typeof json.applied, "object");
+  for (const k of ["downranks", "rejects"]) assert(k in json.applied, `applied.${k} missing`);
   assertEquals(res.headers.get("content-type")?.split(";")[0], "application/json");
 });
 
-Deno.test("POST without apikey is rejected by Supabase gateway", async () => {
+Deno.test("POST without apikey is accepted (verify_jwt disabled)", async () => {
   const res = await fetch(FN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dryRun: true }),
+    body: JSON.stringify({ dryRun: true, sampleSize: 50 }),
   });
-  await res.text();
-  // Supabase function gateway returns 401 for unauthenticated requests
-  assert(res.status === 401 || res.status === 403,
-    `expected 401/403, got ${res.status}`);
+  const json = await res.json();
+  // This function is deployed with verify_jwt=false; gateway does not block.
+  assertEquals(res.status, 200, `expected 200 for verify_jwt=false, got ${res.status}`);
+  assert("actions" in json, "no-auth call must still return shape");
+  // CORS must be present on every response, including no-auth.
+  assert(res.headers.get("access-control-allow-origin"));
 });
 
 Deno.test("invalid JSON body still returns JSON (defaults applied)", async () => {
@@ -70,6 +76,7 @@ Deno.test("invalid JSON body still returns JSON (defaults applied)", async () =>
     body: "not-json",
   });
   const json = await res.json();
-  assert(res.status === 200 || res.status === 500, `status ${res.status}`);
-  assert(typeof json.ok === "boolean");
+  // Defaults applied silently → 200 with full shape.
+  assertEquals(res.status, 200, `status ${res.status}`);
+  assert("actions" in json && "counts" in json);
 });

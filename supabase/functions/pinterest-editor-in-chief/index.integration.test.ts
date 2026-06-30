@@ -28,14 +28,17 @@ Deno.test("editor: CORS preflight succeeds", async () => {
   assert(res.headers.get("access-control-allow-origin"));
 });
 
-Deno.test("editor: dry-run POST returns 200 JSON with summary fields", async () => {
+Deno.test("editor: dry-run POST returns 200 JSON (regression-guards #hook-column bug)", async () => {
   const res = await fetch(FN_URL, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ dryRun: true, limit: 5, maxIterations: 0 }),
   });
   const json = await res.json();
-  assertEquals(res.status, 200);
+  // NOTE: This test currently surfaces a real production bug:
+  //   "column pinterest_pin_queue.hook does not exist" → 500.
+  // It is intentionally strict so the test fails until the editor query is fixed.
+  assertEquals(res.status, 200, `editor returned ${res.status}: ${JSON.stringify(json)}`);
   assertEquals(res.headers.get("content-type")?.split(";")[0], "application/json");
   assert(typeof json.ok === "boolean", "missing ok");
   if (json.ok) {
@@ -44,12 +47,19 @@ Deno.test("editor: dry-run POST returns 200 JSON with summary fields", async () 
   }
 });
 
-Deno.test("editor: missing apikey rejected by gateway", async () => {
+Deno.test("editor: error responses still carry CORS + JSON shape", async () => {
   const res = await fetch(FN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dryRun: true, limit: 1 }),
+    headers: authHeaders(),
+    body: JSON.stringify({ dryRun: true, limit: 1, maxIterations: 0 }),
   });
-  await res.text();
-  assert(res.status === 401 || res.status === 403, `status ${res.status}`);
+  const json = await res.json();
+  // Whether 200 or 5xx, the function MUST return JSON + CORS headers.
+  assertEquals(res.headers.get("content-type")?.split(";")[0], "application/json");
+  assert(res.headers.get("access-control-allow-origin"), "CORS header missing");
+  assert(typeof json.ok === "boolean", "ok flag missing");
+  if (!json.ok) {
+    assert(typeof json.error === "string", "error field missing on failure");
+    assert(typeof json.traceId === "string", "traceId missing on failure");
+  }
 });

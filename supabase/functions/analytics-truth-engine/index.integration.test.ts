@@ -63,12 +63,15 @@ Deno.test("truth: GET with query param is accepted", async () => {
   assertEquals(json.snapshot.window_hours, 12);
 });
 
-Deno.test("truth: missing apikey rejected by gateway", async () => {
+Deno.test("truth: missing apikey is accepted (verify_jwt disabled) and still CORS-tagged", async () => {
   const res = await fetch(FN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hours: 1, dryRun: true }),
   });
-  await res.text();
-  assert(res.status === 401 || res.status === 403, `status ${res.status}`);
+  const json = await res.json();
+  assertEquals(res.status, 200, `expected 200 for verify_jwt=false, got ${res.status}`);
+  assertEquals(json.ok, true);
+  assert(res.headers.get("access-control-allow-origin"),
+    "CORS allow-origin missing on no-auth response");
 });
