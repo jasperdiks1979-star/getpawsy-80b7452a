@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   try {
     const [genome, worlds, recent, gcd] = await Promise.all([
       sb.from("gv41_attention_genome_v").select("*"),
-      sb.from("pcie_v2_scene_generators").select("id,name,family"),
+      sb.from("pcie_v2_scene_generators").select("id,slug,name,enabled"),
       sb.from("ppe_candidate_scores")
         .select("niche,composite,created_at")
         .gte("created_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
