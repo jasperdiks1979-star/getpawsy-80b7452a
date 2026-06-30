@@ -30,6 +30,7 @@ import { CreativeIntelligenceV4Card } from "@/components/admin/CreativeIntellige
 import { ExecutiveOSCard } from "@/components/admin/ExecutiveOSCard";
 import { HumanAttentionCommandCard } from "@/components/admin/HumanAttentionCommandCard";
 import { FeedQualityCard } from "@/components/admin/FeedQualityCard";
+import { Gv42RecommendationCenterCard } from "@/components/admin/Gv42RecommendationCenterCard";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -365,6 +366,7 @@ export default function GrowthCommandCenterPage() {
       <CreativeIntelligenceV4Card />
       <HumanAttentionCommandCard />
       <FeedQualityCard />
+      <Gv42RecommendationCenterCard />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
