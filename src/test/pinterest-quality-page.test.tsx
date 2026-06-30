@@ -86,7 +86,9 @@ describe("PinterestQualityPage Simulate / Apply", () => {
     invoke.mockResolvedValue({ data: gatePayload, error: null });
     render(<PinterestQualityPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Simulate \(dry-run\)/i }));
+    // First "Simulate (dry-run)" button = gate card; second = editor card.
+    const simButtons = screen.getAllByRole("button", { name: /Simulate \(dry-run\)/i });
+    fireEvent.click(simButtons[0]);
 
     await waitFor(() => expect(invoke).toHaveBeenCalled());
     expect(invoke).toHaveBeenCalledWith(
