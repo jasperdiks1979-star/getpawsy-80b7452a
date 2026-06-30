@@ -69,8 +69,20 @@ serve(async (req) => {
     }
 
     if (action === "authenticate") {
+      // SECURITY DISABLE: This handler issued a magic-link session token
+      // without verifying the WebAuthn cryptographic signature or the
+      // server-issued challenge. That allowed any caller who knew a valid
+      // credential_id to sign in as the passkey owner. The endpoint is
+      // disabled until a proper @simplewebauthn/server-style implementation
+      // (challenge store + ECDSA signature verification) is in place.
+      console.error("[SECURITY] webauthn-authenticate 'authenticate' action is disabled pending full signature verification");
+      return new Response(
+        JSON.stringify({ error: "Passkey sign-in is temporarily disabled" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+      // eslint-disable-next-line no-unreachable
       const { credential } = body;
-      
       if (!credential || !credential.id) {
         return new Response(
           JSON.stringify({ error: "Invalid credential" }),
