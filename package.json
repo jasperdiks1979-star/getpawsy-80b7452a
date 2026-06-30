@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:admin": "playwright test e2e/admin-pinterest-quality.spec.ts e2e/admin-pinterest-quality-auth.spec.ts",
+    "test:e2e:admin": "playwright test e2e/admin-pinterest-quality.spec.ts e2e/admin-pinterest-quality-auth.spec.ts e2e/admin-pinterest-quality-errors.spec.ts",
     "cache:audit": "node tools/cf-cache-audit.js",
     "ping:sitemap": "node scripts/pingSitemap.js",
     "postdeploy": "node scripts/pingSitemap.js && node scripts/verify-live-feed.js",
