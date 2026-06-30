@@ -2827,6 +2827,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ai-gateway-credits"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiGatewayCreditsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-performance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
