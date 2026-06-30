@@ -26,13 +26,20 @@ const Candidate = z.object({
 
 const Body = z.object({ candidate: Candidate });
 
-// 30-world catalog used to suggest a regeneration direction.
+// 60-world catalog (First Sale Accelerator). Used to suggest a regen direction
+// and to keep the Pinterest profile feeling like hundreds of distinct creators.
 const WORLDS = [
-  "luxury_home","farmhouse","modern_apartment","tiny_apartment","outdoor_hiking",
-  "camping","road_trip","rv_life","beach","lake","backyard","dog_park",
-  "veterinarian","groomer","trainer","senior_pet","puppy_kitten","golden_retriever",
-  "french_bulldog","labrador","cat_mom","dog_mom","busy_parents","travel",
-  "minimalist","ugc_iphone","tiktok_style","idea_pin","before_after","problem_solution",
+  "luxury_home","minimal_interior","farmhouse","modern_apartment","tiny_apartment",
+  "camping","rv_life","beach","outdoor_adventure","dog_park","cat_cafe","backyard",
+  "kitchen","bedroom","living_room","hallway","travel","airport","vacation",
+  "pet_hotel","groomer","veterinarian","dog_trainer","senior_dog","senior_cat",
+  "puppy","kitten","golden_retriever","french_bulldog","german_shepherd",
+  "labrador","cat_mom","dog_mom","family","busy_pro","minimal_lifestyle",
+  "luxury_lifestyle","funny_pet","emotional_story","problem_solution","educational",
+  "infographic","top5_tips","checklist","buying_guide","comparison","amazon_review",
+  "ugc_iphone","pov","closeup_product","studio_photography","macro_detail",
+  "before_after","holiday","summer","fourth_of_july","weekend_cleaning",
+  "back_to_school","christmas","halloween",
 ];
 
 const TEXT_KEYS = new Set(["headline","hook","cta"]);
@@ -117,8 +124,9 @@ Deno.serve(async (req) => {
     const max_axis = Object.values(axes).reduce((a, b) => Math.max(a, b), 0);
     const overall = Object.values(axes).reduce((a, b) => a + b, 0) / 12;
 
+    // First Sale Accelerator: any axis >65% similarity → regenerate.
     let decision: "pass" | "regenerate" | "reject" = "pass";
-    if (max_axis > 0.7 || overall > 0.55) decision = "regenerate";
+    if (max_axis > 0.65 || overall > 0.5) decision = "regenerate";
     if (c.attempt >= 3) decision = decision === "pass" ? "pass" : "reject";
 
     // Choose a world that does not match the candidate's current concept tokens.
