@@ -362,6 +362,7 @@ export default function GrowthCommandCenterPage() {
       <AutonomousFirstSaleStrip />
       <FirstSaleWarRoom />
       <CreativeIntelligenceV4Card />
+      <HumanAttentionCommandCard />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
