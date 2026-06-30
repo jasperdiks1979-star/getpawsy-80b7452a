@@ -87,6 +87,32 @@ const editorApplyPayload = {
   summary: { ...editorSimulatePayload.summary, approved: 12, rejected: 4 },
 };
 
+/**
+ * In-memory model of the pinterest_pin_queue table. The stubbed edge
+ * functions mutate this map exactly the way the real ones would (status
+ * transitions on draft rows), and the REST stub serves rows from it so the
+ * tests can assert end-to-end DB state changes after Apply.
+ */
+type DraftRow = {
+  id: string;
+  status: "draft" | "rejected" | "downranked" | "approved";
+  native_score: number;
+  category: string;
+};
+
+function seedDrafts(count: number): Map<string, DraftRow> {
+  const m = new Map<string, DraftRow>();
+  for (let i = 0; i < count; i++) {
+    m.set(`d-${i}`, {
+      id: `d-${i}`,
+      status: "draft",
+      native_score: 40 + (i % 30),
+      category: i % 3 === 0 ? "cat_tree" : "lifestyle",
+    });
+  }
+  return m;
+}
+
 test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
   test.beforeEach(async ({ context, page }) => {
     // 1. Seed Supabase session BEFORE the app boots so AuthContext picks it up
@@ -133,7 +159,8 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
         body: JSON.stringify([]),
       }),
     );
-    // Catch-all for any other REST table the page might touch.
+    // Catch-all for any other REST table the page might touch. Individual
+    // tests can override the pinterest_pin_queue route to model DB state.
     await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route) =>
       route.fulfill({
         status: 200,
@@ -265,5 +292,145 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
     await expect(page.getByText(/Rejected:/i)).toBeVisible();
     expect(fnCalls).toHaveLength(1);
     expect(fnCalls[0].body).toMatchObject({ dryRun: false });
+  });
+
+  test("Pre-publish gate: Apply mutates pinterest_pin_queue rows (DB state assertion)", async ({
+    page,
+  }) => {
+    const drafts = seedDrafts(25);
+
+    // Override the queue REST endpoint so reads reflect our in-memory model.
+    await page.route(
+      `**/${SUPABASE_HOST}/rest/v1/pinterest_pin_queue**`,
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}` },
+          body: JSON.stringify(Array.from(drafts.values())),
+        }),
+    );
+
+    // Apply mutates 8 drafts -> rejected, 12 -> downranked, matching the
+    // payload's counts.reject / counts.downrank values.
+    await page.route(
+      `**/${SUPABASE_HOST}/functions/v1/pinterest-native-prepublish-gate`,
+      async (route) => {
+        const req = route.request();
+        const body = req.postDataJSON?.() ?? JSON.parse(req.postData() || "{}");
+        if (body?.dryRun === false) {
+          const ids = Array.from(drafts.keys());
+          for (let i = 0; i < 8; i++) drafts.get(ids[i])!.status = "rejected";
+          for (let i = 8; i < 20; i++) drafts.get(ids[i])!.status = "downranked";
+        }
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(
+            body?.dryRun === false ? gateApplyPayload : gateSimulatePayload,
+          ),
+        });
+      },
+    );
+
+    await page.goto("/admin/pinterest-quality");
+
+    // Pre-condition: nothing rejected/downranked yet.
+    expect(
+      Array.from(drafts.values()).filter((d) => d.status === "rejected"),
+    ).toHaveLength(0);
+    expect(
+      Array.from(drafts.values()).filter((d) => d.status === "downranked"),
+    ).toHaveLength(0);
+
+    await page.getByRole("button", { name: /Apply rebalance/i }).click();
+    await expect(
+      page.getByText(/Applied: 8 rejected, 12 downranked/i),
+    ).toBeVisible();
+
+    // Post-condition: DB state changed exactly as the gate promised.
+    const rejected = Array.from(drafts.values()).filter(
+      (d) => d.status === "rejected",
+    );
+    const downranked = Array.from(drafts.values()).filter(
+      (d) => d.status === "downranked",
+    );
+    expect(rejected).toHaveLength(8);
+    expect(downranked).toHaveLength(12);
+
+    // Verify the page-context REST client also sees the new state.
+    const res = await page.request.get(
+      `https://${SUPABASE_HOST}/rest/v1/pinterest_pin_queue?select=id,status`,
+      { headers: { apikey: "test" } },
+    );
+    const rows = (await res.json()) as DraftRow[];
+    expect(rows.filter((r) => r.status === "rejected")).toHaveLength(8);
+    expect(rows.filter((r) => r.status === "downranked")).toHaveLength(12);
+  });
+
+  test("Editor-in-Chief: Apply mutates pinterest_pin_queue rows (DB state assertion)", async ({
+    page,
+  }) => {
+    const drafts = seedDrafts(25);
+
+    await page.route(
+      `**/${SUPABASE_HOST}/rest/v1/pinterest_pin_queue**`,
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}` },
+          body: JSON.stringify(Array.from(drafts.values())),
+        }),
+    );
+
+    // editorApplyPayload.summary: approved 12, downranked 10, rejected 4 (-1 leftover).
+    await page.route(
+      `**/${SUPABASE_HOST}/functions/v1/pinterest-editor-in-chief`,
+      async (route) => {
+        const req = route.request();
+        const body = req.postDataJSON?.() ?? JSON.parse(req.postData() || "{}");
+        if (body?.dryRun === false) {
+          const ids = Array.from(drafts.keys());
+          for (let i = 0; i < 12; i++) drafts.get(ids[i])!.status = "approved";
+          for (let i = 12; i < 22; i++) drafts.get(ids[i])!.status = "downranked";
+          for (let i = 22; i < 25; i++) drafts.get(ids[i])!.status = "rejected";
+        }
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(
+            body?.dryRun === false ? editorApplyPayload : editorSimulatePayload,
+          ),
+        });
+      },
+    );
+
+    await page.goto("/admin/pinterest-quality");
+    expect(
+      Array.from(drafts.values()).every((d) => d.status === "draft"),
+    ).toBe(true);
+
+    await page
+      .getByRole("button", { name: /Run editor on next 25 drafts/i })
+      .click();
+    await expect(page.getByText(/Approved:/i)).toBeVisible();
+    await expect(page.getByText(/Rejected:/i)).toBeVisible();
+
+    const byStatus = (s: DraftRow["status"]) =>
+      Array.from(drafts.values()).filter((d) => d.status === s).length;
+    expect(byStatus("approved")).toBe(12);
+    expect(byStatus("downranked")).toBe(10);
+    expect(byStatus("rejected")).toBe(3);
+    expect(byStatus("draft")).toBe(0);
+
+    const res = await page.request.get(
+      `https://${SUPABASE_HOST}/rest/v1/pinterest_pin_queue?select=id,status`,
+      { headers: { apikey: "test" } },
+    );
+    const rows = (await res.json()) as DraftRow[];
+    expect(rows.filter((r) => r.status === "approved")).toHaveLength(12);
+    expect(rows.filter((r) => r.status === "downranked")).toHaveLength(10);
+    expect(rows.filter((r) => r.status === "rejected")).toHaveLength(3);
   });
 });
