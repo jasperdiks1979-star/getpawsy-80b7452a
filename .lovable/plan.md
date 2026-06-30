@@ -1,97 +1,84 @@
+# First Sale Sprint — Execution Plan
 
-# Genesis V3.6 — Persona Attribution & Closed-Loop Learning Engine
+Single KPI: **First Verified Purchase**. No new dashboards, no placeholders, no duplicate systems. Everything below extends the engines already running.
 
-A single thin attribution + learning layer that stitches existing engines (PCIE2, Canonical Analytics, Pinterest Growth V3, Audience Intelligence V3.5, MI, Autopilot) into one closed loop. **Zero duplicate analytics, zero placeholder AI, zero new dashboards** — extend `/admin/market-intelligence` only.
+## Scope guardrails
+- Reuse: Canonical Analytics, PI V3 (`gv3_pi_*`), Pinterest Growth V3 (`gv3_pin_growth_*`), MI V3 (`gv3_mi_first_sale_plan_v`), Audience V3.5 (`gv35_*`), Genesis V3.6 attribution (`gv36_*`), First Sale Autopilot (`gv34_*` + `autopilot_actions`), Creative Diversity (`gv34-creative-diversity`), PCIE-V2 creative pipeline (`pcie_v2_*` + `pcie-v2-creative-director`), Pinterest publish pipeline (`pcie2-publish-assembler`, `pinterest_pin_queue`).
+- No new admin pages. One new card on the existing **Growth Command Center**.
+- No fake scores: every metric ties to a real signal in canonical/PCIE/PI tables.
 
----
+## Phase 1 — Creative Diversity Governor V2 (backend)
+New edge function `gv-diversity-governor-v2` invoked as a **pre-render gate** by the PCIE-V2 pipeline (added as a stage before `image_render`/publish).
+- Inputs: candidate decisions (scene, lighting, composition, interior, human, animal, headline, hook, cta, emotion, product, camera) + last 90 published `pcie2_creatives` and last 90 `pcie_v2_creatives`.
+- 12-axis similarity using existing fingerprint catalogs (`pcie_v2_combo_fingerprints`, `pcie2_creatives.headline/cta/emotion_id/style_id/persona_id`) plus simple Jaccard on tokenized headline/hook/cta and per-attribute exact-match on the rest.
+- If **max axis similarity > 0.70** OR overall > 0.55 → return `regenerate` with a forced "different world" hint drawn from the 30-world catalog seeded below. Hard reject after 3 regen attempts.
+- Logs into `pcie_v2_events` (`event_type='diversity_v2_reject'`) for auditability — no new table.
 
-## Reuse inventory (no duplicates)
+### 30-world catalog
+Seed `pcie_v2_scene_generators` (existing table, already used by pipeline) with the 30 worlds from the brief if missing, tagged `world_family`. Diversity governor uses a rolling 7-day per-world cap so feed never repeats a world more than twice in a row.
 
-- **Creative identity:** already in `pcie2_creatives` (id, persona_id, hook_id, headline, visual_dna, cta, board_id) + `pcie2_visual_dna`. Extend with 4 nullable columns; do **not** create a parallel table.
-- **URL attribution:** `pcie2-publish-assembler` already stamps utm_source/medium/campaign/content. Extend the assembler to also embed `creative_id`, `persona_id`, `emotion_id`, `hook_id`, `style_id`, `board_id`, `campaign_id` — no new publisher.
-- **Pinterest feedback:** `pinterest_pin_performance`, `pinterest_pin_queue`, `pinterest_board_performance`, `pcie2_pin_performance`. Already live.
-- **Website feedback:** `canonical_events`, `canonical_sessions`, `cci_events`, `analytics_funnel_waterfall`. Already canonical.
-- **Persona/Audience:** `gv35_audience_personas`, `gv35_product_audience_match`, `gv35_audience_signals_daily`. Reuse — do not fork.
-- **Learning:** `gcp_learnings`, `pcie2_trait_weights`, `pcie2_alg_state`, `pei_creative_dna`, `pei_gene_performance`. Reuse.
-- **Autopilot:** `autopilot_actions` + `autopilot-dispatch`. Reuse with new `action_kind='persona_creative_combo'`.
+## Phase 2 — Product Prioritization
+No new table. Create SQL view `gv_first_sale_priority_v` that joins:
+- `gv3_mi_first_sale_plan_v` (already encodes PI/Pinterest/audience confidence, margin, intent)
+- `gv34_first_sale_hunter_v` (US inventory, mobile PDP health)
+- `gv36_combo_performance` (existing engagement)
+Output: ranked product list with `priority_score` and `gate_passed` (all 9 criteria) — consumed by the autopilot dispatcher and the War Room card.
 
-## New surfaces (minimal — 1 migration, 2 edge functions, 1 SDK file, 1 tab)
+## Phase 3 — Multi-Creative Strategy
+Extend `pcie-v2-creative-director` action `run_full`:
+- For each `gate_passed` product, request **N=8 creative briefs** drawn from 8 distinct story archetypes (lifestyle, UGC, review, educational, infographic, comparison, funny, before/after) — archetypes already live in `pcie_v2_style_families`; just enforce one-per-archetype selection via the diversity governor.
 
-### Migration (single transaction)
+## Phase 4 — Distribution Optimizer
+New edge function `gv-distribution-optimizer` (hourly cron, replaces ad-hoc selection in the publish assembler call path):
+- Pulls `pinterest_pin_queue` drafts where `status='draft'`.
+- Scores each candidate on: title token novelty vs last 50, description novelty, keyword novelty, board diversity (vs `pinterest_board_performance` 7-day publish counts), audience novelty (`gv35_product_audience_match`), visual similarity (reuses governor), freshness, topic spread.
+- Picks the next N to publish (N from `gv34_settings.publish_cadence` if present, else 6/hr). Writes the picks back as `pcie2_publish_queue` rows and lets the existing assembler send them.
 
-1. **Extend** `pcie2_creatives` (additive, nullable):
-   - `emotion_id text`, `style_id text`, `palette_id text`, `room_id text`, `camera_id text`, `generation_model text`, `generation_version text`, `campaign_id text`
-   - Backfill from existing `visual_dna` JSON where present.
-2. **New table** `gv36_attribution_links` — one row per published pin → creative mapping:
-   - `pin_id text PK`, `creative_id uuid`, `persona_id uuid`, `emotion_id text`, `hook_id text`, `style_id text`, `board_id text`, `campaign_id text`, `product_id uuid`, `published_at timestamptz`, `last_metric_sync timestamptz`
-   - Indexes on creative_id, persona_id, product_id. RLS admin-only; service_role write.
-3. **New table** `gv36_combo_performance` — rolled-up per `(persona_id, emotion_id, hook_id, style_id, board_id, product_id)`:
-   - impressions, saves, clicks, ctr, atc, checkout, purchases, revenue, aov, confidence_wilson, sample_n, trend_7d, momentum_28d, status (`winning|growing|stable|declining|needs_refresh|retire`), last_evaluated_at, evidence_sources jsonb.
-   - Unique composite key with `ON CONFLICT DO UPDATE`.
-4. **New table** `gv36_first_sale_memory` — append-only ledger of every purchase, copying winning persona/creative/emotion/hook/board/publish_time/product/category/path snapshots so this becomes permanent reusable knowledge that survives table rewrites.
-5. **New view** `gv36_persona_performance_v` — joins `gv36_attribution_links` + `pinterest_pin_performance` + `canonical_sessions/events/orders` → per persona aggregates (impressions, CTR, save rate, click rate, ATC rate, checkout rate, purchase rate, revenue, AOV, confidence, trend, momentum). Invoker security, admin-only via underlying RLS.
-6. **New view** `gv36_creative_performance_v` — same joins keyed by creative_id with status classification and per-attribute drill-down (headline weak / cta strong / colour excellent / room average / board poor) computed from existing pattern weights.
-7. **GRANTs**: service_role full, authenticated SELECT on views; tables locked to admin role via `has_role(auth.uid(),'admin')`.
+## Phase 5 & 6 — CTR + Save Optimizer
+Use existing per-candidate scorers `scoreCtrIntent` and `scoreOutboundIntent` (already wired in `pinterest-creative-director`). Extend them with a deterministic save-intent scorer (inspiration/aspiration/education/lifestyle/emotion keyword weights). The distribution optimizer's CTR/save scores become a hard floor (≥70) before publishing.
 
-### Edge functions (2)
+## Phase 7 — Landing Page Match
+Add a check inside the distribution optimizer: pin headline+promise+hero must align with the product's PDP. Reuses `pin_landing_validations`. Reject if score <80 (existing threshold).
 
-1. `gv36-attribution-stitcher` (every 30 min)
-   - Reads new rows from `pinterest_pin_queue` where `status='published'` and `pin_id` is set but missing from `gv36_attribution_links`.
-   - Resolves `creative_id`, `persona_id`, `emotion_id`, `hook_id`, `style_id`, `board_id`, `campaign_id`, `product_id` from `pcie2_creatives` + `pcie2_publish_queue` + `pinterest_pin_queue.meta`.
-   - Pulls fresh Pinterest metrics for affected pins (calls existing `pinterest-video-metrics-sync` / `pinterest-track` paths — no new Pinterest API surface).
-   - Joins to canonical sessions via `utm_content` + `creative_id` and updates `gv36_combo_performance` with `ON CONFLICT DO UPDATE`.
-   - Inserts purchases into `gv36_first_sale_memory` (append-only).
-2. `gv36-learning-loop` (hourly, chained after `gv34-decision-loop` + `gv35-audience-decision`)
-   - Recomputes confidence (Wilson 90%) per combo using `min_evidence = max(5 purchases, 200 sessions)` from `gcp_settings.learning.min_evidence` and EMA decay from `gcp_settings.learning.decay_per_day` — **single shared definition**, identical to V3.5.
-   - Writes deltas into `pcie2_trait_weights` (existing table) — never bypasses ALG governor.
-   - For combos with confidence ≥0.90 and positive momentum, enqueues `autopilot_actions(action_kind='persona_creative_combo')` with `dedupe_hash = sha1(persona_id|creative_id|product_id|day)`.
-   - Respects locked creatives in `pcie2_protected_winners`.
+## Phase 8 — First Click Optimizer
+Frontend-only addition to **PDP mobile** (`src/pages/ProductDetail.tsx`): when the visitor arrives from a Pinterest UTM, ensure the trust strip above the ATC shows: Free Shipping (if applicable), Fast US Delivery, In Stock, Secure Checkout, Money-Back, Social Proof. All values come from existing product fields — no new copy, no placeholders.
 
-### Publisher integration (no new pipeline)
+## Phase 9 — Autopilot
+Schedule via existing pg_cron infra:
+- `gv-diversity-governor-v2`: invoked per generation request (no cron).
+- `gv-distribution-optimizer`: every 1h.
+- `gv34-decision-loop`, `gv34-creative-diversity`, `gv34-learning-evaluator`, `gv36-attribution-stitcher`, `gv36-learning-loop`: already cron'd; verify and re-enable if disabled.
 
-- Patch `supabase/functions/pcie2-publish-assembler/index.ts` to append `creative_id`, `persona_id`, `emotion_id`, `hook_id`, `style_id`, `board_id`, `campaign_id` to the outbound URL and write the matching row into `gv36_attribution_links` at publish time. Falls back to existing behavior when any id is missing — never blocks publishing.
+## Phase 10 — First Sale War Room (single Executive Card)
+Add **one** card `<FirstSaleWarRoom />` to `src/pages/admin/GrowthCommandCenterPage.tsx` (the existing dashboard). Reads only from existing views:
+- Best product today → `gv_first_sale_priority_v` top row
+- Best audience → `gv35_audience_signals_daily` top persona for that product
+- Best creative → `gv36_creative_performance_v` top row by `perf_score`
+- Best board → `pinterest_board_performance` top 7-day saves
+- Best posting window → `pinterest_posting_windows` highest engagement slot
+- Purchase probability → existing `gv36_first_sale_memory` Bayesian P from V3.6 learning loop (no new math)
+- Pause list → products with `gv36_combo_performance.status='retire'`
+- Regenerate list → products with all combos `status IN ('declining','needs_refresh')`
+- Top 5 actions → top 5 queued `autopilot_actions` by `priority_score`
 
-### SDK + UI (one tab)
+No new tables, no new routes.
 
-- `src/lib/genesisV36.ts` — typed read-paths for the two views + the combo table. Reuses canonical SDK utilities; no new fetch helpers.
-- New tab inside existing `src/pages/admin/MarketIntelligencePage.tsx`: **Closed-Loop Learning**, file `src/components/admin/market-intelligence/tabs/ClosedLoopLearningTab.tsx`. Tiles: Persona / Creative / Emotion / Hook / Style performance, Audience Journey, Creative Journey, Top Learning Signals, Highest-Revenue Persona / Emotion / Style / Hook, Weakest & Strongest Creative Families. Filters: date, product, persona, campaign, board. All reads via the SDK — no duplicate fetches.
+## Verification (final step)
+1. `tsgo` typecheck.
+2. Edge function smoke: invoke `gv-distribution-optimizer` once, confirm it enqueues real publish rows.
+3. Read back the War Room card data via canonical SDK to confirm zero placeholders.
+4. Run `gv34-connector-health-audit` + `gv36-learning-loop` to confirm pipeline is green.
+5. Trigger one PCIE-V2 generation through the new governor and verify it lands in `pinterest_pin_queue` with `engine_version >= v2.3` and a diverse world tag.
 
-## Confidence methodology (single shared definition)
+## Technical notes
+- Diversity governor uses pure TypeScript Jaccard + categorical equality; no ML, no LLM calls — deterministic, cheap, hourly-safe.
+- All new SQL is one view (`gv_first_sale_priority_v`) — no new tables, so no GRANT/RLS churn beyond `GRANT SELECT ... TO authenticated`.
+- Edge functions follow project conventions (CORS via `npm:@supabase/supabase-js@2/cors`, admin JWT guard, Zod body validation).
+- War Room card lives in `src/components/admin/FirstSaleWarRoom.tsx` and is imported once into `GrowthCommandCenterPage.tsx`. ~250 LOC, no new routes.
 
-- Wilson lower bound at 90% on purchase conversions from canonical events.
-- Floor: `min_evidence = max(5 purchases, 200 sessions)`.
-- EMA decay per day from `gcp_settings.learning.decay_per_day`.
-- `<0.90` → surfaced but non-executable (CIE rule).
-
-## Closed-loop integrity rules
-
-- Never overwrite a creative row — version via `generation_version`.
-- Never duplicate Canonical Analytics — V3.6 reads, never writes, canonical tables.
-- Never duplicate attribution — V3.6 writes only into its own `gv36_*` tables.
-- Never bypass `pcie2_protected_winners` or ALG governor.
-- `autopilot_actions` dedupe via partial unique index already in place.
-
-## Quality gates
-
-- `tsgo --noEmit` clean.
-- `canonical_validate_consistency()` 0% drift (no canonical edits).
-- All new tables admin-only, service_role write; views invoker.
-- Dedupe test: duplicate `persona_creative_combo` insert returns 0 rows.
-- Smoke: assembler still publishes when persona_id is null.
-- Production smoke: end-to-end trace for one live pin (impression → save → click → landing → ATC → purchase → learning row → autopilot enqueue).
-
-## Deliverables
-
-1. One migration (2 column groups, 3 tables, 2 views, GRANTs, RLS, indexes, append-only trigger on first_sale_memory).
-2. Two edge functions + two cron entries (30 min + hourly chained).
-3. Assembler patch to embed the 7 ids in published URLs.
-4. SDK file + one MI tab.
-5. Deployment report: attribution coverage %, learning coverage %, persona confidence distribution, creative confidence distribution, closed-loop validation result, GA4 validation, canonical drift, Pinterest pipeline status, autopilot dedupe, production readiness, remaining blockers.
-
-## Out of scope
-
-- New dashboards/pages beyond the MI tab.
-- New Pinterest API surface (reuses existing sync functions).
-- Direct publishing changes beyond URL parameter additions.
-- Replacing PCIE2/PEI/ALG learning loops — V3.6 feeds them, never replaces them.
-- Scraping external signals.
+## What this plan explicitly does NOT do
+- No new dashboards or admin pages.
+- No new "AI" scorers without a real signal source.
+- No duplication of Canonical Analytics, MI, PI, Pinterest Growth, or V3.6 attribution.
+- No video pipeline changes.
+- No new secrets.
