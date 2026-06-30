@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { AutonomousFirstSaleStrip } from "@/components/admin/AutonomousFirstSaleStrip";
+import { FirstSaleWarRoom } from "@/components/admin/FirstSaleWarRoom";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -355,6 +356,7 @@ export default function GrowthCommandCenterPage() {
 
       {/* Genesis V3.4 — Autonomous First Sale Mode */}
       <AutonomousFirstSaleStrip />
+      <FirstSaleWarRoom />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
