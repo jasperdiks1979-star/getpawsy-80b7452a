@@ -106,8 +106,8 @@ Deno.serve(async (req) => {
   for (const p of ranked) {
     const r = await invokeFn("pinterest-creative-director", {
       action: "run_full",
-      product_slug: p.slug,
-      product_id: p.id,
+      productSlug: p.slug,
+      productId: p.id,
       count: conceptsPerProduct,
       source: "first_sale_strike",
     });
