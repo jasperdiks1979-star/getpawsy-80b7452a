@@ -1,10 +1,17 @@
 # Render.com blueprint — pins each service to the CORRECT Dockerfile.
 #
 # Why this file exists:
-# Without an explicit blueprint, Render auto-detects the repo-root `Dockerfile`
-# (which is the static nginx frontend image). When that image is used for the
-# `getpawsy-render-worker` service, the container has no Node entrypoint —
-# Render injects `WEB_CONCURRENCY=1` and the container exits with status 128.
+# Render's per-service "auto-detect" was repeatedly picking up the repo-root
+# `Dockerfile` (the static nginx frontend build) and shipping it to the
+# `getpawsy-render-worker` service. The resulting container has no Node
+# entrypoint, so Render's injected `WEB_CONCURRENCY=1` made it exit with
+# status 128 on every push — generating "deploy failed" emails even though
+# the previous good GHCR image kept serving traffic and heartbeating.
+#
+# Defensive fix shipped alongside this blueprint: the frontend Dockerfile is
+# now `Dockerfile.frontend` (not `Dockerfile`). There is intentionally NO
+# `Dockerfile` at the repo root, so Render auto-detect cannot mis-route the
+# worker service to it again. The frontend is deployed by Lovable, not Render.
 #
 # This blueprint makes `getpawsy-render-worker` build from
 # `render-worker/Dockerfile`, whose CMD is `node render-worker/start.mjs`.

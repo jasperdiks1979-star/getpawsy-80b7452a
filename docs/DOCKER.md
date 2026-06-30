@@ -24,6 +24,9 @@ docker-compose --profile dev up dev
 
 # Of gebruik de dev Dockerfile direct
 docker build -f Dockerfile.dev -t getpawsy:dev .
+# Productie frontend image (voorheen `Dockerfile`, hernoemd zodat Render
+# auto-detect de worker-service niet meer per ongeluk de frontend laat bouwen):
+docker build -f Dockerfile.frontend -t getpawsy:prod .
 docker run -p 8080:8080 -v $(pwd):/app getpawsy:dev
 ```
 
