@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Save } from "lucide-react";
+import { FirstSaleUnlockStatus } from "@/components/admin/growth-engine/FirstSaleUnlockStatus";
 
 const MODES = ["OFF", "OBSERVE_ONLY", "DRAFT_ONLY", "AUTO_QUEUE", "AUTO_PUBLISH_CONSERVATIVE", "AUTO_PUBLISH_BALANCED"];
 
@@ -33,6 +34,8 @@ export function AutopilotSettingsTab({ onSaved }: { onSaved?: () => void }) {
   }
   if (!settings) return <Loader2 className="h-5 w-5 animate-spin" />;
   return (
+    <div className="space-y-4">
+    <FirstSaleUnlockStatus />
     <Card>
       <CardHeader>
         <CardTitle>Autopilot Settings</CardTitle>
@@ -61,5 +64,6 @@ export function AutopilotSettingsTab({ onSaved }: { onSaved?: () => void }) {
         </Button>
       </CardContent>
     </Card>
+    </div>
   );
 }
