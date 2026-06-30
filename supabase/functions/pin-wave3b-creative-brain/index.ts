@@ -10,6 +10,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { aiCreditPreflight } from "../_shared/ai-credit-preflight.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -312,10 +313,34 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json().catch(() => ({}));
+    const dryRun = !!body.dryRun;
+    if (!dryRun) {
+      const pre = await aiCreditPreflight(supa, "pin-wave3b-creative-brain");
+      if (!pre.ok) {
+        try {
+          await supa.from("pin_wave3_runs").insert({
+            status: "skipped",
+            completed_at: new Date().toISOString(),
+            totals: { skipped: true, skip_reason: pre.reason, state: pre.state, detail: pre.detail ?? null },
+          });
+        } catch (_) { /* table may not allow free insert; non-fatal */ }
+        return new Response(JSON.stringify({
+          ok: false,
+          skipped: true,
+          skip_reason: pre.reason,
+          credit_state: pre.state,
+          detail: pre.detail ?? null,
+          message: "Preflight stopped run: insufficient AI credits or paused lane.",
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
     const result = await run({
       limit: typeof body.limit === "number" ? body.limit : undefined,
       productId: body.productId ? String(body.productId) : undefined,
-      dryRun: !!body.dryRun,
+      dryRun,
     });
     return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
