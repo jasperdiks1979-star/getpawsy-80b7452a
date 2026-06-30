@@ -29,6 +29,7 @@ import { FirstSaleWarRoom } from "@/components/admin/FirstSaleWarRoom";
 import { CreativeIntelligenceV4Card } from "@/components/admin/CreativeIntelligenceV4Card";
 import { ExecutiveOSCard } from "@/components/admin/ExecutiveOSCard";
 import { HumanAttentionCommandCard } from "@/components/admin/HumanAttentionCommandCard";
+import { FeedQualityCard } from "@/components/admin/FeedQualityCard";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
@@ -363,6 +364,7 @@ export default function GrowthCommandCenterPage() {
       <FirstSaleWarRoom />
       <CreativeIntelligenceV4Card />
       <HumanAttentionCommandCard />
+      <FeedQualityCard />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
