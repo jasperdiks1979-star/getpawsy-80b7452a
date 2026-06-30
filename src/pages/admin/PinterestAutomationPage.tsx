@@ -467,9 +467,53 @@ function PinterestDashboard() {
         const row = Array.isArray(rows) ? rows[0] : rows;
         setConnection((row as PinterestConnection | null) || null);
       }
-      // publish_diagnostics action lived in the removed legacy pinterest-automation
-      // function. PCIE2 publisher + Guardian dashboard own diagnostics now.
-      setHealth(null);
+      // Canonical health: pinterest-connection-snapshot is the single source of
+      // truth for OAuth/account/boards validation. Derive auth_valid from the
+      // live snapshot so the UI never shows "AUTH FAILURE" when account+boards
+      // APIs actually returned 200.
+      try {
+        const { data: snap } = await supabase.functions.invoke("pinterest-connection-snapshot");
+        const c = (snap as any)?.connection;
+        const pub = (snap as any)?.publisher;
+        const tokenOk = !!c?.token_expires_at && new Date(c.token_expires_at).getTime() > Date.now();
+        const accountOk = c?.last_account_status === 200;
+        const boardsOk = c?.last_boards_status === 200 && (c?.board_count ?? 0) > 0;
+        const scopes: string = c?.scopes || "";
+        const requiredScopes = ["boards:read", "boards:write", "pins:read", "pins:write", "user_accounts:read"];
+        const missingScopes = requiredScopes.filter((s) => !scopes.includes(s));
+        const authValid = !!c && c.status === "connected" && tokenOk && accountOk && boardsOk && missingScopes.length === 0;
+        const warning = !c
+          ? "No Pinterest connection row found."
+          : c.status !== "connected"
+          ? `Connection status is ${c.status}.`
+          : !tokenOk
+          ? "OAuth token expired — reconnect required."
+          : !accountOk
+          ? `Pinterest /user_account returned ${c.last_account_status}.`
+          : !boardsOk
+          ? `Pinterest /boards returned ${c.last_boards_status} (board_count=${c.board_count ?? 0}).`
+          : missingScopes.length
+          ? `Missing scopes: ${missingScopes.join(", ")}`
+          : null;
+        setHealth({
+          auth_valid: authValid,
+          auth_failure_warning: warning,
+          account_ok: accountOk,
+          boards_ok: boardsOk,
+          token_ok: tokenOk,
+          scopes_ok: missingScopes.length === 0,
+          board_count: c?.board_count ?? 0,
+          token_expires_at: c?.token_expires_at ?? null,
+          last_checked_at: (snap as any)?.generated_at ?? new Date().toISOString(),
+          publishing_enabled: !!pub?.pcie2_publish_enabled && !pub?.global_stop,
+          publisher_operational: !!pub?.operational,
+          blocking_reason: authValid ? null : warning,
+          snapshot: snap,
+        });
+      } catch (snapErr) {
+        console.warn("[pinterest-connection-snapshot] fetch failed:", snapErr);
+        setHealth({ auth_valid: false, auth_failure_warning: "Could not reach pinterest-connection-snapshot." });
+      }
     } catch (e) {
       console.error("Failed to fetch pinterest data:", e);
       toast.error("Could not load Pinterest automation data");
@@ -584,12 +628,15 @@ function PinterestDashboard() {
   const handlePublishNow = async () => {
     setActionLoading("publish-now");
     try {
-      const data = await invokePinterestAction<any>("publish_next");
-      if (data?.published && data?.external_url) {
-        toast.success(`Published live as ${data.published}`);
-      } else {
-        throw new Error(data?.error || data?.eligibility?.reason || "No queued pin was eligible");
-      }
+      // Canonical path: pinterest-canary-publish is the only allowed
+      // "publish one safe pin now" entrypoint. Legacy pinterest-automation
+      // returns 410 Gone (PCIE2 Wave 4 sole-publisher enforcement).
+      const { data, error } = await supabase.functions.invoke("pinterest-canary-publish", { body: {} });
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data?.message || data?.error || "Canary publish failed");
+      const url = data?.published_url || data?.external_url;
+      if (url) toast.success(`Published live: ${url}`);
+      else toast.success("Canary publish completed");
       await fetchAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not publish to Pinterest");
