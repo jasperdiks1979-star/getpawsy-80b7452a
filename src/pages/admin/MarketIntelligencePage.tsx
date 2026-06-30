@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AudienceIntelligenceTab } from "@/components/admin/market-intelligence/tabs/AudienceIntelligenceTab";
+import { ClosedLoopLearningTab } from "@/components/admin/market-intelligence/tabs/ClosedLoopLearningTab";
 import { useToast } from "@/components/ui/use-toast";
 import DataQualityWarning from "@/components/admin/analytics/DataQualityWarning";
 import { MarketIntelligenceEngine } from "@/components/admin/market-intelligence/MarketIntelligenceEngine";
@@ -476,6 +477,7 @@ export default function MarketIntelligencePage() {
           <TabsList>
             <TabsTrigger value="executive">Executive</TabsTrigger>
             <TabsTrigger value="audience">Audience</TabsTrigger>
+            <TabsTrigger value="closed-loop">Closed-Loop (V3.6)</TabsTrigger>
             <TabsTrigger value="trends">Trends</TabsTrigger>
             <TabsTrigger value="competitors">Competitors</TabsTrigger>
             <TabsTrigger value="actions">Actions</TabsTrigger>
@@ -508,6 +510,9 @@ export default function MarketIntelligencePage() {
           </TabsContent>
           <TabsContent value="audience" className="space-y-4 mt-4">
             <AudienceIntelligenceTab />
+          </TabsContent>
+          <TabsContent value="closed-loop" className="space-y-4 mt-4">
+            <ClosedLoopLearningTab />
           </TabsContent>
         </Tabs>
       </div>

@@ -113,7 +113,26 @@ Deno.serve(async (req) => {
       rejected++; bump('low_quality'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'REJECT', reason: 'low_quality', detail: String(d.quality_score) }); continue;
     }
 
-    const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=pcie2&utm_content=${d.id.slice(0,8)}`;
+    // Genesis V3.6 — embed full persona/creative attribution into UTMs so canonical_events
+    // can stitch every purchase back to a creative/persona/hook/style combo. Falls back
+    // gracefully when ids are missing — never blocks publishing.
+    const { data: cMeta } = await sb.from('pcie2_creatives')
+      .select('persona_id, emotion_id, hook_id, style_id, campaign_id')
+      .eq('id', d.id).maybeSingle();
+    const campaign = cMeta?.campaign_id || 'pcie2';
+    const utmContent = cMeta?.persona_id
+      ? `persona_${cMeta.persona_id}`
+      : `creative_${d.id.slice(0,8)}`;
+    const attrParams = [
+      `creative_id=${d.id}`,
+      cMeta?.persona_id  ? `persona_id=${cMeta.persona_id}`   : '',
+      cMeta?.emotion_id  ? `emotion_id=${encodeURIComponent(cMeta.emotion_id)}` : '',
+      cMeta?.hook_id     ? `hook_id=${cMeta.hook_id}`         : '',
+      cMeta?.style_id    ? `style_id=${encodeURIComponent(cMeta.style_id)}`     : '',
+      boardId            ? `board_id=${boardId}`              : '',
+      `campaign_id=${encodeURIComponent(campaign)}`,
+    ].filter(Boolean).join('&');
+    const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${utmContent}&${attrParams}`;
     const description = (d.body_text || d.hook || p.name || '').slice(0, 480);
     const key = `${p.id}|${boardId}|${imageUrl}`;
     if (existingKeys.has(key)) { skipped++; bump('duplicate'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'SKIPPED', reason: 'duplicate' }); continue; }

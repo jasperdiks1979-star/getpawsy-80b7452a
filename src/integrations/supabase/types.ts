@@ -28613,6 +28613,13 @@ export type Database = {
             referencedRelation: "gv35_untapped_audiences_v"
             referencedColumns: ["persona_id"]
           },
+          {
+            foreignKeyName: "gv35_audience_signals_daily_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_persona_performance_v"
+            referencedColumns: ["persona_id"]
+          },
         ]
       }
       gv35_product_audience_match: {
@@ -28684,6 +28691,13 @@ export type Database = {
             referencedRelation: "gv35_untapped_audiences_v"
             referencedColumns: ["persona_id"]
           },
+          {
+            foreignKeyName: "gv35_product_audience_match_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_persona_performance_v"
+            referencedColumns: ["persona_id"]
+          },
         ]
       }
       gv35_settings: {
@@ -28704,6 +28718,261 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      gv36_attribution_links: {
+        Row: {
+          board_id: string | null
+          campaign_id: string | null
+          created_at: string
+          creative_id: string | null
+          destination_url: string | null
+          emotion_id: string | null
+          hook_id: string | null
+          last_metric_sync: string | null
+          meta: Json
+          persona_id: string | null
+          pin_id: string
+          product_id: string | null
+          published_at: string
+          style_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          board_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          destination_url?: string | null
+          emotion_id?: string | null
+          hook_id?: string | null
+          last_metric_sync?: string | null
+          meta?: Json
+          persona_id?: string | null
+          pin_id: string
+          product_id?: string | null
+          published_at?: string
+          style_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          creative_id?: string | null
+          destination_url?: string | null
+          emotion_id?: string | null
+          hook_id?: string | null
+          last_metric_sync?: string | null
+          meta?: Json
+          persona_id?: string | null
+          pin_id?: string
+          product_id?: string | null
+          published_at?: string
+          style_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gv36_attribution_links_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_creative_performance_v"
+            referencedColumns: ["creative_id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_creatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "v_creative_revenue_lineage"
+            referencedColumns: ["creative_id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_timing_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "gv36_attribution_links_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_persona_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+        ]
+      }
+      gv36_combo_performance: {
+        Row: {
+          aov_cents: number
+          atc: number
+          board_id: string | null
+          checkouts: number
+          clicks: number
+          confidence_wilson: number
+          created_at: string
+          ctr: number
+          emotion_id: string | null
+          evidence_sources: Json
+          hook_id: string | null
+          id: string
+          impressions: number
+          last_evaluated_at: string
+          momentum_28d: number
+          persona_id: string | null
+          product_id: string | null
+          purchases: number
+          revenue_cents: number
+          sample_n: number
+          saves: number
+          status: string
+          style_id: string | null
+          trend_7d: number
+          updated_at: string
+        }
+        Insert: {
+          aov_cents?: number
+          atc?: number
+          board_id?: string | null
+          checkouts?: number
+          clicks?: number
+          confidence_wilson?: number
+          created_at?: string
+          ctr?: number
+          emotion_id?: string | null
+          evidence_sources?: Json
+          hook_id?: string | null
+          id?: string
+          impressions?: number
+          last_evaluated_at?: string
+          momentum_28d?: number
+          persona_id?: string | null
+          product_id?: string | null
+          purchases?: number
+          revenue_cents?: number
+          sample_n?: number
+          saves?: number
+          status?: string
+          style_id?: string | null
+          trend_7d?: number
+          updated_at?: string
+        }
+        Update: {
+          aov_cents?: number
+          atc?: number
+          board_id?: string | null
+          checkouts?: number
+          clicks?: number
+          confidence_wilson?: number
+          created_at?: string
+          ctr?: number
+          emotion_id?: string | null
+          evidence_sources?: Json
+          hook_id?: string | null
+          id?: string
+          impressions?: number
+          last_evaluated_at?: string
+          momentum_28d?: number
+          persona_id?: string | null
+          product_id?: string | null
+          purchases?: number
+          revenue_cents?: number
+          sample_n?: number
+          saves?: number
+          status?: string
+          style_id?: string | null
+          trend_7d?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gv36_first_sale_memory: {
+        Row: {
+          board_id: string | null
+          campaign_id: string | null
+          category: string | null
+          creative_id: string | null
+          emotion_id: string | null
+          hook_id: string | null
+          id: string
+          meta: Json
+          order_id: string | null
+          persona_id: string | null
+          pin_id: string | null
+          product_id: string | null
+          publish_time: string | null
+          recorded_at: string
+          revenue_cents: number
+          style_id: string | null
+          traffic_path: Json
+        }
+        Insert: {
+          board_id?: string | null
+          campaign_id?: string | null
+          category?: string | null
+          creative_id?: string | null
+          emotion_id?: string | null
+          hook_id?: string | null
+          id?: string
+          meta?: Json
+          order_id?: string | null
+          persona_id?: string | null
+          pin_id?: string | null
+          product_id?: string | null
+          publish_time?: string | null
+          recorded_at?: string
+          revenue_cents?: number
+          style_id?: string | null
+          traffic_path?: Json
+        }
+        Update: {
+          board_id?: string | null
+          campaign_id?: string | null
+          category?: string | null
+          creative_id?: string | null
+          emotion_id?: string | null
+          hook_id?: string | null
+          id?: string
+          meta?: Json
+          order_id?: string | null
+          persona_id?: string | null
+          pin_id?: string | null
+          product_id?: string | null
+          publish_time?: string | null
+          recorded_at?: string
+          revenue_cents?: number
+          style_id?: string | null
+          traffic_path?: Json
         }
         Relationships: []
       }
@@ -37390,6 +37659,13 @@ export type Database = {
             foreignKeyName: "pcie2_creative_jobs_creative_id_fkey"
             columns: ["creative_id"]
             isOneToOne: false
+            referencedRelation: "gv36_creative_performance_v"
+            referencedColumns: ["creative_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creative_jobs_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
             referencedRelation: "pcie2_creatives"
             referencedColumns: ["id"]
           },
@@ -37411,6 +37687,8 @@ export type Database = {
           body_text: string | null
           brand_visibility_score: number | null
           camera_angle: string | null
+          camera_id: string | null
+          campaign_id: string | null
           category: string | null
           color_palette: Json | null
           composition: string | null
@@ -37422,9 +37700,12 @@ export type Database = {
           duplicate_score: number | null
           embedding: string | null
           embedding_ref: string | null
+          emotion_id: string | null
           evolution_attempts: number
           family: string | null
           font_size: number | null
+          generation_model: string | null
+          generation_version: string | null
           headline: string | null
           headline_id: string | null
           hook: string | null
@@ -37437,6 +37718,7 @@ export type Database = {
           model_version: string | null
           mutation_path: Json
           negative_prompt: string | null
+          palette_id: string | null
           perceptual_hash: string | null
           performance: Json
           persona_id: string | null
@@ -37451,11 +37733,13 @@ export type Database = {
           prompt_version: string | null
           quality_score: number | null
           retired: boolean
+          room_id: string | null
           safe_zone_score: number | null
           scores: Json
           secondary_emotion: string | null
           status: string
           story_type: string | null
+          style_id: string | null
           typography: string | null
           updated_at: string
           visual_fingerprint: string | null
@@ -37469,6 +37753,8 @@ export type Database = {
           body_text?: string | null
           brand_visibility_score?: number | null
           camera_angle?: string | null
+          camera_id?: string | null
+          campaign_id?: string | null
           category?: string | null
           color_palette?: Json | null
           composition?: string | null
@@ -37480,9 +37766,12 @@ export type Database = {
           duplicate_score?: number | null
           embedding?: string | null
           embedding_ref?: string | null
+          emotion_id?: string | null
           evolution_attempts?: number
           family?: string | null
           font_size?: number | null
+          generation_model?: string | null
+          generation_version?: string | null
           headline?: string | null
           headline_id?: string | null
           hook?: string | null
@@ -37495,6 +37784,7 @@ export type Database = {
           model_version?: string | null
           mutation_path?: Json
           negative_prompt?: string | null
+          palette_id?: string | null
           perceptual_hash?: string | null
           performance?: Json
           persona_id?: string | null
@@ -37509,11 +37799,13 @@ export type Database = {
           prompt_version?: string | null
           quality_score?: number | null
           retired?: boolean
+          room_id?: string | null
           safe_zone_score?: number | null
           scores?: Json
           secondary_emotion?: string | null
           status?: string
           story_type?: string | null
+          style_id?: string | null
           typography?: string | null
           updated_at?: string
           visual_fingerprint?: string | null
@@ -37527,6 +37819,8 @@ export type Database = {
           body_text?: string | null
           brand_visibility_score?: number | null
           camera_angle?: string | null
+          camera_id?: string | null
+          campaign_id?: string | null
           category?: string | null
           color_palette?: Json | null
           composition?: string | null
@@ -37538,9 +37832,12 @@ export type Database = {
           duplicate_score?: number | null
           embedding?: string | null
           embedding_ref?: string | null
+          emotion_id?: string | null
           evolution_attempts?: number
           family?: string | null
           font_size?: number | null
+          generation_model?: string | null
+          generation_version?: string | null
           headline?: string | null
           headline_id?: string | null
           hook?: string | null
@@ -37553,6 +37850,7 @@ export type Database = {
           model_version?: string | null
           mutation_path?: Json
           negative_prompt?: string | null
+          palette_id?: string | null
           perceptual_hash?: string | null
           performance?: Json
           persona_id?: string | null
@@ -37567,11 +37865,13 @@ export type Database = {
           prompt_version?: string | null
           quality_score?: number | null
           retired?: boolean
+          room_id?: string | null
           safe_zone_score?: number | null
           scores?: Json
           secondary_emotion?: string | null
           status?: string
           story_type?: string | null
+          style_id?: string | null
           typography?: string | null
           updated_at?: string
           visual_fingerprint?: string | null
@@ -37604,6 +37904,13 @@ export type Database = {
             columns: ["persona_id"]
             isOneToOne: false
             referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_persona_performance_v"
             referencedColumns: ["persona_id"]
           },
         ]
@@ -38383,6 +38690,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pcie2_pin_performance_creative_id_fkey"
+            columns: ["creative_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_creative_performance_v"
+            referencedColumns: ["creative_id"]
+          },
           {
             foreignKeyName: "pcie2_pin_performance_creative_id_fkey"
             columns: ["creative_id"]
@@ -61031,6 +61345,85 @@ export type Database = {
           published_creatives?: never
           purchases_30d?: never
           slug?: string | null
+        }
+        Relationships: []
+      }
+      gv36_creative_performance_v: {
+        Row: {
+          ai_confidence: number | null
+          board_id: string | null
+          clicks: number | null
+          created_at: string | null
+          creative_id: string | null
+          cta: string | null
+          ctr_pct: number | null
+          emotion_id: string | null
+          headline: string | null
+          impressions: number | null
+          perf_score: number | null
+          persona_id: string | null
+          product_id: string | null
+          purchases: number | null
+          quality_score: number | null
+          revenue_cents: number | null
+          saves: number | null
+          status: string | null
+          style_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_audience_timing_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv35_untapped_audiences_v"
+            referencedColumns: ["persona_id"]
+          },
+          {
+            foreignKeyName: "pcie2_creatives_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "gv36_persona_performance_v"
+            referencedColumns: ["persona_id"]
+          },
+        ]
+      }
+      gv36_persona_performance_v: {
+        Row: {
+          aov_cents: number | null
+          atc: number | null
+          checkouts: number | null
+          clicks: number | null
+          confidence: number | null
+          ctr_pct: number | null
+          evidence_count: number | null
+          impressions: number | null
+          persona_id: string | null
+          persona_name: string | null
+          purchases: number | null
+          revenue_cents: number | null
+          save_rate_pct: number | null
+          saves: number | null
         }
         Relationships: []
       }
