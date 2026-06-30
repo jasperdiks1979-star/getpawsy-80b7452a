@@ -22020,6 +22020,111 @@ export type Database = {
         }
         Relationships: []
       }
+      gci_runs: {
+        Row: {
+          avg_crs: number | null
+          avg_trust: number | null
+          created_at: string
+          finished_at: string | null
+          first_sale_eta_hours: number | null
+          id: string
+          products_analyzed: number
+          products_improved: number
+          started_at: string
+          summary: Json
+          total_expected_revenue_lift: number | null
+        }
+        Insert: {
+          avg_crs?: number | null
+          avg_trust?: number | null
+          created_at?: string
+          finished_at?: string | null
+          first_sale_eta_hours?: number | null
+          id?: string
+          products_analyzed?: number
+          products_improved?: number
+          started_at?: string
+          summary?: Json
+          total_expected_revenue_lift?: number | null
+        }
+        Update: {
+          avg_crs?: number | null
+          avg_trust?: number | null
+          created_at?: string
+          finished_at?: string | null
+          first_sale_eta_hours?: number | null
+          id?: string
+          products_analyzed?: number
+          products_improved?: number
+          started_at?: string
+          summary?: Json
+          total_expected_revenue_lift?: number | null
+        }
+        Relationships: []
+      }
+      gci_scores: {
+        Row: {
+          components: Json
+          computed_at: string
+          confidence: number
+          copy_score: number
+          created_at: string
+          crs: number
+          expected_conv_lift: number
+          expected_revenue_lift: number
+          frictions: Json
+          id: string
+          image_score: number
+          mobile_score: number
+          product_id: string
+          product_name: string | null
+          product_slug: string | null
+          signal_score: number
+          trust_score: number
+          updated_at: string
+        }
+        Insert: {
+          components?: Json
+          computed_at?: string
+          confidence?: number
+          copy_score?: number
+          created_at?: string
+          crs?: number
+          expected_conv_lift?: number
+          expected_revenue_lift?: number
+          frictions?: Json
+          id?: string
+          image_score?: number
+          mobile_score?: number
+          product_id: string
+          product_name?: string | null
+          product_slug?: string | null
+          signal_score?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Update: {
+          components?: Json
+          computed_at?: string
+          confidence?: number
+          copy_score?: number
+          created_at?: string
+          crs?: number
+          expected_conv_lift?: number
+          expected_revenue_lift?: number
+          frictions?: Json
+          id?: string
+          image_score?: number
+          mobile_score?: number
+          product_id?: string
+          product_name?: string | null
+          product_slug?: string | null
+          signal_score?: number
+          trust_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gcp_concept_history: {
         Row: {
           change_reason: string | null
