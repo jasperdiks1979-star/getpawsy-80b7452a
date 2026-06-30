@@ -6,6 +6,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { getFirstSaleStatus } from "../_shared/first-sale-mode.ts";
 
 const Candidate = z.object({
   product_id: z.string().uuid().optional(),
@@ -124,9 +125,47 @@ Deno.serve(async (req) => {
     const max_axis = Object.values(axes).reduce((a, b) => Math.max(a, b), 0);
     const overall = Object.values(axes).reduce((a, b) => a + b, 0) / 12;
 
-    // First Sale Accelerator: any axis >65% similarity → regenerate.
+    // Adaptive First Sale Mode: keep the 12-axis governor. Default cap stays
+    // 0.65 per axis. When First Sale Mode is active, axes that are already
+    // saturated in history (> saturation_threshold) get a temporary 0.70 cap
+    // so we can collect learning data; all other axes keep 0.65.
+    const fs = await getFirstSaleStatus(supabase).catch(() => null);
+    const baseCap = fs?.diversity.per_axis_default ?? 0.65;
+    const satCap  = fs?.diversity.per_axis_saturated_cap ?? 0.65;
+    const satThr  = fs?.diversity.saturation_threshold ?? 0.55;
+    const histSaturation: Record<string, number> = {
+      scene: 0, lighting: 0, composition: 0, interior: 0, human: 0, animal: 0,
+      headline: 0, hook: 0, cta: 0, emotion: 0, product: 0, camera: 0,
+    };
+    // Saturation = how dominated history is by its most common value per axis.
+    const dominanceOf = (vals: string[]) => {
+      if (!vals.length) return 0;
+      const counts = new Map<string, number>();
+      for (const v of vals) { const k = (v||"").toLowerCase().trim(); if (!k) continue; counts.set(k,(counts.get(k)??0)+1); }
+      let m = 0; for (const n of counts.values()) if (n>m) m=n;
+      return m / vals.length;
+    };
+    histSaturation.scene       = dominanceOf(histBy("concept"));
+    histSaturation.lighting    = dominanceOf(histBy("lighting"));
+    histSaturation.composition = dominanceOf(histBy("composition"));
+    histSaturation.interior    = dominanceOf(histBy("background"));
+    histSaturation.human       = dominanceOf(histBy("layout"));
+    histSaturation.animal      = dominanceOf(histBy("animal_breed"));
+    histSaturation.headline    = dominanceOf(histBy("headline"));
+    histSaturation.hook        = dominanceOf(histBy("hook"));
+    histSaturation.cta         = dominanceOf(histBy("cta"));
+    histSaturation.emotion     = dominanceOf(histBy("primary_emotion"));
+    histSaturation.product     = dominanceOf(histBy("product_id"));
+    histSaturation.camera      = dominanceOf(histBy("camera_angle"));
+    const saturated_axes: string[] = [];
     let decision: "pass" | "regenerate" | "reject" = "pass";
-    if (max_axis > 0.65 || overall > 0.5) decision = "regenerate";
+    for (const [k, v] of Object.entries(axes)) {
+      const isSat = (histSaturation[k] ?? 0) >= satThr;
+      const cap = isSat ? satCap : baseCap;
+      if (isSat) saturated_axes.push(k);
+      if (v > cap) { decision = "regenerate"; break; }
+    }
+    if (decision === "pass" && overall > 0.5) decision = "regenerate";
     if (c.attempt >= 3) decision = decision === "pass" ? "pass" : "reject";
 
     // Choose a world that does not match the candidate's current concept tokens.
@@ -136,11 +175,19 @@ Deno.serve(async (req) => {
     // Audit log (best-effort; ignore failure).
     await supabase.from("pcie_v2_events").insert({
       event_type: decision === "pass" ? "diversity_v2_pass" : `diversity_v2_${decision}`,
-      payload: { axes, max_axis, overall, attempt: c.attempt, suggested_world: suggested },
+      payload: {
+        axes, max_axis, overall, attempt: c.attempt, suggested_world: suggested,
+        first_sale_mode: !!fs?.active, saturated_axes,
+        per_axis_caps: { default: baseCap, saturated: satCap, threshold: satThr },
+      },
     } as never).then(() => {}, () => {});
 
     return new Response(
-      JSON.stringify({ decision, max_axis, overall, axes, suggested_world: suggested }),
+      JSON.stringify({
+        decision, max_axis, overall, axes, suggested_world: suggested,
+        first_sale_mode: !!fs?.active, saturated_axes,
+        per_axis_caps: { default: baseCap, saturated: satCap, threshold: satThr },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
