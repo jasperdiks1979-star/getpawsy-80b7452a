@@ -11,78 +11,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
-type Row = {
-  id: string;
-  status: string;
-  priority: number | null;
-  category_key: string | null;
-  content_type: string | null;
-  pin_title: string | null;
-  pin_description: string | null;
-  hashtags: string[] | null;
-  meta: Record<string, unknown> | null;
-  created_at: string;
-};
-
-type TypeKey =
-  | "lifestyle"
-  | "educational"
-  | "problem_solution"
-  | "seasonal"
-  | "entertainment"
-  | "product_showcase";
-
-const HELPFUL_TERMS = [
-  "how", "why", "tips", "guide", "checklist", "avoid", "fix", "stop",
-  "ways", "things", "before you", "what to", "best", "vs", "signs",
-];
-const LIFESTYLE_TERMS = [
-  "cozy", "morning", "sunny", "evening", "weekend", "kitchen", "living room",
-  "bedroom", "patio", "balcony", "couch", "rv", "cafe", "outdoor", "garden",
-];
-const EDU_TERMS = [
-  "guide", "tutorial", "step", "explained", "science", "learn",
-  "training", "behavior", "vet", "expert",
-];
-const SHOWCASE_TERMS = [
-  "buy", "sale", "discount", "% off", "shop now", "new arrival",
-  "shop", "deal",
-];
-
-function classify(row: Row): TypeKey {
-  const ct = (row.content_type || "").toLowerCase();
-  if (ct && ct !== "product") {
-    const map: Record<string, TypeKey> = {
-      lifestyle: "lifestyle",
-      educational: "educational",
-      problem_solution: "problem_solution",
-      seasonal: "seasonal",
-      entertainment: "entertainment",
-    };
-    if (map[ct]) return map[ct];
-  }
-  const meta = (row.meta ?? {}) as Record<string, unknown>;
-  const mc = String((meta.content_type as string) || (meta.pin_type as string) || "").toLowerCase();
-  if (mc && mc in { lifestyle: 1, educational: 1, problem_solution: 1, seasonal: 1, entertainment: 1 }) {
-    return mc as TypeKey;
-  }
-  return "product_showcase";
-}
-
-function nativeScore(row: Row): { score: number; axes: Record<string, number> } {
-  const text = `${row.pin_title ?? ""} ${row.pin_description ?? ""} ${(row.hashtags ?? []).join(" ")}`.toLowerCase();
-  const hits = (terms: string[]) => terms.reduce((n, t) => (text.includes(t) ? n + 1 : n), 0);
-  const helpful = Math.min(100, hits(HELPFUL_TERMS) * 22);
-  const lifestyle = Math.min(100, hits(LIFESTYLE_TERMS) * 25);
-  const educational = Math.min(100, hits(EDU_TERMS) * 28);
-  const showcasePenalty = Math.min(40, hits(SHOWCASE_TERMS) * 15);
-  const lengthBonus = (row.pin_description?.length ?? 0) > 120 ? 10 : 0;
-  // Native score = helpful/lifestyle/edu — penalty for sales language.
-  const base = (helpful * 0.4 + lifestyle * 0.35 + educational * 0.25) + lengthBonus;
-  const score = Math.max(0, Math.min(100, Math.round(base - showcasePenalty)));
-  return { score, axes: { helpful, lifestyle, educational, showcasePenalty } };
-}
+import { classify, nativeScore, decideAction, type Row, type TypeKey } from "./scoring.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -156,25 +85,7 @@ Deno.serve(async (req) => {
   for (const d of drafts) {
     const overType = mix[d.type]?.over === true;
     const overCat = d.row.category_key ? overCats[d.row.category_key] !== undefined : false;
-    const isShowcase = d.type === "product_showcase";
-    const lowScore = d.score < minScore;
-    let action: "reject" | "downrank" | "keep" = "keep";
-    let reason = "ok";
-    if (lowScore && (isShowcase || overType || overCat)) {
-      action = "reject";
-      reason = `native_score=${d.score}<${minScore}` +
-        (isShowcase ? "+showcase" : "") +
-        (overType ? `+over_type(${d.type})` : "") +
-        (overCat ? `+over_category(${d.row.category_key})` : "");
-    } else if (lowScore) {
-      action = "downrank";
-      reason = `native_score=${d.score}<${minScore}`;
-    } else if (overType || overCat) {
-      action = "downrank";
-      reason = `rebalance` +
-        (overType ? `+over_type(${d.type})` : "") +
-        (overCat ? `+over_category(${d.row.category_key})` : "");
-    }
+    const { action, reason } = decideAction({ score: d.score, minScore, type: d.type, overType, overCat });
     actions.push({
       id: d.row.id, action, reason,
       score: d.score, type: d.type, category_key: d.row.category_key,
