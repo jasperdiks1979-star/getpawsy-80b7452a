@@ -48164,6 +48164,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_prepublish_gate_audit: {
+        Row: {
+          applied_downranks: number
+          applied_rejects: number
+          avg_native_score: number | null
+          created_at: string
+          decisions: Json
+          downrank_count: number
+          draft_count: number
+          dry_run: boolean
+          id: string
+          input_pin_ids: Json
+          keep_count: number
+          min_score: number
+          mix: Json
+          over_categories: Json
+          ran_at: string
+          reject_count: number
+          sample_size: number
+          trace_id: string
+        }
+        Insert: {
+          applied_downranks?: number
+          applied_rejects?: number
+          avg_native_score?: number | null
+          created_at?: string
+          decisions?: Json
+          downrank_count?: number
+          draft_count?: number
+          dry_run: boolean
+          id?: string
+          input_pin_ids?: Json
+          keep_count?: number
+          min_score: number
+          mix?: Json
+          over_categories?: Json
+          ran_at?: string
+          reject_count?: number
+          sample_size: number
+          trace_id: string
+        }
+        Update: {
+          applied_downranks?: number
+          applied_rejects?: number
+          avg_native_score?: number | null
+          created_at?: string
+          decisions?: Json
+          downrank_count?: number
+          draft_count?: number
+          dry_run?: boolean
+          id?: string
+          input_pin_ids?: Json
+          keep_count?: number
+          min_score?: number
+          mix?: Json
+          over_categories?: Json
+          ran_at?: string
+          reject_count?: number
+          sample_size?: number
+          trace_id?: string
+        }
+        Relationships: []
+      }
       pinterest_product_tiers: {
         Row: {
           add_to_carts_30d: number | null

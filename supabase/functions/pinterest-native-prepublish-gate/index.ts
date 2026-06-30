@@ -133,16 +133,53 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Persist audit trail (best-effort; never blocks the response).
+  const counts = {
+    reject: actions.filter((a) => a.action === "reject").length,
+    downrank: actions.filter((a) => a.action === "downrank").length,
+    keep: actions.filter((a) => a.action === "keep").length,
+  };
+  try {
+    const decisions = scored.map((x, i) => ({
+      id: x.row.id,
+      status: x.row.status,
+      score: x.score,
+      axes: x.axes,
+      type: x.type,
+      category_key: x.row.category_key,
+      decision: x.row.status === "draft"
+        ? (actions.find((a) => a.id === x.row.id)?.action ?? "keep")
+        : "observe",
+      reason: actions.find((a) => a.id === x.row.id)?.reason ?? null,
+      idx: i,
+    }));
+    await supabase.from("pinterest_prepublish_gate_audit").insert({
+      trace_id: traceId,
+      dry_run: dryRun,
+      sample_size: scored.length,
+      min_score: minScore,
+      avg_native_score: Math.round(avgScore),
+      draft_count: drafts.length,
+      reject_count: counts.reject,
+      downrank_count: counts.downrank,
+      keep_count: counts.keep,
+      applied_rejects: appliedRejects,
+      applied_downranks: appliedDownranks,
+      mix,
+      over_categories: overCats,
+      input_pin_ids: sample.map((r) => r.id),
+      decisions,
+    });
+  } catch (auditErr) {
+    console.error("[gate] audit insert failed", auditErr);
+  }
+
   return new Response(JSON.stringify({
     ok: true, traceId, dryRun, sampleSize: scored.length, minScore,
     avgNativeScore: Math.round(avgScore),
     mix, overCategories: overCats,
     drafts: drafts.length,
-    counts: {
-      reject: actions.filter((a) => a.action === "reject").length,
-      downrank: actions.filter((a) => a.action === "downrank").length,
-      keep: actions.filter((a) => a.action === "keep").length,
-    },
+    counts,
     applied: { rejects: appliedRejects, downranks: appliedDownranks },
     actions: actions.slice(0, 50),
   }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
