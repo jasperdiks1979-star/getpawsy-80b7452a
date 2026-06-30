@@ -11,10 +11,13 @@ type Counts = Record<string, number>;
 type Pin = {
   id: string;
   status: string;
-  title: string | null;
-  destination_url: string | null;
+  pin_title: string | null;
+  destination_link: string | null;
   pin_image_url: string | null;
-  scheduled_for: string | null;
+  scheduled_at: string | null;
+  effective_publish_at?: string | null;
+  is_due_now?: boolean | null;
+  product_slug?: string | null;
   created_at: string;
   updated_at: string | null;
 };
@@ -45,12 +48,22 @@ async function countBy(table: string, col = "status"): Promise<Counts> {
   return out;
 }
 
+async function countRows(table: string): Promise<number> {
+  const { count, error } = await (supabase as any)
+    .from(table)
+    .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export default function PinterestPinQueuePage() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [queueCounts, setQueueCounts] = useState<Counts>({});
   const [jobCounts, setJobCounts] = useState<Counts>({});
   const [recentPins, setRecentPins] = useState<Pin[]>([]);
+  const [publishablePins, setPublishablePins] = useState<Pin[]>([]);
+  const [publishableCount, setPublishableCount] = useState(0);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [strike, setStrike] = useState<Strike[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -61,14 +74,21 @@ export default function PinterestPinQueuePage() {
       setLoading(true);
       setErr(null);
       try {
-        const [qc, jc, pins, jobs, str] = await Promise.all([
+        const [qc, jc, pins, publishable, pubCount, jobs, str] = await Promise.all([
           countBy("pinterest_pin_queue"),
           countBy("pinterest_creative_factory_jobs"),
           (supabase as any)
             .from("pinterest_pin_queue")
-            .select("id,status,title,destination_url,pin_image_url,scheduled_for,created_at,updated_at")
+            .select("id,status,pin_title,destination_link,pin_image_url,scheduled_at,product_slug,created_at,updated_at")
             .order("created_at", { ascending: false })
             .limit(50),
+          (supabase as any)
+            .from("pinterest_publishable_queue")
+            .select("id,status,pin_title,destination_link,pin_image_url,scheduled_at,effective_publish_at,is_due_now,product_slug,created_at,updated_at")
+            .order("priority", { ascending: true })
+            .order("effective_publish_at", { ascending: true })
+            .limit(50),
+          countRows("pinterest_publishable_queue"),
           (supabase as any)
             .from("pinterest_creative_factory_jobs")
             .select("id,status,product_id,attempts,created_at,updated_at,error")
@@ -84,6 +104,8 @@ export default function PinterestPinQueuePage() {
         setQueueCounts(qc);
         setJobCounts(jc);
         setRecentPins((pins.data ?? []) as Pin[]);
+        setPublishablePins((publishable.data ?? []) as Pin[]);
+        setPublishableCount(pubCount);
         setRecentJobs((jobs.data ?? []) as Job[]);
         setStrike((str.data ?? []) as Strike[]);
       } catch (e: any) {
@@ -107,6 +129,7 @@ export default function PinterestPinQueuePage() {
   const qQueued = sum(queueCounts, ["ready", "queued", "scheduled", "pending"]);
   const qPublished = sum(queueCounts, ["published", "posted"]);
   const qFailed = sum(queueCounts, ["failed", "rejected", "blocked_legacy_source"]);
+  const dueNow = publishablePins.filter((p) => p.is_due_now).length;
 
   return (
     <div className="p-6 space-y-6">
@@ -149,9 +172,14 @@ export default function PinterestPinQueuePage() {
 
       <section className="grid gap-3 md:grid-cols-4">
         <Card><CardHeader><CardTitle className="text-sm">Pin Draft</CardTitle></CardHeader><CardContent className="text-3xl">{qDraft}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm">Pin Queued</CardTitle></CardHeader><CardContent className="text-3xl">{qQueued}</CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm">Lifecycle Queued</CardTitle></CardHeader><CardContent className="text-3xl">{qQueued}</CardContent></Card>
         <Card><CardHeader><CardTitle className="text-sm">Pin Published</CardTitle></CardHeader><CardContent className="text-3xl">{qPublished}</CardContent></Card>
         <Card><CardHeader><CardTitle className="text-sm">Pin Rejected/Failed</CardTitle></CardHeader><CardContent className="text-3xl">{qFailed}</CardContent></Card>
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-2">
+        <Card><CardHeader><CardTitle className="text-sm">Canonical Publishable</CardTitle></CardHeader><CardContent className="text-3xl">{publishableCount}</CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm">Due Now</CardTitle></CardHeader><CardContent className="text-3xl">{dueNow}</CardContent></Card>
       </section>
 
       <Card>
@@ -161,6 +189,31 @@ export default function PinterestPinQueuePage() {
             <Badge key={s} variant="outline">{s}: {n}</Badge>
           ))}
           {Object.keys(queueCounts).length === 0 && <span className="text-sm text-muted-foreground">No pins.</span>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Canonical publishable queue</CardTitle></CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+          ) : publishablePins.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pins match the canonical publisher query.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-muted-foreground"><th className="p-2">Scheduled</th><th className="p-2">Due</th><th className="p-2">Title</th><th className="p-2">Product</th></tr></thead>
+              <tbody>
+                {publishablePins.map((p) => (
+                  <tr key={p.id} className="border-t">
+                    <td className="p-2 text-xs">{p.effective_publish_at ? new Date(p.effective_publish_at).toLocaleString() : "—"}</td>
+                    <td className="p-2"><Badge variant={p.is_due_now ? "default" : "outline"}>{p.is_due_now ? "now" : "later"}</Badge></td>
+                    <td className="p-2 truncate max-w-[420px]">{p.pin_title ?? "—"}</td>
+                    <td className="p-2 text-xs font-mono">{p.product_slug ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
 
@@ -228,8 +281,8 @@ export default function PinterestPinQueuePage() {
                   <tr key={p.id} className="border-t">
                     <td className="p-2 text-xs">{new Date(p.created_at).toLocaleString()}</td>
                     <td className="p-2"><Badge variant={p.status === "posted" || p.status === "published" ? "default" : p.status === "failed" || p.status === "rejected" ? "destructive" : "secondary"}>{p.status}</Badge></td>
-                    <td className="p-2 truncate max-w-[420px]">{p.title ?? "—"}</td>
-                    <td className="p-2 text-xs text-muted-foreground">{p.scheduled_for ? new Date(p.scheduled_for).toLocaleString() : "—"}</td>
+                    <td className="p-2 truncate max-w-[420px]">{p.pin_title ?? "—"}</td>
+                    <td className="p-2 text-xs text-muted-foreground">{p.scheduled_at ? new Date(p.scheduled_at).toLocaleString() : "—"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -44,12 +44,9 @@ Deno.serve(async (req) => {
 
   // 3. Replay the exact cron base query
   let q = sb
-    .from("pinterest_pin_queue")
+    .from("pinterest_publishable_queue")
     .select("id, status, scheduled_at, approved_at, profit_state, retries, board_id, product_slug, category_key, us_audience_score, pin_image_url, destination_link, pin_title, priority")
-    .eq("status", "queued")
-    .or("profit_state.is.null,profit_state.neq.kill")
-    .lte("scheduled_at", nowIso)
-    .lt("retries", MAX_RETRIES);
+    .eq("is_due_now", true);
   if (!autoApprove) q = q.not("approved_at", "is", null);
   const { data: candidates, error } = await q
     .order("priority", { ascending: true })
@@ -110,7 +107,7 @@ Deno.serve(async (req) => {
       },
       status_counts: statusCounts,
       base_query: {
-        sql: "status=queued AND scheduled_at<=now AND retries<3 AND (profit_state IS NULL OR profit_state!=kill)" +
+        sql: "FROM pinterest_publishable_queue WHERE is_due_now=true" +
           (autoApprove ? "" : " AND approved_at IS NOT NULL"),
         candidate_count: rows.length,
         error: error?.message || null,
