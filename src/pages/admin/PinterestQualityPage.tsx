@@ -33,6 +33,7 @@ export default function PinterestQualityPage() {
   const [scrub, setScrub] = useState<ScrubResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [gate, setGate] = useState<any | null>(null);
+  const [editor, setEditor] = useState<any | null>(null);
 
   async function loadCounts() {
     setBusy("counts");
@@ -106,6 +107,25 @@ export default function PinterestQualityPage() {
       await loadCounts();
     } catch (e) {
       toast.error(`Gate failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runEditor(dryRun: boolean) {
+    setBusy(dryRun ? "editor-dry" : "editor-apply");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-editor-in-chief", {
+        body: { dryRun, limit: 25, minScore: 70, maxIterations: 2 },
+      });
+      if (error) throw error;
+      setEditor(data);
+      toast.success(
+        `Editor: ${data.summary.evaluated} drafts • ${data.summary.approved} approved, ${data.summary.improved} improved, ${data.summary.rejected} rejected`,
+      );
+      await loadCounts();
+    } catch (e) {
+      toast.error(`Editor failed: ${(e as Error).message}`);
     } finally {
       setBusy(null);
     }
@@ -200,6 +220,58 @@ export default function PinterestQualityPage() {
                   <li>Planned reject: {gate.counts.reject} • downrank: {gate.counts.downrank} • keep: {gate.counts.keep}</li>
                   <li>Applied: {gate.applied.rejects} rejected, {gate.applied.downranks} downranked</li>
                   <li>Over-share categories: {Object.keys(gate.overCategories).join(", ") || "none"}</li>
+                </ul>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" /> Editor-in-Chief (V5.3 Pre-Publish Intelligence)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Final editorial gate. Scores each draft on 10 Pinterest psychology axes
+            (Save · Share · Curiosity · Trust · Lifestyle · Educational · Problem-Solving ·
+            Emotion · Future Use · Native), reuses Feed Quality + PPE, then auto-improves
+            weak components (title, hook, description, hashtags) before approving — never
+            regenerates the whole creative.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" disabled={busy !== null} onClick={() => runEditor(true)}>
+              {busy === "editor-dry" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />} Simulate (dry-run)
+            </Button>
+            <Button disabled={busy !== null} onClick={() => runEditor(false)}>
+              {busy === "editor-apply" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />} Run editor on next 25 drafts
+            </Button>
+          </div>
+          {editor && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-sm">
+              <div>
+                <div className="font-medium mb-1">Summary</div>
+                <ul className="space-y-0.5 text-muted-foreground">
+                  <li>Evaluated: <span className="text-foreground font-medium">{editor.summary.evaluated}</span></li>
+                  <li>Approved: <span className="text-foreground font-medium">{editor.summary.approved}</span></li>
+                  <li>Improved (auto): {editor.summary.improved} across {editor.summary.iterations} iterations</li>
+                  <li>Downranked: {editor.summary.downranked}</li>
+                  <li>Rejected: {editor.summary.rejected}</li>
+                  <li>Feed Quality engine used: <Badge variant={editor.feed?.used ? "default" : "secondary"}>{String(!!editor.feed?.used)}</Badge></li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-medium mb-1">Latest decisions</div>
+                <ul className="space-y-1">
+                  {(editor.decisions ?? []).slice(0, 6).map((d: any) => (
+                    <li key={d.draft_id} className="flex justify-between gap-2">
+                      <span className="truncate">
+                        <Badge variant={d.action === "approve" ? "default" : d.action === "reject" ? "destructive" : "secondary"}>{d.action}</Badge>
+                        <span className="ml-2 text-muted-foreground">composite {d.composite} • iters {d.iterations}</span>
+                      </span>
+                      <span className="text-muted-foreground text-xs">{d.expected?.save_rate_pct}% save · {d.expected?.discovery_lift_x}× discovery</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>

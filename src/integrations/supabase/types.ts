@@ -45058,6 +45058,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_editor_decisions: {
+        Row: {
+          action: string
+          after_snapshot: Json | null
+          axes: Json
+          before_snapshot: Json | null
+          composite_score: number
+          created_at: string
+          draft_id: string
+          expected: Json
+          fail_reasons: string[] | null
+          feed_impact: Json
+          id: string
+          improvements: Json
+          iteration: number
+          pass_reasons: string[] | null
+          product_slug: string | null
+          reason: string | null
+          run_id: string
+        }
+        Insert: {
+          action?: string
+          after_snapshot?: Json | null
+          axes?: Json
+          before_snapshot?: Json | null
+          composite_score?: number
+          created_at?: string
+          draft_id: string
+          expected?: Json
+          fail_reasons?: string[] | null
+          feed_impact?: Json
+          id?: string
+          improvements?: Json
+          iteration?: number
+          pass_reasons?: string[] | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id: string
+        }
+        Update: {
+          action?: string
+          after_snapshot?: Json | null
+          axes?: Json
+          before_snapshot?: Json | null
+          composite_score?: number
+          created_at?: string
+          draft_id?: string
+          expected?: Json
+          fail_reasons?: string[] | null
+          feed_impact?: Json
+          id?: string
+          improvements?: Json
+          iteration?: number
+          pass_reasons?: string[] | null
+          product_slug?: string | null
+          reason?: string | null
+          run_id?: string
+        }
+        Relationships: []
+      }
       pinterest_eligibility_log: {
         Row: {
           checked_at: string
