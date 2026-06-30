@@ -168,6 +168,29 @@ Deno.serve(async (req) => {
     if (decision === "pass" && overall > 0.5) decision = "regenerate";
     if (c.attempt >= 3) decision = decision === "pass" ? "pass" : "reject";
 
+    // Genesis V4.1 — Feed Quality preflight. Even if per-axis caps pass, escalate
+    // to regenerate when the feed-level Fatigue Index is high. Best-effort: never
+    // block on failure (the per-axis governor remains the source of truth).
+    let feed_quality: Record<string, unknown> | null = null;
+    try {
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/gv41-feed-quality`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ window: 100, persist: false }),
+      });
+      if (resp.ok) {
+        const fq = await resp.json() as { feed_discovery_score?: number; feed_fatigue_index?: number };
+        feed_quality = fq;
+        if (decision === "pass" && (fq.feed_fatigue_index ?? 0) >= 65) {
+          decision = "regenerate";
+        }
+      }
+    } catch (_) { /* ignore */ }
+
     // Choose a world that does not match the candidate's current concept tokens.
     const candTokens = tokenize(`${c.scene} ${c.interior} ${c.composition}`);
     const suggested = WORLDS.find((w) => !candTokens.has(w.split("_")[0])) ?? WORLDS[0];
@@ -179,6 +202,7 @@ Deno.serve(async (req) => {
         axes, max_axis, overall, attempt: c.attempt, suggested_world: suggested,
         first_sale_mode: !!fs?.active, saturated_axes,
         per_axis_caps: { default: baseCap, saturated: satCap, threshold: satThr },
+        feed_quality,
       },
     } as never).then(() => {}, () => {});
 
@@ -187,6 +211,7 @@ Deno.serve(async (req) => {
         decision, max_axis, overall, axes, suggested_world: suggested,
         first_sale_mode: !!fs?.active, saturated_axes,
         per_axis_caps: { default: baseCap, saturated: satCap, threshold: satThr },
+        feed_quality,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
