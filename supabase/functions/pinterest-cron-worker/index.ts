@@ -464,13 +464,9 @@ Deno.serve(async (req) => {
     }
 
     let q = sb
-      .from("pinterest_pin_queue")
+      .from("pinterest_publishable_queue")
       .select("*")
-      .eq("status", "queued")
-      .not("pin_image_url", "is", null)
-      .or("profit_state.is.null,profit_state.neq.kill")
-      .lte("scheduled_at", new Date().toISOString())
-      .lt("retries", MAX_RETRIES);
+      .eq("is_due_now", true);
     if (!autoApproveQueue) {
       q = q.not("approved_at", "is", null);
     }

@@ -42584,6 +42584,13 @@ export type Database = {
             foreignKeyName: "pin_wave2_audits_pin_id_fkey"
             columns: ["pin_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pin_wave2_audits_pin_id_fkey"
+            columns: ["pin_id"]
+            isOneToOne: false
             referencedRelation: "v_creative_revenue_lineage"
             referencedColumns: ["queue_id"]
           },
@@ -44605,6 +44612,13 @@ export type Database = {
             foreignKeyName: "pinterest_creative_factory_jobs_pin_queue_id_fkey"
             columns: ["pin_queue_id"]
             isOneToOne: true
+            referencedRelation: "pinterest_publishable_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
             referencedRelation: "v_creative_revenue_lineage"
             referencedColumns: ["queue_id"]
           },
@@ -44922,6 +44936,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -46472,6 +46493,13 @@ export type Database = {
             foreignKeyName: "pinterest_live_pin_repair_queue_pin_queue_id_fkey"
             columns: ["pin_queue_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_live_pin_repair_queue_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
             referencedRelation: "v_creative_revenue_lineage"
             referencedColumns: ["queue_id"]
           },
@@ -47370,6 +47398,13 @@ export type Database = {
             foreignKeyName: "pinterest_pin_audit_pin_queue_id_fkey"
             columns: ["pin_queue_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_audit_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
             referencedRelation: "v_creative_revenue_lineage"
             referencedColumns: ["queue_id"]
           },
@@ -47543,6 +47578,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_image_match_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -47931,6 +47973,13 @@ export type Database = {
             columns: ["replacement_for_pin_id"]
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_pin_queue_replacement_for_pin_id_fkey"
+            columns: ["replacement_for_pin_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -48384,6 +48433,13 @@ export type Database = {
             foreignKeyName: "pinterest_post_logs_pin_queue_id_fkey"
             columns: ["pin_queue_id"]
             isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_post_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
             referencedRelation: "v_creative_revenue_lineage"
             referencedColumns: ["queue_id"]
           },
@@ -48812,6 +48868,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_publish_logs_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -49314,6 +49377,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -62402,6 +62472,141 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_publishable_queue: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          board_id: string | null
+          board_name: string | null
+          category_key: string | null
+          content_type: string | null
+          created_at: string | null
+          destination_link: string | null
+          effective_publish_at: string | null
+          error_message: string | null
+          external_url: string | null
+          hashtags: string[] | null
+          hook_group: string | null
+          id: string | null
+          idempotency_key: string | null
+          image_hash: string | null
+          is_due_now: boolean | null
+          last_publish_error: string | null
+          meta: Json | null
+          overlay_text: string | null
+          pcie2_creative_id: string | null
+          pin_description: string | null
+          pin_image_url: string | null
+          pin_title: string | null
+          pin_variant: string | null
+          pinterest_pin_id: string | null
+          posted_at: string | null
+          priority: string | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          profit_state: string | null
+          publish_attempts: number | null
+          publishing_started_at: string | null
+          qa_reasons: string[] | null
+          rejection_reason: string | null
+          retries: number | null
+          scheduled_at: string | null
+          source_type: string | null
+          status: string | null
+          updated_at: string | null
+          us_audience_score: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          board_id?: string | null
+          board_name?: string | null
+          category_key?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          destination_link?: string | null
+          effective_publish_at?: string | null
+          error_message?: string | null
+          external_url?: string | null
+          hashtags?: string[] | null
+          hook_group?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          image_hash?: string | null
+          is_due_now?: never
+          last_publish_error?: string | null
+          meta?: Json | null
+          overlay_text?: string | null
+          pcie2_creative_id?: string | null
+          pin_description?: string | null
+          pin_image_url?: string | null
+          pin_title?: string | null
+          pin_variant?: string | null
+          pinterest_pin_id?: string | null
+          posted_at?: string | null
+          priority?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          profit_state?: string | null
+          publish_attempts?: number | null
+          publishing_started_at?: string | null
+          qa_reasons?: string[] | null
+          rejection_reason?: string | null
+          retries?: number | null
+          scheduled_at?: string | null
+          source_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          us_audience_score?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          board_id?: string | null
+          board_name?: string | null
+          category_key?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          destination_link?: string | null
+          effective_publish_at?: string | null
+          error_message?: string | null
+          external_url?: string | null
+          hashtags?: string[] | null
+          hook_group?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          image_hash?: string | null
+          is_due_now?: never
+          last_publish_error?: string | null
+          meta?: Json | null
+          overlay_text?: string | null
+          pcie2_creative_id?: string | null
+          pin_description?: string | null
+          pin_image_url?: string | null
+          pin_title?: string | null
+          pin_variant?: string | null
+          pinterest_pin_id?: string | null
+          posted_at?: string | null
+          priority?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          profit_state?: string | null
+          publish_attempts?: number | null
+          publishing_started_at?: string | null
+          qa_reasons?: string[] | null
+          rejection_reason?: string | null
+          retries?: number | null
+          scheduled_at?: string | null
+          source_type?: string | null
+          status?: string | null
+          updated_at?: string | null
+          us_audience_score?: number | null
+        }
+        Relationships: []
+      }
       pinterest_retry_outcomes_v: {
         Row: {
           all_rejected: boolean | null
@@ -62428,6 +62633,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: false
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_render_attempts_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
@@ -62546,6 +62758,13 @@ export type Database = {
             columns: ["pin_queue_id"]
             isOneToOne: true
             referencedRelation: "pinterest_pin_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_winners_pin_queue_id_fkey"
+            columns: ["pin_queue_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_publishable_queue"
             referencedColumns: ["id"]
           },
           {
