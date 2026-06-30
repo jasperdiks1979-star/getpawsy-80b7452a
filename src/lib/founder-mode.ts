@@ -35,10 +35,10 @@ const getFounderEmails = (): string[] => {
 };
 
 // ─── Secret key from env ──────────────────────────────────────────
-const getFounderKey = (): string | null => {
-  const key = import.meta.env.VITE_FOUNDER_KEY;
-  return key && typeof key === 'string' && key.length >= 8 ? key : null;
-};
+// SECURITY: VITE_* env vars are inlined into the public client bundle, so a
+// secret URL key MUST NOT live there. URL-based activation is disabled; use
+// /founder-mode toggle (authenticated) or the founder-email allowlist.
+const getFounderKey = (): string | null => null;
 
 // ─── Core detection ───────────────────────────────────────────────
 let _cachedStatus: boolean | null = null;

@@ -5,9 +5,10 @@
  * No other file may contain admin-check logic.
  */
 
-const HARD_FALLBACK_EMAILS: string[] = [
-  'jasperdiks@hotmail.com',
-];
+// SECURITY: No hardcoded admin emails in the client bundle.
+// Admin status is resolved server-side via the `user_roles` table
+// and the `has_role()` security-definer function. See resolveIsAdmin().
+const HARD_FALLBACK_EMAILS: string[] = [];
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
