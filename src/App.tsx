@@ -458,6 +458,7 @@ const CinematicAdsControlCenterPage = lazyWithRetry(() => import("./pages/admin/
 const CinematicV3QaPage = lazyWithRetry(() => import("./pages/admin/CinematicV3QaPage"));
 const CinematicV3DispatcherPage = lazyWithRetry(() => import("./pages/admin/CinematicV3DispatcherPage"));
 const CanonicalHealthPage = lazyWithRetry(() => import("./pages/admin/CanonicalHealthPage"));
+const AnalyticsTruthPage = lazyWithRetry(() => import("./pages/admin/AnalyticsTruthPage"));
 const CinematicV3RepairPage = lazyWithRetry(() => import("./pages/admin/CinematicV3RepairPage"));
 const CinematicV4ReviewPage = lazyWithRetry(() => import("./pages/admin/CinematicV4Review"));
 const CinematicAdQaSummaryPage = lazyWithRetry(() => import("./pages/admin/CinematicAdQaSummaryPage"));
