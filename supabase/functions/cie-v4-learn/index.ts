@@ -64,8 +64,10 @@ Deno.serve(async (req) => {
 
   // Evolution snapshot.
   await sb.from("pei_weight_snapshots").insert({
-    snapshot_at: new Date().toISOString(),
-    payload: { winners: topWinners, losers: topLosers, total: genome?.length ?? 0 } as any,
+    taken_at: new Date().toISOString(),
+    country: "US",
+    snapshot: { winners: topWinners, losers: topLosers, total: genome?.length ?? 0 } as any,
+    notes: "cie-v4-learn hourly snapshot",
   } as never);
 
   // Predict drafts.
