@@ -105,6 +105,15 @@ Deno.serve(async (req) => {
       .map((r: Record<string, unknown>) => r.pin_image_phash as string | null)
       .filter(Boolean) as string[];
 
+    // Consecutive-world cap: scan last 2 queued/posted pins; if both share the
+    // same category_key, that key is rate-limited in this batch.
+    const lastTwoCats = recentRows.slice(0, 2).map((r) => (r as Record<string, unknown>).category_key as string | null);
+    const blockedCategory = lastTwoCats[0] && lastTwoCats[0] === lastTwoCats[1] ? lastTwoCats[0] : null;
+
+    // Purchase intent window: US-business hours (UTC 13:00–04:00 covers 9am–11pm ET).
+    const hourUtc = new Date().getUTCHours();
+    const inIntentWindow = hourUtc >= 13 || hourUtc <= 4;
+
     // 3) Landing validations (last successful per product_id).
     const productIds = Array.from(new Set(drafts.map((d) => d.product_id).filter(Boolean))) as string[];
     const landingOk = new Set<string>();
@@ -155,7 +164,8 @@ Deno.serve(async (req) => {
         visualDup === 1 ||
         landingMatch === 0 ||
         ctrI < 60 ||
-        saveI < 55;
+        saveI < 55 ||
+        (blockedCategory != null && d.category_key === blockedCategory);
 
       return {
         id: d.id,
@@ -179,9 +189,9 @@ Deno.serve(async (req) => {
       if (s.product_id) seenProducts.add(s.product_id);
     }
 
-    // 6) Promote to queued (unless dry-run).
+    // 6) Promote to queued (unless dry-run). Skip promotion outside intent window.
     let promoted = 0;
-    if (!dryRun && picked.length) {
+    if (!dryRun && inIntentWindow && picked.length) {
       const ids = picked.map((p) => p.id);
       const { error: uErr } = await supabase
         .from("pinterest_pin_queue")
@@ -198,6 +208,8 @@ Deno.serve(async (req) => {
         eligible: eligible.length,
         promoted,
         dry_run: dryRun,
+        intent_window: inIntentWindow,
+        blocked_category: blockedCategory,
         top: picked.slice(0, 10),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
