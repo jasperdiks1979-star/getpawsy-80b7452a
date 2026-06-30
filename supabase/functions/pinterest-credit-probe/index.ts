@@ -8,6 +8,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { recordCreditEvent, isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
+import { shouldProbeNow, recordProbeOutcome } from "../_shared/ai-cost-optimizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +32,17 @@ Deno.serve(async (req) => {
   }
 
   const before = await isCreditPaused(supabase);
+
+  // Genesis V6.3 — exponential backoff. Skip the probe entirely if the next
+  // allowed window has not been reached. This stops the gateway from being
+  // hammered with 402s every minute when credits are exhausted.
+  const gate = await shouldProbeNow(supabase);
+  if (!gate.allowed) {
+    return new Response(
+      JSON.stringify({ ok: false, skipped: true, reason: "backoff", next_allowed_at: gate.nextAllowedAt, paused: before.paused }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
   // Minimal request: 1-token text completion via cheap model.
   let status = 0;
@@ -62,6 +74,7 @@ Deno.serve(async (req) => {
   }
 
   if (status === 402) {
+    await recordProbeOutcome(supabase, 402);
     await recordCreditEvent(supabase, {
       event_type: "payment_required",
       status_code: 402,
@@ -81,6 +94,7 @@ Deno.serve(async (req) => {
   }
 
   if (status >= 200 && status < 300) {
+    await recordProbeOutcome(supabase, status);
     await recordCreditEvent(supabase, {
       event_type: "probe_success",
       status_code: status,
@@ -104,6 +118,7 @@ Deno.serve(async (req) => {
     function_name: "credit-probe",
     message: detail?.error?.message ?? `http_${status}`,
   });
+  await recordProbeOutcome(supabase, status || 500);
   return new Response(
     JSON.stringify({ ok: false, status, detail }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
