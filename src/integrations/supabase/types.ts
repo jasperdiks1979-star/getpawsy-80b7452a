@@ -8607,6 +8607,13 @@ export type Database = {
             foreignKeyName: "bestsellers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "bestsellers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -12415,6 +12422,13 @@ export type Database = {
             foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -13223,6 +13237,13 @@ export type Database = {
             foreignKeyName: "cj_sync_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "cj_sync_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -13383,6 +13404,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cj_us_winners_imported_product_id_fkey"
+            columns: ["imported_product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "cj_us_winners_imported_product_id_fkey"
             columns: ["imported_product_id"]
@@ -17002,6 +17030,13 @@ export type Database = {
             foreignKeyName: "dedupe_conflicts_canonical_product_id_fkey"
             columns: ["canonical_product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -17039,6 +17074,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
+            columns: ["duplicate_product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
@@ -27903,6 +27945,13 @@ export type Database = {
             foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -28100,6 +28149,13 @@ export type Database = {
             foreignKeyName: "gv3_pi_scores_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -28194,6 +28250,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
             columns: ["product_id"]
@@ -28334,6 +28397,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
             columns: ["product_id"]
@@ -30107,6 +30177,13 @@ export type Database = {
             foreignKeyName: "loss_making_notifications_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "loss_making_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -30710,6 +30787,13 @@ export type Database = {
             foreignKeyName: "market_product_priority_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "market_product_priority_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -31260,6 +31344,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "media_audit_product_id_fkey"
             columns: ["product_id"]
@@ -41857,6 +41948,13 @@ export type Database = {
             foreignKeyName: "pin_product_classification_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -42013,6 +42111,13 @@ export type Database = {
           use_case?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "pin_product_understanding_product_id_fkey"
             columns: ["product_id"]
@@ -44217,6 +44322,13 @@ export type Database = {
             foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -45515,6 +45627,13 @@ export type Database = {
           used_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
             columns: ["product_id"]
@@ -47597,6 +47716,13 @@ export type Database = {
             foreignKeyName: "pinterest_pins_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -47969,6 +48095,13 @@ export type Database = {
           tier?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pinterest_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "pinterest_product_tiers_product_id_fkey"
             columns: ["product_id"]
@@ -49209,6 +49342,13 @@ export type Database = {
             foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -49733,6 +49873,13 @@ export type Database = {
           word_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "pinterest_title_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "pinterest_title_variants_product_id_fkey"
             columns: ["product_id"]
@@ -52180,6 +52327,13 @@ export type Database = {
             foreignKeyName: "product_aliases_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -52290,6 +52444,13 @@ export type Database = {
             foreignKeyName: "product_categories_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -52353,6 +52514,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_creative_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_creative_profiles_product_id_fkey"
             columns: ["product_id"]
@@ -52800,6 +52968,13 @@ export type Database = {
             foreignKeyName: "product_matches_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_matches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -52909,6 +53084,13 @@ export type Database = {
             foreignKeyName: "product_media_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_media_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -53011,6 +53193,13 @@ export type Database = {
           severity?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_media_audit_product_id_fkey"
             columns: ["product_id"]
@@ -53238,6 +53427,13 @@ export type Database = {
             foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
             columns: ["candidate_product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -53275,6 +53471,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
           },
           {
             foreignKeyName: "product_replacement_candidates_product_id_fkey"
@@ -53368,6 +53571,13 @@ export type Database = {
             foreignKeyName: "product_reviews_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -53434,6 +53644,13 @@ export type Database = {
           reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_slug_history_product_id_fkey"
             columns: ["product_id"]
@@ -53567,6 +53784,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_supplier_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "product_supplier_mappings_product_id_fkey"
             columns: ["product_id"]
@@ -54240,6 +54464,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "products_canonical_product_id_fkey"
             columns: ["canonical_product_id"]
@@ -56620,6 +56851,13 @@ export type Database = {
             foreignKeyName: "saved_google_ads_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "saved_google_ads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -57984,6 +58222,13 @@ export type Database = {
             foreignKeyName: "shopping_optimizations_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "shopping_optimizations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -58074,6 +58319,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shopping_winners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "shopping_winners_product_id_fkey"
             columns: ["product_id"]
@@ -59074,6 +59326,13 @@ export type Database = {
             foreignKeyName: "stock_notifications_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -59647,6 +59906,13 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tiktok_post_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "tiktok_post_queue_product_id_fkey"
             columns: ["product_id"]
@@ -60557,6 +60823,13 @@ export type Database = {
             foreignKeyName: "visitor_activity_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -61114,6 +61387,13 @@ export type Database = {
             foreignKeyName: "visitor_activity_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -61219,6 +61499,38 @@ export type Database = {
           priority_score?: number | null
           product_id?: string | null
           product_title?: string | null
+        }
+        Relationships: []
+      }
+      gv_first_sale_priority_v: {
+        Row: {
+          best_audience_match: number | null
+          best_buying_prob: number | null
+          best_persona_id: string | null
+          combo_impressions: number | null
+          combo_max_confidence: number | null
+          combo_purchases: number | null
+          combo_saves: number | null
+          expected_revenue_eur: number | null
+          gate_passed: boolean | null
+          handle: string | null
+          hunter_score: number | null
+          is_fast_shipping: boolean | null
+          is_us_warehouse: boolean | null
+          lane_probability: number | null
+          margin_percent: number | null
+          mi_composite: number | null
+          mi_min_confidence: number | null
+          pi_confidence: number | null
+          pi_score: number | null
+          pin_confidence: number | null
+          pin_growth_score: number | null
+          price: number | null
+          priority_score: number | null
+          product_id: string | null
+          shipping_score: number | null
+          title: string | null
+          us_stock: number | null
         }
         Relationships: []
       }
@@ -61805,6 +62117,13 @@ export type Database = {
             foreignKeyName: "products_canonical_product_id_fkey"
             columns: ["canonical_product_id"]
             isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
             referencedRelation: "gv3_mi_first_sale_plan_v"
             referencedColumns: ["product_id"]
           },
@@ -61940,6 +62259,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
           {
             foreignKeyName: "products_canonical_product_id_fkey"
             columns: ["canonical_product_id"]
