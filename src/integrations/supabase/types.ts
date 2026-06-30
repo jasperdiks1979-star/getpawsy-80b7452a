@@ -7377,6 +7377,75 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_truth_snapshots: {
+        Row: {
+          bot_pct: number
+          bot_sessions: number
+          broken_funnels: number
+          captured_at: string
+          created_at: string
+          direct_pct: number | null
+          duplicate_events: number
+          human_pct: number
+          human_sessions: number
+          id: string
+          issues: Json
+          metric_explanations: Json
+          missing_funnel_events: number
+          pinterest_attribution_pct: number | null
+          repairs: Json
+          top_sources: Json
+          total_events: number
+          total_sessions: number
+          trust_score: number
+          window_hours: number
+        }
+        Insert: {
+          bot_pct: number
+          bot_sessions: number
+          broken_funnels?: number
+          captured_at?: string
+          created_at?: string
+          direct_pct?: number | null
+          duplicate_events?: number
+          human_pct: number
+          human_sessions: number
+          id?: string
+          issues?: Json
+          metric_explanations?: Json
+          missing_funnel_events?: number
+          pinterest_attribution_pct?: number | null
+          repairs?: Json
+          top_sources?: Json
+          total_events: number
+          total_sessions: number
+          trust_score: number
+          window_hours?: number
+        }
+        Update: {
+          bot_pct?: number
+          bot_sessions?: number
+          broken_funnels?: number
+          captured_at?: string
+          created_at?: string
+          direct_pct?: number | null
+          duplicate_events?: number
+          human_pct?: number
+          human_sessions?: number
+          id?: string
+          issues?: Json
+          metric_explanations?: Json
+          missing_funnel_events?: number
+          pinterest_attribution_pct?: number | null
+          repairs?: Json
+          top_sources?: Json
+          total_events?: number
+          total_sessions?: number
+          trust_score?: number
+          window_hours?: number
+        }
+        Relationships: []
+      }
       aos_consensus_decisions: {
         Row: {
           created_at: string
@@ -63041,6 +63110,190 @@ export type Database = {
         }
         Relationships: []
       }
+      v_trusted_canonical_events: {
+        Row: {
+          browser: string | null
+          canonical_name:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          city: string | null
+          country: string | null
+          currency: string | null
+          dedup_key: string | null
+          device: string | null
+          ga_client_id: string | null
+          id: string | null
+          ingested_at: string | null
+          landing_page: string | null
+          meta: Json | null
+          occurred_at: string | null
+          order_id: string | null
+          os: string | null
+          page_path: string | null
+          product_id: string | null
+          referrer: string | null
+          session_id: string | null
+          source_event_id: string | null
+          source_system:
+            | Database["public"]["Enums"]["canonical_source_system"]
+            | null
+          stripe_session_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          value_cents: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          canonical_name?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          city?: string | null
+          country?: string | null
+          currency?: string | null
+          dedup_key?: string | null
+          device?: string | null
+          ga_client_id?: string | null
+          id?: string | null
+          ingested_at?: string | null
+          landing_page?: string | null
+          meta?: Json | null
+          occurred_at?: string | null
+          order_id?: string | null
+          os?: string | null
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          source_event_id?: string | null
+          source_system?:
+            | Database["public"]["Enums"]["canonical_source_system"]
+            | null
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          canonical_name?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          city?: string | null
+          country?: string | null
+          currency?: string | null
+          dedup_key?: string | null
+          device?: string | null
+          ga_client_id?: string | null
+          id?: string | null
+          ingested_at?: string | null
+          landing_page?: string | null
+          meta?: Json | null
+          occurred_at?: string | null
+          order_id?: string | null
+          os?: string | null
+          page_path?: string | null
+          product_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          source_event_id?: string | null
+          source_system?:
+            | Database["public"]["Enums"]["canonical_source_system"]
+            | null
+          stripe_session_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          value_cents?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      v_trusted_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          ga_client_id: string | null
+          landing_page: string | null
+          last_seen_at: string | null
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          order_id: string | null
+          os: string | null
+          referrer: string | null
+          session_id: string | null
+          stripe_session_id: string | null
+          updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          ga_client_id?: string | null
+          landing_page?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          ga_client_id?: string | null
+          landing_page?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _canonical_upsert_alert: {
@@ -63749,6 +64002,7 @@ export type Database = {
         Args: { p_pin_id: string; p_product_id: string; p_product_url?: string }
         Returns: undefined
       }
+      is_trusted_session: { Args: { _session_id: string }; Returns: boolean }
       list_admin_assignees: {
         Args: never
         Returns: {
