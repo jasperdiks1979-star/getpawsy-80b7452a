@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     if (top50.length > 0) {
       const { error: e1, count: c1 } = await supabase
         .from('pinterest_pin_queue')
-        .update({ priority: 95, updated_at: new Date().toISOString() }, { count: 'exact' })
+        .update({ priority: 'high', updated_at: new Date().toISOString() }, { count: 'exact' })
         .in('status', ['queued', 'draft'])
         .in('product_id', top50);
       if (e1) throw e1;
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     if (top150.length > 0) {
       const { error: e2, count: c2 } = await supabase
         .from('pinterest_pin_queue')
-        .update({ priority: 80, updated_at: new Date().toISOString() }, { count: 'exact' })
+        .update({ priority: 'medium', updated_at: new Date().toISOString() }, { count: 'exact' })
         .in('status', ['queued', 'draft'])
         .in('product_id', top150.filter((id) => !top50.includes(id)));
       if (e2) throw e2;
