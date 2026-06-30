@@ -61755,6 +61755,20 @@ export type Database = {
         }
         Relationships: []
       }
+      gv41_attention_genome_v: {
+        Row: {
+          attention: number | null
+          click_p: number | null
+          dim: string | null
+          key: string | null
+          n: number | null
+          purchase_p: number | null
+          save_p: number | null
+          scroll_stop: number | null
+          winners: number | null
+        }
+        Relationships: []
+      }
       mv_canonical_funnel_hourly: {
         Row: {
           bucket: string | null
