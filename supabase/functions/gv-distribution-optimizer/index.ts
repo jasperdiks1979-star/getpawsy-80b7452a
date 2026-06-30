@@ -4,6 +4,7 @@
 // the top N to status='queued' so the existing publisher picks them up.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
+import { getFirstSaleStatus } from "../_shared/first-sale-mode.ts";
 
 type Draft = {
   id: string;
@@ -70,6 +71,20 @@ Deno.serve(async (req) => {
     const limit = Math.min(Math.max(Number(body?.limit ?? 6), 1), 50);
     const dryRun = !!body?.dry_run;
 
+    // First Sale Mode — exploratory floors only while FSM is active. Visibility,
+    // landing-match, brand-safety and Pinterest-safety floors stay untouched.
+    const fsm = await getFirstSaleStatus(supabase);
+    // Baselines (production). Exploratory floors scale by the FSM composite ratio
+    // (active: 55/92 ≈ 0.60; inactive: 1.0 → unchanged production behaviour).
+    const BASE_CTR_FLOOR = 60;
+    const BASE_SAVE_FLOOR = 55;
+    const PROD_COMPOSITE = 92;
+    const compositeRatio = fsm.ppe.composite_floor / PROD_COMPOSITE; // 1.0 prod, ~0.60 FSM
+    const ctrFloor = Math.max(0, Math.round(BASE_CTR_FLOOR * compositeRatio));
+    const saveFloor = Math.max(0, Math.round(BASE_SAVE_FLOOR * compositeRatio));
+    // Publish gate translated to distScore (heuristic max ≈ 100).
+    const distFloor = fsm.ppe.publish_gate_threshold * 0.55; // ~48 FSM, ~52 prod
+
     // 1) Load up to 200 draft pins.
     const { data: draftsRaw, error: dErr } = await supabase
       .from("pinterest_pin_queue")
@@ -111,10 +126,9 @@ Deno.serve(async (req) => {
     const blockedCategory = lastTwoCats[0] && lastTwoCats[0] === lastTwoCats[1] ? lastTwoCats[0] : null;
 
     // Purchase intent window (expanded): UTC 11:00–06:00 covers 7am–1am ET
-    // (6am–midnight CT / 4am–10pm PT). Wider window lets queued drafts promote
-    // sooner while still avoiding the dead 1am–7am ET slot.
+    // (6am–midnight CT / 4am–10pm PT). FSM widens to 24/7 exploratory publishing.
     const hourUtc = new Date().getUTCHours();
-    const inIntentWindow = hourUtc >= 11 || hourUtc <= 6;
+    const inIntentWindow = fsm.active ? true : (hourUtc >= 11 || hourUtc <= 6);
 
     // 3) Landing validations (last successful per product_id).
     const productIds = Array.from(new Set(drafts.map((d) => d.product_id).filter(Boolean))) as string[];
@@ -165,8 +179,9 @@ Deno.serve(async (req) => {
       const hardReject =
         visualDup === 1 ||
         landingMatch === 0 ||
-        ctrI < 60 ||
-        saveI < 55 ||
+        ctrI < ctrFloor ||
+        saveI < saveFloor ||
+        distScore < distFloor ||
         (blockedCategory != null && d.category_key === blockedCategory);
 
       return {
@@ -212,6 +227,13 @@ Deno.serve(async (req) => {
         dry_run: dryRun,
         intent_window: inIntentWindow,
         blocked_category: blockedCategory,
+        first_sale_mode: {
+          active: fsm.active,
+          reasons: fsm.reasons,
+          counters: fsm.counters,
+          triggers: fsm.triggers,
+          floors: { ctr: ctrFloor, save: saveFloor, dist: Math.round(distFloor) },
+        },
         top: picked.slice(0, 10),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
