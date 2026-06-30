@@ -41,7 +41,7 @@ export default function FirstSaleAcceleratorPage() {
       supabase.from("gv6_runs").select("*").order("started_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("gv6_first_sale_scores").select("*").order("fsps", { ascending: false }).limit(50),
     ]);
-    setRun((lastRun as Run | null) ?? null);
+    setRun((lastRun as unknown as Run | null) ?? null);
     setRows((scores ?? []) as ScoreRow[]);
     setLoading(false);
   };
