@@ -11,6 +11,7 @@ import {
   compositePpeScore,
   ppeFloors,
 } from "../_shared/ppe-engine.ts";
+import { getFirstSaleStatus, applyFirstSaleOverridesToConfig } from "../_shared/first-sale-mode.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -76,8 +77,14 @@ async function loadCatalogs(supabase: any): Promise<Catalogs> {
   const flags = Object.fromEntries((flg.data ?? []).map((r: any) => [r.flag, r.enabled]));
   const weights = new Map<string, number>();
   for (const w of wt.data ?? []) weights.set(`${w.attribute}|${w.value_slug}|${w.signal_slug}`, Number(w.weight));
+  // First Sale Mode: temporary adaptive calibration. Lowers ONLY exploratory
+  // thresholds (composite, ctr floor, novelty, publish-gate). Visibility,
+  // landing-match and safety floors remain untouched.
+  let firstSale = null as Awaited<ReturnType<typeof getFirstSaleStatus>> | null;
+  try { firstSale = await getFirstSaleStatus(supabase); } catch { /* fail open */ }
+  const cfgFinal = firstSale ? applyFirstSaleOverridesToConfig(config, firstSale) : config;
   return {
-    config, flags,
+    config: cfgFinal, flags,
     style_families: sf.data ?? [], typography: ty.data ?? [], hook_categories: hc.data ?? [],
     hooks: hk.data ?? [], cameras: cam.data ?? [], emotions: em.data ?? [], ctas: cta.data ?? [],
     scenes: sc.data ?? [], axes: ax.data ?? [], stages: st.data ?? [], signals: sig.data ?? [], weights,
