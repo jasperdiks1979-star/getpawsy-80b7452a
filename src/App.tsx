@@ -2748,6 +2748,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="analytics-truth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AnalyticsTruthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-v4-review"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
