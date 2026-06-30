@@ -366,6 +366,7 @@ export default function GrowthCommandCenterPage() {
       <CreativeIntelligenceV4Card />
       <HumanAttentionCommandCard />
       <FeedQualityCard />
+      <Gv42RecommendationCenterCard />
 
       {/* Genesis V3.1 — First Sale Mission brief */}
       <Card className="border-primary">
