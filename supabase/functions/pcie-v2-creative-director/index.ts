@@ -12,6 +12,7 @@ import {
   ppeFloors,
 } from "../_shared/ppe-engine.ts";
 import { getFirstSaleStatus, applyFirstSaleOverridesToConfig } from "../_shared/first-sale-mode.ts";
+import { aiCreditPreflight } from "../_shared/ai-credit-preflight.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -547,6 +548,30 @@ Deno.serve(async (req) => {
     const cat = await loadCatalogs(supabase);
     if (cat.flags.pcie_v2_enabled === false) {
       return new Response(JSON.stringify({ ok: false, error: "pcie_v2_disabled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Credit preflight — skip entire run when AI gateway lane is unhealthy.
+    const dryRunFlag = !!(body.dry_run ?? cat.config.dry_run_default ?? false);
+    if (!dryRunFlag) {
+      const pre = await aiCreditPreflight(supabase, "pcie-v2-creative-director", { requireImage: true });
+      if (!pre.ok) {
+        const { data: skipRun } = await supabase.from("pcie_v2_runs").insert({
+          trigger: body.trigger ?? (req.url.endsWith("/replay") ? "replay" : "manual"),
+          requested: 0,
+          status: "skipped",
+          config_snapshot: { skipped: true, skip_reason: pre.reason, credit_state: pre.state, detail: pre.detail ?? null },
+          finished_at: new Date().toISOString(),
+        }).select("id").maybeSingle();
+        return new Response(JSON.stringify({
+          ok: false,
+          skipped: true,
+          run_id: skipRun?.id ?? null,
+          skip_reason: pre.reason,
+          credit_state: pre.state,
+          detail: pre.detail ?? null,
+          message: "Preflight stopped run: insufficient AI credits or paused lane.",
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // ---- Replay: regenerate a creative with same/updated config
