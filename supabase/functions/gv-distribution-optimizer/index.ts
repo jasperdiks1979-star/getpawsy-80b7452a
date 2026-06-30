@@ -110,9 +110,11 @@ Deno.serve(async (req) => {
     const lastTwoCats = recentRows.slice(0, 2).map((r) => (r as Record<string, unknown>).category_key as string | null);
     const blockedCategory = lastTwoCats[0] && lastTwoCats[0] === lastTwoCats[1] ? lastTwoCats[0] : null;
 
-    // Purchase intent window: US-business hours (UTC 13:00–04:00 covers 9am–11pm ET).
+    // Purchase intent window (expanded): UTC 11:00–06:00 covers 7am–1am ET
+    // (6am–midnight CT / 4am–10pm PT). Wider window lets queued drafts promote
+    // sooner while still avoiding the dead 1am–7am ET slot.
     const hourUtc = new Date().getUTCHours();
-    const inIntentWindow = hourUtc >= 13 || hourUtc <= 4;
+    const inIntentWindow = hourUtc >= 11 || hourUtc <= 6;
 
     // 3) Landing validations (last successful per product_id).
     const productIds = Array.from(new Set(drafts.map((d) => d.product_id).filter(Boolean))) as string[];
