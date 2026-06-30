@@ -206,13 +206,6 @@ Deno.serve(async (req) => {
       }
     }
     if (downIds.length) {
-      for (let i = 0; i < downIds.length; i += 200) {
-        const chunk = downIds.slice(i, i + 200);
-        const { error: dErr, count } = await supabase
-          .rpc as unknown as never; // not used
-        void dErr; void chunk; void count;
-      }
-      // Use direct update with arithmetic via RPC-less approach: fetch + update.
       const { data: cur } = await supabase
         .from("pinterest_pin_queue")
         .select("id, priority")
