@@ -116,6 +116,9 @@ describe("PinterestQualityPage Simulate / Apply", () => {
       "pinterest-native-prepublish-gate",
       expect.objectContaining({ body: expect.objectContaining({ dryRun: false }) }),
     );
+    await waitFor(() => {
+      expect(screen.getByText(/Applied: 8 rejected, 12 downranked/i)).toBeInTheDocument();
+    });
   });
 
   it("Editor Simulate calls editor-in-chief with dryRun and renders summary", async () => {
@@ -152,5 +155,9 @@ describe("PinterestQualityPage Simulate / Apply", () => {
       "pinterest-editor-in-chief",
       expect.objectContaining({ body: expect.objectContaining({ dryRun: false }) }),
     );
+    await waitFor(() => {
+      expect(screen.getByText(/Approved:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Rejected:/i)).toBeInTheDocument();
+    });
   });
 });

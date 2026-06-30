@@ -70,6 +70,38 @@ Deno.test("expectedLifts: stable bounds", () => {
   assert(e.save_rate_pct >= 0.4);
 });
 
+Deno.test("expectedLifts: clamps below-floor inputs to conservative minimums", () => {
+  const e = expectedLifts(-999, {
+    save: -100,
+    trust: -100,
+    problem_solving: -100,
+    lifestyle: -100,
+    educational: -100,
+    native: -100,
+  });
+  assertEquals(e.save_rate_pct, 0.4);
+  assertEquals(e.discovery_lift_x, 1);
+  assertEquals(e.follow_lift_pct, 0.1);
+  assertEquals(e.purchase_intent, 0.2);
+  assertEquals(e.authority_lift, 0);
+});
+
+Deno.test("expectedLifts: clamps above-ceiling inputs to maximum modeled lifts", () => {
+  const e = expectedLifts(999, {
+    save: 999,
+    trust: 999,
+    problem_solving: 999,
+    lifestyle: 999,
+    educational: 999,
+    native: 999,
+  });
+  assertEquals(e.save_rate_pct, 2);
+  assertEquals(e.discovery_lift_x, 3.2);
+  assertEquals(e.follow_lift_pct, 1);
+  assertEquals(e.purchase_intent, 1.4);
+  assertEquals(e.authority_lift, 1.2);
+});
+
 Deno.test("decideEditorAction: approves when at or above minScore", () => {
   assertEquals(decideEditorAction({ composite: 70, minScore: 70, maxIter: 2 }).action, "approve");
   assertEquals(decideEditorAction({ composite: 85, minScore: 70, maxIter: 2 }).action, "approve");
@@ -77,7 +109,9 @@ Deno.test("decideEditorAction: approves when at or above minScore", () => {
 
 Deno.test("decideEditorAction: rejects when below floor (max(45, minScore-20))", () => {
   // minScore=70 → floor=50. composite=40 < 50 ⇒ reject.
-  assertEquals(decideEditorAction({ composite: 40, minScore: 70, maxIter: 2 }).action, "reject");
+  const highFloor = decideEditorAction({ composite: 40, minScore: 70, maxIter: 2 });
+  assertEquals(highFloor.action, "reject");
+  assert(highFloor.reason.includes("after 2 iters"));
   // minScore=55 → floor=45. composite=44 < 45 ⇒ reject.
   assertEquals(decideEditorAction({ composite: 44, minScore: 55, maxIter: 2 }).action, "reject");
 });
