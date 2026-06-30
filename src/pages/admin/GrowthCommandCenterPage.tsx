@@ -28,6 +28,7 @@ import { AutonomousFirstSaleStrip } from "@/components/admin/AutonomousFirstSale
 import { FirstSaleWarRoom } from "@/components/admin/FirstSaleWarRoom";
 import { CreativeIntelligenceV4Card } from "@/components/admin/CreativeIntelligenceV4Card";
 import { ExecutiveOSCard } from "@/components/admin/ExecutiveOSCard";
+import { HumanAttentionCommandCard } from "@/components/admin/HumanAttentionCommandCard";
 
 const fmtEur = (v: number) => `€${v.toFixed(2)}`;
 const fmtPct = (v: number) => `${v.toFixed(2)}%`;
