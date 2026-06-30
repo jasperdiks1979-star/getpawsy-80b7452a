@@ -3914,6 +3914,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-pin-queue"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestPinQueuePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-cost"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
