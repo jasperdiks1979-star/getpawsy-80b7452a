@@ -544,3 +544,132 @@ const ManualImportPanel = ({ onImported }: { onImported: () => void }) => {
     </Card>
   );
 };
+
+type ExportResult = {
+  ok: boolean;
+  period: { label: string; start: string; end: string };
+  totals: { documents: number; invoices: number; receipts: number; suppliers: number; payments: number; gross_minor: number; vat_minor: number };
+  zip: { storage_path: string; sha256: string; bytes: number; manifest_sha256: string; signed_url: string | null; expires_in_days: number };
+};
+
+const BelastingdienstExportPanel = () => {
+  const now = new Date();
+  const [periodType, setPeriodType] = useState<"quarter" | "year">("quarter");
+  const [year, setYear] = useState<number>(now.getUTCFullYear());
+  const [quarter, setQuarter] = useState<number>(Math.floor(now.getUTCMonth() / 3) + 1);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<ExportResult | null>(null);
+
+  const run = async () => {
+    setRunning(true);
+    setResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("finance-belastingdienst-export", {
+        body: { period_type: periodType, year, quarter: periodType === "quarter" ? quarter : null },
+      });
+      if (error) throw error;
+      setResult(data as ExportResult);
+      toast.success(`Dossier ${(data as ExportResult).period.label} generated (${(data as ExportResult).totals.documents} docs)`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Download className="h-4 w-4" /> Belastingdienst Export
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          One-click quarterly or annual ZIP dossier — invoices, receipts, VAT summary,
+          suppliers, payments, evidence index, SHA-256 manifest and Dutch-language ReadMe.
+          Stored in the private Evidence Vault; the download link below is valid for 30 days.
+        </p>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <div>
+            <Label>Period</Label>
+            <select
+              className="mt-1 w-full h-9 rounded-md border bg-background px-2 text-sm"
+              value={periodType}
+              onChange={(e) => setPeriodType(e.target.value as "quarter" | "year")}
+            >
+              <option value="quarter">Quarter</option>
+              <option value="year">Full year</option>
+            </select>
+          </div>
+          <div>
+            <Label>Year</Label>
+            <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} min={2020} max={now.getUTCFullYear() + 1} />
+          </div>
+          {periodType === "quarter" && (
+            <div>
+              <Label>Quarter</Label>
+              <select
+                className="mt-1 w-full h-9 rounded-md border bg-background px-2 text-sm"
+                value={quarter}
+                onChange={(e) => setQuarter(Number(e.target.value))}
+              >
+                <option value={1}>Q1 (Jan–Mar)</option>
+                <option value={2}>Q2 (Apr–Jun)</option>
+                <option value={3}>Q3 (Jul–Sep)</option>
+                <option value={4}>Q4 (Oct–Dec)</option>
+              </select>
+            </div>
+          )}
+          <div className="flex items-end">
+            <Button disabled={running} onClick={run} className="gap-2 w-full">
+              {running ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</> : <><Download className="h-4 w-4" /> Generate ZIP</>}
+            </Button>
+          </div>
+        </div>
+
+        <div className="rounded-md border p-4 bg-muted/30 text-xs text-muted-foreground">
+          <p className="font-medium text-foreground mb-1">ZIP contents</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            <li><code>invoices/&lt;supplier&gt;/*</code> — originele PDF's/afbeeldingen</li>
+            <li><code>receipts/&lt;supplier&gt;/*</code> — betalingsbewijzen</li>
+            <li><code>other/*</code> — creditnota's, statements</li>
+            <li><code>reports/vat-summary.csv</code> + <code>.json</code></li>
+            <li><code>reports/suppliers.csv</code> · <code>payments.csv</code> · <code>evidence-index.csv</code></li>
+            <li><code>manifest.json</code> — SHA-256 per bestand</li>
+            <li><code>README.md</code> — Nederlandse toelichting (Wet IB §3.8, art. 52 AWR)</li>
+          </ul>
+        </div>
+
+        {result && (
+          <div className="rounded-md border border-green-500/40 bg-green-500/5 p-4 space-y-2 text-sm">
+            <p className="font-medium">
+              ✅ Dossier <code>{result.period.label}</code> — {result.totals.documents} documents
+              ({result.totals.invoices} invoices · {result.totals.receipts} receipts · {result.totals.suppliers} suppliers)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Period {result.period.start} → {result.period.end} · ZIP {(result.zip.bytes / 1024 / 1024).toFixed(2)} MB
+            </p>
+            <p className="text-xs font-mono break-all">
+              SHA-256: {result.zip.sha256}
+            </p>
+            <p className="text-xs font-mono break-all">
+              Manifest SHA-256: {result.zip.manifest_sha256}
+            </p>
+            {result.zip.signed_url && (
+              <a
+                href={result.zip.signed_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary underline"
+              >
+                <Download className="h-3 w-3" /> Download ZIP (link expires in {result.zip.expires_in_days} days)
+              </a>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
