@@ -823,7 +823,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
         sb
           .from("products")
           .select(
-            "id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price, is_active, primary_species, tags",
+            "id, name, slug, description, category, product_type, image_url, key_feature, benefit_angle, description_bullets, price, is_active, primary_species",
           )
           .eq("id", pin.product_id)
           .maybeSingle(),
