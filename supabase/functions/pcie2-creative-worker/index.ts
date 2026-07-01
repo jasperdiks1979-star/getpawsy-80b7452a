@@ -158,6 +158,40 @@ async function processJob(job: any, report: any) {
     uses_count: 1, last_used_at: new Date().toISOString(),
   }, { onConflict: "fingerprint" }).then(() => {}, () => {});
 
+  // Genesis V6.4 — Golden DNA Prompt Compiler gate for PCIE2 briefs.
+  // Deterministic compilation must pass BEFORE the brief is persisted, so
+  // downstream assemblers only ever render species-locked, occupancy-
+  // targeted prompts. No thresholds lowered.
+  const compiled = compileGoldenPrompt(
+    { id: prod.id, name: prod.name, category: prod.category } as any,
+    { minPredictedPre: 90, maxMutations: 3 },
+  );
+  const traceId = `pcie2_${job.id}`;
+  const ledgerId = await writeCompilerLedger(SUPA, {
+    trace_id: traceId,
+    product_id: prod.id,
+    product_slug: null,
+    rule_hash: compiled.rule_hash,
+    compiled_prompt: compiled.prompt,
+    rule_set: compiled.rule_set,
+    predicted_pre: compiled.predicted_pre,
+    dominant_blocker: compiled.dominant_blocker,
+    qa_blockers: compiled.qa_blockers,
+    mutation_step: compiled.mutation_step,
+    gemini_called: compiled.ok,
+    source_function: "pcie2-creative-worker",
+  });
+  if (!compiled.ok) {
+    await SUPA.from("pcie2_creative_jobs").update({
+      status: "skipped",
+      last_error: `golden_dna_gate:${compiled.reason ?? "predicted_pre_below_90"}`,
+      completed_at: new Date().toISOString(),
+    }).eq("id", job.id);
+    report.similarity_prevented++;
+    return;
+  }
+  const fusedPrompt = `${String(brief.prompt ?? "")}\n\n[GOLDEN_DNA_COMPILER trace=${traceId} ledger=${ledgerId ?? "n/a"} pred_pre=${compiled.predicted_pre}]\n${compiled.prompt}`;
+
   const row = {
     product_id: prod.id,
     category: prod.category,
@@ -165,7 +199,7 @@ async function processJob(job: any, report: any) {
     family,
     visual_fingerprint: visualFingerprint,
     concept_node_id: job.concept_node_id ?? null,
-    prompt: String(brief.prompt ?? "").slice(0, 4000),
+    prompt: fusedPrompt.slice(0, 4000),
     negative_prompt: String(brief.negative_prompt ?? "").slice(0, 1000),
     layout: brief.layout,
     camera_angle: brief.camera_angle,
