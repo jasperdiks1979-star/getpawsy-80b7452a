@@ -139,7 +139,8 @@ Deno.serve(async (req) => {
     };
 
     // Aggregate VAT across imported invoices (this run)
-    const vatByYearQuarter = new Map<string, { year: number; quarter: number; vat: number; count: number; currency: string; details: any[] }>();
+    type VatEntry = { year: number; quarter: number; vat: number; count: number; currency: string; details: Array<Record<string, unknown>> };
+    const vatByYearQuarter = new Map<string, VatEntry>();
 
     // 1) Invoices
     let starting_after: string | undefined;
