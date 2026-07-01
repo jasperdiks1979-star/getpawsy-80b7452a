@@ -320,6 +320,10 @@ const EvidenceVaultPage = () => {
           <TabsContent value="belastingdienst">
             <BelastingdienstExportPanel />
           </TabsContent>
+
+          <TabsContent value="backfill">
+            <BackfillTasksPanel />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
