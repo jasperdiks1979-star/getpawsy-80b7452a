@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Eye, ShoppingCart, CreditCard, Pin, PinOff, Minus, X,
   Globe, Smartphone, Monitor, Tablet, Link2, Clock, Package, DollarSign, GripVertical, Move, Maximize2,
+  Loader2, Radio,
 } from "lucide-react";
 
 interface ActivityRow {
@@ -95,6 +96,13 @@ function formatDuration(ms: number) {
   const rem = s % 60;
   return `${m}m ${rem}s`;
 }
+function formatLastUpdated(ts: number) {
+  const diff = Date.now() - ts;
+  if (diff < 5_000) return "just now";
+  if (diff < 60_000) return `${Math.floor(diff / 1_000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  return new Date(ts).toLocaleTimeString();
+}
 
 export function useLiveVisitorInspector() {
   const [state, setState] = useState<UIState>(() => loadState());
@@ -111,6 +119,8 @@ interface Props {
 
 export const LiveVisitorInspector = ({ state, setState }: Props) => {
   const [rows, setRows] = useState<ActivityRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ dx: number; dy: number; active: boolean }>({ dx: 0, dy: 0, active: false });
@@ -139,14 +149,19 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
     let cancelled = false;
 
     const fetchInitial = async () => {
+      setLoading(true);
       const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("visitor_activity")
         .select("id, session_id, activity_type, country, city, device_type, browser, referrer_category, page_path, product_name, order_value, created_at")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (!cancelled && data) setRows(data as ActivityRow[]);
+      if (!cancelled) {
+        if (!error && data) setRows(data as ActivityRow[]);
+        setLoading(false);
+        setLastUpdated(Date.now());
+      }
     };
     fetchInitial();
 
@@ -157,6 +172,7 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
         (payload) => {
           const row = payload.new as ActivityRow;
           setRows(prev => [row, ...prev].slice(0, 200));
+          setLastUpdated(Date.now());
         })
       .subscribe();
 
@@ -359,8 +375,24 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
 
           {/* Timeline */}
           <div className="flex-1 overflow-y-auto">
-            {rows.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400">Waiting for live events…</div>
+            {loading ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-xs text-slate-400" aria-live="polite" aria-busy="true">
+                <Loader2 className="h-5 w-5 animate-spin text-emerald-400" aria-hidden="true" />
+                <p>Connecting to live visitor stream…</p>
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center" aria-live="polite">
+                <Radio className="h-5 w-5 text-slate-500" aria-hidden="true" />
+                <p className="text-xs text-slate-300">No live visitor events right now.</p>
+                <p className="max-w-[220px] text-[11px] text-slate-500">
+                  The realtime stream is quiet. Events will appear automatically when visitors browse, add to cart, or purchase.
+                </p>
+                {lastUpdated && (
+                  <p className="mt-1 text-[10px] text-slate-500 tabular-nums">
+                    Checked {formatLastUpdated(lastUpdated)}
+                  </p>
+                )}
+              </div>
             ) : (
               <ul className="divide-y divide-slate-800">
                 {rows.slice(0, 60).map(r => {
@@ -402,9 +434,15 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
             )}
           </div>
 
-          <div className="border-t border-slate-800 px-3 py-1.5 text-[10px] text-slate-500">
-            Realtime · last 15 min · {rows.length} events · updates via websocket (no polling)
-            <span className="ml-1 opacity-50">t={new Date(now).toLocaleTimeString()}</span>
+          <div className="flex items-center justify-between border-t border-slate-800 px-3 py-1.5 text-[10px] text-slate-500">
+            <span>
+              Realtime · last 15 min · {rows.length} events · websocket
+            </span>
+            {lastUpdated && (
+              <span className="tabular-nums" title={new Date(lastUpdated).toLocaleString()}>
+                Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
           </div>
           {/* Keyboard-accessible resize handle. The CSS `resize: both` corner
               is not reachable by keyboard, so we expose a focusable button
