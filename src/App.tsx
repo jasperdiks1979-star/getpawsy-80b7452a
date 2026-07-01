@@ -355,6 +355,7 @@ const PreWaveLivePage = lazyWithRetry(() => import("./pages/admin/PreWaveLivePag
 const FirstSaleAcceleratorPage = lazyWithRetry(() => import("./pages/admin/FirstSaleAcceleratorPage"));
 const ConversionIntelligencePage = lazyWithRetry(() => import("./pages/admin/ConversionIntelligencePage"));
 const ConversionWarRoomPage = lazyWithRetry(() => import("./pages/admin/ConversionWarRoomPage"));
+const PdpAtcDrilldownPage = lazyWithRetry(() => import("./pages/admin/PdpAtcDrilldownPage"));
 const GenesisPrcPage = lazyWithRetry(() => import("./pages/admin/GenesisPrcPage"));
 const PinterestTrafficForensicsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrafficForensicsPage"));
 const PinterestDistributionPage = lazyWithRetry(() => import("./pages/admin/PinterestDistributionPage"));
@@ -1727,6 +1728,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ConversionWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pdp-atc-drilldown"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PdpAtcDrilldownPage />
                                 </Suspense>
                               }
                             />
