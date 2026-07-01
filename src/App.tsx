@@ -1697,6 +1697,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pre-wave-live"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PreWaveLivePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="first-sale"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
