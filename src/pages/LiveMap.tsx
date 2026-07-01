@@ -3,17 +3,19 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 import { VisitorWorldMap } from "@/components/admin/VisitorWorldMap";
 import { CleanAnalyticsPanel } from "@/components/admin/CleanAnalyticsPanel";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Share2, Check } from "lucide-react";
+import { ArrowLeft, Share2, Check, Globe2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { LiveVisitorInspector, useLiveVisitorInspector } from "@/components/admin/LiveVisitorInspector";
 
 const LiveMap = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const inspector = useLiveVisitorInspector();
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -140,8 +142,21 @@ const LiveMap = () => {
           <div className="mb-6">
             <CleanAnalyticsPanel />
           </div>
+          <div className="mb-3 hidden md:flex items-center justify-end">
+            <Button
+              variant={inspector.state.open ? "default" : "outline"}
+              size="sm"
+              onClick={inspector.open}
+              className="gap-2"
+              title="Open the live visitor inspector"
+            >
+              <Globe2 className="w-4 h-4" />
+              Live Visitors
+            </Button>
+          </div>
           <VisitorWorldMap />
         </main>
+        <LiveVisitorInspector state={inspector.state} setState={inspector.setState} />
       </div>
     </HelmetProvider>
   );
