@@ -105,6 +105,44 @@ const NATIVE_SHOWCASE_TERMS = [
   "shop", "deal",
 ];
 
+// ─── Genesis V9.7 — Canonical GetPawsy destination phrase ───────────────
+// Every Pinterest description must carry ONE approved destination phrase
+// so the downstream copy quality gate can confirm the pin points home.
+// These phrases are Pinterest-native (helpful/lifestyle), never storefront.
+export const GETPAWSY_DESTINATION_HOST = "getpawsy.pet";
+
+const DESTINATION_PHRASES: Record<CanonicalContentType, string> = {
+  lifestyle: "More cozy pet home ideas at getpawsy.pet.",
+  educational: "More helpful pet care guides at getpawsy.pet.",
+  problem_solution: "More gentle pet care tips at getpawsy.pet.",
+  seasonal: "More seasonal pet ideas at getpawsy.pet.",
+  entertainment: "More playful pet moments at getpawsy.pet.",
+};
+
+/**
+ * Guarantees the description contains a valid GetPawsy destination phrase
+ * (`getpawsy.pet`) without using any banned storefront CTA language.
+ * Deterministic; no AI. Safe to call multiple times (idempotent).
+ */
+export function ensureGetpawsyDestination(
+  description: string,
+  classification: CanonicalClassification,
+): string {
+  const clean = stripShowcaseLanguage(description ?? "").trim();
+  if (/getpawsy\.pet/i.test(clean)) {
+    return clean.replace(/\s{2,}/g, " ").trim().slice(0, 480);
+  }
+  const phrase = DESTINATION_PHRASES[classification.content_type] ??
+    DESTINATION_PHRASES.lifestyle;
+  const joined = clean ? `${clean} ${phrase}` : phrase;
+  return joined.replace(/\s{2,}/g, " ").trim().slice(0, 480);
+}
+
+/** True if description contains a valid GetPawsy destination phrase. */
+export function hasGetpawsyDestination(description: string): boolean {
+  return /getpawsy\.pet/i.test(String(description ?? ""));
+}
+
 function stripShowcaseLanguage(text: string): string {
   let out = text ?? "";
   out = out.replace(/\bShop now[^.]*\.?/gi, "").trim();
@@ -171,6 +209,7 @@ export function naturalizeCopyForNative<T extends NaturalizableCopy>(
     desc = `${desc} ${helpfulAdd[ct]}`.trim();
   }
   desc = desc.replace(/\s{2,}/g, " ").trim().slice(0, 480);
+  desc = ensureGetpawsyDestination(desc, classification);
   return { ...copy, description: desc };
 }
 
@@ -222,6 +261,14 @@ export function applyCanonicalEnrichment<
       niche ?? undefined,
     );
     (out as Record<string, unknown>).pin_description = naturalized.description;
+  }
+  // Fail-closed: if the row carries a description at all, guarantee it
+  // includes the canonical GetPawsy destination phrase before it lands in
+  // any downstream copy quality gate.
+  const desc = (out as Record<string, unknown>).pin_description;
+  if (typeof desc === "string" && desc.length > 0) {
+    (out as Record<string, unknown>).pin_description =
+      ensureGetpawsyDestination(desc, c);
   }
   return out;
 }
