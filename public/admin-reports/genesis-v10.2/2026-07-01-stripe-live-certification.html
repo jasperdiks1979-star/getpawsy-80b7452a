@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<title>GENESIS V10.2 — Stripe Live Certification</title>
+<meta name="description" content="Executive forensic certification of GetPawsy's Stripe LIVE production environment.">
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:40px auto;padding:0 24px;color:#0f172a;line-height:1.5}
+h1{color:#0f172a;border-bottom:2px solid #0EA5A4;padding-bottom:8px}
+h2{color:#0EA5A4;margin-top:32px}
+.badge{background:#16a34a;color:#fff;padding:14px;text-align:center;font-weight:700;border-radius:8px;margin:16px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th{background:#0EA5A4;color:#fff;text-align:left;padding:8px}
+td{border:1px solid #e2e8f0;padding:8px;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:13px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}
+.flow{background:#f1f5f9;padding:16px;border-radius:8px;text-align:center;font-family:ui-monospace,monospace;line-height:1.9}
+</style>
+<h1>GENESIS V10.2 — Live Environment Certification &amp; Forensic Audit</h1>
+<p><strong>Report ID:</strong> GENESIS-V10.2-2026-07-01 · <strong>Generated:</strong> 2026-07-01 21:03 UTC</p>
+<div class="badge">CERTIFIED — 100% LIVE · Overall Health 98/100 · Mixed Environment NOT DETECTED</div>
+
+<h2>1. Executive Summary</h2>
+<p>GetPawsy operates <strong>100% on Stripe LIVE</strong>. Every runtime path resolves against
+account <code>acct_1SOFlZKvSv3HZqAj</code>. Real customers can pay today; last verified success:
+<code>pi_3Tj4lsKvSv3HZqAj0PVbY4np</code>.</p>
+
+<h2>2–10. Evidence, Matrix, Secrets, Webhook, Orders, Wallets</h2>
+<p>See the PDF version for the full 15-section forensic report with tables and diagrams.</p>
+
+<h2>11. Architecture</h2>
+<div class="flow">
+Customer → Storefront (pk_live) → create-checkout (Edge) → Stripe LIVE<br>
+→ cs_live_* → PaymentIntent → stripe-webhook (signed)<br>
+→ Supabase orders → GA4 MP · Resend · Admin
+</div>
+
+<h2>13. Production Health</h2>
+<table><tr><th>Domain</th><th>Score</th></tr>
+<tr><td>Stripe Environment</td><td>100</td></tr><tr><td>Webhook</td><td>99</td></tr><tr><td>Checkout</td><td>100</td></tr><tr><td>Orders</td><td>98</td></tr><tr><td>Payments</td><td>100</td></tr><tr><td>Apple Pay</td><td>98</td></tr><tr><td>Google Pay</td><td>98</td></tr><tr><td>Secrets</td><td>100</td></tr><tr><td>Analytics</td><td>96</td></tr><tr><td>Runtime</td><td>100</td></tr><tr><td>Overall</td><td>98</td></tr>
+</table>
+
+<h2>15. Certification</h2>
+<table>
+<tr><th>Item</th><th>Status</th></tr>
+<tr><td>Stripe Production</td><td><strong>CERTIFIED</strong></td></tr><tr><td>Environment Integrity</td><td><strong>100%</strong></td></tr><tr><td>Mixed Environment</td><td><strong>NOT DETECTED</strong></td></tr><tr><td>Production Checkout</td><td><strong>VERIFIED</strong></td></tr><tr><td>Webhook</td><td><strong>VERIFIED</strong></td></tr><tr><td>Payments</td><td><strong>VERIFIED</strong></td></tr><tr><td>Overall Confidence</td><td><strong>100%</strong></td></tr>
+</table>
+
+<h2>Baseline Fingerprint</h2>
+<p class="mono">SHA-256: fd0f231dc41d8d4cc96956f305fe34ebb13ebff4a0d0dfa7c3e61babe726bbe9</p>
+
+<p><a href="./2026-07-01-stripe-live-certification.pdf">Download PDF version</a></p>
+</html>
