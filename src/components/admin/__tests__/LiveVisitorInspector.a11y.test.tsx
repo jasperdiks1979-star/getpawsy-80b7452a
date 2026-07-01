@@ -2,6 +2,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useLiveVisitorInspector, LiveVisitorInspector } from "../LiveVisitorInspector";
 
+// jsdom does not implement ResizeObserver — the panel uses it to track
+// pointer-driven resize. A no-op stub is enough for these tests.
+if (typeof (globalThis as any).ResizeObserver === "undefined") {
+  (globalThis as any).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 // Mock the Supabase client so the component can mount without network I/O.
 // The realtime channel returns a chainable stub whose `subscribe` is a no-op.
 vi.mock("@/integrations/supabase/client", () => {
