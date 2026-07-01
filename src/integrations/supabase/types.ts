@@ -64805,6 +64805,10 @@ export type Database = {
           total_posts: number
         }[]
       }
+      pinterest_derive_content_classification: {
+        Args: { niche: string }
+        Returns: Json
+      }
       pinterest_diversity_pick_next: {
         Args: never
         Returns: {
