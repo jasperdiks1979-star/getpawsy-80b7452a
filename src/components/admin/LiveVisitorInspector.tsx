@@ -141,14 +141,19 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
     let cancelled = false;
 
     const fetchInitial = async () => {
+      setLoading(true);
       const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("visitor_activity")
         .select("id, session_id, activity_type, country, city, device_type, browser, referrer_category, page_path, product_name, order_value, created_at")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (!cancelled && data) setRows(data as ActivityRow[]);
+      if (!cancelled) {
+        if (!error && data) setRows(data as ActivityRow[]);
+        setLoading(false);
+        setLastUpdated(Date.now());
+      }
     };
     fetchInitial();
 
@@ -159,6 +164,7 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
         (payload) => {
           const row = payload.new as ActivityRow;
           setRows(prev => [row, ...prev].slice(0, 200));
+          setLastUpdated(Date.now());
         })
       .subscribe();
 
