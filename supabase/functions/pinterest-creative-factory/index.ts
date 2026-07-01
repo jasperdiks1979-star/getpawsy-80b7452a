@@ -926,13 +926,15 @@ async function processJob(sb: Sb, job: any, settings: any) {
     if (product.is_active === false) throw new Error("product_inactive");
 
     const niche = detectNiche(product) as NicheKey;
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       benefit: product.benefit_angle ?? null,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, Number(job.attempt_count ?? 1));
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
     const overlayBlock = `${copy.overlay} ${copy.cta}`.replace(/[|•\r\n]/g, " ")
       .replace(/\s+/g, " ").trim().slice(0, 32);
     const validation = validatePinCopy({
@@ -1154,6 +1156,12 @@ async function processJob(sb: Sb, job: any, settings: any) {
         legacy_feed: false,
         wave2_pending_regeneration: false,
         factory_job_id: job.id,
+        pin_type: classification.pin_type,
+        content_type: classification.content_type,
+        creative_style: classification.creative_style,
+        creative_goal: classification.creative_goal,
+        content_strategy: classification.content_strategy,
+        genesis_v91_aligned: true,
         intelligence: {
           scores: qc.scores,
           niche_key: niche,
@@ -1164,7 +1172,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
           },
         },
       };
-      const { error } = await sb.from("pinterest_pin_queue").update({
+      const updateRow = {
         pin_title: copy.title,
         pin_description: copy.description,
         pin_image_url: imageUrl,
@@ -1173,12 +1181,15 @@ async function processJob(sb: Sb, job: any, settings: any) {
         image_hash: mediaHash,
         pin_image_phash: phash,
         meta,
+        content_type: classification.content_type,
         status: pin.status === "queued" ? "queued" : "queued",
         approved_at: pin.approved_at ?? new Date().toISOString(),
         error_message: null,
         rejection_reason: null,
         updated_at: new Date().toISOString(),
-      }).eq("id", pin.id);
+      };
+      assertFactoryMetadataComplete(updateRow);
+      const { error } = await sb.from("pinterest_pin_queue").update(updateRow).eq("id", pin.id);
       if (error) throw error;
       return true;
     });
