@@ -610,6 +610,58 @@ function buildPrompt(
   });
 }
 
+function wantsNoOverlay(directives: unknown): boolean {
+  return typeof directives === "string" && /\bno\s+(text\s+)?overlay\b|no\s+typography|no\s+cta|no\s+watermark/i.test(directives);
+}
+
+function isDurableBirdToyV10Retry(product: any, directives: unknown): boolean {
+  const text = `${product?.name ?? ""} ${product?.slug ?? ""} ${String(directives ?? "")}`.toLowerCase();
+  return text.includes("durable bird toy") &&
+    text.includes("target species") &&
+    text.includes("cat") &&
+    (text.includes("no dogs") || text.includes("no dog"));
+}
+
+function applyAdaptiveMasterDims(
+  dims: MasterDims,
+  product: any,
+  directives: unknown,
+): MasterDims {
+  if (!isDurableBirdToyV10Retry(product, directives)) return dims;
+  return {
+    ...dims,
+    composition: "floor-level close lifestyle composition; plush bird toy central and visually dominant, occupying 25–35% of the frame; one cat secondary at frame edge",
+    camera: "iPhone 15 Pro main camera, true-to-life color, sharp product focus",
+    lighting: "warm soft daylight through a Scandinavian living-room window",
+    room: "warm Scandinavian living room with light oak floor, white walls, and a plain neutral rug",
+    story: "quiet premium cat play moment: one cat gently reaching toward the plush bird-shaped toy on a plain rug",
+    emotion: "curious, calm, playful, focused on the toy",
+    owner: "no owner visible and no lived-in props",
+    palette: "warm cream, oat, light oak neutrals; product colors stay exact bright green, blue, yellow, red, and green feather tail",
+    season: "evergreen (no seasonal markers)",
+    hero: "the plush bird-shaped cat toy is the hero; the cat is secondary context only",
+    breed_hint: "domestic shorthair cat",
+    imperfection: "subtle natural rug fibers and realistic soft shadows only",
+  };
+}
+
+function buildAdaptiveOverrideBlock(product: any, directives: unknown): string {
+  if (!isDurableBirdToyV10Retry(product, directives)) return "";
+  return [
+    "[GENESIS_V10_CONFLICT_RESOLUTION — HIGHEST PRIORITY]",
+    "Ignore and override any earlier conflicting Creative Director, copy, overlay, owner, dog, roadtrip, post-walk, muddy-paws, mug, blanket, chair, wordmark, CTA, text-overlay, or product-supporting-role instructions.",
+    "Render exactly one premium Pinterest-native pet lifestyle photo: a plush bird-shaped CAT toy for one CAT.",
+    "TARGET SPECIES: CAT ONLY. No dogs. No real birds. No humans. No children. No other pets.",
+    "TOY SHAPE: plush bird-shaped cat toy. The toy is the visual hero and must be sharp, central, fully visible, and occupy 25–35% of the frame.",
+    "PDP COLOR LOCK: bright green body, blue head, yellow beak, red wing accent, green feather tail. Match the PDP silhouette and colors with >95% product similarity.",
+    "CAT ROLE: one cat only, secondary and smaller than the toy, naturally reaching toward / sniffing / gently batting the toy; cat must not dominate the frame.",
+    "SCENE: warm Scandinavian living room, light oak floor, white wall, soft daylight, plain neutral rug only.",
+    "STRICT NEGATIVES: no chair, no mug, no blanket, no boots, no leash, no extra props, no extra toys, no clutter, no text overlay, no typography, no CTA, no watermark, no GetPawsy wordmark.",
+    "QUALITY: premium natural editorial photo, realistic shadows, warm emotional appeal, clean composition, Pinterest-saveable, strong shopping match and landing match.",
+    String(directives ?? "").trim(),
+  ].filter(Boolean).join("\n");
+}
+
 async function generateImage(
   prompt: string,
   productImageUrl: string | null,
@@ -881,15 +933,26 @@ async function processJob(sb: Sb, job: any, settings: any) {
       throw new Error(`copy_validation_failed:${validation.errors.join(",")}`);
     }
 
-    const masterDims = await prePlanningHelper(
+    const adaptiveDirectives = await prePlanningHelper(
+      "readAdaptiveRetryDirectives",
+      metrics,
+      () => (job as any)?.prompt?.adaptive_retry_directives,
+    );
+
+    let masterDims = await prePlanningHelper(
       "pickDiverseMasterDims",
       metrics,
       () => pickDiverseMasterDims(sb, product, job),
     );
+    masterDims = await prePlanningHelper(
+      "applyAdaptiveMasterDims",
+      metrics,
+      () => applyAdaptiveMasterDims(masterDims, product, adaptiveDirectives),
+    );
     let prompt = await prePlanningHelper(
       "buildPrompt",
       metrics,
-      () => buildPrompt(product, niche, copy.overlay, masterDims),
+      () => buildPrompt(product, niche, wantsNoOverlay(adaptiveDirectives) ? "" : copy.overlay, masterDims),
     );
 
     // Genesis V6.4 — Golden DNA Prompt Compiler gate.
@@ -964,13 +1027,13 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // fixes for a single job. Read from job.prompt.adaptive_retry_directives
     // (string). This does NOT lower any PRE gate — it only supplies extra
     // negative/positive directives appended after the compiler payload.
-    const adaptiveDirectives = await prePlanningHelper(
-      "readAdaptiveRetryDirectives",
-      metrics,
-      () => (job as any)?.prompt?.adaptive_retry_directives,
-    );
     if (typeof adaptiveDirectives === "string" && adaptiveDirectives.trim().length > 0) {
-      prompt = `${prompt}\n\n[ADAPTIVE_RETRY_DIRECTIVES]\n${adaptiveDirectives.trim()}`;
+      const overrideBlock = await prePlanningHelper(
+        "buildAdaptiveOverrideBlock",
+        metrics,
+        () => buildAdaptiveOverrideBlock(product, adaptiveDirectives),
+      );
+      prompt = `${prompt}\n\n${overrideBlock || `[ADAPTIVE_RETRY_DIRECTIVES]\n${adaptiveDirectives.trim()}`}`;
       (metrics as any).adaptive_retry_directives_applied = true;
     }
     await timed("planning", metrics, async () => {
@@ -1423,7 +1486,7 @@ Deno.serve(async (req) => {
       }
       const { data: existing, error: rErr } = await sb
         .from("pinterest_creative_factory_jobs")
-        .select("id, prompt, attempt_count, max_attempts")
+        .select("*")
         .eq("id", jobId)
         .maybeSingle();
       if (rErr || !existing) {
@@ -1437,18 +1500,39 @@ Deno.serve(async (req) => {
         ...(existing.prompt ?? {}),
         adaptive_retry_directives: directives,
       };
+      const nextAttempt = Number(existing.attempt_count ?? 0) + 1;
+      const owner = `adaptive-v10-${traceId()}`;
       await sb.from("pinterest_creative_factory_jobs").update({
         prompt: nextPrompt,
-        status: "retry",
+        status: "running",
         stage: "planning",
+        attempt_count: nextAttempt,
         media_url: null,
         media_hash: null,
         error_message: null,
-        lease_owner: null,
-        leased_until: null,
-        max_attempts: Math.max(Number(existing.max_attempts ?? 3), Number(existing.attempt_count ?? 0) + 2),
+        lease_owner: owner,
+        leased_until: new Date(Date.now() + 4 * 60_000).toISOString(),
+        max_attempts: Math.max(Number(existing.max_attempts ?? 3), nextAttempt + 1),
       }).eq("id", jobId);
-      const result = await work(sb, 1);
+      const { data: retryJob, error: retryErr } = await sb
+        .from("pinterest_creative_factory_jobs")
+        .select("*")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (retryErr || !retryJob) throw throwableToError(retryErr ?? { message: "retry_job_missing" });
+      const { data: settings } = await sb.from(
+        "pinterest_creative_factory_settings",
+      ).select("*").eq("id", 1).maybeSingle();
+      const processed = await processJob(sb, retryJob, settings ?? {});
+      const result = {
+        ok: true,
+        owner,
+        direct_job_id: jobId,
+        leased: 1,
+        completed: processed.ok ? 1 : 0,
+        failed: processed.ok ? 0 : 1,
+        results: [processed],
+      };
       const { data: after } = await sb
         .from("pinterest_creative_factory_jobs")
         .select("id, status, stage, error_message, metrics, media_url")
