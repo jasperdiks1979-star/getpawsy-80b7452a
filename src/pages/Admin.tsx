@@ -1295,6 +1295,16 @@ const Admin = () => {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <MiniKPIWidget />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/live-map')}
+              className="gap-2"
+              title="Open the Live Visitor World Map"
+            >
+              <Globe className="w-4 h-4" />
+              Live Visitor Map
+            </Button>
             <Badge variant="secondary" className="text-lg px-4 py-2">
               <Package className="w-4 h-4 mr-2" />
               {existingProducts?.length || 0} products
