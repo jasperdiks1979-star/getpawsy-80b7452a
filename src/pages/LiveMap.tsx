@@ -149,6 +149,8 @@ const LiveMap = () => {
               onClick={inspector.open}
               className="gap-2"
               title="Open the live visitor inspector"
+              aria-expanded={inspector.state.open}
+              aria-controls="live-visitor-inspector-title"
             >
               <Globe2 className="w-4 h-4" />
               Live Visitors

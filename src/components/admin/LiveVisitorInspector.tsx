@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Eye, ShoppingCart, CreditCard, Pin, PinOff, Minus, X,
-  Globe, Smartphone, Monitor, Tablet, Link2, Clock, Package, DollarSign, GripVertical,
+  Globe, Smartphone, Monitor, Tablet, Link2, Clock, Package, DollarSign, GripVertical, Move, Maximize2,
 } from "lucide-react";
 
 interface ActivityRow {
@@ -114,6 +114,17 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
   const [now, setNow] = useState(Date.now());
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ dx: number; dy: number; active: boolean }>({ dx: 0, dy: 0, active: false });
+  const titleId = "live-visitor-inspector-title";
+  // Remember the element that opened the panel so we can restore focus on close.
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (state.open) {
+      openerRef.current = (document.activeElement as HTMLElement) ?? null;
+    } else if (openerRef.current) {
+      // Restore focus to the opener when the panel closes (WCAG 2.4.3).
+      try { openerRef.current.focus(); } catch { /* noop */ }
+    }
+  }, [state.open]);
 
   // Tick every 10s to keep session-duration labels fresh (no DB polling).
   useEffect(() => {
@@ -168,6 +179,52 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
   };
   const onPointerUp = () => { dragRef.current.active = false; };
 
+  // Keyboard move: arrow keys nudge the panel when the drag handle has focus.
+  const nudge = useCallback((dx: number, dy: number) => {
+    setState(s => {
+      if (s.pinned) return s;
+      const x = Math.max(0, Math.min(window.innerWidth - 120, (s.x < 0 ? window.innerWidth - s.w - 24 : s.x) + dx));
+      const y = Math.max(0, Math.min(window.innerHeight - 60, s.y + dy));
+      return { ...s, x, y };
+    });
+  }, [setState]);
+  const onMoveHandleKeyDown = (e: React.KeyboardEvent) => {
+    if (state.pinned) return;
+    const step = e.shiftKey ? 40 : 10;
+    switch (e.key) {
+      case "ArrowLeft":  e.preventDefault(); nudge(-step, 0); break;
+      case "ArrowRight": e.preventDefault(); nudge(step, 0); break;
+      case "ArrowUp":    e.preventDefault(); nudge(0, -step); break;
+      case "ArrowDown":  e.preventDefault(); nudge(0, step); break;
+    }
+  };
+  // Keyboard resize handle: arrow keys change width/height while focused.
+  const resize = useCallback((dw: number, dh: number) => {
+    setState(s => {
+      if (s.pinned || s.minimized) return s;
+      const w = Math.max(320, Math.min(window.innerWidth - 40, s.w + dw));
+      const h = Math.max(240, Math.min(window.innerHeight - 40, s.h + dh));
+      return { ...s, w, h };
+    });
+  }, [setState]);
+  const onResizeKeyDown = (e: React.KeyboardEvent) => {
+    if (state.pinned || state.minimized) return;
+    const step = e.shiftKey ? 40 : 10;
+    switch (e.key) {
+      case "ArrowLeft":  e.preventDefault(); resize(-step, 0); break;
+      case "ArrowRight": e.preventDefault(); resize(step, 0); break;
+      case "ArrowUp":    e.preventDefault(); resize(0, -step); break;
+      case "ArrowDown":  e.preventDefault(); resize(0, step); break;
+    }
+  };
+  // Escape closes the panel — matches native dialog affordance.
+  const onPanelKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      setState(s => ({ ...s, open: false }));
+    }
+  };
+
   // Track manual resize via ResizeObserver
   useEffect(() => {
     if (!panelRef.current) return;
@@ -217,6 +274,7 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
       ref={panelRef}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onKeyDown={onPanelKeyDown}
       className="fixed z-[70] flex flex-col rounded-lg border border-slate-700 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur"
       style={{
         left: xPx,
@@ -225,11 +283,13 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
         height: state.minimized ? "auto" : state.h,
         minWidth: 320,
         minHeight: state.minimized ? undefined : 240,
+        // Pointer resize stays available via the visible corner grip; the
+        // dedicated resize <button> below provides the keyboard equivalent.
         resize: state.minimized || state.pinned ? "none" : "both",
         overflow: "hidden",
       }}
       role="dialog"
-      aria-label="Live Visitor Inspector"
+      aria-labelledby={titleId}
     >
       {/* Header / drag handle */}
       <div
@@ -237,34 +297,51 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
         className={`flex items-center justify-between gap-2 border-b border-slate-700 bg-slate-800/80 px-3 py-2 ${state.pinned ? "cursor-default" : "cursor-move"}`}
       >
         <div className="flex items-center gap-2 text-xs font-semibold">
-          <GripVertical className="h-3.5 w-3.5 opacity-60" />
-          <Users className="h-3.5 w-3.5 text-emerald-400" />
-          <span>Live Visitors</span>
+          {/* Focusable drag handle — arrow keys move the panel for keyboard users. */}
+          <button
+            type="button"
+            onKeyDown={onMoveHandleKeyDown}
+            disabled={state.pinned}
+            aria-label={state.pinned ? "Panel pinned — move disabled" : "Move panel (arrow keys, shift for larger steps)"}
+            className="rounded p-0.5 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-50"
+          >
+            <GripVertical className="h-3.5 w-3.5 opacity-60" aria-hidden="true" />
+          </button>
+          <Users className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+          <span id={titleId}>Live Visitors</span>
           <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-300 tabular-nums">
             {stats.total}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => setState(s => ({ ...s, pinned: !s.pinned }))}
-            className="rounded p-1 hover:bg-slate-700"
+            className="rounded p-1 hover:bg-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             title={state.pinned ? "Unpin" : "Pin position"}
+            aria-label={state.pinned ? "Unpin panel" : "Pin panel position"}
+            aria-pressed={state.pinned}
           >
-            {state.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+            {state.pinned ? <PinOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Pin className="h-3.5 w-3.5" aria-hidden="true" />}
           </button>
           <button
+            type="button"
             onClick={() => setState(s => ({ ...s, minimized: !s.minimized }))}
-            className="rounded p-1 hover:bg-slate-700"
+            className="rounded p-1 hover:bg-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             title={state.minimized ? "Expand" : "Minimize"}
+            aria-label={state.minimized ? "Expand panel" : "Minimize panel"}
+            aria-expanded={!state.minimized}
           >
-            <Minus className="h-3.5 w-3.5" />
+            <Minus className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={() => setState(s => ({ ...s, open: false }))}
-            className="rounded p-1 hover:bg-slate-700"
-            title="Close"
+            className="rounded p-1 hover:bg-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            title="Close (Esc)"
+            aria-label="Close visitor inspector"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -329,6 +406,20 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
             Realtime · last 15 min · {rows.length} events · updates via websocket (no polling)
             <span className="ml-1 opacity-50">t={new Date(now).toLocaleTimeString()}</span>
           </div>
+          {/* Keyboard-accessible resize handle. The CSS `resize: both` corner
+              is not reachable by keyboard, so we expose a focusable button
+              that responds to arrow keys. */}
+          {!state.pinned && (
+            <button
+              type="button"
+              onKeyDown={onResizeKeyDown}
+              aria-label="Resize panel (arrow keys, shift for larger steps)"
+              title="Resize (arrow keys)"
+              className="absolute bottom-1 right-1 rounded p-0.5 text-slate-500 hover:text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              <Maximize2 className="h-3 w-3 rotate-90" aria-hidden="true" />
+            </button>
+          )}
         </>
       )}
     </div>
