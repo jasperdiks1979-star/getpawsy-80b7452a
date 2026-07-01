@@ -1904,6 +1904,82 @@ Deno.serve(async (req) => {
               }
             }
 
+            // ── PRE-RENDER fidelity gate (2026-07 cost hardening) ────────
+            // Score the brief against the product photo BEFORE dispatching
+            // the image model. If the predicted fidelity is below threshold
+            // we skip image generation entirely and regenerate the brief.
+            if (productImageUrl && !emergency) {
+              const pre = await predictBriefFidelity(brief, productImageUrl);
+              if (pre.score < PRODUCT_FIDELITY_THRESHOLD) {
+                stages.push({
+                  stage: "brief_fidelity_check",
+                  status: "rejected",
+                  brief_index: i,
+                  attempt,
+                  reason: "predicted_fidelity_too_low",
+                  details: {
+                    score: pre.score,
+                    threshold: PRODUCT_FIDELITY_THRESHOLD,
+                    notes: pre.notes,
+                  },
+                });
+                lastReasons = [
+                  ...lastReasons,
+                  `pre_render_fidelity_${pre.score}<${PRODUCT_FIDELITY_THRESHOLD}:${
+                    pre.notes.slice(0, 80)
+                  }`,
+                ];
+                await logRenderAttempt(supabase, {
+                  pin_queue_id: null,
+                  product_slug: product.slug,
+                  niche_key: niche,
+                  brief,
+                  attempt_no: attempt,
+                  scores: { pre_render_fidelity: pre.score },
+                  total_score: pre.score,
+                  rejected: true,
+                  reasons: lastReasons,
+                });
+                if (attempt > EFFECTIVE_MAX_RETRIES) {
+                  rejected.push({
+                    brief,
+                    reasons: lastReasons,
+                    scores: { pre_render_fidelity: pre.score },
+                    pre_render_skip: true,
+                  });
+                  break;
+                }
+                // Regenerate the brief with the predictor's rationale so the
+                // next attempt names the product more explicitly. NO image
+                // was rendered — this is the whole point of the pre-gate.
+                const single = await generateBriefs(
+                  product,
+                  dna,
+                  1,
+                  [brief.pattern_id!] as PatternId[],
+                  weights,
+                  {
+                    0: [
+                      `predicted product fidelity ${pre.score} — ${pre.notes}`,
+                    ],
+                  },
+                );
+                brief = {
+                  ...single[0],
+                  id: brief.id,
+                  pattern_id: brief.pattern_id,
+                };
+                continue;
+              }
+              stages.push({
+                stage: "brief_fidelity_check",
+                status: "ok",
+                brief_index: i,
+                attempt,
+                details: { score: pre.score },
+              });
+            }
+
             const bytes = await renderSceneWithSource(
               brief,
               dna,
