@@ -135,6 +135,12 @@ const AdminReportsPage = () => {
             <h1 className="text-2xl font-bold text-foreground">Reports</h1>
             <p className="text-sm text-muted-foreground">Internal documents & strategy reports</p>
           </div>
+          <NavLink
+            to="/admin/vault"
+            className="ml-auto inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Open Genesis Intelligence Vault →
+          </NavLink>
         </div>
 
         <div className="grid gap-4">

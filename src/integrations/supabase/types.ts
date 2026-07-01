@@ -22885,6 +22885,144 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_documents: {
+        Row: {
+          category: string
+          country: string | null
+          created_at: string
+          description: string | null
+          document_type: string
+          download_count: number
+          environment: string | null
+          file_size: number | null
+          generated_by: string | null
+          generator_version: string | null
+          id: string
+          integrity_verified: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          is_pinned: boolean
+          language: string | null
+          last_opened: string | null
+          last_verified: string | null
+          metadata: Json | null
+          mime_type: string | null
+          page_count: number | null
+          parent_document: string | null
+          public_path: string | null
+          search_vector: unknown
+          sha256: string | null
+          status: string
+          storage_bucket: string | null
+          storage_path: string | null
+          subcategory: string | null
+          subtitle: string | null
+          supersedes_document: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          version: string | null
+          view_count: number
+          visibility: string
+          workspace: string | null
+        }
+        Insert: {
+          category?: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          download_count?: number
+          environment?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generator_version?: string | null
+          id?: string
+          integrity_verified?: boolean
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_pinned?: boolean
+          language?: string | null
+          last_opened?: string | null
+          last_verified?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          page_count?: number | null
+          parent_document?: string | null
+          public_path?: string | null
+          search_vector?: unknown
+          sha256?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          subcategory?: string | null
+          subtitle?: string | null
+          supersedes_document?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          version?: string | null
+          view_count?: number
+          visibility?: string
+          workspace?: string | null
+        }
+        Update: {
+          category?: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          download_count?: number
+          environment?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generator_version?: string | null
+          id?: string
+          integrity_verified?: boolean
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_pinned?: boolean
+          language?: string | null
+          last_opened?: string | null
+          last_verified?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          page_count?: number | null
+          parent_document?: string | null
+          public_path?: string | null
+          search_vector?: unknown
+          sha256?: string | null
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          subcategory?: string | null
+          subtitle?: string | null
+          supersedes_document?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          version?: string | null
+          view_count?: number
+          visibility?: string
+          workspace?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_documents_parent_document_fkey"
+            columns: ["parent_document"]
+            isOneToOne: false
+            referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "genesis_documents_supersedes_document_fkey"
+            columns: ["supersedes_document"]
+            isOneToOne: false
+            referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
