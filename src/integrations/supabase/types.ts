@@ -24875,6 +24875,84 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_compliance_certifications: {
+        Row: {
+          automation_governance_score: number
+          certified_at: string
+          compliance_score: number
+          evidence_integrity_score: number
+          executive_readiness_score: number
+          financial_integrity_score: number
+          findings: Json | null
+          genesis_version: string
+          id: string
+          overall_score: number
+          revenue_protection_score: number
+          safety_score: number
+          sha256: string
+          trust_score: number
+        }
+        Insert: {
+          automation_governance_score: number
+          certified_at?: string
+          compliance_score: number
+          evidence_integrity_score: number
+          executive_readiness_score: number
+          financial_integrity_score: number
+          findings?: Json | null
+          genesis_version: string
+          id?: string
+          overall_score: number
+          revenue_protection_score: number
+          safety_score: number
+          sha256: string
+          trust_score: number
+        }
+        Update: {
+          automation_governance_score?: number
+          certified_at?: string
+          compliance_score?: number
+          evidence_integrity_score?: number
+          executive_readiness_score?: number
+          financial_integrity_score?: number
+          findings?: Json | null
+          genesis_version?: string
+          id?: string
+          overall_score?: number
+          revenue_protection_score?: number
+          safety_score?: number
+          sha256?: string
+          trust_score?: number
+        }
+        Relationships: []
+      }
+      genesis_constitution: {
+        Row: {
+          article_number: number
+          body: string
+          id: string
+          ratified_at: string
+          sha256: string
+          title: string
+        }
+        Insert: {
+          article_number: number
+          body: string
+          id?: string
+          ratified_at?: string
+          sha256: string
+          title: string
+        }
+        Update: {
+          article_number?: number
+          body?: string
+          id?: string
+          ratified_at?: string
+          sha256?: string
+          title?: string
+        }
+        Relationships: []
+      }
       genesis_documents: {
         Row: {
           category: string
