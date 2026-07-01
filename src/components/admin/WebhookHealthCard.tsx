@@ -7,7 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 type MiniHealth = {
   healthy: boolean;
-  ping: { reachable: boolean; status: number; signature_validation_active: boolean };
+  ping: {
+    reachable: boolean;
+    status: number;
+    signature_validation_active: boolean;
+    classification?: "healthcheck_ok" | "signature_protection_active" | "unreachable" | "unexpected";
+  };
   orders_30d: { paid: number; pending: number; last_paid_at: string | null };
   stripe_events: Array<{ pending_webhooks: number }>;
 };
@@ -52,7 +57,15 @@ export function WebhookHealthCard() {
           <>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Endpoint</span>
-              <span>{data.ping.reachable ? `${data.ping.status} OK` : "unreachable"}</span>
+              <span>
+                {!data.ping.reachable
+                  ? "unreachable"
+                  : data.ping.classification === "healthcheck_ok"
+                    ? "200 OK"
+                    : data.ping.classification === "signature_protection_active"
+                      ? "400 (signature protected)"
+                      : `${data.ping.status}`}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Signature check</span>

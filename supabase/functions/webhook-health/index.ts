@@ -28,6 +28,7 @@ async function pingWebhook(): Promise<{
   status: number;
   signature_validation_active: boolean;
   ms: number;
+  classification: "healthcheck_ok" | "signature_protection_active" | "unreachable" | "unexpected";
 }> {
   const t0 = Date.now();
   try {
@@ -36,13 +37,20 @@ async function pingWebhook(): Promise<{
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ping: true }),
     });
-    await res.text();
+    const text = await res.text();
+    let parsed: any = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch (_) { /* ignore */ }
+    // The webhook now returns 200 for the recognized healthcheck ping, and
+    // 400 for any other unsigned request. Both prove signature protection.
+    let classification: "healthcheck_ok" | "signature_protection_active" | "unreachable" | "unexpected" = "unexpected";
+    if (res.status === 200 && parsed?.mode === "healthcheck") classification = "healthcheck_ok";
+    else if (res.status === 400) classification = "signature_protection_active";
     return {
       reachable: true,
       status: res.status,
-      // 400 = signature validation rejected our unsigned ping (correct, healthy)
-      signature_validation_active: res.status === 400,
+      signature_validation_active: res.status === 200 ? !!parsed?.signature_validation_active : res.status === 400,
       ms: Date.now() - t0,
+      classification,
     };
   } catch {
     return {
@@ -50,6 +58,7 @@ async function pingWebhook(): Promise<{
       status: 0,
       signature_validation_active: false,
       ms: Date.now() - t0,
+      classification: "unreachable",
     };
   }
 }
@@ -137,6 +146,7 @@ serve(async (req) => {
     const healthy =
       ping.reachable &&
       ping.signature_validation_active &&
+      (ping.classification === "healthcheck_ok" || ping.classification === "signature_protection_active") &&
       stripeEvents.every((e) => e.pending_webhooks === 0);
 
     return new Response(

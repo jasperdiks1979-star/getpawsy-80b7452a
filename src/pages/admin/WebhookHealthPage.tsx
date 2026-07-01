@@ -12,7 +12,13 @@ type Health = {
   healthy: boolean;
   message: string;
   endpoint: string;
-  ping: { reachable: boolean; status: number; signature_validation_active: boolean; ms: number };
+  ping: {
+    reachable: boolean;
+    status: number;
+    signature_validation_active: boolean;
+    ms: number;
+    classification?: "healthcheck_ok" | "signature_protection_active" | "unreachable" | "unexpected";
+  };
   orders_30d: {
     total: number;
     paid: number;
@@ -112,7 +118,17 @@ export default function WebhookHealthPage() {
                 <Stat label="Endpoint reachable" value={data.ping.reachable ? "Yes" : "No"} ok={data.ping.reachable} />
                 <Stat label="Signature validation" value={data.ping.signature_validation_active ? "Active" : "Off"} ok={data.ping.signature_validation_active} />
                 <Stat label="Ping latency" value={`${data.ping.ms} ms`} ok={data.ping.ms < 2000} />
-                <Stat label="Response code" value={String(data.ping.status)} ok={data.ping.status === 400} />
+                <Stat
+                  label="Response code"
+                  value={
+                    data.ping.classification === "healthcheck_ok"
+                      ? `${data.ping.status} (healthcheck ack)`
+                      : data.ping.classification === "signature_protection_active"
+                        ? `${data.ping.status} (signature protected)`
+                        : String(data.ping.status)
+                  }
+                  ok={data.ping.status === 200 || data.ping.status === 400}
+                />
               </CardContent>
             </Card>
 
