@@ -2454,6 +2454,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="evidence-vault"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EvidenceVaultPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="growth-execution"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
