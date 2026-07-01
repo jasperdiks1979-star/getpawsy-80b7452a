@@ -354,6 +354,7 @@ const PinterestHealthPage = lazyWithRetry(() => import("./pages/admin/PinterestH
 const PreWaveLivePage = lazyWithRetry(() => import("./pages/admin/PreWaveLivePage"));
 const FirstSaleAcceleratorPage = lazyWithRetry(() => import("./pages/admin/FirstSaleAcceleratorPage"));
 const ConversionIntelligencePage = lazyWithRetry(() => import("./pages/admin/ConversionIntelligencePage"));
+const ConversionWarRoomPage = lazyWithRetry(() => import("./pages/admin/ConversionWarRoomPage"));
 const PinterestTrafficForensicsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrafficForensicsPage"));
 const PinterestDistributionPage = lazyWithRetry(() => import("./pages/admin/PinterestDistributionPage"));
 const PinterestRevenueControlPage = lazyWithRetry(() => import("./pages/admin/PinterestRevenueControlPage"));
