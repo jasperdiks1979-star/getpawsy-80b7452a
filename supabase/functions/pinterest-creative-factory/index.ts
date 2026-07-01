@@ -9,6 +9,7 @@ import {
   validatePinCopy,
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
+import { Image as _V101Image } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
 import { normalizeThrowable, throwableToError } from "./normalize-throwable.ts";
 import { extractStrictQcJson } from "./qc-parser.ts";
