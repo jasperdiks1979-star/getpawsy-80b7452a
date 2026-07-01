@@ -106,7 +106,38 @@ function formatLastUpdated(ts: number) {
 
 export function useLiveVisitorInspector() {
   const [state, setState] = useState<UIState>(() => loadState());
-  useEffect(() => { saveState(state); }, [state]);
+  // Track the last serialized value we wrote/read so we can suppress the
+  // save-effect when state was just hydrated from a `storage` event in
+  // another tab (prevents echo loops between tabs).
+  const lastSerializedRef = useRef<string>("");
+  useEffect(() => {
+    const serialized = JSON.stringify(state);
+    if (serialized === lastSerializedRef.current) return;
+    lastSerializedRef.current = serialized;
+    saveState(state);
+  }, [state]);
+  // Cross-tab sync: when another tab updates the inspector state in
+  // localStorage, mirror it here so open/closed, position, size, pin, and
+  // minimize stay consistent across windows.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== LS_KEY || e.storageArea !== localStorage) return;
+      if (e.newValue == null) {
+        lastSerializedRef.current = JSON.stringify(DEFAULT_STATE);
+        setState(DEFAULT_STATE);
+        return;
+      }
+      try {
+        const parsed = { ...DEFAULT_STATE, ...JSON.parse(e.newValue) } as UIState;
+        const serialized = JSON.stringify(parsed);
+        if (serialized === lastSerializedRef.current) return;
+        lastSerializedRef.current = serialized;
+        setState(parsed);
+      } catch { /* ignore corrupt payloads from other tabs */ }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   const open = useCallback(() => setState(s => ({ ...s, open: true, minimized: false })), []);
   const close = useCallback(() => setState(s => ({ ...s, open: false })), []);
   return { state, setState, open, close };
