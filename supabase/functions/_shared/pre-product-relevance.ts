@@ -22,6 +22,8 @@ export type PreInput = {
   pin_image_url: string;
   destination_link: string;
   pin_queue_id?: string | null;
+  trace_id?: string | null;
+  function_name?: string | null;
 };
 
 export type PreVerdict = {
@@ -309,10 +311,33 @@ async function persist(
         raw_response: raw ?? null,
         vision_model: model,
         latency_ms: latency,
+        trace_id: i.trace_id ?? null,
       })
       .select("id")
       .maybeSingle();
     if (data?.id) v.evaluation_id = data.id;
+    // Emit trace event so PRE outcomes are joinable to the originating
+    // AI request / generation-lock / cache lookup via trace_id.
+    if (i.trace_id) {
+      try {
+        await supabase.from("ai_trace_events").insert({
+          trace_id: i.trace_id,
+          function_name: i.function_name ?? "pre-product-relevance",
+          stage: v.passed ? "pre_pass" : "pre_fail",
+          product_slug: i.product_slug,
+          product_id: i.product_id,
+          model,
+          status: v.passed ? "ok" : "blocked",
+          latency_ms: latency,
+          pin_queue_id: i.pin_queue_id ?? null,
+          pre_evaluation_id: data?.id ?? null,
+          meta: {
+            overall_score: v.overall_score,
+            blocking_reasons: v.blocking_reasons,
+          },
+        });
+      } catch (_) {}
+    }
   } catch (_) {
     // Never let logging failures block the verdict.
   }
