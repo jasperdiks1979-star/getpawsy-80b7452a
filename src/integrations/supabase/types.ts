@@ -20094,6 +20094,60 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_actions: {
+        Row: {
+          action_type: string
+          category: string | null
+          created_at: string
+          currency: string | null
+          detail: string | null
+          due_at: string | null
+          estimated_impact_minor: number | null
+          id: string
+          metadata: Json
+          priority: string
+          resolved_at: string | null
+          status: string
+          supplier_slug: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          due_at?: string | null
+          estimated_impact_minor?: number | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          supplier_slug?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          due_at?: string | null
+          estimated_impact_minor?: number | null
+          id?: string
+          metadata?: Json
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          supplier_slug?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       finance_alerts: {
         Row: {
           action_url: string | null
@@ -20190,6 +20244,54 @@ export type Database = {
           total_expenses_minor?: number
           total_vat_minor?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_anomalies: {
+        Row: {
+          anomaly_type: string
+          created_at: string
+          currency: string | null
+          detail: string | null
+          detected_at: string
+          expected_minor: number | null
+          id: string
+          metadata: Json
+          observed_minor: number | null
+          status: string
+          supplier_slug: string | null
+          title: string
+          z_score: number | null
+        }
+        Insert: {
+          anomaly_type: string
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          detected_at?: string
+          expected_minor?: number | null
+          id?: string
+          metadata?: Json
+          observed_minor?: number | null
+          status?: string
+          supplier_slug?: string | null
+          title: string
+          z_score?: number | null
+        }
+        Update: {
+          anomaly_type?: string
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          detected_at?: string
+          expected_minor?: number | null
+          id?: string
+          metadata?: Json
+          observed_minor?: number | null
+          status?: string
+          supplier_slug?: string | null
+          title?: string
+          z_score?: number | null
         }
         Relationships: []
       }
@@ -20328,6 +20430,69 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_health_history: {
+        Row: {
+          created_at: string
+          id: string
+          overall_score: number
+          scores: Json
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overall_score: number
+          scores?: Json
+          snapshot_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overall_score?: number
+          scores?: Json
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
+      finance_health_scores: {
+        Row: {
+          computed_at: string
+          created_at: string
+          details: Json
+          id: string
+          reason: string | null
+          score_grade: string | null
+          score_key: string
+          score_name: string
+          score_value: number
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          reason?: string | null
+          score_grade?: string | null
+          score_key: string
+          score_name: string
+          score_value?: number
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          reason?: string | null
+          score_grade?: string | null
+          score_key?: string
+          score_name?: string
+          score_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       finance_import_tasks: {
         Row: {
           created_at: string
@@ -20380,6 +20545,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      finance_reports: {
+        Row: {
+          created_at: string
+          file_size: number | null
+          generated_at: string
+          id: string
+          overall_score: number | null
+          period_number: number | null
+          period_year: number
+          public_path: string | null
+          report_type: string
+          sha256: string | null
+          storage_path: string | null
+          summary: Json
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          file_size?: number | null
+          generated_at?: string
+          id?: string
+          overall_score?: number | null
+          period_number?: number | null
+          period_year: number
+          public_path?: string | null
+          report_type: string
+          sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+          title: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number | null
+          generated_at?: string
+          id?: string
+          overall_score?: number | null
+          period_number?: number | null
+          period_year?: number
+          public_path?: string | null
+          report_type?: string
+          sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+          title?: string
+        }
+        Relationships: []
+      }
+      finance_risk_findings: {
+        Row: {
+          amount_minor: number | null
+          created_at: string
+          currency: string | null
+          detail: string | null
+          detected_at: string
+          evidence_id: string | null
+          finding_type: string
+          id: string
+          metadata: Json
+          resolved_at: string | null
+          severity: string
+          status: string
+          supplier_slug: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          detected_at?: string
+          evidence_id?: string | null
+          finding_type: string
+          id?: string
+          metadata?: Json
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          supplier_slug?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string | null
+          detail?: string | null
+          detected_at?: string
+          evidence_id?: string | null
+          finding_type?: string
+          id?: string
+          metadata?: Json
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          supplier_slug?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       finance_subscriptions: {
         Row: {
