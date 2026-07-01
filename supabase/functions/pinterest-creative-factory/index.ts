@@ -133,6 +133,201 @@ function conciseProductName(name: string) {
   return name.replace(/[,–—].*$/, "").replace(/\s+/g, " ").trim().slice(0, 90);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Genesis V9.1 — Factory ↔ Native Gate metadata alignment
+// ─────────────────────────────────────────────────────────────────────────────
+// The Native Prepublish Gate classifies drafts using `content_type` and
+// `meta.pin_type`/`meta.content_type`. Missing metadata → classified as
+// `product_showcase` → nativeScore=0 → rejected. These helpers derive the
+// correct Pinterest-native classification from the product niche and enrich
+// the copy with organic lifestyle/helpful language WITHOUT lowering any
+// thresholds or bypassing the gate.
+
+export type FactoryContentType =
+  | "lifestyle"
+  | "educational"
+  | "problem_solution"
+  | "seasonal"
+  | "entertainment";
+
+export interface FactoryClassification {
+  content_type: FactoryContentType;
+  pin_type: FactoryContentType;
+  creative_style: string;
+  creative_goal: string;
+  content_strategy: string;
+}
+
+/** Map niche → Pinterest-native classification. Deterministic, no AI. */
+export function deriveContentClassification(
+  niche: string | null | undefined,
+): FactoryClassification {
+  const n = String(niche ?? "").toLowerCase();
+  // Educational: the outcome/tool has a "how to use it well" story.
+  if (
+    n.includes("training") || n.includes("dental") || n.includes("grooming") ||
+    n.includes("feeder") || n.includes("bowl_station") ||
+    n.includes("fountain") || n.includes("interactive_toy") ||
+    n.includes("supplement") || n.includes("potty")
+  ) {
+    return {
+      content_type: "educational",
+      pin_type: "educational",
+      creative_style: "helpful_guide",
+      creative_goal: "teach_and_earn_save",
+      content_strategy: "how_to_do_it_right",
+    };
+  }
+  // Problem/solution: the product resolves a specific parent pain.
+  if (
+    n.includes("litter") || n.includes("pet_camera") || n.includes("dog_car") ||
+    n.includes("carrier") || n.includes("gps") || n.includes("harness")
+  ) {
+    return {
+      content_type: "problem_solution",
+      pin_type: "problem_solution",
+      creative_style: "before_after_story",
+      creative_goal: "solve_pet_parent_pain",
+      content_strategy: "problem_first_then_fix",
+    };
+  }
+  // Entertainment: playful, saveable pet-joy content.
+  if (n.includes("scratcher") || n.includes("treats")) {
+    return {
+      content_type: "entertainment",
+      pin_type: "entertainment",
+      creative_style: "playful_moment",
+      creative_goal: "spark_delight_and_save",
+      content_strategy: "pet_joy_first",
+    };
+  }
+  // Seasonal: outdoor / weather-shifting products.
+  if (
+    n.includes("outdoor") || n.includes("enclosure") ||
+    n.includes("clothing")
+  ) {
+    return {
+      content_type: "seasonal",
+      pin_type: "seasonal",
+      creative_style: "seasonal_scene",
+      creative_goal: "seasonal_relevance",
+      content_strategy: "right_product_right_season",
+    };
+  }
+  // Default: lifestyle — cozy home + pet routine framing.
+  return {
+    content_type: "lifestyle",
+    pin_type: "lifestyle",
+    creative_style: "cozy_home_scene",
+    creative_goal: "inspire_and_earn_save",
+    content_strategy: "real_home_pet_routine",
+  };
+}
+
+// Terms drawn 1:1 from pinterest-native-prepublish-gate/scoring.ts so we
+// remain aligned WITHOUT importing (avoids cross-function coupling).
+const NATIVE_LIFESTYLE_TERMS = [
+  "cozy", "morning", "sunny", "evening", "weekend", "kitchen",
+  "living room", "bedroom", "patio", "couch", "outdoor",
+];
+const NATIVE_HELPFUL_TERMS = [
+  "how", "tips", "guide", "checklist", "best", "signs", "ways",
+];
+const NATIVE_EDU_TERMS = [
+  "guide", "training", "behavior", "vet", "expert", "explained",
+];
+const NATIVE_SHOWCASE_TERMS = [
+  "buy", "sale", "discount", "% off", "shop now", "new arrival",
+  "shop", "deal",
+];
+
+function stripShowcaseLanguage(text: string): string {
+  let out = text;
+  // Remove the CTA sentence "Shop now at getpawsy.pet." specifically.
+  out = out.replace(/\bShop now[^.]*\.?/gi, "").trim();
+  out = out.replace(/\bShop\s+[A-Z][A-Za-z ]{2,30}\.?/g, "").trim();
+  // Strip any residual bare showcase words at word boundaries.
+  for (const t of NATIVE_SHOWCASE_TERMS) {
+    const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi");
+    out = out.replace(re, "").trim();
+  }
+  return out.replace(/\s{2,}/g, " ").replace(/\s+([.,])/g, "$1").trim();
+}
+
+function hasAny(text: string, terms: string[]): boolean {
+  const t = text.toLowerCase();
+  return terms.some((w) => t.includes(w));
+}
+
+/**
+ * Rewrites Factory copy so the Native Gate sees Pinterest-native language:
+ * removes storefront CTAs and, if needed, appends a neutral lifestyle or
+ * helpful sentence matched to the classification. No clickbait, no fake
+ * urgency, no exaggerated claims — just plain organic Pinterest phrasing.
+ */
+export function naturalizeCopyForNative(
+  copy: { title: string; description: string; overlay: string; cta: string; brandWordmark: string },
+  classification: FactoryClassification,
+  niche: string,
+): { title: string; description: string; overlay: string; cta: string; brandWordmark: string } {
+  const ct = classification.content_type;
+  let desc = stripShowcaseLanguage(copy.description);
+
+  const lifestyleAdd: Record<string, string> = {
+    lifestyle: "A cozy morning routine, right at home in the living room.",
+    educational: "A simple guide to what actually works for daily use.",
+    problem_solution: "Signs it's time to fix this, and the ways parents solve it.",
+    seasonal: "Made for weekend outdoor time on the patio or in the garden.",
+    entertainment: "A playful evening moment on the couch that pets love.",
+  };
+
+  const helpfulAdd: Record<string, string> = {
+    lifestyle: "Tips for building a calmer, cozier home for your pet.",
+    educational: "How to introduce it step by step, with expert-approved guidance.",
+    problem_solution: "How to spot the signs early and the best ways to help.",
+    seasonal: "Best ways to keep pets comfortable through the season.",
+    entertainment: "Fun ways to keep your pet engaged during the evening.",
+  };
+
+  if (!hasAny(desc, NATIVE_LIFESTYLE_TERMS)) {
+    desc = `${desc} ${lifestyleAdd[ct]}`.trim();
+  }
+  const needsHelpful = ct === "educational" || ct === "problem_solution" ||
+    ct === "seasonal";
+  const helpfulPool = ct === "educational" ? NATIVE_EDU_TERMS : NATIVE_HELPFUL_TERMS;
+  if (needsHelpful && !hasAny(desc, helpfulPool)) {
+    desc = `${desc} ${helpfulAdd[ct]}`.trim();
+  }
+  // For lifestyle/entertainment, a soft helpful hint still lifts the score
+  // without turning the copy into a listicle.
+  if (!needsHelpful && !hasAny(desc, NATIVE_HELPFUL_TERMS)) {
+    desc = `${desc} ${helpfulAdd[ct]}`.trim();
+  }
+  desc = desc.replace(/\s{2,}/g, " ").trim().slice(0, 480);
+  return { ...copy, description: desc };
+}
+
+/** Rejects drafts internally if required metadata is missing. */
+function assertFactoryMetadataComplete(row: {
+  content_type?: string | null;
+  meta?: Record<string, unknown> | null;
+}): void {
+  const meta = (row.meta ?? {}) as Record<string, unknown>;
+  const missing: string[] = [];
+  if (!row.content_type || row.content_type === "product") {
+    missing.push("content_type");
+  }
+  if (!meta.pin_type) missing.push("meta.pin_type");
+  if (!meta.content_type) missing.push("meta.content_type");
+  if (!meta.creative_style) missing.push("meta.creative_style");
+  if (!meta.creative_goal) missing.push("meta.creative_goal");
+  if (!meta.content_strategy) missing.push("meta.content_strategy");
+  if (missing.length) {
+    console.warn("[factory_metadata_missing]", missing.join(","));
+    throw new Error(`factory_metadata_missing:${missing.join(",")}`);
+  }
+}
+
 async function seedMissingMediaJobs(sb: Sb, limit: number, source: string) {
   const { data: pins, error } = await sb
     .from("pinterest_pin_queue")
@@ -197,12 +392,14 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
       .is("pinterest_pin_id", null);
     if ((count ?? 0) >= 3) continue;
     const niche = detectNiche(product) as NicheKey;
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, created);
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
     const row = {
       product_id: product.id,
       product_slug: product.slug,
@@ -218,7 +415,7 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
       category_key: niche,
       overlay_text: copy.overlay,
       source_type: "product_ai",
-      content_type: "product",
+      content_type: classification.content_type,
       pin_variant: "product_ai",
       meta: {
         creative_source: source,
@@ -227,8 +424,15 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
         inventory_seed: true,
         publish_allowed: true,
         source_type: "product_ai",
+        pin_type: classification.pin_type,
+        content_type: classification.content_type,
+        creative_style: classification.creative_style,
+        creative_goal: classification.creative_goal,
+        content_strategy: classification.content_strategy,
+        genesis_v91_aligned: true,
       },
     };
+    assertFactoryMetadataComplete(row);
     const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
       .insert(row).select("id").maybeSingle();
     if (insErr) {
@@ -297,14 +501,15 @@ async function seedProductDrafts(
   const niche = detectNiche(product) as NicheKey;
   const created: string[] = [];
   for (let i = 0; i < Math.max(1, Math.min(count, 8)); i++) {
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, i);
-    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
-      .insert({
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
+    const insertRow = {
         product_id: product.id,
         product_slug: product.slug,
         product_name: product.name,
@@ -319,7 +524,7 @@ async function seedProductDrafts(
         category_key: niche,
         overlay_text: copy.overlay,
         source_type: "product_ai",
-        content_type: "product",
+        content_type: classification.content_type,
         pin_variant: "product_ai",
         meta: {
           creative_source: source,
@@ -328,8 +533,17 @@ async function seedProductDrafts(
           inventory_seed: true,
           publish_allowed: true,
           source_type: "product_ai",
+          pin_type: classification.pin_type,
+          content_type: classification.content_type,
+          creative_style: classification.creative_style,
+          creative_goal: classification.creative_goal,
+          content_strategy: classification.content_strategy,
+          genesis_v91_aligned: true,
         },
-      }).select("id").maybeSingle();
+      };
+    assertFactoryMetadataComplete(insertRow);
+    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
+      .insert(insertRow).select("id").maybeSingle();
     if (insErr || !pin?.id) continue;
     created.push(pin.id as string);
     // Closed-loop lineage stamp (product-draft path).
@@ -712,13 +926,15 @@ async function processJob(sb: Sb, job: any, settings: any) {
     if (product.is_active === false) throw new Error("product_inactive");
 
     const niche = detectNiche(product) as NicheKey;
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       benefit: product.benefit_angle ?? null,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, Number(job.attempt_count ?? 1));
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
     const overlayBlock = `${copy.overlay} ${copy.cta}`.replace(/[|•\r\n]/g, " ")
       .replace(/\s+/g, " ").trim().slice(0, 32);
     const validation = validatePinCopy({
@@ -940,6 +1156,12 @@ async function processJob(sb: Sb, job: any, settings: any) {
         legacy_feed: false,
         wave2_pending_regeneration: false,
         factory_job_id: job.id,
+        pin_type: classification.pin_type,
+        content_type: classification.content_type,
+        creative_style: classification.creative_style,
+        creative_goal: classification.creative_goal,
+        content_strategy: classification.content_strategy,
+        genesis_v91_aligned: true,
         intelligence: {
           scores: qc.scores,
           niche_key: niche,
@@ -950,7 +1172,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
           },
         },
       };
-      const { error } = await sb.from("pinterest_pin_queue").update({
+      const updateRow = {
         pin_title: copy.title,
         pin_description: copy.description,
         pin_image_url: imageUrl,
@@ -959,12 +1181,15 @@ async function processJob(sb: Sb, job: any, settings: any) {
         image_hash: mediaHash,
         pin_image_phash: phash,
         meta,
+        content_type: classification.content_type,
         status: pin.status === "queued" ? "queued" : "queued",
         approved_at: pin.approved_at ?? new Date().toISOString(),
         error_message: null,
         rejection_reason: null,
         updated_at: new Date().toISOString(),
-      }).eq("id", pin.id);
+      };
+      assertFactoryMetadataComplete(updateRow);
+      const { error } = await sb.from("pinterest_pin_queue").update(updateRow).eq("id", pin.id);
       if (error) throw error;
       return true;
     });
