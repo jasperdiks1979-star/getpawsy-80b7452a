@@ -2445,6 +2445,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="vault"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisVaultPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="growth-execution"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
