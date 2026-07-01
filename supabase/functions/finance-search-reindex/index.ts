@@ -23,14 +23,14 @@ Deno.serve(async (req) => {
 
   const { data: docs } = await admin
     .from("evidence_documents")
-    .select("id,filename,ocr_text,supplier_id,invoice_date,total_minor,currency")
+    .select("id,original_filename,title,ocr_text,supplier_id,document_date,amount_minor,currency")
     .limit(5000);
   for (const d of docs ?? []) rows.push({
     entity_type: "document",
     entity_id: d.id,
-    title: d.filename ?? "Document",
-    body: [d.ocr_text ?? "", `${d.invoice_date ?? ""}`, `${d.total_minor ?? ""} ${d.currency ?? ""}`].join(" ").slice(0, 8000),
-    metadata: { invoice_date: d.invoice_date, total_minor: d.total_minor, currency: d.currency, supplier_id: d.supplier_id },
+    title: d.original_filename ?? d.title ?? "Document",
+    body: [d.ocr_text ?? "", `${d.document_date ?? ""}`, `${d.amount_minor ?? ""} ${d.currency ?? ""}`].join(" ").slice(0, 8000),
+    metadata: { document_date: d.document_date, amount_minor: d.amount_minor, currency: d.currency, supplier_id: d.supplier_id },
   });
 
   const { data: sups } = await admin.from("evidence_suppliers").select("id,name,slug,country,vat_number,category,notes");
@@ -60,12 +60,12 @@ Deno.serve(async (req) => {
     metadata: { cadence: s.cadence, amount_minor: s.amount_minor, currency: s.currency },
   });
 
-  const { data: pays } = await admin.from("evidence_payments").select("id,supplier_id,amount_minor,currency,paid_at,reference").limit(5000);
+  const { data: pays } = await admin.from("evidence_payments").select("id,supplier_id,amount_minor,currency,paid_at,bank_txn_reference").limit(5000);
   for (const p of pays ?? []) rows.push({
     entity_type: "payment",
     entity_id: p.id,
-    title: `Payment ${p.reference ?? p.id.slice(0, 8)}`,
-    body: [p.paid_at, `${p.amount_minor} ${p.currency ?? ""}`, p.reference].filter(Boolean).join(" "),
+    title: `Payment ${p.bank_txn_reference ?? p.id.slice(0, 8)}`,
+    body: [p.paid_at, `${p.amount_minor} ${p.currency ?? ""}`, p.bank_txn_reference].filter(Boolean).join(" "),
     metadata: { paid_at: p.paid_at, amount_minor: p.amount_minor, currency: p.currency, supplier_id: p.supplier_id },
   });
 
