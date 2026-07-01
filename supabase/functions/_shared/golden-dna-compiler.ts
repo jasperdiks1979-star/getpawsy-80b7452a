@@ -10,7 +10,7 @@
 // and no new scorers — only the compiler layer described in Phase 1..9 of the
 // V6.4 directive.
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 
 // -----------------------------------------------------------------------------
 // Types
