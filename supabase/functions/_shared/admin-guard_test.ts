@@ -71,7 +71,13 @@ function router(
   });
 }
 
-Deno.test("allows requests that present the correct internal secret", async () => {
+// The guard fires audit inserts via `EdgeRuntime.waitUntil` — outside the
+// Supabase runtime that helper is undefined, so writeAudit becomes a
+// dangling fire-and-forget promise. That's intentional in production but
+// trips Deno's op sanitizer, so every test opts out of sanitization.
+const sanitize = { sanitizeOps: false, sanitizeResources: false };
+
+Deno.test({ name: "allows requests that present the correct internal secret", ...sanitize, fn: async () => {
   const restore = router();
   try {
     const res = await requireInternalOrAdmin(
@@ -81,9 +87,9 @@ Deno.test("allows requests that present the correct internal secret", async () =
   } finally {
     restore();
   }
-});
+} });
 
-Deno.test("rejects requests with a WRONG internal secret and no bearer token", async () => {
+Deno.test({ name: "rejects requests with a WRONG internal secret and no bearer token", ...sanitize, fn: async () => {
   const restore = router();
   try {
     const res = await requireInternalOrAdmin(
@@ -96,9 +102,9 @@ Deno.test("rejects requests with a WRONG internal secret and no bearer token", a
   } finally {
     restore();
   }
-});
+} });
 
-Deno.test("rejects requests with no auth header at all", async () => {
+Deno.test({ name: "rejects requests with no auth header at all", ...sanitize, fn: async () => {
   const restore = router();
   try {
     const res = await requireInternalOrAdmin(makeRequest());
@@ -107,9 +113,9 @@ Deno.test("rejects requests with no auth header at all", async () => {
   } finally {
     restore();
   }
-});
+} });
 
-Deno.test("rejects requests with a bearer token that Supabase cannot resolve", async () => {
+Deno.test({ name: "rejects requests with a bearer token that Supabase cannot resolve", ...sanitize, fn: async () => {
   const restore = router({
     getUser: () => jsonResponse(401, { message: "bad jwt" }),
   });
@@ -122,9 +128,9 @@ Deno.test("rejects requests with a bearer token that Supabase cannot resolve", a
   } finally {
     restore();
   }
-});
+} });
 
-Deno.test("rejects authenticated users that lack the admin role (403)", async () => {
+Deno.test({ name: "rejects authenticated users that lack the admin role (403)", ...sanitize, fn: async () => {
   const restore = router({
     getUser: () =>
       jsonResponse(200, {
@@ -146,9 +152,9 @@ Deno.test("rejects authenticated users that lack the admin role (403)", async ()
   } finally {
     restore();
   }
-});
+} });
 
-Deno.test("allows authenticated admins", async () => {
+Deno.test({ name: "allows authenticated admins", ...sanitize, fn: async () => {
   const restore = router({
     getUser: () =>
       jsonResponse(200, {
@@ -167,4 +173,4 @@ Deno.test("allows authenticated admins", async () => {
   } finally {
     restore();
   }
-});
+} });
