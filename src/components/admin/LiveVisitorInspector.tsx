@@ -368,8 +368,24 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
 
           {/* Timeline */}
           <div className="flex-1 overflow-y-auto">
-            {rows.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400">Waiting for live events…</div>
+            {loading ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-xs text-slate-400" aria-live="polite" aria-busy="true">
+                <Loader2 className="h-5 w-5 animate-spin text-emerald-400" aria-hidden="true" />
+                <p>Connecting to live visitor stream…</p>
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center" aria-live="polite">
+                <Radio className="h-5 w-5 text-slate-500" aria-hidden="true" />
+                <p className="text-xs text-slate-300">No live visitor events right now.</p>
+                <p className="max-w-[220px] text-[11px] text-slate-500">
+                  The realtime stream is quiet. Events will appear automatically when visitors browse, add to cart, or purchase.
+                </p>
+                {lastUpdated && (
+                  <p className="mt-1 text-[10px] text-slate-500 tabular-nums">
+                    Checked {formatLastUpdated(lastUpdated)}
+                  </p>
+                )}
+              </div>
             ) : (
               <ul className="divide-y divide-slate-800">
                 {rows.slice(0, 60).map(r => {
