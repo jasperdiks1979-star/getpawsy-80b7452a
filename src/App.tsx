@@ -428,6 +428,7 @@ const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDomina
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
+const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
 const GrowthCommandPage = lazyWithRetry(() => import("./pages/admin/GrowthCommandPage"));
@@ -2449,6 +2450,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GenesisVaultPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="evidence-vault"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EvidenceVaultPage />
                                 </Suspense>
                               }
                             />
