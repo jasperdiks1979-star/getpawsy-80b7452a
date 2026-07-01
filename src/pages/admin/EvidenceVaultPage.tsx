@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, ExternalLink, FileText, Search, Shield, Building2, Receipt, Clock, Download } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 type Supplier = {
   id: string;
@@ -143,6 +145,9 @@ const EvidenceVaultPage = () => {
             Open Finance Intelligence →
           </NavLink>
         </div>
+
+        <StripeImportPanel />
+
 
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <StatCard label="Evidence documents" value={stats.total} icon={<FileText className="h-5 w-5" />} />
@@ -358,5 +363,54 @@ const StatCard = ({ label, value, icon }: { label: string; value: React.ReactNod
     </CardContent>
   </Card>
 );
+
+const StripeImportPanel = () => {
+  const [running, setRunning] = useState(false);
+  const [sinceDays, setSinceDays] = useState(365);
+  const [result, setResult] = useState<any>(null);
+
+  const run = async () => {
+    setRunning(true); setResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-evidence-import", {
+        body: { since_days: sinceDays, limit: 100 },
+      });
+      if (error) throw error;
+      setResult(data);
+      toast.success(`Imported ${data?.stats?.invoices ?? 0} invoices · ${data?.stats?.receipts ?? 0} receipts · ${data?.stats?.payouts ?? 0} payouts`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Import failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Card className="mb-6 border-primary/30">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Receipt className="h-4 w-4" /> Stripe Auto-Import
+          <Badge variant="outline" className="ml-2 text-[10px]">SHA-256 verified</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-muted-foreground">Import invoices, receipts, payouts, and balance snapshots from Stripe LIVE. Idempotent (dedupes by SHA + reference). Auto-linked to Stripe supplier.</span>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Since (days)</label>
+          <Input type="number" min={1} max={3650} value={sinceDays} onChange={(e)=>setSinceDays(Number(e.target.value)||365)} className="w-24 h-8" />
+        </div>
+        <Button size="sm" onClick={run} disabled={running}>
+          {running ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importing…</> : "Run Stripe import"}
+        </Button>
+        {result?.stats && (
+          <span className="text-xs text-muted-foreground">
+            ✓ {result.stats.invoices} inv · {result.stats.receipts} rcpt · {result.stats.payouts} payouts · {result.stats.skipped} skipped
+            {result.stats.errors?.length ? ` · ${result.stats.errors.length} errors` : ""}
+          </span>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 export default EvidenceVaultPage;
