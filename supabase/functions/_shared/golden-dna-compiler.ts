@@ -368,7 +368,9 @@ function normalizeColors(colors: string[] | null | undefined): string[] {
 // -----------------------------------------------------------------------------
 
 export function extractProductRules(product: ProductLike): CompiledRuleSet {
-  const species = detectSpecies(product);
+  const semantic = interpretProductSemantics(product);
+  const species = semantic.target_species;
+  const toyShape = semantic.toy_shape;
   const env = detectEnvironment(product);
   const landingColors = normalizeColors(
     product.landing_dominant_colors ?? (product.primary_color ? [product.primary_color] : []),
@@ -410,6 +412,9 @@ export function extractProductRules(product: ProductLike): CompiledRuleSet {
     species,
     allowed_species: species === "unknown" ? [] : [species],
     forbidden_species: forbiddenSpecies,
+    toy_shape: toyShape,
+    semantic_interpretation: semantic.interpretation,
+    species_source: semantic.species_source,
     allowed_breeds: [],
     forbidden_breeds: [],
     environment: env,
