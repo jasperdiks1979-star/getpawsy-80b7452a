@@ -146,6 +146,9 @@ const EvidenceVaultPage = () => {
           </NavLink>
         </div>
 
+        <StripeImportPanel />
+
+
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <StatCard label="Evidence documents" value={stats.total} icon={<FileText className="h-5 w-5" />} />
           <StatCard label="Suppliers" value={stats.suppliersCount} icon={<Building2 className="h-5 w-5" />} />
