@@ -1504,6 +1504,7 @@ Deno.serve(async (req) => {
         prompt: nextPrompt,
         status: "retry",
         stage: "planning",
+        attempt_count: Math.min(Number(existing.attempt_count ?? 0), 4),
         media_url: null,
         media_hash: null,
         error_message: null,
