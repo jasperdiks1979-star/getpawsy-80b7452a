@@ -2864,6 +2864,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ai-trace-explorer"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AiTraceExplorerPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="cinematic-performance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
