@@ -9,7 +9,15 @@ import {
 interface ActivityRow {
   id: string;
   session_id: string;
-  activity_type: "browsing" | "cart" | "checkout" | "purchase" | string;
+  activity_type:
+    | "browsing"
+    | "product_view"
+    | "add_to_cart"
+    | "view_cart"
+    | "cart"
+    | "checkout"
+    | "purchase"
+    | string;
   country: string | null;
   city: string | null;
   device_type: string | null;
@@ -52,6 +60,33 @@ function deviceIcon(d?: string | null) {
   if (d === "tablet") return <Tablet className="h-3 w-3" />;
   return <Monitor className="h-3 w-3" />;
 }
+
+// Normalize the raw activity_type values from `visitor_activity` into the
+// 5 buckets displayed in the inspector. `view_cart` folds into the cart
+// bucket (both represent an intent-to-purchase state without checkout).
+type Bucket = "product_view" | "add_to_cart" | "checkout" | "purchase" | "browsing";
+function bucketFor(t: string): Bucket {
+  switch (t) {
+    case "purchase": return "purchase";
+    case "checkout": return "checkout";
+    case "add_to_cart":
+    case "cart":
+    case "view_cart": return "add_to_cart";
+    case "product_view": return "product_view";
+    default: return "browsing";
+  }
+}
+// Funnel priority — later stages "stick" as the session's current status.
+const BUCKET_PRIORITY: Record<Bucket, number> = {
+  browsing: 0, product_view: 1, add_to_cart: 2, checkout: 3, purchase: 4,
+};
+const BUCKET_LABEL: Record<Bucket, string> = {
+  browsing: "Browsing",
+  product_view: "Product viewed",
+  add_to_cart: "Add to cart",
+  checkout: "Checkout",
+  purchase: "Purchase",
+};
 
 function formatDuration(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -148,24 +183,29 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
 
   // Derived stats
   const stats = useMemo(() => {
-    const sessions = new Map<string, { type: string; last: number; first: number }>();
+    // Track the "furthest reached" bucket per session, plus first/last timestamps.
+    const sessions = new Map<string, { bucket: Bucket; last: number; first: number }>();
     for (const r of rows) {
       const ts = new Date(r.created_at).getTime();
+      const b = bucketFor(r.activity_type);
       const cur = sessions.get(r.session_id);
-      if (!cur) sessions.set(r.session_id, { type: r.activity_type, last: ts, first: ts });
+      if (!cur) sessions.set(r.session_id, { bucket: b, last: ts, first: ts });
       else {
         cur.first = Math.min(cur.first, ts);
-        if (ts > cur.last) { cur.last = ts; cur.type = r.activity_type; }
+        if (ts > cur.last) cur.last = ts;
+        // Sticky funnel: never regress to a lower stage within the 15-min window.
+        if (BUCKET_PRIORITY[b] > BUCKET_PRIORITY[cur.bucket]) cur.bucket = b;
       }
     }
-    let browsing = 0, cart = 0, checkout = 0, purchase = 0;
+    let browsing = 0, product_view = 0, add_to_cart = 0, checkout = 0, purchase = 0;
     sessions.forEach(v => {
-      if (v.type === "browsing") browsing++;
-      else if (v.type === "cart") cart++;
-      else if (v.type === "checkout") checkout++;
-      else if (v.type === "purchase") purchase++;
+      if (v.bucket === "browsing") browsing++;
+      else if (v.bucket === "product_view") product_view++;
+      else if (v.bucket === "add_to_cart") add_to_cart++;
+      else if (v.bucket === "checkout") checkout++;
+      else if (v.bucket === "purchase") purchase++;
     });
-    return { total: sessions.size, browsing, cart, checkout, purchase, sessions };
+    return { total: sessions.size, browsing, product_view, add_to_cart, checkout, purchase, sessions };
   }, [rows]);
 
   if (!state.open) return null;
@@ -231,10 +271,11 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
 
       {!state.minimized && (
         <>
-          {/* Summary */}
-          <div className="grid grid-cols-4 gap-1.5 border-b border-slate-800 px-3 py-2 text-[11px]">
-            <SummaryCell icon={<Eye className="h-3 w-3" />} label="Browsing" value={stats.browsing} tone="text-blue-300" />
-            <SummaryCell icon={<ShoppingCart className="h-3 w-3" />} label="Cart" value={stats.cart} tone="text-amber-300" />
+          {/* Summary — 5-stage funnel mirrors the ActivityDot color legend below. */}
+          <div className="grid grid-cols-5 gap-1.5 border-b border-slate-800 px-3 py-2 text-[11px]">
+            <SummaryCell icon={<Users className="h-3 w-3" />} label="Active" value={stats.total} tone="text-slate-200" />
+            <SummaryCell icon={<Eye className="h-3 w-3" />} label="Product" value={stats.product_view} tone="text-cyan-300" />
+            <SummaryCell icon={<ShoppingCart className="h-3 w-3" />} label="Cart" value={stats.add_to_cart} tone="text-amber-300" />
             <SummaryCell icon={<CreditCard className="h-3 w-3" />} label="Checkout" value={stats.checkout} tone="text-emerald-300" />
             <SummaryCell icon={<DollarSign className="h-3 w-3" />} label="Purchase" value={stats.purchase} tone="text-fuchsia-300" />
           </div>
@@ -253,7 +294,7 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <ActivityDot type={r.activity_type} />
-                          <span className="font-medium capitalize">{r.activity_type}</span>
+                          <span className="font-medium">{BUCKET_LABEL[bucketFor(r.activity_type)]}</span>
                           {r.order_value ? (
                             <span className="text-fuchsia-300">· ${Number(r.order_value).toFixed(2)}</span>
                           ) : null}
@@ -306,10 +347,12 @@ function SummaryCell({ icon, label, value, tone }: { icon: React.ReactNode; labe
 }
 
 function ActivityDot({ type }: { type: string }) {
+  const b = bucketFor(type);
   const color =
-    type === "checkout" ? "bg-emerald-400" :
-    type === "cart" ? "bg-amber-400" :
-    type === "purchase" ? "bg-fuchsia-400" :
+    b === "purchase" ? "bg-fuchsia-400" :
+    b === "checkout" ? "bg-emerald-400" :
+    b === "add_to_cart" ? "bg-amber-400" :
+    b === "product_view" ? "bg-cyan-400" :
     "bg-blue-400";
   return <span className={`inline-block h-1.5 w-1.5 rounded-full ${color}`} />;
 }
