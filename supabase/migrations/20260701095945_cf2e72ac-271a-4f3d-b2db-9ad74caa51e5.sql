@@ -1,0 +1,1 @@
+ALTER VIEW public.ai_trace_waste_hotspots_24h SET (security_invoker = true);
