@@ -5860,6 +5860,7 @@ export type Database = {
           lane: string
           product_slug: string
           run_id: string
+          trace_id: string | null
         }
         Insert: {
           acquired_at?: string
@@ -5868,6 +5869,7 @@ export type Database = {
           lane: string
           product_slug: string
           run_id: string
+          trace_id?: string | null
         }
         Update: {
           acquired_at?: string
@@ -5876,6 +5878,7 @@ export type Database = {
           lane?: string
           product_slug?: string
           run_id?: string
+          trace_id?: string | null
         }
         Relationships: []
       }
@@ -6098,6 +6101,7 @@ export type Database = {
           model: string
           product_slug: string | null
           response_json: Json
+          trace_id: string | null
         }
         Insert: {
           cache_key: string
@@ -6110,6 +6114,7 @@ export type Database = {
           model: string
           product_slug?: string | null
           response_json: Json
+          trace_id?: string | null
         }
         Update: {
           cache_key?: string
@@ -6122,6 +6127,7 @@ export type Database = {
           model?: string
           product_slug?: string | null
           response_json?: Json
+          trace_id?: string | null
         }
         Relationships: []
       }
@@ -6305,6 +6311,72 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_trace_events: {
+        Row: {
+          cache_hit: boolean | null
+          cache_key: string | null
+          created_at: string
+          credits_estimated: number | null
+          function_name: string
+          id: string
+          lane: string | null
+          latency_ms: number | null
+          lock_run_id: string | null
+          meta: Json
+          model: string | null
+          parent_trace_id: string | null
+          pin_queue_id: string | null
+          pre_evaluation_id: string | null
+          product_id: string | null
+          product_slug: string | null
+          stage: string
+          status: string | null
+          trace_id: string
+        }
+        Insert: {
+          cache_hit?: boolean | null
+          cache_key?: string | null
+          created_at?: string
+          credits_estimated?: number | null
+          function_name: string
+          id?: string
+          lane?: string | null
+          latency_ms?: number | null
+          lock_run_id?: string | null
+          meta?: Json
+          model?: string | null
+          parent_trace_id?: string | null
+          pin_queue_id?: string | null
+          pre_evaluation_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          stage: string
+          status?: string | null
+          trace_id: string
+        }
+        Update: {
+          cache_hit?: boolean | null
+          cache_key?: string | null
+          created_at?: string
+          credits_estimated?: number | null
+          function_name?: string
+          id?: string
+          lane?: string | null
+          latency_ms?: number | null
+          lock_run_id?: string | null
+          meta?: Json
+          model?: string | null
+          parent_trace_id?: string | null
+          pin_queue_id?: string | null
+          pre_evaluation_id?: string | null
+          product_id?: string | null
+          product_slug?: string | null
+          stage?: string
+          status?: string | null
+          trace_id?: string
         }
         Relationships: []
       }
@@ -52680,6 +52752,7 @@ export type Database = {
           regenerate_brief: Json | null
           shopping_match_score: number | null
           species_match_ok: boolean | null
+          trace_id: string | null
           use_case_match_ok: boolean | null
           vision_model: string | null
           visual_focus_score: number | null
@@ -52710,6 +52783,7 @@ export type Database = {
           regenerate_brief?: Json | null
           shopping_match_score?: number | null
           species_match_ok?: boolean | null
+          trace_id?: string | null
           use_case_match_ok?: boolean | null
           vision_model?: string | null
           visual_focus_score?: number | null
@@ -52740,6 +52814,7 @@ export type Database = {
           regenerate_brief?: Json | null
           shopping_match_score?: number | null
           species_match_ok?: boolean | null
+          trace_id?: string | null
           use_case_match_ok?: boolean | null
           vision_model?: string | null
           visual_focus_score?: number | null
@@ -61700,6 +61775,24 @@ export type Database = {
           purchases_24h: number | null
           traffic_source: string | null
           variant_key: string | null
+        }
+        Relationships: []
+      }
+      ai_trace_waste_hotspots_24h: {
+        Row: {
+          avg_latency_ms: number | null
+          blocked: number | null
+          cache_hits: number | null
+          cache_misses: number | null
+          credits_est_total: number | null
+          events: number | null
+          failures: number | null
+          function_name: string | null
+          lane: string | null
+          last_seen_at: string | null
+          product_slug: string | null
+          stage: string | null
+          status: string | null
         }
         Relationships: []
       }
