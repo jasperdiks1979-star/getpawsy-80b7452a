@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { toast } from "sonner";
-import { AlertTriangle, Search, RefreshCw, Boxes, Bell, LayoutDashboard, Package, Sparkles } from "lucide-react";
+import { AlertTriangle, Search, RefreshCw, Boxes, Bell, LayoutDashboard, Package, Sparkles, Receipt, FileWarning, Copy, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type Kpis = {
@@ -34,6 +34,9 @@ export default function FinancialEvidenceVaultPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningJob, setRunningJob] = useState<string | null>(null);
+  const [vat, setVat] = useState<VatState | null>(null);
+  const [vatLoading, setVatLoading] = useState(false);
+  const [vatGenerating, setVatGenerating] = useState(false);
 
   async function loadAll() {
     setLoading(true);
@@ -68,6 +71,7 @@ export default function FinancialEvidenceVaultPage() {
   }
 
   useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadVat(); }, []);
 
   async function runJob(fn: string, label: string) {
     setRunningJob(fn);
@@ -92,6 +96,74 @@ export default function FinancialEvidenceVaultPage() {
   async function resolveAlert(id: string) {
     await supabase.from("finance_alerts").update({ is_resolved: true, resolved_at: new Date().toISOString() }).eq("id", id);
     loadAll();
+  }
+
+  async function loadVat() {
+    setVatLoading(true);
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const q = Math.floor(now.getUTCMonth() / 3) + 1;
+    const startMonth = (q - 1) * 3;
+    const start = new Date(Date.UTC(y, startMonth, 1)).toISOString().slice(0, 10);
+    const end = new Date(Date.UTC(y, startMonth + 3, 0)).toISOString().slice(0, 10);
+
+    const [{ data: docs }, { data: recs }, { data: summaries }] = await Promise.all([
+      supabase
+        .from("evidence_documents")
+        .select("id,title,supplier_name,invoice_number,document_date,amount_minor,vat_minor,currency,tax_country,document_type,sha256")
+        .gte("document_date", start).lte("document_date", end)
+        .limit(2000),
+      supabase.from("finance_vat_reconciliations")
+        .select("id,period_year,period_number,status,imported_vat_minor,calculated_vat_minor,delta_minor,missing_docs,created_at")
+        .order("created_at", { ascending: false }).limit(8),
+      supabase.from("finance_vat_summaries")
+        .select("period_year,period_number,vat_total_minor,recoverable_minor,non_recoverable_minor,outstanding_minor,invoice_count,currency,computed_at")
+        .order("computed_at", { ascending: false }).limit(4),
+    ]);
+
+    const rows = docs ?? [];
+    let recoverable = 0, nonRecoverable = 0, vatTotal = 0;
+    const missing: any[] = [];
+    const dupMap = new Map<string, any[]>();
+    for (const d of rows) {
+      const vat = Number(d.vat_minor ?? 0);
+      const amt = Number(d.amount_minor ?? 0);
+      if (vat > 0) {
+        vatTotal += vat;
+        if ((d.tax_country ?? "").toUpperCase() === "NL") recoverable += vat;
+        else nonRecoverable += vat;
+      } else if (amt > 0 && (d.document_type === "invoice" || d.document_type === "receipt")) {
+        missing.push(d);
+      }
+      const key = `${(d.supplier_name || "").toLowerCase()}|${(d.invoice_number || "").toLowerCase()}`;
+      if (d.invoice_number) {
+        const arr = dupMap.get(key) ?? []; arr.push(d); dupMap.set(key, arr);
+      }
+    }
+    const duplicates = Array.from(dupMap.values()).filter((a) => a.length > 1);
+
+    setVat({
+      period: { year: y, quarter: q, start, end },
+      totals: { vatTotal, recoverable, nonRecoverable, invoiceCount: rows.length },
+      missing, duplicates,
+      reconciliations: recs ?? [],
+      summaries: summaries ?? [],
+    });
+    setVatLoading(false);
+  }
+
+  async function generateQuarterlyVatReport() {
+    if (!vat) return;
+    setVatGenerating(true);
+    const { data, error } = await invokeFunction<{ ok: boolean }>("finance-vat-reconcile", {
+      triggered_by: "vault_v14_ui",
+      period_type: "quarter",
+      period_year: vat.period.year,
+      period_number: vat.period.quarter,
+    });
+    setVatGenerating(false);
+    if (error || !data?.ok) toast.error("Quarterly VAT report failed");
+    else { toast.success(`Q${vat.period.quarter} ${vat.period.year} VAT report generated`); loadVat(); }
   }
 
   return (
@@ -123,6 +195,7 @@ export default function FinancialEvidenceVaultPage() {
         <TabsList>
           <TabsTrigger value="overview"><LayoutDashboard className="h-4 w-4 mr-1" />Overview</TabsTrigger>
           <TabsTrigger value="assets"><Boxes className="h-4 w-4 mr-1" />Assets</TabsTrigger>
+          <TabsTrigger value="vat"><Receipt className="h-4 w-4 mr-1" />VAT{vat && (vat.missing.length + vat.duplicates.length) > 0 ? <Badge variant="secondary" className="ml-2">{vat.missing.length + vat.duplicates.length}</Badge> : null}</TabsTrigger>
           <TabsTrigger value="alerts"><Bell className="h-4 w-4 mr-1" />Alerts {kpis?.openAlerts ? <Badge variant="secondary" className="ml-2">{kpis.openAlerts}</Badge> : null}</TabsTrigger>
           <TabsTrigger value="search"><Search className="h-4 w-4 mr-1" />Search</TabsTrigger>
         </TabsList>
@@ -180,6 +253,87 @@ export default function FinancialEvidenceVaultPage() {
                         <div>{currency(a.current_book_value_cents ?? a.purchase_amount_cents ?? 0, a.currency ?? "EUR")}</div>
                         <div className="text-xs text-muted-foreground">since {a.purchase_date ?? "—"}</div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="vat" className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">VAT Intelligence</h2>
+              <p className="text-xs text-muted-foreground">
+                Current quarter: Q{vat?.period.quarter} {vat?.period.year} ({vat?.period.start} → {vat?.period.end})
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={loadVat} disabled={vatLoading}>
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </Button>
+              <Button size="sm" onClick={generateQuarterlyVatReport} disabled={vatGenerating || !vat}>
+                <Download className="h-4 w-4" /> {vatGenerating ? "Generating…" : "Generate quarterly VAT report"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Kpi label="Recoverable VAT (NL)" value={currency(vat?.totals.recoverable ?? 0)} sub="tax_country = NL" />
+            <Kpi label="Non-recoverable VAT" value={currency(vat?.totals.nonRecoverable ?? 0)} sub="foreign / no NL VAT" />
+            <Kpi label="Missing VAT" value={vat?.missing.length ?? 0} sub="invoices with amount, no VAT" />
+            <Kpi label="Duplicate invoices" value={vat?.duplicates.length ?? 0} sub="same supplier + invoice #" />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileWarning className="h-4 w-4" /> Missing VAT ({vat?.missing.length ?? 0})</CardTitle></CardHeader>
+              <CardContent className="space-y-2 max-h-96 overflow-auto">
+                {vatLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
+                  (vat?.missing.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">No missing VAT this quarter.</p> :
+                  vat!.missing.slice(0, 50).map((d) => (
+                    <div key={d.id} className="text-sm border-b pb-1 last:border-0">
+                      <div className="font-medium">{d.supplier_name || d.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.document_date} · {d.invoice_number || "no invoice #"} · {currency(d.amount_minor ?? 0, d.currency ?? "EUR")}
+                      </div>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><Copy className="h-4 w-4" /> Duplicate invoices ({vat?.duplicates.length ?? 0})</CardTitle></CardHeader>
+              <CardContent className="space-y-3 max-h-96 overflow-auto">
+                {vatLoading ? <p className="text-sm text-muted-foreground">Loading…</p> :
+                  (vat?.duplicates.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">No duplicates detected.</p> :
+                  vat!.duplicates.slice(0, 50).map((group, i) => (
+                    <div key={i} className="border-b pb-2 last:border-0">
+                      <div className="font-medium text-sm">{group[0].supplier_name} · #{group[0].invoice_number}</div>
+                      <div className="text-xs text-muted-foreground">{group.length} copies — VAT sha256 differs: {new Set(group.map((g: any) => g.sha256)).size > 1 ? "yes" : "no"}</div>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Reconciliation history</CardTitle></CardHeader>
+            <CardContent>
+              {(vat?.reconciliations.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">No reconciliations yet — click “Generate quarterly VAT report” to run the first one.</p>
+              ) : (
+                <div className="divide-y text-sm">
+                  {vat!.reconciliations.map((r) => (
+                    <div key={r.id} className="py-2 flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Q{r.period_number} {r.period_year} · <Badge variant={r.status === "ok" ? "secondary" : "destructive"}>{r.status}</Badge></div>
+                        <div className="text-xs text-muted-foreground">
+                          calc {currency(r.calculated_vat_minor ?? 0)} · imported {currency(r.imported_vat_minor ?? 0)} · Δ {currency(r.delta_minor ?? 0)} · missing {r.missing_docs ?? 0}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</div>
                     </div>
                   ))}
                 </div>
