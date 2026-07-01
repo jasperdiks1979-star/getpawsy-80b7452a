@@ -10,6 +10,10 @@ import {
   MUTATION_STRATEGIES, ENGINE_V2,
   pickVisualDNA, fingerprintVisualDNA,
 } from "../_shared/pcie2-engine-v2.ts";
+import {
+  compilePrompt as compileGoldenPrompt,
+  writeCompilerLedger,
+} from "../_shared/golden-dna-compiler.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const SUPA = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
