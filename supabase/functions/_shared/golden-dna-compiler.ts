@@ -351,8 +351,10 @@ function buildInterpretationLine(
 
 function detectEnvironment(product: ProductLike): Environment {
   const t = textBag(product);
-  if (/outdoor|backyard|hike|park|beach|patio|yard/.test(t)) return "outdoor";
-  if (/indoor|home|apartment|couch|sofa|bedroom|kitchen|living/.test(t)) return "indoor";
+  if (/\b(outdoor|backyard|hike|park|beach|patio|yard)\b/.test(t)) return "outdoor";
+  if (/\b(indoor|home|apartment|couch|sofa|bedroom|kitchen|living\s*room|scandinavian)\b/.test(t)) {
+    return "indoor";
+  }
   return "either";
 }
 
