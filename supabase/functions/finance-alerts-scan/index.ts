@@ -102,17 +102,17 @@ Deno.serve(async (req) => {
   const since = new Date(); since.setDate(since.getDate() - 90);
   const { data: unk } = await admin
     .from("evidence_documents")
-    .select("id,filename,invoice_date")
+    .select("id,original_filename,title,document_date")
     .is("supplier_id", null)
-    .gte("invoice_date", since.toISOString().slice(0, 10))
+    .gte("document_date", since.toISOString().slice(0, 10))
     .limit(200);
   for (const d of unk ?? []) alerts.push({
     alert_type: "unknown_supplier",
     severity: "info",
     subject_type: "evidence_documents",
     subject_id: d.id,
-    title: `Unlinked supplier: ${d.filename ?? "document"}`,
-    detail: `Invoice date ${d.invoice_date ?? "unknown"}`,
+    title: `Unlinked supplier: ${d.original_filename ?? d.title ?? "document"}`,
+    detail: `Document date ${d.document_date ?? "unknown"}`,
   });
 
   // 5. asset_incomplete (no linked invoice)
@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
   // 6. invoice_missing on payments
   const { data: pays } = await admin
     .from("evidence_payments")
-    .select("id,amount_minor,currency,paid_at,evidence_document_id,supplier_id")
-    .is("evidence_document_id", null)
+    .select("id,amount_minor,currency,paid_at,invoice_document_id,supplier_id")
+    .is("invoice_document_id", null)
     .limit(500);
   for (const p of pays ?? []) alerts.push({
     alert_type: "invoice_missing",
