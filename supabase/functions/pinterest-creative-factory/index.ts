@@ -17,6 +17,11 @@ import {
   pickMasterDims,
   scoreInspirationAi,
 } from "../_shared/pinterest-master-creative-director.ts";
+import {
+  compilePrompt as compileGoldenPrompt,
+  priorSuccessRate,
+  writeCompilerLedger,
+} from "../_shared/golden-dna-compiler.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
