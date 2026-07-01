@@ -338,6 +338,15 @@ async function persist(
         });
       } catch (_) {}
     }
+
+    // Genesis V6.4 — Immediate Dispatch
+    // When PRE passes with score >= immediate_dispatch_threshold (default 95)
+    // AND the pin already exists in pinterest_pin_queue, promote the row to
+    // "ready now" and wake pinterest-cron-worker so the pin ships without
+    // waiting for the next cron tick.
+    if (v.passed && v.overall_score >= 95 && i.pin_queue_id) {
+      await maybeImmediateDispatch(supabase, i, v, data?.id ?? null);
+    }
   } catch (_) {
     // Never let logging failures block the verdict.
   }
@@ -353,5 +362,111 @@ export async function preEnabled(supabase: any): Promise<boolean> {
     return data?.value !== false;
   } catch {
     return true; // fail-closed default
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Immediate dispatch helper
+// ─────────────────────────────────────────────────────────────────────────────
+async function immediateDispatchEnabled(supabase: any): Promise<{ enabled: boolean; threshold: number }> {
+  try {
+    const { data } = await supabase
+      .from("pre_settings")
+      .select("key,value")
+      .in("key", ["immediate_dispatch_enabled", "immediate_dispatch_threshold"]);
+    const map: Record<string, unknown> = {};
+    for (const r of (data ?? [])) map[r.key] = r.value;
+    const enabled = map.immediate_dispatch_enabled !== false; // default ON
+    const t = typeof map.immediate_dispatch_threshold === "string"
+      ? Number(map.immediate_dispatch_threshold)
+      : (map.immediate_dispatch_threshold as number);
+    return { enabled, threshold: Number.isFinite(t) ? t : 95 };
+  } catch {
+    return { enabled: true, threshold: 95 };
+  }
+}
+
+async function maybeImmediateDispatch(
+  supabase: any,
+  i: PreInput,
+  v: PreVerdict,
+  preEvalId: string | null,
+) {
+  try {
+    const { enabled, threshold } = await immediateDispatchEnabled(supabase);
+    if (!enabled || v.overall_score < threshold) return;
+
+    const nowIso = new Date().toISOString();
+
+    // Promote the pin to "ready now": approve if not yet approved, set schedule
+    // to now, and bump priority so the worker picks it first. Only touch rows
+    // that are still in a pre-publish state — never override rows that already
+    // posted, failed, or were rejected downstream.
+    const { data: promoted } = await supabase
+      .from("pinterest_pin_queue")
+      .update({
+        approved_at: nowIso,
+        scheduled_at: nowIso,
+        effective_publish_at: nowIso,
+        priority: 0,
+        status: "queued",
+        updated_at: nowIso,
+      })
+      .eq("id", i.pin_queue_id)
+      .in("status", ["draft", "approved", "queued", "pending"])
+      .is("pinterest_pin_id", null)
+      .select("id")
+      .maybeSingle();
+
+    if (!promoted?.id) return;
+
+    const supaUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supaUrl || !serviceKey) return;
+
+    // Fire-and-forget wake of the canonical publisher. Using EdgeRuntime.waitUntil
+    // keeps the response fast while ensuring the network call actually completes.
+    const wake = fetch(`${supaUrl}/functions/v1/pinterest-cron-worker`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceKey}`,
+        "apikey": serviceKey,
+        "Content-Type": "application/json",
+        "x-caller": "pre-immediate-dispatch",
+      },
+      body: JSON.stringify({
+        trigger: "pre_immediate_dispatch",
+        pin_queue_id: i.pin_queue_id,
+        pre_evaluation_id: preEvalId,
+        pre_score: v.overall_score,
+      }),
+    }).catch(() => {});
+
+    // deno-lint-ignore no-explicit-any
+    const rt: any = (globalThis as any).EdgeRuntime;
+    if (rt?.waitUntil) rt.waitUntil(wake);
+
+    // Log the dispatch on the trace timeline for observability.
+    if (i.trace_id) {
+      try {
+        await supabase.from("ai_trace_events").insert({
+          trace_id: i.trace_id,
+          function_name: i.function_name ?? "pre-product-relevance",
+          stage: "pre_immediate_dispatch",
+          product_slug: i.product_slug,
+          product_id: i.product_id,
+          status: "ok",
+          pin_queue_id: i.pin_queue_id,
+          pre_evaluation_id: preEvalId,
+          meta: {
+            overall_score: v.overall_score,
+            threshold,
+            target: "pinterest-cron-worker",
+          },
+        });
+      } catch (_) {}
+    }
+  } catch (_) {
+    // Immediate dispatch must never break the PRE verdict path.
   }
 }
