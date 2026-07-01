@@ -5,11 +5,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, FileText, Landmark, Receipt, Shield } from "lucide-react";
+import { ArrowLeft, FileText, Landmark, Receipt, Shield, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
 
 type Doc = { id: string; title: string; document_type: string; supplier_name: string | null; document_date: string | null; amount_minor: number | null; vat_minor: number | null; currency: string | null; sha256: string; };
 type Vat = { id: string; period_type: string; period_year: number; period_number: number | null; recoverable_minor: number; vat_total_minor: number; currency: string; invoice_count: number };
+type Recon = { id: string; period_type: string; period_year: number; period_number: number | null; status: string; currency: string; imported_vat_minor: number; calculated_vat_minor: number; delta_minor: number; delta_pct: number; invoice_count: number; missing_docs: number; evidence_sha256: string | null; triggered_by: string; created_at: string };
 
 const money = (m: number | null | undefined, c?: string | null) =>
   m == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: c || "EUR" }).format(m / 100);
@@ -18,6 +21,8 @@ const AccountantPortalPage = () => {
   const { user, isAdmin, isLoading } = useAuth();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [vats, setVats] = useState<Vat[]>([]);
+  const [recons, setRecons] = useState<Recon[]>([]);
+  const [running, setRunning] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
 
   useEffect(() => {
@@ -26,12 +31,14 @@ const AccountantPortalPage = () => {
         const r = await supabase.from("user_roles").select("role").eq("user_id", user.id);
         if (r.data) setRoles(r.data.map((x: { role: string }) => x.role));
       }
-      const [d, v] = await Promise.all([
+      const [d, v, r] = await Promise.all([
         supabase.from("evidence_documents").select("id,title,document_type,supplier_name,document_date,amount_minor,vat_minor,currency,sha256").order("document_date", { ascending: false, nullsFirst: false }).limit(500),
         supabase.from("finance_vat_summaries").select("*").order("period_year", { ascending: false }),
+        supabase.from("finance_vat_reconciliations").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
       if (d.data) setDocs(d.data as Doc[]);
       if (v.data) setVats(v.data as Vat[]);
+      if (r.data) setRecons(r.data as Recon[]);
     })();
   }, [user]);
 
@@ -43,6 +50,24 @@ const AccountantPortalPage = () => {
 
   const invoices = docs.filter((d) => d.document_type === "invoice");
   const receipts = docs.filter((d) => d.document_type === "receipt");
+
+  const runReconcile = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("finance-vat-reconcile", {
+        body: { triggered_by: "manual" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Reconciliation failed");
+      toast.success(`Reconciliation ${data.reconciliation.status.toUpperCase()} · Δ ${money(data.reconciliation.delta_minor, data.reconciliation.currency)}`);
+      const { data: r } = await supabase.from("finance_vat_reconciliations").select("*").order("created_at", { ascending: false }).limit(50);
+      if (r) setRecons(r as Recon[]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reconciliation failed");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,7 +83,7 @@ const AccountantPortalPage = () => {
         </div>
 
         <Tabs defaultValue="invoices">
-          <TabsList className="mb-4"><TabsTrigger value="invoices">Invoices</TabsTrigger><TabsTrigger value="receipts">Receipts</TabsTrigger><TabsTrigger value="vat">VAT summaries</TabsTrigger></TabsList>
+          <TabsList className="mb-4"><TabsTrigger value="invoices">Invoices</TabsTrigger><TabsTrigger value="receipts">Receipts</TabsTrigger><TabsTrigger value="vat">VAT summaries</TabsTrigger><TabsTrigger value="reconcile">VAT reconciliation</TabsTrigger></TabsList>
 
           <TabsContent value="invoices">
             <DocList items={invoices} empty="No invoices archived yet." icon={<FileText className="h-6 w-6" />} />
@@ -82,6 +107,50 @@ const AccountantPortalPage = () => {
                       <p className="text-xs text-muted-foreground">recoverable of {money(v.vat_total_minor, v.currency)}</p></div>
                   </CardContent></Card>
                 ))}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="reconcile">
+            <Card className="mb-4"><CardContent className="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="font-medium flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Automated quarterly VAT reconciliation</p>
+                <p className="text-xs text-muted-foreground">Runs every quarter · compares imported VAT vs calculated VAT from evidence · logs SHA-256 audit fingerprint</p>
+              </div>
+              <Button onClick={runReconcile} disabled={running} size="sm">
+                <RefreshCw className={`h-4 w-4 mr-2 ${running ? "animate-spin" : ""}`} />
+                {running ? "Reconciling…" : "Run now"}
+              </Button>
+            </CardContent></Card>
+            {recons.length === 0 ? (
+              <Card><CardContent className="p-8 text-sm text-muted-foreground text-center">No reconciliation runs yet. Click <b>Run now</b> to reconcile the previous quarter.</CardContent></Card>
+            ) : (
+              <div className="grid gap-2">
+                {recons.map((r) => {
+                  const badgeVariant = r.status === "ok" ? "default" : r.status === "warning" ? "secondary" : "destructive";
+                  return (
+                    <Card key={r.id}><CardContent className="p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium flex items-center gap-2">
+                            {r.status !== "ok" && <AlertTriangle className="h-4 w-4 text-amber-600" />}
+                            {r.period_type === "quarter" ? `Q${r.period_number} ${r.period_year}` : `FY ${r.period_year}`}
+                            <Badge variant={badgeVariant as "default" | "secondary" | "destructive"} className="text-[10px] uppercase">{r.status}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{r.triggered_by}</Badge>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Imported {money(r.imported_vat_minor, r.currency)} · Calculated {money(r.calculated_vat_minor, r.currency)} · {r.invoice_count} invoices
+                            {r.missing_docs > 0 ? ` · ${r.missing_docs} missing VAT` : ""}
+                          </p>
+                          {r.evidence_sha256 && <p className="text-[10px] font-mono text-muted-foreground truncate">sha: {r.evidence_sha256.slice(0, 32)}…</p>}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`font-medium ${Math.abs(r.delta_minor) > 100 ? "text-amber-700" : ""}`}>Δ {money(r.delta_minor, r.currency)}</p>
+                          <p className="text-xs text-muted-foreground">{Number(r.delta_pct).toFixed(2)}% · {new Date(r.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </CardContent></Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
