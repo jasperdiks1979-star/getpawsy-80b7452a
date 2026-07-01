@@ -427,6 +427,7 @@ const HomepageAiPage = lazyWithRetry(() => import("./pages/admin/HomepageAiPage"
 const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDominance"));
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
+const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
 const GrowthCommandPage = lazyWithRetry(() => import("./pages/admin/GrowthCommandPage"));
