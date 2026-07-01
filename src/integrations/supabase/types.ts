@@ -20141,13 +20141,18 @@ export type Database = {
           created_at: string
           currency: string | null
           first_invoice_at: string | null
+          health_score: number | null
           id: string
+          intelligence: Json | null
+          invoice_completeness_pct: number | null
           invoice_count: number
           latest_invoice_at: string | null
           metadata: Json
           name: string
           notes: string | null
+          risk_score: number | null
           slug: string
+          spend_ytd_cents: number | null
           total_paid_minor: number
           updated_at: string
           vat_number: string | null
@@ -20159,13 +20164,18 @@ export type Database = {
           created_at?: string
           currency?: string | null
           first_invoice_at?: string | null
+          health_score?: number | null
           id?: string
+          intelligence?: Json | null
+          invoice_completeness_pct?: number | null
           invoice_count?: number
           latest_invoice_at?: string | null
           metadata?: Json
           name: string
           notes?: string | null
+          risk_score?: number | null
           slug: string
+          spend_ytd_cents?: number | null
           total_paid_minor?: number
           updated_at?: string
           vat_number?: string | null
@@ -20177,13 +20187,18 @@ export type Database = {
           created_at?: string
           currency?: string | null
           first_invoice_at?: string | null
+          health_score?: number | null
           id?: string
+          intelligence?: Json | null
+          invoice_completeness_pct?: number | null
           invoice_count?: number
           latest_invoice_at?: string | null
           metadata?: Json
           name?: string
           notes?: string | null
+          risk_score?: number | null
           slug?: string
+          spend_ytd_cents?: number | null
           total_paid_minor?: number
           updated_at?: string
           vat_number?: string | null
@@ -20397,6 +20412,8 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           severity: string
+          subject_id: string | null
+          subject_type: string | null
           supplier_slug: string | null
           title: string
           updated_at: string
@@ -20412,6 +20429,8 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity: string
+          subject_id?: string | null
+          subject_type?: string | null
           supplier_slug?: string | null
           title: string
           updated_at?: string
@@ -20427,6 +20446,8 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
+          subject_id?: string | null
+          subject_type?: string | null
           supplier_slug?: string | null
           title?: string
           updated_at?: string
@@ -20531,6 +20552,189 @@ export type Database = {
           z_score?: number | null
         }
         Relationships: []
+      }
+      finance_asset_documents: {
+        Row: {
+          asset_id: string
+          created_at: string
+          evidence_document_id: string
+          id: string
+          role: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          evidence_document_id: string
+          id?: string
+          role: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          evidence_document_id?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_asset_documents_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "finance_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_asset_documents_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_asset_events: {
+        Row: {
+          asset_id: string
+          cost_cents: number | null
+          created_at: string
+          event_date: string
+          event_type: string
+          evidence_document_id: string | null
+          id: string
+          notes: string | null
+          supplier_id: string | null
+          vat_cents: number | null
+        }
+        Insert: {
+          asset_id: string
+          cost_cents?: number | null
+          created_at?: string
+          event_date?: string
+          event_type: string
+          evidence_document_id?: string | null
+          id?: string
+          notes?: string | null
+          supplier_id?: string | null
+          vat_cents?: number | null
+        }
+        Update: {
+          asset_id?: string
+          cost_cents?: number | null
+          created_at?: string
+          event_date?: string
+          event_type?: string
+          evidence_document_id?: string | null
+          id?: string
+          notes?: string | null
+          supplier_id?: string | null
+          vat_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "finance_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_asset_events_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_asset_events_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_assets: {
+        Row: {
+          asset_status: string
+          business_usage_pct: number | null
+          category: string
+          created_at: string
+          currency: string | null
+          current_book_value_cents: number | null
+          depreciation_method: string | null
+          depreciation_years: number | null
+          id: string
+          metadata: Json | null
+          name: string
+          notes: string | null
+          photos: Json | null
+          purchase_amount_cents: number | null
+          purchase_date: string | null
+          replacement_expected_at: string | null
+          salvage_value_cents: number | null
+          serial: string | null
+          supplier_id: string | null
+          updated_at: string
+          vat_amount_cents: number | null
+          warranty_until: string | null
+        }
+        Insert: {
+          asset_status?: string
+          business_usage_pct?: number | null
+          category: string
+          created_at?: string
+          currency?: string | null
+          current_book_value_cents?: number | null
+          depreciation_method?: string | null
+          depreciation_years?: number | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          notes?: string | null
+          photos?: Json | null
+          purchase_amount_cents?: number | null
+          purchase_date?: string | null
+          replacement_expected_at?: string | null
+          salvage_value_cents?: number | null
+          serial?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          vat_amount_cents?: number | null
+          warranty_until?: string | null
+        }
+        Update: {
+          asset_status?: string
+          business_usage_pct?: number | null
+          category?: string
+          created_at?: string
+          currency?: string | null
+          current_book_value_cents?: number | null
+          depreciation_method?: string | null
+          depreciation_years?: number | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          notes?: string | null
+          photos?: Json | null
+          purchase_amount_cents?: number | null
+          purchase_date?: string | null
+          replacement_expected_at?: string | null
+          salvage_value_cents?: number | null
+          serial?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          vat_amount_cents?: number | null
+          warranty_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_assets_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_backfill_scans: {
         Row: {
@@ -21010,6 +21214,39 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_search_index: {
+        Row: {
+          body: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+          title: string
+          tsv: unknown
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          title: string
+          tsv?: unknown
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          title?: string
+          tsv?: unknown
+          updated_at?: string
+        }
+        Relationships: []
+      }
       finance_subscriptions: {
         Row: {
           amount_minor: number
@@ -21017,15 +21254,19 @@ export type Database = {
           cancelled_at: string | null
           created_at: string
           currency: string
+          duplicate_of: string | null
+          expected_next_invoice_at: string | null
           id: string
           is_active: boolean
           last_seen_at: string | null
+          missing_invoice_flag: boolean | null
           notes: string | null
           price_history: Json
           product_name: string
           renews_at: string | null
           started_at: string | null
           supplier_slug: string
+          unused_since: string | null
           updated_at: string
           vat_pct: number | null
         }
@@ -21035,15 +21276,19 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           currency?: string
+          duplicate_of?: string | null
+          expected_next_invoice_at?: string | null
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
+          missing_invoice_flag?: boolean | null
           notes?: string | null
           price_history?: Json
           product_name: string
           renews_at?: string | null
           started_at?: string | null
           supplier_slug: string
+          unused_since?: string | null
           updated_at?: string
           vat_pct?: number | null
         }
@@ -21053,15 +21298,19 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           currency?: string
+          duplicate_of?: string | null
+          expected_next_invoice_at?: string | null
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
+          missing_invoice_flag?: boolean | null
           notes?: string | null
           price_history?: Json
           product_name?: string
           renews_at?: string | null
           started_at?: string | null
           supplier_slug?: string
+          unused_since?: string | null
           updated_at?: string
           vat_pct?: number | null
         }

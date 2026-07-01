@@ -429,6 +429,7 @@ const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/Analytics
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
 const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
+const FinancialEvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/FinancialEvidenceVaultPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
@@ -2462,6 +2463,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <EvidenceVaultPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="vault-v14"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FinancialEvidenceVaultPage />
                                 </Suspense>
                               }
                             />
