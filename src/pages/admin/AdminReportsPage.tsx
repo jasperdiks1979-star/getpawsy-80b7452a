@@ -16,6 +16,12 @@ interface ReportItem {
 
 const REPORTS: ReportItem[] = [
   {
+    filename: "2026-07-01-lovable-expense-tax-forensics.pdf",
+    title: "Genesis V11 — Lovable Expense & Tax Forensics Report",
+    category: "Bookkeeping · Belastingdienst · Credits verified · Invoices §9 recovery",
+    path: "/admin-reports/genesis-v11/2026-07-01-lovable-expense-tax-forensics.pdf",
+  },
+  {
     filename: "2026-07-01-financial-integrity-certification.pdf",
     title: "Genesis V10.3 — Ultimate Financial Integrity & Production Certification",
     category: "Financial Certification · CERTIFIED 100% LIVE · Overall 97/100 · 0.00% divergence",
