@@ -1486,7 +1486,7 @@ Deno.serve(async (req) => {
       }
       const { data: existing, error: rErr } = await sb
         .from("pinterest_creative_factory_jobs")
-        .select("id, prompt, attempt_count, max_attempts")
+        .select("*")
         .eq("id", jobId)
         .maybeSingle();
       if (rErr || !existing) {
@@ -1500,19 +1500,39 @@ Deno.serve(async (req) => {
         ...(existing.prompt ?? {}),
         adaptive_retry_directives: directives,
       };
+      const nextAttempt = Number(existing.attempt_count ?? 0) + 1;
+      const owner = `adaptive-v10-${traceId()}`;
       await sb.from("pinterest_creative_factory_jobs").update({
         prompt: nextPrompt,
-        status: "retry",
+        status: "running",
         stage: "planning",
-        attempt_count: Math.min(Number(existing.attempt_count ?? 0), 4),
+        attempt_count: nextAttempt,
         media_url: null,
         media_hash: null,
         error_message: null,
-        lease_owner: null,
-        leased_until: null,
-        max_attempts: Math.max(Number(existing.max_attempts ?? 3), Number(existing.attempt_count ?? 0) + 2),
+        lease_owner: owner,
+        leased_until: new Date(Date.now() + 4 * 60_000).toISOString(),
+        max_attempts: Math.max(Number(existing.max_attempts ?? 3), nextAttempt + 1),
       }).eq("id", jobId);
-      const result = await work(sb, 1);
+      const { data: retryJob, error: retryErr } = await sb
+        .from("pinterest_creative_factory_jobs")
+        .select("*")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (retryErr || !retryJob) throw throwableToError(retryErr ?? { message: "retry_job_missing" });
+      const { data: settings } = await sb.from(
+        "pinterest_creative_factory_settings",
+      ).select("*").eq("id", 1).maybeSingle();
+      const processed = await processJob(sb, retryJob, settings ?? {});
+      const result = {
+        ok: true,
+        owner,
+        direct_job_id: jobId,
+        leased: 1,
+        completed: processed.ok ? 1 : 0,
+        failed: processed.ok ? 0 : 1,
+        results: [processed],
+      };
       const { data: after } = await sb
         .from("pinterest_creative_factory_jobs")
         .select("id, status, stage, error_message, metrics, media_url")
