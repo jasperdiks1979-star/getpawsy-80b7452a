@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { extractStrictQcJson } from "./index.ts";
+import { extractStrictQcJson } from "./qc-parser.ts";
 
 Deno.test("strict JSON response parses", () => {
   const v = extractStrictQcJson('{"score":92,"ok":true,"reasons":["clean"]}');
