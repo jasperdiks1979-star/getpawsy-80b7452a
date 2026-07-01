@@ -501,14 +501,15 @@ async function seedProductDrafts(
   const niche = detectNiche(product) as NicheKey;
   const created: string[] = [];
   for (let i = 0; i < Math.max(1, Math.min(count, 8)); i++) {
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, i);
-    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
-      .insert({
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
+    const insertRow = {
         product_id: product.id,
         product_slug: product.slug,
         product_name: product.name,
@@ -523,7 +524,7 @@ async function seedProductDrafts(
         category_key: niche,
         overlay_text: copy.overlay,
         source_type: "product_ai",
-        content_type: "product",
+        content_type: classification.content_type,
         pin_variant: "product_ai",
         meta: {
           creative_source: source,
@@ -532,8 +533,17 @@ async function seedProductDrafts(
           inventory_seed: true,
           publish_allowed: true,
           source_type: "product_ai",
+          pin_type: classification.pin_type,
+          content_type: classification.content_type,
+          creative_style: classification.creative_style,
+          creative_goal: classification.creative_goal,
+          content_strategy: classification.content_strategy,
+          genesis_v91_aligned: true,
         },
-      }).select("id").maybeSingle();
+      };
+    assertFactoryMetadataComplete(insertRow);
+    const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
+      .insert(insertRow).select("id").maybeSingle();
     if (insErr || !pin?.id) continue;
     created.push(pin.id as string);
     // Closed-loop lineage stamp (product-draft path).
