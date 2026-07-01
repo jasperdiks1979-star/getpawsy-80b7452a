@@ -565,12 +565,15 @@ const BelastingdienstExportPanel = () => {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<ExportResult | null>(null);
 
-  const run = async () => {
+  const run = async (override?: { periodType: "quarter" | "year"; year: number; quarter: number | null }) => {
     setRunning(true);
     setResult(null);
     try {
+      const pt = override?.periodType ?? periodType;
+      const yr = override?.year ?? year;
+      const qt = override ? override.quarter : (periodType === "quarter" ? quarter : null);
       const { data, error } = await supabase.functions.invoke("finance-belastingdienst-export", {
-        body: { period_type: periodType, year, quarter: periodType === "quarter" ? quarter : null },
+        body: { period_type: pt, year: yr, quarter: qt },
       });
       if (error) throw error;
       setResult(data as ExportResult);
@@ -580,6 +583,25 @@ const BelastingdienstExportPanel = () => {
     } finally {
       setRunning(false);
     }
+  };
+
+  const oneClickCurrentQuarter = () => {
+    const y = now.getUTCFullYear();
+    const q = Math.floor(now.getUTCMonth() / 3) + 1;
+    setPeriodType("quarter"); setYear(y); setQuarter(q);
+    run({ periodType: "quarter", year: y, quarter: q });
+  };
+  const oneClickPreviousQuarter = () => {
+    let q = Math.floor(now.getUTCMonth() / 3) + 1 - 1;
+    let y = now.getUTCFullYear();
+    if (q < 1) { q = 4; y -= 1; }
+    setPeriodType("quarter"); setYear(y); setQuarter(q);
+    run({ periodType: "quarter", year: y, quarter: q });
+  };
+  const oneClickYearToDate = () => {
+    const y = now.getUTCFullYear();
+    setPeriodType("year"); setYear(y);
+    run({ periodType: "year", year: y, quarter: null });
   };
 
   return (
@@ -595,6 +617,32 @@ const BelastingdienstExportPanel = () => {
           suppliers, payments, evidence index, SHA-256 manifest and Dutch-language ReadMe.
           Stored in the private Evidence Vault; the download link below is valid for 30 days.
         </p>
+
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">One-click Belastingdienst dossier</p>
+              <p className="text-xs text-muted-foreground">
+                Instant ZIP with VAT summary, invoices, receipts, evidence hashes en SHA-256 manifest.
+                Klaar voor inspectie door de Belastingdienst.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            <Button size="sm" disabled={running} onClick={oneClickCurrentQuarter} className="gap-2">
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Current quarter
+            </Button>
+            <Button size="sm" variant="secondary" disabled={running} onClick={oneClickPreviousQuarter} className="gap-2">
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Previous quarter
+            </Button>
+            <Button size="sm" variant="secondary" disabled={running} onClick={oneClickYearToDate} className="gap-2">
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Year-to-date ({now.getUTCFullYear()})
+            </Button>
+          </div>
+        </div>
 
         <div className="grid gap-3 md:grid-cols-4">
           <div>
@@ -628,7 +676,7 @@ const BelastingdienstExportPanel = () => {
             </div>
           )}
           <div className="flex items-end">
-            <Button disabled={running} onClick={run} className="gap-2 w-full">
+            <Button disabled={running} onClick={() => run()} className="gap-2 w-full">
               {running ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</> : <><Download className="h-4 w-4" /> Generate ZIP</>}
             </Button>
           </div>
