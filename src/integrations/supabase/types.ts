@@ -9401,6 +9401,243 @@ export type Database = {
         }
         Relationships: []
       }
+      ceo_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          detail: string | null
+          detected_at: string
+          evidence: Json
+          id: string
+          resolved_at: string | null
+          severity: string
+          source_module: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          detail?: string | null
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          resolved_at?: string | null
+          severity: string
+          source_module?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          detail?: string | null
+          detected_at?: string
+          evidence?: Json
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source_module?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      ceo_briefings: {
+        Row: {
+          briefing_type: string
+          generated_at: string
+          headline: string | null
+          id: string
+          period_end: string
+          period_start: string
+          sha256: string | null
+          storage_path: string | null
+          summary: Json
+        }
+        Insert: {
+          briefing_type: string
+          generated_at?: string
+          headline?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+        }
+        Update: {
+          briefing_type?: string
+          generated_at?: string
+          headline?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+        }
+        Relationships: []
+      }
+      ceo_business_health: {
+        Row: {
+          computed_at: string
+          evidence: Json
+          id: string
+          reason: string | null
+          score_grade: string | null
+          score_key: string
+          score_name: string
+          score_value: number
+          source_module: string | null
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          evidence?: Json
+          id?: string
+          reason?: string | null
+          score_grade?: string | null
+          score_key: string
+          score_name: string
+          score_value?: number
+          source_module?: string | null
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          evidence?: Json
+          id?: string
+          reason?: string | null
+          score_grade?: string | null
+          score_key?: string
+          score_name?: string
+          score_value?: number
+          source_module?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ceo_goals: {
+        Row: {
+          created_at: string
+          current_value: number
+          due_at: string | null
+          goal_category: string
+          goal_key: string
+          goal_name: string
+          id: string
+          metadata: Json
+          status: string
+          target_value: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number
+          due_at?: string | null
+          goal_category: string
+          goal_key: string
+          goal_name: string
+          id?: string
+          metadata?: Json
+          status?: string
+          target_value: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          due_at?: string | null
+          goal_category?: string
+          goal_key?: string
+          goal_name?: string
+          id?: string
+          metadata?: Json
+          status?: string
+          target_value?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ceo_kpi_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          kpis: Json
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpis?: Json
+          snapshot_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpis?: Json
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
+      ceo_priorities: {
+        Row: {
+          confidence: number
+          created_at: string
+          difficulty: string
+          estimated_roi: string | null
+          evidence: string | null
+          id: string
+          impact: string
+          metadata: Json
+          problem: string | null
+          rank: number
+          recommended_action: string | null
+          source_module: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          difficulty?: string
+          estimated_roi?: string | null
+          evidence?: string | null
+          id?: string
+          impact?: string
+          metadata?: Json
+          problem?: string | null
+          rank?: number
+          recommended_action?: string | null
+          source_module?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          difficulty?: string
+          estimated_roi?: string | null
+          evidence?: string | null
+          id?: string
+          impact?: string
+          metadata?: Json
+          problem?: string | null
+          rank?: number
+          recommended_action?: string | null
+          source_module?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkout_funnel_events: {
         Row: {
           bot_reason: string | null
