@@ -678,3 +678,175 @@ const BelastingdienstExportPanel = () => {
     </Card>
   );
 };
+
+type BackfillTask = {
+  id: string;
+  source_type: string;
+  source_id: string;
+  supplier_hint: string | null;
+  reference: string | null;
+  document_date: string | null;
+  amount_minor: number | null;
+  currency: string | null;
+  priority: string;
+  status: string;
+  reason: string;
+  auto_recover_result: string | null;
+  linked_document_id: string | null;
+  created_at: string;
+};
+
+type BackfillScan = {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  candidates_seen: number;
+  auto_recovered: number;
+  tasks_created: number;
+  tasks_updated: number;
+  error_message: string | null;
+};
+
+const BackfillTasksPanel = () => {
+  const [tasks, setTasks] = useState<BackfillTask[]>([]);
+  const [scans, setScans] = useState<BackfillScan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("open");
+
+  const load = async () => {
+    setLoading(true);
+    const q = supabase.from("finance_backfill_tasks")
+      .select("*")
+      .order("priority", { ascending: true })
+      .order("document_date", { ascending: false })
+      .limit(500);
+    if (statusFilter !== "all") q.eq("status", statusFilter);
+    const [{ data: t }, { data: s }] = await Promise.all([
+      q,
+      supabase.from("finance_backfill_scans").select("*").order("started_at", { ascending: false }).limit(10),
+    ]);
+    setTasks((t as BackfillTask[]) ?? []);
+    setScans((s as BackfillScan[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, [statusFilter]);
+
+  const runScan = async (dryRun: boolean) => {
+    setRunning(true);
+    const { data, error } = await supabase.functions.invoke("finance-backfill-scan", {
+      body: { dry_run: dryRun },
+    });
+    setRunning(false);
+    if (error) { toast.error(error.message); return; }
+    const r = data as { candidates: number; auto: number; created: number; updated: number };
+    toast.success(`Scan complete — ${r.candidates} candidates, ${r.auto} auto-linked, ${r.created} new, ${r.updated} updated`);
+    void load();
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    const patch: Record<string, unknown> = { status };
+    if (status === "resolved" || status === "wont_fix") patch.resolved_at = new Date().toISOString();
+    const { error } = await supabase.from("finance_backfill_tasks").update(patch).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    void load();
+  };
+
+  const openCount = tasks.filter(t => t.status === "open").length;
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Backfill task queue</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Scans orders, subscriptions, ad spend and payments for missing evidence documents.
+              Auto-links by reference when possible; unresolved rows become tasks.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => runScan(true)} disabled={running}>
+              {running ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null} Dry run
+            </Button>
+            <Button size="sm" onClick={() => runScan(false)} disabled={running}>
+              {running ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null} Run scan
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 flex-wrap">
+            {(["open", "in_progress", "resolved", "wont_fix", "all"] as const).map(s => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "default" : "outline"}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === "all" ? "All" : s.replace("_", " ")}
+                {s === "open" && openCount ? ` (${openCount})` : ""}
+              </Button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No tasks for this filter.</p>
+          ) : (
+            <div className="border rounded-lg divide-y">
+              {tasks.map(t => (
+                <div key={t.id} className="p-3 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline">{t.source_type}</Badge>
+                      <Badge variant={t.priority === "high" ? "destructive" : "secondary"}>{t.priority}</Badge>
+                      <Badge variant={t.status === "open" ? "default" : "outline"}>{t.status}</Badge>
+                      {t.auto_recover_result && (
+                        <Badge variant="outline" className="text-xs">{t.auto_recover_result}</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium mt-1 truncate">{t.reason}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {t.supplier_hint ?? "—"} · ref {t.reference ?? "—"} · {t.document_date ?? "—"} · {money(t.amount_minor, t.currency)}
+                    </p>
+                    <p className="text-xs font-mono text-muted-foreground truncate">{t.source_id}</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {t.status !== "resolved" && (
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(t.id, "resolved")}>Resolve</Button>
+                    )}
+                    {t.status === "open" && (
+                      <Button size="sm" variant="ghost" onClick={() => updateStatus(t.id, "wont_fix")}>Won't fix</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {scans.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Recent scans</h4>
+              <div className="border rounded-lg divide-y text-xs">
+                {scans.map(s => (
+                  <div key={s.id} className="p-2 flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={s.status === "success" ? "outline" : s.status === "failed" ? "destructive" : "secondary"}>{s.status}</Badge>
+                      <span className="text-muted-foreground">{new Date(s.started_at).toLocaleString()}</span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {s.candidates_seen} seen · {s.auto_recovered} auto · {s.tasks_created}+ / {s.tasks_updated}~
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
