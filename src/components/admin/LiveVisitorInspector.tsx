@@ -434,9 +434,15 @@ export const LiveVisitorInspector = ({ state, setState }: Props) => {
             )}
           </div>
 
-          <div className="border-t border-slate-800 px-3 py-1.5 text-[10px] text-slate-500">
-            Realtime · last 15 min · {rows.length} events · updates via websocket (no polling)
-            <span className="ml-1 opacity-50">t={new Date(now).toLocaleTimeString()}</span>
+          <div className="flex items-center justify-between border-t border-slate-800 px-3 py-1.5 text-[10px] text-slate-500">
+            <span>
+              Realtime · last 15 min · {rows.length} events · websocket
+            </span>
+            {lastUpdated && (
+              <span className="tabular-nums" title={new Date(lastUpdated).toLocaleString()}>
+                Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
           </div>
           {/* Keyboard-accessible resize handle. The CSS `resize: both` corner
               is not reachable by keyboard, so we expose a focusable button
