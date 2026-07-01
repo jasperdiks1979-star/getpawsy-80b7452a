@@ -136,6 +136,12 @@ const EvidenceVaultPage = () => {
               </p>
             </div>
           </div>
+          <NavLink
+            to="/admin/finance"
+            className="ml-auto inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Open Finance Intelligence →
+          </NavLink>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4 mb-6">
