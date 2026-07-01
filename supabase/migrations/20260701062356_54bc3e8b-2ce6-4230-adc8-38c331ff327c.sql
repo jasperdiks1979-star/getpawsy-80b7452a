@@ -1,0 +1,1 @@
+UPDATE public.ai_probe_backoff_state SET next_allowed_at = now() - interval '1 minute', consecutive_failures = 0 WHERE id = 1;
