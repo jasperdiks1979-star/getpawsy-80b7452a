@@ -1732,6 +1732,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pdp-atc-drilldown"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PdpAtcDrilldownPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="genesis-prc"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
