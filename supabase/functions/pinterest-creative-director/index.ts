@@ -783,6 +783,108 @@ async function fetchAsDataUrl(url: string): Promise<string> {
 const PRODUCT_FIDELITY_THRESHOLD = 90;
 const FIDELITY_MODEL = "google/gemini-2.5-flash";
 
+/**
+ * PRE-RENDER fidelity prediction. Sends the product photo + the planned brief
+ * (prompt, environment, headline, CTA) to a cheap multimodal LLM and asks:
+ * "If this brief were rendered as-is, would the resulting image depict the
+ * SAME product?" Score < threshold → skip the expensive image call entirely
+ * and regenerate the brief. This runs BEFORE `renderSceneWithSource` so
+ * failing briefs never burn `IMAGE_MODEL` credits.
+ */
+async function predictBriefFidelity(
+  brief: SceneBrief,
+  productImageUrl: string,
+): Promise<{ score: number; notes: string }> {
+  if (!LOVABLE_API_KEY) return { score: 0, notes: "no_api_key" };
+  let sourceDataUrl: string;
+  try {
+    sourceDataUrl = await fetchAsDataUrl(productImageUrl);
+  } catch (e) {
+    return { score: 0, notes: `source_fetch_failed:${(e as Error).message}` };
+  }
+  const briefText = [
+    `HEADLINE: ${brief.headline}`,
+    `CTA: ${brief.cta}`,
+    brief.environment_summary
+      ? `ENVIRONMENT: ${brief.environment_summary}`
+      : null,
+    `PROMPT: ${brief.full_prompt}`,
+  ].filter(Boolean).join("\n");
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "predict_fidelity",
+      description:
+        "Predict how faithfully a text-to-image render of the BRIEF will preserve the exact product shown in the reference photo.",
+      parameters: {
+        type: "object",
+        properties: {
+          score: {
+            type: "number",
+            description:
+              "0-100. 100 = brief unambiguously locks the product identity. <90 = brief is generic/ambiguous and likely to yield a different SKU (wrong shape, color, materials, structure).",
+          },
+          notes: { type: "string" },
+        },
+        required: ["score", "notes"],
+      },
+    },
+  }];
+  try {
+    const resp = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: FIDELITY_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a strict QA planner for a DTC pet brand's Pinterest ads. You are given (1) the canonical Shopify product photo and (2) the text brief that will be sent to an image model. Predict — WITHOUT rendering — whether the brief will produce an image whose product is indistinguishable from the reference SKU. Reward briefs that explicitly name the product's distinctive shape, materials, colors, levels/tiers, and accessories. Penalize briefs that are generic, describe a different product category, or leave the product identity to the model. Use the predict_fidelity tool. Score below 90 means the render should be skipped and the brief regenerated.",
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text:
+                    "Reference product photo below. Then the brief text. Predict fidelity.",
+                },
+                { type: "image_url", image_url: { url: sourceDataUrl } },
+                { type: "text", text: briefText },
+              ],
+            },
+          ],
+          tools,
+          tool_choice: {
+            type: "function",
+            function: { name: "predict_fidelity" },
+          },
+        }),
+      },
+    );
+    await tagGatewayResp(resp, "creative-director:fidelity");
+    if (!resp.ok) {
+      const t = await resp.text();
+      return { score: 0, notes: `predictor_${resp.status}:${t.slice(0, 120)}` };
+    }
+    const data = await resp.json();
+    const call = data?.choices?.[0]?.message?.tool_calls?.[0];
+    if (!call) return { score: 0, notes: "no_tool_call" };
+    const parsed = JSON.parse(call.function.arguments || "{}");
+    const score = Math.max(0, Math.min(100, Number(parsed.score ?? 0)));
+    return { score, notes: String(parsed.notes || "") };
+  } catch (e) {
+    return { score: 0, notes: `predict_error:${(e as Error).message}` };
+  }
+}
+
 async function auditProductFidelity(
   generatedBytes: Uint8Array,
   productImageUrl: string,
