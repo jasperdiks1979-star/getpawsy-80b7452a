@@ -1722,6 +1722,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="conversion-war-room"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ConversionWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-revenue-control"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
