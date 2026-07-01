@@ -1119,6 +1119,32 @@ async function processJob(sb: Sb, job: any, settings: any) {
             metrics,
           ),
       );
+      // Genesis V10.1 — local occupancy pre-check. If the freshly generated
+      // image shows a product footprint below 25%, regenerate ONCE with an
+      // even tighter crop directive appended. This runs strictly BEFORE PRE
+      // and does NOT bypass any downstream gate.
+      if (typeof adaptiveDirectives === "string" && adaptiveDirectives.length > 0) {
+        const occ = await estimateLocalProductOccupancy(bytes);
+        (metrics as any).local_occupancy_estimate = occ;
+        (metrics as any).local_occupancy_estimate_pass1 = occ;
+        if (occ >= 0 && occ < 25) {
+          const tighter = `${prompt}\n\n[V10.1_LOCAL_OCCUPANCY_CORRECTION]\nPrevious render measured ~${occ}% product occupancy. RECOMPOSE with a TIGHTER CROP: move camera closer, fill 30–38% of the frame with the plush bird-shaped cat toy, keep toy in lower-middle foreground, reduce empty rug and background, keep cat secondary and partially cropped.`;
+          bytes = await timed(
+            "image_generation_v101_correction",
+            metrics,
+            async () =>
+              generateImage(
+                tighter,
+                product.image_url ?? null,
+                settings?.model ?? DEFAULT_MODEL,
+                metrics,
+              ),
+          );
+          const occ2 = await estimateLocalProductOccupancy(bytes);
+          (metrics as any).local_occupancy_estimate = occ2;
+          (metrics as any).local_occupancy_estimate_pass2 = occ2;
+        }
+      }
       const digest = await crypto.subtle.digest(
         "SHA-256",
         bytes.buffer.slice(
