@@ -1731,6 +1731,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="genesis-prc"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisPrcPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-revenue-control"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
