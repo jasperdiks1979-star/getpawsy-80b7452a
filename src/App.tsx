@@ -355,6 +355,7 @@ const PreWaveLivePage = lazyWithRetry(() => import("./pages/admin/PreWaveLivePag
 const FirstSaleAcceleratorPage = lazyWithRetry(() => import("./pages/admin/FirstSaleAcceleratorPage"));
 const ConversionIntelligencePage = lazyWithRetry(() => import("./pages/admin/ConversionIntelligencePage"));
 const ConversionWarRoomPage = lazyWithRetry(() => import("./pages/admin/ConversionWarRoomPage"));
+const ConversionCommanderPage = lazyWithRetry(() => import("./pages/admin/ConversionCommanderPage"));
 const PdpAtcDrilldownPage = lazyWithRetry(() => import("./pages/admin/PdpAtcDrilldownPage"));
 const GenesisPrcPage = lazyWithRetry(() => import("./pages/admin/GenesisPrcPage"));
 const PinterestTrafficForensicsPage = lazyWithRetry(() => import("./pages/admin/PinterestTrafficForensicsPage"));
@@ -1736,6 +1737,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ConversionWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="conversion-commander"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ConversionCommanderPage />
                                 </Suspense>
                               }
                             />
