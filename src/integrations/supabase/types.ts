@@ -20532,6 +20532,131 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_backfill_scans: {
+        Row: {
+          auto_recovered: number
+          candidates_seen: number
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          scanned_sources: Json
+          started_at: string
+          status: string
+          tasks_created: number
+          tasks_updated: number
+          triggered_by: string | null
+        }
+        Insert: {
+          auto_recovered?: number
+          candidates_seen?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          scanned_sources?: Json
+          started_at?: string
+          status?: string
+          tasks_created?: number
+          tasks_updated?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          auto_recovered?: number
+          candidates_seen?: number
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          scanned_sources?: Json
+          started_at?: string
+          status?: string
+          tasks_created?: number
+          tasks_updated?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      finance_backfill_tasks: {
+        Row: {
+          amount_minor: number | null
+          auto_recover_attempted: boolean
+          auto_recover_result: string | null
+          created_at: string
+          currency: string | null
+          document_date: string | null
+          id: string
+          linked_document_id: string | null
+          metadata: Json
+          notes: string | null
+          priority: string
+          reason: string
+          reference: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source_id: string
+          source_type: string
+          status: string
+          supplier_hint: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          auto_recover_attempted?: boolean
+          auto_recover_result?: string | null
+          created_at?: string
+          currency?: string | null
+          document_date?: string | null
+          id?: string
+          linked_document_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          priority?: string
+          reason: string
+          reference?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+          supplier_hint?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number | null
+          auto_recover_attempted?: boolean
+          auto_recover_result?: string | null
+          created_at?: string
+          currency?: string | null
+          document_date?: string | null
+          id?: string
+          linked_document_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          priority?: string
+          reason?: string
+          reference?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+          supplier_hint?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_backfill_tasks_linked_document_id_fkey"
+            columns: ["linked_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_connectors: {
         Row: {
           capabilities: Json
