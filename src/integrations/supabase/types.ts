@@ -1976,6 +1976,63 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_guard_audit_log: {
+        Row: {
+          auth_mode: string
+          created_at: string
+          duration_ms: number | null
+          function_name: string
+          id: string
+          ip: string | null
+          metadata: Json
+          method: string | null
+          outcome: string
+          path: string | null
+          reason: string | null
+          request_id: string | null
+          status_code: number | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auth_mode: string
+          created_at?: string
+          duration_ms?: number | null
+          function_name: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          method?: string | null
+          outcome: string
+          path?: string | null
+          reason?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auth_mode?: string
+          created_at?: string
+          duration_ms?: number | null
+          function_name?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          method?: string | null
+          outcome?: string
+          path?: string | null
+          reason?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_resources: {
         Row: {
           created_at: string
