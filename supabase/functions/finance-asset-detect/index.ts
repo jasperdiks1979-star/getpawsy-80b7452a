@@ -32,13 +32,14 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: doc, error } = await admin
       .from("evidence_documents")
-      .select("id,supplier_id,ocr_text,extracted_metadata,filename,total_minor,currency,invoice_date")
+      .select("id,supplier_id,ocr_text,metadata,original_filename,title,amount_minor,currency,document_date")
       .eq("id", evidence_document_id)
       .maybeSingle();
     if (error || !doc) return json({ ok: false, error: "document_not_found" }, 404);
 
     // Heuristic fallback when Gemini is unavailable.
-    const text = `${doc.filename ?? ""} ${doc.ocr_text ?? ""}`.toLowerCase();
+    const filename = doc.original_filename ?? doc.title ?? "";
+    const text = `${filename} ${doc.ocr_text ?? ""}`.toLowerCase();
     const heuristic = classifyHeuristic(text);
 
     let ai: null | { is_asset: boolean; category: string; suggested_name: string; confidence: number; rationale: string } = null;
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
             response_format: { type: "json_object" },
             messages: [
               { role: "system", content: "Classify invoices as durable business assets. Reply JSON: {is_asset:bool, category:one of phone|laptop|desktop|tablet|monitor|server|network|printer|furniture|vehicle|camera|audio|storage|dev|other, suggested_name:string, confidence:0-1, rationale:string}. Consumables (paper, ink cartridges, cables) are NOT assets. Software subscriptions are NOT assets." },
-              { role: "user", content: `Filename: ${doc.filename ?? "?"}\nAmount: ${doc.total_minor ?? "?"} ${doc.currency ?? ""}\nOCR:\n${(doc.ocr_text ?? "").slice(0, 4000)}` },
+              { role: "user", content: `Filename: ${filename || "?"}\nAmount: ${doc.amount_minor ?? "?"} ${doc.currency ?? ""}\nOCR:\n${(doc.ocr_text ?? "").slice(0, 4000)}` },
             ],
           }),
         });
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
     const suggestion = ai ?? {
       is_asset: heuristic.category !== null,
       category: heuristic.category ?? "other",
-      suggested_name: heuristic.name ?? doc.filename ?? "New asset",
+      suggested_name: heuristic.name ?? filename ?? "New asset",
       confidence: heuristic.category ? 0.55 : 0.2,
       rationale: "heuristic",
     };
