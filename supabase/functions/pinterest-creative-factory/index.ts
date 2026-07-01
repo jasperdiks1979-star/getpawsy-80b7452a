@@ -648,15 +648,16 @@ function applyAdaptiveMasterDims(
 function buildAdaptiveOverrideBlock(product: any, directives: unknown): string {
   if (!isDurableBirdToyV10Retry(product, directives)) return "";
   return [
-    "[GENESIS_V10_CONFLICT_RESOLUTION — HIGHEST PRIORITY]",
+    "[GENESIS_V10.1_COMPOSITION_LOCK — HIGHEST PRIORITY]",
     "Ignore and override any earlier conflicting Creative Director, copy, overlay, owner, dog, roadtrip, post-walk, muddy-paws, mug, blanket, chair, wordmark, CTA, text-overlay, or product-supporting-role instructions.",
     "Render exactly one premium Pinterest-native pet lifestyle photo: a plush bird-shaped CAT toy for one CAT.",
     "TARGET SPECIES: CAT ONLY. No dogs. No real birds. No humans. No children. No other pets.",
-    "TOY SHAPE: plush bird-shaped cat toy. The toy is the visual hero and must be sharp, central, fully visible, and occupy 25–35% of the frame.",
+    "TOY SHAPE: plush bird-shaped cat toy. The toy MUST be the largest sharp foreground object and occupy 30–38% of the frame (never below 30%).",
+    "COMPOSITION LOCK: toy centered in the lower-middle foreground; low macro close-up at toy level; shallow depth of field focused on the toy; tight crop around toy + cat interaction; camera lens ~35mm, camera height at toy level, distance ~30cm.",
+    "CAT ROLE: one cat, SECONDARY, positioned partially behind or next to the toy; cat may touch the toy with a paw or nose but MUST NOT cover, overlap, or occlude the toy silhouette. Cat head/body may be partially cropped by the frame.",
     "PDP COLOR LOCK: bright green body, blue head, yellow beak, red wing accent, green feather tail. Match the PDP silhouette and colors with >95% product similarity.",
-    "CAT ROLE: one cat only, secondary and smaller than the toy, naturally reaching toward / sniffing / gently batting the toy; cat must not dominate the frame.",
-    "SCENE: warm Scandinavian living room, light oak floor, white wall, soft daylight, plain neutral rug only.",
-    "STRICT NEGATIVES: no chair, no mug, no blanket, no boots, no leash, no extra props, no extra toys, no clutter, no text overlay, no typography, no CTA, no watermark, no GetPawsy wordmark.",
+    "SCENE: warm neutral plain rug only, soft daylight, empty background. Remove ALL furniture, walls decor, and props.",
+    "STRICT NEGATIVES: no furniture, no chair, no couch, no table, no mug, no blanket, no boots, no leash, no extra props, no extra toys, no clutter, no text overlay, no typography, no CTA, no watermark, no GetPawsy wordmark, no dog, no real bird, no human, no child.",
     "QUALITY: premium natural editorial photo, realistic shadows, warm emotional appeal, clean composition, Pinterest-saveable, strong shopping match and landing match.",
     String(directives ?? "").trim(),
   ].filter(Boolean).join("\n");
