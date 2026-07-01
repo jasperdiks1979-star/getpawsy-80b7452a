@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Eye, ShoppingCart, CreditCard, Pin, PinOff, Minus, X,
   Globe, Smartphone, Monitor, Tablet, Link2, Clock, Package, DollarSign, GripVertical, Move, Maximize2,
+  Loader2, Radio,
 } from "lucide-react";
 
 interface ActivityRow {
