@@ -22,6 +22,15 @@ type Kpis = {
   suppliers: number;
 };
 
+type VatState = {
+  period: { year: number; quarter: number; start: string; end: string };
+  totals: { vatTotal: number; recoverable: number; nonRecoverable: number; invoiceCount: number };
+  missing: any[];
+  duplicates: any[][];
+  reconciliations: any[];
+  summaries: any[];
+};
+
 const currency = (cents: number, ccy = "EUR") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: ccy }).format(cents / 100);
 
@@ -156,10 +165,12 @@ export default function FinancialEvidenceVaultPage() {
     if (!vat) return;
     setVatGenerating(true);
     const { data, error } = await invokeFunction<{ ok: boolean }>("finance-vat-reconcile", {
-      triggered_by: "vault_v14_ui",
-      period_type: "quarter",
-      period_year: vat.period.year,
-      period_number: vat.period.quarter,
+      body: {
+        triggered_by: "vault_v14_ui",
+        period_type: "quarter",
+        period_year: vat.period.year,
+        period_number: vat.period.quarter,
+      },
     });
     setVatGenerating(false);
     if (error || !data?.ok) toast.error("Quarterly VAT report failed");
