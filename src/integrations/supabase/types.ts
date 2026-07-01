@@ -20094,6 +20094,404 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_alerts: {
+        Row: {
+          action_url: string | null
+          alert_type: string
+          created_at: string
+          detail: string | null
+          id: string
+          is_resolved: boolean
+          metadata: Json
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          supplier_slug: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_url?: string | null
+          alert_type: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          is_resolved?: boolean
+          metadata?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          supplier_slug?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_url?: string | null
+          alert_type?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          is_resolved?: boolean
+          metadata?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          supplier_slug?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_annual_dossiers: {
+        Row: {
+          belastingdienst_ready: boolean
+          completeness_score: number
+          created_at: string
+          fiscal_year: number
+          generated_at: string | null
+          id: string
+          invoice_count: number
+          manifest_sha256: string | null
+          storage_path: string | null
+          summary: Json
+          supplier_count: number
+          total_expenses_minor: number
+          total_vat_minor: number
+          updated_at: string
+        }
+        Insert: {
+          belastingdienst_ready?: boolean
+          completeness_score?: number
+          created_at?: string
+          fiscal_year: number
+          generated_at?: string | null
+          id?: string
+          invoice_count?: number
+          manifest_sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+          supplier_count?: number
+          total_expenses_minor?: number
+          total_vat_minor?: number
+          updated_at?: string
+        }
+        Update: {
+          belastingdienst_ready?: boolean
+          completeness_score?: number
+          created_at?: string
+          fiscal_year?: number
+          generated_at?: string | null
+          id?: string
+          invoice_count?: number
+          manifest_sha256?: string | null
+          storage_path?: string | null
+          summary?: Json
+          supplier_count?: number
+          total_expenses_minor?: number
+          total_vat_minor?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_connectors: {
+        Row: {
+          capabilities: Json
+          config: Json
+          connection_method: string
+          created_at: string
+          display_name: string
+          health_score: number
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          next_sync_at: string | null
+          notes: string | null
+          status: string
+          supplier_slug: string
+          sync_frequency: string | null
+          updated_at: string
+        }
+        Insert: {
+          capabilities?: Json
+          config?: Json
+          connection_method: string
+          created_at?: string
+          display_name: string
+          health_score?: number
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          notes?: string | null
+          status?: string
+          supplier_slug: string
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capabilities?: Json
+          config?: Json
+          connection_method?: string
+          created_at?: string
+          display_name?: string
+          health_score?: number
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          notes?: string | null
+          status?: string
+          supplier_slug?: string
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_credit_ledger: {
+        Row: {
+          cost_minor: number
+          created_at: string
+          credits_delta: number
+          currency: string
+          event_type: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          provider: string
+          reference: string | null
+          unit: string | null
+        }
+        Insert: {
+          cost_minor?: number
+          created_at?: string
+          credits_delta?: number
+          currency?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          provider: string
+          reference?: string | null
+          unit?: string | null
+        }
+        Update: {
+          cost_minor?: number
+          created_at?: string
+          credits_delta?: number
+          currency?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          provider?: string
+          reference?: string | null
+          unit?: string | null
+        }
+        Relationships: []
+      }
+      finance_expense_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_recoverable: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+          vat_default_pct: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recoverable?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          vat_default_pct?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recoverable?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          vat_default_pct?: number | null
+        }
+        Relationships: []
+      }
+      finance_import_tasks: {
+        Row: {
+          created_at: string
+          currency: string | null
+          due_at: string | null
+          evidence_document_id: string | null
+          expected_amount_minor: number | null
+          expected_type: string
+          id: string
+          instructions: string | null
+          period_label: string
+          status: string
+          supplier_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          due_at?: string | null
+          evidence_document_id?: string | null
+          expected_amount_minor?: number | null
+          expected_type?: string
+          id?: string
+          instructions?: string | null
+          period_label: string
+          status?: string
+          supplier_slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          due_at?: string | null
+          evidence_document_id?: string | null
+          expected_amount_minor?: number | null
+          expected_type?: string
+          id?: string
+          instructions?: string | null
+          period_label?: string
+          status?: string
+          supplier_slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_import_tasks_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_subscriptions: {
+        Row: {
+          amount_minor: number
+          cadence: string
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          notes: string | null
+          price_history: Json
+          product_name: string
+          renews_at: string | null
+          started_at: string | null
+          supplier_slug: string
+          updated_at: string
+          vat_pct: number | null
+        }
+        Insert: {
+          amount_minor: number
+          cadence: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          notes?: string | null
+          price_history?: Json
+          product_name: string
+          renews_at?: string | null
+          started_at?: string | null
+          supplier_slug: string
+          updated_at?: string
+          vat_pct?: number | null
+        }
+        Update: {
+          amount_minor?: number
+          cadence?: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          notes?: string | null
+          price_history?: Json
+          product_name?: string
+          renews_at?: string | null
+          started_at?: string | null
+          supplier_slug?: string
+          updated_at?: string
+          vat_pct?: number | null
+        }
+        Relationships: []
+      }
+      finance_vat_summaries: {
+        Row: {
+          computed_at: string
+          created_at: string
+          currency: string
+          details: Json
+          id: string
+          invoice_count: number
+          non_recoverable_minor: number
+          outstanding_minor: number
+          period_number: number | null
+          period_type: string
+          period_year: number
+          reclaimed_minor: number
+          recoverable_minor: number
+          updated_at: string
+          vat_total_minor: number
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          currency?: string
+          details?: Json
+          id?: string
+          invoice_count?: number
+          non_recoverable_minor?: number
+          outstanding_minor?: number
+          period_number?: number | null
+          period_type: string
+          period_year: number
+          reclaimed_minor?: number
+          recoverable_minor?: number
+          updated_at?: string
+          vat_total_minor?: number
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          currency?: string
+          details?: Json
+          id?: string
+          invoice_count?: number
+          non_recoverable_minor?: number
+          outstanding_minor?: number
+          period_number?: number | null
+          period_type?: string
+          period_year?: number
+          reclaimed_minor?: number
+          recoverable_minor?: number
+          updated_at?: string
+          vat_total_minor?: number
+        }
+        Relationships: []
+      }
       fos_reviews: {
         Row: {
           biggest_losses: Json | null
