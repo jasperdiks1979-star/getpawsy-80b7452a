@@ -16,6 +16,12 @@ interface ReportItem {
 
 const REPORTS: ReportItem[] = [
   {
+    filename: "2026-07-01-financial-integrity-certification.pdf",
+    title: "Genesis V10.3 — Ultimate Financial Integrity & Production Certification",
+    category: "Financial Certification · CERTIFIED 100% LIVE · Overall 97/100 · 0.00% divergence",
+    path: "/admin-reports/genesis-v10.3/2026-07-01-financial-integrity-certification.pdf",
+  },
+  {
     filename: "2026-07-01-stripe-live-certification.pdf",
     title: "Genesis V10.2 — Stripe Live Certification & Forensic Audit",
     category: "Environment Integrity · CERTIFIED 100% LIVE · Health 98/100",
