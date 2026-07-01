@@ -13,8 +13,7 @@
 // the caller (pinterest-ai-backdrop) on every freshly generated image.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Mirror via jsDelivr — deno.land/x/imagescript is flaky in the bundler.
-import { Image } from "https://cdn.jsdelivr.net/gh/matmen/ImageScript@1.2.17/mod.ts";
+import { Image } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 
 /** Raise to reject more aggressively, lower to allow more variance. */
 export const PHASH_DUPLICATE_SIMILARITY = 0.70;
