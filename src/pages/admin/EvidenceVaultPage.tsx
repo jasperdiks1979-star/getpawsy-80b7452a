@@ -84,22 +84,22 @@ const EvidenceVaultPage = () => {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const [s, d, p, t] = await Promise.all([
-        supabase.from("evidence_suppliers").select("*").order("name"),
-        supabase.from("evidence_documents").select("*").order("document_date", { ascending: false, nullsFirst: false }).limit(500),
-        supabase.from("evidence_payments").select("*").order("paid_at", { ascending: false, nullsFirst: false }).limit(500),
-        supabase.from("evidence_timeline").select("*").order("event_at", { ascending: false }).limit(200),
-      ]);
-      if (s.data) setSuppliers(s.data as Supplier[]);
-      if (d.data) setDocs(d.data as EvidenceDoc[]);
-      if (p.data) setPayments(p.data as Payment[]);
-      if (t.data) setTimeline(t.data as TimelineEvent[]);
-      setLoading(false);
-    })();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    const [s, d, p, t] = await Promise.all([
+      supabase.from("evidence_suppliers").select("*").order("name"),
+      supabase.from("evidence_documents").select("*").order("document_date", { ascending: false, nullsFirst: false }).limit(500),
+      supabase.from("evidence_payments").select("*").order("paid_at", { ascending: false, nullsFirst: false }).limit(500),
+      supabase.from("evidence_timeline").select("*").order("event_at", { ascending: false }).limit(200),
+    ]);
+    if (s.data) setSuppliers(s.data as Supplier[]);
+    if (d.data) setDocs(d.data as EvidenceDoc[]);
+    if (p.data) setPayments(p.data as Payment[]);
+    if (t.data) setTimeline(t.data as TimelineEvent[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
