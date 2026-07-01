@@ -839,6 +839,15 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // downstream image model receives BOTH the existing creative direction and
     // the compiler's deterministic guardrails.
     prompt = `${prompt}\n\n[GOLDEN_DNA_COMPILER]\n${compiled.prompt}`;
+    // Adaptive one-shot retry: allow a human/operator to inject exact PRE-blocker
+    // fixes for a single job. Read from job.prompt.adaptive_retry_directives
+    // (string). This does NOT lower any PRE gate — it only supplies extra
+    // negative/positive directives appended after the compiler payload.
+    const adaptiveDirectives = (job as any)?.prompt?.adaptive_retry_directives;
+    if (typeof adaptiveDirectives === "string" && adaptiveDirectives.trim().length > 0) {
+      prompt = `${prompt}\n\n[ADAPTIVE_RETRY_DIRECTIVES]\n${adaptiveDirectives.trim()}`;
+      (metrics as any).adaptive_retry_directives_applied = true;
+    }
     await timed("planning", metrics, async () => {
       await sb.from("pinterest_creative_factory_jobs").update({
         stage: "planned",
