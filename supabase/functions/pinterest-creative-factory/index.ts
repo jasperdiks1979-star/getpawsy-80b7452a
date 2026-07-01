@@ -626,7 +626,13 @@ async function validateWithAi(
   }
   const started = Date.now();
   const dataUrl = `data:image/png;base64,${bytesToBase64(bytes)}`;
-  try {
+  const promptCore = prompt.slice(0, 1200);
+  const attempts: Array<{ raw: string; content: string; parseError?: string }> = [];
+
+  async function callGateway(strict: boolean): Promise<{ raw: string; content: string; httpStatus: number }> {
+    const instructions = strict
+      ? `RESPOND WITH JSON ONLY. NO PROSE. NO MARKDOWN FENCES. NO PRAISE. Exact schema (all keys required): {"score":number 0-100,"ok":boolean,"reasons":string[]}. Set ok=true only if score>=70 AND image matches prompt intent (product truth, mobile-safe composition, non-spammy overlay). Prompt intent: ${promptCore}`
+      : `Score this Pinterest creative 0-100 for premium pet ecommerce quality, product truth, mobile-safe composition, non-spammy overlay. Return STRICT JSON matching this schema exactly and nothing else: {"score":number,"ok":boolean,"reasons":string[]}. Prompt intent: ${promptCore}`;
     const resp = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -637,57 +643,108 @@ async function validateWithAi(
         },
         body: JSON.stringify({
           model: TEXT_MODEL,
+          response_format: { type: "json_object" },
           messages: [{
             role: "user",
             content: [
               { type: "image_url", image_url: { url: dataUrl } },
-              {
-                type: "text",
-                text:
-                  `Score this Pinterest creative from 0-100 for premium pet ecommerce quality, product truth, mobile-safe composition, and non-spammy overlay. Return strict JSON: {"score":number,"ok":boolean,"reasons":[string],"notes":"string"}. Prompt intent: ${
-                    prompt.slice(0, 1200)
-                  }`,
-              },
+              { type: "text", text: instructions },
             ],
           }],
-          temperature: 0.1,
+          temperature: 0,
         }),
       },
     );
-    metrics.ai_quality_latency_ms = Date.now() - started;
-    if (!resp.ok) {
-      return {
-        ok: true,
-        score: 70,
-        reasons: [`ai_qc_http_${resp.status}`],
-        notes: "soft-pass; deterministic gates still applied",
-      };
-    }
     const raw = await resp.text();
-    const parsed = JSON.parse(raw);
-    const content = parsed?.choices?.[0]?.message?.content ?? raw;
-    const match = String(content).match(/\{[\s\S]*\}/);
-    const verdict = match ? JSON.parse(match[0]) : parsed;
-    const score = Math.max(0, Math.min(100, Number(verdict.score ?? 70)));
+    let content = "";
+    try {
+      const parsed = JSON.parse(raw);
+      content = String(parsed?.choices?.[0]?.message?.content ?? "");
+    } catch {
+      content = raw;
+    }
+    return { raw, content, httpStatus: resp.status };
+  }
+
+  try {
+    let last: { raw: string; content: string; httpStatus: number } | null = null;
+    for (const strict of [false, true]) {
+      const r = await callGateway(strict);
+      last = r;
+      if (r.httpStatus < 200 || r.httpStatus >= 300) {
+        attempts.push({ raw: r.raw.slice(0, 800), content: "", parseError: `http_${r.httpStatus}` });
+        continue;
+      }
+      const verdict = extractStrictQcJson(r.content);
+      if (verdict) {
+        metrics.ai_quality_latency_ms = Date.now() - started;
+        (metrics as any).ai_qc_attempts = attempts.length + 1;
+        const score = Math.max(0, Math.min(100, Number(verdict.score)));
+        return {
+          ok: Boolean(verdict.ok) && score >= 70,
+          score,
+          reasons: Array.isArray(verdict.reasons) ? verdict.reasons.map(String) : [],
+          notes: "",
+        };
+      }
+      attempts.push({ raw: r.raw.slice(0, 800), content: r.content.slice(0, 800), parseError: "non_json_response" });
+    }
+    metrics.ai_quality_latency_ms = Date.now() - started;
+    (metrics as any).ai_qc_parse_failed = true;
+    (metrics as any).ai_qc_raw_response = attempts;
+    // Fail closed: do NOT treat prose praise as success.
     return {
-      ok: Boolean(verdict.ok ?? score >= 70),
-      score,
-      reasons: Array.isArray(verdict.reasons) ? verdict.reasons : [],
-      notes: String(verdict.notes ?? ""),
+      ok: false,
+      score: 0,
+      reasons: ["qc_parse_failed"],
+      notes: "AI QC returned non-JSON after strict retry; media quarantined for audit.",
     };
   } catch (e) {
     metrics.ai_quality_latency_ms = Date.now() - started;
+    (metrics as any).ai_qc_error = e instanceof Error ? e.message.slice(0, 200) : "unknown";
     return {
-      ok: true,
-      score: 70,
+      ok: false,
+      score: 0,
       reasons: [
-        `ai_qc_error:${
+        `ai_qc_transport_error:${
           e instanceof Error ? e.message.slice(0, 80) : "unknown"
         }`,
       ],
-      notes: "soft-pass; deterministic gates still applied",
+      notes: "transport error; media quarantined for audit.",
     };
   }
+}
+
+// Exported for unit tests. Accepts an LLM content string and returns a valid
+// QC verdict or null when no strict JSON can be recovered.
+export function extractStrictQcJson(
+  content: string,
+): { score: number; ok: boolean; reasons: string[] } | null {
+  if (!content) return null;
+  const candidates: string[] = [];
+  const trimmed = content.trim();
+  candidates.push(trimmed);
+  // Strip markdown code fences ```json ... ``` or ``` ... ```
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fence) candidates.push(fence[1].trim());
+  // Greedy outermost braces
+  const first = trimmed.indexOf("{");
+  const last = trimmed.lastIndexOf("}");
+  if (first !== -1 && last > first) candidates.push(trimmed.slice(first, last + 1));
+  for (const c of candidates) {
+    try {
+      const v = JSON.parse(c);
+      if (
+        v && typeof v === "object" &&
+        typeof v.score === "number" &&
+        typeof v.ok === "boolean" &&
+        Array.isArray(v.reasons)
+      ) {
+        return { score: v.score, ok: v.ok, reasons: v.reasons.map((x: unknown) => String(x)) };
+      }
+    } catch { /* try next */ }
+  }
+  return null;
 }
 
 function deterministicQuality(copy: any, bytes: Uint8Array) {
