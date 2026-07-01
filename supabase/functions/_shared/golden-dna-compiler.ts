@@ -18,6 +18,16 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 
 export type Species = "dog" | "cat" | "small_pet" | "bird" | "fish" | "human_only" | "unknown";
 export type Environment = "indoor" | "outdoor" | "either";
+export type ToyShape =
+  | "bird"
+  | "mouse"
+  | "fish"
+  | "squirrel"
+  | "rabbit"
+  | "bone"
+  | "ball"
+  | "plush"
+  | "none";
 
 export interface ProductLike {
   id?: string | null;
@@ -27,6 +37,8 @@ export interface ProductLike {
   category?: string | null;
   categories?: string[] | null;
   tags?: string[] | null;
+  primary_species?: string | null;
+  product_type?: string | null;
   landing_dominant_colors?: string[] | null;
   primary_color?: string | null;
   image_url?: string | null;
@@ -38,6 +50,9 @@ export interface CompiledRuleSet {
   species: Species;
   allowed_species: Species[];
   forbidden_species: Species[];
+  toy_shape: ToyShape;
+  semantic_interpretation: string;
+  species_source: "primary_species" | "category" | "tags" | "description" | "title" | "fallback";
   allowed_breeds: string[];
   forbidden_breeds: string[];
   environment: Environment;
