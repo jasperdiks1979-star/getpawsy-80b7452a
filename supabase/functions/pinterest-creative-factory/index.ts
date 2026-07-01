@@ -392,12 +392,14 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
       .is("pinterest_pin_id", null);
     if ((count ?? 0) >= 3) continue;
     const niche = detectNiche(product) as NicheKey;
-    const copy = buildPinCopy({
+    const rawCopy = buildPinCopy({
       name: product.name,
       category: product.category ?? null,
       price: product.price ?? null,
       niche,
     }, created);
+    const classification = deriveContentClassification(niche);
+    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
     const row = {
       product_id: product.id,
       product_slug: product.slug,
@@ -413,7 +415,7 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
       category_key: niche,
       overlay_text: copy.overlay,
       source_type: "product_ai",
-      content_type: "product",
+      content_type: classification.content_type,
       pin_variant: "product_ai",
       meta: {
         creative_source: source,
@@ -422,8 +424,15 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
         inventory_seed: true,
         publish_allowed: true,
         source_type: "product_ai",
+        pin_type: classification.pin_type,
+        content_type: classification.content_type,
+        creative_style: classification.creative_style,
+        creative_goal: classification.creative_goal,
+        content_strategy: classification.content_strategy,
+        genesis_v91_aligned: true,
       },
     };
+    assertFactoryMetadataComplete(row);
     const { data: pin, error: insErr } = await sb.from("pinterest_pin_queue")
       .insert(row).select("id").maybeSingle();
     if (insErr) {
