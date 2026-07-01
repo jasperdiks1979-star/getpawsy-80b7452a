@@ -167,7 +167,7 @@ async function processJob(job: any, report: any) {
     { minPredictedPre: 90, maxMutations: 3 },
   );
   const traceId = `pcie2_${job.id}`;
-  const ledgerId = await writeCompilerLedger(SUPA, {
+  const ledgerId = await writeCompilerLedger(SUPA as any, {
     trace_id: traceId,
     product_id: prod.id,
     product_slug: null,
