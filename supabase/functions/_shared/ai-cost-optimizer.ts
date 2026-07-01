@@ -23,11 +23,71 @@ export interface GatewayCacheOpts {
   ttlHours?: number; // override default
   isImage?: boolean; // longer TTL
   approxCreditsPerHit?: number; // for savings telemetry
+  traceId?: string;             // Trace-ID for cross-system correlation
+  lane?: string | null;         // Optional lane for trace context
+  productId?: string | null;
 }
 
 export async function cacheKeyFor(model: string, body: unknown, extra?: string): Promise<string> {
   const canonical = JSON.stringify({ m: model, b: body, x: extra ?? null });
   return await sha256Hex(canonical);
+}
+
+// ── Trace-ID plumbing ───────────────────────────────────────────────────────
+// Every AI request can now be correlated across cache lookups, generation
+// locks, and PRE outcomes via a shared uuid `trace_id`.
+
+export function newTraceId(): string {
+  return crypto.randomUUID();
+}
+
+export interface TraceEventInput {
+  traceId: string;
+  parentTraceId?: string | null;
+  functionName: string;
+  stage: string;              // cache_lookup | cache_hit | cache_store | lock_acquire | lock_release | ai_request | ai_response | pre_evaluate | pre_pass | pre_fail | gateway_402
+  productSlug?: string | null;
+  productId?: string | null;
+  lane?: string | null;
+  model?: string | null;
+  status?: "ok" | "fail" | "skipped" | "blocked" | null;
+  cacheHit?: boolean | null;
+  creditsEstimated?: number | null;
+  latencyMs?: number | null;
+  pinQueueId?: string | null;
+  preEvaluationId?: string | null;
+  cacheKey?: string | null;
+  lockRunId?: string | null;
+  meta?: Record<string, unknown>;
+}
+
+export async function logAiTraceEvent(
+  supabase: SupabaseClient,
+  evt: TraceEventInput,
+): Promise<void> {
+  try {
+    await supabase.from("ai_trace_events").insert({
+      trace_id: evt.traceId,
+      parent_trace_id: evt.parentTraceId ?? null,
+      function_name: evt.functionName,
+      stage: evt.stage,
+      product_slug: evt.productSlug ?? null,
+      product_id: evt.productId ?? null,
+      lane: evt.lane ?? null,
+      model: evt.model ?? null,
+      status: evt.status ?? null,
+      cache_hit: evt.cacheHit ?? null,
+      credits_estimated: evt.creditsEstimated ?? null,
+      latency_ms: evt.latencyMs ?? null,
+      pin_queue_id: evt.pinQueueId ?? null,
+      pre_evaluation_id: evt.preEvaluationId ?? null,
+      cache_key: evt.cacheKey ?? null,
+      lock_run_id: evt.lockRunId ?? null,
+      meta: evt.meta ?? {},
+    });
+  } catch (_) {
+    // Trace logging must never break the pipeline.
+  }
 }
 
 export async function lookupCachedGateway(opts: GatewayCacheOpts): Promise<unknown | null> {
@@ -38,7 +98,23 @@ export async function lookupCachedGateway(opts: GatewayCacheOpts): Promise<unkno
     .eq("cache_key", key)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data) {
+    if (opts.traceId) {
+      await logAiTraceEvent(opts.supabase, {
+        traceId: opts.traceId,
+        functionName: opts.functionName,
+        stage: "cache_lookup",
+        productSlug: opts.productSlug,
+        productId: opts.productId,
+        lane: opts.lane,
+        model: opts.model,
+        cacheHit: false,
+        cacheKey: key,
+        status: "ok",
+      });
+    }
+    return null;
+  }
   // Fire-and-forget hit-count bump.
   opts.supabase
     .from("ai_prompt_cache")
@@ -49,6 +125,21 @@ export async function lookupCachedGateway(opts: GatewayCacheOpts): Promise<unkno
     })
     .eq("cache_key", key)
     .then(() => {}, () => {});
+  if (opts.traceId) {
+    await logAiTraceEvent(opts.supabase, {
+      traceId: opts.traceId,
+      functionName: opts.functionName,
+      stage: "cache_hit",
+      productSlug: opts.productSlug,
+      productId: opts.productId,
+      lane: opts.lane,
+      model: opts.model,
+      cacheHit: true,
+      cacheKey: key,
+      creditsEstimated: opts.approxCreditsPerHit ?? null,
+      status: "ok",
+    });
+  }
   return data.response_json;
 }
 
@@ -65,7 +156,21 @@ export async function storeCachedGateway(opts: GatewayCacheOpts, responseJson: u
       product_slug: opts.productSlug ?? null,
       response_json: responseJson as any,
       expires_at: expires,
+      trace_id: opts.traceId ?? null,
     }, { onConflict: "cache_key" });
+  if (opts.traceId) {
+    await logAiTraceEvent(opts.supabase, {
+      traceId: opts.traceId,
+      functionName: opts.functionName,
+      stage: "cache_store",
+      productSlug: opts.productSlug,
+      productId: opts.productId,
+      lane: opts.lane,
+      model: opts.model,
+      cacheKey: key,
+      status: "ok",
+    });
+  }
 }
 
 // ── Per-product/lane single-flight lock ─────────────────────────────────────
@@ -76,6 +181,8 @@ export interface AcquireLockOpts {
   lane: string; // e.g. "creative-director-image", "pcie-v2-pipeline"
   ttlSeconds?: number;
   functionName?: string;
+  traceId?: string;
+  productId?: string | null;
 }
 
 export async function acquireProductLock(opts: AcquireLockOpts): Promise<{ acquired: boolean; runId: string }> {
@@ -97,18 +204,64 @@ export async function acquireProductLock(opts: AcquireLockOpts): Promise<{ acqui
       run_id: runId,
       function_name: opts.functionName ?? null,
       expires_at: expires,
+      trace_id: opts.traceId ?? null,
     });
-  if (error) return { acquired: false, runId };
+  if (error) {
+    if (opts.traceId) {
+      await logAiTraceEvent(opts.supabase, {
+        traceId: opts.traceId,
+        functionName: opts.functionName ?? "unknown",
+        stage: "lock_acquire",
+        productSlug: opts.productSlug,
+        productId: opts.productId,
+        lane: opts.lane,
+        lockRunId: runId,
+        status: "blocked",
+        meta: { reason: "already_locked", error: error.message },
+      });
+    }
+    return { acquired: false, runId };
+  }
+  if (opts.traceId) {
+    await logAiTraceEvent(opts.supabase, {
+      traceId: opts.traceId,
+      functionName: opts.functionName ?? "unknown",
+      stage: "lock_acquire",
+      productSlug: opts.productSlug,
+      productId: opts.productId,
+      lane: opts.lane,
+      lockRunId: runId,
+      status: "ok",
+    });
+  }
   return { acquired: true, runId };
 }
 
-export async function releaseProductLock(supabase: SupabaseClient, productSlug: string, lane: string, runId: string): Promise<void> {
+export async function releaseProductLock(
+  supabase: SupabaseClient,
+  productSlug: string,
+  lane: string,
+  runId: string,
+  traceId?: string,
+  functionName?: string,
+): Promise<void> {
   await supabase
     .from("ai_generation_locks")
     .delete()
     .eq("product_slug", productSlug)
     .eq("lane", lane)
     .eq("run_id", runId);
+  if (traceId) {
+    await logAiTraceEvent(supabase, {
+      traceId,
+      functionName: functionName ?? "unknown",
+      stage: "lock_release",
+      productSlug,
+      lane,
+      lockRunId: runId,
+      status: "ok",
+    });
+  }
 }
 
 // ── Exponential probe backoff ───────────────────────────────────────────────
