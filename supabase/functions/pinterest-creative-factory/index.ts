@@ -9,6 +9,7 @@ import {
   validatePinCopy,
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
+import { Image as _V101Image } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
 import { normalizeThrowable, throwableToError } from "./normalize-throwable.ts";
 import { extractStrictQcJson } from "./qc-parser.ts";
@@ -648,18 +649,56 @@ function applyAdaptiveMasterDims(
 function buildAdaptiveOverrideBlock(product: any, directives: unknown): string {
   if (!isDurableBirdToyV10Retry(product, directives)) return "";
   return [
-    "[GENESIS_V10_CONFLICT_RESOLUTION — HIGHEST PRIORITY]",
+    "[GENESIS_V10.1_COMPOSITION_LOCK — HIGHEST PRIORITY]",
     "Ignore and override any earlier conflicting Creative Director, copy, overlay, owner, dog, roadtrip, post-walk, muddy-paws, mug, blanket, chair, wordmark, CTA, text-overlay, or product-supporting-role instructions.",
     "Render exactly one premium Pinterest-native pet lifestyle photo: a plush bird-shaped CAT toy for one CAT.",
     "TARGET SPECIES: CAT ONLY. No dogs. No real birds. No humans. No children. No other pets.",
-    "TOY SHAPE: plush bird-shaped cat toy. The toy is the visual hero and must be sharp, central, fully visible, and occupy 25–35% of the frame.",
+    "TOY SHAPE: plush bird-shaped cat toy. The toy MUST be the largest sharp foreground object and occupy 30–38% of the frame (never below 30%).",
+    "COMPOSITION LOCK: toy centered in the lower-middle foreground; low macro close-up at toy level; shallow depth of field focused on the toy; tight crop around toy + cat interaction; camera lens ~35mm, camera height at toy level, distance ~30cm.",
+    "CAT ROLE: one cat, SECONDARY, positioned partially behind or next to the toy; cat may touch the toy with a paw or nose but MUST NOT cover, overlap, or occlude the toy silhouette. Cat head/body may be partially cropped by the frame.",
     "PDP COLOR LOCK: bright green body, blue head, yellow beak, red wing accent, green feather tail. Match the PDP silhouette and colors with >95% product similarity.",
-    "CAT ROLE: one cat only, secondary and smaller than the toy, naturally reaching toward / sniffing / gently batting the toy; cat must not dominate the frame.",
-    "SCENE: warm Scandinavian living room, light oak floor, white wall, soft daylight, plain neutral rug only.",
-    "STRICT NEGATIVES: no chair, no mug, no blanket, no boots, no leash, no extra props, no extra toys, no clutter, no text overlay, no typography, no CTA, no watermark, no GetPawsy wordmark.",
+    "SCENE: warm neutral plain rug only, soft daylight, empty background. Remove ALL furniture, walls decor, and props.",
+    "STRICT NEGATIVES: no furniture, no chair, no couch, no table, no mug, no blanket, no boots, no leash, no extra props, no extra toys, no clutter, no text overlay, no typography, no CTA, no watermark, no GetPawsy wordmark, no dog, no real bird, no human, no child.",
     "QUALITY: premium natural editorial photo, realistic shadows, warm emotional appeal, clean composition, Pinterest-saveable, strong shopping match and landing match.",
     String(directives ?? "").trim(),
   ].filter(Boolean).join("\n");
+}
+
+// Genesis V10.1 — local occupancy estimator. Downscales the image and counts
+// high-saturation foreground pixels concentrated in the central region as a
+// rough proxy for product occupancy. Used to reject undersized renders BEFORE
+// wasting a PRE call.
+async function estimateLocalProductOccupancy(
+  bytes: Uint8Array,
+): Promise<number> {
+  try {
+    const img = await _V101Image.decode(bytes);
+    const target = 128;
+    const scaled = img.clone().resize(target, target);
+    let saturated = 0;
+    let total = 0;
+    for (let y = 0; y < target; y++) {
+      for (let x = 0; x < target; x++) {
+        const px = scaled.getPixelAt(x + 1, y + 1);
+        const r = (px >> 24) & 0xff;
+        const g = (px >> 16) & 0xff;
+        const b = (px >> 8) & 0xff;
+        const mx = Math.max(r, g, b);
+        const mn = Math.min(r, g, b);
+        const sat = mx === 0 ? 0 : (mx - mn) / mx;
+        // bird colors: green/blue/yellow/red — all high saturation.
+        // neutral rug + walls sit under ~0.25 saturation.
+        if (sat > 0.45 && mx > 90) saturated++;
+        total++;
+      }
+    }
+    if (total === 0) return 0;
+    const pct = (saturated / total) * 100;
+    // clamp — very colorful full-frame scenes shouldn't report >60% product.
+    return Math.max(0, Math.min(100, Math.round(pct)));
+  } catch (_e) {
+    return -1; // unknown — do not block
+  }
 }
 
 async function generateImage(
@@ -1080,6 +1119,32 @@ async function processJob(sb: Sb, job: any, settings: any) {
             metrics,
           ),
       );
+      // Genesis V10.1 — local occupancy pre-check. If the freshly generated
+      // image shows a product footprint below 25%, regenerate ONCE with an
+      // even tighter crop directive appended. This runs strictly BEFORE PRE
+      // and does NOT bypass any downstream gate.
+      if (typeof adaptiveDirectives === "string" && adaptiveDirectives.length > 0) {
+        const occ = await estimateLocalProductOccupancy(bytes);
+        (metrics as any).local_occupancy_estimate = occ;
+        (metrics as any).local_occupancy_estimate_pass1 = occ;
+        if (occ >= 0 && occ < 25) {
+          const tighter = `${prompt}\n\n[V10.1_LOCAL_OCCUPANCY_CORRECTION]\nPrevious render measured ~${occ}% product occupancy. RECOMPOSE with a TIGHTER CROP: move camera closer, fill 30–38% of the frame with the plush bird-shaped cat toy, keep toy in lower-middle foreground, reduce empty rug and background, keep cat secondary and partially cropped.`;
+          bytes = await timed(
+            "image_generation_v101_correction",
+            metrics,
+            async () =>
+              generateImage(
+                tighter,
+                product.image_url ?? null,
+                settings?.model ?? DEFAULT_MODEL,
+                metrics,
+              ),
+          );
+          const occ2 = await estimateLocalProductOccupancy(bytes);
+          (metrics as any).local_occupancy_estimate = occ2;
+          (metrics as any).local_occupancy_estimate_pass2 = occ2;
+        }
+      }
       const digest = await crypto.subtle.digest(
         "SHA-256",
         bytes.buffer.slice(
