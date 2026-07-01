@@ -393,15 +393,36 @@ serve(async (req) => {
 
   try {
     const signature = req.headers.get("stripe-signature");
+    const body = await req.text();
+
+    // Healthcheck classification: unsigned, tiny ping body from webhook-health.
+    // We answer 200 so the dashboard doesn't misread it as degraded, but we do
+    // NOT process the payload — signature verification is still mandatory for
+    // any real Stripe event.
     if (!signature) {
-      console.error("[STRIPE-WEBHOOK] No signature provided");
+      let isHealthPing = false;
+      try {
+        const parsed = body ? JSON.parse(body) : {};
+        isHealthPing = parsed && parsed.ping === true;
+      } catch (_) { /* not JSON, treat as unsigned probe */ }
+      if (isHealthPing) {
+        console.log("[STRIPE-WEBHOOK] Healthcheck ping acknowledged");
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            mode: "healthcheck",
+            signature_validation_active: true,
+            message: "Signature protection active; unsigned pings are rejected for real events.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+      console.warn("[STRIPE-WEBHOOK] Unsigned request rejected (signature protection active)");
       return new Response(
-        JSON.stringify({ error: "No signature provided" }),
+        JSON.stringify({ error: "No signature provided", signature_validation_active: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
-
-    const body = await req.text();
     let event: Stripe.Event;
 
     try {
@@ -791,6 +812,43 @@ serve(async (req) => {
             console.error("[STRIPE-WEBHOOK] Error updating refunded order:", error);
           }
         }
+        break;
+      }
+
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log("[STRIPE-WEBHOOK] Async payment succeeded:", session.id);
+        const pi = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
+        const patch: Record<string, unknown> = { status: "paid" };
+        if (pi) patch.stripe_payment_intent_id = pi;
+        const { error } = await supabaseAdmin
+          .from("orders")
+          .update(patch)
+          .eq("stripe_session_id", session.id)
+          .neq("status", "paid");
+        if (error) console.error("[STRIPE-WEBHOOK] async_payment_succeeded update error:", error);
+        break;
+      }
+
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log("[STRIPE-WEBHOOK] Async payment failed:", session.id);
+        const { error } = await supabaseAdmin
+          .from("orders")
+          .update({ status: "failed" })
+          .eq("stripe_session_id", session.id)
+          .neq("status", "paid");
+        if (error) console.error("[STRIPE-WEBHOOK] async_payment_failed update error:", error);
+        break;
+      }
+
+      case "charge.succeeded":
+      case "charge.failed": {
+        // Logged only; order state is authoritative from checkout.session.completed
+        // and payment_intent.* handlers. Kept as a first-class case to prevent
+        // "Unhandled event type" noise and to enable future forensic logging.
+        const charge = event.data.object as Stripe.Charge;
+        console.log(`[STRIPE-WEBHOOK] ${event.type} (pi=${charge.payment_intent ?? "-"}) acknowledged`);
         break;
       }
 
