@@ -429,6 +429,8 @@ const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/Analytics
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
 const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
+const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
+const AccountantPortalPage = lazyWithRetry(() => import("./pages/admin/AccountantPortalPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
 const GrowthCommandPage = lazyWithRetry(() => import("./pages/admin/GrowthCommandPage"));
@@ -2458,6 +2460,22 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <EvidenceVaultPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="finance"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FinanceIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="accountant"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AccountantPortalPage />
                                 </Suspense>
                               }
                             />
