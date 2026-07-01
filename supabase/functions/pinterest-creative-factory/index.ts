@@ -10,6 +10,7 @@ import {
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
+import { normalizeThrowable, throwableToError } from "./normalize-throwable.ts";
 import { extractStrictQcJson } from "./qc-parser.ts";
 import {
   buildMasterPrompt,
@@ -121,6 +122,46 @@ async function timed<T>(
       memory_before: before,
       memory_after: after,
     });
+  }
+}
+
+function auditThrowable(error: unknown) {
+  const n = normalizeThrowable(error);
+  return {
+    message: String(n.message).slice(0, 1000),
+    name: n.name,
+    stack: n.stack ? n.stack.slice(0, 2000) : null,
+    raw: n.raw,
+  };
+}
+
+async function prePlanningHelper<T>(
+  helper: string,
+  metrics: Record<string, unknown>,
+  fn: () => T | Promise<T>,
+): Promise<T> {
+  try {
+    const result = await fn();
+    (metrics.preplanning_trace as Array<Record<string, unknown>>).push({
+      helper,
+      ok: true,
+      at: new Date().toISOString(),
+    });
+    return result;
+  } catch (error) {
+    const before = auditThrowable(error);
+    const wrapped = throwableToError(error);
+    const after = auditThrowable(wrapped);
+    const entry = {
+      helper,
+      ok: false,
+      at: new Date().toISOString(),
+      normalized_before: before,
+      normalized_after: after,
+    };
+    (metrics.preplanning_trace as Array<Record<string, unknown>>).push(entry);
+    (metrics as any).preplanning_error = entry;
+    throw wrapped;
   }
 }
 
@@ -747,6 +788,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
   const startedMs = Date.now();
   const metrics: Record<string, unknown> = {
     stages: [],
+    preplanning_trace: [],
     started_at: new Date().toISOString(),
     memory_start_mb: memoryRssMb(),
   };
@@ -790,31 +832,65 @@ async function processJob(sb: Sb, job: any, settings: any) {
     if (!product) throw new Error("product_missing");
     if (product.is_active === false) throw new Error("product_inactive");
 
-    const niche = detectNiche(product) as NicheKey;
-    const rawCopy = buildPinCopy({
-      name: product.name,
-      benefit: product.benefit_angle ?? null,
-      category: product.category ?? null,
-      price: product.price ?? null,
-      niche,
-    }, Number(job.attempt_count ?? 1));
-    const classification = deriveContentClassification(niche);
-    const copy = naturalizeCopyForNative(rawCopy, classification, niche);
-    const overlayBlock = `${copy.overlay} ${copy.cta}`.replace(/[|•\r\n]/g, " ")
-      .replace(/\s+/g, " ").trim().slice(0, 32);
-    const validation = validatePinCopy({
-      title: copy.title,
-      description: copy.description,
-      overlay: copy.overlay,
-      overlayBlock,
-      brandWordmark: copy.brandWordmark,
-    });
+    const niche = await prePlanningHelper(
+      "detectNiche",
+      metrics,
+      () => detectNiche(product) as NicheKey,
+    );
+    const rawCopy = await prePlanningHelper(
+      "buildPinCopy",
+      metrics,
+      () =>
+        buildPinCopy({
+          name: product.name,
+          benefit: product.benefit_angle ?? null,
+          category: product.category ?? null,
+          price: product.price ?? null,
+          niche,
+        }, Number(job.attempt_count ?? 1)),
+    );
+    const classification = await prePlanningHelper(
+      "deriveContentClassification",
+      metrics,
+      () => deriveContentClassification(niche),
+    );
+    const copy = await prePlanningHelper(
+      "naturalizeCopyForNative",
+      metrics,
+      () => naturalizeCopyForNative(rawCopy, classification, niche),
+    );
+    const overlayBlock = await prePlanningHelper(
+      "buildOverlayBlock",
+      metrics,
+      () => `${copy.overlay} ${copy.cta}`.replace(/[|•\r\n]/g, " ")
+        .replace(/\s+/g, " ").trim().slice(0, 32),
+    );
+    const validation = await prePlanningHelper(
+      "validatePinCopy",
+      metrics,
+      () =>
+        validatePinCopy({
+          title: copy.title,
+          description: copy.description,
+          overlay: copy.overlay,
+          overlayBlock,
+          brandWordmark: copy.brandWordmark,
+        }),
+    );
     if (!validation.valid) {
       throw new Error(`copy_validation_failed:${validation.errors.join(",")}`);
     }
 
-    const masterDims = await pickDiverseMasterDims(sb, product, job);
-    let prompt = buildPrompt(product, niche, copy.overlay, masterDims);
+    const masterDims = await prePlanningHelper(
+      "pickDiverseMasterDims",
+      metrics,
+      () => pickDiverseMasterDims(sb, product, job),
+    );
+    let prompt = await prePlanningHelper(
+      "buildPrompt",
+      metrics,
+      () => buildPrompt(product, niche, copy.overlay, masterDims),
+    );
 
     // Genesis V6.4 — Golden DNA Prompt Compiler gate.
     // Every image call must be preceded by a deterministic, species-locked,
@@ -822,33 +898,51 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // ≥ 90 within its mutation budget, we DO NOT call Gemini — instead we
     // record the block in the ledger and fail the job. No thresholds are
     // lowered, no validation is bypassed.
-    const priorRate = await priorSuccessRate(
-      sb,
-      // species is derived inside compilePrompt too, but we ask the ledger
-      // for the same species so recent success weights the prediction.
-      // Fall back to "unknown" if compiler can't decide.
-      "unknown",
-    ).catch(() => 0.5);
-    const compiled = compileGoldenPrompt(product as any, {
-      minPredictedPre: 90,
-      maxMutations: 3,
-      priorSuccessRate: priorRate,
-    });
+    const priorRate = await prePlanningHelper(
+      "priorSuccessRate",
+      metrics,
+      () =>
+        priorSuccessRate(
+          sb,
+          // species is derived inside compilePrompt too, but we ask the ledger
+          // for the same species so recent success weights the prediction.
+          // Fall back to "unknown" if compiler can't decide.
+          "unknown",
+        ).catch((error) => {
+          (metrics as any).prior_success_rate_error = auditThrowable(error);
+          return 0.5;
+        }),
+    );
+    const compiled = await prePlanningHelper(
+      "compileGoldenPrompt",
+      metrics,
+      () =>
+        compileGoldenPrompt(product as any, {
+          minPredictedPre: 90,
+          maxMutations: 3,
+          priorSuccessRate: priorRate,
+        }),
+    );
     const traceId = `pcf_${job.id}`;
-    const ledgerId = await writeCompilerLedger(sb, {
-      trace_id: traceId,
-      product_id: product.id ?? null,
-      product_slug: product.slug ?? null,
-      rule_hash: compiled.rule_hash,
-      compiled_prompt: compiled.prompt,
-      rule_set: compiled.rule_set,
-      predicted_pre: compiled.predicted_pre,
-      dominant_blocker: compiled.dominant_blocker,
-      qa_blockers: compiled.qa_blockers,
-      mutation_step: compiled.mutation_step,
-      gemini_called: compiled.ok,
-      source_function: "pinterest-creative-factory",
-    });
+    const ledgerId = await prePlanningHelper(
+      "writeCompilerLedger",
+      metrics,
+      () =>
+        writeCompilerLedger(sb, {
+          trace_id: traceId,
+          product_id: product.id ?? null,
+          product_slug: product.slug ?? null,
+          rule_hash: compiled.rule_hash,
+          compiled_prompt: compiled.prompt,
+          rule_set: compiled.rule_set,
+          predicted_pre: compiled.predicted_pre,
+          dominant_blocker: compiled.dominant_blocker,
+          qa_blockers: compiled.qa_blockers,
+          mutation_step: compiled.mutation_step,
+          gemini_called: compiled.ok,
+          source_function: "pinterest-creative-factory",
+        }),
+    );
     (metrics as any).golden_dna_compiler = {
       predicted_pre: compiled.predicted_pre,
       mutation_step: compiled.mutation_step,
@@ -870,12 +964,17 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // fixes for a single job. Read from job.prompt.adaptive_retry_directives
     // (string). This does NOT lower any PRE gate — it only supplies extra
     // negative/positive directives appended after the compiler payload.
-    const adaptiveDirectives = (job as any)?.prompt?.adaptive_retry_directives;
+    const adaptiveDirectives = await prePlanningHelper(
+      "readAdaptiveRetryDirectives",
+      metrics,
+      () => (job as any)?.prompt?.adaptive_retry_directives,
+    );
     if (typeof adaptiveDirectives === "string" && adaptiveDirectives.trim().length > 0) {
       prompt = `${prompt}\n\n[ADAPTIVE_RETRY_DIRECTIVES]\n${adaptiveDirectives.trim()}`;
       (metrics as any).adaptive_retry_directives_applied = true;
     }
     await timed("planning", metrics, async () => {
+      await prePlanningHelper("persistPlannedJob", metrics, async () => {
       await sb.from("pinterest_creative_factory_jobs").update({
         stage: "planned",
         prompt: {
@@ -892,6 +991,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
         },
       }).eq("id", job.id);
       return true;
+      });
     });
 
     let bytes: Uint8Array;
@@ -1091,7 +1191,9 @@ async function processJob(sb: Sb, job: any, settings: any) {
       memory_mb: metrics.memory_end_mb,
     };
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
+    const normalized = auditThrowable(e);
+    const message = normalized.message;
+    (metrics as any).normalized_error = normalized;
     metrics.finished_at = new Date().toISOString();
     metrics.duration_ms = Date.now() - startedMs;
     metrics.memory_end_mb = memoryRssMb();
