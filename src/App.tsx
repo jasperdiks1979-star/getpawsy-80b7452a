@@ -430,6 +430,7 @@ const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsP
 const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
 const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
+const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const AccountantPortalPage = lazyWithRetry(() => import("./pages/admin/AccountantPortalPage"));
 const GrowthExecutionPage = lazyWithRetry(() => import("./pages/admin/GrowthExecutionPage"));
 const GrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/GrowthIntelligencePage"));
