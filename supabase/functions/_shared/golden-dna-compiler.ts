@@ -474,6 +474,10 @@ export function buildDeterministicPrompt(
     : `${rules.species.toUpperCase()} ONLY. Never generate ${
       rules.forbidden_species.map((s) => s.toUpperCase()).join(", ") || "other species"
     }.`;
+  const shapeLine =
+    rules.toy_shape !== "none" && rules.species !== "unknown"
+      ? `TOY SHAPE: ${rules.toy_shape.toUpperCase()}. The product is a ${rules.toy_shape.toUpperCase()}-SHAPED toy FOR ${rules.species.toUpperCase()}S. NEVER render a real ${rules.toy_shape}. Render a real ${rules.species} actively batting, biting, chasing or interacting with the ${rules.toy_shape}-shaped toy.`
+      : null;
   const colorLine = rules.landing_dominant_colors.length
     ? `Product color MUST exactly match PDP palette: ${rules.landing_dominant_colors.join(", ")}.`
     : "Product color MUST exactly match the PDP hero image.";
@@ -482,7 +486,10 @@ export function buildDeterministicPrompt(
 
   return [
     `PRODUCT: ${productName}`,
+    `SEMANTIC INTERPRETATION: ${rules.semantic_interpretation}`,
+    `SPECIES SOURCE: ${rules.species_source} (title is never authoritative).`,
     speciesLine,
+    ...(shapeLine ? [shapeLine] : []),
     `Subject MUST be shown actually using / wearing THIS product.`,
     colorLine,
     envLine,
@@ -497,7 +504,9 @@ export function buildDeterministicPrompt(
     `Shopping similarity target: ${rules.shopping_similarity_target}%.`,
     `Emotional trigger: ${rules.emotional_trigger}.`,
     `Pinterest vertical ${rules.aspect_ratio}, maximum stopping power.`,
-    `MUST NOT include: text overlays, infographics, CTA buttons, watermarks, children, competing products, other species.`,
+    `MUST NOT include: text overlays, infographics, CTA buttons, watermarks, children, competing products, other species${
+      rules.toy_shape !== "none" ? `, or a real ${rules.toy_shape}` : ""
+    }.`,
     `DNA reference: ${rules.golden_dna_ref}.`,
   ].join("\n");
 }
