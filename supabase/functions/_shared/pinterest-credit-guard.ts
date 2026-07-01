@@ -12,7 +12,7 @@
 // `isPublishingPaused()` is independent and is only set by an explicit
 // operator action (`publishing_paused` column). Credit guard NEVER toggles it.
 
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { recomputeForecast, maybeFire24hAlert } from "./pinterest-credit-forecast.ts";
 
 const ORANGE_THRESHOLD_402 = 1; // any 402 in last hour → orange minimum

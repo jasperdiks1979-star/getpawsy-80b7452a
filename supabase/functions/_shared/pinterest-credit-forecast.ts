@@ -5,7 +5,7 @@
 // `pinterest_credit_state`. Pure DB read + state update — never blocks the
 // publish pipeline.
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 
 export type ForecastState = "green" | "orange" | "red";
 

@@ -8,7 +8,7 @@
 //
 // Returns the raw verdict from the RPC plus a normalized reason string.
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 
 export interface GovernorViolation {
   rule: string;
