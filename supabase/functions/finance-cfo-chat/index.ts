@@ -71,7 +71,7 @@ async function gatherContext(admin: ReturnType<typeof createClient>, question: s
   // 2) Supplier totals (top 20 by total spend across evidence_payments).
   const { data: suppliers } = await admin
     .from("evidence_suppliers")
-    .select("id, name, category, country, is_recurring")
+    .select("id, name, category, country")
     .limit(200);
   const { data: pays } = await admin
     .from("evidence_payments")
@@ -98,23 +98,24 @@ async function gatherContext(admin: ReturnType<typeof createClient>, question: s
   // 3) Active subscriptions.
   const { data: subs } = await admin
     .from("finance_subscriptions")
-    .select("name, vendor, amount_minor, currency, cadence, renews_at, is_active")
+    .select("product_name, supplier_slug, amount_minor, currency, cadence, renews_at, is_active")
     .eq("is_active", true)
     .limit(100);
   if (subs && subs.length) {
     ctxParts.push("\n### Active subscriptions");
-    for (const s of subs) ctxParts.push(`- ${s.vendor ?? ""} ${s.name ?? ""}: ${money(s.amount_minor, s.currency ?? "EUR")} / ${s.cadence ?? "monthly"} (renews ${s.renews_at ?? "?"})`);
+    for (const s of subs) ctxParts.push(`- ${s.supplier_slug ?? ""} — ${s.product_name ?? ""}: ${money(s.amount_minor, s.currency ?? "EUR")} / ${s.cadence ?? "monthly"} (renews ${s.renews_at ?? "?"})`);
   }
 
   // 4) VAT summaries.
   const { data: vat } = await admin
     .from("finance_vat_summaries")
-    .select("period_start, period_end, vat_charged_minor, vat_reclaimable_minor, currency")
-    .order("period_start", { ascending: false })
+    .select("period_type, period_year, period_number, vat_total_minor, recoverable_minor, reclaimed_minor, outstanding_minor, currency")
+    .order("period_year", { ascending: false })
+    .order("period_number", { ascending: false })
     .limit(8);
   if (vat && vat.length) {
     ctxParts.push("\n### VAT summaries (recent quarters)");
-    for (const v of vat) ctxParts.push(`- ${v.period_start} → ${v.period_end}: charged ${money(v.vat_charged_minor, v.currency ?? "EUR")}, reclaimable ${money(v.vat_reclaimable_minor, v.currency ?? "EUR")}`);
+    for (const v of vat) ctxParts.push(`- ${v.period_type ?? "Q"} ${v.period_year}-${v.period_number}: total ${money(v.vat_total_minor, v.currency ?? "EUR")}, recoverable ${money(v.recoverable_minor, v.currency ?? "EUR")}, reclaimed ${money(v.reclaimed_minor, v.currency ?? "EUR")}, outstanding ${money(v.outstanding_minor, v.currency ?? "EUR")}`);
   }
 
   // 5) Assets summary.
