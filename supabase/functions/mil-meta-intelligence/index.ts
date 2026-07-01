@@ -4,6 +4,7 @@
 // weight adjustments require mil_settings.autonomy.auto_adjust_weights = true.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -208,6 +209,8 @@ async function runReview(supa: ReturnType<typeof createClient>, trigger: string)
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const supa = createClient(SUPABASE_URL, SERVICE_KEY);
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};

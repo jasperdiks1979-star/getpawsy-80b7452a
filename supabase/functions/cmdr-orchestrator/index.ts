@@ -3,6 +3,7 @@
 //          → budget-check → decision-engine → simulation → self-healing
 // Default mode = simulation. Never invokes downstream engines in 6A.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -264,6 +265,8 @@ async function runOrchestrator(trigger: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const trigger = body?.trigger ?? "manual";

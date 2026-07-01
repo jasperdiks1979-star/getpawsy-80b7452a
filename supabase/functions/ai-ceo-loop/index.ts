@@ -2,6 +2,7 @@
 // Pure intelligence layer. Reads from existing engines. Writes only to ai_ceo_*.
 // Hourly loop: observe → explain → predict → rank → recommend → learn.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -194,6 +195,8 @@ function executiveScore(obs: any, recs: Rec[]) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
   const body = await req.json().catch(() => ({}));
   const trigger = body.trigger ?? "manual";
