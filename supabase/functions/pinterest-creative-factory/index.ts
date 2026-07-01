@@ -22,6 +22,29 @@ import {
   priorSuccessRate,
   writeCompilerLedger,
 } from "../_shared/golden-dna-compiler.ts";
+import {
+  applyCanonicalEnrichment,
+  assertQueueRowEnriched,
+  CANONICAL_ENRICHMENT_VERSION,
+  deriveContentClassification as _canonicalDeriveContentClassification,
+  naturalizeCopyForNative as _canonicalNaturalizeCopyForNative,
+  type CanonicalClassification,
+} from "../_shared/pinterest-canonical-enrichment.ts";
+
+// Genesis V9.3 — re-export canonical helpers so callers keep working while
+// the source of truth lives in `_shared/pinterest-canonical-enrichment.ts`.
+// The local duplicates that used to live in this file were REMOVED.
+export const deriveContentClassification = _canonicalDeriveContentClassification;
+export const naturalizeCopyForNative = _canonicalNaturalizeCopyForNative;
+export type FactoryClassification = CanonicalClassification;
+export type FactoryContentType = CanonicalClassification["content_type"];
+
+function assertFactoryMetadataComplete(row: {
+  content_type?: string | null;
+  meta?: Record<string, unknown> | null;
+}): void {
+  assertQueueRowEnriched(row);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
