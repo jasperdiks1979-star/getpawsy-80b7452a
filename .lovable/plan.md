@@ -1,86 +1,64 @@
-# Genesis V6.4 — Golden DNA Prompt Compiler
 
-Additive layer that sits between the Creative Director and Gemini. Never weakens PRE, never lowers thresholds, never duplicates existing engines. Fully reuses Golden DNA, PRE, Creative Director, Creative Factory, Product/Conversion/Market/Audience Intelligence, First Sale Accelerator, Recommendation OS, Closed-Loop Learning, and Pinterest Publisher.
+# GENESIS V14 — Financial Evidence Vault
 
-## Architecture
+Additive platform on top of the existing V11.1 Evidence Vault, V12 Finance Intelligence, V12.1 Health, V12.2 Manual Import, V12.3 Belastingdienst Export, V13 CEO Command Center, and `stripe-evidence-import`. Nothing existing is replaced.
 
-```text
-Product ──► Rule Extractor ──► Constraint Set ──► DNA Inheritor ──► Prompt Builder
-                                    │                    │
-                     Product/Market/Audience Intel   PRE=96 Golden Reference
-                                    │
-                              Compiler QA  ──► reject (recompile) ──► loop
-                                    │
-                              predicted_pre >= 90 ?  ── no ──► recompile prompt (no Gemini call)
-                                    │ yes
-                              call Gemini (existing factory)
-                                    │
-                        pre-product-relevance evaluation
-                                    │
-                     compiler_prompt_ledger  ──► closed-loop learning
-```
+Because of the breadth of Sections 1–25, V14 ships in 4 phases. Phase 1 is executed now; Phases 2–4 are queued for subsequent turns so each stays reviewable and the migrations stay small enough to audit.
 
-## Files added (shared library, single source of truth)
+## Phase 1 (this turn) — Foundation: Assets, Suppliers upgrade, CFO Dashboard shell
 
-- `supabase/functions/_shared/golden-dna-compiler.ts`
-  - `extractProductRules(product, landingSignals)` → `CompiledRuleSet` (species/breed/env/use-case/accessory/colour allow+forbid lists, camera/lens/lighting/mood/composition/background, occupancy target, visibility target, landing-similarity target, shopping-similarity target, click-intent target, emotional trigger, stopping-power target).
-  - `inheritGoldenDNA(ruleSet)` → merges defaults from the PRE=96 reference (camera, lighting, crop, distance, focus, bg complexity, contrast, hierarchy, product scale, negative space, eye-tracking, shopping clarity) via existing `pinterest-style-dna.ts`.
-  - `buildDeterministicPrompt(ruleSet)` → single canonical Gemini prompt string with explicit MUST/NEVER blocks + numeric occupancy/visibility clauses.
-  - `compilerQA(ruleSet, prompt)` → runs species/use-case/shopping/landing/occupancy/visibility ambiguity checks; returns `{ ok, blockers[] }`.
-  - `predictPre(ruleSet, priorPreEvals, dnaSimilarity)` → deterministic scorer (feature-weighted, no LLM call) returning `predicted_pre 0-100`.
-  - `mutateForBlocker(ruleSet, blocker)` → PRE-aware Phase 4 mutation table (species-lock, occupancy raise, palette lock, emotional upgrade, hero composition).
-- `supabase/functions/_shared/golden-dna-compiler_test.ts` — Deno unit tests for extractor, QA, mutator, and predictor.
+**New tables (all `public.*`, RLS admin-only, GRANT to authenticated + service_role):**
+- `finance_assets` — id, category (enum: phone/laptop/desktop/tablet/monitor/server/network/printer/furniture/vehicle/camera/audio/storage/dev/other), name, serial, supplier_id → `evidence_suppliers`, purchase_date, purchase_amount_cents, vat_amount_cents, currency, business_usage_pct, depreciation_method (linear/none), depreciation_years, salvage_value_cents, status (active/repair/sold/retired/lost), current_book_value_cents (computed nightly), warranty_until, replacement_expected_at, notes, photos jsonb, metadata jsonb.
+- `finance_asset_events` — asset_id, event_type (purchase/repair/warranty_claim/battery/upgrade/resale/replacement/note), event_date, cost_cents, vat_cents, evidence_document_id, supplier_id, notes.
+- `finance_asset_documents` — join asset_id ↔ evidence_document_id + role (invoice/receipt/warranty/manual/photo/repair_receipt).
+- `finance_alerts` — alert_type (invoice_missing/receipt_missing/payment_missing/duplicate_payment/warranty_expiring/subscription_renewing/price_increase/vat_mismatch/unknown_supplier/asset_incomplete), severity, subject_type, subject_id, message, status (open/ack/resolved), created_at.
+- `finance_search_index` — materialised text search over documents/suppliers/assets/subscriptions/payments (`tsvector` GIN).
 
-## Files modified (wire the compiler in — no logic duplication)
+**Extends existing tables (ADD COLUMN, nullable):**
+- `evidence_suppliers`: `health_score smallint`, `risk_score smallint`, `invoice_completeness_pct smallint`, `spend_ytd_cents bigint`, `intelligence jsonb`.
+- `finance_subscriptions`: `duplicate_of uuid`, `unused_since date`, `expected_next_invoice_at date`, `missing_invoice_flag boolean`.
 
-- `supabase/functions/pinterest-creative-factory/index.ts`
-  - Before every Gemini image call: `compilePrompt()` → QA loop (max 3 mutations) → `predictPre` gate → only then `EdgeRuntime.waitUntil(callGemini)`.
-  - Log `trace_id` (existing) plus compiled prompt + rule hash into new ledger.
-- `supabase/functions/pre-occupancy-rerender/index.ts`
-  - Replace ad-hoc prompt regen with `mutateForBlocker('occupancy')` so retries always compile a DIFFERENT prompt (Phase 4 rule: never resend previous prompt).
-- `supabase/functions/pre-product-relevance/index.ts`
-  - On finish, write into `compiler_prompt_ledger`: `{trace_id, compiled_prompt, rule_hash, predicted_pre, actual_pre, dominant_blocker}` for closed-loop learning.
-- `supabase/functions/pcie2-creative-worker/index.ts`
-  - Route all `generateImage` calls through the compiler helper. No fallback path — if QA fails after 3 mutations, drop the job (no Gemini spend), enqueue for human review.
+**Edge functions:**
+- `finance-asset-detect` — post-import hook. Given an `evidence_document_id`, calls Gemini 2.5 Flash to detect if the invoice describes a durable asset (Apple/Dell/camera/etc.). Returns suggested category + prompts.
+- `finance-asset-depreciate` — nightly cron; recomputes `current_book_value_cents` for every active asset.
+- `finance-alerts-scan` — nightly; produces `finance_alerts` rows for the 10 alert types.
+- `finance-search-reindex` — rebuilds `finance_search_index`.
 
-## Database (single new table, additive)
+**Frontend:**
+- `src/pages/admin/FinancialEvidenceVaultPage.tsx` at `/admin/vault-v14` with tabs: Overview (CFO KPIs), Assets, Suppliers, Subscriptions, Alerts, Search, Timeline. Reuses existing panels from `EvidenceVaultPage` (Manual Import, Stripe Import, Backfill, Belastingdienst Export) via imports — no duplication.
+- New components under `src/components/admin/vault-v14/`:
+  - `CFOScorecard.tsx` (Section 16 KPIs from `finance_vat_summaries`, `evidence_payments`, `finance_subscriptions`, `finance_assets`).
+  - `AssetRegistryPanel.tsx` (list + drawer with timeline of `finance_asset_events`).
+  - `AssetIntakeDialog.tsx` (Section 6 assistant: business use %, since when, register-as-asset flow).
+  - `AlertsPanel.tsx`.
+  - `GlobalFinanceSearch.tsx` (Section 18, hits `finance_search_index`).
+- Route registered in `src/App.tsx` under existing `AdminRouteGuard`.
 
-- `public.compiler_prompt_ledger`
-  - `trace_id`, `product_id`, `rule_hash`, `compiled_prompt`, `rule_set jsonb`, `predicted_pre`, `actual_pre`, `dominant_blocker`, `mutation_step`, `succeeded bool`, timestamps.
-  - Grants: `service_role` full, `authenticated` SELECT (for admin dashboard). RLS: admin-only.
-  - Indexed on `(product_id, created_at desc)` and `(dominant_blocker)` so `mutateForBlocker` and Phase 7 learning aggregates are cheap.
+**Backfill (Section 21):** extend `finance-backfill-scan` to also emit asset-candidate tasks (invoices > €200 from hardware suppliers detected by `finance-asset-detect`).
 
-## Reused systems (no duplication)
+## Phase 2 (next turn) — VAT, Subscription & Supplier Intelligence
+- `finance-vat-intelligence` edge fn: flags reverse-charge / EU / non-EU / missing / duplicate VAT per document; feeds `finance_alerts` + a new `finance_vat_flags` table.
+- `finance-subscription-intelligence`: duplicate/unused/price-increase detection over `finance_subscriptions` history.
+- `finance-supplier-intelligence`: health/risk/completeness scores → writes to `evidence_suppliers` fields added in Phase 1.
+- UI: Subscription tab timeline, VAT flags drawer, Supplier profile page.
 
-| Concern | Reused component |
-| --- | --- |
-| Golden reference asset | `_shared/pinterest-style-dna.ts` (PRE=96 DNA) |
-| PRE scoring | `pre-product-relevance` (unchanged, same thresholds) |
-| Master Creative Director | `_shared/pinterest-master-creative-director.ts` |
-| Occupancy retry orchestration | `pre-occupancy-rerender` |
-| Product/Market/Audience metadata | existing `products`, `market_intelligence_*`, `audience_intelligence_*` tables |
-| Landing colour extraction | existing `product_landing_signals` view |
-| Closed-loop learning | `governance_decision_log` + new ledger table |
-| Publisher | `pcie2-publish-assembler` (unchanged) |
-| Credit preflight | `_shared/ai-credit-preflight.ts` — compiler runs BEFORE preflight so we never even reserve credit for a low-confidence prompt |
+## Phase 3 — Audit Mode, Belastingdienst Dossiers, Accountant Package, Multi-year
+- `finance-audit-package` edge fn: builds immutable ZIP (invoices + receipts + payments + assets + VAT + SHA-256 manifest), stored to `genesis-vault`, registered in `evidence_documents` with `is_audit_package = true`.
+- Extends `finance-belastingdienst-export` to include asset register + supplier register + timeline JSON.
+- `finance-accountant-package` fn (Section 15): CSV registers (expense / invoice / asset / VAT / supplier) + evidence ZIP.
+- `finance_annual_dossiers` gains `asset_register_url`, `supplier_register_url`, `audit_package_url`. Nightly cron ensures a dossier row exists for every completed year and the current YTD.
 
-## Validation run (Phase 9)
+## Phase 4 — Report Library, Certification, Connectors, Timeline
+- `finance_reports_library` view + UI tab that auto-archives every existing Genesis report (Revenue/Pinterest/Stripe/Finance/Tax/Infra/Analytics/Evidence/Certification) into `evidence_documents` with `report_category`.
+- Financial Timeline view (Section 19) reading `evidence_timeline` + `finance_asset_events` + `evidence_payments` + `finance_subscriptions` renewals.
+- Connector framework registry table `finance_connectors_catalog` describing which providers auto-import vs manual-only (Lovable, OpenAI, Stripe ✓ auto; Apple, Meta, Pinterest, TikTok, CJ, Cloudflare, GitHub, domain hosts → guided manual upload). No scraping of unsupported services.
+- `GENESIS V14 Certification` generator (PDF via existing pdf skill): Financial Health, Accounting Completeness, Invoice Completeness, VAT Readiness, Asset Completeness, Audit Readiness, Belastingdienst Readiness, Evidence Integrity, Automation, Security, Overall Score, SHA-256 fingerprint. Stored in `genesis_documents` and shown in `/admin/vault-v14` header.
 
-- Pick the current Top-15 First Sale products (from `first_sale_accelerator` ranking view).
-- One compiled prompt → one Gemini image → one PRE eval per product.
-- If PRE ≥ 95 → mark validated. If PRE < 95 → do NOT touch Gemini or thresholds; instead persist blocker to `compiler_prompt_ledger` and re-run `mutateForBlocker` next cycle. Improvement happens compiler-side only.
+## Guardrails
+- All new tables: `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated; GRANT ALL ... TO service_role;` + `ENABLE ROW LEVEL SECURITY` + admin-only policies via `has_role(auth.uid(),'admin')`.
+- All new edge functions: `admin-guard.ts`, CORS, zod input validation, SHA-256 on every persisted artifact, idempotent `registerDoc` reuse.
+- Zero changes to existing routes, tables, or edge functions beyond additive columns.
+- No fabricated data anywhere; missing evidence surfaces as a `finance_alerts` row.
 
-## Success targets (measured, not asserted)
-
-- Baseline PRE pass rate: read live from `pre_evaluations` (last 7 days). Ledger `succeeded=true` ratio after rollout is the after-metric.
-- Credit reduction: `sum(gemini_image_calls_before) - sum(gemini_image_calls_after)` from `ai_trace_events`.
-- Retry reduction: distinct `trace_id` count in `pinterest_pin_queue` retry lane.
-
-Numbers in the final report will be pulled from those tables — no synthetic values.
-
-## Out of scope (explicit)
-
-- No changes to PRE thresholds, publish gates, autopilot mode, or Guardian rules.
-- No new Creative Director. Compiler is a pure pre-processor.
-- No new Publisher. Existing assembler consumes compiled prompts unchanged.
-- No prompt sent to Gemini when `compilerQA` fails or `predicted_pre < 90`.
+## Deliverable of this turn
+Phase 1 fully shipped and reachable at `/admin/vault-v14`, alerts + assets + CFO scorecard live, nightly crons scheduled, backfill extended. Phases 2–4 wait for your go-ahead so each ships with its own reviewable migration + code batch.
