@@ -219,7 +219,7 @@ async function seedMissingMediaJobs(sb: Sb, limit: number, source: string) {
     .not("product_id", "is", null)
     .order("created_at", { ascending: true })
     .limit(limit);
-  if (error) throw error;
+  if (error) throw throwableToError(error);
 
   const rows = (pins ?? []).map((p: any, i: number) => ({
     pin_queue_id: p.id,
@@ -240,7 +240,7 @@ async function seedMissingMediaJobs(sb: Sb, limit: number, source: string) {
   const { error: upsertErr } = await sb
     .from("pinterest_creative_factory_jobs")
     .upsert(rows, { onConflict: "pin_queue_id", ignoreDuplicates: true });
-  if (upsertErr) throw upsertErr;
+  if (upsertErr) throw throwableToError(upsertErr);
   return { discovered: rows.length, inserted: rows.length };
 }
 
@@ -260,7 +260,7 @@ async function seedInventoryDrafts(sb: Sb, target: number, source: string) {
     .not("image_url", "is", null)
     .order("updated_at", { ascending: false })
     .limit(deficit * 3);
-  if (error) throw error;
+  if (error) throw throwableToError(error);
   let created = 0;
   for (const product of products ?? []) {
     if (created >= deficit) break;
@@ -375,7 +375,7 @@ async function seedProductDrafts(
   else if (productRef.productSlug) q = q.eq("slug", productRef.productSlug);
   else throw new Error("productId_or_productSlug_required");
   const { data: products, error } = await q;
-  if (error) throw error;
+  if (error) throw throwableToError(error);
   const product = products?.[0];
   if (!product?.id) throw new Error("product_not_found");
   const niche = detectNiche(product) as NicheKey;
@@ -527,7 +527,7 @@ async function leaseJobs(sb: Sb, limit: number, owner: string) {
     .order("priority", { ascending: true })
     .order("created_at", { ascending: true })
     .limit(limit);
-  if (error) throw error;
+  if (error) throw throwableToError(error);
   const leased: any[] = [];
   for (const job of candidates ?? []) {
     const until = new Date(Date.now() + 4 * 60_000).toISOString();
@@ -803,7 +803,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
           .eq("id", job.pin_queue_id)
           .maybeSingle(),
     );
-    if (pinErr) throw pinErr;
+    if (pinErr) throw throwableToError(pinErr);
     if (!pin) throw new Error("pin_queue_row_missing");
     if (pin.pin_image_url) {
       await sb.from("pinterest_creative_factory_jobs").update({
@@ -828,7 +828,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
           .eq("id", pin.product_id)
           .maybeSingle(),
     );
-    if (pErr) throw pErr;
+    if (pErr) throw throwableToError(pErr);
     if (!product) throw new Error("product_missing");
     if (product.is_active === false) throw new Error("product_inactive");
 
@@ -1035,7 +1035,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
           cacheControl: "31536000",
           upsert: true,
         });
-        if (up.error) throw up.error;
+        if (up.error) throw throwableToError(up.error);
         return true;
       });
       const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
@@ -1164,7 +1164,7 @@ async function processJob(sb: Sb, job: any, settings: any) {
       };
       assertFactoryMetadataComplete(updateRow);
       const { error } = await sb.from("pinterest_pin_queue").update(updateRow).eq("id", pin.id);
-      if (error) throw error;
+      if (error) throw throwableToError(error);
       return true;
     });
 
