@@ -20942,6 +20942,83 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_vat_reconciliations: {
+        Row: {
+          calculated_vat_minor: number
+          created_at: string
+          currency: string
+          delta_minor: number
+          delta_pct: number
+          details: Json
+          evidence_document_id: string | null
+          evidence_sha256: string | null
+          flagged_documents: Json
+          id: string
+          imported_vat_minor: number
+          invoice_count: number
+          missing_docs: number
+          notes: string | null
+          period_number: number | null
+          period_type: string
+          period_year: number
+          status: string
+          triggered_by: string
+          updated_at: string
+        }
+        Insert: {
+          calculated_vat_minor?: number
+          created_at?: string
+          currency?: string
+          delta_minor?: number
+          delta_pct?: number
+          details?: Json
+          evidence_document_id?: string | null
+          evidence_sha256?: string | null
+          flagged_documents?: Json
+          id?: string
+          imported_vat_minor?: number
+          invoice_count?: number
+          missing_docs?: number
+          notes?: string | null
+          period_number?: number | null
+          period_type: string
+          period_year: number
+          status?: string
+          triggered_by?: string
+          updated_at?: string
+        }
+        Update: {
+          calculated_vat_minor?: number
+          created_at?: string
+          currency?: string
+          delta_minor?: number
+          delta_pct?: number
+          details?: Json
+          evidence_document_id?: string | null
+          evidence_sha256?: string | null
+          flagged_documents?: Json
+          id?: string
+          imported_vat_minor?: number
+          invoice_count?: number
+          missing_docs?: number
+          notes?: string | null
+          period_number?: number | null
+          period_type?: string
+          period_year?: number
+          status?: string
+          triggered_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_vat_reconciliations_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_vat_summaries: {
         Row: {
           computed_at: string
