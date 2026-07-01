@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, ExternalLink, FileText, Search, Shield, Building2, Receipt, Clock, Download } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Search, Shield, Building2, Receipt, Clock, Download, UploadCloud, Sparkles } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -82,22 +84,22 @@ const EvidenceVaultPage = () => {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const [s, d, p, t] = await Promise.all([
-        supabase.from("evidence_suppliers").select("*").order("name"),
-        supabase.from("evidence_documents").select("*").order("document_date", { ascending: false, nullsFirst: false }).limit(500),
-        supabase.from("evidence_payments").select("*").order("paid_at", { ascending: false, nullsFirst: false }).limit(500),
-        supabase.from("evidence_timeline").select("*").order("event_at", { ascending: false }).limit(200),
-      ]);
-      if (s.data) setSuppliers(s.data as Supplier[]);
-      if (d.data) setDocs(d.data as EvidenceDoc[]);
-      if (p.data) setPayments(p.data as Payment[]);
-      if (t.data) setTimeline(t.data as TimelineEvent[]);
-      setLoading(false);
-    })();
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    const [s, d, p, t] = await Promise.all([
+      supabase.from("evidence_suppliers").select("*").order("name"),
+      supabase.from("evidence_documents").select("*").order("document_date", { ascending: false, nullsFirst: false }).limit(500),
+      supabase.from("evidence_payments").select("*").order("paid_at", { ascending: false, nullsFirst: false }).limit(500),
+      supabase.from("evidence_timeline").select("*").order("event_at", { ascending: false }).limit(200),
+    ]);
+    if (s.data) setSuppliers(s.data as Supplier[]);
+    if (d.data) setDocs(d.data as EvidenceDoc[]);
+    if (p.data) setPayments(p.data as Payment[]);
+    if (t.data) setTimeline(t.data as TimelineEvent[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -147,6 +149,7 @@ const EvidenceVaultPage = () => {
         </div>
 
         <StripeImportPanel />
+        <ManualImportPanel onImported={load} />
 
 
         <div className="grid gap-4 md:grid-cols-4 mb-6">
@@ -414,3 +417,159 @@ const StripeImportPanel = () => {
 };
 
 export default EvidenceVaultPage;
+
+const ManualImportPanel = ({ onImported }: { onImported: () => void }) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [supplier, setSupplier] = useState("");
+  const [category, setCategory] = useState("");
+  const [docType, setDocType] = useState("invoice");
+  const [notes, setNotes] = useState("");
+  const [taskId, setTaskId] = useState("");
+  const [tasks, setTasks] = useState<Array<{ id: string; supplier_slug: string; period_label: string; expected_type: string; status: string }>>([]);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    supabase
+      .from("finance_import_tasks")
+      .select("id, supplier_slug, period_label, expected_type, status")
+      .eq("status", "open")
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .limit(50)
+      .then(({ data }) => setTasks(data ?? []));
+  }, []);
+
+  const submit = async () => {
+    if (!file) { toast.error("Choose a file first"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Max 25 MB per file"); return; }
+    setRunning(true); setResult(null);
+    try {
+      const b64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || "").split(",", 2)[1] ?? "");
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+      const { data, error } = await supabase.functions.invoke("finance-manual-import", {
+        body: {
+          filename: file.name,
+          mime_type: file.type || "application/octet-stream",
+          base64: b64,
+          hint_supplier: supplier || null,
+          hint_category: category || null,
+          hint_task_id: taskId || null,
+          hint_document_type: docType || null,
+          user_notes: notes || null,
+        },
+      });
+      if (error) throw error;
+      setResult(data);
+      if (data?.deduped) {
+        toast.info("Duplicate detected — already archived (SHA-256 match).");
+      } else {
+        toast.success(`Archived · ${data?.document?.supplier_name ?? "unknown supplier"}${data?.closed_task_id ? " · task closed" : ""}`);
+      }
+      setFile(null); setSupplier(""); setCategory(""); setNotes(""); setTaskId("");
+      onImported();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Import failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Card className="mb-6 border-primary/30">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <UploadCloud className="h-4 w-4" /> Manual Import Assistant
+          <Badge variant="outline" className="ml-2 text-[10px] flex items-center gap-1">
+            <Sparkles className="h-3 w-3" /> AI OCR
+          </Badge>
+          <Badge variant="outline" className="text-[10px]">SHA-256</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Upload an invoice, receipt or bill (PDF or image, max 25 MB). The AI assistant extracts
+          supplier, invoice number, date, amount and VAT, deduplicates by SHA-256, archives to the
+          private vault, and auto-links it to a matching open import task if one exists.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label className="text-xs">File</Label>
+            <Input
+              type="file"
+              accept="application/pdf,image/*"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            {file && (
+              <p className="text-[10px] text-muted-foreground truncate">
+                {file.name} · {(file.size / 1024).toFixed(1)} KB · {file.type || "unknown"}
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Match open task (optional)</Label>
+            <select
+              value={taskId}
+              onChange={(e) => setTaskId(e.target.value)}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">— auto-detect —</option>
+              {tasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.supplier_slug} · {t.period_label} · {t.expected_type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Supplier hint (optional)</Label>
+            <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g. OpenAI, Lovable, Cloudflare" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Category hint (optional)</Label>
+            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. AI, Software, Hosting" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Document type</Label>
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="invoice">Invoice</option>
+              <option value="receipt">Receipt</option>
+              <option value="credit_note">Credit note</option>
+              <option value="statement">Statement</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Notes (optional)</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything the bookkeeper should know" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button size="sm" onClick={submit} disabled={running || !file}>
+            {running ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Extracting & archiving…</> : "Import & archive"}
+          </Button>
+          {result && !result.deduped && result?.document && (
+            <span className="text-xs text-muted-foreground">
+              ✓ {result.document.supplier_name ?? "—"} · {result.document.document_type}
+              {result.document.invoice_number ? ` · #${result.document.invoice_number}` : ""}
+              {result.document.document_date ? ` · ${result.document.document_date}` : ""}
+              {result.document.amount_minor != null ? ` · ${(result.document.amount_minor / 100).toFixed(2)} ${result.document.currency ?? ""}` : ""}
+              {result.closed_task_id ? " · task closed" : ""}
+              {typeof result.confidence === "number" ? ` · conf ${(result.confidence * 100).toFixed(0)}%` : ""}
+            </span>
+          )}
+          {result?.deduped && (
+            <span className="text-xs text-amber-600">Duplicate — already archived (SHA match).</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
