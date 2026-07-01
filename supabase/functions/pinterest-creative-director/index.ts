@@ -1708,6 +1708,7 @@ Deno.serve(async (req) => {
           | "profile_validation"
           | "brief_generated"
           | "pre_diversity"
+          | "brief_fidelity_check"
           | "image_generation"
           | "quality_gate"
           | "fidelity_check"
