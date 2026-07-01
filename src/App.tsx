@@ -471,6 +471,7 @@ const CinematicQueueHealthPage = lazyWithRetry(() => import("./pages/admin/Cinem
 const PinterestRecoveryStatusPage = lazyWithRetry(() => import("./pages/admin/PinterestRecoveryStatusPage"));
 const PinterestCreditProtectionPage = lazyWithRetry(() => import("./pages/admin/PinterestCreditProtectionPage"));
 const AiGatewayCreditsPage = lazyWithRetry(() => import("./pages/admin/AiGatewayCreditsPage"));
+const AiTraceExplorerPage = lazyWithRetry(() => import("./pages/admin/AiTraceExplorerPage"));
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
