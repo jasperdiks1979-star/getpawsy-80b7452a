@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, FileText, Landmark, Receipt, Shield, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
+import { ArrowLeft, FileText, Landmark, Receipt, Shield, ShieldCheck, AlertTriangle, RefreshCw, Download, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
@@ -24,6 +24,8 @@ const AccountantPortalPage = () => {
   const [recons, setRecons] = useState<Recon[]>([]);
   const [running, setRunning] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [lastExport, setLastExport] = useState<{ label: string; url: string | null; bytes: number; sha256: string; totals: Record<string, number> } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -69,6 +71,29 @@ const AccountantPortalPage = () => {
     }
   };
 
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  const currentQuarter = Math.floor(now.getUTCMonth() / 3) + 1;
+
+  const runExport = async (scope: "quarter" | "year" | "all", opts?: { year?: number; quarter?: number }) => {
+    const key = `${scope}-${opts?.year ?? ""}-${opts?.quarter ?? ""}`;
+    setExporting(key);
+    try {
+      const { data, error } = await supabase.functions.invoke("finance-accountant-export", {
+        body: { scope, year: opts?.year ?? currentYear, quarter: opts?.quarter ?? null },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Export failed");
+      setLastExport({ label: data.period.label, url: data.zip.signed_url, bytes: data.zip.bytes, sha256: data.zip.sha256, totals: data.totals });
+      toast.success(`Dossier ready · ${data.totals.documents} documents · ${(data.zip.bytes / 1024 / 1024).toFixed(2)} MB`);
+      if (data.zip.signed_url) window.open(data.zip.signed_url, "_blank", "noopener");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet><title>Accountant Portal · GetPawsy</title></Helmet>
@@ -83,7 +108,7 @@ const AccountantPortalPage = () => {
         </div>
 
         <Tabs defaultValue="invoices">
-          <TabsList className="mb-4"><TabsTrigger value="invoices">Invoices</TabsTrigger><TabsTrigger value="receipts">Receipts</TabsTrigger><TabsTrigger value="vat">VAT summaries</TabsTrigger><TabsTrigger value="reconcile">VAT reconciliation</TabsTrigger></TabsList>
+          <TabsList className="mb-4"><TabsTrigger value="invoices">Invoices</TabsTrigger><TabsTrigger value="receipts">Receipts</TabsTrigger><TabsTrigger value="vat">VAT summaries</TabsTrigger><TabsTrigger value="reconcile">VAT reconciliation</TabsTrigger><TabsTrigger value="export">Export dossier</TabsTrigger></TabsList>
 
           <TabsContent value="invoices">
             <DocList items={invoices} empty="No invoices archived yet." icon={<FileText className="h-6 w-6" />} />
@@ -152,6 +177,56 @@ const AccountantPortalPage = () => {
                   );
                 })}
               </div>
+            )}
+          </TabsContent>
+          <TabsContent value="export">
+            <Card className="mb-4"><CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1"><Package className="h-4 w-4" /><p className="font-medium">Accountant Mode dossier</p></div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Bundles expenses, invoices, receipts, assets, VAT, suppliers, subscriptions, ad-spend and payments — with original PDFs and a SHA-256 manifest — into a single downloadable ZIP.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" disabled={!!exporting} onClick={() => runExport("quarter", { year: currentYear, quarter: currentQuarter })}>
+                  <Download className={`h-4 w-4 mr-2 ${exporting?.startsWith("quarter") ? "animate-pulse" : ""}`} />
+                  Current quarter (Q{currentQuarter} {currentYear})
+                </Button>
+                <Button size="sm" variant="secondary" disabled={!!exporting} onClick={() => {
+                  const q = currentQuarter === 1 ? 4 : currentQuarter - 1;
+                  const y = currentQuarter === 1 ? currentYear - 1 : currentYear;
+                  return runExport("quarter", { year: y, quarter: q });
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Previous quarter
+                </Button>
+                <Button size="sm" variant="secondary" disabled={!!exporting} onClick={() => runExport("year", { year: currentYear })}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Year to date ({currentYear})
+                </Button>
+                <Button size="sm" variant="secondary" disabled={!!exporting} onClick={() => runExport("year", { year: currentYear - 1 })}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Full year {currentYear - 1}
+                </Button>
+                <Button size="sm" disabled={!!exporting} onClick={() => runExport("all")}>
+                  <Download className={`h-4 w-4 mr-2 ${exporting === "all--" ? "animate-pulse" : ""}`} />
+                  All-time archive
+                </Button>
+              </div>
+              {exporting && <p className="text-xs text-muted-foreground mt-3">Building dossier… downloading originals and hashing files. This may take a minute for large periods.</p>}
+            </CardContent></Card>
+            {lastExport && (
+              <Card><CardContent className="p-4">
+                <p className="font-medium mb-1">Latest export · {lastExport.label}</p>
+                <p className="text-xs text-muted-foreground">
+                  {lastExport.totals.documents} documents · {lastExport.totals.invoices} invoices · {lastExport.totals.receipts} receipts · {lastExport.totals.assets} assets · {lastExport.totals.suppliers} suppliers
+                </p>
+                <p className="text-[10px] font-mono text-muted-foreground mt-1">sha256: {lastExport.sha256}</p>
+                <p className="text-xs text-muted-foreground mt-1">Size: {(lastExport.bytes / 1024 / 1024).toFixed(2)} MB · signed URL valid 30 days</p>
+                {lastExport.url && (
+                  <Button size="sm" className="mt-3" onClick={() => window.open(lastExport.url!, "_blank", "noopener")}>
+                    <Download className="h-4 w-4 mr-2" /> Download ZIP
+                  </Button>
+                )}
+              </CardContent></Card>
             )}
           </TabsContent>
         </Tabs>
