@@ -21,6 +21,12 @@ const REPORTS: ReportItem[] = [
     category: "SEO & Authority Strategy",
     path: "/admin-reports/GetPawsy_Boardroom_Investor_Report.pdf",
   },
+  {
+    filename: "2026-07-01-stripe-live-vs-test-forensics.pdf",
+    title: "Genesis V10 — Stripe Live vs Test Forensics",
+    category: "Environment Integrity · YES — proven",
+    path: "/admin-reports/genesis-v10/2026-07-01-stripe-live-vs-test-forensics.pdf",
+  },
 ];
 
 // Dynamic PDF reports (generated client-side)
