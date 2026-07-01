@@ -715,37 +715,6 @@ async function validateWithAi(
   }
 }
 
-// Exported for unit tests. Accepts an LLM content string and returns a valid
-// QC verdict or null when no strict JSON can be recovered.
-export function extractStrictQcJson(
-  content: string,
-): { score: number; ok: boolean; reasons: string[] } | null {
-  if (!content) return null;
-  const candidates: string[] = [];
-  const trimmed = content.trim();
-  candidates.push(trimmed);
-  // Strip markdown code fences ```json ... ``` or ``` ... ```
-  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (fence) candidates.push(fence[1].trim());
-  // Greedy outermost braces
-  const first = trimmed.indexOf("{");
-  const last = trimmed.lastIndexOf("}");
-  if (first !== -1 && last > first) candidates.push(trimmed.slice(first, last + 1));
-  for (const c of candidates) {
-    try {
-      const v = JSON.parse(c);
-      if (
-        v && typeof v === "object" &&
-        typeof v.score === "number" &&
-        typeof v.ok === "boolean" &&
-        Array.isArray(v.reasons)
-      ) {
-        return { score: v.score, ok: v.ok, reasons: v.reasons.map((x: unknown) => String(x)) };
-      }
-    } catch { /* try next */ }
-  }
-  return null;
-}
 
 function deterministicQuality(copy: any, bytes: Uint8Array) {
   const reasons: string[] = [];
