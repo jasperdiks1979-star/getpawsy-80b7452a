@@ -19566,6 +19566,471 @@ export type Database = {
         }
         Relationships: []
       }
+      evidence_backup_checks: {
+        Row: {
+          broken_links: number
+          details: Json
+          documents_checked: number
+          documents_missing: number
+          hash_mismatches: number
+          id: string
+          run_at: string
+          status: string
+        }
+        Insert: {
+          broken_links?: number
+          details?: Json
+          documents_checked?: number
+          documents_missing?: number
+          hash_mismatches?: number
+          id?: string
+          run_at?: string
+          status?: string
+        }
+        Update: {
+          broken_links?: number
+          details?: Json
+          documents_checked?: number
+          documents_missing?: number
+          hash_mismatches?: number
+          id?: string
+          run_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      evidence_documents: {
+        Row: {
+          amount_minor: number | null
+          category: string
+          classification: string | null
+          classification_confidence: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          document_date: string | null
+          document_type: string
+          file_size: number | null
+          id: string
+          imported_at: string
+          integrity_verified: boolean
+          invoice_number: string | null
+          is_duplicate_of: string | null
+          is_immutable: boolean
+          last_verified: string | null
+          metadata: Json
+          mime_type: string | null
+          ocr_status: string
+          ocr_text: string | null
+          original_filename: string | null
+          period_end: string | null
+          period_start: string | null
+          public_path: string | null
+          reference: string | null
+          search_vector: unknown
+          sha256: string
+          source: string | null
+          storage_bucket: string
+          storage_path: string | null
+          subcategory: string | null
+          supersedes: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          tags: string[]
+          tax_country: string | null
+          title: string
+          updated_at: string
+          uploader: string | null
+          vat_minor: number | null
+          version: number
+        }
+        Insert: {
+          amount_minor?: number | null
+          category: string
+          classification?: string | null
+          classification_confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          document_date?: string | null
+          document_type: string
+          file_size?: number | null
+          id?: string
+          imported_at?: string
+          integrity_verified?: boolean
+          invoice_number?: string | null
+          is_duplicate_of?: string | null
+          is_immutable?: boolean
+          last_verified?: string | null
+          metadata?: Json
+          mime_type?: string | null
+          ocr_status?: string
+          ocr_text?: string | null
+          original_filename?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          public_path?: string | null
+          reference?: string | null
+          search_vector?: unknown
+          sha256: string
+          source?: string | null
+          storage_bucket?: string
+          storage_path?: string | null
+          subcategory?: string | null
+          supersedes?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tags?: string[]
+          tax_country?: string | null
+          title: string
+          updated_at?: string
+          uploader?: string | null
+          vat_minor?: number | null
+          version?: number
+        }
+        Update: {
+          amount_minor?: number | null
+          category?: string
+          classification?: string | null
+          classification_confidence?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          document_date?: string | null
+          document_type?: string
+          file_size?: number | null
+          id?: string
+          imported_at?: string
+          integrity_verified?: boolean
+          invoice_number?: string | null
+          is_duplicate_of?: string | null
+          is_immutable?: boolean
+          last_verified?: string | null
+          metadata?: Json
+          mime_type?: string | null
+          ocr_status?: string
+          ocr_text?: string | null
+          original_filename?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          public_path?: string | null
+          reference?: string | null
+          search_vector?: unknown
+          sha256?: string
+          source?: string | null
+          storage_bucket?: string
+          storage_path?: string | null
+          subcategory?: string | null
+          supersedes?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tags?: string[]
+          tax_country?: string | null
+          title?: string
+          updated_at?: string
+          uploader?: string | null
+          vat_minor?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_documents_is_duplicate_of_fkey"
+            columns: ["is_duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_documents_supersedes_fkey"
+            columns: ["supersedes"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_documents_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          evidence_id: string | null
+          id: string
+          note: string | null
+          related_evidence_id: string | null
+          related_report_id: string | null
+          relation: string
+          report_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          evidence_id?: string | null
+          id?: string
+          note?: string | null
+          related_evidence_id?: string | null
+          related_report_id?: string | null
+          relation?: string
+          report_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          evidence_id?: string | null
+          id?: string
+          note?: string | null
+          related_evidence_id?: string | null
+          related_report_id?: string | null
+          relation?: string
+          report_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_links_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_links_related_evidence_id_fkey"
+            columns: ["related_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_links_related_report_id_fkey"
+            columns: ["related_report_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_links_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_payments: {
+        Row: {
+          amount_minor: number
+          bank_txn_reference: string | null
+          created_at: string
+          currency: string
+          id: string
+          invoice_document_id: string | null
+          metadata: Json
+          paid_at: string | null
+          provider: string | null
+          receipt_document_id: string | null
+          sha256: string | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+          vat_minor: number | null
+        }
+        Insert: {
+          amount_minor: number
+          bank_txn_reference?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_document_id?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          provider?: string | null
+          receipt_document_id?: string | null
+          sha256?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          vat_minor?: number | null
+        }
+        Update: {
+          amount_minor?: number
+          bank_txn_reference?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_document_id?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          provider?: string | null
+          receipt_document_id?: string | null
+          sha256?: string | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          vat_minor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_payments_invoice_document_id_fkey"
+            columns: ["invoice_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_payments_receipt_document_id_fkey"
+            columns: ["receipt_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_suppliers: {
+        Row: {
+          category: string | null
+          country: string | null
+          created_at: string
+          currency: string | null
+          first_invoice_at: string | null
+          id: string
+          invoice_count: number
+          latest_invoice_at: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          slug: string
+          total_paid_minor: number
+          updated_at: string
+          vat_number: string | null
+          website: string | null
+        }
+        Insert: {
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          first_invoice_at?: string | null
+          id?: string
+          invoice_count?: number
+          latest_invoice_at?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          slug: string
+          total_paid_minor?: number
+          updated_at?: string
+          vat_number?: string | null
+          website?: string | null
+        }
+        Update: {
+          category?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string | null
+          first_invoice_at?: string | null
+          id?: string
+          invoice_count?: number
+          latest_invoice_at?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          slug?: string
+          total_paid_minor?: number
+          updated_at?: string
+          vat_number?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      evidence_timeline: {
+        Row: {
+          amount_minor: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          event_at: string
+          event_type: string
+          evidence_id: string | null
+          id: string
+          metadata: Json
+          payment_id: string | null
+          report_id: string | null
+          supplier_id: string | null
+          title: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          event_at: string
+          event_type: string
+          evidence_id?: string | null
+          id?: string
+          metadata?: Json
+          payment_id?: string | null
+          report_id?: string | null
+          supplier_id?: string | null
+          title: string
+        }
+        Update: {
+          amount_minor?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          event_at?: string
+          event_type?: string
+          evidence_id?: string | null
+          id?: string
+          metadata?: Json
+          payment_id?: string | null
+          report_id?: string | null
+          supplier_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_timeline_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_timeline_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_timeline_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_timeline_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_revenue_reports: {
         Row: {
           aov_30d: number
