@@ -15210,6 +15210,66 @@ export type Database = {
         }
         Relationships: []
       }
+      compiler_prompt_ledger: {
+        Row: {
+          actual_pre: number | null
+          compiled_prompt: string
+          created_at: string
+          dominant_blocker: string | null
+          gemini_called: boolean
+          id: string
+          mutation_step: number
+          predicted_pre: number | null
+          product_id: string | null
+          product_slug: string | null
+          qa_blockers: string[]
+          rule_hash: string
+          rule_set: Json
+          source_function: string | null
+          succeeded: boolean | null
+          trace_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_pre?: number | null
+          compiled_prompt: string
+          created_at?: string
+          dominant_blocker?: string | null
+          gemini_called?: boolean
+          id?: string
+          mutation_step?: number
+          predicted_pre?: number | null
+          product_id?: string | null
+          product_slug?: string | null
+          qa_blockers?: string[]
+          rule_hash: string
+          rule_set?: Json
+          source_function?: string | null
+          succeeded?: boolean | null
+          trace_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_pre?: number | null
+          compiled_prompt?: string
+          created_at?: string
+          dominant_blocker?: string | null
+          gemini_called?: boolean
+          id?: string
+          mutation_step?: number
+          predicted_pre?: number | null
+          product_id?: string | null
+          product_slug?: string | null
+          qa_blockers?: string[]
+          rule_hash?: string
+          rule_set?: Json
+          source_function?: string | null
+          succeeded?: boolean | null
+          trace_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string

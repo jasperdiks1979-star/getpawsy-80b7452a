@@ -17,6 +17,11 @@ import {
   pickMasterDims,
   scoreInspirationAi,
 } from "../_shared/pinterest-master-creative-director.ts";
+import {
+  compilePrompt as compileGoldenPrompt,
+  priorSuccessRate,
+  writeCompilerLedger,
+} from "../_shared/golden-dna-compiler.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -728,11 +733,73 @@ async function processJob(sb: Sb, job: any, settings: any) {
     }
 
     const masterDims = await pickDiverseMasterDims(sb, product, job);
-    const prompt = buildPrompt(product, niche, copy.overlay, masterDims);
+    let prompt = buildPrompt(product, niche, copy.overlay, masterDims);
+
+    // Genesis V6.4 — Golden DNA Prompt Compiler gate.
+    // Every image call must be preceded by a deterministic, species-locked,
+    // occupancy-targeted prompt. If the compiler cannot reach predicted PRE
+    // ≥ 90 within its mutation budget, we DO NOT call Gemini — instead we
+    // record the block in the ledger and fail the job. No thresholds are
+    // lowered, no validation is bypassed.
+    const priorRate = await priorSuccessRate(
+      sb,
+      // species is derived inside compilePrompt too, but we ask the ledger
+      // for the same species so recent success weights the prediction.
+      // Fall back to "unknown" if compiler can't decide.
+      "unknown",
+    ).catch(() => 0.5);
+    const compiled = compileGoldenPrompt(product as any, {
+      minPredictedPre: 90,
+      maxMutations: 3,
+      priorSuccessRate: priorRate,
+    });
+    const traceId = `pcf_${job.id}`;
+    const ledgerId = await writeCompilerLedger(sb, {
+      trace_id: traceId,
+      product_id: product.id ?? null,
+      product_slug: product.slug ?? null,
+      rule_hash: compiled.rule_hash,
+      compiled_prompt: compiled.prompt,
+      rule_set: compiled.rule_set,
+      predicted_pre: compiled.predicted_pre,
+      dominant_blocker: compiled.dominant_blocker,
+      qa_blockers: compiled.qa_blockers,
+      mutation_step: compiled.mutation_step,
+      gemini_called: compiled.ok,
+      source_function: "pinterest-creative-factory",
+    });
+    (metrics as any).golden_dna_compiler = {
+      predicted_pre: compiled.predicted_pre,
+      mutation_step: compiled.mutation_step,
+      dominant_blocker: compiled.dominant_blocker,
+      qa_blockers: compiled.qa_blockers,
+      ledger_id: ledgerId,
+      passed: compiled.ok,
+    };
+    if (!compiled.ok) {
+      throw new Error(
+        `golden_dna_compiler_gate:${compiled.reason ?? "predicted_pre_below_90"}`,
+      );
+    }
+    // Fuse the Golden DNA constraints into the master creative prompt so the
+    // downstream image model receives BOTH the existing creative direction and
+    // the compiler's deterministic guardrails.
+    prompt = `${prompt}\n\n[GOLDEN_DNA_COMPILER]\n${compiled.prompt}`;
     await timed("planning", metrics, async () => {
       await sb.from("pinterest_creative_factory_jobs").update({
         stage: "planned",
-        prompt: { text: prompt, niche, copy, master_dims: masterDims },
+        prompt: {
+          text: prompt,
+          niche,
+          copy,
+          master_dims: masterDims,
+          compiler: {
+            rule_hash: compiled.rule_hash,
+            predicted_pre: compiled.predicted_pre,
+            mutation_step: compiled.mutation_step,
+            ledger_id: ledgerId,
+          },
+        },
       }).eq("id", job.id);
       return true;
     });

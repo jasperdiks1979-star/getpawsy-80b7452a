@@ -1,75 +1,86 @@
+# Genesis V6.4 — Golden DNA Prompt Compiler
 
-# Genesis V4 — Creative Intelligence Engine (CIE-V4)
+Additive layer that sits between the Creative Director and Gemini. Never weakens PRE, never lowers thresholds, never duplicates existing engines. Fully reuses Golden DNA, PRE, Creative Director, Creative Factory, Product/Conversion/Market/Audience Intelligence, First Sale Accelerator, Recommendation OS, Closed-Loop Learning, and Pinterest Publisher.
 
-Single mission: continuously learn **why** creatives stop / save / click / buy, and feed that learning back into generation. **Zero new analytics**. Everything is glue on top of what already ships.
+## Architecture
 
-## Reuse map (nothing new where these already exist)
+```text
+Product ──► Rule Extractor ──► Constraint Set ──► DNA Inheritor ──► Prompt Builder
+                                    │                    │
+                     Product/Market/Audience Intel   PRE=96 Golden Reference
+                                    │
+                              Compiler QA  ──► reject (recompile) ──► loop
+                                    │
+                              predicted_pre >= 90 ?  ── no ──► recompile prompt (no Gemini call)
+                                    │ yes
+                              call Gemini (existing factory)
+                                    │
+                        pre-product-relevance evaluation
+                                    │
+                     compiler_prompt_ledger  ──► closed-loop learning
+```
 
-| Capability | Existing system (reuse, do NOT duplicate) |
-|---|---|
-| Creative DNA storage | `gcd_creatives`, `gcd_visual_dna` (58 cols), `gcd_genes`, `gcd_concepts`, `gcd_performance`, `gcd_predictions`, `gcd_learnings`, `gcd_settings` |
-| Performance / attribution | `canonical_events`, `canonical_sessions`, `gv36_attribution_links`, `gv36_combo_performance`, `gv36_creative_performance_v`, `gv36_persona_performance_v`, `pcie2_pin_performance` |
-| Genome maths | `pei_creative_dna`, `pei_gene_performance`, `pei_weight_snapshots`, `pei_predicted_winners` |
-| Generation pipeline | `pcie-v2-creative-director` + `pcie_v2_*` catalogs + `gv-diversity-governor-v2` |
-| Distribution / diversity | `gv-distribution-optimizer`, `pinterest_board_performance`, `pinterest_posting_windows` |
-| Personas / audiences | `gv35_audience_personas`, `gv35_product_audience_match` |
-| Loop / explainability | `pcie2_xai_decisions`, `pcie2_evidence_runs`, `pcie2_trait_weights` |
+## Files added (shared library, single source of truth)
 
-Net new artifacts: **2 edge functions + 1 view + 1 dashboard card**. No new tables.
+- `supabase/functions/_shared/golden-dna-compiler.ts`
+  - `extractProductRules(product, landingSignals)` → `CompiledRuleSet` (species/breed/env/use-case/accessory/colour allow+forbid lists, camera/lens/lighting/mood/composition/background, occupancy target, visibility target, landing-similarity target, shopping-similarity target, click-intent target, emotional trigger, stopping-power target).
+  - `inheritGoldenDNA(ruleSet)` → merges defaults from the PRE=96 reference (camera, lighting, crop, distance, focus, bg complexity, contrast, hierarchy, product scale, negative space, eye-tracking, shopping clarity) via existing `pinterest-style-dna.ts`.
+  - `buildDeterministicPrompt(ruleSet)` → single canonical Gemini prompt string with explicit MUST/NEVER blocks + numeric occupancy/visibility clauses.
+  - `compilerQA(ruleSet, prompt)` → runs species/use-case/shopping/landing/occupancy/visibility ambiguity checks; returns `{ ok, blockers[] }`.
+  - `predictPre(ruleSet, priorPreEvals, dnaSimilarity)` → deterministic scorer (feature-weighted, no LLM call) returning `predicted_pre 0-100`.
+  - `mutateForBlocker(ruleSet, blocker)` → PRE-aware Phase 4 mutation table (species-lock, occupancy raise, palette lock, emotional upgrade, hero composition).
+- `supabase/functions/_shared/golden-dna-compiler_test.ts` — Deno unit tests for extractor, QA, mutator, and predictor.
 
-## Phase 1 — DNA Auto-Tagger (extend, don't replace)
-- Add `image_dna_tag` pipeline stage to `pcie-v2-creative-director`. Every published creative is registered via `GCD.upsertCreative({genome, visual_dna})` using `gcd_visual_dna`'s 58 columns (covers all 40+ traits in the brief: emotion, story, room, palette, brightness, contrast, warmth, luxury_score, minimalism_score, outdoor, family, humor, educational, ugc, professional, camera angle/distance, focus, human/pet/product visibility, headline type, cta type, typography, complexity, negative_space, platform_style, intent, scroll_stop/save/ctr/purchase estimates).
-- For backfill of historic pins: new edge function `cie-v4-dna-backfill` reads `pcie2_creatives` + `pcie2_pin_performance` rows missing a `gcd_visual_dna` row, runs a Gemini-2.5-flash vision pass (via Lovable AI Gateway, multimodal `image_url`), persists into `gcd_visual_dna`. Idempotent, batched 25/run, hourly cron.
+## Files modified (wire the compiler in — no logic duplication)
 
-## Phase 2 — Winner & Loser Genome (no new table)
-- New SQL view `gv4_genome_v` on top of `gcd_performance` ⋈ `gcd_visual_dna` ⋈ `gv36_creative_performance_v` returning per-trait Wilson-confidence-weighted `success_score` and `failure_score`, ranked. Trait dimensions = every categorical/scored column in `gcd_visual_dna`.
-- View also exposes "top X / bottom X" rows for: color, emotion, story, layout, hook, headline, product, persona, board, hour, day, US state, device, camera_angle, cta_style, lighting, interior_style, category, lifestyle_theme — sourced from the joined real tables.
+- `supabase/functions/pinterest-creative-factory/index.ts`
+  - Before every Gemini image call: `compilePrompt()` → QA loop (max 3 mutations) → `predictPre` gate → only then `EdgeRuntime.waitUntil(callGemini)`.
+  - Log `trace_id` (existing) plus compiled prompt + rule hash into new ledger.
+- `supabase/functions/pre-occupancy-rerender/index.ts`
+  - Replace ad-hoc prompt regen with `mutateForBlocker('occupancy')` so retries always compile a DIFFERENT prompt (Phase 4 rule: never resend previous prompt).
+- `supabase/functions/pre-product-relevance/index.ts`
+  - On finish, write into `compiler_prompt_ledger`: `{trace_id, compiled_prompt, rule_hash, predicted_pre, actual_pre, dominant_blocker}` for closed-loop learning.
+- `supabase/functions/pcie2-creative-worker/index.ts`
+  - Route all `generateImage` calls through the compiler helper. No fallback path — if QA fails after 3 mutations, drop the job (no Gemini spend), enqueue for human review.
 
-## Phase 3 — AI Director consultation (rewire, don't rebuild)
-- `pcie-v2-creative-director` already calls `pickWeighted()` on `pcie_v2_attribute_weights`. Add a pre-stage `gcd_consult` that calls `GCD.recommend(family)` and merges Winner Genome top-decile traits into the candidate set, then **hard-rejects** any candidate matching ≥2 Loser Genome bottom-decile traits. Logged into `gcd_engine_consultations` + `pcie2_xai_decisions`.
+## Database (single new table, additive)
 
-## Phase 4 — Hourly self-learning loop
-- New edge function `cie-v4-learn` (cron every hour):
-  1. `refresh materialized view` on the canonical perf MVs (already exist).
-  2. Recompute `gcd_genes` EMA + Wilson confidence for every trait surfaced by `gv4_genome_v`.
-  3. Promote/demote `pcie_v2_attribute_weights` rows accordingly (uses existing genetic-learning hook).
-  4. Update `pinterest_posting_windows`, `pinterest_board_performance` rankings (these are already cron'd — just trigger refresh, don't duplicate).
-  5. Write a `gcd_learnings` evidence row per material delta (audit trail).
-  6. Snapshot to `pei_weight_snapshots` for evolution timeline.
+- `public.compiler_prompt_ledger`
+  - `trace_id`, `product_id`, `rule_hash`, `compiled_prompt`, `rule_set jsonb`, `predicted_pre`, `actual_pre`, `dominant_blocker`, `mutation_step`, `succeeded bool`, timestamps.
+  - Grants: `service_role` full, `authenticated` SELECT (for admin dashboard). RLS: admin-only.
+  - Indexed on `(product_id, created_at desc)` and `(dominant_blocker)` so `mutateForBlocker` and Phase 7 learning aggregates are cheap.
 
-## Phase 5 — Predicted Winners / Failures
-- Reuse `pei_predicted_winners` + `gcd_predictions`. `cie-v4-learn` writes predictions for every draft in `pinterest_pin_queue` using current genome weights. No model retrain — Bayesian update only.
+## Reused systems (no duplication)
 
-## Phase 6 — Distribution health (reuse)
-- No new code. `gv-distribution-optimizer` already enforces freshness/topic/visual/keyword/board/audience/creative diversity. The new dashboard card just reads its outputs.
+| Concern | Reused component |
+| --- | --- |
+| Golden reference asset | `_shared/pinterest-style-dna.ts` (PRE=96 DNA) |
+| PRE scoring | `pre-product-relevance` (unchanged, same thresholds) |
+| Master Creative Director | `_shared/pinterest-master-creative-director.ts` |
+| Occupancy retry orchestration | `pre-occupancy-rerender` |
+| Product/Market/Audience metadata | existing `products`, `market_intelligence_*`, `audience_intelligence_*` tables |
+| Landing colour extraction | existing `product_landing_signals` view |
+| Closed-loop learning | `governance_decision_log` + new ledger table |
+| Publisher | `pcie2-publish-assembler` (unchanged) |
+| Credit preflight | `_shared/ai-credit-preflight.ts` — compiler runs BEFORE preflight so we never even reserve credit for a low-confidence prompt |
 
-## Phase 7 — Executive panel (ONE card)
-- Add `<CreativeIntelligenceV4Card />` to existing `GrowthCommandCenterPage.tsx`. Reads only:
-  - Top 10 Winner DNA traits → `gv4_genome_v` (winner side).
-  - Top 10 Loser DNA traits → `gv4_genome_v` (loser side).
-  - Emerging patterns → `gcd_learnings` last 24h, sorted by delta magnitude.
-  - Creative evolution timeline → `pei_weight_snapshots` last 30 days.
-  - Predicted winners/failures → `gcd_predictions` joined to drafts.
-  - Diversity score → `gv-distribution-optimizer`'s last run summary.
-  - Pinterest distribution health → existing `pinterest_pipeline_health_snapshots`.
-  - Expected purchase probability → `gv36_first_sale_memory.bayes_p` (existing).
-- ~250 LOC, one file. No new route.
+## Validation run (Phase 9)
 
-## Phase 8 — Verification
-1. `tsgo` typecheck.
-2. Smoke `cie-v4-dna-backfill` (returns batch_size + tagged count).
-3. Smoke `cie-v4-learn` (returns updated_genes + new_predictions + snapshots count).
-4. Verify card renders against real `gv4_genome_v` rows (no placeholders).
-5. Trigger one PCIE-V2 generation, confirm `gcd_engine_consultations` row written and final creative blocked if Loser DNA detected.
+- Pick the current Top-15 First Sale products (from `first_sale_accelerator` ranking view).
+- One compiled prompt → one Gemini image → one PRE eval per product.
+- If PRE ≥ 95 → mark validated. If PRE < 95 → do NOT touch Gemini or thresholds; instead persist blocker to `compiler_prompt_ledger` and re-run `mutateForBlocker` next cycle. Improvement happens compiler-side only.
 
-## Hard rules
-- No new tables, no new dashboard pages, no new attribution tracking — every metric ties to an existing canonical/PCIE/GCD/GV36/PEI row.
-- No synthetic confidence: every score uses Wilson lower bound + min sample size (already defined in `gcd_settings`).
-- Vision tagging uses the existing AI Gateway multimodal path (`google/gemini-2.5-flash`, `image_url` blocks) — no new secrets.
-- Loop cadence is hourly; nothing more frequent (Pinterest sampling noise).
+## Success targets (measured, not asserted)
 
-## What this plan explicitly does NOT do
-- Does **not** create a parallel "v4_*" table tree.
-- Does **not** duplicate Canonical Analytics, V3.6 attribution, or PEI evolution.
-- Does **not** add a new admin page or route.
-- Does **not** touch the video pipeline.
+- Baseline PRE pass rate: read live from `pre_evaluations` (last 7 days). Ledger `succeeded=true` ratio after rollout is the after-metric.
+- Credit reduction: `sum(gemini_image_calls_before) - sum(gemini_image_calls_after)` from `ai_trace_events`.
+- Retry reduction: distinct `trace_id` count in `pinterest_pin_queue` retry lane.
+
+Numbers in the final report will be pulled from those tables — no synthetic values.
+
+## Out of scope (explicit)
+
+- No changes to PRE thresholds, publish gates, autopilot mode, or Guardian rules.
+- No new Creative Director. Compiler is a pure pre-processor.
+- No new Publisher. Existing assembler consumes compiled prompts unchanged.
+- No prompt sent to Gemini when `compilerQA` fails or `predicted_pre < 90`.

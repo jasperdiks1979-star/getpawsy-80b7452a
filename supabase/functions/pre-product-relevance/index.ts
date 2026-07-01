@@ -13,6 +13,7 @@ import {
   evaluateProductRelevance,
   type PreInput,
 } from "../_shared/pre-product-relevance.ts";
+import { attachActualPre } from "../_shared/golden-dna-compiler.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -62,6 +63,14 @@ Deno.serve(async (req) => {
         return json({ ok: false, error: "missing_input" }, 400);
       }
       const verdict = await evaluateProductRelevance(sb, input);
+      const traceId = typeof body.trace_id === "string" ? body.trace_id : null;
+      if (traceId) {
+        await attachActualPre(sb, traceId, {
+          actual_pre: Number((verdict as any)?.overall_score ?? 0),
+          passed: Boolean((verdict as any)?.passed),
+          actual_blocker: ((verdict as any)?.blocking_reasons?.[0] ?? null),
+        }).catch(() => {});
+      }
       return json({ ok: true, verdict });
     }
 
@@ -92,6 +101,14 @@ Deno.serve(async (req) => {
         destination_link: pin.destination_link ?? "",
         pin_queue_id: pin.id,
       });
+      const traceId2 = typeof body.trace_id === "string"
+        ? body.trace_id
+        : `pcf_${pin.id}`;
+      await attachActualPre(sb, traceId2, {
+        actual_pre: Number((verdict as any)?.overall_score ?? 0),
+        passed: Boolean((verdict as any)?.passed),
+        actual_blocker: ((verdict as any)?.blocking_reasons?.[0] ?? null),
+      }).catch(() => {});
       return json({ ok: true, verdict });
     }
 
