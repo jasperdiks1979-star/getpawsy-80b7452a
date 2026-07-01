@@ -10,6 +10,7 @@ import {
 } from "../_shared/pinterest-board-templates.ts";
 import { computePhashFromBytes } from "../_shared/pinterest-phash.ts";
 import { verifyPinIntegrity } from "../_shared/pinterest-integrity-guard.ts";
+import { extractStrictQcJson } from "./qc-parser.ts";
 import {
   buildMasterPrompt,
   dimsSimilarity,
