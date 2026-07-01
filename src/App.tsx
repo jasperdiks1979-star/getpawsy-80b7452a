@@ -1741,6 +1741,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="conversion-commander"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ConversionCommanderPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pdp-atc-drilldown"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
