@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, ExternalLink, FileText, Search, Shield, Building2, Receipt, Clock, Download } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 type Supplier = {
   id: string;
