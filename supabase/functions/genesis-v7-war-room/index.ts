@@ -221,9 +221,11 @@ Deno.serve(async (req) => {
       await sb.from("governance_decision_log").insert({
         decision_type: "genesis_v7_war_room",
         source_engine: "genesis-v7-war-room",
-        rationale: report.executive_summary,
-        payload: report,
-        confidence: bottlenecks[0]?.confidence ?? 70,
+        proposal: report,
+        expected_metric: "first_sale_probability_pct",
+        expected_value: report.first_sale_probability_pct,
+        confidence: (bottlenecks[0]?.confidence ?? 70) / 100,
+        dedupe_key: `war-room-${new Date().toISOString().slice(0, 10)}`,
       });
     } catch { /* non-fatal */ }
 
