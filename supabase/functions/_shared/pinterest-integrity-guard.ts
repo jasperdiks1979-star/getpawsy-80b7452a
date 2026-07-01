@@ -184,6 +184,27 @@ export async function verifyPinIntegrity(
   //    rejects pins whose creative does not actually match the product.
   //    Hard rule: NO pin publishes if PRE fails. Cannot be skipped.
   if (imgOk && input.pin_image_url && (await preEnabled(supabase))) {
+    // Genesis V9.5 (M4) — PRE freshness cache.
+    // If we already have a PRE evaluation for the SAME product + SAME
+    // pin_image_url within the last 24h with overall_score >= 95, reuse it.
+    // Threshold unchanged. Cost avoided, and prior-passed pins are no longer
+    // re-rejected by transient vision drift.
+    try {
+      const freshCutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const { data: cached } = await supabase
+        .from("pre_evaluations")
+        .select("overall_score, passed, blocking_reasons, created_at")
+        .eq("product_id", input.product_id)
+        .eq("pin_image_url", input.pin_image_url)
+        .gte("created_at", freshCutoff)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cached && cached.passed === true && Number(cached.overall_score) >= 95) {
+        checks.product_relevance = { ok: true, reason: `PRE cached ${cached.overall_score}/100` };
+        return finalize(checks, reasons);
+      }
+    } catch (_) { /* fall through to live PRE */ }
     try {
       const pre = await evaluateProductRelevance(supabase, {
         product_id: input.product_id,
