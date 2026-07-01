@@ -40,10 +40,15 @@ Deno.serve(async (req) => {
   }) as Record<TypeKey, number>;
   const maxCatShare = Number(settings?.max_category_share_pct ?? 10) / 100;
 
+  // Genesis V9.5 (M3) — Brand-cap denominator = rolling 24h of ATTEMPTS
+  // (any status except purely archival ones). Keeps the 10% principle,
+  // removes the "10% of 3 publishes/day = 0 slots" deadlock.
+  const rolling24hCutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { data: rows, error } = await supabase
     .from("pinterest_pin_queue")
     .select("id,status,priority,category_key,content_type,pin_title,pin_description,hashtags,meta,created_at")
-    .in("status", ["posted", "queued", "scheduled", "draft"])
+    .in("status", ["posted", "queued", "scheduled", "draft", "rejected", "paused", "failed", "skipped"])
+    .gte("created_at", rolling24hCutoff)
     .order("created_at", { ascending: false })
     .limit(sampleSize);
   if (error) {

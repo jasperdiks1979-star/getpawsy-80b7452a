@@ -48053,6 +48053,7 @@ export type Database = {
           last_validated_at: string | null
           last_validation_error: string | null
           last_verified_at: string | null
+          legacy_source_carveout_eligible: boolean
           legacy_supplier_content: boolean
           legacy_supplier_reason: string | null
           live_pin_verified_at: string | null
@@ -48125,6 +48126,7 @@ export type Database = {
           last_validated_at?: string | null
           last_validation_error?: string | null
           last_verified_at?: string | null
+          legacy_source_carveout_eligible?: boolean
           legacy_supplier_content?: boolean
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
@@ -48197,6 +48199,7 @@ export type Database = {
           last_validated_at?: string | null
           last_validation_error?: string | null
           last_verified_at?: string | null
+          legacy_source_carveout_eligible?: boolean
           legacy_supplier_content?: boolean
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
@@ -64827,6 +64830,10 @@ export type Database = {
           _meta: Json
           _pin_variant: string
         }
+        Returns: string
+      }
+      pinterest_naturalize_copy: {
+        Args: { content_type_in: string; desc_in: string }
         Returns: string
       }
       pinterest_publish_health: { Args: never; Returns: Json }
