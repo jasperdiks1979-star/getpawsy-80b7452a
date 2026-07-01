@@ -2473,6 +2473,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="financial-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FinancialHealthPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="accountant"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
