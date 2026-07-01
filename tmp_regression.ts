@@ -40,7 +40,7 @@ async function q(sql: string): Promise<any[]> {
 }
 
 // Just use psql via Deno subprocess for a straight sample.
-const proc = new Deno.Command("psql", { args:["-t","-A","-F","\t","-c",
+const proc = new Deno.Command("psql", { stdout:"piped", stderr:"piped", args:["-t","-A","-F","\t","-c",
   `SELECT id, category_key, content_type, coalesce(pin_title,''), coalesce(pin_description,''), coalesce(rejection_reason,'')
    FROM pinterest_pin_queue
    WHERE status='rejected' AND rejection_reason LIKE 'native_gate:%'
