@@ -96,6 +96,13 @@ function formatDuration(ms: number) {
   const rem = s % 60;
   return `${m}m ${rem}s`;
 }
+function formatLastUpdated(ts: number) {
+  const diff = Date.now() - ts;
+  if (diff < 5_000) return "just now";
+  if (diff < 60_000) return `${Math.floor(diff / 1_000)}s ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  return new Date(ts).toLocaleTimeString();
+}
 
 export function useLiveVisitorInspector() {
   const [state, setState] = useState<UIState>(() => loadState());
