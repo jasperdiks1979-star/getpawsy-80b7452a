@@ -1,8 +1,9 @@
-// GENESIS V13.1 — Stripe → Evidence Vault auto-import
-// Pulls invoices, charge receipts, payouts, and balance transactions from Stripe LIVE,
-// SHA-256 hashes every artifact, stores the PDF/JSON in the private `genesis-vault` bucket,
-// registers immutable rows in evidence_documents + evidence_payments, and auto-links Stripe supplier.
-// Admin-only. Idempotent: dedupes by (source_id, sha256).
+// GENESIS V13.2 — Stripe → Evidence Vault auto-import
+// Pulls invoices, charge receipts, payouts, balance transactions, and subscriptions from Stripe LIVE,
+// extracts per-invoice VAT/tax breakdowns, generates period CSV statements,
+// SHA-256 hashes every artifact, stores the PDF/JSON/CSV in the private `genesis-vault` bucket,
+// and registers immutable rows in evidence_documents + evidence_payments + finance_subscriptions
+// + finance_vat_summaries. Admin-only. Idempotent: dedupes by (source_id, sha256).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
@@ -76,13 +77,18 @@ Deno.serve(async (req) => {
     const stats = { invoices: 0, receipts: 0, payouts: 0, balance_txns: 0, skipped: 0, errors: [] as string[] };
 
     const registerDoc = async (opts: {
-      source_id: string; kind: "invoice" | "receipt" | "payout" | "balance"; title: string;
+      source_id: string;
+      kind: "invoice" | "receipt" | "payout" | "balance" | "subscription" | "csv_statement";
+      title: string;
       docDate: string | null; number: string | null; amountMinor: number | null; currency: string;
       pdfBuf: ArrayBuffer | null; jsonPayload: unknown;
+      csvBuf?: ArrayBuffer | null;
     }) => {
-      const filename = `${opts.kind}_${opts.source_id}.${opts.pdfBuf ? "pdf" : "json"}`;
+      const ext = opts.csvBuf ? "csv" : opts.pdfBuf ? "pdf" : "json";
+      const contentType = opts.csvBuf ? "text/csv" : opts.pdfBuf ? "application/pdf" : "application/json";
+      const filename = `${opts.kind}_${opts.source_id}.${ext}`;
       const path = `stripe/${opts.kind}s/${filename}`;
-      const payloadBuf = opts.pdfBuf ?? new TextEncoder().encode(JSON.stringify(opts.jsonPayload, null, 2)).buffer;
+      const payloadBuf = opts.csvBuf ?? opts.pdfBuf ?? new TextEncoder().encode(JSON.stringify(opts.jsonPayload, null, 2)).buffer;
       const hash = await sha256(payloadBuf);
 
       // Dedupe by sha256 + reference
@@ -93,15 +99,17 @@ Deno.serve(async (req) => {
       if (existing) { stats.skipped++; return existing.id; }
 
       const { error: upErr } = await admin.storage.from(BUCKET).upload(path, payloadBuf, {
-        contentType: opts.pdfBuf ? "application/pdf" : "application/json",
-        upsert: true,
+        contentType, upsert: true,
       });
       if (upErr) throw new Error(`storage upload failed: ${upErr.message}`);
 
       const { data: doc, error: insErr } = await admin.from("evidence_documents").insert({
         title: opts.title,
         description: `Auto-imported from Stripe (${opts.kind}).`,
-        document_type: opts.kind === "invoice" ? "invoice" : opts.kind === "receipt" ? "receipt" : "statement",
+        document_type: opts.kind === "invoice" ? "invoice"
+          : opts.kind === "receipt" ? "receipt"
+          : opts.kind === "subscription" ? "contract"
+          : "statement",
         category: "payments",
         subcategory: `stripe_${opts.kind}`,
         supplier_id: supplierId,
@@ -112,7 +120,7 @@ Deno.serve(async (req) => {
         amount_minor: opts.amountMinor,
         currency: opts.currency,
         original_filename: filename,
-        mime_type: opts.pdfBuf ? "application/pdf" : "application/json",
+        mime_type: contentType,
         file_size: payloadBuf.byteLength,
         sha256: hash,
         storage_bucket: BUCKET,
@@ -129,6 +137,10 @@ Deno.serve(async (req) => {
       if (insErr) throw new Error(`doc insert failed: ${insErr.message}`);
       return doc.id;
     };
+
+    // Aggregate VAT across imported invoices (this run)
+    type VatEntry = { year: number; quarter: number; vat: number; count: number; currency: string; details: Array<Record<string, unknown>> };
+    const vatByYearQuarter = new Map<string, VatEntry>();
 
     // 1) Invoices
     let starting_after: string | undefined;
@@ -150,6 +162,19 @@ Deno.serve(async (req) => {
             pdfBuf: pdf, jsonPayload: inv,
           });
           stats.invoices++;
+          // VAT extraction
+          const taxMinor = Number(inv.tax ?? 0) || (inv.total_tax_amounts ?? []).reduce((s: number, t: any) => s + Number(t.amount ?? 0), 0);
+          if (taxMinor > 0 && inv.created) {
+            const d = new Date(inv.created * 1000);
+            const yr = d.getUTCFullYear();
+            const q = Math.floor(d.getUTCMonth() / 3) + 1;
+            const key = `${yr}-Q${q}`;
+            const cur = (inv.currency ?? "usd").toUpperCase();
+            const entry: VatEntry = vatByYearQuarter.get(key) ?? { year: yr, quarter: q, vat: 0, count: 0, currency: cur, details: [] };
+            entry.vat += taxMinor; entry.count += 1;
+            entry.details.push({ invoice: inv.id, number: inv.number, tax_minor: taxMinor, currency: cur, rates: inv.total_tax_amounts ?? null });
+            vatByYearQuarter.set(key, entry);
+          }
         } catch (e) { stats.errors.push(`invoice ${inv.id}: ${(e as Error).message}`); }
       }
       starting_after = list.has_more ? list.data[list.data.length - 1]?.id : undefined;
@@ -221,7 +246,68 @@ Deno.serve(async (req) => {
       pages++;
     } while (starting_after && pages < 20);
 
-    // 4) Balance transactions summary snapshot
+    // 4) Subscriptions (active + past_due + canceled)
+    stats["subscriptions" as keyof typeof stats] = 0 as any;
+    (stats as any).subscriptions = 0;
+    starting_after = undefined; pages = 0;
+    do {
+      const params: Record<string, string> = { limit: String(limit), status: "all" };
+      if (starting_after) params.starting_after = starting_after;
+      const list = await stripeGet("/subscriptions", params);
+      for (const sub of list.data as any[]) {
+        try {
+          const item = sub.items?.data?.[0];
+          const price = item?.price;
+          const amountMinor = Number(price?.unit_amount ?? 0) * Number(item?.quantity ?? 1);
+          const cadence = (() => {
+            const iv = price?.recurring?.interval;
+            if (iv === "month") return "monthly";
+            if (iv === "year") return "annual";
+            if (iv === "week") return "weekly";
+            if (iv === "day") return "usage";
+            return "monthly";
+          })();
+          const currency = (price?.currency ?? "usd").toUpperCase();
+          const productName = price?.nickname ?? item?.plan?.nickname ?? `Stripe ${sub.id}`;
+          await registerDoc({
+            source_id: sub.id, kind: "subscription",
+            title: `Stripe Subscription ${productName}`,
+            docDate: sub.start_date ? new Date(sub.start_date * 1000).toISOString().slice(0, 10) : null,
+            number: sub.id,
+            amountMinor,
+            currency,
+            pdfBuf: null, jsonPayload: sub,
+          });
+          // Upsert into finance_subscriptions
+          const { data: existing } = await admin.from("finance_subscriptions")
+            .select("id, price_history").eq("supplier_slug", "stripe").eq("product_name", productName).maybeSingle();
+          const isActive = ["active", "trialing", "past_due"].includes(sub.status);
+          const payload = {
+            supplier_slug: "stripe",
+            product_name: productName,
+            cadence, amount_minor: amountMinor, currency,
+            started_at: sub.start_date ? new Date(sub.start_date * 1000).toISOString().slice(0, 10) : null,
+            renews_at: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString().slice(0, 10) : null,
+            cancelled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString().slice(0, 10) : null,
+            is_active: isActive,
+            last_seen_at: new Date().toISOString(),
+            notes: `Stripe status: ${sub.status}`,
+          };
+          if (existing) {
+            const history = Array.isArray(existing.price_history) ? existing.price_history : [];
+            history.push({ at: new Date().toISOString(), amount_minor: amountMinor, status: sub.status });
+            await admin.from("finance_subscriptions").update({ ...payload, price_history: history }).eq("id", existing.id);
+          } else {
+            await admin.from("finance_subscriptions").insert({ ...payload, price_history: [{ at: new Date().toISOString(), amount_minor: amountMinor, status: sub.status }] });
+          }
+          (stats as any).subscriptions++;
+        } catch (e) { stats.errors.push(`subscription ${sub.id}: ${(e as Error).message}`); }
+      }
+      starting_after = list.has_more ? list.data[list.data.length - 1]?.id : undefined;
+      pages++;
+    } while (starting_after && pages < 20);
+
+    // 5) Balance transactions summary snapshot
     const balList = await stripeGet("/balance_transactions", { limit: String(limit), "created[gte]": String(created_gte) });
     if (balList.data?.length) {
       const snapshotId = `balance_snapshot_${created_gte}_${Date.now()}`;
@@ -232,7 +318,40 @@ Deno.serve(async (req) => {
         number: null, amountMinor: null, currency: "USD",
         pdfBuf: null, jsonPayload: { count: balList.data.length, transactions: balList.data },
       });
+      // Also archive CSV
+      const header = "id,created,type,amount,currency,fee,net,description\n";
+      const rows = (balList.data as any[]).map(t =>
+        [t.id, new Date(t.created * 1000).toISOString(), t.type, t.amount, t.currency, t.fee, t.net,
+         JSON.stringify(t.description ?? "")].join(",")
+      ).join("\n");
+      const csvBuf = new TextEncoder().encode(header + rows).buffer;
+      await registerDoc({
+        source_id: `${snapshotId}_csv`, kind: "csv_statement",
+        title: `Stripe Balance CSV Statement`,
+        docDate: new Date().toISOString().slice(0, 10),
+        number: null, amountMinor: null, currency: "USD",
+        pdfBuf: null, jsonPayload: { rows: balList.data.length }, csvBuf,
+      });
       stats.balance_txns = balList.data.length;
+    }
+
+    // 6) VAT summaries — upsert quarter aggregates from imported invoices
+    (stats as any).vat_periods = 0;
+    for (const [, entry] of vatByYearQuarter) {
+      const { error: vatErr } = await admin.from("finance_vat_summaries").upsert({
+        period_type: "quarter",
+        period_year: entry.year,
+        period_number: entry.quarter,
+        vat_total_minor: entry.vat,
+        recoverable_minor: entry.vat,
+        non_recoverable_minor: 0,
+        currency: entry.currency,
+        invoice_count: entry.count,
+        details: { source: "stripe_auto_import", invoices: entry.details },
+        computed_at: new Date().toISOString(),
+      }, { onConflict: "period_type,period_year,period_number" });
+      if (!vatErr) (stats as any).vat_periods++;
+      else stats.errors.push(`vat ${entry.year}Q${entry.quarter}: ${vatErr.message}`);
     }
 
     // Refresh supplier rollups
