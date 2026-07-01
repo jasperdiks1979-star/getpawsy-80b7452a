@@ -318,36 +318,7 @@ const EvidenceVaultPage = () => {
           </TabsContent>
 
           <TabsContent value="belastingdienst">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Belastingdienst Package</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  One-click export of every invoice, receipt, VAT statement, payment
-                  confirmation, audit report, Genesis certification, evidence index and SHA-256
-                  verification list — packaged with a Dutch-language ReadMe for the accountant.
-                </p>
-                <div className="rounded-md border p-4 bg-muted/30 text-sm">
-                  <p className="font-medium">Contents (auto-generated at export time)</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
-                    <li>Invoices ZIP · Receipts ZIP · Expense reports</li>
-                    <li>VAT reports · Payment register (CSV)</li>
-                    <li>Genesis certifications · Audit reports</li>
-                    <li>Evidence index (JSON) · SHA-256 verification list</li>
-                    <li>ReadMe (NL) — Wet IB §3.8 references</li>
-                  </ul>
-                </div>
-                <Button disabled className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Generate Belastingdienst ZIP (Phase 2)
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  ZIP generator ships in Phase 2 once the auto-import connectors have populated
-                  the archive with original invoices.
-                </p>
-              </CardContent>
-            </Card>
+            <BelastingdienstExportPanel />
           </TabsContent>
         </Tabs>
       </div>
