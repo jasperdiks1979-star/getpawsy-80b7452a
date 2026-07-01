@@ -16,6 +16,12 @@ interface ReportItem {
 
 const REPORTS: ReportItem[] = [
   {
+    filename: "2026-07-01-stripe-live-certification.pdf",
+    title: "Genesis V10.2 — Stripe Live Certification & Forensic Audit",
+    category: "Environment Integrity · CERTIFIED 100% LIVE · Health 98/100",
+    path: "/admin-reports/genesis-v10.2/2026-07-01-stripe-live-certification.pdf",
+  },
+  {
     filename: "GetPawsy_Boardroom_Investor_Report.pdf",
     title: "GetPawsy Boardroom Investor Report",
     category: "SEO & Authority Strategy",
