@@ -111,6 +111,8 @@ interface Props {
 
 export const LiveVisitorInspector = ({ state, setState }: Props) => {
   const [rows, setRows] = useState<ActivityRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ dx: number; dy: number; active: boolean }>({ dx: 0, dy: 0, active: false });
