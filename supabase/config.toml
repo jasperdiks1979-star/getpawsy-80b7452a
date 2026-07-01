@@ -473,3 +473,6 @@ verify_jwt = true
 
 [functions.gv35-audience-decision]
 verify_jwt = true
+
+[functions.genesis-v7-war-room]
+verify_jwt = true
