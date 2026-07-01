@@ -15639,6 +15639,86 @@ export type Database = {
           },
         ]
       }
+      conversion_experiments: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          ended_at: string | null
+          hypothesis: string | null
+          id: string
+          lift: number | null
+          metrics: Json | null
+          name: string
+          repair_id: string | null
+          split: Json
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          hypothesis?: string | null
+          id?: string
+          lift?: number | null
+          metrics?: Json | null
+          name: string
+          repair_id?: string | null
+          split?: Json
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          ended_at?: string | null
+          hypothesis?: string | null
+          id?: string
+          lift?: number | null
+          metrics?: Json | null
+          name?: string
+          repair_id?: string | null
+          split?: Json
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_experiments_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_repairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversion_knowledge: {
+        Row: {
+          created_at: string
+          evidence: Json | null
+          id: string
+          lesson: string
+          pattern: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          lesson: string
+          pattern: string
+          success: boolean
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          lesson?: string
+          pattern?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       conversion_reality_products: {
         Row: {
           add_to_carts: number
@@ -15819,6 +15899,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversion_repair_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          repair_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          repair_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          repair_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversion_repair_logs_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "conversion_repairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversion_repairs: {
+        Row: {
+          after_state: Json | null
+          auto_safe: boolean
+          before_state: Json | null
+          category: string
+          created_at: string
+          created_by: string | null
+          evidence: Json
+          executed_at: string | null
+          expected_impact: Json | null
+          id: string
+          observed_impact: Json | null
+          problem: string
+          risk_score: number
+          rollback: Json | null
+          rolled_back_at: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          after_state?: Json | null
+          auto_safe?: boolean
+          before_state?: Json | null
+          category: string
+          created_at?: string
+          created_by?: string | null
+          evidence?: Json
+          executed_at?: string | null
+          expected_impact?: Json | null
+          id?: string
+          observed_impact?: Json | null
+          problem: string
+          risk_score?: number
+          rollback?: Json | null
+          rolled_back_at?: string | null
+          severity?: string
+          status?: string
+        }
+        Update: {
+          after_state?: Json | null
+          auto_safe?: boolean
+          before_state?: Json | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          evidence?: Json
+          executed_at?: string | null
+          expected_impact?: Json | null
+          id?: string
+          observed_impact?: Json | null
+          problem?: string
+          risk_score?: number
+          rollback?: Json | null
+          rolled_back_at?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
       }
       cpe_asset_versions: {
         Row: {
