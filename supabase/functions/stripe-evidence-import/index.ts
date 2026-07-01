@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
             const q = Math.floor(d.getUTCMonth() / 3) + 1;
             const key = `${yr}-Q${q}`;
             const cur = (inv.currency ?? "usd").toUpperCase();
-            const entry = vatByYearQuarter.get(key) ?? { year: yr, quarter: q, vat: 0, count: 0, currency: cur, details: [] };
+            const entry: VatEntry = vatByYearQuarter.get(key) ?? { year: yr, quarter: q, vat: 0, count: 0, currency: cur, details: [] };
             entry.vat += taxMinor; entry.count += 1;
             entry.details.push({ invoice: inv.id, number: inv.number, tax_minor: taxMinor, currency: cur, rates: inv.total_tax_amounts ?? null });
             vatByYearQuarter.set(key, entry);
