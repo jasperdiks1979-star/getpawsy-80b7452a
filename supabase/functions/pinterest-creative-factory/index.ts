@@ -1282,6 +1282,56 @@ Deno.serve(async (req) => {
         message: "creative_factory_work_started",
       }, 202);
     }
+    if (action === "run_adaptive_retry") {
+      const jobId = String(body.jobId ?? "");
+      const directives = String(body.directives ?? "").trim();
+      if (!jobId || !directives) {
+        return json({
+          ok: false,
+          traceId: traceId(),
+          message: "jobId_and_directives_required",
+        }, 400);
+      }
+      const { data: existing, error: rErr } = await sb
+        .from("pinterest_creative_factory_jobs")
+        .select("id, prompt, attempt_count, max_attempts")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (rErr || !existing) {
+        return json({
+          ok: false,
+          traceId: traceId(),
+          message: "job_not_found",
+        }, 404);
+      }
+      const nextPrompt = {
+        ...(existing.prompt ?? {}),
+        adaptive_retry_directives: directives,
+      };
+      await sb.from("pinterest_creative_factory_jobs").update({
+        prompt: nextPrompt,
+        status: "retry",
+        stage: "planning",
+        media_url: null,
+        media_hash: null,
+        error_message: null,
+        lease_owner: null,
+        leased_until: null,
+        max_attempts: Math.max(Number(existing.max_attempts ?? 3), Number(existing.attempt_count ?? 0) + 2),
+      }).eq("id", jobId);
+      const result = await work(sb, 1);
+      const { data: after } = await sb
+        .from("pinterest_creative_factory_jobs")
+        .select("id, status, stage, error_message, metrics, media_url")
+        .eq("id", jobId)
+        .maybeSingle();
+      return json({
+        ok: true,
+        traceId: traceId(),
+        result,
+        job: after,
+      });
+    }
     if (action === "continuous_run") {
       await seedMissingMediaJobs(
         sb,
