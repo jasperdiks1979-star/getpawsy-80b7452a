@@ -664,6 +664,43 @@ function buildAdaptiveOverrideBlock(product: any, directives: unknown): string {
   ].filter(Boolean).join("\n");
 }
 
+// Genesis V10.1 — local occupancy estimator. Downscales the image and counts
+// high-saturation foreground pixels concentrated in the central region as a
+// rough proxy for product occupancy. Used to reject undersized renders BEFORE
+// wasting a PRE call.
+async function estimateLocalProductOccupancy(
+  bytes: Uint8Array,
+): Promise<number> {
+  try {
+    const img = await _V101Image.decode(bytes);
+    const target = 128;
+    const scaled = img.clone().resize(target, target);
+    let saturated = 0;
+    let total = 0;
+    for (let y = 0; y < target; y++) {
+      for (let x = 0; x < target; x++) {
+        const px = scaled.getPixelAt(x + 1, y + 1);
+        const r = (px >> 24) & 0xff;
+        const g = (px >> 16) & 0xff;
+        const b = (px >> 8) & 0xff;
+        const mx = Math.max(r, g, b);
+        const mn = Math.min(r, g, b);
+        const sat = mx === 0 ? 0 : (mx - mn) / mx;
+        // bird colors: green/blue/yellow/red — all high saturation.
+        // neutral rug + walls sit under ~0.25 saturation.
+        if (sat > 0.45 && mx > 90) saturated++;
+        total++;
+      }
+    }
+    if (total === 0) return 0;
+    const pct = (saturated / total) * 100;
+    // clamp — very colorful full-frame scenes shouldn't report >60% product.
+    return Math.max(0, Math.min(100, Math.round(pct)));
+  } catch (_e) {
+    return -1; // unknown — do not block
+  }
+}
+
 async function generateImage(
   prompt: string,
   productImageUrl: string | null,
