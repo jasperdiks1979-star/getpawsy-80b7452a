@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { toast } from "sonner";
-import { AlertTriangle, Search, RefreshCw, Boxes, Bell, LayoutDashboard, Package } from "lucide-react";
+import { AlertTriangle, Search, RefreshCw, Boxes, Bell, LayoutDashboard, Package, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 type Kpis = {
   totalAssets: number;
@@ -103,6 +104,9 @@ export default function FinancialEvidenceVaultPage() {
           <p className="text-muted-foreground text-sm">Genesis V14 · CFO, accounting & tax intelligence</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="default">
+            <Link to="/admin/cfo"><Sparkles className="h-4 w-4" /> Ask the CFO</Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => runJob("finance-alerts-scan", "Alerts scan")} disabled={!!runningJob}>
             <Bell className="h-4 w-4" /> Scan alerts
           </Button>
