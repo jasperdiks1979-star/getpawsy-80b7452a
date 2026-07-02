@@ -66849,6 +66849,57 @@ export type Database = {
         }
         Relationships: []
       }
+      us_traffic_campaigns: {
+        Row: {
+          channel: string
+          created_at: string
+          daily_budget_usd: number
+          id: string
+          landing_page: string | null
+          launched_at: string | null
+          name: string
+          notes: string | null
+          paused_at: string | null
+          status: string
+          updated_at: string
+          utm_campaign: string
+          utm_medium: string
+          utm_source: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          daily_budget_usd?: number
+          id?: string
+          landing_page?: string | null
+          launched_at?: string | null
+          name: string
+          notes?: string | null
+          paused_at?: string | null
+          status?: string
+          updated_at?: string
+          utm_campaign: string
+          utm_medium?: string
+          utm_source: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          daily_budget_usd?: number
+          id?: string
+          landing_page?: string | null
+          launched_at?: string | null
+          name?: string
+          notes?: string | null
+          paused_at?: string | null
+          status?: string
+          updated_at?: string
+          utm_campaign?: string
+          utm_medium?: string
+          utm_source?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
