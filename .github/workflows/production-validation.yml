@@ -16,6 +16,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node scripts/smoke-anon-storefront.mjs
+      - name: Genesis Golden Customer (Zero-Regression gate)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/genesis-golden-customer.mjs
       - name: Invoke production-validation-runner
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
