@@ -478,6 +478,43 @@ serve(async (req) => {
       metadata: orderMetadata,
     };
 
+    // ─── Checkout Trust & Recovery (Genesis Ω∞) ────────────────────────
+    // 1. Persist a Stripe Customer for every session — enables Stripe's
+    //    hosted recovery email + branded receipts even for guests.
+    // 2. Turn on abandoned-checkout recovery: Stripe emails the shopper
+    //    a resume-link when the session expires (24h TTL). Zero code
+    //    fallback for the 100% checkout abandonment we've measured.
+    // 3. Auto-generate a branded PDF invoice attached to the receipt.
+    // 4. Reinforce trust inside Stripe's hosted UI with custom copy
+    //    beside the pay button + short T&Cs message. These render as
+    //    grey helper text under the summary, not as a modal.
+    sessionConfig.customer_creation = customerId ? undefined : "always";
+    sessionConfig.after_expiration = {
+      recovery: { enabled: true, allow_promotion_codes: false },
+    };
+    sessionConfig.invoice_creation = {
+      enabled: true,
+      invoice_data: {
+        description: "GetPawsy order — ships from our US warehouse.",
+        footer: "GetPawsy · 30-day money-back guarantee · support@getpawsy.pet",
+        metadata: { brand: "GetPawsy" },
+      },
+    };
+    sessionConfig.custom_text = {
+      submit: {
+        message:
+          "Secure checkout by Stripe. Backed by our 30-day money-back guarantee. Ships from our US warehouse in 5–10 business days.",
+      },
+      shipping_address: {
+        message: "We ship from our US warehouse. Free shipping on orders $35+.",
+      },
+    };
+    // Payment-intent description shows on the Stripe receipt & dashboard.
+    sessionConfig.payment_intent_data = {
+      description: `GetPawsy order — ${totalItems} item${totalItems === 1 ? "" : "s"}`,
+      metadata: { brand: "GetPawsy" },
+    };
+
     // Only add discounts if we have a valid code.
     // Stripe rejects sessions that set BOTH `discounts` and
     // `allow_promotion_codes` — so we set `allow_promotion_codes:false`
