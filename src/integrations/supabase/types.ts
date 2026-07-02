@@ -68300,6 +68300,21 @@ export type Database = {
         }
         Relationships: []
       }
+      ceo_kill_switch_public: {
+        Row: {
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cinematic_ad_failure_breakdown: {
         Row: {
           category: string | null
