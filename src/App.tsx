@@ -2750,6 +2750,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="evidence-explorer"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <EvidenceExplorerPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
