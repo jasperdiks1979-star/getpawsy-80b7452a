@@ -12,6 +12,7 @@ import ExternalManualActionsCard from "@/components/admin/ExternalManualActionsC
 import ChannelAvailabilityCard from "@/components/admin/ChannelAvailabilityCard";
 import ChannelIntelligenceCard from "@/components/admin/ChannelIntelligenceCard";
 import ChannelReallocationCard from "@/components/admin/ChannelReallocationCard";
+import ZeroWasteEnginePanel from "@/components/admin/mission-control/ZeroWasteEnginePanel";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
@@ -355,6 +356,10 @@ export default function MissionControlPage() {
       </section>
 
       {/* SECTION — EXECUTIVE INTELLIGENCE (CEO Mode, Top 10, Explainers) */}
+      <section>
+        <ZeroWasteEnginePanel />
+      </section>
+
       <section>
         <MissionIntelligencePanel
           snap={snap as any}
