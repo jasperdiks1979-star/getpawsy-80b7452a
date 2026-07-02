@@ -164,6 +164,125 @@ export default function RevenueWarRoomPage() {
         <Stat icon={Target} label="Conv Rate" value={conv ?? "UNKNOWN"} />
       </div>
 
+      {/* Live funnel breakdown — step conversion + drop-off by page & product */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingDown className="h-4 w-4 text-primary" />
+            Live Funnel Breakdown (today)
+            {data?.funnel_breakdown?.bottleneck && (
+              <Badge variant="destructive" className="ml-2">
+                Bottleneck: {data.funnel_breakdown.bottleneck.from} → {data.funnel_breakdown.bottleneck.to} · −{data.funnel_breakdown.bottleneck.drop_pct}% ({data.funnel_breakdown.bottleneck.lost} lost)
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Step bars */}
+          <div className="space-y-1.5">
+            {(data?.funnel_breakdown?.steps ?? []).map((s, i) => {
+              const width = Math.max(2, Math.min(100, s.rate_from_top ?? 0));
+              const isDrop = (s.drop_pct ?? 0) >= 50;
+              return (
+                <div key={s.key} className="grid grid-cols-12 gap-2 items-center text-xs">
+                  <div className="col-span-2 font-medium">{s.label}</div>
+                  <div className="col-span-5">
+                    <div className="h-4 rounded bg-muted overflow-hidden">
+                      <div
+                        className={`h-full ${isDrop ? 'bg-red-500' : i === 0 ? 'bg-primary' : 'bg-emerald-500'}`}
+                        style={{ width: `${width}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-1 text-right font-mono">{fmtNum(s.count)}</div>
+                  <div className="col-span-2 text-right text-muted-foreground">
+                    {s.rate_from_top != null ? `${s.rate_from_top}% of top` : '—'}
+                  </div>
+                  <div className="col-span-2 text-right">
+                    {i === 0 ? <span className="text-muted-foreground">baseline</span> : (
+                      <span className={isDrop ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                        {s.step_conv != null ? `${s.step_conv}% pass` : 'UNKNOWN'}
+                        {s.drop_pct != null && ` · −${s.drop_pct}%`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Drop-off by landing page */}
+            <div className="border rounded overflow-hidden">
+              <div className="px-2 py-1.5 text-[11px] font-medium bg-muted/40 border-b flex items-center justify-between">
+                <span>Drop-off by landing page</span>
+                <span className="text-muted-foreground">visitor → add-to-cart</span>
+              </div>
+              {data?.funnel_breakdown?.by_page?.length ? (
+                <div>
+                  <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[10px] text-muted-foreground border-b">
+                    <div className="col-span-6">Page</div>
+                    <div className="col-span-2 text-right">Sessions</div>
+                    <div className="col-span-2 text-right">ATC</div>
+                    <div className="col-span-2 text-right">Lost</div>
+                  </div>
+                  {data.funnel_breakdown.by_page.map((p) => (
+                    <div key={p.page} className="grid grid-cols-12 gap-2 px-2 py-1 text-xs border-b last:border-b-0 items-center">
+                      <div className="col-span-6 truncate" title={p.page}>{p.page}</div>
+                      <div className="col-span-2 text-right font-mono">{p.sessions}</div>
+                      <div className="col-span-2 text-right font-mono">
+                        {p.atc}{p.atc_rate != null && <span className="text-muted-foreground"> ({p.atc_rate}%)</span>}
+                      </div>
+                      <div className="col-span-2 text-right font-mono text-red-600">{p.dropped}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 text-xs text-muted-foreground">No page-level traffic captured today.</div>
+              )}
+            </div>
+
+            {/* Drop-off by product */}
+            <div className="border rounded overflow-hidden">
+              <div className="px-2 py-1.5 text-[11px] font-medium bg-muted/40 border-b flex items-center justify-between">
+                <span>Drop-off by product</span>
+                <span className="text-muted-foreground">add-to-cart → purchase</span>
+              </div>
+              {data?.funnel_breakdown?.by_product?.length ? (
+                <div>
+                  <div className="grid grid-cols-12 gap-2 px-2 py-1 text-[10px] text-muted-foreground border-b">
+                    <div className="col-span-6">Product</div>
+                    <div className="col-span-2 text-right">ATC</div>
+                    <div className="col-span-2 text-right">Purch</div>
+                    <div className="col-span-2 text-right">Lost</div>
+                  </div>
+                  {data.funnel_breakdown.by_product.map((p) => (
+                    <div key={p.product_id} className="grid grid-cols-12 gap-2 px-2 py-1 text-xs border-b last:border-b-0 items-center">
+                      <div className="col-span-6 truncate" title={p.name ?? p.product_id}>
+                        <Link to={`/admin/products?highlight=${p.product_id}`} className="text-primary hover:underline">
+                          {p.name ?? p.product_id}
+                        </Link>
+                      </div>
+                      <div className="col-span-2 text-right font-mono">{p.atc}</div>
+                      <div className="col-span-2 text-right font-mono">
+                        {p.purchases}{p.conv_rate != null && <span className="text-muted-foreground"> ({p.conv_rate}%)</span>}
+                      </div>
+                      <div className="col-span-2 text-right font-mono text-red-600">{p.lost}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 text-xs text-muted-foreground">No product-level ATC captured today.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="text-[11px] text-muted-foreground">
+            Sessions grouped from canonical_events (today, UTC). Step rates use session-derived stage counts; drop-off shows the largest revenue-leaking transition. Missing signal = UNKNOWN, never zero.
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Phase 2 — Single highest-value action */}
       <Card className="border-primary/40">
         <CardHeader className="pb-2">
