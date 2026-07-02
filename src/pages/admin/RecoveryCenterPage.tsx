@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Play, ShieldCheck, ShieldAlert, Activity, TrendingUp, Brain, X, Clock, Sun, Rocket } from "lucide-react";
+import { Loader2, RefreshCw, Play, ShieldCheck, Activity, TrendingUp, Brain, X, Clock, Sun, Rocket } from "lucide-react";
 
 type ScoreRow = {
   captured_at: string;
