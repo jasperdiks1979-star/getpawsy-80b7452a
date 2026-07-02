@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Play, ShieldCheck, ShieldAlert, Activity, TrendingUp, Brain } from "lucide-react";
+import { Loader2, RefreshCw, Play, ShieldCheck, ShieldAlert, Activity, TrendingUp, Brain, X, Clock, Sun, Rocket } from "lucide-react";
 
 type ScoreRow = {
   captured_at: string;
@@ -52,6 +52,25 @@ type Plan = {
   plan: { action?: string; root_cause?: string };
 };
 
+type MorningBrief = {
+  date: string;
+  detected_24h: number;
+  auto_repaired_24h: number;
+  pending_approval: number;
+  revenue_recovered_24h: number;
+  bhi_gained_24h: number;
+  top_recommendation: {
+    id: string;
+    action: string;
+    why: string;
+    expected_revenue_gain: number | null;
+    expected_annual_gain: number | null;
+    confidence: number | null;
+    risk_level: string;
+    status: string;
+  } | null;
+};
+
 type Learning = {
   id: string;
   problem_signature: string;
@@ -75,10 +94,14 @@ export default function RecoveryCenterPage() {
   const [learning, setLearning] = useState<Learning[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState<null | "cycle" | "detect">(null);
+  const [brief, setBrief] = useState<MorningBrief | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.functions.invoke("gare-orchestrator", { body: { action: "status" } });
+    const [{ data }, { data: briefData }] = await Promise.all([
+      supabase.functions.invoke("gare-orchestrator", { body: { action: "status" } }),
+      supabase.functions.invoke("gare-orchestrator", { body: { action: "morning-brief" } }),
+    ]);
     const r = (data as { result?: { recent: Detection[]; pending: Plan[]; score: ScoreRow | null; learning: Learning[] } })?.result;
     if (r) {
       setScore(r.score);
@@ -86,6 +109,7 @@ export default function RecoveryCenterPage() {
       setPending(r.pending ?? []);
       setLearning(r.learning ?? []);
     }
+    setBrief(((briefData as { result?: MorningBrief })?.result) ?? null);
     setLoading(false);
   }, []);
 
@@ -100,6 +124,17 @@ export default function RecoveryCenterPage() {
 
   const approve = async (planId: string) => {
     await supabase.functions.invoke("gare-orchestrator", { body: { action: "approve", plan_id: planId } });
+    await load();
+  };
+
+  const reject = async (planId: string) => {
+    const reason = window.prompt("Rejection reason (evidence)?") ?? "manual";
+    await supabase.functions.invoke("gare-orchestrator", { body: { action: "reject", plan_id: planId, reason } });
+    await load();
+  };
+
+  const schedule = async (planId: string) => {
+    await supabase.functions.invoke("gare-orchestrator", { body: { action: "schedule", plan_id: planId } });
     await load();
   };
 
@@ -168,25 +203,83 @@ export default function RecoveryCenterPage() {
           </Card>
         </div>
 
-        {/* Pending approvals */}
+        {/* V8 — Executive Morning Brief */}
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sun className="w-4 h-4 text-amber-500" /> Executive Morning Brief
+              {brief && <span className="text-xs text-muted-foreground font-normal">— {brief.date}</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!brief && <p className="text-sm text-muted-foreground">Brief unavailable — run a cycle first.</p>}
+            {brief && (
+              <>
+                <p className="text-sm">
+                  Good morning Jasper. Yesterday Genesis detected <b>{brief.detected_24h}</b> issues, autonomously
+                  repaired <b>{brief.auto_repaired_24h}</b>, and has <b>{brief.pending_approval}</b> awaiting approval.
+                  Revenue recovered: <b>${Number(brief.revenue_recovered_24h).toFixed(0)}</b>. BHI Δ:{" "}
+                  <b>+{Number(brief.bhi_gained_24h).toFixed(1)}</b>.
+                </p>
+                {brief.top_recommendation ? (
+                  <div className="p-3 border rounded bg-primary/5">
+                    <div className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">
+                      Highest priority today
+                    </div>
+                    <div className="text-sm font-medium">{brief.top_recommendation.action}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Why: {brief.top_recommendation.why}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Est. monthly: ${Number(brief.top_recommendation.expected_revenue_gain ?? 0).toFixed(0)} · annual: $
+                      {Number(brief.top_recommendation.expected_annual_gain ?? 0).toFixed(0)} · confidence:{" "}
+                      {brief.top_recommendation.confidence ?? "?"}% · risk: {brief.top_recommendation.risk_level}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No pending recommendations. System is healthy.</p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* V8 — Execution Marketplace (ROI-sorted approvals) */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-amber-500" /> Pending Approval ({pending.length})</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket className="w-4 h-4 text-primary" /> Execution Marketplace ({pending.length})
+              <span className="text-xs text-muted-foreground font-normal">sorted by expected revenue × confidence</span>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {pending.length === 0 && <p className="text-sm text-muted-foreground">Nothing waiting on approval. Autonomous playbooks are handling detections.</p>}
             {pending.map((p) => (
               <div key={p.id} className="flex items-start justify-between gap-3 p-3 border rounded bg-card">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium">{p.plan?.action ?? "Recovery plan"}</div>
+                  <div className="text-sm font-medium flex items-center gap-2">
+                    {p.plan?.action ?? "Recovery plan"}
+                    <Badge variant="outline" className="text-[10px]">{p.status}</Badge>
+                  </div>
                   <div className="text-xs text-muted-foreground mt-0.5">Root cause: {p.plan?.root_cause ?? "unknown"}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    Risk: <b>{p.risk_level}</b> · Confidence: {p.confidence ?? "?"}% · Est. revenue: ${p.expected_revenue_gain ?? 0} · BHI Δ: {p.expected_bhi_gain ?? 0}
+                    Risk: <b>{p.risk_level}</b> · Confidence: {p.confidence ?? "?"}% · Est. monthly: $
+                    {p.expected_revenue_gain ?? 0} · Annual: $
+                    {p.expected_revenue_gain != null ? (Number(p.expected_revenue_gain) * 12).toFixed(0) : 0} · BHI Δ:{" "}
+                    {p.expected_bhi_gain ?? 0}
                   </div>
                 </div>
-                <Button size="sm" onClick={() => approve(p.id)}>
-                  <ShieldCheck className="w-4 h-4 mr-1" /> Approve
-                </Button>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Button size="sm" onClick={() => approve(p.id)}>
+                    <ShieldCheck className="w-4 h-4 mr-1" /> Approve
+                  </Button>
+                  {p.status !== "scheduled" && (
+                    <Button size="sm" variant="outline" onClick={() => schedule(p.id)}>
+                      <Clock className="w-4 h-4 mr-1" /> Schedule
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => reject(p.id)}>
+                    <X className="w-4 h-4 mr-1" /> Reject
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
