@@ -1,0 +1,10 @@
+date,kind,reference,detail,confidence
+2026-01-14,Genesis migration,20260114205014,products table created with policy 'Products are publicly readable' → anon SELECT worked,HIGH
+2026-01-18,Live paid orders,orders table,"2 anonymous paid orders (c8888426, 50332a97) — proves anon checkout functioned that day",VERY HIGH
+2026-01-19 → 2026-06-15,Silent period,orders,Zero anonymous paid orders across 148 days despite active site,HIGH
+2026-05-??,1 paid order,orders,"Single paid order in May (user-attributed, not anon)",MEDIUM
+2026-06-16,1 paid order,orders,Single paid order in June (pre-blackout),MEDIUM
+2026-06-30 17:00 UTC,Security-linter migration,20260630170046,ALTER VIEW products_public SET (security_invoker=true) WITHOUT adding anon RLS on products → storefront returns 0 rows for anon,VERY HIGH
+2026-06-30 → 2026-07-02,P0 BLACKOUT,curl anon API,"Anonymous PostgREST queries returned 0 products for ~76h. Admin/service role continued to see all products, masking the incident.",VERY HIGH
+2026-07-02 20:41 UTC,Emergency fix v1,20260702204128,"Flipped view to security_invoker=off + GRANT SELECT anon,authenticated. Anon returns 342 products.",VERY HIGH
+2026-07-02 21:17 UTC,Hardening fix v2,20260702211725,"Restored security_invoker=on + narrow anon RLS policy on products (is_active, in-stock, listable). Anon still returns 342.",VERY HIGH
