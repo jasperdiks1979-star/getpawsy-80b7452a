@@ -61542,6 +61542,207 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_readiness_briefings: {
+        Row: {
+          body: Json
+          briefing_date: string
+          confidence: number
+          created_at: string
+          expected_impact: string | null
+          id: string
+          overall_score: number
+          snapshot_id: string | null
+          top_blocker: string | null
+          top_opportunity: string | null
+          top_risk: string | null
+          top_roi_fix: string | null
+          yesterday_score: number | null
+        }
+        Insert: {
+          body?: Json
+          briefing_date?: string
+          confidence?: number
+          created_at?: string
+          expected_impact?: string | null
+          id?: string
+          overall_score: number
+          snapshot_id?: string | null
+          top_blocker?: string | null
+          top_opportunity?: string | null
+          top_risk?: string | null
+          top_roi_fix?: string | null
+          yesterday_score?: number | null
+        }
+        Update: {
+          body?: Json
+          briefing_date?: string
+          confidence?: number
+          created_at?: string
+          expected_impact?: string | null
+          id?: string
+          overall_score?: number
+          snapshot_id?: string | null
+          top_blocker?: string | null
+          top_opportunity?: string | null
+          top_risk?: string | null
+          top_roi_fix?: string | null
+          yesterday_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_readiness_briefings_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "sales_readiness_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_readiness_certifications: {
+        Row: {
+          created_at: string
+          fingerprint_sha256: string
+          id: string
+          overall_score: number
+          payload: Json
+          snapshot_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_sha256: string
+          id?: string
+          overall_score: number
+          payload: Json
+          snapshot_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          fingerprint_sha256?: string
+          id?: string
+          overall_score?: number
+          payload?: Json
+          snapshot_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_readiness_certifications_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "sales_readiness_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_readiness_snapshots: {
+        Row: {
+          captured_at: string
+          confidence: number
+          executive_summary: Json
+          id: string
+          meta: Json
+          overall_score: number
+          priorities: Json
+          simulation: Json
+          status: string
+        }
+        Insert: {
+          captured_at?: string
+          confidence?: number
+          executive_summary?: Json
+          id?: string
+          meta?: Json
+          overall_score: number
+          priorities?: Json
+          simulation?: Json
+          status?: string
+        }
+        Update: {
+          captured_at?: string
+          confidence?: number
+          executive_summary?: Json
+          id?: string
+          meta?: Json
+          overall_score?: number
+          priorities?: Json
+          simulation?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      sales_readiness_subscores: {
+        Row: {
+          confidence: number
+          evidence: Json
+          id: string
+          label: string
+          note: string | null
+          score: number
+          snapshot_id: string
+          subscore_key: string
+          weight: number
+        }
+        Insert: {
+          confidence?: number
+          evidence?: Json
+          id?: string
+          label: string
+          note?: string | null
+          score: number
+          snapshot_id: string
+          subscore_key: string
+          weight?: number
+        }
+        Update: {
+          confidence?: number
+          evidence?: Json
+          id?: string
+          label?: string
+          note?: string | null
+          score?: number
+          snapshot_id?: string
+          subscore_key?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_readiness_subscores_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "sales_readiness_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_readiness_weights: {
+        Row: {
+          auto_learned: boolean
+          id: string
+          label: string
+          rationale: string | null
+          subscore_key: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          auto_learned?: boolean
+          id?: string
+          label: string
+          rationale?: string | null
+          subscore_key: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          auto_learned?: boolean
+          id?: string
+          label?: string
+          rationale?: string | null
+          subscore_key?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       saved_google_ads: {
         Row: {
           created_at: string
