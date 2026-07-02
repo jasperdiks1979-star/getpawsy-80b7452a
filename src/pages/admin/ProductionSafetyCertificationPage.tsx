@@ -6,6 +6,30 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type KillSwitch = {
+  status: string;
+  reason: string | null;
+  triggered_at: string | null;
+  cleared_at: string | null;
+  triggered_by: string | null;
+  golden_run_id: string | null;
+  updated_at: string;
+};
+
+type Certificate = {
+  id: string;
+  issued_at: string;
+  certificate_status: string;
+  kill_switch_status: string;
+  anonymous_journey_ok: boolean | null;
+  checkout_ok: boolean | null;
+  stripe_ok: boolean | null;
+  revenue_ok: boolean | null;
+  regression_ok: boolean | null;
+  confidence: number | null;
+  sha256: string;
+};
+
 /**
  * GENESIS Ω∞ — Production Safety Certification.
  *
@@ -69,6 +93,17 @@ export default function ProductionSafetyCertificationPage() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [killSwitch, setKillSwitch] = useState<KillSwitch | null>(null);
+  const [cert, setCert] = useState<Certificate | null>(null);
+
+  const loadStatus = useCallback(async () => {
+    const [ks, c] = await Promise.all([
+      supabase.from("ceo_kill_switch_state").select("*").eq("singleton", true).maybeSingle(),
+      supabase.from("ceo_production_certificates").select("*").order("issued_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    if (ks.data) setKillSwitch(ks.data as unknown as KillSwitch);
+    if (c.data) setCert(c.data as unknown as Certificate);
+  }, []);
 
   const loadRuns = useCallback(async () => {
     setLoading(true);
@@ -94,7 +129,7 @@ export default function ProductionSafetyCertificationPage() {
     setChecks((data ?? []) as unknown as Check[]);
   }, []);
 
-  useEffect(() => { void loadRuns(); }, [loadRuns]);
+  useEffect(() => { void loadRuns(); void loadStatus(); }, [loadRuns, loadStatus]);
   useEffect(() => { if (selected) void loadChecks(selected.id); }, [selected, loadChecks]);
 
   const runNow = async () => {
@@ -107,9 +142,35 @@ export default function ProductionSafetyCertificationPage() {
     const d = data as { status?: string; passed?: number; failed?: number };
     toast.success(`Golden Customer ${d?.status ?? "done"} — ${d?.passed ?? 0} pass, ${d?.failed ?? 0} fail`);
     await loadRuns();
+    await loadStatus();
+  };
+
+  const setOverride = async (on: boolean) => {
+    const { error } = await supabase.from("ceo_kill_switch_state")
+      .update({
+        status: on ? "hotfix_override" : "clear",
+        reason: on ? "Hotfix override (admin)" : "Override cleared (admin)",
+        cleared_at: on ? null : new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("singleton", true);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("ceo_kill_switch_events").insert({
+      event: on ? "override_on" : "override_off",
+      previous_status: killSwitch?.status ?? null,
+      new_status: on ? "hotfix_override" : "clear",
+      reason: on ? "Manual hotfix override" : "Manual override cleared",
+      actor: "admin_ui",
+    });
+    toast.success(on ? "Hotfix override ENABLED" : "Override cleared");
+    await loadStatus();
   };
 
   const latest = runs[0];
+  const ksColor =
+    killSwitch?.status === "tripped" ? "destructive"
+    : killSwitch?.status === "degraded" ? "secondary"
+    : killSwitch?.status === "hotfix_override" ? "secondary" : "default";
   const passRate = runs.length ? (runs.filter(r => r.status === "pass").length / runs.length) * 100 : 0;
   const meanDuration = runs.length
     ? Math.round(runs.reduce((s, r) => s + (r.duration_ms ?? 0), 0) / runs.length)
@@ -136,6 +197,66 @@ export default function ProductionSafetyCertificationPage() {
           no admin, no service role). Fails a deployment automatically when the anonymous storefront or checkout is broken.
         </AlertDescription>
       </Alert>
+
+      <Card className={killSwitch?.status === "tripped" ? "border-destructive" : ""}>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>CEO Kill Switch</span>
+            <Badge variant={ksColor as "default" | "secondary" | "destructive"}>
+              {(killSwitch?.status ?? "unknown").toUpperCase()}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            {killSwitch?.reason ?? "No status recorded yet."}
+          </div>
+          <div className="text-xs font-mono">
+            {killSwitch?.triggered_at && <>Tripped: {new Date(killSwitch.triggered_at).toLocaleString()} · </>}
+            {killSwitch?.triggered_by && <>By: {killSwitch.triggered_by} · </>}
+            Updated: {killSwitch ? new Date(killSwitch.updated_at).toLocaleString() : "—"}
+          </div>
+          <div className="flex gap-2">
+            {killSwitch?.status !== "hotfix_override" ? (
+              <Button variant="destructive" size="sm" onClick={() => setOverride(true)}>
+                Enable hotfix override
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setOverride(false)}>
+                Clear override
+              </Button>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            When TRIPPED: all standard deployments and migrations are blocked. Only hotfixes, rollbacks,
+            diagnostics, monitoring, evidence collection, and production validation may proceed.
+          </div>
+        </CardContent>
+      </Card>
+
+      {cert && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Latest CEO Production Safety Certificate</span>
+              <StatusBadge status={cert.certificate_status} />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex flex-wrap gap-2">
+              <BoolBadge value={cert.anonymous_journey_ok} label="Journey" />
+              <BoolBadge value={cert.checkout_ok} label="Checkout" />
+              <BoolBadge value={cert.stripe_ok} label="Stripe" />
+              <BoolBadge value={cert.revenue_ok} label="Revenue" />
+              <BoolBadge value={cert.regression_ok} label="Regression" />
+            </div>
+            <div className="text-xs font-mono break-all">
+              Confidence: {cert.confidence != null ? (cert.confidence * 100).toFixed(1) + "%" : "—"} ·
+              SHA-256: {cert.sha256} · Issued: {new Date(cert.issued_at).toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardHeader><CardTitle>Certification</CardTitle></CardHeader>
