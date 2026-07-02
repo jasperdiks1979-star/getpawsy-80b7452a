@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import MissionControlCertification, { type DrillCtx } from "@/components/admin/MissionControlCertification";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
@@ -254,6 +255,23 @@ export default function MissionControlPage() {
   const filteredReports = REPORT_LINKS.filter((r) =>
     q.trim() === "" ? true : r.title.toLowerCase().includes(q.trim().toLowerCase())
   );
+
+  const drillCtx: DrillCtx = useMemo(() => {
+    const lowest = [...subs]
+      .sort((a, b) => Number(a.score) - Number(b.score))
+      .slice(0, 5)
+      .map((s) => ({ key: s.subscore_key, label: s.label, score: Number(s.score) }));
+    const contributing = subs.filter((s) => Number(s.confidence) > 0).length;
+    return {
+      overall: snap?.overall_score ?? null,
+      confidence: snap?.confidence ?? null,
+      capturedAt: snap?.captured_at ?? null,
+      sha256: snap?.sha256 ?? null,
+      subCount: subs.length,
+      contributingCount: contributing,
+      lowestSubs: lowest,
+    };
+  }, [snap, subs]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
