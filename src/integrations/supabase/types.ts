@@ -27025,6 +27025,303 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_v5_baselines: {
+        Row: {
+          captured_at: string
+          decision_id: string | null
+          id: string
+          metrics: Json
+          window_days: number | null
+        }
+        Insert: {
+          captured_at?: string
+          decision_id?: string | null
+          id?: string
+          metrics?: Json
+          window_days?: number | null
+        }
+        Update: {
+          captured_at?: string
+          decision_id?: string | null
+          id?: string
+          metrics?: Json
+          window_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_v5_baselines_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v5_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_v5_certifications: {
+        Row: {
+          business_impact_cents: number | null
+          confidence_calibration: number | null
+          executive_summary: string | null
+          generated_at: string
+          id: string
+          learning_curve: number | null
+          payload: Json
+          prediction_accuracy: number | null
+          recommendation_accuracy: number | null
+          revenue_accuracy: number | null
+          sha256: string | null
+          window_days: number | null
+        }
+        Insert: {
+          business_impact_cents?: number | null
+          confidence_calibration?: number | null
+          executive_summary?: string | null
+          generated_at?: string
+          id?: string
+          learning_curve?: number | null
+          payload?: Json
+          prediction_accuracy?: number | null
+          recommendation_accuracy?: number | null
+          revenue_accuracy?: number | null
+          sha256?: string | null
+          window_days?: number | null
+        }
+        Update: {
+          business_impact_cents?: number | null
+          confidence_calibration?: number | null
+          executive_summary?: string | null
+          generated_at?: string
+          id?: string
+          learning_curve?: number | null
+          payload?: Json
+          prediction_accuracy?: number | null
+          recommendation_accuracy?: number | null
+          revenue_accuracy?: number | null
+          sha256?: string | null
+          window_days?: number | null
+        }
+        Relationships: []
+      }
+      genesis_v5_decisions: {
+        Row: {
+          approved_at: string | null
+          approver: string | null
+          best_case: Json | null
+          business_objective: string | null
+          category: string | null
+          confidence: number | null
+          created_at: string
+          decision_key: string | null
+          deployment_sha: string | null
+          evidence: Json
+          executed_at: string | null
+          expected_conversion_lift_pct: number | null
+          expected_credit_savings: number | null
+          expected_profit_cents: number | null
+          expected_revenue_cents: number | null
+          id: string
+          measured_at: string | null
+          risk: string | null
+          rollback_plan: string | null
+          status: string
+          subsystem: string
+          summary: string | null
+          title: string
+          updated_at: string
+          worst_case: Json | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approver?: string | null
+          best_case?: Json | null
+          business_objective?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          decision_key?: string | null
+          deployment_sha?: string | null
+          evidence?: Json
+          executed_at?: string | null
+          expected_conversion_lift_pct?: number | null
+          expected_credit_savings?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          measured_at?: string | null
+          risk?: string | null
+          rollback_plan?: string | null
+          status?: string
+          subsystem: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          worst_case?: Json | null
+        }
+        Update: {
+          approved_at?: string | null
+          approver?: string | null
+          best_case?: Json | null
+          business_objective?: string | null
+          category?: string | null
+          confidence?: number | null
+          created_at?: string
+          decision_key?: string | null
+          deployment_sha?: string | null
+          evidence?: Json
+          executed_at?: string | null
+          expected_conversion_lift_pct?: number | null
+          expected_credit_savings?: number | null
+          expected_profit_cents?: number | null
+          expected_revenue_cents?: number | null
+          id?: string
+          measured_at?: string | null
+          risk?: string | null
+          rollback_plan?: string | null
+          status?: string
+          subsystem?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          worst_case?: Json | null
+        }
+        Relationships: []
+      }
+      genesis_v5_lessons: {
+        Row: {
+          category: string | null
+          created_at: string
+          decision_id: string | null
+          future_applicability: string | null
+          id: string
+          lesson: string
+          root_cause: string | null
+          weight: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          decision_id?: string | null
+          future_applicability?: string | null
+          id?: string
+          lesson: string
+          root_cause?: string | null
+          weight?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          decision_id?: string | null
+          future_applicability?: string | null
+          id?: string
+          lesson?: string
+          root_cause?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_v5_lessons_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v5_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_v5_outcomes: {
+        Row: {
+          actual_metrics: Json
+          confidence_accuracy: number | null
+          decision_id: string
+          deltas: Json
+          horizon: string
+          id: string
+          measured_at: string
+          notes: string | null
+          prediction_accuracy: number | null
+          revenue_accuracy: number | null
+          verdict: string | null
+        }
+        Insert: {
+          actual_metrics?: Json
+          confidence_accuracy?: number | null
+          decision_id: string
+          deltas?: Json
+          horizon: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          prediction_accuracy?: number | null
+          revenue_accuracy?: number | null
+          verdict?: string | null
+        }
+        Update: {
+          actual_metrics?: Json
+          confidence_accuracy?: number | null
+          decision_id?: string
+          deltas?: Json
+          horizon?: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          prediction_accuracy?: number | null
+          revenue_accuracy?: number | null
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_v5_outcomes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v5_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_v5_scores: {
+        Row: {
+          average_roi: number | null
+          category: string | null
+          computed_at: string
+          confidence_reliability: number | null
+          decisions_successful: number | null
+          decisions_total: number | null
+          id: string
+          prediction_accuracy: number | null
+          revenue_accuracy: number | null
+          subsystem: string
+          success_rate: number | null
+          window_days: number
+        }
+        Insert: {
+          average_roi?: number | null
+          category?: string | null
+          computed_at?: string
+          confidence_reliability?: number | null
+          decisions_successful?: number | null
+          decisions_total?: number | null
+          id?: string
+          prediction_accuracy?: number | null
+          revenue_accuracy?: number | null
+          subsystem: string
+          success_rate?: number | null
+          window_days?: number
+        }
+        Update: {
+          average_roi?: number | null
+          category?: string | null
+          computed_at?: string
+          confidence_reliability?: number | null
+          decisions_successful?: number | null
+          decisions_total?: number | null
+          id?: string
+          prediction_accuracy?: number | null
+          revenue_accuracy?: number | null
+          subsystem?: string
+          success_rate?: number | null
+          window_days?: number
+        }
+        Relationships: []
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
