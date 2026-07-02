@@ -14,7 +14,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const CRON_SECRET = Deno.env.get('HERO_PUBLISH_CRON_SECRET') ?? '';
+const CRON_SECRET_ENV = Deno.env.get('HERO_PUBLISH_CRON_SECRET') ?? '';
 
 const HERO_PRODUCT_ID = '128e0207-8a94-4d71-b428-5b7f5002528f';
 const DAILY_BUDGET = 6;
@@ -41,15 +41,22 @@ async function invokeFn(name: string, body: Record<string, unknown>): Promise<St
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  // Cron secret gate — required for every invocation (manual or scheduled).
+  const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // Cron secret gate — accepts either the env-managed secret (for manual
+  // invocation from an operator machine) or the app_config-managed secret
+  // (used by pg_cron so the value never leaves the database).
   const provided = req.headers.get('x-cron-secret') ?? '';
-  if (!CRON_SECRET || provided !== CRON_SECRET) {
+  const { data: cfgSecret } = await sb.from('app_config')
+    .select('value').eq('key', 'hero_publish_cron_secret').maybeSingle();
+  const dbSecret = typeof cfgSecret?.value === 'string' ? cfgSecret.value : '';
+  const ok = !!provided && (provided === CRON_SECRET_ENV || provided === dbSecret);
+  if (!ok) {
     return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
       status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
   const today = new Date().toISOString().slice(0, 10); // UTC yyyy-mm-dd
 
   // Load prior state to enforce per-day idempotency.
