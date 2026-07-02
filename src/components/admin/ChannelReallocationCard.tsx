@@ -30,7 +30,7 @@ export default function ChannelReallocationCard() {
       .select("*")
       .order("triggered_at", { ascending: false })
       .limit(10);
-    setEvents((data as Event[]) ?? []);
+    setEvents(((data ?? []) as unknown) as Event[]);
     setLoading(false);
   }
 
