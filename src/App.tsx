@@ -2777,6 +2777,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="revenue-war-room"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
