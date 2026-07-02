@@ -513,6 +513,11 @@ serve(async (req) => {
     sessionConfig.payment_intent_data = {
       description: `GetPawsy order — ${totalItems} item${totalItems === 1 ? "" : "s"}`,
       metadata: { brand: "GetPawsy" },
+      // Bank/card statement descriptor. Prefix comes from the Stripe account
+      // (Dashboard → Public business name); this suffix is the per-order tail
+      // so shoppers recognize the charge as GetPawsy even if the account
+      // prefix hasn't been updated from "Skidzo" yet.
+      statement_descriptor_suffix: "GETPAWSY",
     };
 
     // Only add discounts if we have a valid code.
