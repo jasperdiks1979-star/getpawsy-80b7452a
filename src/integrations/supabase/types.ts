@@ -69812,6 +69812,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      fse_map_event_kind: { Args: { _name: string }; Returns: string }
+      fse_safe_uuid: { Args: { _txt: string }; Returns: string }
       gad_refresh_module_rollups: { Args: never; Returns: undefined }
       gad_upsert_concept: {
         Args: {
