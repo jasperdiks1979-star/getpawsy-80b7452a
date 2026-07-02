@@ -24875,6 +24875,48 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_board_meetings: {
+        Row: {
+          agenda: string | null
+          consensus: Json
+          constitution_compliance: number
+          created_at: string
+          disagreements: Json
+          first_100_alignment: number
+          id: string
+          meeting_date: string
+          north_star_alignment: number
+          reports: Json
+          status: string
+        }
+        Insert: {
+          agenda?: string | null
+          consensus?: Json
+          constitution_compliance?: number
+          created_at?: string
+          disagreements?: Json
+          first_100_alignment?: number
+          id?: string
+          meeting_date?: string
+          north_star_alignment?: number
+          reports?: Json
+          status?: string
+        }
+        Update: {
+          agenda?: string | null
+          consensus?: Json
+          constitution_compliance?: number
+          created_at?: string
+          disagreements?: Json
+          first_100_alignment?: number
+          id?: string
+          meeting_date?: string
+          north_star_alignment?: number
+          reports?: Json
+          status?: string
+        }
+        Relationships: []
+      }
       genesis_boardroom_certifications: {
         Row: {
           canonical_compliance: number
@@ -25162,6 +25204,45 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_digital_executives: {
+        Row: {
+          created_at: string
+          id: string
+          last_meeting_at: string | null
+          readiness_score: number
+          reports_to: string
+          responsibilities: Json
+          role_code: string
+          role_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_meeting_at?: string | null
+          readiness_score?: number
+          reports_to?: string
+          responsibilities?: Json
+          role_code: string
+          role_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_meeting_at?: string | null
+          readiness_score?: number
+          reports_to?: string
+          responsibilities?: Json
+          role_code?: string
+          role_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       genesis_documents: {
         Row: {
           category: string
@@ -25296,6 +25377,83 @@ export type Database = {
             columns: ["supersedes_document"]
             isOneToOne: false
             referencedRelation: "genesis_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_executive_decisions: {
+        Row: {
+          confidence: number | null
+          constitution_compliant: boolean | null
+          created_at: string
+          customer_impact: number | null
+          engineering_cost: number | null
+          evidence: Json | null
+          executive_role: string
+          expected_profit: number | null
+          expected_revenue: number | null
+          financial_cost: number | null
+          first_100_impact: boolean | null
+          id: string
+          meeting_id: string | null
+          operational_impact: number | null
+          priority_score: number | null
+          rationale: string | null
+          risk: number | null
+          status: string
+          strategic_value: number | null
+          title: string
+        }
+        Insert: {
+          confidence?: number | null
+          constitution_compliant?: boolean | null
+          created_at?: string
+          customer_impact?: number | null
+          engineering_cost?: number | null
+          evidence?: Json | null
+          executive_role: string
+          expected_profit?: number | null
+          expected_revenue?: number | null
+          financial_cost?: number | null
+          first_100_impact?: boolean | null
+          id?: string
+          meeting_id?: string | null
+          operational_impact?: number | null
+          priority_score?: number | null
+          rationale?: string | null
+          risk?: number | null
+          status?: string
+          strategic_value?: number | null
+          title: string
+        }
+        Update: {
+          confidence?: number | null
+          constitution_compliant?: boolean | null
+          created_at?: string
+          customer_impact?: number | null
+          engineering_cost?: number | null
+          evidence?: Json | null
+          executive_role?: string
+          expected_profit?: number | null
+          expected_revenue?: number | null
+          financial_cost?: number | null
+          first_100_impact?: boolean | null
+          id?: string
+          meeting_id?: string | null
+          operational_impact?: number | null
+          priority_score?: number | null
+          rationale?: string | null
+          risk?: number | null
+          status?: string
+          strategic_value?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_executive_decisions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_board_meetings"
             referencedColumns: ["id"]
           },
         ]
@@ -25437,6 +25595,69 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_omega_infinity_certifications: {
+        Row: {
+          ai_readiness: number
+          architecture_readiness: number
+          business_maturity_score: number
+          certified_at: string
+          company_intelligence_score: number
+          customer_readiness: number
+          evidence: Json
+          executive_governance_score: number
+          executive_readiness: number
+          financial_readiness: number
+          fingerprint: string | null
+          growth_readiness: number
+          id: string
+          operational_readiness: number
+          overall_score: number
+          security_readiness: number
+          strategic_readiness: number
+          tax_readiness: number
+        }
+        Insert: {
+          ai_readiness?: number
+          architecture_readiness?: number
+          business_maturity_score?: number
+          certified_at?: string
+          company_intelligence_score?: number
+          customer_readiness?: number
+          evidence?: Json
+          executive_governance_score?: number
+          executive_readiness?: number
+          financial_readiness?: number
+          fingerprint?: string | null
+          growth_readiness?: number
+          id?: string
+          operational_readiness?: number
+          overall_score?: number
+          security_readiness?: number
+          strategic_readiness?: number
+          tax_readiness?: number
+        }
+        Update: {
+          ai_readiness?: number
+          architecture_readiness?: number
+          business_maturity_score?: number
+          certified_at?: string
+          company_intelligence_score?: number
+          customer_readiness?: number
+          evidence?: Json
+          executive_governance_score?: number
+          executive_readiness?: number
+          financial_readiness?: number
+          fingerprint?: string | null
+          growth_readiness?: number
+          id?: string
+          operational_readiness?: number
+          overall_score?: number
+          security_readiness?: number
+          strategic_readiness?: number
+          tax_readiness?: number
+        }
+        Relationships: []
+      }
       genesis_omega_syntheses: {
         Row: {
           ceo_view: Json
@@ -25492,6 +25713,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      genesis_shareholder_letters: {
+        Row: {
+          body_markdown: string
+          created_at: string
+          headline: string
+          id: string
+          major_decisions: Json
+          metrics: Json
+          outlook: string | null
+          period_month: string
+          sha256: string | null
+        }
+        Insert: {
+          body_markdown: string
+          created_at?: string
+          headline: string
+          id?: string
+          major_decisions?: Json
+          metrics?: Json
+          outlook?: string | null
+          period_month: string
+          sha256?: string | null
+        }
+        Update: {
+          body_markdown?: string
+          created_at?: string
+          headline?: string
+          id?: string
+          major_decisions?: Json
+          metrics?: Json
+          outlook?: string | null
+          period_month?: string
+          sha256?: string | null
+        }
+        Relationships: []
       }
       genesis_truth_conflicts: {
         Row: {
