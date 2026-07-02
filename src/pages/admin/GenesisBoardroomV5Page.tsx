@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import GridLayout, { useContainerWidth, type LayoutItem as RGLItem } from "react-grid-layout";
+import GridLayout, { WidthProvider, type Layout as RGLItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -225,7 +225,6 @@ export default function GenesisBoardroomV5Page() {
   const [certLoading, setCertLoading] = useState(false);
   const [cert, setCert] = useState<any>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const { containerRef, width } = useContainerWidth();
 
   const active = workspaces.find((w) => w.id === activeId) ?? null;
 
@@ -431,12 +430,10 @@ export default function GenesisBoardroomV5Page() {
 
         {/* Grid */}
         {active ? (
-          <div ref={containerRef as any}>
-          <GridLayout
+          <ReactGrid
             className="layout"
             layout={rglLayout}
             cols={12}
-            width={width || 1200}
             rowHeight={60}
             margin={[12, 12]}
             onLayoutChange={(l) => saveLayout(l as RGLItem[])}
@@ -463,8 +460,7 @@ export default function GenesisBoardroomV5Page() {
                 </div>
               );
             })}
-          </GridLayout>
-          </div>
+          </ReactGrid>
         ) : (
           <Card><CardContent className="p-6 text-sm text-muted-foreground">Create your first workspace to begin.</CardContent></Card>
         )}
