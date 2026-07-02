@@ -25091,6 +25091,86 @@ export type Database = {
           },
         ]
       }
+      genesis_genome_nodes: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          meta: Json
+          node_key: string
+          room: string
+          snapshot_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          meta?: Json
+          node_key: string
+          room: string
+          snapshot_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          meta?: Json
+          node_key?: string
+          room?: string
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_genome_nodes_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_genome_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_genome_snapshots: {
+        Row: {
+          completeness: number
+          created_at: string
+          edge_count: number
+          edges: Json
+          health_score: number
+          id: string
+          node_count: number
+          nodes: Json
+          rooms: Json
+          summary: string
+        }
+        Insert: {
+          completeness?: number
+          created_at?: string
+          edge_count?: number
+          edges?: Json
+          health_score?: number
+          id?: string
+          node_count?: number
+          nodes?: Json
+          rooms?: Json
+          summary?: string
+        }
+        Update: {
+          completeness?: number
+          created_at?: string
+          edge_count?: number
+          edges?: Json
+          health_score?: number
+          id?: string
+          node_count?: number
+          nodes?: Json
+          rooms?: Json
+          summary?: string
+        }
+        Relationships: []
+      }
       genesis_omega_architecture_scans: {
         Row: {
           admin_pages_count: number
