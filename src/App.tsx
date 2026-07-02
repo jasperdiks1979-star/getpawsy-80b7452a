@@ -465,6 +465,7 @@ const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionCont
 const ExecutiveWarRoomPage = lazyWithRetry(() => import("./pages/admin/ExecutiveWarRoomPage"));
 const DecisionOutcomesPage = lazyWithRetry(() => import("./pages/admin/DecisionOutcomesPage"));
 const RevenueWarRoomPage = lazyWithRetry(() => import("./pages/admin/RevenueWarRoomPage"));
+const RecoveryCenterPage = lazyWithRetry(() => import("./pages/admin/RecoveryCenterPage"));
 const EvidenceExplorerPage = lazyWithRetry(() => import("./pages/admin/EvidenceExplorerPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
