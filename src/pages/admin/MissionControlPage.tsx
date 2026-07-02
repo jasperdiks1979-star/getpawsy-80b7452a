@@ -10,6 +10,7 @@ import MissionControlCertification, { type DrillCtx } from "@/components/admin/M
 import MissionIntelligencePanel from "@/components/admin/MissionIntelligencePanel";
 import ExternalManualActionsCard from "@/components/admin/ExternalManualActionsCard";
 import ChannelAvailabilityCard from "@/components/admin/ChannelAvailabilityCard";
+import ChannelIntelligenceCard from "@/components/admin/ChannelIntelligenceCard";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
