@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import MissionControlCertification, { type DrillCtx } from "@/components/admin/MissionControlCertification";
 import MissionIntelligencePanel from "@/components/admin/MissionIntelligencePanel";
 import ExternalManualActionsCard from "@/components/admin/ExternalManualActionsCard";
+import ChannelAvailabilityCard from "@/components/admin/ChannelAvailabilityCard";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
@@ -390,6 +391,11 @@ export default function MissionControlPage() {
       {/* SECTION 4.5 — EXTERNAL MANUAL ACTIONS (owner-only unblockers) */}
       <section>
         <ExternalManualActionsCard />
+      </section>
+
+      {/* SECTION 4.6 — CHANNEL AVAILABILITY (Organic Growth Constitution) */}
+      <section>
+        <ChannelAvailabilityCard />
       </section>
 
       {/* SECTION 2 & 3 — LIVE + TODAY */}
