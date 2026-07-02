@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Infinity as InfinityIcon, Loader2, RefreshCw, ShieldCheck, ScrollText } from "lucide-react";
+import { Infinity as InfinityIcon, Loader2, RefreshCw, ShieldCheck, ScrollText, Download } from "lucide-react";
+import jsPDF from "jspdf";
 
 type Principle = { id: string; code: string; title: string; body: string; pillar: string | null };
 type Cycle = { id: string; cycle_number: number; started_at: string; ended_at: string | null; status: string; learnings: any; priorities: any; observations: any; fingerprint_sha256: string | null };
@@ -62,6 +63,82 @@ export default function GenesisPerpetualCompanyPage() {
     ["Century", latest.century_readiness],
   ] : [];
 
+  function exportCertificationPdf() {
+    if (!latest) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const left = 48;
+    let y = 56;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("GENESIS Ω∞.1 — Perpetual Company Certification", left, y);
+    y += 22;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`Issued: ${new Date(latest.issued_at).toLocaleString()}`, left, y);
+    y += 14;
+    doc.text(`Certification ID: ${latest.id}`, left, y);
+    y += 18;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("Overall Scores", left, y);
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Company Maturity: ${latest.overall_company_maturity} / 100`, left, y); y += 14;
+    doc.text(`Century Readiness: ${latest.century_readiness} / 100`, left, y); y += 22;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("Axis Scores (0–100)", left, y);
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    for (const [label, val] of axes) {
+      if (y > 760) { doc.addPage(); y = 56; }
+      doc.setTextColor(110, 110, 110);
+      doc.text(`${label}`, left, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(String(val ?? "—"), left + 200, y);
+      y += 16;
+    }
+
+    y += 10;
+    if (y > 720) { doc.addPage(); y = 56; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("Narrative", left, y);
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const narrativeLines = doc.splitTextToSize(latest.narrative || "—", pageW - left * 2);
+    doc.text(narrativeLines, left, y);
+    y += narrativeLines.length * 13 + 14;
+
+    if (y > 740) { doc.addPage(); y = 56; }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("SHA-256 Fingerprint", left, y);
+    y += 14;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(9);
+    const fp = doc.splitTextToSize(latest.fingerprint_sha256 ?? "—", pageW - left * 2);
+    doc.text(fp, left, y);
+    y += fp.length * 12 + 8;
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text("Immutable certification issued by Genesis Ω∞.1 — Perpetual Company.", left, y);
+
+    doc.save(`perpetual-certification-${latest.id}.pdf`);
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -75,6 +152,9 @@ export default function GenesisPerpetualCompanyPage() {
           <Button onClick={runCycle} disabled={busy}>
             {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
             Run Perpetual Cycle + Certify
+          </Button>
+          <Button variant="outline" onClick={exportCertificationPdf} disabled={!latest}>
+            <Download className="w-4 h-4 mr-2" /> Export Certification PDF
           </Button>
           <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="w-4 h-4" /></Button>
         </div>
