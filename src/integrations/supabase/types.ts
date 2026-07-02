@@ -10055,6 +10055,97 @@ export type Database = {
         }
         Relationships: []
       }
+      ceo_kill_switch_events: {
+        Row: {
+          actor: string | null
+          context: Json
+          event: string
+          golden_run_id: string | null
+          id: string
+          new_status: string | null
+          occurred_at: string
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor?: string | null
+          context?: Json
+          event: string
+          golden_run_id?: string | null
+          id?: string
+          new_status?: string | null
+          occurred_at?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor?: string | null
+          context?: Json
+          event?: string
+          golden_run_id?: string | null
+          id?: string
+          new_status?: string | null
+          occurred_at?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ceo_kill_switch_events_golden_run_id_fkey"
+            columns: ["golden_run_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_golden_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ceo_kill_switch_state: {
+        Row: {
+          cleared_at: string | null
+          evidence: Json
+          golden_run_id: string | null
+          id: string
+          reason: string | null
+          singleton: boolean
+          status: string
+          triggered_at: string | null
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          cleared_at?: string | null
+          evidence?: Json
+          golden_run_id?: string | null
+          id?: string
+          reason?: string | null
+          singleton?: boolean
+          status?: string
+          triggered_at?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cleared_at?: string | null
+          evidence?: Json
+          golden_run_id?: string | null
+          id?: string
+          reason?: string | null
+          singleton?: boolean
+          status?: string
+          triggered_at?: string | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ceo_kill_switch_state_golden_run_id_fkey"
+            columns: ["golden_run_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_golden_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ceo_kpi_snapshots: {
         Row: {
           created_at: string
@@ -10129,6 +10220,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ceo_production_certificates: {
+        Row: {
+          anonymous_journey_ok: boolean | null
+          certificate_status: string
+          checkout_ok: boolean | null
+          confidence: number | null
+          golden_run_id: string | null
+          id: string
+          issued_at: string
+          kill_switch_status: string
+          payload: Json
+          regression_ok: boolean | null
+          revenue_ok: boolean | null
+          sha256: string
+          stripe_ok: boolean | null
+        }
+        Insert: {
+          anonymous_journey_ok?: boolean | null
+          certificate_status: string
+          checkout_ok?: boolean | null
+          confidence?: number | null
+          golden_run_id?: string | null
+          id?: string
+          issued_at?: string
+          kill_switch_status: string
+          payload: Json
+          regression_ok?: boolean | null
+          revenue_ok?: boolean | null
+          sha256: string
+          stripe_ok?: boolean | null
+        }
+        Update: {
+          anonymous_journey_ok?: boolean | null
+          certificate_status?: string
+          checkout_ok?: boolean | null
+          confidence?: number | null
+          golden_run_id?: string | null
+          id?: string
+          issued_at?: string
+          kill_switch_status?: string
+          payload?: Json
+          regression_ok?: boolean | null
+          revenue_ok?: boolean | null
+          sha256?: string
+          stripe_ok?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ceo_production_certificates_golden_run_id_fkey"
+            columns: ["golden_run_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_golden_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       channel_intelligence_reports: {
         Row: {
@@ -70095,6 +70242,10 @@ export type Database = {
         }[]
       }
       cci_check_geo_unknown_funnel: { Args: never; Returns: Json }
+      ceo_kill_switch_gate: {
+        Args: { p_deployment_kind?: string }
+        Returns: Json
+      }
       check_and_restore_batch_gates: {
         Args: { _batch_tag: string }
         Returns: Json
