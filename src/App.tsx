@@ -465,6 +465,7 @@ const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionCont
 const ExecutiveWarRoomPage = lazyWithRetry(() => import("./pages/admin/ExecutiveWarRoomPage"));
 const DecisionOutcomesPage = lazyWithRetry(() => import("./pages/admin/DecisionOutcomesPage"));
 const RevenueWarRoomPage = lazyWithRetry(() => import("./pages/admin/RevenueWarRoomPage"));
+const RevenueAttributionCenterPage = lazyWithRetry(() => import("./pages/admin/RevenueAttributionCenterPage"));
 const RecoveryCenterPage = lazyWithRetry(() => import("./pages/admin/RecoveryCenterPage"));
 const EvidenceExplorerPage = lazyWithRetry(() => import("./pages/admin/EvidenceExplorerPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
@@ -2782,6 +2783,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenueWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="revenue-attribution-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueAttributionCenterPage />
                                 </Suspense>
                               }
                             />

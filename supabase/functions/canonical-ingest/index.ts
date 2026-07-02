@@ -248,8 +248,12 @@ async function refreshSessions(sb: ReturnType<typeof createClient>, sinceISO: st
   `;
   // supabase-js can't run raw SQL; expose via RPC if needed. Skip in v1 — sessions backfilled by refresh job.
   // We instead call a small RPC below.
-  const { error } = await sb.rpc("canonical_session_upsert_recent", { since: sinceISO });
-  if (error && !error.message.includes("does not exist")) throw error;
+  // Prefer the combined refresh + attribution RPC; fall back to the legacy upsert-only path.
+  const { error } = await sb.rpc("canonical_session_refresh_with_attribution", { since: sinceISO });
+  if (error) {
+    const { error: fallbackErr } = await sb.rpc("canonical_session_upsert_recent", { since: sinceISO });
+    if (fallbackErr && !fallbackErr.message.includes("does not exist")) throw fallbackErr;
+  }
   return 0;
 }
 
