@@ -340,6 +340,27 @@ export default function GenesisEnterpriseTwinPage() {
               <CardContent className="space-y-4">
                 <div className="text-4xl font-bold">{latestCert.overall_genesis_intelligence}/100</div>
                 <p className="text-sm">{latestCert.narrative}</p>
+                <div className="flex flex-wrap items-center gap-2 border rounded-md p-3 bg-muted/30">
+                  <span className="text-xs font-medium mr-1">PDF layout:</span>
+                  <Button
+                    size="sm"
+                    variant={pdfLayout === "compact" ? "default" : "outline"}
+                    onClick={() => setPdfLayout("compact")}
+                  >Compact</Button>
+                  <Button
+                    size="sm"
+                    variant={pdfLayout === "executive" ? "default" : "outline"}
+                    onClick={() => setPdfLayout("executive")}
+                  >Executive</Button>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {pdfLayout === "compact"
+                      ? "One-page dense summary: two-column axis grid, minimal narrative."
+                      : "Narrative-heavy: per-axis interpretation, evidence block, wide fingerprint."}
+                  </span>
+                  <Button size="sm" variant="secondary" className="ml-auto" onClick={exportCertificationPdf}>
+                    <Download className="w-4 h-4 mr-1" /> Download {pdfLayout} PDF
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {([
                     ["BI Score", latestCert.business_intelligence_score],
