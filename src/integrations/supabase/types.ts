@@ -25284,6 +25284,207 @@ export type Database = {
           },
         ]
       }
+      genesis_truth_conflicts: {
+        Row: {
+          delta_pct: number | null
+          detected_at: string
+          explanation: string | null
+          id: string
+          metric_key: string
+          resolution: string | null
+          resolved_at: string | null
+          severity: string
+          source_a: string
+          source_b: string
+          status: string
+          value_a: number | null
+          value_b: number | null
+        }
+        Insert: {
+          delta_pct?: number | null
+          detected_at?: string
+          explanation?: string | null
+          id?: string
+          metric_key: string
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_a: string
+          source_b: string
+          status?: string
+          value_a?: number | null
+          value_b?: number | null
+        }
+        Update: {
+          delta_pct?: number | null
+          detected_at?: string
+          explanation?: string | null
+          id?: string
+          metric_key?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_a?: string
+          source_b?: string
+          status?: string
+          value_a?: number | null
+          value_b?: number | null
+        }
+        Relationships: []
+      }
+      genesis_truth_lineage: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          metric_key: string
+          node_name: string
+          node_type: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          metric_key: string
+          node_name: string
+          node_type: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          metric_key?: string
+          node_name?: string
+          node_type?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      genesis_truth_metrics: {
+        Row: {
+          canonical_source: string | null
+          confidence: number
+          consumers: Json
+          created_at: string
+          display_name: string
+          domain: string
+          formula: string | null
+          id: string
+          last_validated_at: string | null
+          metric_key: string
+          notes: string | null
+          sources: Json
+          status: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          canonical_source?: string | null
+          confidence?: number
+          consumers?: Json
+          created_at?: string
+          display_name: string
+          domain: string
+          formula?: string | null
+          id?: string
+          last_validated_at?: string | null
+          metric_key: string
+          notes?: string | null
+          sources?: Json
+          status?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canonical_source?: string | null
+          confidence?: number
+          consumers?: Json
+          created_at?: string
+          display_name?: string
+          domain?: string
+          formula?: string | null
+          id?: string
+          last_validated_at?: string | null
+          metric_key?: string
+          notes?: string | null
+          sources?: Json
+          status?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      genesis_truth_snapshots: {
+        Row: {
+          ai_integrity: number
+          analytics_integrity: number
+          broken_count: number
+          canonical_count: number
+          conflict_count: number
+          data_integrity: number
+          deprecated_count: number
+          derived_count: number
+          executive_report: Json
+          experimental_count: number
+          financial_integrity: number
+          fingerprint: string | null
+          id: string
+          operational_integrity: number
+          overall_truth_score: number
+          resolved_count: number
+          revenue_integrity: number
+          run_at: string
+          total_metrics: number
+          unknown_count: number
+        }
+        Insert: {
+          ai_integrity?: number
+          analytics_integrity?: number
+          broken_count?: number
+          canonical_count?: number
+          conflict_count?: number
+          data_integrity?: number
+          deprecated_count?: number
+          derived_count?: number
+          executive_report?: Json
+          experimental_count?: number
+          financial_integrity?: number
+          fingerprint?: string | null
+          id?: string
+          operational_integrity?: number
+          overall_truth_score?: number
+          resolved_count?: number
+          revenue_integrity?: number
+          run_at?: string
+          total_metrics?: number
+          unknown_count?: number
+        }
+        Update: {
+          ai_integrity?: number
+          analytics_integrity?: number
+          broken_count?: number
+          canonical_count?: number
+          conflict_count?: number
+          data_integrity?: number
+          deprecated_count?: number
+          derived_count?: number
+          executive_report?: Json
+          experimental_count?: number
+          financial_integrity?: number
+          fingerprint?: string | null
+          id?: string
+          operational_integrity?: number
+          overall_truth_score?: number
+          resolved_count?: number
+          revenue_integrity?: number
+          run_at?: string
+          total_metrics?: number
+          unknown_count?: number
+        }
+        Relationships: []
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
