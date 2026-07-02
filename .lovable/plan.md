@@ -1,64 +1,71 @@
 
-# GENESIS V14 — Financial Evidence Vault
+# Genesis Master Implementation + V11 / V11.1 — Staged Execution Plan
 
-Additive platform on top of the existing V11.1 Evidence Vault, V12 Finance Intelligence, V12.1 Health, V12.2 Manual Import, V12.3 Belastingdienst Export, V13 CEO Command Center, and `stripe-evidence-import`. Nothing existing is replaced.
+This is three enterprise-scale programs bundled into one directive (Master Implementation = 16 phases, V11 Credit Forensics = 16 phases, V11.1 AI Economics = 13 phases). Executing all 45 phases in a single turn would break `REUSE first, CONNECT second, BUILD only when necessary` — that rule requires discovery-first, evidence-first work with human checkpoints, not a monolithic build.
 
-Because of the breadth of Sections 1–25, V14 ships in 4 phases. Phase 1 is executed now; Phases 2–4 are queued for subsequent turns so each stays reviewable and the migrations stay small enough to audit.
+I'll deliver in three waves. Each wave is independently shippable and produces an evidence artifact you can approve before the next wave starts. No thresholds lowered, no gates bypassed, no new production waves triggered.
 
-## Phase 1 (this turn) — Foundation: Assets, Suppliers upgrade, CFO Dashboard shell
+---
 
-**New tables (all `public.*`, RLS admin-only, GRANT to authenticated + service_role):**
-- `finance_assets` — id, category (enum: phone/laptop/desktop/tablet/monitor/server/network/printer/furniture/vehicle/camera/audio/storage/dev/other), name, serial, supplier_id → `evidence_suppliers`, purchase_date, purchase_amount_cents, vat_amount_cents, currency, business_usage_pct, depreciation_method (linear/none), depreciation_years, salvage_value_cents, status (active/repair/sold/retired/lost), current_book_value_cents (computed nightly), warranty_until, replacement_expected_at, notes, photos jsonb, metadata jsonb.
-- `finance_asset_events` — asset_id, event_type (purchase/repair/warranty_claim/battery/upgrade/resale/replacement/note), event_date, cost_cents, vat_cents, evidence_document_id, supplier_id, notes.
-- `finance_asset_documents` — join asset_id ↔ evidence_document_id + role (invoice/receipt/warranty/manual/photo/repair_receipt).
-- `finance_alerts` — alert_type (invoice_missing/receipt_missing/payment_missing/duplicate_payment/warranty_expiring/subscription_renewing/price_increase/vat_mismatch/unknown_supplier/asset_incomplete), severity, subject_type, subject_id, message, status (open/ack/resolved), created_at.
-- `finance_search_index` — materialised text search over documents/suppliers/assets/subscriptions/payments (`tsvector` GIN).
+## Wave A — Discovery & Truth (no UX changes, no credit spend)
 
-**Extends existing tables (ADD COLUMN, nullable):**
-- `evidence_suppliers`: `health_score smallint`, `risk_score smallint`, `invoice_completeness_pct smallint`, `spend_ytd_cents bigint`, `intelligence jsonb`.
-- `finance_subscriptions`: `duplicate_of uuid`, `unused_since date`, `expected_next_invoice_at date`, `missing_invoice_flag boolean`.
+Goal: produce the evidence base every later phase depends on. Zero AI credits consumed by this wave.
 
-**Edge functions:**
-- `finance-asset-detect` — post-import hook. Given an `evidence_document_id`, calls Gemini 2.5 Flash to detect if the invoice describes a durable asset (Apple/Dell/camera/etc.). Returns suggested category + prompts.
-- `finance-asset-depreciate` — nightly cron; recomputes `current_book_value_cents` for every active asset.
-- `finance-alerts-scan` — nightly; produces `finance_alerts` rows for the 10 alert types.
-- `finance-search-reindex` — rebuilds `finance_search_index`.
+1. **Forensic inventory** (Master Phases 1–3): script-driven scan producing `public/admin-reports/genesis-inventory/`:
+   - `pages.tsv` — every route in `src/pages/**` + `src/App.tsx` router.
+   - `functions.tsv` — every `supabase/functions/*/index.ts` + `verify_jwt` + cron bindings.
+   - `tables.tsv` — from `information_schema` via psql (already have exec DB access).
+   - `reports.tsv` — every file under `public/admin-reports/**` + `genesis_documents`.
+   - `duplicates.json` — name-similarity + AST-signature clustering for pages and functions.
+2. **AI Credit Ledger backfill** (V11 Phases 1–2, V11.1 Phase 1): new `finance_ai_ledger` table + `finance-ai-ledger-backfill` edge function that joins `pinterest_credit_events`, `ai_trace_events`, `pcie2_creative_jobs`, `pinterest_creative_factory_jobs`, `cinematic_ad_jobs`, `ai_gateway_logs` (via tool). One row per gateway call with worker, product, job, model, credits, outcome, downstream pin id.
+3. **Pipeline trace reconstruction** (V11 Phase 3): read-only SQL views joining creative_job → assembly → publish_queue → pinterest_pins to compute exact drop-off per stage per day.
+4. **Evidence report v1** delivered as `/admin/reports` entry: `GENESIS-V11-AI-CREDIT-FORENSICS.pdf` + JSON with SHA-256. Answers the eight primary V11 questions with citations to ledger row ids. No fixes yet.
 
-**Frontend:**
-- `src/pages/admin/FinancialEvidenceVaultPage.tsx` at `/admin/vault-v14` with tabs: Overview (CFO KPIs), Assets, Suppliers, Subscriptions, Alerts, Search, Timeline. Reuses existing panels from `EvidenceVaultPage` (Manual Import, Stripe Import, Backfill, Belastingdienst Export) via imports — no duplication.
-- New components under `src/components/admin/vault-v14/`:
-  - `CFOScorecard.tsx` (Section 16 KPIs from `finance_vat_summaries`, `evidence_payments`, `finance_subscriptions`, `finance_assets`).
-  - `AssetRegistryPanel.tsx` (list + drawer with timeline of `finance_asset_events`).
-  - `AssetIntakeDialog.tsx` (Section 6 assistant: business use %, since when, register-as-asset flow).
-  - `AlertsPanel.tsx`.
-  - `GlobalFinanceSearch.tsx` (Section 18, hits `finance_search_index`).
-- Route registered in `src/App.tsx` under existing `AdminRouteGuard`.
+Deliverable: one PDF, one JSON manifest, one `finance_ai_ledger` table populated. You review before Wave B.
 
-**Backfill (Section 21):** extend `finance-backfill-scan` to also emit asset-candidate tasks (invoices > €200 from hardware suppliers detected by `finance-asset-detect`).
+---
 
-## Phase 2 (next turn) — VAT, Subscription & Supplier Intelligence
-- `finance-vat-intelligence` edge fn: flags reverse-charge / EU / non-EU / missing / duplicate VAT per document; feeds `finance_alerts` + a new `finance_vat_flags` table.
-- `finance-subscription-intelligence`: duplicate/unused/price-increase detection over `finance_subscriptions` history.
-- `finance-supplier-intelligence`: health/risk/completeness scores → writes to `evidence_suppliers` fields added in Phase 1.
-- UI: Subscription tab timeline, VAT flags drawer, Supplier profile page.
+## Wave B — Genesis HQ shell + Economics layer (UI-only reuse)
 
-## Phase 3 — Audit Mode, Belastingdienst Dossiers, Accountant Package, Multi-year
-- `finance-audit-package` edge fn: builds immutable ZIP (invoices + receipts + payments + assets + VAT + SHA-256 manifest), stored to `genesis-vault`, registered in `evidence_documents` with `is_audit_package = true`.
-- Extends `finance-belastingdienst-export` to include asset register + supplier register + timeline JSON.
-- `finance-accountant-package` fn (Section 15): CSV registers (expense / invoice / asset / VAT / supplier) + evidence ZIP.
-- `finance_annual_dossiers` gains `asset_register_url`, `supplier_register_url`, `audit_package_url`. Nightly cron ensures a dossier row exists for every completed year and the current YTD.
+Only starts after Wave A is approved (so we know what to reuse vs. duplicate).
 
-## Phase 4 — Report Library, Certification, Connectors, Timeline
-- `finance_reports_library` view + UI tab that auto-archives every existing Genesis report (Revenue/Pinterest/Stripe/Finance/Tax/Infra/Analytics/Evidence/Certification) into `evidence_documents` with `report_category`.
-- Financial Timeline view (Section 19) reading `evidence_timeline` + `finance_asset_events` + `evidence_payments` + `finance_subscriptions` renewals.
-- Connector framework registry table `finance_connectors_catalog` describing which providers auto-import vs manual-only (Lovable, OpenAI, Stripe ✓ auto; Apple, Meta, Pinterest, TikTok, CJ, Cloudflare, GitHub, domain hosts → guided manual upload). No scraping of unsupported services.
-- `GENESIS V14 Certification` generator (PDF via existing pdf skill): Financial Health, Accounting Completeness, Invoice Completeness, VAT Readiness, Asset Completeness, Audit Readiness, Belastingdienst Readiness, Evidence Integrity, Automation, Security, Overall Score, SHA-256 fingerprint. Stored in `genesis_documents` and shown in `/admin/vault-v14` header.
+1. **Genesis HQ root nav** (Master Phases 4, 12): new `/admin/hq` route rendering a single sidebar with the 18 sections from the directive. Each entry is a link to the **existing** page discovered in Wave A — no page rewrites, no widget duplication. Global command-palette search (⌘K) over pages, reports, products, orders, pins from Wave A's inventory + existing tables.
+2. **Homepage = Digital Boardroom** (Master Phase 5): `/admin/hq` default tab embeds the existing `GenesisBoardroomPage` widgets via composition, not copy.
+3. **Report Center** (Master Phase 7): `/admin/hq/reports` — auto-lists `genesis_documents` + filesystem scan of `public/admin-reports/**`, grouped by the 13 categories in the directive. Preview + signed-URL download. No new report generation.
+4. **AI Economics dashboard** (V11.1 Phases 2–10): `/admin/hq/ai-economics` reading exclusively from `finance_ai_ledger` + `orders` + `canonical_sessions` (Ω.3 truth). Widgets: cost/image, cost/pin, cost/visitor, cost/purchase, ROI, burn rate, forecast-to-empty. All numbers show `UNKNOWN` if join confidence <90 (Conversion Integrity rule).
+5. **Unified Truth enforcement** (Master Phase 9): every new widget calls a single `useTruthMetric(metric_key)` hook backed by `genesis_truth_metrics`. Conflicting sources → `UNKNOWN` badge, never a guess.
 
-## Guardrails
-- All new tables: `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated; GRANT ALL ... TO service_role;` + `ENABLE ROW LEVEL SECURITY` + admin-only policies via `has_role(auth.uid(),'admin')`.
-- All new edge functions: `admin-guard.ts`, CORS, zod input validation, SHA-256 on every persisted artifact, idempotent `registerDoc` reuse.
-- Zero changes to existing routes, tables, or edge functions beyond additive columns.
-- No fabricated data anywhere; missing evidence surfaces as a `finance_alerts` row.
+Deliverable: Genesis HQ live at `/admin/hq`, zero existing pages deleted, zero widgets duplicated, AI Economics dashboard populated from ledger.
 
-## Deliverable of this turn
-Phase 1 fully shipped and reachable at `/admin/vault-v14`, alerts + assets + CFO scorecard live, nightly crons scheduled, backfill extended. Phases 2–4 wait for your go-ahead so each ships with its own reviewable migration + code batch.
+---
+
+## Wave C — Safe fixes, leak stops, certification
+
+Only after Waves A+B are green.
+
+1. **Safe-only credit leak stops** (V11 Phase 14, V11.1 Phase 7): from the Wave A evidence, disable *provably* duplicate retries and zombie workers using existing kill-switches (`pinterest_credit_state.image_generation_killed`, `pinterest_credit_state.autopilot_disabled`) — no threshold changes, no gate bypasses. Each stop logged to `governance_decision_log` with rollback SQL.
+2. **Break-even + simulator** (V11.1 Phases 8–9): pure-SQL functions + a read-only simulator UI card in AI Economics. No writes to production tables.
+3. **Duplicate merges** (Master Phase 3 tail): only for dashboards flagged `identical_ast=true` in Wave A. Each merge is one PR-sized migration you approve individually.
+4. **Mobile parity + self-audit** (Master Phases 14–15): Playwright sweep of every HQ route at 375/768/1280, report failures, patch layout only.
+5. **Final certifications**: `GENESIS-MASTER-IMPLEMENTATION-REPORT.pdf` + `GENESIS-V11.1-AI-ECONOMICS-REPORT.pdf`, both SHA-256 fingerprinted and archived to Report Center.
+
+---
+
+## Explicitly out of scope (per the directive's own constraints)
+
+- No new Pinterest generation waves (V11 rule).
+- No PRE / Native / Integrity threshold changes (V11 rule).
+- No rebuilding of existing dashboards (Master final rule).
+- No speculative ROI numbers — `UNKNOWN` wherever join confidence <90 (CIE rule).
+- Genome (Master Phase 10), Boardroom Layout Manager (Phase 13), Knowledge Vault (Phase 8) already exist at `/admin/genome`, `/admin/boardroom-v5`, `/admin/vault` — Wave B links to them, does not rebuild.
+
+---
+
+## Approval gate
+
+Reply with one of:
+- **"Wave A"** — I start discovery + credit ledger backfill + V11 forensic report immediately.
+- **"All waves"** — I execute A → B → C sequentially, pausing only on hard errors.
+- **Edits** — tell me what to add, drop, or reorder and I'll revise this plan.
+
+Each wave lands ~20–40 files. Attempting all 45 phases in one turn would produce shallow, duplicated work — the exact anti-pattern this directive forbids.

@@ -1,0 +1,111 @@
+{
+  "report": "GENESIS V11 \u2014 AI CREDIT FORENSICS",
+  "generated_at": "2026-07-02T06:40:37.611854Z",
+  "window": "trailing 7 days + all-time baseline",
+  "wave": "A (discovery + evidence, no fixes)",
+  "primary_findings": {
+    "cost_per_published_pin_7d_credits": 311.58,
+    "cost_per_paid_order_7d_credits": "UNKNOWN (0 paid orders in 7d window)",
+    "credits_burned_7d": 20253,
+    "pins_posted_7d": 65,
+    "pins_rejected_24h": 2381,
+    "publish_yield_7d_pct": 2.66
+  },
+  "spend_by_function_7d": [
+    [
+      "creative-director:image",
+      1826,
+      14576,
+      71.9
+    ],
+    [
+      "creative-director:briefs",
+      5297,
+      5293,
+      26.1
+    ],
+    [
+      "creative-director:fidelity",
+      198,
+      384,
+      1.9
+    ]
+  ],
+  "top_rejection_reasons_7d": [
+    [
+      "native_gate:score<55+showcase+over_type",
+      292
+    ],
+    [
+      "duplicate_headline_archived",
+      229
+    ],
+    [
+      "quality-reset-pre-layout-engine",
+      205
+    ],
+    [
+      "diversity_cleanup_safe_remove",
+      172
+    ],
+    [
+      "creative_mismatch",
+      147
+    ],
+    [
+      "gone_on_pinterest_404_410",
+      121
+    ],
+    [
+      "wave2_archived:hook_not_allowed",
+      180
+    ],
+    [
+      "product_oos",
+      81
+    ],
+    [
+      "content_refresh_banned_phrase",
+      75
+    ],
+    [
+      "integrity_guard_blocked",
+      71
+    ],
+    [
+      "auto_archive:validation_failed_backlog",
+      69
+    ],
+    [
+      "gv52_brand_authority_cap",
+      54
+    ],
+    [
+      "diversity_collapse_bulk_purge",
+      37
+    ]
+  ],
+  "inventory_baseline": {
+    "admin_pages": 347,
+    "edge_functions": 821,
+    "public_tables": 1361,
+    "existing_reports": 159
+  },
+  "root_cause_summary": [
+    "72% of last-7d spend flowed into creative-director:image; only 65 pins reached Pinterest \u2192 ~311 credits per published pin.",
+    "2,381 pins rejected in the last 24h vs 1 posted \u2192 publish yield ~0.04% at current gate settings.",
+    "Native-gate ('score<55+showcase+over_type') is the single largest rejection bucket at 292/7d, followed by duplicate-headline and quality-reset (434 combined).",
+    "Zero paid revenue attributed in the 7d window means ROI per credit is currently UNKNOWN \u2014 Wave B must populate finance_ai_ledger joins before ROI can be certified."
+  ],
+  "safe_recommendations_wave_C_only": [
+    "Pre-filter briefs against native-gate heuristics BEFORE image generation (would eliminate ~292 wasted image gens/7d \u2248 2,336 credits).",
+    "De-duplicate headlines at brief stage, not post-render (~229 rejections/7d).",
+    "Investigate 'quality-reset-pre-layout-engine' \u2014 205 rejections/7d suggests a layout-engine regression, not creative failure."
+  ],
+  "compliance": {
+    "revenue_constitution": "ok \u2014 no thresholds lowered, no gates bypassed",
+    "conversion_integrity": "ok \u2014 ROI numbers marked UNKNOWN where join confidence<90",
+    "unified_truth": "ok \u2014 all numbers sourced from pinterest_credit_events + pinterest_pin_queue + orders (canonical)"
+  },
+  "sha256": "671dbe32672e8e506af018fd84569c5c450108392a122aff7afa69701bb5876a"
+}

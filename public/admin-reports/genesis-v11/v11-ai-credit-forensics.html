@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>GENESIS V11 — AI Credit Forensics</title>
+<style>body{font-family:-apple-system,system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#111}
+h1{border-bottom:3px solid #111;padding-bottom:.5rem}
+h2{margin-top:2rem;color:#0f3460}
+table{border-collapse:collapse;width:100%;margin:1rem 0}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:14px}
+th{background:#f4f4f8} .warn{color:#c00;font-weight:600}
+code{background:#f4f4f8;padding:2px 6px;border-radius:3px;font-size:12px}
+.k{color:#666;font-size:12px}</style></head><body>
+<h1>GENESIS V11 — AI Credit Forensics</h1>
+<p class="k">Generated 2026-07-02T06:40:37.611854Z · Window trailing 7 days + all-time baseline · Wave A (discovery only)</p>
+<p class="k">SHA-256: <code>671dbe32672e8e506af018fd84569c5c450108392a122aff7afa69701bb5876a</code></p>
+
+<h2>Primary Findings</h2>
+<table><tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Credits burned (7d)</td><td>20,253</td></tr>
+<tr><td>Pins posted (7d)</td><td>65</td></tr>
+<tr><td>Pins rejected (24h)</td><td class="warn">2,381</td></tr>
+<tr><td>Cost per published pin (7d)</td><td class="warn">≈ 311.6 credits/pin</td></tr>
+<tr><td>Publish yield (7d)</td><td class="warn">2.66%</td></tr>
+<tr><td>Cost per paid order (7d)</td><td>UNKNOWN — 0 paid orders in window</td></tr>
+<tr><td>ROI per credit</td><td>UNKNOWN — insufficient revenue signal</td></tr>
+</table>
+
+<h2>Spend by Worker (7d)</h2>
+<table><tr><th>Function</th><th>Calls</th><th>Credits</th><th>%</th></tr>
+<tr><td><code>creative-director:image</code></td><td>1,826</td><td>14,576</td><td>71.9%</td></tr><tr><td><code>creative-director:briefs</code></td><td>5,297</td><td>5,293</td><td>26.1%</td></tr><tr><td><code>creative-director:fidelity</code></td><td>198</td><td>384</td><td>1.9%</td></tr>
+</table>
+<p><strong>Finding:</strong> 71.9% of all AI spend flows through <code>creative-director:image</code>, which generated 1,826 images but yielded only 65 published pins.</p>
+
+<h2>Top Rejection Reasons (7d)</h2>
+<table><tr><th>Reason</th><th>Count</th></tr>
+<tr><td>native_gate:score<55+showcase+over_type</td><td>292</td></tr><tr><td>duplicate_headline_archived</td><td>229</td></tr><tr><td>quality-reset-pre-layout-engine</td><td>205</td></tr><tr><td>diversity_cleanup_safe_remove</td><td>172</td></tr><tr><td>creative_mismatch</td><td>147</td></tr><tr><td>gone_on_pinterest_404_410</td><td>121</td></tr><tr><td>wave2_archived:hook_not_allowed</td><td>180</td></tr><tr><td>product_oos</td><td>81</td></tr><tr><td>content_refresh_banned_phrase</td><td>75</td></tr><tr><td>integrity_guard_blocked</td><td>71</td></tr><tr><td>auto_archive:validation_failed_backlog</td><td>69</td></tr><tr><td>gv52_brand_authority_cap</td><td>54</td></tr><tr><td>diversity_collapse_bulk_purge</td><td>37</td></tr>
+</table>
+
+<h2>Root Cause Summary</h2>
+<ol><li>72% of last-7d spend flowed into creative-director:image; only 65 pins reached Pinterest → ~311 credits per published pin.</li><li>2,381 pins rejected in the last 24h vs 1 posted → publish yield ~0.04% at current gate settings.</li><li>Native-gate ('score<55+showcase+over_type') is the single largest rejection bucket at 292/7d, followed by duplicate-headline and quality-reset (434 combined).</li><li>Zero paid revenue attributed in the 7d window means ROI per credit is currently UNKNOWN — Wave B must populate finance_ai_ledger joins before ROI can be certified.</li></ol>
+
+<h2>Safe Recommendations (Wave C — pending approval)</h2>
+<ul><li>Pre-filter briefs against native-gate heuristics BEFORE image generation (would eliminate ~292 wasted image gens/7d ≈ 2,336 credits).</li><li>De-duplicate headlines at brief stage, not post-render (~229 rejections/7d).</li><li>Investigate 'quality-reset-pre-layout-engine' — 205 rejections/7d suggests a layout-engine regression, not creative failure.</li></ul>
+
+<h2>Inventory Baseline</h2>
+<table><tr><th>Kind</th><th>Count</th></tr>
+<tr><td>admin_pages</td><td>347</td></tr><tr><td>edge_functions</td><td>821</td></tr><tr><td>public_tables</td><td>1,361</td></tr><tr><td>existing_reports</td><td>159</td></tr>
+</table>
+
+<h2>Compliance</h2>
+<table><tr><th>Standard</th><th>Status</th></tr>
+<tr><td>revenue_constitution</td><td>ok — no thresholds lowered, no gates bypassed</td></tr><tr><td>conversion_integrity</td><td>ok — ROI numbers marked UNKNOWN where join confidence<90</td></tr><tr><td>unified_truth</td><td>ok — all numbers sourced from pinterest_credit_events + pinterest_pin_queue + orders (canonical)</td></tr>
+</table>
+
+<hr><p class="k">Immutable fingerprint: <code>671dbe32672e8e506af018fd84569c5c450108392a122aff7afa69701bb5876a</code></p>
+</body></html>

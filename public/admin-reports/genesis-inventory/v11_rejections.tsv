@@ -1,0 +1,17 @@
+?column?	rejection_reason	count
+rejection	native_gate:native_score=0<55+showcase+over_type(product_showcase)	292
+rejection	duplicate_headline_archived	229
+rejection	quality-reset-pre-layout-engine	205
+rejection	diversity_cleanup_safe_remove	172
+rejection	creative_mismatch	147
+rejection	gone_on_pinterest_404_410	121
+rejection	wave2_archived:hook_not_allowed	93
+rejection	wave2_archived:hook_not_allowed,classification_inconsistent	87
+rejection	product_oos	81
+rejection	content_refresh_banned_phrase_2026_06_12	75
+rejection	integrity_guard_blocked	71
+rejection	auto_archive: validation_failed_backlog	69
+rejection	gv52_brand_authority_cap:cat_scratcher_over_10pct	54
+rejection	native_gate:native_score=0<55+showcase+over_type(product_showcase)+over_category	49
+rejection	diversity_collapse_bulk_purge	37
+(15 rows)
