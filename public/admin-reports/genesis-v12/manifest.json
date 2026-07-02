@@ -1,0 +1,18 @@
+{
+  "version": "v12",
+  "generated_at": "2026-07-02",
+  "reports": [
+    {
+      "slug": "genesis-v12",
+      "title": "Genesis V12 \u2014 Conversion Black Box Report",
+      "html": "/admin-reports/genesis-v12/2026-07-02-genesis-v12-conversion-black-box.html",
+      "category": "Conversion Forensics \u00b7 0 purchases / 7d \u00b7 4 abandoned Stripe sessions \u00b7 Top 25 fixes"
+    },
+    {
+      "slug": "genesis-v12.1",
+      "title": "Genesis V12.1 \u2014 First Impression & Trust Forensics",
+      "html": "/admin-reports/genesis-v12/2026-07-02-genesis-v12.1-first-impression-trust.html",
+      "category": "UX \u00b7 First Impression \u00b7 5s / 30s persona tests \u00b7 Top 25 safe improvements"
+    }
+  ]
+}
