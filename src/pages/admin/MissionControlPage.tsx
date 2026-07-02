@@ -399,6 +399,11 @@ export default function MissionControlPage() {
         <ChannelAvailabilityCard />
       </section>
 
+      {/* SECTION 4.7 — CHANNEL INTELLIGENCE ENGINE (Channel Survival Constitution) */}
+      <section>
+        <ChannelIntelligenceCard />
+      </section>
+
       {/* SECTION 2 & 3 — LIVE + TODAY */}
       <section className="grid md:grid-cols-2 gap-4">
         <Card>
