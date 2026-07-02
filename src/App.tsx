@@ -2759,6 +2759,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="executive-war-room"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ExecutiveWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
