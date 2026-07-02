@@ -31,7 +31,7 @@ export default function GenesisOmegaArchitectPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(10);
-    setScans((data as Scan[]) ?? []);
+    setScans(((data as unknown) as Scan[]) ?? []);
   };
 
   useEffect(() => { load(); }, []);
