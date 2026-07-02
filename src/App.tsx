@@ -2530,6 +2530,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="genome"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisGenomePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="finance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
