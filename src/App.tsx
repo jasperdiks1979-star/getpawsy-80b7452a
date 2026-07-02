@@ -438,6 +438,7 @@ const GenesisOmegaPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaP
 const GenesisOmegaArchitectPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaArchitectPage"));
 const GenesisGenomePage = lazyWithRetry(() => import("./pages/admin/GenesisGenomePage"));
 const GenesisOmegaTruthPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaTruthPage"));
+const GenesisBoardroomPage = lazyWithRetry(() => import("./pages/admin/GenesisBoardroomPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
