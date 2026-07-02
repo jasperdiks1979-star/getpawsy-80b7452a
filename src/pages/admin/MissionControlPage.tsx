@@ -10,6 +10,7 @@ import MissionControlCertification, { type DrillCtx } from "@/components/admin/M
 import MissionIntelligencePanel from "@/components/admin/MissionIntelligencePanel";
 import ExternalManualActionsCard from "@/components/admin/ExternalManualActionsCard";
 import ChannelAvailabilityCard from "@/components/admin/ChannelAvailabilityCard";
+import ChannelIntelligenceCard from "@/components/admin/ChannelIntelligenceCard";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
@@ -396,6 +397,11 @@ export default function MissionControlPage() {
       {/* SECTION 4.6 — CHANNEL AVAILABILITY (Organic Growth Constitution) */}
       <section>
         <ChannelAvailabilityCard />
+      </section>
+
+      {/* SECTION 4.7 — CHANNEL INTELLIGENCE ENGINE (Channel Survival Constitution) */}
+      <section>
+        <ChannelIntelligenceCard />
       </section>
 
       {/* SECTION 2 & 3 — LIVE + TODAY */}
