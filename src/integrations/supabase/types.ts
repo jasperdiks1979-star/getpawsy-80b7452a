@@ -7642,18 +7642,24 @@ export type Database = {
           checkout_exits: number | null
           checkout_interactions: number | null
           classification: string | null
+          click_density: number | null
           coupon_attempts: number | null
           created_at: string
           dead_clicks: number | null
           filter_uses: number | null
+          hesitation_events: number | null
+          idle_time_ms: number | null
+          image_gallery_uses: number | null
           max_scroll_pct: number | null
           menu_uses: number | null
           mouse_events: number | null
+          mouse_movement_density: number | null
           page_count: number | null
           product_interactions: number | null
           rage_clicks: number | null
           return_visit: boolean | null
           score: number
+          scroll_velocity_avg: number | null
           search_uses: number | null
           session_id: string
           shipping_estimator_uses: number | null
@@ -7664,6 +7670,7 @@ export type Database = {
           variant_selections: number | null
           visible_ratio: number | null
           visitor_id: string | null
+          zoom_uses: number | null
         }
         Insert: {
           back_button_uses?: number | null
@@ -7671,18 +7678,24 @@ export type Database = {
           checkout_exits?: number | null
           checkout_interactions?: number | null
           classification?: string | null
+          click_density?: number | null
           coupon_attempts?: number | null
           created_at?: string
           dead_clicks?: number | null
           filter_uses?: number | null
+          hesitation_events?: number | null
+          idle_time_ms?: number | null
+          image_gallery_uses?: number | null
           max_scroll_pct?: number | null
           menu_uses?: number | null
           mouse_events?: number | null
+          mouse_movement_density?: number | null
           page_count?: number | null
           product_interactions?: number | null
           rage_clicks?: number | null
           return_visit?: boolean | null
           score?: number
+          scroll_velocity_avg?: number | null
           search_uses?: number | null
           session_id: string
           shipping_estimator_uses?: number | null
@@ -7693,6 +7706,7 @@ export type Database = {
           variant_selections?: number | null
           visible_ratio?: number | null
           visitor_id?: string | null
+          zoom_uses?: number | null
         }
         Update: {
           back_button_uses?: number | null
@@ -7700,18 +7714,24 @@ export type Database = {
           checkout_exits?: number | null
           checkout_interactions?: number | null
           classification?: string | null
+          click_density?: number | null
           coupon_attempts?: number | null
           created_at?: string
           dead_clicks?: number | null
           filter_uses?: number | null
+          hesitation_events?: number | null
+          idle_time_ms?: number | null
+          image_gallery_uses?: number | null
           max_scroll_pct?: number | null
           menu_uses?: number | null
           mouse_events?: number | null
+          mouse_movement_density?: number | null
           page_count?: number | null
           product_interactions?: number | null
           rage_clicks?: number | null
           return_visit?: boolean | null
           score?: number
+          scroll_velocity_avg?: number | null
           search_uses?: number | null
           session_id?: string
           shipping_estimator_uses?: number | null
@@ -7722,6 +7742,7 @@ export type Database = {
           variant_selections?: number | null
           visible_ratio?: number | null
           visitor_id?: string | null
+          zoom_uses?: number | null
         }
         Relationships: []
       }
@@ -14595,6 +14616,123 @@ export type Database = {
           processed?: boolean | null
           processed_at?: string | null
           webhook_type?: string
+        }
+        Relationships: []
+      }
+      cjie_session_journeys: {
+        Row: {
+          abandonment_confidence: number | null
+          abandonment_evidence: Json
+          abandonment_reason: string | null
+          browser: string | null
+          built_at: string
+          built_from_events_at: string
+          checkout_interactions: Json
+          city: string | null
+          classified_channel: string | null
+          country: string | null
+          device: string | null
+          duration_ms: number
+          entry_page: string | null
+          event_count: number
+          exit_page: string | null
+          first_seen: string
+          intent_class: string | null
+          intent_confidence: number | null
+          intent_evidence: Json
+          language: string | null
+          last_seen: string
+          narrative_hash: string
+          new_visitor: boolean
+          page_count: number
+          product_ids: string[]
+          reached_atc: boolean
+          reached_checkout: boolean
+          reached_purchase: boolean
+          region: string | null
+          returning_visitor: boolean
+          screen_wxh: string | null
+          session_id: string
+          stage_sequence: string[]
+          timezone: string | null
+          trust_interactions: Json
+          visitor_id: string | null
+        }
+        Insert: {
+          abandonment_confidence?: number | null
+          abandonment_evidence?: Json
+          abandonment_reason?: string | null
+          browser?: string | null
+          built_at?: string
+          built_from_events_at?: string
+          checkout_interactions?: Json
+          city?: string | null
+          classified_channel?: string | null
+          country?: string | null
+          device?: string | null
+          duration_ms?: number
+          entry_page?: string | null
+          event_count?: number
+          exit_page?: string | null
+          first_seen: string
+          intent_class?: string | null
+          intent_confidence?: number | null
+          intent_evidence?: Json
+          language?: string | null
+          last_seen: string
+          narrative_hash: string
+          new_visitor?: boolean
+          page_count?: number
+          product_ids?: string[]
+          reached_atc?: boolean
+          reached_checkout?: boolean
+          reached_purchase?: boolean
+          region?: string | null
+          returning_visitor?: boolean
+          screen_wxh?: string | null
+          session_id: string
+          stage_sequence?: string[]
+          timezone?: string | null
+          trust_interactions?: Json
+          visitor_id?: string | null
+        }
+        Update: {
+          abandonment_confidence?: number | null
+          abandonment_evidence?: Json
+          abandonment_reason?: string | null
+          browser?: string | null
+          built_at?: string
+          built_from_events_at?: string
+          checkout_interactions?: Json
+          city?: string | null
+          classified_channel?: string | null
+          country?: string | null
+          device?: string | null
+          duration_ms?: number
+          entry_page?: string | null
+          event_count?: number
+          exit_page?: string | null
+          first_seen?: string
+          intent_class?: string | null
+          intent_confidence?: number | null
+          intent_evidence?: Json
+          language?: string | null
+          last_seen?: string
+          narrative_hash?: string
+          new_visitor?: boolean
+          page_count?: number
+          product_ids?: string[]
+          reached_atc?: boolean
+          reached_checkout?: boolean
+          reached_purchase?: boolean
+          region?: string | null
+          returning_visitor?: boolean
+          screen_wxh?: string | null
+          session_id?: string
+          stage_sequence?: string[]
+          timezone?: string | null
+          trust_interactions?: Json
+          visitor_id?: string | null
         }
         Relationships: []
       }
@@ -69131,6 +69269,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_journey_paths_top: {
+        Row: {
+          avg_duration_sec: number | null
+          conversion_pct: number | null
+          path: string | null
+          purchases: number | null
+          reached_purchase: boolean | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
       v_landing_page_intelligence_daily: {
         Row: {
           atc_sessions: number | null
@@ -69178,6 +69327,23 @@ export type Database = {
           purchases: number | null
           revenue_cents: number | null
           sessions: number | null
+        }
+        Relationships: []
+      }
+      v_product_journey_health: {
+        Row: {
+          atc_rate_pct: number | null
+          atc_sessions: number | null
+          checkout_rate_pct: number | null
+          checkout_sessions: number | null
+          confidence: string | null
+          lost_after_atc: number | null
+          product_id: string | null
+          purchase_rate_pct: number | null
+          purchase_sessions: number | null
+          revenue_cents: number | null
+          unique_viewers: number | null
+          views: number | null
         }
         Relationships: []
       }
@@ -69507,6 +69673,13 @@ export type Database = {
           last_at: string
           reason: string
           reset_at: string
+        }[]
+      }
+      cjie_build_journeys: {
+        Args: { p_since?: string }
+        Returns: {
+          sessions_built: number
+          sessions_updated: number
         }[]
       }
       claim_cinematic_ad_job: {
