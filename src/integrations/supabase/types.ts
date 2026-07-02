@@ -7637,59 +7637,89 @@ export type Database = {
       }
       analytics_session_quality: {
         Row: {
+          back_button_uses: number | null
           cart_interactions: number | null
+          checkout_exits: number | null
           checkout_interactions: number | null
           classification: string | null
+          coupon_attempts: number | null
           created_at: string
+          dead_clicks: number | null
+          filter_uses: number | null
           max_scroll_pct: number | null
+          menu_uses: number | null
           mouse_events: number | null
           page_count: number | null
           product_interactions: number | null
+          rage_clicks: number | null
           return_visit: boolean | null
           score: number
+          search_uses: number | null
           session_id: string
+          shipping_estimator_uses: number | null
           signals: Json | null
           time_on_page_ms: number | null
           touch_events: number | null
           updated_at: string
+          variant_selections: number | null
           visible_ratio: number | null
           visitor_id: string | null
         }
         Insert: {
+          back_button_uses?: number | null
           cart_interactions?: number | null
+          checkout_exits?: number | null
           checkout_interactions?: number | null
           classification?: string | null
+          coupon_attempts?: number | null
           created_at?: string
+          dead_clicks?: number | null
+          filter_uses?: number | null
           max_scroll_pct?: number | null
+          menu_uses?: number | null
           mouse_events?: number | null
           page_count?: number | null
           product_interactions?: number | null
+          rage_clicks?: number | null
           return_visit?: boolean | null
           score?: number
+          search_uses?: number | null
           session_id: string
+          shipping_estimator_uses?: number | null
           signals?: Json | null
           time_on_page_ms?: number | null
           touch_events?: number | null
           updated_at?: string
+          variant_selections?: number | null
           visible_ratio?: number | null
           visitor_id?: string | null
         }
         Update: {
+          back_button_uses?: number | null
           cart_interactions?: number | null
+          checkout_exits?: number | null
           checkout_interactions?: number | null
           classification?: string | null
+          coupon_attempts?: number | null
           created_at?: string
+          dead_clicks?: number | null
+          filter_uses?: number | null
           max_scroll_pct?: number | null
+          menu_uses?: number | null
           mouse_events?: number | null
           page_count?: number | null
           product_interactions?: number | null
+          rage_clicks?: number | null
           return_visit?: boolean | null
           score?: number
+          search_uses?: number | null
           session_id?: string
+          shipping_estimator_uses?: number | null
           signals?: Json | null
           time_on_page_ms?: number | null
           touch_events?: number | null
           updated_at?: string
+          variant_selections?: number | null
           visible_ratio?: number | null
           visitor_id?: string | null
         }
@@ -9553,20 +9583,44 @@ export type Database = {
       }
       canonical_sessions: {
         Row: {
+          attribution_locked: boolean
+          attribution_snapshot_at: string | null
           browser: string | null
           city: string | null
+          classified_channel: string | null
           country: string | null
           device: string | null
+          first_affiliate_id: string | null
+          first_email_id: string | null
+          first_fbclid: string | null
+          first_gclid: string | null
+          first_landing_path: string | null
+          first_landing_url: string | null
+          first_msclkid: string | null
+          first_pinterest_click_id: string | null
+          first_reddit_click_id: string | null
+          first_referrer: string | null
           first_seen_at: string
+          first_ttclid: string | null
+          first_utm_campaign: string | null
+          first_utm_content: string | null
+          first_utm_medium: string | null
+          first_utm_source: string | null
+          first_utm_term: string | null
           ga_client_id: string | null
           landing_page: string | null
+          language: string | null
           last_seen_at: string
           last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
           order_id: string | null
           os: string | null
+          redirect_chain: Json | null
           referrer: string | null
+          region: string | null
+          screen_wxh: string | null
           session_id: string
           stripe_session_id: string | null
+          timezone: string | null
           updated_at: string
           utm_campaign: string | null
           utm_content: string | null
@@ -9576,22 +9630,46 @@ export type Database = {
           visitor_id: string | null
         }
         Insert: {
+          attribution_locked?: boolean
+          attribution_snapshot_at?: string | null
           browser?: string | null
           city?: string | null
+          classified_channel?: string | null
           country?: string | null
           device?: string | null
+          first_affiliate_id?: string | null
+          first_email_id?: string | null
+          first_fbclid?: string | null
+          first_gclid?: string | null
+          first_landing_path?: string | null
+          first_landing_url?: string | null
+          first_msclkid?: string | null
+          first_pinterest_click_id?: string | null
+          first_reddit_click_id?: string | null
+          first_referrer?: string | null
           first_seen_at: string
+          first_ttclid?: string | null
+          first_utm_campaign?: string | null
+          first_utm_content?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
+          first_utm_term?: string | null
           ga_client_id?: string | null
           landing_page?: string | null
+          language?: string | null
           last_seen_at: string
           last_stage?:
             | Database["public"]["Enums"]["canonical_event_name"]
             | null
           order_id?: string | null
           os?: string | null
+          redirect_chain?: Json | null
           referrer?: string | null
+          region?: string | null
+          screen_wxh?: string | null
           session_id: string
           stripe_session_id?: string | null
+          timezone?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -9601,22 +9679,46 @@ export type Database = {
           visitor_id?: string | null
         }
         Update: {
+          attribution_locked?: boolean
+          attribution_snapshot_at?: string | null
           browser?: string | null
           city?: string | null
+          classified_channel?: string | null
           country?: string | null
           device?: string | null
+          first_affiliate_id?: string | null
+          first_email_id?: string | null
+          first_fbclid?: string | null
+          first_gclid?: string | null
+          first_landing_path?: string | null
+          first_landing_url?: string | null
+          first_msclkid?: string | null
+          first_pinterest_click_id?: string | null
+          first_reddit_click_id?: string | null
+          first_referrer?: string | null
           first_seen_at?: string
+          first_ttclid?: string | null
+          first_utm_campaign?: string | null
+          first_utm_content?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
+          first_utm_term?: string | null
           ga_client_id?: string | null
           landing_page?: string | null
+          language?: string | null
           last_seen_at?: string
           last_stage?:
             | Database["public"]["Enums"]["canonical_event_name"]
             | null
           order_id?: string | null
           os?: string | null
+          redirect_chain?: Json | null
           referrer?: string | null
+          region?: string | null
+          screen_wxh?: string | null
           session_id?: string
           stripe_session_id?: string | null
+          timezone?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -69016,6 +69118,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v_funnel_intelligence_daily: {
+        Row: {
+          atc_sessions: number | null
+          channel: string | null
+          checkout_sessions: number | null
+          day: string | null
+          landing_sessions: number | null
+          product_view_sessions: number | null
+          purchase_sessions: number | null
+          revenue_cents: number | null
+        }
+        Relationships: []
+      }
+      v_landing_page_intelligence_daily: {
+        Row: {
+          atc_sessions: number | null
+          channel: string | null
+          day: string | null
+          landing_page: string | null
+          product_view_sessions: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+          unique_visitors: number | null
+        }
+        Relationships: []
+      }
       v_pin_queue_daily_breakdown: {
         Row: {
           day: string | null
@@ -69035,6 +69164,20 @@ export type Database = {
           product_slug: string | null
           rejection_reason: string | null
           status: string | null
+        }
+        Relationships: []
+      }
+      v_product_attribution_daily: {
+        Row: {
+          add_to_carts: number | null
+          channel: string | null
+          checkouts: number | null
+          day: string | null
+          product_id: string | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
         }
         Relationships: []
       }
@@ -69386,6 +69529,15 @@ export type Database = {
           vo_script: string
           vo_url: string
         }[]
+      }
+      classify_traffic_source: {
+        Args: {
+          p_click_ids?: Json
+          p_referrer: string
+          p_utm_medium: string
+          p_utm_source: string
+        }
+        Returns: string
       }
       cleanup_old_health_checks: { Args: never; Returns: undefined }
       cleanup_old_visitor_activity: { Args: never; Returns: undefined }
