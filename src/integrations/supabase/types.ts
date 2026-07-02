@@ -23590,6 +23590,348 @@ export type Database = {
           },
         ]
       }
+      gare_certifications: {
+        Row: {
+          created_at: string
+          execution_id: string
+          id: string
+          report: Json
+          report_title: string
+          sha256: string
+        }
+        Insert: {
+          created_at?: string
+          execution_id: string
+          id?: string
+          report: Json
+          report_title: string
+          sha256: string
+        }
+        Update: {
+          created_at?: string
+          execution_id?: string
+          id?: string
+          report?: Json
+          report_title?: string
+          sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gare_certifications_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "gare_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gare_detections: {
+        Row: {
+          baseline_value: Json | null
+          created_at: string
+          detected_at: string
+          evidence: Json
+          first_sales_impact: boolean
+          id: string
+          metric: string
+          observed_value: Json | null
+          severity: string
+          status: string
+          subsystem: string
+          updated_at: string
+        }
+        Insert: {
+          baseline_value?: Json | null
+          created_at?: string
+          detected_at?: string
+          evidence?: Json
+          first_sales_impact?: boolean
+          id?: string
+          metric: string
+          observed_value?: Json | null
+          severity: string
+          status?: string
+          subsystem: string
+          updated_at?: string
+        }
+        Update: {
+          baseline_value?: Json | null
+          created_at?: string
+          detected_at?: string
+          evidence?: Json
+          first_sales_impact?: boolean
+          id?: string
+          metric?: string
+          observed_value?: Json | null
+          severity?: string
+          status?: string
+          subsystem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gare_executions: {
+        Row: {
+          after_state: Json
+          before_state: Json
+          bhi_delta: number | null
+          created_at: string
+          duration_ms: number | null
+          finished_at: string | null
+          id: string
+          logs: Json
+          outcome: string
+          plan_id: string
+          regression_tests: Json
+          revenue_delta: number | null
+          started_at: string
+        }
+        Insert: {
+          after_state?: Json
+          before_state?: Json
+          bhi_delta?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          finished_at?: string | null
+          id?: string
+          logs?: Json
+          outcome?: string
+          plan_id: string
+          regression_tests?: Json
+          revenue_delta?: number | null
+          started_at?: string
+        }
+        Update: {
+          after_state?: Json
+          before_state?: Json
+          bhi_delta?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          finished_at?: string | null
+          id?: string
+          logs?: Json
+          outcome?: string
+          plan_id?: string
+          regression_tests?: Json
+          revenue_delta?: number | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gare_executions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "gare_recovery_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gare_learning: {
+        Row: {
+          avg_recovery_seconds: number | null
+          avg_revenue_gain: number | null
+          created_at: string
+          failure_count: number
+          fix_recipe: Json
+          id: string
+          last_applied_at: string | null
+          outcomes: Json
+          prediction_accuracy: number | null
+          problem_signature: string
+          root_cause: string
+          subsystem: string
+          success_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_recovery_seconds?: number | null
+          avg_revenue_gain?: number | null
+          created_at?: string
+          failure_count?: number
+          fix_recipe: Json
+          id?: string
+          last_applied_at?: string | null
+          outcomes?: Json
+          prediction_accuracy?: number | null
+          problem_signature: string
+          root_cause: string
+          subsystem: string
+          success_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_recovery_seconds?: number | null
+          avg_revenue_gain?: number | null
+          created_at?: string
+          failure_count?: number
+          fix_recipe?: Json
+          id?: string
+          last_applied_at?: string | null
+          outcomes?: Json
+          prediction_accuracy?: number | null
+          problem_signature?: string
+          root_cause?: string
+          subsystem?: string
+          success_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gare_recovery_plans: {
+        Row: {
+          approval_required: boolean
+          auto_safe: boolean
+          confidence: number | null
+          created_at: string
+          detection_id: string
+          expected_bhi_gain: number | null
+          expected_revenue_gain: number | null
+          first_sales_boost: boolean
+          id: string
+          plan: Json
+          risk_level: string
+          rollback: Json
+          root_cause_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_required?: boolean
+          auto_safe?: boolean
+          confidence?: number | null
+          created_at?: string
+          detection_id: string
+          expected_bhi_gain?: number | null
+          expected_revenue_gain?: number | null
+          first_sales_boost?: boolean
+          id?: string
+          plan: Json
+          risk_level: string
+          rollback?: Json
+          root_cause_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_required?: boolean
+          auto_safe?: boolean
+          confidence?: number | null
+          created_at?: string
+          detection_id?: string
+          expected_bhi_gain?: number | null
+          expected_revenue_gain?: number | null
+          first_sales_boost?: boolean
+          id?: string
+          plan?: Json
+          risk_level?: string
+          rollback?: Json
+          root_cause_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gare_recovery_plans_detection_id_fkey"
+            columns: ["detection_id"]
+            isOneToOne: false
+            referencedRelation: "gare_detections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gare_recovery_plans_root_cause_id_fkey"
+            columns: ["root_cause_id"]
+            isOneToOne: false
+            referencedRelation: "gare_root_causes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gare_root_causes: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          detection_id: string
+          evidence: Json
+          id: string
+          root_cause: string | null
+          why_chain: Json
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          detection_id: string
+          evidence?: Json
+          id?: string
+          root_cause?: string | null
+          why_chain?: Json
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          detection_id?: string
+          evidence?: Json
+          id?: string
+          root_cause?: string | null
+          why_chain?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gare_root_causes_detection_id_fkey"
+            columns: ["detection_id"]
+            isOneToOne: false
+            referencedRelation: "gare_detections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gare_score_snapshots: {
+        Row: {
+          avg_recovery_seconds: number | null
+          bhi_gained_24h: number | null
+          captured_at: string
+          confidence: number | null
+          id: string
+          problems_detected: number
+          problems_pending_approval: number
+          problems_repaired: number
+          regression_pct: number | null
+          repair_success_pct: number | null
+          revenue_recovered_24h: number | null
+          rollback_pct: number | null
+          self_heal_score: number | null
+        }
+        Insert: {
+          avg_recovery_seconds?: number | null
+          bhi_gained_24h?: number | null
+          captured_at?: string
+          confidence?: number | null
+          id?: string
+          problems_detected?: number
+          problems_pending_approval?: number
+          problems_repaired?: number
+          regression_pct?: number | null
+          repair_success_pct?: number | null
+          revenue_recovered_24h?: number | null
+          rollback_pct?: number | null
+          self_heal_score?: number | null
+        }
+        Update: {
+          avg_recovery_seconds?: number | null
+          bhi_gained_24h?: number | null
+          captured_at?: string
+          confidence?: number | null
+          id?: string
+          problems_detected?: number
+          problems_pending_approval?: number
+          problems_repaired?: number
+          regression_pct?: number | null
+          repair_success_pct?: number | null
+          revenue_recovered_24h?: number | null
+          rollback_pct?: number | null
+          self_heal_score?: number | null
+        }
+        Relationships: []
+      }
       gbd_conflicts: {
         Row: {
           conflict_type: string
