@@ -25091,6 +25091,63 @@ export type Database = {
           },
         ]
       }
+      genesis_omega_architecture_scans: {
+        Row: {
+          admin_pages_count: number
+          architecture_score: number
+          created_at: string
+          cron_jobs_count: number
+          dead_candidates: Json
+          duplicates: Json
+          edge_functions_count: number
+          evidence: Json
+          hotspots: Json
+          id: string
+          module_scores: Json
+          policies_count: number
+          proposals: Json
+          scope: string
+          summary: string
+          tables_count: number
+        }
+        Insert: {
+          admin_pages_count?: number
+          architecture_score?: number
+          created_at?: string
+          cron_jobs_count?: number
+          dead_candidates?: Json
+          duplicates?: Json
+          edge_functions_count?: number
+          evidence?: Json
+          hotspots?: Json
+          id?: string
+          module_scores?: Json
+          policies_count?: number
+          proposals?: Json
+          scope?: string
+          summary?: string
+          tables_count?: number
+        }
+        Update: {
+          admin_pages_count?: number
+          architecture_score?: number
+          created_at?: string
+          cron_jobs_count?: number
+          dead_candidates?: Json
+          duplicates?: Json
+          edge_functions_count?: number
+          evidence?: Json
+          hotspots?: Json
+          id?: string
+          module_scores?: Json
+          policies_count?: number
+          proposals?: Json
+          scope?: string
+          summary?: string
+          tables_count?: number
+        }
+        Relationships: []
+      }
       genesis_omega_syntheses: {
         Row: {
           ceo_view: Json
