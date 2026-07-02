@@ -465,6 +465,7 @@ const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionCont
 const ExecutiveWarRoomPage = lazyWithRetry(() => import("./pages/admin/ExecutiveWarRoomPage"));
 const DecisionOutcomesPage = lazyWithRetry(() => import("./pages/admin/DecisionOutcomesPage"));
 const RevenueWarRoomPage = lazyWithRetry(() => import("./pages/admin/RevenueWarRoomPage"));
+const UsTrafficCampaignPage = lazyWithRetry(() => import("./pages/admin/UsTrafficCampaignPage"));
 const RevenueAttributionCenterPage = lazyWithRetry(() => import("./pages/admin/RevenueAttributionCenterPage"));
 const CustomerJourneyCenterPage = lazyWithRetry(() => import("./pages/admin/CustomerJourneyCenterPage"));
 const RecoveryCenterPage = lazyWithRetry(() => import("./pages/admin/RecoveryCenterPage"));
@@ -2784,6 +2785,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenueWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="us-traffic-campaign"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <UsTrafficCampaignPage />
                                 </Suspense>
                               }
                             />
