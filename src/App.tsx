@@ -2786,6 +2786,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="recovery-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RecoveryCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
