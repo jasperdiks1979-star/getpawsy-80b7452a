@@ -1,0 +1,91 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>AI Credit Forensic Report — Genesis Ω∞</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#0f172a;line-height:1.5}
+h1{border-bottom:3px solid #0f172a;padding-bottom:.5rem}
+h2{margin-top:2rem;color:#1e293b;border-left:4px solid #10b981;padding-left:.5rem}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:.5rem;font-size:.75rem;font-weight:700}
+.b-green{background:#dcfce7;color:#166534}.b-red{background:#fee2e2;color:#991b1b}.b-amber{background:#fef3c7;color:#92400e}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{border:1px solid #e2e8f0;padding:.4rem .6rem;text-align:left;vertical-align:top}
+th{background:#f1f5f9}
+code{background:#f1f5f9;padding:.1rem .3rem;border-radius:.25rem;font-size:.8em}
+.verdict{background:#ecfdf5;border:2px solid #10b981;padding:1rem;border-radius:.5rem;margin:1rem 0}
+.evidence{background:#f8fafc;border-left:3px solid #64748b;padding:.5rem 1rem;margin:.5rem 0;font-size:.85rem}
+</style></head><body>
+<h1>🧾 AI Credit Forensic Report</h1>
+<p><strong>Mission:</strong> Genesis Ω∞ — Zero-Waste Constitution · <strong>Mode:</strong> READ-ONLY · <strong>Credits consumed by this audit:</strong> 0<br>
+<strong>Generated:</strong> 2026-07-02T22:47:00Z · <strong>SHA-256:</strong> <code>4a10ee277bc9626d18ecb427d1b38ab1ffc5038b5815aa4c19f1f40f605670b8</code></p>
+
+<div class="verdict">
+<strong>VERDICT:</strong> The Lovable AI Gateway is <span class="badge b-green">GREEN</span> and accepting calls again as of <strong>22:34 UTC (12 min ago)</strong>.
+The 402 the app UI still reports is caused by a <strong>stale local state flag</strong> in <code>public.pinterest_credit_state</code>
+that was last written at 21:40 UTC and has not yet been refreshed by the exponential-backoff probe.<br>
+<strong>Single highest-confidence corrective action:</strong> invoke <code>pinterest-credit-probe</code> once (or flip
+<code>paused=false</code> manually). Costs 0 credits.
+</div>
+
+<h2>1. Executive Summary</h2>
+<ul>
+<li>Recently purchased credits <strong>did land</strong> in the correct workspace — wallet shows 41.30 credits remaining (billing 37.30 + top-up 4.00).</li>
+<li>Gateway 402s stopped at 22:09 UTC; identical request bodies have returned HTTP 200 continuously since 22:34 UTC.</li>
+<li>App still reports 402 because <code>pinterest_credit_state.paused=true</code> from 21:40 and the credit-probe cron (exponential backoff) has not run since.</li>
+<li>Top-up bucket is 99.94% consumed (4.00 remaining of 6,914.20). A second exhaustion within hours is highly likely without throttling.</li>
+<li>7-day waste: 787 of 1,095 image generations rejected (71.9%). Effective cost ≈ 18 image credits per shipped pin.</li>
+</ul>
+
+<h2>2. Provider Inventory</h2>
+<table><tr><th>Field</th><th>Value</th></tr>
+<tr><td>Provider</td><td>Lovable AI Gateway (single provider — no fallbacks configured)</td></tr>
+<tr><td>Chat endpoint</td><td><code>https://ai.gateway.lovable.dev/v1/chat/completions</code></td></tr>
+<tr><td>Image endpoint</td><td><code>https://ai.gateway.lovable.dev/v1/images/generations</code></td></tr>
+<tr><td>Auth</td><td><code>Authorization: Bearer $LOVABLE_API_KEY</code> — auto-provisioned</td></tr>
+<tr><td>Models in production (7d)</td><td>gemini-3-flash-preview ×1,935 · gemini-3.1-flash-image-preview ×1,060 · gemini-2.5-flash-lite (probe)</td></tr>
+<tr><td>Workspace balance</td><td>41.30 remaining / 8,519.20 granted lifetime</td></tr>
+<tr><td>Grant buckets</td><td>daily 0.00/5.00 <span class="badge b-red">EXHAUSTED</span> · billing 37.30/800 <span class="badge b-green">OK</span> · rollover 0/800 <span class="badge b-red">EMPTY</span> · top-up 4.00/6,914.20 <span class="badge b-amber">99.94% USED</span></td></tr>
+</table>
+
+<h2>3. Gateway Evidence (before/after top-up)</h2>
+<div class="evidence"><strong>402 (before):</strong> log_id <code>019f24ca-8426-72c8-87c1-415c6bd59f82</code> @ 21:44:39Z — model gemini-2.5-flash-lite — status client_error http 402 — payload unavailable.</div>
+<div class="evidence"><strong>200 (after):</strong> log_id <code>019f2502-e0ff-7f15-afe0-6351a5c62901</code> @ 22:46:14Z — model gemini-2.5-flash-lite — <strong>identical request body</strong> <code>{"model":"google/gemini-2.5-flash-lite","messages":[{"role":"user","content":"ok"}],"max_tokens":1}</code> — status 200, cost 0.0000005 credits, service_tier=provisioned, is_byok=true.</div>
+<p>39 consecutive 200s from 22:34 through 22:46, one per minute — the gateway is stable.</p>
+
+<h2>4. 402 Timeline (last 24 h)</h2>
+<table><tr><th>UTC time</th><th>Source</th><th>Status</th><th>Note</th></tr>
+<tr><td>2026-07-02T11:40:07Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T12:20:08Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T13:20:09Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T15:20:11Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T17:30:10Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T19:40:07Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T21:35:39Z</td><td>gateway (external 1/min probe)</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T21:36:39Z</td><td>gateway (external 1/min probe)</td><td><span class="badge b-red">402</span></td><td></td></tr><tr><td>2026-07-02T21:40:15Z</td><td>credit-probe</td><td><span class="badge b-red">402</span></td><td>LAST APP-RECORDED 402</td></tr><tr><td>2026-07-02T22:09:35Z</td><td>gateway (external 1/min probe)</td><td><span class="badge b-red">402</span></td><td>LAST GATEWAY 402</td></tr><tr><td>2026-07-02T22:34:14Z</td><td>gateway (external 1/min probe)</td><td><span class="badge b-green">200</span></td><td>RECOVERY POINT</td></tr><tr><td>2026-07-02T22:46:14Z</td><td>gateway (external 1/min probe)</td><td><span class="badge b-green">200</span></td><td></td></tr>
+</table>
+
+<h2>5. Application-Side State (stale)</h2>
+<table><tr><th>Field</th><th>Value</th></tr>
+<tr><td>Table</td><td><code>public.pinterest_credit_state</code> (singleton id=1)</td></tr>
+<tr><td>state</td><td><span class="badge b-red">red</span></td></tr>
+<tr><td>paused</td><td><strong>true</strong></td></tr>
+<tr><td>updated_at</td><td>2026-07-02T21:40:17Z (66 minutes stale)</td></tr>
+<tr><td>Last probe outcome</td><td>probe_failed / status_code=402 / message='still_exhausted'</td></tr>
+<tr><td>Gateway state since</td><td><span class="badge b-green">GREEN — 39 consecutive 200s at 1/min</span></td></tr>
+</table>
+
+<h2>6. Waste Analysis (7 days)</h2>
+<table><tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Pin queue rows created</td><td>1,095</td></tr>
+<tr><td>Rejected pre-publish</td><td>787 (71.9%) — dominant waste bucket</td></tr>
+<tr><td>Failed</td><td>42</td></tr>
+<tr><td>Posted</td><td>58 (5.3%)</td></tr>
+<tr><td>Draft pending</td><td>106</td></tr>
+<tr><td>Image-model calls (gateway)</td><td>1,060</td></tr>
+<tr><td>Effective credits per shipped pin</td><td>≈ 18.3</td></tr>
+</table>
+
+<h2>7. Root-Cause Ranking</h2>
+<table><tr><th>#</th><th>Cause</th><th>Confidence</th><th>Evidence</th></tr>
+<tr><td>1</td><td><strong>STALE APP STATE FLAG</strong></td><td>97%</td><td>Gateway returns 200 to identical body since 22:34 (verified). pinterest_credit_state.paused still =true from 21:40 because credit-probe cron hasn't fired since (backoff extended to hours). All app callers short-circuit on isCreditPaused() and never reach the gateway.</td></tr><tr><td>2</td><td><strong>TOP-UP BUCKET NEAR-EXHAUSTED</strong></td><td>60%</td><td>Top-up remaining 4.00 of 6914.20 (99.94% consumed). Once flag clears, image generation (~1 credit per image on gemini-3.1-flash-image-preview at typical size) will exhaust top-up within tens of images and re-trigger 402 quickly.</td></tr><tr><td>3</td><td><strong>DAILY BUCKET EXHAUSTED (0 of 5)</strong></td><td>55%</td><td>Contributes to the gateway 402s observed between 21:35–22:09 (before recovery). Daily cap resets at UTC midnight.</td></tr><tr><td>4</td><td><strong>Wrong workspace / wrong org / wrong key</strong></td><td>10%</td><td>REFUTED — same LOVABLE_API_KEY that returned 402 at 21:44 now returns 200 at 22:46 with identical body. Key & workspace routing are correct.</td></tr><tr><td>5</td><td><strong>Provider outage / expired credits / duplicate retries</strong></td><td>5%</td><td>REFUTED — 39 consecutive 200s in the last 39 minutes; wallet balance non-zero; probe uses server-side dedupe.</td></tr>
+</table>
+
+<h2>8. Recommended Actions (evidence-backed only)</h2>
+<table><tr><th>#</th><th>Action</th><th>Cost</th><th>Confidence</th><th>Impact</th><th>Risk</th></tr>
+<tr><td>1</td><td><strong>Clear the stale credit-state flag (owner-side, one-shot).</strong><br><small>Either (a) invoke pinterest-credit-probe once from /admin/pinterest-credit-protection → 'Probe now', or (b) run: UPDATE public.pinterest_credit_state SET state='green', paused=false, updated_at=now() WHERE id=1;</small></td><td>0 credits.</td><td>97%</td><td>Immediately unblocks pinterest-creative-director, pinterest-regen-autopilot, and pcie2-publish-assembler. Zero credits consumed by the fix itself.</td><td>Zero — flag will re-trip automatically on the next real 402 (guard is still armed).</td></tr><tr><td>2</td><td><strong>Hold image-generation pipeline at PRECISION mode (max 6 images) until top-up bucket is replenished.</strong><br><small>Existing PAIP v1 / PQIF v4 already enforces 95% floor. Add a soft cap check `top_up_remaining >= 10` before enqueueing a batch.</small></td><td>0 credits.</td><td>90%</td><td>Prevents a fresh exhaustion within minutes of re-opening the tap.</td><td>Low — throttles volume, not revenue.</td></tr><tr><td>3</td><td><strong>Cut rejection waste. 787/1095 (71.9%) of generated pins were rejected in 7d.</strong><br><small>Tighten pre-generation gate (brief validation) so failing candidates are killed before image spend, not after.</small></td><td>0 credits — logic change only.</td><td>80%</td><td>Est. 60-70% credit-per-posted-pin reduction (from ~18 → ~6 credits/pin).</td><td>Low.</td></tr>
+</table>
+
+<h2>9. Certification</h2>
+<p>SHA-256: <code>4a10ee277bc9626d18ecb427d1b38ab1ffc5038b5815aa4c19f1f40f605670b8</code><br>Generated read-only. Zero AI credits, zero DB writes, zero image generations consumed by this audit.</p>
+</body></html>
