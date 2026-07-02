@@ -74,7 +74,7 @@ function ScoreCard({ label, score, sub, icon: Icon }: { label: string; score: nu
           </div>
           <Badge className={pill.cls}>{pill.label}</Badge>
         </div>
-        <div className={`text-3xl font-semibold ${scoreColor(s)}`}>{score == null ? "—" : s.toFixed(0)}</div>
+        <div className={`text-3xl font-semibold ${scoreColor(s)}`}>{score == null ? "UNKNOWN" : s.toFixed(0)}</div>
         {sub ? <div className="text-xs text-muted-foreground mt-1">{sub}</div> : null}
       </CardContent>
     </Card>
@@ -101,6 +101,7 @@ function fmtCurrency(n: number) {
 
 const REPORT_LINKS: { title: string; to: string; icon: any }[] = [
   { title: "Business Health Index", to: "/admin/business-health", icon: Gauge },
+  { title: "Evidence Explorer", to: "/admin/evidence-explorer", icon: FileCheck2 },
   { title: "Sales Readiness", to: "/admin/sales-readiness", icon: Rocket },
   { title: "Revenue Command Center", to: "/admin/revenue-command-center", icon: DollarSign },
   { title: "Revenue Scorecard V13", to: "/admin/revenue-scorecard-v13", icon: LineChart },
@@ -307,10 +308,15 @@ export default function MissionControlPage() {
 
       {/* SECTION 1 — EXECUTIVE HEALTH */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Executive Health</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Executive Health</h2>
+          <Link to="/admin/evidence-explorer" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+            <FileCheck2 className="h-3.5 w-3.5" /> Evidence Explorer
+          </Link>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <ScoreCard label="Business Health" score={overallScore} icon={Gauge} sub={`Confidence ${snap?.confidence?.toFixed(0) ?? "—"}%`} />
-          <ScoreCard label="Sales Readiness" score={salesReadiness?.score ?? null} icon={Rocket} sub={salesReadiness?.status || "—"} />
+          <Link to="/admin/evidence-explorer?metric=business_health"><ScoreCard label="Business Health" score={overallScore} icon={Gauge} sub={`Confidence ${snap?.confidence?.toFixed(0) ?? "—"}%`} /></Link>
+          <Link to="/admin/evidence-explorer?metric=sales_readiness"><ScoreCard label="Sales Readiness" score={salesReadiness?.score ?? null} icon={Rocket} sub={salesReadiness?.status || "—"} /></Link>
           <ScoreCard
             label="Revenue Readiness"
             score={subs.find((s) => s.category?.toLowerCase().includes("revenue"))?.score ?? null}
@@ -331,11 +337,11 @@ export default function MissionControlPage() {
             score={subs.find((s) => s.category?.toLowerCase().includes("infra"))?.score ?? null}
             icon={Wrench}
           />
-          <ScoreCard
+          <Link to="/admin/evidence-explorer?metric=tracking_integrity"><ScoreCard
             label="Tracking Integrity"
             score={subs.find((s) => s.subscore_key?.toLowerCase().includes("track"))?.score ?? null}
             icon={Activity}
-          />
+          /></Link>
           <ScoreCard
             label="Customer Satisfaction"
             score={subs.find((s) => s.category?.toLowerCase().includes("customer"))?.score ?? null}
