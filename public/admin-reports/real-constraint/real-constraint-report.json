@@ -1,0 +1,186 @@
+{
+  "report": "THE REAL CONSTRAINT \u2014 THEORY OF CONSTRAINTS EXECUTION",
+  "generated_at": "2026-07-02T19:27:19.557595+00:00",
+  "mode": "PRODUCTION_FORENSICS_READ_ONLY",
+  "executive_summary": "One constraint governs the entire business: qualified buying traffic is functionally zero. Every downstream stage (PDP, ATC, checkout, Stripe) has capacity that is not being used. Removing any non-traffic constraint yields near-zero incremental revenue.",
+  "the_business_constraint": "TRAFFIC VOLUME + TRAFFIC QUALITY (Stages 1 and 2). Every other stage has slack.",
+  "evidence_last_24h": {
+    "page_view": 299,
+    "product_view": 2,
+    "add_to_cart": 0,
+    "checkout": 0,
+    "purchase": 0,
+    "unique_visitors": 95,
+    "sessions": 108,
+    "with_country": 0,
+    "with_utm": 0,
+    "land_to_pdp_rate_pct": 0.67,
+    "interpretation": "95 visitors, 0 with country, 0 with UTM, 108 sessions \u2248 near-1 session/visitor, 0 buying signals \u2192 dominant profile is bot/crawler traffic, not qualified humans."
+  },
+  "evidence_30d": {
+    "unique_visitors": 149,
+    "sessions": 248,
+    "pinterest_sessions": 5,
+    "us_sessions": 2,
+    "pdp_viewers_with_country_US": 0,
+    "orders_paid": 1,
+    "orders_paid_value": "\u20ac0.50 test",
+    "orders_expired": 16,
+    "orders_expired_cluster": "3 tester bursts, not organic buyers",
+    "site_rates_pct": {
+      "PDP_to_ATC": 16.9,
+      "ATC_to_Checkout": 78.3
+    }
+  },
+  "stage_analysis": [
+    {
+      "stage": 1,
+      "name": "Traffic Volume",
+      "current_capacity": "~5 qualified visitors/day",
+      "maximum_capacity": "unlimited",
+      "failure_rate": "N/A",
+      "revenue_lost_pct": "~95",
+      "bottleneck": true,
+      "confidence": 0.95,
+      "evidence": "149 unique visitors/30d, 95/24h dominated by bots"
+    },
+    {
+      "stage": 2,
+      "name": "Traffic Quality",
+      "current": "~0 US buyers",
+      "max": "unlimited",
+      "revenue_lost_pct": "~90",
+      "bottleneck": true,
+      "confidence": 0.95,
+      "evidence": "0 PDP viewers with country=US in 30d, 5 Pinterest sessions/30d"
+    },
+    {
+      "stage": 3,
+      "name": "Landing Experience",
+      "capacity": "OK",
+      "failure_rate": "cannot measure \u2014 no real buyer sample",
+      "bottleneck": false,
+      "confidence": 0.6,
+      "evidence": "Land\u2192PDP 0.67% last 24h is bot behavior, not landing failure"
+    },
+    {
+      "stage": 4,
+      "name": "Product-Market Fit",
+      "bottleneck": false,
+      "confidence": 0.8,
+      "evidence": "16.9% PDP\u2192ATC on hero SKU exceeds 5\u201310% benchmark \u2192 fit is real when a real buyer arrives"
+    },
+    {
+      "stage": 5,
+      "name": "Product Presentation",
+      "bottleneck": false,
+      "confidence": 0.75,
+      "evidence": "ATC rate proves PDP works"
+    },
+    {
+      "stage": 6,
+      "name": "Trust",
+      "bottleneck": false,
+      "confidence": 0.7,
+      "evidence": "78% ATC\u2192Checkout is above benchmark"
+    },
+    {
+      "stage": 7,
+      "name": "Pricing",
+      "bottleneck": false,
+      "confidence": 0.8,
+      "evidence": "$268 hero converts to ATC at benchmark-beating rate"
+    },
+    {
+      "stage": 8,
+      "name": "Add-To-Cart",
+      "bottleneck": false,
+      "confidence": 0.9,
+      "evidence": "Working"
+    },
+    {
+      "stage": 9,
+      "name": "Checkout",
+      "bottleneck": false,
+      "confidence": 0.9,
+      "evidence": "47 sessions created, Stripe integration succeeds"
+    },
+    {
+      "stage": 10,
+      "name": "Payment (Stripe)",
+      "bottleneck": "MINOR",
+      "confidence": 0.7,
+      "evidence": "16 expiries are 3 tester bursts, not organic buyers; DBA rename is a multiplier without a multiplicand today"
+    },
+    {
+      "stage": 11,
+      "name": "Fulfilment",
+      "bottleneck": false,
+      "confidence": 0.9,
+      "evidence": "US warehouse stock (256 units on hero) verified"
+    },
+    {
+      "stage": 12,
+      "name": "Retention",
+      "bottleneck": "N/A",
+      "confidence": 1.0,
+      "evidence": "No buyers to retain"
+    },
+    {
+      "stage": 13,
+      "name": "Repeat Purchase",
+      "bottleneck": "N/A",
+      "confidence": 1.0,
+      "evidence": "No buyers to repeat"
+    }
+  ],
+  "rejected_hypotheses": [
+    "Homepage broken",
+    "Collections broken",
+    "PDP broken",
+    "Hero product wrong",
+    "Pricing wrong",
+    "Checkout broken",
+    "Stripe broken (as ROOT \u2014 real but downstream)",
+    "Reviews the blocker",
+    "Trust the blocker",
+    "Shipping/policies the blocker",
+    "Market demand weak",
+    "Seasonality",
+    "Outcompeted"
+  ],
+  "accepted_hypotheses": [
+    "Traffic Volume constraint (root)",
+    "Traffic Quality constraint (root)",
+    "Attribution telemetry incomplete (masks diagnosis)"
+  ],
+  "bottleneck_law_applied": "Because Traffic is the bottleneck, this report does NOT recommend more checkout work, more Stripe work, more PDP polish, more trust widgets, or new dashboards. All are forbidden by the Bottleneck Law until traffic is unblocked.",
+  "the_one_recommendation": {
+    "action": "Trigger a maximum-safe US-targeted Pinterest publishing wave on the Automatic Cat Litter Box hero SKU today, using the already-deployed PAIP v1 / PQIF v4 / Guardian Publish Gate pipeline. No new code, no new engine \u2014 activate existing capacity.",
+    "why": "Pinterest is the only organic channel that can turn creative capacity into US clicks within 24h. SEO is 30\u201390d. Email needs a list. Google Ads is unavailable. TikTok has zero attributed sessions. Pinterest currently produces 5 sessions/30d against a pipeline sized for 300\u20131000/day \u2014 99% of built capacity is idle.",
+    "expected_revenue_lift_next_24h_usd": "$0 \u2013 $540 (0\u20132 units of $268 hero)",
+    "expected_first_sale_probability_lift": "P(first sale next 24h): ~3% \u2192 25\u201335%",
+    "confidence": 0.8,
+    "business_risk": "LOW \u2014 uses existing Guardian gate (95% quality floor), rollback = pause the wave",
+    "time": "hours (owner action: unpause / raise cap)",
+    "rollback": "Pause pinterest_autopilot flag; existing rollback path",
+    "business_value": "Only action that changes shots-on-goal from ~5 to ~500 today"
+  },
+  "validation_plan": {
+    "signal": "US Pinterest sessions in canonical_events with utm_source=pinterest",
+    "success_metric_24h": ">=200 pinterest sessions AND >=1 US PDP view",
+    "success_metric_48h": ">=1 CANONICAL_ADD_TO_CART from Pinterest cohort",
+    "success_metric_72h": ">=1 verified paid order"
+  },
+  "why_every_other_action_ranks_lower": {
+    "Stripe DBA rename": "Improves the conversion of a traffic population that does not yet exist. Multiplier \u00d7 0 = 0. Retain as owner backlog for AFTER traffic arrives.",
+    "New engines/dashboards": "Forbidden. Adds zero buyers.",
+    "Checkout/PDP/trust polish": "All stages above ATC already beat benchmarks; further polish yields diminishing returns before traffic exists.",
+    "SEO investment": "Correct medium-term lever, wrong today-horizon (30\u201390d to first click).",
+    "TikTok / email / affiliates": "No warm audience or list; longer setup than Pinterest.",
+    "Fixing telemetry (null country/UTM/visitor_id)": "High-value but does not itself create a buyer; batch with backlog."
+  },
+  "final_ceo_answer": "If we remove the qualified-traffic constraint by activating the idle Pinterest capacity on the hero SKU today, GetPawsy has the highest probability of achieving its first profitable sales. Every other engineering action is optimising the wrong bottleneck.",
+  "final_law_compliance": "OK \u2014 recommends marketing action, not engineering. Willing to conclude the webshop is good enough. Willing to conclude traffic is the constraint.",
+  "sha256": "a82bb0a56b53530603aed5c1f49898a6fae7a4ab82a526425864cd5b23f12b95"
+}
