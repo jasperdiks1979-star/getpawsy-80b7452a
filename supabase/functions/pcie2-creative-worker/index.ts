@@ -14,6 +14,7 @@ import {
   compilePrompt as compileGoldenPrompt,
   writeCompilerLedger,
 } from "../_shared/golden-dna-compiler.ts";
+import { evaluateZeroWasteGate, shouldSkip } from "../_shared/zero-waste-guard.ts";
 
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 const SUPA = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -60,6 +61,20 @@ async function processJob(job: any, report: any) {
   if (!prod) {
     await SUPA.from("pcie2_creative_jobs").update({ status: "failed", last_error: "product_missing", completed_at: new Date().toISOString() }).eq("id", job.id);
     report.failed++; return;
+  }
+
+  // Zero-Waste V2 gate — Phase 1 (Success Probability) + Phase 4 (Budget) in one RPC.
+  // Shadow-mode logs but does not block; hard-mode aborts BEFORE any AI credit is spent.
+  const _zwGate = await evaluateZeroWasteGate(prod.id, { phase: "pre_gen", jobId: job.id, meta: { concept: job.concept } });
+  const _zwSkip = shouldSkip(_zwGate);
+  if (_zwSkip.skip) {
+    await SUPA.from("pcie2_creative_jobs").update({
+      status: "skipped",
+      last_error: `zero_waste_v2:${_zwSkip.reason ?? "blocked"} score=${_zwGate.score}`,
+      completed_at: new Date().toISOString(),
+    }).eq("id", job.id);
+    report.similarity_prevented++;
+    return;
   }
 
   // Siblings for similarity
