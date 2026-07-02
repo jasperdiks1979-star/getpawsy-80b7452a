@@ -210,9 +210,11 @@
       "action": "Cut rejection waste. 787/1095 (71.9%) of generated pins were rejected in 7d.",
       "how": "Tighten pre-generation gate (brief validation) so failing candidates are killed before image spend, not after.",
       "expected_impact": "Est. 60-70% credit-per-posted-pin reduction (from ~18 \u2192 ~6 credits/pin).",
+      "risk": "Low.",
+      "rollback": "revert flag.",
       "cost": "0 credits \u2014 logic change only."
     }
   ],
   "single_highest_confidence_action": "Run pinterest-credit-probe once (0 credits). Gateway is already green.",
-  "sha256": "b4833dd1ee5d18c854708595ea410d3a54abc6e369568f70d2c220f6c15ff3c6"
+  "sha256": "4a10ee277bc9626d18ecb427d1b38ab1ffc5038b5815aa4c19f1f40f605670b8"
 }
