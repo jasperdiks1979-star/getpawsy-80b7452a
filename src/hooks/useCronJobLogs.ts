@@ -54,6 +54,10 @@ const KNOWN_JOBS: Record<string, { displayName: string; schedule: string }> = {
     displayName: 'Auto Guide Publisher',
     schedule: '03:00 UTC (05:00 CET)',
   },
+  'canonical-ingest-recent': {
+    displayName: 'Canonical Ingest (near real-time)',
+    schedule: 'Elke 3 minuten',
+  },
 };
 
 export const useCronJobLogs = (limit = 50) => {
