@@ -38,6 +38,12 @@ type WarRoom = {
   leaks: Array<{ label: string; loss_est: number; evidence: string }>;
   hero_product: { product_id: string; name: string | null; atc_7d: number; purchases_7d: number; score: number } | null;
   next_action: { action: string; why: string; confidence: number; expected_revenue: number; expected_roi: number; eta_minutes: number; rollback: string; evidence: any };
+  funnel_breakdown?: {
+    steps: Array<{ key: string; label: string; count: number | null; rate_from_top: number | null; step_conv: number | null; drop_pct: number | null }>;
+    bottleneck: { from: string; to: string; drop_pct: number; lost: number } | null;
+    by_page: Array<{ page: string; sessions: number; atc: number; atc_rate: number | null; dropped: number }>;
+    by_product: Array<{ product_id: string; name: string | null; atc: number; purchases: number; lost: number; conv_rate: number | null }>;
+  };
 };
 
 const fmtNum = (n: number | null | undefined) => (n == null ? "UNKNOWN" : n.toLocaleString());
