@@ -462,6 +462,7 @@ const RevenueScorecardV13Page = lazyWithRetry(() => import("./pages/admin/Revenu
 const SalesReadinessPage = lazyWithRetry(() => import("./pages/admin/SalesReadinessPage"));
 const BusinessHealthIndexPage = lazyWithRetry(() => import("./pages/admin/BusinessHealthIndexPage"));
 const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionControlPage"));
+const EvidenceExplorerPage = lazyWithRetry(() => import("./pages/admin/EvidenceExplorerPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
 const AutonomousCommercePage = lazyWithRetry(() => import("./pages/admin/AutonomousCommercePage"));
