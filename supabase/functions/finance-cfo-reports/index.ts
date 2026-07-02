@@ -336,7 +336,7 @@ async function buildTaxReadiness(admin: SupabaseAdmin, start: string, end: strin
     fetchDocs(admin, start, end),
     admin.from("finance_vat_summaries").select("*").order("period_year", { ascending: false }).order("period_number", { ascending: false }).limit(20),
     admin.from("finance_vat_reconciliations").select("*").order("created_at", { ascending: false }).limit(20),
-    admin.from("finance_anomalies").select("id,type,severity,status,message,created_at").eq("status", "open").limit(200),
+    admin.from("finance_anomalies").select("id,anomaly_type,title,detail,status,created_at").eq("status", "open").limit(200),
   ]);
   const missing = docs.filter((d) => (d.amount_minor ?? 0) > 0 && !(d.vat_minor ?? 0));
   const nl = docs.filter((d) => (d.tax_country ?? "").toUpperCase() === "NL");
@@ -354,11 +354,18 @@ async function buildTaxReadiness(admin: SupabaseAdmin, start: string, end: strin
 </div>
 <h2>VAT summaries on file</h2>${tableRows(vatSum.map((v) => ({
   period: `${v.period_year} ${v.period_type === "quarter" ? "Q" + v.period_number : v.period_number ?? ""}`,
-  gross: fmtMoney(v.gross_minor ?? 0), vat: fmtMoney(v.vat_minor ?? 0),
-  status: v.status ?? "", generated: (v.created_at ?? "").slice(0, 10),
+  vat_total: fmtMoney(v.vat_total_minor ?? 0),
+  recoverable: fmtMoney(v.recoverable_minor ?? 0),
+  reclaimed: fmtMoney(v.reclaimed_minor ?? 0),
+  invoices: v.invoice_count ?? 0,
+  generated: (v.created_at ?? "").slice(0, 10),
 })), [
-  { k: "period", label: "Period" }, { k: "gross", label: "Gross", num: true }, { k: "vat", label: "VAT", num: true },
-  { k: "status", label: "Status" }, { k: "generated", label: "Generated" },
+  { k: "period", label: "Period" },
+  { k: "vat_total", label: "VAT total", num: true },
+  { k: "recoverable", label: "Recoverable", num: true },
+  { k: "reclaimed", label: "Reclaimed", num: true },
+  { k: "invoices", label: "Invoices", num: true },
+  { k: "generated", label: "Generated" },
 ])}
 <h2>Latest reconciliations</h2>${tableRows(recon.map((r) => ({
   period: `${r.period_year} Q${r.period_number ?? ""}`,
@@ -376,9 +383,9 @@ async function buildTaxReadiness(admin: SupabaseAdmin, start: string, end: strin
   { k: "date", label: "Date" }, { k: "supplier", label: "Supplier" }, { k: "title", label: "Title" }, { k: "amount", label: "Amount", num: true },
 ])}
 <h2>Open anomalies (top 100)</h2>${tableRows(anomalies.slice(0, 100).map((a) => ({
-  type: a.type ?? "", severity: a.severity ?? "", message: a.message ?? "", when: (a.created_at ?? "").slice(0, 10),
+  type: a.anomaly_type ?? "", title: a.title ?? "", detail: a.detail ?? "", when: (a.created_at ?? "").slice(0, 10),
 })), [
-  { k: "type", label: "Type" }, { k: "severity", label: "Severity" }, { k: "message", label: "Detail" }, { k: "when", label: "Detected" },
+  { k: "type", label: "Type" }, { k: "title", label: "Title" }, { k: "detail", label: "Detail" }, { k: "when", label: "Detected" },
 ])}`;
   const summary = {
     period: { start, end },
