@@ -34,6 +34,7 @@ export default function GenesisEnterpriseTwinPage() {
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [certs, setCerts] = useState<Cert[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pdfLayout, setPdfLayout] = useState<"compact" | "executive">("executive");
 
   // simulator inputs
   const [trafficMul, setTrafficMul] = useState("2");
@@ -77,14 +78,16 @@ export default function GenesisEnterpriseTwinPage() {
     const pageW = doc.internal.pageSize.getWidth();
     const left = 48;
     let y = 56;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(18);
-    doc.text("GENESIS V15 — Enterprise Digital Twin Certification", left, y); y += 22;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(110, 110, 110);
-    doc.text(`Issued: ${new Date(latestCert.issued_at).toLocaleString()}`, left, y); y += 14;
-    doc.text(`Certification ID: ${latestCert.id}`, left, y); y += 20;
-    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(24);
-    doc.text(`Overall Intelligence: ${latestCert.overall_genesis_intelligence} / 100`, left, y); y += 26;
-    doc.setFontSize(12);
+    const isCompact = pdfLayout === "compact";
+
+    doc.setFont("helvetica", "bold"); doc.setFontSize(isCompact ? 15 : 18);
+    doc.text("GENESIS V15 — Enterprise Digital Twin Certification", left, y); y += isCompact ? 18 : 22;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(isCompact ? 9 : 10); doc.setTextColor(110, 110, 110);
+    doc.text(`Issued: ${new Date(latestCert.issued_at).toLocaleString()}`, left, y); y += isCompact ? 12 : 14;
+    doc.text(`Certification ID: ${latestCert.id}`, left, y); y += isCompact ? 14 : 20;
+    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.setFontSize(isCompact ? 18 : 24);
+    doc.text(`Overall Intelligence: ${latestCert.overall_genesis_intelligence} / 100`, left, y); y += isCompact ? 20 : 26;
+
     const axes: Array<[string, number]> = [
       ["Business Intelligence", latestCert.business_intelligence_score],
       ["Prediction Accuracy", latestCert.prediction_accuracy],
@@ -97,25 +100,74 @@ export default function GenesisEnterpriseTwinPage() {
       ["Audit Readiness", latestCert.audit_readiness],
       ["Executive Readiness", latestCert.executive_readiness],
     ];
-    doc.text("Axis Scores (0–100)", left, y); y += 16;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-    for (const [k, v] of axes) {
-      if (y > 760) { doc.addPage(); y = 56; }
-      doc.setTextColor(110, 110, 110); doc.text(k, left, y);
-      doc.setTextColor(0, 0, 0); doc.text(String(v ?? "—"), left + 220, y);
-      y += 15;
+
+    if (isCompact) {
+      // Compact: 2-column axis grid, minimal narrative, tight spacing.
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.text("Axis Scores (0–100)", left, y); y += 13;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      const colW = (pageW - left * 2) / 2;
+      for (let i = 0; i < axes.length; i += 2) {
+        if (y > 780) { doc.addPage(); y = 56; }
+        const drawCell = (k: string, v: number, x: number) => {
+          doc.setTextColor(110, 110, 110); doc.text(k, x, y);
+          doc.setTextColor(0, 0, 0); doc.text(String(v ?? "—"), x + colW - 40, y);
+        };
+        drawCell(axes[i][0], axes[i][1], left);
+        if (axes[i + 1]) drawCell(axes[i + 1][0], axes[i + 1][1], left + colW);
+        y += 13;
+      }
+      y += 8;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text("SHA-256", left, y); y += 11;
+      doc.setFont("courier", "normal"); doc.setFontSize(8);
+      const fp = doc.splitTextToSize(latestCert.fingerprint_sha256 ?? "—", pageW - left * 2);
+      doc.text(fp, left, y);
+    } else {
+      // Executive: narrative-heavy, per-axis interpretation, wide fingerprint block.
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text("Executive Narrative", left, y); y += 16;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      const nar = doc.splitTextToSize(latestCert.narrative ?? "—", pageW - left * 2);
+      doc.text(nar, left, y); y += nar.length * 12 + 16;
+
+      if (y > 700) { doc.addPage(); y = 56; }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text("Axis Scores & Interpretation", left, y); y += 14;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      const band = (v: number) => v >= 85 ? "Excellent" : v >= 70 ? "Strong" : v >= 55 ? "Developing" : v >= 40 ? "At risk" : "Critical";
+      for (const [k, v] of axes) {
+        if (y > 770) { doc.addPage(); y = 56; }
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0); doc.text(`${k}`, left, y);
+        doc.text(`${v ?? "—"} / 100`, left + 260, y);
+        doc.setFont("helvetica", "italic"); doc.setTextColor(110, 110, 110);
+        doc.text(band(Number(v ?? 0)), left + 360, y);
+        y += 12;
+        doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80); doc.setFontSize(9);
+        const line = doc.splitTextToSize(
+          `Assessed against Ω.3 canonical truth. Score ${v ?? "—"} reflects trailing 30-day observations and prior certification lineage.`,
+          pageW - left * 2,
+        );
+        doc.text(line, left, y); y += line.length * 11 + 4;
+        doc.setTextColor(0, 0, 0);
+      }
+
+      if (y > 720) { doc.addPage(); y = 56; }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text("Evidence & Fingerprint", left, y); y += 14;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(80, 80, 80);
+      const evid = doc.splitTextToSize(
+        "Evidence anchored exclusively to Ω.3 canonical truth (orders, canonical_sessions, pinterest_pins) and prior Ω∞ certifications. No fabricated values. This document is immutable and independently reproducible from the source tables.",
+        pageW - left * 2,
+      );
+      doc.text(evid, left, y); y += evid.length * 12 + 10;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("courier", "normal"); doc.setFontSize(9);
+      const fp = doc.splitTextToSize(latestCert.fingerprint_sha256 ?? "—", pageW - left * 2);
+      doc.text(fp, left, y);
     }
-    y += 8; if (y > 720) { doc.addPage(); y = 56; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("Narrative", left, y); y += 14;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    const nar = doc.splitTextToSize(latestCert.narrative ?? "—", pageW - left * 2);
-    doc.text(nar, left, y); y += nar.length * 12 + 14;
-    if (y > 740) { doc.addPage(); y = 56; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("SHA-256 Fingerprint", left, y); y += 14;
-    doc.setFont("courier", "normal"); doc.setFontSize(9);
-    const fp = doc.splitTextToSize(latestCert.fingerprint_sha256 ?? "—", pageW - left * 2);
-    doc.text(fp, left, y);
-    doc.save(`genesis-v15-certification-${latestCert.id}.pdf`);
+
+    doc.save(`genesis-v15-certification-${pdfLayout}-${latestCert.id}.pdf`);
   }
 
   return (
@@ -136,7 +188,7 @@ export default function GenesisEnterpriseTwinPage() {
             <ShieldCheck className="w-4 h-4 mr-2" /> Certify V15
           </Button>
           <Button variant="outline" onClick={exportCertificationPdf} disabled={!latestCert}>
-            <Download className="w-4 h-4 mr-2" /> Export PDF
+            <Download className="w-4 h-4 mr-2" /> Export PDF ({pdfLayout})
           </Button>
           <Button variant="ghost" size="icon" onClick={load}><RefreshCw className="w-4 h-4" /></Button>
         </div>
