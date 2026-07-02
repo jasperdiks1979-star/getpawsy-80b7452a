@@ -1464,6 +1464,7 @@ const App = () => {
                           <Route path="/collections/dog-car-travel-safety-seats" element={<Navigate to="/collections/all" replace />} />
 
                           {/* SEO Collection pages — /collections/:slug */}
+                          <Route path="/collections" element={<Navigate to="/collections/all" replace />} />
                           <Route
                             path="/collections/:slug"
                             element={
