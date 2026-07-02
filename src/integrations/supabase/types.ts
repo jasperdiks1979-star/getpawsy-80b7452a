@@ -24875,6 +24875,215 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_boardroom_certifications: {
+        Row: {
+          canonical_compliance: number
+          created_at: string
+          executive_readiness: number
+          fingerprint: string
+          id: string
+          layouts_created: number
+          overall_score: number
+          payload: Json
+          performance_score: number
+          profiles_count: number
+          reuse_percentage: number
+          widgets_registered: number
+        }
+        Insert: {
+          canonical_compliance: number
+          created_at?: string
+          executive_readiness: number
+          fingerprint: string
+          id?: string
+          layouts_created: number
+          overall_score: number
+          payload: Json
+          performance_score: number
+          profiles_count: number
+          reuse_percentage: number
+          widgets_registered: number
+        }
+        Update: {
+          canonical_compliance?: number
+          created_at?: string
+          executive_readiness?: number
+          fingerprint?: string
+          id?: string
+          layouts_created?: number
+          overall_score?: number
+          payload?: Json
+          performance_score?: number
+          profiles_count?: number
+          reuse_percentage?: number
+          widgets_registered?: number
+        }
+        Relationships: []
+      }
+      genesis_boardroom_widget_usage: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          ms_open: number | null
+          user_id: string
+          widget_key: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          ms_open?: number | null
+          user_id: string
+          widget_key: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          ms_open?: number | null
+          user_id?: string
+          widget_key?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      genesis_boardroom_widgets_registry: {
+        Row: {
+          category: string
+          created_at: string
+          default_h: number
+          default_w: number
+          description: string | null
+          id: string
+          metadata: Json
+          min_h: number
+          min_w: number
+          status: string
+          supports_mobile: boolean
+          title: string
+          truth_source: string | null
+          widget_key: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          default_h?: number
+          default_w?: number
+          description?: string | null
+          id?: string
+          metadata?: Json
+          min_h?: number
+          min_w?: number
+          status?: string
+          supports_mobile?: boolean
+          title: string
+          truth_source?: string | null
+          widget_key: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          default_h?: number
+          default_w?: number
+          description?: string | null
+          id?: string
+          metadata?: Json
+          min_h?: number
+          min_w?: number
+          status?: string
+          supports_mobile?: boolean
+          title?: string
+          truth_source?: string | null
+          widget_key?: string
+        }
+        Relationships: []
+      }
+      genesis_boardroom_workspace_versions: {
+        Row: {
+          created_at: string
+          id: string
+          layout: Json
+          user_id: string
+          version: number
+          widgets: Json
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          layout: Json
+          user_id: string
+          version: number
+          widgets: Json
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          layout?: Json
+          user_id?: string
+          version?: number
+          widgets?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_boardroom_workspace_versions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_boardroom_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_boardroom_workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          is_pinned: boolean
+          layout: Json
+          name: string
+          profile: string
+          theme: string
+          updated_at: string
+          user_id: string
+          version: number
+          widgets: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_pinned?: boolean
+          layout?: Json
+          name: string
+          profile?: string
+          theme?: string
+          updated_at?: string
+          user_id: string
+          version?: number
+          widgets?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          is_pinned?: boolean
+          layout?: Json
+          name?: string
+          profile?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+          widgets?: Json
+        }
+        Relationships: []
+      }
       genesis_compliance_certifications: {
         Row: {
           automation_governance_score: number
