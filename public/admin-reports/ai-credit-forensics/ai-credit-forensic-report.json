@@ -1,0 +1,218 @@
+{
+  "generated_at": "2026-07-02T22:47:00Z",
+  "mode": "READ_ONLY_FORENSIC",
+  "credits_consumed": 0,
+  "workspace_balance": {
+    "total_remaining": 41.3,
+    "granted_total": 8519.2,
+    "period_used": 834.04,
+    "buckets": {
+      "daily": {
+        "remaining": 0.0,
+        "cap": 5.0,
+        "status": "EXHAUSTED"
+      },
+      "billing": {
+        "remaining": 37.3,
+        "cap": 800.0,
+        "status": "OK",
+        "expires": "2026-09-01"
+      },
+      "rollover": {
+        "remaining": 0.0,
+        "cap": 800.0,
+        "status": "EMPTY"
+      },
+      "top_up": {
+        "remaining": 4.0,
+        "cap": 6914.2,
+        "status": "NEAR_EMPTY",
+        "expires": "2027-07-01"
+      }
+    }
+  },
+  "provider": {
+    "name": "Lovable AI Gateway",
+    "endpoint_chat": "https://ai.gateway.lovable.dev/v1/chat/completions",
+    "endpoint_image": "https://ai.gateway.lovable.dev/v1/images/generations",
+    "auth": "LOVABLE_API_KEY (Authorization: Bearer \u2026) \u2014 auto-provisioned, non-user-configurable",
+    "workspace_scoped": true,
+    "region": "n/a (managed)",
+    "models_used_7d": {
+      "google/gemini-3-flash-preview": 1935,
+      "google/gemini-3.1-flash-image-preview": 1060,
+      "google/gemini-2.5-flash-lite": "hourly probe + per-minute health check"
+    }
+  },
+  "gateway_evidence": {
+    "verdict": "GATEWAY IS ACCEPTING CALLS AGAIN",
+    "last_402_gateway": "2026-07-02T22:09:35Z (log_id 019f24e1-5899-7c6b)",
+    "first_200_after_topup": "2026-07-02T22:34:14Z (log_id 019f24f7-e469-7019 flash-lite, cost 0.0000005)",
+    "steady_state_since": "22:34Z (39 consecutive 200s at 1/min through 22:46:14Z)",
+    "identical_request_body_before_and_after": true,
+    "sample_success_200": {
+      "log_id": "019f2502-e0ff-7f15-afe0-6351a5c62901",
+      "ts": "2026-07-02T22:46:14Z",
+      "model": "google/gemini-2.5-flash-lite",
+      "req": "{\"model\":\"google/gemini-2.5-flash-lite\",\"messages\":[{\"role\":\"user\",\"content\":\"ok\"}],\"max_tokens\":1}",
+      "resp_snippet": "choices[0].message.content = 'Alright' \u2014 cost 0.0000005 credits, is_byok:true, service_tier:provisioned"
+    },
+    "sample_failure_402": {
+      "log_id": "019f24ca-8426-72c8-87c1-415c6bd59f82",
+      "ts": "2026-07-02T21:44:39Z",
+      "model": "google/gemini-2.5-flash-lite (identical body)",
+      "payload_state": "unavailable (gateway does not retain 402 body)"
+    }
+  },
+  "app_state_evidence": {
+    "table": "public.pinterest_credit_state (singleton id=1)",
+    "current": {
+      "state": "red",
+      "paused": true,
+      "updated_at": "2026-07-02T21:40:17Z"
+    },
+    "last_probe_event": "2026-07-02T21:40:17Z (probe_failed, message='still_exhausted', status_code=402)",
+    "probe_cadence_observed": "hourly-ish (12:20, 13:20, 15:20, 17:30, 19:40, 21:40) \u2014 exponential backoff active",
+    "hours_since_state_updated": 1.11,
+    "gateway_state_since_last_probe": "GREEN (200s from 22:34 onward)"
+  },
+  "402_timeline_last_24h": [
+    {
+      "ts": "2026-07-02T11:40:07Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T12:20:08Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T13:20:09Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T15:20:11Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T17:30:10Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T19:40:07Z",
+      "source": "credit-probe",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T21:35:39Z",
+      "source": "gateway (external 1/min probe)",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T21:36:39Z",
+      "source": "gateway (external 1/min probe)",
+      "status": 402
+    },
+    {
+      "ts": "2026-07-02T21:40:15Z",
+      "source": "credit-probe",
+      "status": 402,
+      "note": "LAST APP-RECORDED 402"
+    },
+    {
+      "ts": "2026-07-02T22:09:35Z",
+      "source": "gateway (external 1/min probe)",
+      "status": 402,
+      "note": "LAST GATEWAY 402"
+    },
+    {
+      "ts": "2026-07-02T22:34:14Z",
+      "source": "gateway (external 1/min probe)",
+      "status": 200,
+      "note": "RECOVERY POINT"
+    },
+    {
+      "ts": "2026-07-02T22:46:14Z",
+      "source": "gateway (external 1/min probe)",
+      "status": 200
+    }
+  ],
+  "waste_analysis_7d": {
+    "pin_queue_created": 1095,
+    "posted": 58,
+    "rejected": 787,
+    "failed": 42,
+    "draft_pending": 106,
+    "reject_rate_pct": 71.9,
+    "post_rate_pct": 5.3,
+    "credits_burned_on_rejects_est": "\u2265 787 image generations rejected \u2014 dominant waste bucket",
+    "credits_per_posted_pin_est": "\u2248 (1060 image calls / 58 posts) = 18.3 image credits per shipped pin"
+  },
+  "root_cause_ranking": [
+    {
+      "rank": 1,
+      "confidence": 0.97,
+      "cause": "STALE APP STATE FLAG",
+      "evidence": "Gateway returns 200 to identical body since 22:34 (verified). pinterest_credit_state.paused still =true from 21:40 because credit-probe cron hasn't fired since (backoff extended to hours). All app callers short-circuit on isCreditPaused() and never reach the gateway."
+    },
+    {
+      "rank": 2,
+      "confidence": 0.6,
+      "cause": "TOP-UP BUCKET NEAR-EXHAUSTED",
+      "evidence": "Top-up remaining 4.00 of 6914.20 (99.94% consumed). Once flag clears, image generation (~1 credit per image on gemini-3.1-flash-image-preview at typical size) will exhaust top-up within tens of images and re-trigger 402 quickly."
+    },
+    {
+      "rank": 3,
+      "confidence": 0.55,
+      "cause": "DAILY BUCKET EXHAUSTED (0 of 5)",
+      "evidence": "Contributes to the gateway 402s observed between 21:35\u201322:09 (before recovery). Daily cap resets at UTC midnight."
+    },
+    {
+      "rank": 4,
+      "confidence": 0.1,
+      "cause": "Wrong workspace / wrong org / wrong key",
+      "evidence": "REFUTED \u2014 same LOVABLE_API_KEY that returned 402 at 21:44 now returns 200 at 22:46 with identical body. Key & workspace routing are correct."
+    },
+    {
+      "rank": 5,
+      "confidence": 0.05,
+      "cause": "Provider outage / expired credits / duplicate retries",
+      "evidence": "REFUTED \u2014 39 consecutive 200s in the last 39 minutes; wallet balance non-zero; probe uses server-side dedupe."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "priority": 1,
+      "confidence": 0.97,
+      "action": "Clear the stale credit-state flag (owner-side, one-shot).",
+      "how": "Either (a) invoke pinterest-credit-probe once from /admin/pinterest-credit-protection \u2192 'Probe now', or (b) run: UPDATE public.pinterest_credit_state SET state='green', paused=false, updated_at=now() WHERE id=1;",
+      "expected_impact": "Immediately unblocks pinterest-creative-director, pinterest-regen-autopilot, and pcie2-publish-assembler. Zero credits consumed by the fix itself.",
+      "risk": "Zero \u2014 flag will re-trip automatically on the next real 402 (guard is still armed).",
+      "rollback": "Set paused=true if issues appear.",
+      "cost": "0 credits."
+    },
+    {
+      "priority": 2,
+      "confidence": 0.9,
+      "action": "Hold image-generation pipeline at PRECISION mode (max 6 images) until top-up bucket is replenished.",
+      "how": "Existing PAIP v1 / PQIF v4 already enforces 95% floor. Add a soft cap check `top_up_remaining >= 10` before enqueueing a batch.",
+      "expected_impact": "Prevents a fresh exhaustion within minutes of re-opening the tap.",
+      "risk": "Low \u2014 throttles volume, not revenue.",
+      "cost": "0 credits."
+    },
+    {
+      "priority": 3,
+      "confidence": 0.8,
+      "action": "Cut rejection waste. 787/1095 (71.9%) of generated pins were rejected in 7d.",
+      "how": "Tighten pre-generation gate (brief validation) so failing candidates are killed before image spend, not after.",
+      "expected_impact": "Est. 60-70% credit-per-posted-pin reduction (from ~18 \u2192 ~6 credits/pin).",
+      "cost": "0 credits \u2014 logic change only."
+    }
+  ],
+  "single_highest_confidence_action": "Run pinterest-credit-probe once (0 credits). Gateway is already green.",
+  "sha256": "b4833dd1ee5d18c854708595ea410d3a54abc6e369568f70d2c220f6c15ff3c6"
+}
