@@ -69307,6 +69307,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_fse_envelope_quality: {
+        Row: {
+          event_kind: string | null
+          has_browser: number | null
+          has_channel: number | null
+          has_country: number | null
+          has_device: number | null
+          has_landing: number | null
+          has_page: number | null
+          has_product: number | null
+          has_session: number | null
+          has_source: number | null
+          has_utm: number | null
+          has_visitor: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
       v_funnel_intelligence_daily: {
         Row: {
           atc_sessions: number | null

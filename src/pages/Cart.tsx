@@ -15,6 +15,7 @@ import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { FreeShippingNudge } from '@/components/cart/FreeShippingNudge';
 import { TieredIncentiveBar } from '@/components/cart/TieredIncentiveBar';
+import { TrustStripAboveATC } from '@/components/trust/TrustStripAboveATC';
 import { safeString, safeNumber } from '@/lib/safe-render';
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -352,6 +353,8 @@ const Cart = () => {
                 className="block mt-4"
                 onClick={() => handleCartCheckoutClick('cart_proceed_button')}
               >
+                {/* Mission First Revenue P0.2 — trust strip directly above primary CTA */}
+                <TrustStripAboveATC className="mb-3 justify-center" compact />
                 <Button
                   size="lg"
                   className={
