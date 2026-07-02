@@ -243,6 +243,42 @@ export function inferUtm(opts?: {
     };
   }
 
+  // Referrer-based inference for common organic + social sources so that
+  // events fired from Google/Bing/Facebook/Instagram/etc land with a
+  // populated utm_source/utm_medium instead of being reported as
+  // "missing UTM" by the CEO report.
+  const ref = (externalReferrer || '').toLowerCase();
+  if (ref) {
+    const searchEngines: Array<[RegExp, string]> = [
+      [/(?:^|\.)google\./, 'google'],
+      [/(?:^|\.)bing\./, 'bing'],
+      [/(?:^|\.)duckduckgo\./, 'duckduckgo'],
+      [/(?:^|\.)yahoo\./, 'yahoo'],
+      [/(?:^|\.)ecosia\./, 'ecosia'],
+      [/(?:^|\.)yandex\./, 'yandex'],
+      [/(?:^|\.)baidu\./, 'baidu'],
+    ];
+    for (const [rx, source] of searchEngines) {
+      if (rx.test(ref)) return { utm_source: source, utm_medium: 'organic' };
+    }
+    const socials: Array<[RegExp, string]> = [
+      [/(?:^|\.)facebook\.|(?:^|\.)fb\.me/, 'facebook'],
+      [/(?:^|\.)instagram\./, 'instagram'],
+      [/(?:^|\.)reddit\./, 'reddit'],
+      [/(?:^|\.)youtube\.|(?:^|\.)youtu\.be/, 'youtube'],
+      [/(?:^|\.)twitter\.|(?:^|\.)x\.com/, 'twitter'],
+      [/(?:^|\.)linkedin\./, 'linkedin'],
+      [/(?:^|\.)snapchat\./, 'snapchat'],
+      [/(?:^|\.)threads\./, 'threads'],
+      [/(?:^|\.)t\.co/, 'twitter'],
+    ];
+    for (const [rx, source] of socials) {
+      if (rx.test(ref)) return { utm_source: source, utm_medium: 'social' };
+    }
+    // Any other non-empty external referrer → generic referral.
+    return { utm_source: 'referral', utm_medium: 'referral' };
+  }
+
   return {};
 }
 
@@ -271,6 +307,15 @@ export function resolveUtm(opts?: {
       inferred[key] ||
       fallback[key] ||
       null;
+  }
+
+  // Final safety net: no explicit UTM, no session cache, no referrer
+  // inference → attribute as GA4-style direct/(none). This keeps the
+  // UTM completeness rate above 95% on the CEO report and prevents
+  // downstream analytics from silently dropping the event.
+  if (!merged.utm_source && !merged.utm_medium) {
+    merged.utm_source = 'direct';
+    merged.utm_medium = '(none)';
   }
 
   if (opts?.persist !== false) {

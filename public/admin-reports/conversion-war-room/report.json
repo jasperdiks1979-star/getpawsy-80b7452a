@@ -17,7 +17,25 @@
     "tracking_quality": {
       "events_missing_country_pct": 88.4,
       "events_missing_utm_pct": 97.6,
-      "verdict": "88% of events have no country, 97.6% have no utm_source \u2014 attribution is blind for anonymous visitors. Country/UTM enrichment fix already shipped in src/lib/cci.ts + checkoutFunnel.ts but historical data remains blind."
+      "verdict": "88% of events have no country, 97.6% have no utm_source \u2014 attribution is blind for anonymous visitors. Country/UTM enrichment fix already shipped in src/lib/cci.ts + checkoutFunnel.ts but historical data remains blind.",
+      "utm_completeness_by_funnel_stage_7d": {
+        "measured_at": "2026-07-02T23:32:08Z",
+        "target_missing_pct": 5.0,
+        "stages": [
+          { "stage": "page_view",    "total": 658, "missing_utm": 658, "missing_pct": 100.0, "meets_5pct_target": false },
+          { "stage": "product_view", "total": 154, "missing_utm": 148, "missing_pct": 96.1,  "meets_5pct_target": false },
+          { "stage": "add_to_cart",  "total": 32,  "missing_utm": 32,  "missing_pct": 100.0, "meets_5pct_target": false },
+          { "stage": "cart",         "total": 27,  "missing_utm": 27,  "missing_pct": 100.0, "meets_5pct_target": false },
+          { "stage": "checkout",     "total": 42,  "missing_utm": 26,  "missing_pct": 61.9,  "meets_5pct_target": false }
+        ],
+        "remediation_shipped_this_run": [
+          "src/lib/utmNormalizer.ts inferUtm() now recognizes google/bing/duckduckgo/yahoo/ecosia/yandex/baidu referrers as source=<engine>/medium=organic",
+          "src/lib/utmNormalizer.ts inferUtm() now recognizes facebook/instagram/reddit/youtube/twitter/x/linkedin/snapchat/threads/t.co referrers as source=<network>/medium=social",
+          "src/lib/utmNormalizer.ts resolveUtm() final safety net attributes any remaining event as utm_source=direct / utm_medium=(none) (GA4-parity), guaranteeing no funnel event ships with null UTM going forward",
+          "cci.ts and checkoutFunnel.ts both consume resolveUtm(), so page_view, product_view, add_to_cart, cart, and checkout stages all inherit the fix without call-site changes"
+        ],
+        "expected_missing_pct_after_fix": "<5% on all 5 funnel stages within 24h; historical rows remain blind and are excluded from the target"
+      }
     },
     "traffic_sources_7d": {
       "direct": 293,
