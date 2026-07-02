@@ -130,12 +130,14 @@ export default function MissionControlPage() {
   const loadCore = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: bhi }, { data: sr }, { data: br }] = await Promise.all([
-        supabase.from("bhi_snapshots").select("*").order("captured_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("sales_readiness_snapshots").select("overall_score,status,captured_at")
-          .order("captured_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("bhi_briefings").select("*").order("briefing_date", { ascending: false }).limit(1).maybeSingle(),
-      ]);
+      const bhiQ: any = supabase.from("bhi_snapshots").select("*").order("captured_at", { ascending: false }).limit(1).maybeSingle();
+      const srQ: any = supabase.from("sales_readiness_snapshots").select("overall_score,status,captured_at")
+        .order("captured_at", { ascending: false }).limit(1).maybeSingle();
+      const brQ: any = supabase.from("bhi_briefings").select("*").order("briefing_date", { ascending: false }).limit(1).maybeSingle();
+      const [bhiRes, srRes, brRes] = await Promise.all([bhiQ, srQ, brQ]);
+      const bhi = bhiRes?.data;
+      const sr = srRes?.data;
+      const br = brRes?.data;
       if (bhi) {
         setSnap(bhi as unknown as Snap);
         const { data: subRows } = await supabase
