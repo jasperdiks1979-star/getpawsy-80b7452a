@@ -214,6 +214,9 @@ async function handleSmokeTestStart(req: Request, userId: string): Promise<Respo
         metadata: { smoke_test: "true", initiator: userId },
         description: "GetPawsy live checkout smoke test",
       },
+      // Phone collection disabled across all GetPawsy Checkout sessions
+      // (Growth Cycle #1, 2026-06-28). Buyers use wallet/Stripe-stored details.
+      phone_number_collection: { enabled: false },
       metadata: { smoke_test: "true", initiator: userId, trace_id: traceId },
       success_url: `${origin}/admin/payments?smoke_test=success&cs={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/admin/payments?smoke_test=cancel`,

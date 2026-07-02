@@ -155,6 +155,9 @@ serve(async (req) => {
       payment_method_types: ["card", "link"],
       locale: "en",
       billing_address_collection: "auto",
+      // Phone collection disabled across all GetPawsy Checkout sessions
+      // (Growth Cycle #1, 2026-06-28).
+      phone_number_collection: { enabled: false },
       success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&test=1`,
       cancel_url: `${req.headers.get("origin")}/admin/test-payment`,
       metadata: {
