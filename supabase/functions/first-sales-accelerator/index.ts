@@ -356,19 +356,57 @@ async function nightlyAudit() {
   const s = sb();
   const wr = await buildWarRoom();
   const purchases = wr.today.purchases ?? 0;
-  const why = purchases > 0
-    ? `Sold ${purchases} order(s) today — revenue $${wr.today.revenue}`
-    : (wr.leaks[0]?.label ?? 'No qualified visitors reached checkout');
+  const f = wr.today ?? {};
+  // Explain WHY no sale (or celebrate the sale) using funnel evidence.
+  let why_no_sale: string;
+  if (purchases > 0) {
+    why_no_sale = `Sold ${purchases} order(s) today — revenue $${wr.today.revenue}. Keep amplifying the winning funnel.`;
+  } else if ((f.page_views ?? 0) === 0) {
+    why_no_sale = 'Zero visitors reached the site — no traffic to convert. Root cause: distribution, not conversion.';
+  } else if ((f.qualified ?? 0) === 0) {
+    why_no_sale = `${f.page_views} visitors landed but none engaged (scroll/PDP). Root cause: landing relevance / hook mismatch.`;
+  } else if ((f.add_to_cart ?? 0) === 0) {
+    why_no_sale = `${f.qualified ?? f.page_views} qualified visitors but zero add-to-cart. Root cause: PDP conversion (price/trust/CTA).`;
+  } else if ((f.checkout ?? 0) === 0) {
+    why_no_sale = `${f.add_to_cart} carts but zero began checkout. Root cause: cart friction (shipping, cost surprise, trust).`;
+  } else {
+    why_no_sale = `${f.checkout} began checkout but none completed. Root cause: checkout friction (payment, form, error).`;
+  }
+
   const improvement = wr.next_action;
-  // Log a learning event
+  const report = {
+    report_date: new Date().toISOString().slice(0, 10),
+    why_no_sale,
+    best_improvement: improvement.action,
+    improvement_reason: improvement.why,
+    expected_roi: Number(improvement.expected_roi ?? 0),
+    expected_revenue_usd: Number(improvement.expected_revenue ?? 0),
+    confidence: Number(improvement.confidence ?? 0),
+    eta_minutes: Number(improvement.eta_minutes ?? 0),
+    rollback: improvement.rollback ?? null,
+    funnel: f,
+    leaks: wr.leaks ?? [],
+    hero_product: wr.hero_product ?? null,
+    live_buyers: wr.live_buyers ?? null,
+    evidence: improvement.evidence ?? {},
+  };
+  const sha = await sha256(JSON.stringify(report));
+
+  // Persist the audit report for the dashboard
+  try {
+    await s.from('revenue_audit_reports').insert({ ...report, sha256: sha });
+  } catch (e) { console.error('revenue_audit_reports insert failed', e); }
+
+  // Learning ledger (kept for backward compat)
   try {
     await s.from('first_sales_events').insert({
       event_kind: purchases > 0 ? 'purchase' : 'bounce',
-      why, revenue: wr.today.revenue, confidence: improvement.confidence,
-      evidence: { funnel: wr.today, leaks: wr.leaks, hero: wr.hero_product },
+      why: why_no_sale, revenue: wr.today.revenue, confidence: improvement.confidence,
+      evidence: { funnel: f, leaks: wr.leaks, hero: wr.hero_product, improvement },
     });
   } catch {}
-  return { audit: { why, improvement, confidence: improvement.confidence, expected_roi: improvement.expected_roi } };
+
+  return { audit: { ...report, sha256: sha } };
 }
 
 async function certify() {
