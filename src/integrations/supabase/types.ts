@@ -21952,16 +21952,23 @@ export type Database = {
       first_sales_certifications: {
         Row: {
           add_to_cart: number
+          applied_fixes: Json | null
           checkouts: number
           confidence: number | null
           created_at: string
           forecast: Json | null
+          funnel: Json | null
           gross_margin: number | null
           hero_product: Json | null
           id: string
+          leaks: Json | null
+          live_buyers: Json | null
           net_margin: number | null
+          opportunities: Json | null
           purchases: number
           qualified_visitors: number
+          report_title: string | null
+          report_version: string | null
           revenue: number
           sha256: string | null
           top_leak: Json | null
@@ -21973,16 +21980,23 @@ export type Database = {
         }
         Insert: {
           add_to_cart?: number
+          applied_fixes?: Json | null
           checkouts?: number
           confidence?: number | null
           created_at?: string
           forecast?: Json | null
+          funnel?: Json | null
           gross_margin?: number | null
           hero_product?: Json | null
           id?: string
+          leaks?: Json | null
+          live_buyers?: Json | null
           net_margin?: number | null
+          opportunities?: Json | null
           purchases?: number
           qualified_visitors?: number
+          report_title?: string | null
+          report_version?: string | null
           revenue?: number
           sha256?: string | null
           top_leak?: Json | null
@@ -21994,16 +22008,23 @@ export type Database = {
         }
         Update: {
           add_to_cart?: number
+          applied_fixes?: Json | null
           checkouts?: number
           confidence?: number | null
           created_at?: string
           forecast?: Json | null
+          funnel?: Json | null
           gross_margin?: number | null
           hero_product?: Json | null
           id?: string
+          leaks?: Json | null
+          live_buyers?: Json | null
           net_margin?: number | null
+          opportunities?: Json | null
           purchases?: number
           qualified_visitors?: number
+          report_title?: string | null
+          report_version?: string | null
           revenue?: number
           sha256?: string | null
           top_leak?: Json | null
