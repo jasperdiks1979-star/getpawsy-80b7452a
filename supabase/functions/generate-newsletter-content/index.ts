@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 // Version marker for deployment verification
 const VERSION = "v2.4.0";
@@ -22,6 +23,8 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   try {
     const { contentType, customPrompt, includeProducts = true, maxProducts = 4 }: GenerateRequest = await req.json();

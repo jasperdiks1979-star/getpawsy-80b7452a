@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,8 @@ function keywordToSlug(keyword: string): string {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   const startTime = Date.now();
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

@@ -6,6 +6,7 @@
 //   POST { action: "approve", plan_id } — mark queued plan approved (admin only via JWT)
 //   POST { action: "status" }      — live recovery center payload
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -484,6 +485,8 @@ async function morningBrief(sb: ReturnType<typeof admin>) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
   try {
     const sb = admin();
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
