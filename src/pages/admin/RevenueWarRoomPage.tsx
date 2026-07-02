@@ -11,7 +11,30 @@ import { toast } from "sonner";
 type WarRoom = {
   captured_at: string;
   today: { visitors: number | null; qualified_visitors: number | null; add_to_cart: number | null; checkouts: number | null; purchases: number | null; revenue: number; orders: number; gross_margin: number; net_margin: number; live_visitors_15m: number | null };
-  live_buyers: { hot: number; warm: number };
+  live_buyers: {
+    buying_now: number;
+    hot: number;
+    warm: number;
+    cold: number;
+    window_minutes: number;
+    top: Array<{
+      session_id: string;
+      visitor_id: string | null;
+      class: 'BUYING_NOW' | 'HOT' | 'WARM' | 'COLD';
+      score: number;
+      last_stage: string | null;
+      minutes_since_last: number;
+      events: number;
+      distinct_products: number;
+      last_product_id: string | null;
+      last_product_name?: string | null;
+      country: string | null;
+      device: string | null;
+      utm_source: string | null;
+      landing_page: string | null;
+      signals: string[];
+    }>;
+  };
   leaks: Array<{ label: string; loss_est: number; evidence: string }>;
   hero_product: { product_id: string; name: string | null; atc_7d: number; purchases_7d: number; score: number } | null;
   next_action: { action: string; why: string; confidence: number; expected_revenue: number; expected_roi: number; eta_minutes: number; rollback: string; evidence: any };
