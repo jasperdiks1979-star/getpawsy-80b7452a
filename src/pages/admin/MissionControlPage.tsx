@@ -74,7 +74,7 @@ function ScoreCard({ label, score, sub, icon: Icon }: { label: string; score: nu
           </div>
           <Badge className={pill.cls}>{pill.label}</Badge>
         </div>
-        <div className={`text-3xl font-semibold ${scoreColor(s)}`}>{score == null ? "—" : s.toFixed(0)}</div>
+        <div className={`text-3xl font-semibold ${scoreColor(s)}`}>{score == null ? "UNKNOWN" : s.toFixed(0)}</div>
         {sub ? <div className="text-xs text-muted-foreground mt-1">{sub}</div> : null}
       </CardContent>
     </Card>
