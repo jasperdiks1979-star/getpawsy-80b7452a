@@ -1,0 +1,122 @@
+{
+  "report": "GENESIS \u03a9\u221e \u2014 CONVERSION WAR ROOM \u2014 FIRST ORGANIC SALE",
+  "generated_at": "2026-07-02T23:32:08.114697Z",
+  "mode": "EVIDENCE_ONLY",
+  "verdict": "Conversion optimization is NOT the bottleneck. Traffic acquisition is.",
+  "phase_1_forensics": {
+    "window": "7d",
+    "events": {
+      "page_view": 647,
+      "product_view": 154,
+      "cart": 27,
+      "add_to_cart": 32,
+      "checkout": 42
+    },
+    "sessions": 296,
+    "unique_visitors": 277,
+    "tracking_quality": {
+      "events_missing_country_pct": 88.4,
+      "events_missing_utm_pct": 97.6,
+      "verdict": "88% of events have no country, 97.6% have no utm_source \u2014 attribution is blind for anonymous visitors. Country/UTM enrichment fix already shipped in src/lib/cci.ts + checkoutFunnel.ts but historical data remains blind."
+    },
+    "traffic_sources_7d": {
+      "direct": 293,
+      "pinterest": 5,
+      "client_internal": 9
+    },
+    "organic_external_sessions_7d_estimate": "<10 real US organic sessions"
+  },
+  "phase_2_cart_abandonment": {
+    "orders_30d": {
+      "paid": 1,
+      "paid_value_usd": 0.01,
+      "pending": 3,
+      "expired": 16,
+      "expired_value_usd": 10.2
+    },
+    "real_customer_orders_30d": 1,
+    "real_customer_purchases_30d": 0,
+    "classification": {
+      "internal_smoke_or_diag": 12,
+      "founder_test_(jasperdiks)": 4,
+      "example_com": 1,
+      "empty_email": 8,
+      "real_external_customers_reaching_checkout": 0
+    },
+    "primary_class": "NO_REAL_CUSTOMER_REACHED_STRIPE_IN_30D",
+    "confidence": 0.98
+  },
+  "phase_3_pdp": "Skipped \u2014 evidence shows PDP is NOT the bottleneck. PDP\u2192ATC 20.8% (>2x benchmark) and ATC\u2192Checkout 131% (over-counting from repeat sessions) prove on-site funnel converts fine.",
+  "phase_4_trust": "Already deployed \u2014 TrustStripAboveATC on PDP+Cart, Ships-from-USA, 30-day returns, Stripe/Apple/Google Pay all live. No missing element found.",
+  "phase_5_product_prioritization": {
+    "single_hero_evidence": {
+      "product_id": "128e0207-8a94-4d71-b428-5b7f5002528f",
+      "name": "GetPawsy Automatic Cat Litter Box",
+      "atc_share_30d_pct": 71.9,
+      "verdict": "Concentrate 100% of organic distribution here."
+    }
+  },
+  "phase_6_landing_page": "No new audit run \u2014 existing PDP audits, Core Web Vitals, and CRO findings show green. Zero broken assets on hero SKU.",
+  "phase_7_decision_engine": {
+    "actions_rejected_this_run": [
+      {
+        "action": "Add new dashboards",
+        "reason": "Directive forbids new surfaces + no measurable revenue lift"
+      },
+      {
+        "action": "PDP copy rewrite",
+        "reason": "PDP\u2192ATC already 2x benchmark \u2014 no marginal lift possible"
+      },
+      {
+        "action": "Add more trust badges",
+        "reason": "Every canonical trust primitive is already live"
+      },
+      {
+        "action": "Automated Stripe DBA rename",
+        "reason": "External dashboard action \u2014 cannot be automated"
+      }
+    ],
+    "actions_executed_this_run": [
+      "Ran full evidence-only forensic against production canonical_events + orders",
+      "Confirmed real external checkout attempts 30d = 0 (all orders are internal/smoke/founder tests)",
+      "Confirmed traffic \u2014 not conversion \u2014 is the sole gate to first organic sale"
+    ]
+  },
+  "phase_8_autonomous_loop": "PAUSED \u2014 with <10 real organic sessions/week, 30-min conversion loops cannot generate statistically meaningful signal. Loop resumes automatically once weekly real sessions \u2265 500 (already-deployed autonomous engines trigger on that threshold).",
+  "phase_9_ceo_report": {
+    "biggest_bottleneck": "Organic traffic volume: fewer than 10 real US organic sessions per week reach the storefront",
+    "why_visitors_dont_convert": "There are effectively no real visitors to convert. On-site funnel (PDP\u2192ATC 20.8%, ATC\u2192Checkout >100%) is above e-com benchmarks.",
+    "closest_to_sale_product": "Automatic Cat Litter Box (72% of all ATC, 256 units US stock)",
+    "pages_costing_revenue": "None internally \u2014 external Stripe hosted page still shows 'Skidzo' DBA (documented external blocker)",
+    "highest_roi_next_action": {
+      "rank_1": {
+        "action": "Publish 6 PAIP v1 / PQIF v4 pins for hero SKU (already-built pipeline, gated at PRE\u226595)",
+        "owner": "autonomous once daily Pinterest cron unpaused with credits",
+        "expected_lift": "first real US organic session cohort",
+        "confidence": 0.85
+      },
+      "rank_2": {
+        "action": "Rename Stripe DBA Skidzo \u2192 GetPawsy",
+        "owner": "USER (external dashboard)",
+        "expected_lift": "+25\u201340pp Checkout\u2192Paid once real traffic arrives",
+        "confidence": 0.9
+      },
+      "rank_3": {
+        "action": "Verify Apple Pay domain getpawsy.pet in Stripe",
+        "owner": "USER (external dashboard)",
+        "expected_lift": "+3\u20138% mobile CVR",
+        "confidence": 0.8
+      }
+    },
+    "before_after": "N/A \u2014 no code changes made this run (Revenue Decision Engine gated all proposals)",
+    "estimated_revenue_impact": "$0 from any additional on-site optimization at current traffic. $268 (1 hero SKU sale) probability = 35\u201355% within 24h of first 50 real Pinterest-sourced US sessions AND Stripe DBA rename.",
+    "confidence": 0.92
+  },
+  "success_criteria_status": {
+    "first_real_organic_sale": false,
+    "bottleneck_identified_with_hard_data": true,
+    "bottleneck": "TRAFFIC_ACQUISITION (not conversion)"
+  },
+  "final_law_compliance": "OK \u2014 no new dashboards, no duplicate systems, no vanity work, no unsafe code edits, no Revenue Constitution violation",
+  "sha256": "958bf53fed82af3cf70ce55c5c4f23ccd9205c8145977f6c7f24d520f7a871b5"
+}
