@@ -387,6 +387,11 @@ export default function MissionControlPage() {
         </Card>
       </section>
 
+      {/* SECTION 4.5 — EXTERNAL MANUAL ACTIONS (owner-only unblockers) */}
+      <section>
+        <ExternalManualActionsCard />
+      </section>
+
       {/* SECTION 2 & 3 — LIVE + TODAY */}
       <section className="grid md:grid-cols-2 gap-4">
         <Card>
