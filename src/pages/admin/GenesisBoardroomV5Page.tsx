@@ -18,6 +18,8 @@ import {
   Layout as LayoutIcon, Star, X, Copy, ShieldCheck, Loader2, Command,
 } from "lucide-react";
 
+const ReactGrid = WidthProvider(GridLayout);
+
 /* -------------------------------------------------------------------------- */
 /*  Ω.5 Boardroom Layout Manager                                              */
 /* -------------------------------------------------------------------------- */
