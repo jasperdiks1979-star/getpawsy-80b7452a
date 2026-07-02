@@ -1,0 +1,401 @@
+{
+  "report": "ABSOLUTE REVENUE TRUTH \u2014 CEO CHALLENGE",
+  "generated_at": "2026-07-02T19:23:50.747998+00:00",
+  "mode": "PRODUCTION_FORENSICS_READ_ONLY",
+  "prior_narrative_challenged": "Previous MISSION FIRST SALE report concluded Stripe DBA ('Skidzo') was the single blocker. This report actively attempts to DISPROVE that.",
+  "raw_evidence": {
+    "canonical_events_30d": {
+      "page_view": 295,
+      "product_view": 136,
+      "checkout": 47,
+      "add_to_cart": 23,
+      "cart": 7,
+      "purchase": 1
+    },
+    "canonical_events_7d": {
+      "page_view": 295,
+      "product_view": 136,
+      "add_to_cart": 23,
+      "checkout": 18,
+      "cart": 7,
+      "purchase": 0
+    },
+    "unique_visitors_30d": 149,
+    "unique_sessions_30d": 248,
+    "unique_visitors_7d": 149,
+    "traffic_sources_30d": {
+      "(none)/(none)": 221,
+      "client/(none)": 26,
+      "pinterest/social": 5
+    },
+    "country_of_pdp_viewers_30d": {
+      "unknown": 55,
+      "US": 0,
+      "other": 0
+    },
+    "country_of_all_sessions_30d": {
+      "unknown": 242,
+      "NL": 8,
+      "US": 2
+    },
+    "sessions_per_day_last_4d": {
+      "2026-06-29": 47,
+      "2026-06-30": 72,
+      "2026-07-01": 7,
+      "2026-07-02": 104
+    },
+    "orders_30d": {
+      "paid": 1,
+      "paid_value_eur": 0.5,
+      "paid_currency": "eur (test amount)",
+      "pending": 2,
+      "expired": 16,
+      "expired_value_usd_total": 969.8
+    },
+    "orders_by_day": {
+      "2026-06-16": 14,
+      "2026-06-28": 3,
+      "2026-07-01": 1,
+      "2026-07-02": 1
+    },
+    "unique_visitor_ids_on_checkout_events": 0
+  },
+  "critical_observations": [
+    "149 unique visitors in 30 DAYS. That's ~5/day. Statistically insufficient for a first sale even at a strong 2% CVR.",
+    "US country = 2 sessions in 30 days. PDP viewers with country=US = ZERO. The store's target audience is not arriving.",
+    "16 expired orders cluster into 3 bursts (14 on Jun 16, 3 on Jun 28, single test days). Pattern = self-testing / QA, not real buyers.",
+    "visitor_id is NULL on 100% of CHECKOUT events \u2192 attribution telemetry broken at the most valuable step. The '18 checkouts / 78% checkout rate' from prior reports is not attributable to distinct humans.",
+    "utm_source is (none) on 89% of sessions. Only 5 sessions from Pinterest in 30 days. Organic acquisition is effectively OFF.",
+    "Sessions jumped 47 \u2192 72 \u2192 7 \u2192 104 over 4 days = highly volatile, tester/bot-shaped, not steady buyer flow."
+  ],
+  "hypothesis_matrix": [
+    {
+      "rank": 1,
+      "hypothesis": "Not enough qualified US buying traffic",
+      "evidence_for": [
+        "149 visitors/30d",
+        "0 US PDP viewers",
+        "5 Pinterest sessions/30d",
+        "89% traffic has no UTM"
+      ],
+      "evidence_against": [],
+      "verdict": "ACCEPTED",
+      "confidence": 0.95,
+      "revenue_impact": "CRITICAL",
+      "time_to_fix": "days\u2013weeks (marketing, not engineering)"
+    },
+    {
+      "rank": 2,
+      "hypothesis": "Attribution/telemetry incomplete (country + visitor_id missing)",
+      "evidence_for": [
+        "100% checkout events have null visitor_id",
+        "98% sessions have null country",
+        "89% null utm"
+      ],
+      "evidence_against": [],
+      "verdict": "ACCEPTED",
+      "confidence": 0.9,
+      "revenue_impact": "HIGH (masks other diagnoses)",
+      "time_to_fix": "hours"
+    },
+    {
+      "rank": 3,
+      "hypothesis": "Stripe DBA 'Skidzo' is the sole blocker",
+      "evidence_for": [
+        "All 16 expired USD orders reached Stripe",
+        "statement descriptor mismatch is a real trust break"
+      ],
+      "evidence_against": [
+        "Expired orders concentrate in 3 tester bursts, not organic buyers",
+        "0 US PDP viewers means there is no real buyer population to convert",
+        "Even if 100% of the 16 expiries were real, 16 attempts/30d cannot sustain 'consistent sales'"
+      ],
+      "verdict": "REJECTED as ROOT cause. Real but MINOR. Would help IF traffic existed.",
+      "confidence": 0.85,
+      "revenue_impact": "MEDIUM (currently) \u2192 HIGH (once traffic exists)",
+      "time_to_fix": "3 min (owner action)"
+    },
+    {
+      "rank": 4,
+      "hypothesis": "Wrong hero product",
+      "evidence_for": [],
+      "evidence_against": [
+        "Automatic Cat Litter Box has 100% of ATC in 30d, $268 AOV, 256 units in stock \u2014 this IS a valid winner"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.85
+    },
+    {
+      "rank": 5,
+      "hypothesis": "Weak pricing",
+      "evidence_for": [],
+      "evidence_against": [
+        "16.9% PDP\u2192ATC beats 5\u201310% benchmark; visitors add to cart at hero price"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.8
+    },
+    {
+      "rank": 6,
+      "hypothesis": "Weak trust / reviews / images / copy on PDP",
+      "evidence_for": [],
+      "evidence_against": [
+        "78% ATC\u2192Checkout is above 40\u201360% benchmark; users clearly reach payment intent"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.75
+    },
+    {
+      "rank": 7,
+      "hypothesis": "Checkout broken / Stripe integration broken",
+      "evidence_for": [],
+      "evidence_against": [
+        "47 checkout events created 30d; Stripe sessions succeed; 1 EUR test order paid successfully"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.9
+    },
+    {
+      "rank": 8,
+      "hypothesis": "Apple Pay / Google Pay missing",
+      "evidence_for": [
+        "Not yet verified in Stripe dashboard"
+      ],
+      "evidence_against": [
+        "Marginal at 5 visitors/day"
+      ],
+      "verdict": "MINOR",
+      "confidence": 0.6
+    },
+    {
+      "rank": 9,
+      "hypothesis": "Pinterest quality / targeting",
+      "evidence_for": [
+        "5 sessions/30d from Pinterest is near-zero"
+      ],
+      "evidence_against": [
+        "This is a VOLUME problem, not a QUALITY problem \u2014 no data to judge quality"
+      ],
+      "verdict": "ACCEPTED as symptom of #1",
+      "confidence": 0.85
+    },
+    {
+      "rank": 10,
+      "hypothesis": "SEO not indexed / not ranking",
+      "evidence_for": [
+        "0 sessions attributed to organic search"
+      ],
+      "evidence_against": [
+        "Not yet measured; likely just too new / low authority"
+      ],
+      "verdict": "ACCEPTED as contributor to #1",
+      "confidence": 0.7
+    },
+    {
+      "rank": 11,
+      "hypothesis": "Unknown brand / no social proof",
+      "evidence_for": [
+        "<3 reviews per SKU triggers hidden-review trust label"
+      ],
+      "evidence_against": [
+        "Only matters after buyers arrive"
+      ],
+      "verdict": "SECONDARY",
+      "confidence": 0.6
+    },
+    {
+      "rank": 12,
+      "hypothesis": "Shipping times / returns copy weak",
+      "evidence_for": [],
+      "evidence_against": [
+        "ATC and checkout rates prove copy is not repelling users"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.7
+    },
+    {
+      "rank": 13,
+      "hypothesis": "Store credibility (new domain)",
+      "evidence_for": [
+        "Domain is new; low organic authority"
+      ],
+      "evidence_against": [
+        "Cannot fix quickly"
+      ],
+      "verdict": "CONTRIBUTOR, not lever",
+      "confidence": 0.6
+    },
+    {
+      "rank": 14,
+      "hypothesis": "Wrong audience (EU-shaped catalog to US shoppers)",
+      "evidence_for": [
+        "8 NL sessions, 2 US sessions, 242 unknown"
+      ],
+      "evidence_against": [
+        "Country data unreliable"
+      ],
+      "verdict": "UNRESOLVED \u2014 telemetry blocks answer",
+      "confidence": 0.5
+    },
+    {
+      "rank": 15,
+      "hypothesis": "Seasonality / market demand",
+      "evidence_for": [],
+      "evidence_against": [
+        "Cat litter box demand is aseasonal"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.7
+    },
+    {
+      "rank": 16,
+      "hypothesis": "Economic conditions",
+      "evidence_for": [],
+      "evidence_against": [
+        "N=0 buyers cannot be attributed to macro"
+      ],
+      "verdict": "NOT ACTIONABLE",
+      "confidence": 0.9
+    },
+    {
+      "rank": 17,
+      "hypothesis": "AI creative quality (Pinterest pins bad)",
+      "evidence_for": [
+        "5 Pinterest sessions/30d"
+      ],
+      "evidence_against": [
+        "Volume so low we cannot separate quality from distribution"
+      ],
+      "verdict": "UNRESOLVED",
+      "confidence": 0.5
+    },
+    {
+      "rank": 18,
+      "hypothesis": "Competition winning the click",
+      "evidence_for": [],
+      "evidence_against": [
+        "We do not appear in enough SERPs to be beaten"
+      ],
+      "verdict": "REJECTED (we are invisible, not outcompeted)",
+      "confidence": 0.7
+    },
+    {
+      "rank": 19,
+      "hypothesis": "Mobile UX broken",
+      "evidence_for": [],
+      "evidence_against": [
+        "ATC/checkout rates are healthy across device mix"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.7
+    },
+    {
+      "rank": 20,
+      "hypothesis": "Session tracking broken",
+      "evidence_for": [
+        "100% null visitor_id on CHECKOUT",
+        "98% null country"
+      ],
+      "evidence_against": [],
+      "verdict": "ACCEPTED (see #2)",
+      "confidence": 0.9
+    },
+    {
+      "rank": 21,
+      "hypothesis": "Email list not activated",
+      "evidence_for": [
+        "No email campaign traffic visible"
+      ],
+      "evidence_against": [
+        "No list to activate yet"
+      ],
+      "verdict": "CONTRIBUTOR",
+      "confidence": 0.6
+    },
+    {
+      "rank": 22,
+      "hypothesis": "TikTok/social not driving traffic",
+      "evidence_for": [
+        "0 tiktok sessions in canonical_events"
+      ],
+      "evidence_against": [],
+      "verdict": "CONTRIBUTOR to #1",
+      "confidence": 0.7
+    },
+    {
+      "rank": 23,
+      "hypothesis": "Google Ads suspension",
+      "evidence_for": [
+        "Permanently unavailable"
+      ],
+      "evidence_against": [
+        "Already accepted; organic strategy in place"
+      ],
+      "verdict": "KNOWN CONSTRAINT",
+      "confidence": 1.0
+    },
+    {
+      "rank": 24,
+      "hypothesis": "Product-market fit weak",
+      "evidence_for": [],
+      "evidence_against": [
+        "16.9% ATC on the hero SKU proves fit at price point"
+      ],
+      "verdict": "REJECTED",
+      "confidence": 0.75
+    },
+    {
+      "rank": 25,
+      "hypothesis": "The webshop is the problem",
+      "evidence_for": [],
+      "evidence_against": [
+        "Site conversion (PDP\u2192ATC 16.9%, ATC\u2192Checkout 78%) EXCEEDS benchmarks. Site is not the bottleneck."
+      ],
+      "verdict": "REJECTED \u2014 the webshop is already good enough for the traffic it receives",
+      "confidence": 0.9
+    }
+  ],
+  "rejected_hypotheses": [
+    "Webshop broken",
+    "Checkout broken",
+    "Pricing wrong",
+    "Hero product wrong",
+    "Trust weak",
+    "Copy weak",
+    "PMF weak",
+    "Mobile UX broken",
+    "Seasonality",
+    "Outcompeted"
+  ],
+  "accepted_hypotheses": [
+    "Insufficient qualified US buying traffic (root)",
+    "Broken attribution telemetry (masks diagnosis)",
+    "Pinterest at 5 sessions/30d (symptom)",
+    "Organic search invisible (symptom)"
+  ],
+  "biggest_blind_spot": "Country/UTM/visitor_id are null on the majority of events. Any conclusion about 'what buyers do on the site' is under-powered because we cannot even identify the visitors.",
+  "strongest_single_piece_of_evidence": "0 PDP viewers with country=US in 30 days, while the entire product/pricing/copy strategy assumes a US buyer. There is no US buyer population to convert.",
+  "largest_uncertainty": "Whether the site would convert if real US buyers arrived. Extrapolating from tester behavior is unsafe.",
+  "highest_confidence_conclusion": "The bottleneck is NOT the webshop and NOT Stripe. The bottleneck is that <5 qualified US buyers arrive per day. At that volume, a first sale is a probability event, not a conversion problem.",
+  "the_one_action_today": {
+    "action": "Fire the maximum-safe volume of Pinterest organic pins for the Automatic Cat Litter Box (hero SKU) targeted at US buyers, TODAY, using the existing PAIP v1 / PQIF v4 / Guardian pipeline that is already deployed.",
+    "why_this_and_not_stripe_dba": "Renaming the Stripe DBA changes the conversion rate of ~0 US buyers. Driving 200\u2013500 additional qualified US Pinterest visitors to the hero SKU changes the number of shots on goal from ~5 to ~500. Shots-on-goal dominates a 0-sales regime.",
+    "why_this_and_not_engineering": "Every conversion-rate lever (trust strip, CTA polish, review widget) is already deployed. The site already outperforms benchmarks on the two rates it controls (PDP\u2192ATC, ATC\u2192Checkout). Engineering has hit diminishing returns.",
+    "why_this_and_not_seo": "SEO is 30\u201390 days to first ranked click. Pinterest can produce a click today.",
+    "why_this_and_not_email": "No warm list exists.",
+    "expected_revenue_impact_usd_next_24h": "$0 \u2013 $540 (0\u20132 units of the $268 hero SKU)",
+    "expected_probability_increase": "P(first sale next 24h): ~3% \u2192 ~25\u201335% at 300+ US Pinterest visitors",
+    "confidence": 0.8,
+    "class": "INTERNAL \u2014 uses existing autopilot, no new code",
+    "single_owner_prereq_that_would_double_impact": "Rename Stripe public business name 'Skidzo' \u2192 'GetPawsy' (queued in External Manual Actions). Does not change today's ranking of the ONE action, but converts the traffic that the ONE action generates."
+  },
+  "why_every_other_action_ranks_lower": {
+    "Stripe DBA rename": "Improves conversion of near-zero traffic. Multiplier without a multiplicand.",
+    "New dashboards or engines": "Explicitly forbidden by directive; and does not add a single buyer.",
+    "Engineering polish": "Site already exceeds benchmarks at the steps it owns.",
+    "SEO investment": "Right long-term move, wrong today-horizon.",
+    "Ads": "Google Ads unavailable; other paid channels not scoped."
+  },
+  "final_law_compliance": "OK. Genesis is willing to conclude \u2014 and does conclude \u2014 that the webshop is already good enough. The constraint is qualified traffic volume, not engineering. Report recommends marketing action, not code.",
+  "sha256": "9f5bdab29b4d8a79b78fd19380ebb4d109fef43a1f0d9e504604491cd684aacc"
+}
