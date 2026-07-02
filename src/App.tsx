@@ -2503,6 +2503,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="war-room-v1"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisWarRoomV1Page />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="finance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
