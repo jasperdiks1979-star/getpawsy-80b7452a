@@ -7400,23 +7400,36 @@ export type Database = {
           add_to_cart_at: string | null
           begin_checkout_at: string | null
           click_at: string | null
+          collection_id: string | null
           created_at: string
+          currency: string | null
+          device: string | null
           engagement_start_at: string | null
           furthest_step: string | null
           landing_at: string | null
           landing_page: string | null
+          last_step: string | null
+          last_step_at: string | null
           page_view_at: string | null
           payment_at: string | null
+          product_id: string | null
+          product_name: string | null
           purchase_at: string | null
+          quantity: number | null
           redirect_at: string | null
+          referrer: string | null
           remove_from_cart_at: string | null
           scroll_at: string | null
           session_id: string
+          session_start_at: string | null
+          source_page: string | null
           traffic_type: string | null
           updated_at: string
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
+          value: number | null
+          variant_id: string | null
           view_cart_at: string | null
           view_item_at: string | null
           visitor_id: string | null
@@ -7425,23 +7438,36 @@ export type Database = {
           add_to_cart_at?: string | null
           begin_checkout_at?: string | null
           click_at?: string | null
+          collection_id?: string | null
           created_at?: string
+          currency?: string | null
+          device?: string | null
           engagement_start_at?: string | null
           furthest_step?: string | null
           landing_at?: string | null
           landing_page?: string | null
+          last_step?: string | null
+          last_step_at?: string | null
           page_view_at?: string | null
           payment_at?: string | null
+          product_id?: string | null
+          product_name?: string | null
           purchase_at?: string | null
+          quantity?: number | null
           redirect_at?: string | null
+          referrer?: string | null
           remove_from_cart_at?: string | null
           scroll_at?: string | null
           session_id: string
+          session_start_at?: string | null
+          source_page?: string | null
           traffic_type?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          value?: number | null
+          variant_id?: string | null
           view_cart_at?: string | null
           view_item_at?: string | null
           visitor_id?: string | null
@@ -7450,23 +7476,36 @@ export type Database = {
           add_to_cart_at?: string | null
           begin_checkout_at?: string | null
           click_at?: string | null
+          collection_id?: string | null
           created_at?: string
+          currency?: string | null
+          device?: string | null
           engagement_start_at?: string | null
           furthest_step?: string | null
           landing_at?: string | null
           landing_page?: string | null
+          last_step?: string | null
+          last_step_at?: string | null
           page_view_at?: string | null
           payment_at?: string | null
+          product_id?: string | null
+          product_name?: string | null
           purchase_at?: string | null
+          quantity?: number | null
           redirect_at?: string | null
+          referrer?: string | null
           remove_from_cart_at?: string | null
           scroll_at?: string | null
           session_id?: string
+          session_start_at?: string | null
+          source_page?: string | null
           traffic_type?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          value?: number | null
+          variant_id?: string | null
           view_cart_at?: string | null
           view_item_at?: string | null
           visitor_id?: string | null
