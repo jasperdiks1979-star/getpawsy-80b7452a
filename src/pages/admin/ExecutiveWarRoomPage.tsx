@@ -69,12 +69,13 @@ export default function ExecutiveWarRoomPage() {
       const brQ: any = supabase.from("bhi_briefings").select("top_threat,top_opportunity,top_revenue_leak,highest_roi,confidence").order("briefing_date", { ascending: false }).limit(1).maybeSingle();
       const ordersQ: any = supabase.from("orders").select("total_amount,created_at").eq("status", "paid").gte("created_at", dayIso);
       const pinsQ: any = supabase.from("pinterest_pins").select("id", { count: "exact", head: true }).gte("created_at", dayIso);
-      const pvQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "page_view").gte("occurred_at", dayIso);
-      const atcQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "add_to_cart").gte("occurred_at", dayIso);
-      const chkQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "begin_checkout").gte("occurred_at", dayIso);
-      const purchQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "purchase").gte("occurred_at", dayIso);
-      const liveQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "page_view").gte("occurred_at", since5m);
-      const topProdQ: any = supabase.from("canonical_events").select("product_id").eq("canonical_name", "add_to_cart").gte("occurred_at", dayIso).not("product_id", "is", null).limit(500);
+      const ce: any = supabase.from("canonical_events");
+      const pvQ: any = ce.select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PAGE_VIEW").gte("occurred_at", dayIso);
+      const atcQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_ADD_TO_CART").gte("occurred_at", dayIso);
+      const chkQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_CHECKOUT").gte("occurred_at", dayIso);
+      const purchQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PURCHASE").gte("occurred_at", dayIso);
+      const liveQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PAGE_VIEW").gte("occurred_at", since5m);
+      const topProdQ: any = supabase.from("canonical_events").select("product_id").eq("canonical_name", "CANONICAL_ADD_TO_CART").gte("occurred_at", dayIso).not("product_id", "is", null).limit(500);
       const topCampQ: any = supabase.from("canonical_events").select("utm_campaign").gte("occurred_at", dayIso).not("utm_campaign", "is", null).limit(500);
       const pendingQ: any = supabase.from("governance_decision_log").select("id,timestamp,source_engine,decision_type,proposal,expected_metric,expected_value,confidence,outcome").is("outcome", null).order("timestamp", { ascending: false }).limit(15);
 
