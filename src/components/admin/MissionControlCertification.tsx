@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, ExternalLink, Inbox, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Metric = { label: string; value: string; source?: string };
 type Evidence = { label: string; to?: string; href?: string };
@@ -226,7 +228,15 @@ function tone(score: number) {
   return "bg-red-600 text-white";
 }
 
-export default function MissionControlCertification({ ctx }: { ctx: DrillCtx }) {
+type Props = {
+  ctx: DrillCtx;
+  loading?: boolean;
+  error?: string | null;
+  hasSnapshot?: boolean;
+  onRetry?: () => void;
+};
+
+export default function MissionControlCertification({ ctx, loading = false, error = null, hasSnapshot = true, onRetry }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [showOnlyWatch, setShowOnlyWatch] = useState(false);
 
@@ -245,6 +255,51 @@ export default function MissionControlCertification({ ctx }: { ctx: DrillCtx }) 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
+        {loading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground" role="status" aria-live="polite">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading certification snapshot…
+          </div>
+        ) : null}
+
+        {!loading && error ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Couldn't load BHI snapshot</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2">
+              <div className="text-xs break-words">{error}</div>
+              {onRetry ? (
+                <Button size="sm" variant="outline" onClick={onRetry}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                </Button>
+              ) : null}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {!loading && !error && !hasSnapshot ? (
+          <div className="rounded-md border border-dashed p-6 text-center space-y-2">
+            <Inbox className="h-5 w-5 mx-auto text-muted-foreground" />
+            <div className="text-sm font-medium">No BHI snapshot yet</div>
+            <div className="text-xs text-muted-foreground">
+              Run the BHI compute job to generate the first certification snapshot. Drill-down metrics will populate once data is available.
+            </div>
+            {onRetry ? (
+              <Button size="sm" variant="outline" onClick={onRetry}>
+                <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {loading && !hasSnapshot ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary">Readiness avg {readinessAvg.toFixed(2)}</Badge>
           <Badge variant="secondary">Maturity avg {maturityAvg.toFixed(2)}</Badge>
@@ -287,37 +342,71 @@ export default function MissionControlCertification({ ctx }: { ctx: DrillCtx }) 
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
                         <div className="text-xs font-medium text-muted-foreground mb-1">Contributing metrics</div>
-                        <ul className="text-xs space-y-1">
-                          {c.metrics(ctx).map((m, i) => (
-                            <li key={i} className="flex items-baseline justify-between gap-3 border-b border-border/40 pb-1">
-                              <span className="text-muted-foreground">
-                                {m.label}
-                                {m.source ? <span className="ml-1 opacity-60">({m.source})</span> : null}
-                              </span>
-                              <span className="font-mono">{m.value}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {loading ? (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Loading metrics…
+                          </div>
+                        ) : !hasSnapshot ? (
+                          <div className="text-xs text-muted-foreground italic">
+                            Metrics unavailable — no BHI snapshot loaded yet.
+                          </div>
+                        ) : (() => {
+                          const items = c.metrics(ctx);
+                          if (!items.length) {
+                            return <div className="text-xs text-muted-foreground italic">No contributing metrics recorded.</div>;
+                          }
+                          return (
+                            <ul className="text-xs space-y-1">
+                              {items.map((m, i) => {
+                                const missing = m.value === "—" || m.value === "" || m.value == null;
+                                return (
+                                  <li key={i} className="flex items-baseline justify-between gap-3 border-b border-border/40 pb-1">
+                                    <span className="text-muted-foreground">
+                                      {m.label}
+                                      {m.source ? <span className="ml-1 opacity-60">({m.source})</span> : null}
+                                    </span>
+                                    <span className={`font-mono ${missing ? "text-muted-foreground italic" : ""}`} title={missing ? "Data not available" : undefined}>
+                                      {missing ? "unavailable" : m.value}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          );
+                        })()}
                       </div>
                       <div>
                         <div className="text-xs font-medium text-muted-foreground mb-1">Evidence links</div>
-                        <ul className="text-xs space-y-1">
-                          {c.evidence.map((e, i) => (
-                            <li key={i}>
-                              {e.to ? (
-                                <Link to={e.to} className="inline-flex items-center gap-1 text-primary hover:underline">
-                                  {e.label} <ExternalLink className="h-3 w-3" />
-                                </Link>
-                              ) : e.href ? (
-                                <a href={e.href} className="inline-flex items-center gap-1 text-primary hover:underline" target="_blank" rel="noreferrer">
-                                  {e.label} <ExternalLink className="h-3 w-3" />
-                                </a>
-                              ) : (
-                                <span>{e.label}</span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
+                        {(() => {
+                          const linked = c.evidence.filter((e) => e.to || e.href);
+                          if (!c.evidence.length) {
+                            return <div className="text-xs text-muted-foreground italic">No evidence sources registered for this component.</div>;
+                          }
+                          if (!linked.length) {
+                            return <div className="text-xs text-muted-foreground italic">Evidence sources listed but no links are available yet.</div>;
+                          }
+                          return (
+                            <ul className="text-xs space-y-1">
+                              {c.evidence.map((e, i) => (
+                                <li key={i}>
+                                  {e.to ? (
+                                    <Link to={e.to} className="inline-flex items-center gap-1 text-primary hover:underline">
+                                      {e.label} <ExternalLink className="h-3 w-3" />
+                                    </Link>
+                                  ) : e.href ? (
+                                    <a href={e.href} className="inline-flex items-center gap-1 text-primary hover:underline" target="_blank" rel="noreferrer">
+                                      {e.label} <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground italic" title="No link available">
+                                      {e.label} · link unavailable
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          );
+                        })()}
                       </div>
                     </div>
 

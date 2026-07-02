@@ -126,6 +126,7 @@ export default function MissionControlPage() {
     visitors: 0, addToCart: 0, checkout: 0, purchase: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [verify, setVerify] = useState<{
     running: boolean;
@@ -139,12 +140,15 @@ export default function MissionControlPage() {
 
   const loadCore = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const bhiQ: any = supabase.from("bhi_snapshots").select("*").order("captured_at", { ascending: false }).limit(1).maybeSingle();
       const srQ: any = supabase.from("sales_readiness_snapshots").select("overall_score,status,captured_at")
         .order("captured_at", { ascending: false }).limit(1).maybeSingle();
       const brQ: any = supabase.from("bhi_briefings").select("*").order("briefing_date", { ascending: false }).limit(1).maybeSingle();
       const [bhiRes, srRes, brRes] = await Promise.all([bhiQ, srQ, brQ]);
+      const firstErr = bhiRes?.error || srRes?.error || brRes?.error;
+      if (firstErr) throw firstErr;
       const bhi = bhiRes?.data;
       const sr = srRes?.data;
       const br = brRes?.data;
@@ -157,6 +161,8 @@ export default function MissionControlPage() {
       }
       if (sr) setSalesReadiness({ score: Number((sr as any).overall_score) || 0, status: String((sr as any).status || "") });
       if (br) setBriefing(br as unknown as Briefing);
+    } catch (e: any) {
+      setLoadError(e?.message ?? "Failed to load BHI snapshot");
     } finally {
       setLoading(false);
     }
@@ -567,7 +573,7 @@ export default function MissionControlPage() {
 
       {/* SECTION — COMPONENT CERTIFICATION DRILL-DOWN */}
       <section>
-        <MissionControlCertification ctx={drillCtx} />
+        <MissionControlCertification ctx={drillCtx} loading={loading} error={loadError} hasSnapshot={!!snap} onRetry={loadCore} />
       </section>
     </div>
   );
