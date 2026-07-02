@@ -21949,6 +21949,123 @@ export type Database = {
         }
         Relationships: []
       }
+      first_sales_certifications: {
+        Row: {
+          add_to_cart: number
+          checkouts: number
+          confidence: number | null
+          created_at: string
+          forecast: Json | null
+          gross_margin: number | null
+          hero_product: Json | null
+          id: string
+          net_margin: number | null
+          purchases: number
+          qualified_visitors: number
+          revenue: number
+          sha256: string | null
+          top_leak: Json | null
+          top_opportunity: Json | null
+          top_recommendation: Json | null
+          visitors: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          add_to_cart?: number
+          checkouts?: number
+          confidence?: number | null
+          created_at?: string
+          forecast?: Json | null
+          gross_margin?: number | null
+          hero_product?: Json | null
+          id?: string
+          net_margin?: number | null
+          purchases?: number
+          qualified_visitors?: number
+          revenue?: number
+          sha256?: string | null
+          top_leak?: Json | null
+          top_opportunity?: Json | null
+          top_recommendation?: Json | null
+          visitors?: number
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          add_to_cart?: number
+          checkouts?: number
+          confidence?: number | null
+          created_at?: string
+          forecast?: Json | null
+          gross_margin?: number | null
+          hero_product?: Json | null
+          id?: string
+          net_margin?: number | null
+          purchases?: number
+          qualified_visitors?: number
+          revenue?: number
+          sha256?: string | null
+          top_leak?: Json | null
+          top_opportunity?: Json | null
+          top_recommendation?: Json | null
+          visitors?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      first_sales_events: {
+        Row: {
+          confidence: number | null
+          country: string | null
+          device: string | null
+          event_kind: string
+          evidence: Json
+          id: string
+          journey: Json
+          occurred_at: string
+          product_id: string | null
+          revenue: number | null
+          session_id: string | null
+          traffic_source: string | null
+          visitor_id: string | null
+          why: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          country?: string | null
+          device?: string | null
+          event_kind: string
+          evidence?: Json
+          id?: string
+          journey?: Json
+          occurred_at?: string
+          product_id?: string | null
+          revenue?: number | null
+          session_id?: string | null
+          traffic_source?: string | null
+          visitor_id?: string | null
+          why?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          country?: string | null
+          device?: string | null
+          event_kind?: string
+          evidence?: Json
+          id?: string
+          journey?: Json
+          occurred_at?: string
+          product_id?: string | null
+          revenue?: number | null
+          session_id?: string | null
+          traffic_source?: string | null
+          visitor_id?: string | null
+          why?: string | null
+        }
+        Relationships: []
+      }
       fos_reviews: {
         Row: {
           biggest_losses: Json | null
