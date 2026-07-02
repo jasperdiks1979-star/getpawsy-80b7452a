@@ -34,6 +34,17 @@ export const BANNED_PHRASES = [
   "never clean litter again",
   "shocking",
   "doctors hate",
+  // duplicate-slop stems flagged by hero reject analysis (2026-07-02)
+  "cleaner litter, less work",
+  "tired of scooping",
+  "tired of litter scooping",
+  "tired of litter box chores",
+  "tired of daily scooping",
+  "cat parents love this",
+  "cat owners love this",
+  "cat owners love it",
+  "what if you never scooped",
+  "reclaim your time",
 ];
 
 export function isLocalImage(url: string | null | undefined): boolean {
