@@ -209,6 +209,33 @@ export default function MissionControlPage() {
     return () => clearInterval(iv);
   }, [loadCore, loadToday, loadLive]);
 
+  const recomputeAndCompare = useCallback(async () => {
+    setVerify((v) => ({ ...v, running: true, error: null }));
+    try {
+      const { data, error } = await supabase.functions.invoke("bhi-compute", { body: {} });
+      if (error) throw error;
+      const newSha: string | null = (data as any)?.sha256 ?? null;
+      const newOverall = Number((data as any)?.overall ?? NaN);
+      const newConfidence = Number((data as any)?.confidence ?? NaN);
+      const priorSha = snap?.sha256 ?? null;
+      setVerify({
+        running: false,
+        newSha,
+        newOverall: Number.isFinite(newOverall) ? newOverall : null,
+        newConfidence: Number.isFinite(newConfidence) ? newConfidence : null,
+        matches: newSha && priorSha ? newSha === priorSha : null,
+        error: null,
+        ranAt: new Date().toISOString(),
+      });
+      await loadCore();
+    } catch (e: any) {
+      setVerify({
+        running: false, newSha: null, newOverall: null, newConfidence: null,
+        matches: null, error: e?.message ?? "Recompute failed", ranAt: new Date().toISOString(),
+      });
+    }
+  }, [snap?.sha256, loadCore]);
+
   const subsByCategory = useMemo(() => {
     const map = new Map<string, Sub[]>();
     subs.forEach((s) => {
