@@ -45,6 +45,22 @@ export const BANNED_PHRASES = [
   "cat owners love it",
   "what if you never scooped",
   "reclaim your time",
+  // Round 2 (2026-07-02): overlay + description slop from hero reject sweep
+  "read reviews",
+  "see how it works",
+  "cat parents rave",
+  "cat parents praise",
+  "are loving it",
+  "viral find",
+  "litter box chores",
+  "litter box cleaning hassles",
+  "clean smarter",
+  "clean with ease",
+  "made for cat",
+  "cozy morning routine",
+  "right at home in the living room",
+  "tips for building a calmer",
+  "cozier home for your pet",
 ];
 
 export function isLocalImage(url: string | null | undefined): boolean {
