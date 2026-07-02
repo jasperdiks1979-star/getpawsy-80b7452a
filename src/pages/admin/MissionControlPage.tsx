@@ -126,6 +126,7 @@ export default function MissionControlPage() {
     visitors: 0, addToCart: 0, checkout: 0, purchase: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [verify, setVerify] = useState<{
     running: boolean;
@@ -572,7 +573,7 @@ export default function MissionControlPage() {
 
       {/* SECTION — COMPONENT CERTIFICATION DRILL-DOWN */}
       <section>
-        <MissionControlCertification ctx={drillCtx} />
+        <MissionControlCertification ctx={drillCtx} loading={loading} error={loadError} hasSnapshot={!!snap} onRetry={loadCore} />
       </section>
     </div>
   );
