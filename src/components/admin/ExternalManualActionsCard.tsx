@@ -60,26 +60,6 @@ const ACTIONS: Action[] = [
       "Branding → upload logo (512×512 min) and icon (128×128). Accent color = your paw-brand primary. Save.",
   },
   {
-    id: "google-ads-launch",
-    title: "Launch 6 pre-registered US Search campaigns ($15/day each)",
-    where: "Google Ads · Campaigns",
-    where_url: "https://ads.google.com/aw/campaigns",
-    priority: "P0", blocking: true, status: "READY_FOR_OWNER",
-    eta_minutes: 20, confidence_pct: 92, revenue_impact: "HIGH",
-    copy_instructions:
-      "Follow the Launch Pack: /mnt/documents/mission-first-revenue-p1/google-ads-launch-pack.json — 6 bestseller campaigns pre-registered as pending_launch. Paste headlines/descriptions/keywords/negatives verbatim. Set geo = United States, device bid +10% mobile, Maximize Clicks, max CPC $1.20. Enable each campaign to go live.",
-  },
-  {
-    id: "google-ads-billing",
-    title: "Confirm Google Ads billing is active",
-    where: "Google Ads · Billing",
-    where_url: "https://ads.google.com/aw/billing",
-    priority: "P0", blocking: true, status: "READY_FOR_OWNER",
-    eta_minutes: 2, confidence_pct: 100, revenue_impact: "HIGH",
-    copy_instructions:
-      "Billing → payment method → ensure card active with sufficient limit ($3k/mo suggested for the 6-campaign launch).",
-  },
-  {
     id: "gsc-verify",
     title: "Confirm Google Search Console owns getpawsy.pet",
     where: "Google Search Console",
