@@ -47,25 +47,26 @@ Deno.serve(async (req) => {
   // Fast-path: explicit reinstate list (no scoring). Trusted caller has already
   // dry-run scored these ids via PQIF v4 and confirms the passing set.
   if (reinstateIds && !dryRun) {
-    const { data: upd, error: updErr } = await sb
-      .from("pinterest_pin_queue")
-      .update({
-        status: "draft",
-        rejection_reason: null,
-        updated_at: new Date().toISOString(),
-      })
-      .in("id", reinstateIds)
-      .eq("product_id", productId)  // safety: never touch other products
-      .eq("status", "rejected")     // safety: only rejected → draft
-      .select("id");
-    if (updErr) {
-      return new Response(
-        JSON.stringify({ ok: false, error: updErr.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const results: { id: string; ok: boolean; error?: string }[] = [];
+    for (const id of reinstateIds) {
+      const { data, error } = await sb
+        .from("pinterest_pin_queue")
+        .update({
+          status: "draft",
+          rejection_reason: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("product_id", productId)  // safety: never touch other products
+        .eq("status", "rejected")     // safety: only rejected → draft
+        .select("id")
+        .maybeSingle();
+      if (error) results.push({ id, ok: false, error: error.message });
+      else results.push({ id, ok: !!data });
     }
+    const reinstated = results.filter((r) => r.ok).length;
     return new Response(
-      JSON.stringify({ ok: true, dry_run: false, reinstated: upd?.length ?? 0, ids: (upd ?? []).map((r: any) => r.id) }),
+      JSON.stringify({ ok: true, dry_run: false, reinstated, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
