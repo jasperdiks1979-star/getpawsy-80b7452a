@@ -10,6 +10,7 @@ import { installUxSignals } from '@/lib/ux-signals';
 import { armEngagementStart } from '@/lib/engagementStart';
 import { installSessionQuality, sessionQualitySignals } from '@/lib/sessionQuality';
 import { recordFunnelStep } from '@/lib/analyticsFunnel';
+import { trackCci } from '@/lib/cci';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -66,6 +67,7 @@ const TrackerInner = () => {
       trackCheckout();
       try { sessionQualitySignals.checkout(); } catch {}
       try { recordFunnelStep('begin_checkout'); } catch {}
+      try { trackCci('checkout_loaded', { funnel_stage: 'begin_checkout' }); } catch {}
     } else if (path === '/cart') {
       trackViewCart();
       try { sessionQualitySignals.cart(); } catch {}
@@ -77,11 +79,21 @@ const TrackerInner = () => {
         }
       } catch {}
       try { recordFunnelStep('view_cart'); } catch {}
+      try { trackCci('cart_open', { funnel_stage: 'cart' }); } catch {}
     } else {
       trackBrowsing(path);
       if (path.startsWith('/products/')) {
         try { sessionQualitySignals.product(); } catch {}
         try { recordFunnelStep('view_item'); } catch {}
+        // Note: product_view CCI event is already fired from ProductDetail
+        // once the PDP mounts with a resolved product — do NOT double-emit
+        // here (would inflate CANONICAL_PRODUCT_VIEW).
+      } else if (path === '/') {
+        // Homepage — feeds CANONICAL_PAGE_VIEW so the Revenue War Room
+        // "visitors" tile reflects real storefront traffic.
+        try { trackCci('homepage_view', { funnel_stage: 'landing' }); } catch {}
+      } else if (path === '/products' || path.startsWith('/collections')) {
+        try { trackCci('collection_view', { funnel_stage: 'browse' }); } catch {}
       }
     }
     try { recordFunnelStep('page_view'); sessionQualitySignals.page(); } catch {}
