@@ -2575,6 +2575,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="perpetual-company"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisPerpetualCompanyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="finance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
