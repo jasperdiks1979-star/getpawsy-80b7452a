@@ -461,6 +461,7 @@ const AiCreditIntelligencePage = lazyWithRetry(() => import("./pages/admin/AiCre
 const RevenueScorecardV13Page = lazyWithRetry(() => import("./pages/admin/RevenueScorecardV13Page"));
 const SalesReadinessPage = lazyWithRetry(() => import("./pages/admin/SalesReadinessPage"));
 const BusinessHealthIndexPage = lazyWithRetry(() => import("./pages/admin/BusinessHealthIndexPage"));
+const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionControlPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
 const AutonomousCommercePage = lazyWithRetry(() => import("./pages/admin/AutonomousCommercePage"));
