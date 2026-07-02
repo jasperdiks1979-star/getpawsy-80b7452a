@@ -29,6 +29,8 @@ interface Body {
   currency?: string;
   paymentMethod?: string;
   isKlarna?: boolean;
+  visitorId?: string;
+  country?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -69,6 +71,14 @@ serve(async (req) => {
     const referrer = typeof meta.referrer === "string" ? meta.referrer : null;
     const url = typeof meta.url === "string" ? meta.url : null;
     const utmRaw = (meta.utm || {}) as Record<string, unknown>;
+    // Country resolution: explicit body value first (client-side geo cache),
+    // then edge headers, then null.
+    const country =
+      (typeof body.country === "string" && body.country.length > 0 ? body.country : null) ||
+      req.headers.get("cf-ipcountry") ||
+      req.headers.get("x-vercel-ip-country") ||
+      req.headers.get("x-country") ||
+      null;
     const check = checkEvent({
       url,
       referrer,
@@ -120,8 +130,10 @@ serve(async (req) => {
       currency: (body.currency || "usd").toLowerCase(),
       payment_method: body.paymentMethod ?? null,
       is_klarna: !!body.isKlarna,
+      geo_country: country,
       metadata: {
         ...(body.metadata ?? {}),
+        visitor_id: body.visitorId ?? (typeof meta.visitor_id === "string" ? meta.visitor_id : null),
         utm: check.utm,
         url: check.cleanedUrl,
         referrer: check.cleanedReferrer,

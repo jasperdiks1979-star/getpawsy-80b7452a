@@ -35,7 +35,21 @@ Deno.serve(async (req) => {
     });
   }
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const country = req.headers.get('cf-ipcountry') || null;
+  // Country resolution priority:
+  //   1. Explicit body.country (client-side geo via useVisitorTracking cache)
+  //   2. Edge headers (works only on Cloudflare / Vercel / some proxies)
+  //   3. null (unknown)
+  // Supabase Edge Runtime does NOT set cf-ipcountry, so headers-only was
+  // always null in production; body.country closes that gap.
+  const bodyCountry = typeof body.country === 'string' && body.country.length > 0
+    ? String(body.country)
+    : null;
+  const headerCountry =
+    req.headers.get('cf-ipcountry') ||
+    req.headers.get('x-vercel-ip-country') ||
+    req.headers.get('x-country') ||
+    null;
+  const country = bodyCountry || headerCountry || null;
   const { error } = await sb.from('cci_events').insert({
     session_id,
     visitor_id: body.visitor_id ? String(body.visitor_id) : null,
