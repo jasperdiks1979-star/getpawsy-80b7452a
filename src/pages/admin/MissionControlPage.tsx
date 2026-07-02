@@ -564,6 +564,11 @@ export default function MissionControlPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* SECTION — COMPONENT CERTIFICATION DRILL-DOWN */}
+      <section>
+        <MissionControlCertification ctx={drillCtx} />
+      </section>
     </div>
   );
 }
