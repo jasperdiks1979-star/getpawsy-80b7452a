@@ -33,11 +33,48 @@ Deno.serve(async (req) => {
 
   const before = await isCreditPaused(supabase);
 
+  // Parse flags (POST body or querystring). `force=true` bypasses backoff.
+  let force = false;
+  try {
+    const url = new URL(req.url);
+    if (url.searchParams.get("force") === "true") force = true;
+    if (req.method === "POST") {
+      const body = await req.clone().json().catch(() => null);
+      if (body && (body.force === true || body.force === "true")) force = true;
+    }
+  } catch { /* noop */ }
+
+  // ── Evidence-backed auto-recovery (zero-cost path) ─────────────────────
+  // If the gateway has produced any successful response within the last
+  // 10 minutes, credits are demonstrably available and the paused flag is
+  // stale. Clear it without spending a probe token.
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: recentSuccess } = await supabase
+    .from("pinterest_credit_events")
+    .select("id, created_at, function_name, event_type")
+    .in("event_type", ["success", "probe_success"])
+    .gte("created_at", tenMinAgo)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (before.paused && recentSuccess && recentSuccess.length > 0) {
+    await recordProbeOutcome(supabase, 200); // reset backoff
+    await recordCreditEvent(supabase, {
+      event_type: "resumed",
+      function_name: "credit-probe:evidence",
+      message: "auto_recovered_from_recent_success",
+      raw: { evidence: recentSuccess[0] },
+    });
+    return new Response(
+      JSON.stringify({ ok: true, recovered: true, mode: "evidence", evidence: recentSuccess[0], before }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   // Genesis V6.3 — exponential backoff. Skip the probe entirely if the next
   // allowed window has not been reached. This stops the gateway from being
   // hammered with 402s every minute when credits are exhausted.
   const gate = await shouldProbeNow(supabase);
-  if (!gate.allowed) {
+  if (!gate.allowed && !force) {
     return new Response(
       JSON.stringify({ ok: false, skipped: true, reason: "backoff", next_allowed_at: gate.nextAllowedAt, paused: before.paused }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

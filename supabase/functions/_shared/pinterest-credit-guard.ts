@@ -17,6 +17,61 @@ import { recomputeForecast, maybeFire24hAlert } from "./pinterest-credit-forecas
 
 const ORANGE_THRESHOLD_402 = 1; // any 402 in last hour → orange minimum
 const WARNING_COOLDOWN_HOURS = 6;
+// Evidence-backed auto-recovery: after a 402, re-check within this window.
+// Prevents hammering while still turning transient 402s into self-healing events.
+const AUTO_RECOVERY_COOLDOWN_MS = 60 * 1000;
+let __lastAutoRecoveryAt = 0;
+
+/**
+ * Fire an evidence-backed re-probe. Called after a 402 from any AI gateway
+ * response. Rate-limited to once per minute per worker to avoid probe storms.
+ * Never throws; publishing/generation callers ignore the outcome.
+ */
+async function scheduleEvidenceRecovery(supabase: SupabaseClient, functionName: string): Promise<void> {
+  const now = Date.now();
+  if (now - __lastAutoRecoveryAt < AUTO_RECOVERY_COOLDOWN_MS) return;
+  __lastAutoRecoveryAt = now;
+
+  const invoke = async () => {
+    try {
+      // 1. Zero-cost evidence path — look for recent gateway successes.
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from("pinterest_credit_events")
+        .select("id, created_at, function_name")
+        .in("event_type", ["success", "probe_success"])
+        .gte("created_at", tenMinAgo)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (recent && recent.length > 0) {
+        await supabase
+          .from("ai_probe_backoff_state")
+          .update({
+            consecutive_failures: 0,
+            next_allowed_at: new Date().toISOString(),
+            last_status_code: 200,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", 1);
+        await recordCreditEvent(supabase, {
+          event_type: "resumed",
+          function_name: `auto-recover:${functionName}`,
+          message: "evidence_backed_recovery_after_402",
+          raw: { evidence: recent[0] },
+        });
+        return;
+      }
+      // 2. Force the probe (bypasses backoff) to verify with a 1-token call.
+      await supabase.functions.invoke("pinterest-credit-probe", {
+        body: { force: true, source: `auto-recover:${functionName}` },
+      });
+    } catch (_) { /* auto-recovery must never throw */ }
+  };
+
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(invoke());
+  else invoke();
+}
 
 export function getServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -305,6 +360,9 @@ export async function aiGatewayFetch(
       message: json?.error?.message ?? json?.message ?? "payment_required",
       raw: json,
     });
+    // Evidence-backed auto-recovery — some 402s are transient (per-key rate
+    // slice, race with a top-up). Kick a re-probe so a stale pause auto-clears.
+    await scheduleEvidenceRecovery(supabase, functionName);
     return { ok: false, status: 402, json, paused: true };
   }
   if (resp.status === 429) {
