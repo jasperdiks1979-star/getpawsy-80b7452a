@@ -2548,6 +2548,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="boardroom"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisBoardroomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="finance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
