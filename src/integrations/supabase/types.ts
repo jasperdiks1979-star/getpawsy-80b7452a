@@ -25091,6 +25091,62 @@ export type Database = {
           },
         ]
       }
+      genesis_omega_syntheses: {
+        Row: {
+          ceo_view: Json
+          cfo_view: Json
+          cmo_view: Json
+          coo_view: Json
+          created_at: string
+          cto_view: Json
+          disagreements: Json
+          evidence: Json
+          id: string
+          model: string
+          overall_score: number
+          run_id: string | null
+          synthesis: string
+        }
+        Insert: {
+          ceo_view?: Json
+          cfo_view?: Json
+          cmo_view?: Json
+          coo_view?: Json
+          created_at?: string
+          cto_view?: Json
+          disagreements?: Json
+          evidence?: Json
+          id?: string
+          model?: string
+          overall_score?: number
+          run_id?: string | null
+          synthesis?: string
+        }
+        Update: {
+          ceo_view?: Json
+          cfo_view?: Json
+          cmo_view?: Json
+          coo_view?: Json
+          created_at?: string
+          cto_view?: Json
+          disagreements?: Json
+          evidence?: Json
+          id?: string
+          model?: string
+          overall_score?: number
+          run_id?: string | null
+          synthesis?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_omega_syntheses_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_ceo_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
