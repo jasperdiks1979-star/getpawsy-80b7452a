@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import GridLayout, { WidthProvider, Layout as RGLLayout } from "react-grid-layout";
+import GridLayout, { useContainerWidth, type LayoutItem as RGLItem } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,6 @@ import {
   Plus, Save, RotateCcw, Trash2, Download, Search, Sun, Moon, Sparkles,
   Layout as LayoutIcon, Star, X, Copy, ShieldCheck, Loader2, Command,
 } from "lucide-react";
-
-const ReactGrid = WidthProvider(GridLayout);
 
 /* -------------------------------------------------------------------------- */
 /*  Ω.5 Boardroom Layout Manager                                              */
@@ -227,6 +225,7 @@ export default function GenesisBoardroomV5Page() {
   const [certLoading, setCertLoading] = useState(false);
   const [cert, setCert] = useState<any>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const { containerRef, width } = useContainerWidth();
 
   const active = workspaces.find((w) => w.id === activeId) ?? null;
 
@@ -272,7 +271,7 @@ export default function GenesisBoardroomV5Page() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  async function saveLayout(next: RGLLayout[]) {
+  async function saveLayout(next: RGLItem[]) {
     if (!active) return;
     const layout = next.map((l) => ({ i: l.i, x: l.x, y: l.y, w: l.w, h: l.h, minW: l.minW, minH: l.minH }));
     setWorkspaces((ws) => ws.map((w) => (w.id === active.id ? { ...w, layout } : w)));
@@ -367,7 +366,7 @@ export default function GenesisBoardroomV5Page() {
     finally { setCertLoading(false); }
   }
 
-  const rglLayout = useMemo<RGLLayout[]>(() => (active?.layout ?? []).map((l) => ({ ...l })), [active?.layout]);
+  const rglLayout = useMemo<RGLItem[]>(() => (active?.layout ?? []).map((l) => ({ ...l })) as RGLItem[], [active?.layout]);
 
   return (
     <div ref={rootRef} className={`min-h-screen ${themeClass(active?.theme ?? "dark")}`}>
@@ -432,13 +431,15 @@ export default function GenesisBoardroomV5Page() {
 
         {/* Grid */}
         {active ? (
-          <ReactGrid
+          <div ref={containerRef as any}>
+          <GridLayout
             className="layout"
             layout={rglLayout}
             cols={12}
+            width={width || 1200}
             rowHeight={60}
             margin={[12, 12]}
-            onLayoutChange={(l) => saveLayout(l)}
+            onLayoutChange={(l) => saveLayout(l as RGLItem[])}
             draggableHandle=".drag-handle"
             compactType="vertical"
           >
@@ -462,7 +463,8 @@ export default function GenesisBoardroomV5Page() {
                 </div>
               );
             })}
-          </ReactGrid>
+          </GridLayout>
+          </div>
         ) : (
           <Card><CardContent className="p-6 text-sm text-muted-foreground">Create your first workspace to begin.</CardContent></Card>
         )}
