@@ -463,6 +463,7 @@ const SalesReadinessPage = lazyWithRetry(() => import("./pages/admin/SalesReadin
 const BusinessHealthIndexPage = lazyWithRetry(() => import("./pages/admin/BusinessHealthIndexPage"));
 const MissionControlPage = lazyWithRetry(() => import("./pages/admin/MissionControlPage"));
 const ExecutiveWarRoomPage = lazyWithRetry(() => import("./pages/admin/ExecutiveWarRoomPage"));
+const DecisionOutcomesPage = lazyWithRetry(() => import("./pages/admin/DecisionOutcomesPage"));
 const EvidenceExplorerPage = lazyWithRetry(() => import("./pages/admin/EvidenceExplorerPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
@@ -2763,6 +2764,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ExecutiveWarRoomPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="decision-outcomes"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <DecisionOutcomesPage />
                                 </Suspense>
                               }
                             />
