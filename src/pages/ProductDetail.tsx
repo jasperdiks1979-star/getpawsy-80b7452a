@@ -56,6 +56,7 @@ import CreatePinterestAdButton from "@/components/admin/pinterest-ad-studio/Crea
 import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
+import { TrustStripAboveATC } from "@/components/trust/TrustStripAboveATC";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { trackViewItem, trackEvent } from "@/lib/analytics";
 import { ttTrackViewContent } from "@/lib/tiktok-pixel";
