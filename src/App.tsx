@@ -2741,6 +2741,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="mission-control"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MissionControlPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
