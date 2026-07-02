@@ -9047,6 +9047,234 @@ export type Database = {
           },
         ]
       }
+      bhi_audit_log: {
+        Row: {
+          audit_type: string
+          created_at: string
+          findings: Json
+          id: string
+          passed: boolean
+          snapshot_id: string | null
+        }
+        Insert: {
+          audit_type: string
+          created_at?: string
+          findings?: Json
+          id?: string
+          passed: boolean
+          snapshot_id?: string | null
+        }
+        Update: {
+          audit_type?: string
+          created_at?: string
+          findings?: Json
+          id?: string
+          passed?: boolean
+          snapshot_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bhi_audit_log_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "bhi_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bhi_briefings: {
+        Row: {
+          body: Json
+          briefing_date: string
+          confidence: number | null
+          created_at: string
+          critical_alerts: Json
+          expected_profit_today: number | null
+          expected_revenue_today: number | null
+          highest_roi: string | null
+          overall_score: number
+          snapshot_id: string
+          top_opportunity: string | null
+          top_revenue_leak: string | null
+          top_revenue_opportunity: string | null
+          top_threat: string | null
+          trend: number | null
+          yesterday_score: number | null
+        }
+        Insert: {
+          body?: Json
+          briefing_date: string
+          confidence?: number | null
+          created_at?: string
+          critical_alerts?: Json
+          expected_profit_today?: number | null
+          expected_revenue_today?: number | null
+          highest_roi?: string | null
+          overall_score: number
+          snapshot_id: string
+          top_opportunity?: string | null
+          top_revenue_leak?: string | null
+          top_revenue_opportunity?: string | null
+          top_threat?: string | null
+          trend?: number | null
+          yesterday_score?: number | null
+        }
+        Update: {
+          body?: Json
+          briefing_date?: string
+          confidence?: number | null
+          created_at?: string
+          critical_alerts?: Json
+          expected_profit_today?: number | null
+          expected_revenue_today?: number | null
+          highest_roi?: string | null
+          overall_score?: number
+          snapshot_id?: string
+          top_opportunity?: string | null
+          top_revenue_leak?: string | null
+          top_revenue_opportunity?: string | null
+          top_threat?: string | null
+          trend?: number | null
+          yesterday_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bhi_briefings_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "bhi_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bhi_snapshots: {
+        Row: {
+          captured_at: string
+          confidence: number
+          created_at: string
+          executive_summary: Json
+          id: string
+          meta: Json
+          overall_score: number
+          priorities: Json
+          sha256: string | null
+          simulation: Json
+          status: string
+          trend: number | null
+          yesterday_score: number | null
+        }
+        Insert: {
+          captured_at?: string
+          confidence: number
+          created_at?: string
+          executive_summary?: Json
+          id?: string
+          meta?: Json
+          overall_score: number
+          priorities?: Json
+          sha256?: string | null
+          simulation?: Json
+          status: string
+          trend?: number | null
+          yesterday_score?: number | null
+        }
+        Update: {
+          captured_at?: string
+          confidence?: number
+          created_at?: string
+          executive_summary?: Json
+          id?: string
+          meta?: Json
+          overall_score?: number
+          priorities?: Json
+          sha256?: string | null
+          simulation?: Json
+          status?: string
+          trend?: number | null
+          yesterday_score?: number | null
+        }
+        Relationships: []
+      }
+      bhi_subscores: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          id: string
+          label: string
+          note: string | null
+          score: number
+          snapshot_id: string
+          subscore_key: string
+          trend: number | null
+          weight: number
+        }
+        Insert: {
+          category: string
+          confidence: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          label: string
+          note?: string | null
+          score: number
+          snapshot_id: string
+          subscore_key: string
+          trend?: number | null
+          weight: number
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          label?: string
+          note?: string | null
+          score?: number
+          snapshot_id?: string
+          subscore_key?: string
+          trend?: number | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bhi_subscores_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "bhi_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bhi_weights: {
+        Row: {
+          category: string
+          label: string
+          rationale: string | null
+          subscore_key: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          category: string
+          label: string
+          rationale?: string | null
+          subscore_key: string
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          category?: string
+          label?: string
+          rationale?: string | null
+          subscore_key?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       blocked_cj_products: {
         Row: {
           blocked_at: string

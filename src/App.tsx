@@ -460,6 +460,7 @@ const CreativeIntelligencePage = lazyWithRetry(() => import("./pages/admin/Creat
 const AiCreditIntelligencePage = lazyWithRetry(() => import("./pages/admin/AiCreditIntelligencePage"));
 const RevenueScorecardV13Page = lazyWithRetry(() => import("./pages/admin/RevenueScorecardV13Page"));
 const SalesReadinessPage = lazyWithRetry(() => import("./pages/admin/SalesReadinessPage"));
+const BusinessHealthIndexPage = lazyWithRetry(() => import("./pages/admin/BusinessHealthIndexPage"));
 const PcieV2RevenueIntelligencePage = lazyWithRetry(() => import("./pages/admin/PcieV2RevenueIntelligencePage"));
 const AutonomousGrowthPage = lazyWithRetry(() => import("./pages/admin/AutonomousGrowthPage"));
 const AutonomousCommercePage = lazyWithRetry(() => import("./pages/admin/AutonomousCommercePage"));
@@ -2727,6 +2728,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <SalesReadinessPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="business-health"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <BusinessHealthIndexPage />
                                 </Suspense>
                               }
                             />
