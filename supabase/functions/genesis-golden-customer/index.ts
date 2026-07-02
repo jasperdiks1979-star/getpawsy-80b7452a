@@ -332,6 +332,79 @@ Deno.serve(async (req) => {
     });
   }
 
+  // -- CEO Kill Switch integration (Constitution) --------------------------
+  // Fail  -> trip.   Warning -> degraded.   Pass -> clear (only if the
+  // switch was tripped/degraded by a prior Golden run; never overrides a
+  // manual hotfix_override).
+  try {
+    const { data: stateRow } = await admin
+      .from("ceo_kill_switch_state")
+      .select("*").eq("singleton", true).maybeSingle();
+    const prev = stateRow?.status ?? "clear";
+
+    let next = prev;
+    let reason: string | null = null;
+    if (status === "fail") {
+      next = "tripped";
+      reason = `Golden Customer FAIL — ${failed} check(s), anonymous journey broken.`;
+    } else if (status === "warning") {
+      next = prev === "tripped" ? "tripped" : "degraded";
+      reason = `Golden Customer degraded — ${warnings} warning(s).`;
+    } else if (status === "pass" && prev !== "hotfix_override") {
+      next = "clear";
+      reason = "Golden Customer PASS — anonymous journey healthy.";
+    }
+
+    if (next !== prev) {
+      await admin.from("ceo_kill_switch_state")
+        .update({
+          status: next,
+          reason,
+          triggered_at: next === "tripped" ? new Date().toISOString() : stateRow?.triggered_at ?? null,
+          cleared_at: next === "clear" ? new Date().toISOString() : null,
+          triggered_by: `genesis-golden-customer:${trigger}`,
+          golden_run_id: runId,
+          evidence: { sha256: sha, totals: cat.totals, failed, warnings },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("singleton", true);
+
+      await admin.from("ceo_kill_switch_events").insert({
+        event: next === "clear" ? "clear" : "trip",
+        previous_status: prev,
+        new_status: next,
+        reason,
+        actor: `genesis-golden-customer:${trigger}`,
+        golden_run_id: runId,
+        context: { failed, warnings, totals: cat.totals },
+      });
+    }
+
+    // Always publish a CEO Production Safety Certificate for this run.
+    await admin.from("ceo_production_certificates").insert({
+      golden_run_id: runId,
+      kill_switch_status: next,
+      certificate_status: status === "fail" ? "fail" : status === "warning" ? "degraded" : "pass",
+      anonymous_journey_ok: jr.journey_ok,
+      checkout_ok: jr.checkout_ok,
+      stripe_ok: jr.stripe_ok,
+      revenue_ok: jr.journey_ok && jr.checkout_ok && jr.stripe_ok,
+      regression_ok: rls.rls_ok,
+      confidence: passed / Math.max(1, passed + failed + warnings),
+      sha256: sha,
+      payload: {
+        totals: cat.totals, phases: {
+          journey_ok: jr.journey_ok, checkout_ok: jr.checkout_ok,
+          stripe_ok: jr.stripe_ok, rls_ok: rls.rls_ok,
+        },
+        passed, failed, warnings, duration_ms: duration,
+      },
+    });
+  } catch (e) {
+    console.error("[kill-switch] update failed", e);
+  }
+  // ------------------------------------------------------------------------
+
   return new Response(JSON.stringify({
     ok: true,
     run_id: runId,
