@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Anonymous storefront visibility (P0 guard)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/smoke-anon-storefront.mjs
       - name: Invoke production-validation-runner
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
