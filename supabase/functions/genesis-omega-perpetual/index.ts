@@ -2,6 +2,7 @@
 // Runs the perpetual loop (observe → learn → improve) and issues Perpetual Certification.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireInternalOrAdmin } from '../_shared/admin-guard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -14,6 +15,8 @@ const clamp = (n: number, min = 0, max = 100) => Math.max(min, Math.min(max, Mat
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
   const supa = createClient(SUPABASE_URL, SERVICE_KEY);
   const body = await req.json().catch(() => ({}));
   const action = body.action ?? 'cycle';

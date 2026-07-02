@@ -1,8 +1,11 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { requireInternalOrAdmin } from '../_shared/admin-guard.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

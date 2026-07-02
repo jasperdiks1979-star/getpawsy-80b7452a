@@ -3,6 +3,7 @@
 // (orders, canonical_sessions, pinterest_pins, ai_gateway_logs proxies via
 // genesis_truth_metrics, prior V∞ certifications). Never fabricates values.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -350,6 +351,8 @@ async function actionCertify() {
 // -----------------------------------------------------------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
   try {
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action ?? "snapshot");

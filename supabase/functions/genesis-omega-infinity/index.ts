@@ -1,5 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireInternalOrAdmin } from '../_shared/admin-guard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -15,6 +16,8 @@ function score(n: number, min = 60, max = 100) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
   const supa = createClient(SUPABASE_URL, SERVICE_KEY);
   const url = new URL(req.url);
   const action = url.searchParams.get('action') ?? (await req.json().catch(() => ({}))).action ?? 'board-meeting';

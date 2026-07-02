@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { evaluateProductRelevance } from "../_shared/pre-product-relevance.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -342,6 +343,8 @@ async function processProduct(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   try {
     const body = await req.json().catch(() => ({}));
