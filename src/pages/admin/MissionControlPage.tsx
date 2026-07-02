@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
-  HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench,
+  HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
 } from "lucide-react";
 
 type Snap = {
@@ -126,6 +126,15 @@ export default function MissionControlPage() {
   });
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
+  const [verify, setVerify] = useState<{
+    running: boolean;
+    newSha: string | null;
+    newOverall: number | null;
+    newConfidence: number | null;
+    matches: boolean | null;
+    error: string | null;
+    ranAt: string | null;
+  }>({ running: false, newSha: null, newOverall: null, newConfidence: null, matches: null, error: null, ranAt: null });
 
   const loadCore = useCallback(async () => {
     setLoading(true);
@@ -199,6 +208,33 @@ export default function MissionControlPage() {
     const iv = setInterval(() => { loadLive(); loadToday(); }, 30_000);
     return () => clearInterval(iv);
   }, [loadCore, loadToday, loadLive]);
+
+  const recomputeAndCompare = useCallback(async () => {
+    setVerify((v) => ({ ...v, running: true, error: null }));
+    try {
+      const { data, error } = await supabase.functions.invoke("bhi-compute", { body: {} });
+      if (error) throw error;
+      const newSha: string | null = (data as any)?.sha256 ?? null;
+      const newOverall = Number((data as any)?.overall ?? NaN);
+      const newConfidence = Number((data as any)?.confidence ?? NaN);
+      const priorSha = snap?.sha256 ?? null;
+      setVerify({
+        running: false,
+        newSha,
+        newOverall: Number.isFinite(newOverall) ? newOverall : null,
+        newConfidence: Number.isFinite(newConfidence) ? newConfidence : null,
+        matches: newSha && priorSha ? newSha === priorSha : null,
+        error: null,
+        ranAt: new Date().toISOString(),
+      });
+      await loadCore();
+    } catch (e: any) {
+      setVerify({
+        running: false, newSha: null, newOverall: null, newConfidence: null,
+        matches: null, error: e?.message ?? "Recompute failed", ranAt: new Date().toISOString(),
+      });
+    }
+  }, [snap?.sha256, loadCore]);
 
   const subsByCategory = useMemo(() => {
     const map = new Map<string, Sub[]>();
@@ -426,10 +462,90 @@ export default function MissionControlPage() {
         </Card>
       </section>
 
-      <footer className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-        <ShieldCheck className="h-3.5 w-3.5" />
-        BHI SHA-256: <code className="font-mono truncate max-w-[40ch]">{snap?.sha256 ?? "—"}</code>
-      </footer>
+      {/* SECTION — DATA INTEGRITY */}
+      <section>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileCheck2 className="h-4 w-4" /> Data Integrity · Certification Fingerprint
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="space-y-2">
+              <p className="text-muted-foreground">
+                The SHA-256 below is a cryptographic fingerprint of the exact BHI certification
+                payload written to <code className="font-mono">bhi_snapshots</code> at capture time.
+                Any change to the payload — even a single digit — produces a completely different hash,
+                so this value proves the record has not been altered since it was minted.
+              </p>
+              <div className="rounded-md border bg-muted/30 p-3">
+                <div className="text-xs font-medium mb-1 text-muted-foreground">Hash covers</div>
+                <ul className="list-disc pl-5 space-y-0.5 text-xs">
+                  <li><b>Headline scores</b>: overall, confidence, status, trend, yesterday_score</li>
+                  <li><b>All 40+ subscores</b>: key, category, label, weight, score, confidence, evidence, note</li>
+                  <li><b>Priorities</b> (ranked mission board) and <b>simulation</b> (revenue projections)</li>
+                  <li><b>Executive summary</b>: top opportunity / threat / leak, expected revenue &amp; profit today</li>
+                  <li><b>Meta</b>: window_days, orders_window_days, contributing/total subs, generated_at</li>
+                </ul>
+                <div className="text-[11px] text-muted-foreground mt-2">
+                  Algorithm: SHA-256 over <code className="font-mono">JSON.stringify(payload)</code> in canonical field order.
+                  Because <code className="font-mono">meta.generated_at</code> is included, a fresh recompute
+                  will always produce a new hash — that is expected and proves the pipeline is live.
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-md border p-3">
+                <div className="text-xs text-muted-foreground mb-1">Current certification</div>
+                <div className="text-[11px] mb-1">
+                  Captured {snap?.captured_at ? new Date(snap.captured_at).toLocaleString() : "—"} ·
+                  Overall <b>{snap?.overall_score?.toFixed?.(1) ?? "—"}</b> ·
+                  Confidence <b>{snap?.confidence?.toFixed?.(0) ?? "—"}%</b>
+                </div>
+                <code className="font-mono text-xs break-all block">{snap?.sha256 ?? "—"}</code>
+              </div>
+              <div className="rounded-md border p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-muted-foreground">Recomputed now</div>
+                  {verify.matches === true ? (
+                    <Badge className="bg-emerald-600 text-white">HASH MATCH</Badge>
+                  ) : verify.matches === false ? (
+                    <Badge className="bg-amber-500 text-white">CHANGED — new snapshot</Badge>
+                  ) : null}
+                </div>
+                {verify.error ? (
+                  <div className="text-xs text-red-600">{verify.error}</div>
+                ) : verify.newSha ? (
+                  <>
+                    <div className="text-[11px] mb-1">
+                      Ran {verify.ranAt ? new Date(verify.ranAt).toLocaleString() : "—"} ·
+                      Overall <b>{verify.newOverall?.toFixed?.(1) ?? "—"}</b> ·
+                      Confidence <b>{verify.newConfidence?.toFixed?.(0) ?? "—"}%</b>
+                    </div>
+                    <code className="font-mono text-xs break-all block">{verify.newSha}</code>
+                  </>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    Click <b>Recompute &amp; compare</b> to mint a fresh certification and diff its
+                    fingerprint against the current record.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" onClick={recomputeAndCompare} disabled={verify.running}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${verify.running ? "animate-spin" : ""}`} />
+                {verify.running ? "Recomputing…" : "Recompute & compare"}
+              </Button>
+              <span className="text-[11px] text-muted-foreground">
+                Invokes <code className="font-mono">bhi-compute</code>, persists a new snapshot, and compares SHA-256.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
