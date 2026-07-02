@@ -1,0 +1,12 @@
+?column?	count	coalesce
+credit_events_total	32591	56374
+credit_events_24h	141	0
+credit_events_7d	8438	20253
+creative_jobs_total	7611	
+creative_jobs_24h	0	
+pin_queue_draft	45	
+pin_queue_queued	3	
+pin_queue_posted_24h	1	
+pin_queue_posted_7d	65	
+pin_queue_rejected_24h	2381	
+(10 rows)
