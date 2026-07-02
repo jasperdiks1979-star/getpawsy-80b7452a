@@ -437,6 +437,7 @@ const GenesisWarRoomV1Page = lazyWithRetry(() => import("./pages/admin/GenesisWa
 const GenesisOmegaPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaPage"));
 const GenesisOmegaArchitectPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaArchitectPage"));
 const GenesisGenomePage = lazyWithRetry(() => import("./pages/admin/GenesisGenomePage"));
+const GenesisOmegaTruthPage = lazyWithRetry(() => import("./pages/admin/GenesisOmegaTruthPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
@@ -2534,6 +2535,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GenesisGenomePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="omega-truth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisOmegaTruthPage />
                                 </Suspense>
                               }
                             />
