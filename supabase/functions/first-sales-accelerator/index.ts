@@ -105,6 +105,9 @@ async function buildWarRoom() {
   // Single highest-value action
   const nextAction = pickNextAction({ pv, atc, chk, purch, hero, leaks, hotVisitors, buyingNowVisitors });
 
+  // Funnel breakdown — step rates + drop-off by page and by product (today)
+  const funnelBreakdown = await buildFunnelBreakdown(s, dayIso, { pv, qualified, atc, chk, purch });
+
   return {
     captured_at: new Date().toISOString(),
     today: {
@@ -130,6 +133,120 @@ async function buildWarRoom() {
     leaks: leaks.slice(0, 5),
     hero_product: hero,
     next_action: nextAction,
+    funnel_breakdown: funnelBreakdown,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Funnel breakdown — session-aware step conversion + drop-off attribution
+// -----------------------------------------------------------------------------
+async function buildFunnelBreakdown(
+  s: any,
+  dayIso: string,
+  counts: { pv: number | null; qualified: number | null; atc: number | null; chk: number | null; purch: number | null },
+) {
+  const { pv, qualified, atc, chk, purch } = counts;
+  const pct = (num: number | null, den: number | null) => {
+    if (num == null || den == null || den <= 0) return null;
+    return Math.round((num / den) * 1000) / 10; // 1dp
+  };
+  const dropPct = (from: number | null, to: number | null) => {
+    if (from == null || to == null || from <= 0) return null;
+    return Math.max(0, Math.round(((from - to) / from) * 1000) / 10);
+  };
+
+  const steps = [
+    { key: 'visitor',    label: 'Visitor',      count: pv,        rate_from_top: 100,                     step_conv: null as number | null, drop_pct: null as number | null },
+    { key: 'qualified',  label: 'Qualified',    count: qualified, rate_from_top: pct(qualified, pv),      step_conv: pct(qualified, pv),    drop_pct: dropPct(pv, qualified) },
+    { key: 'atc',        label: 'Add-to-Cart',  count: atc,       rate_from_top: pct(atc, pv),            step_conv: pct(atc, qualified ?? pv), drop_pct: dropPct(qualified ?? pv, atc) },
+    { key: 'checkout',   label: 'Checkout',     count: chk,       rate_from_top: pct(chk, pv),            step_conv: pct(chk, atc),         drop_pct: dropPct(atc, chk) },
+    { key: 'purchase',   label: 'Purchase',     count: purch,     rate_from_top: pct(purch, pv),          step_conv: pct(purch, chk),       drop_pct: dropPct(chk, purch) },
+  ];
+
+  // Identify biggest bottleneck step (highest drop_pct with a meaningful upstream base)
+  let bottleneck: { from: string; to: string; drop_pct: number; lost: number } | null = null;
+  for (let i = 1; i < steps.length; i++) {
+    const prev = steps[i - 1];
+    const cur = steps[i];
+    if (prev.count && cur.count != null && cur.drop_pct != null) {
+      const lost = Math.max(0, (prev.count as number) - (cur.count as number));
+      if (!bottleneck || cur.drop_pct > bottleneck.drop_pct) {
+        bottleneck = { from: prev.label, to: cur.label, drop_pct: cur.drop_pct, lost };
+      }
+    }
+  }
+
+  // By-page drop-off: sessions with a page_view today, grouped by landing page.
+  const byPage: Array<{ page: string; sessions: number; atc: number; atc_rate: number | null; dropped: number }> = [];
+  try {
+    const { data: pvRows } = await s
+      .from('canonical_events')
+      .select('session_id,page_path,landing_page')
+      .eq('canonical_name', 'CANONICAL_PAGE_VIEW')
+      .gte('occurred_at', dayIso)
+      .not('session_id', 'is', null)
+      .limit(10000);
+    const sessionPage = new Map<string, string>();
+    for (const r of pvRows ?? []) {
+      const sid = String((r as any).session_id);
+      if (sessionPage.has(sid)) continue;
+      const page = (r as any).landing_page || (r as any).page_path || '/';
+      sessionPage.set(sid, String(page));
+    }
+    const { data: atcRows } = await s
+      .from('canonical_events')
+      .select('session_id')
+      .eq('canonical_name', 'CANONICAL_ADD_TO_CART')
+      .gte('occurred_at', dayIso)
+      .not('session_id', 'is', null)
+      .limit(10000);
+    const atcSessions = new Set<string>((atcRows ?? []).map((r: any) => String(r.session_id)));
+    const agg = new Map<string, { sessions: number; atc: number }>();
+    for (const [sid, page] of sessionPage) {
+      const cur = agg.get(page) ?? { sessions: 0, atc: 0 };
+      cur.sessions++;
+      if (atcSessions.has(sid)) cur.atc++;
+      agg.set(page, cur);
+    }
+    for (const [page, v] of agg) {
+      const dropped = v.sessions - v.atc;
+      const atc_rate = v.sessions > 0 ? Math.round((v.atc / v.sessions) * 1000) / 10 : null;
+      byPage.push({ page, sessions: v.sessions, atc: v.atc, atc_rate, dropped });
+    }
+    byPage.sort((a, b) => b.dropped - a.dropped);
+  } catch {}
+
+  // By-product drop-off: ATC count vs purchase count (today), lost = atc - purch.
+  const byProduct: Array<{ product_id: string; name: string | null; atc: number; purchases: number; lost: number; conv_rate: number | null }> = [];
+  try {
+    const [{ data: pAtc }, { data: pPur }] = await Promise.all([
+      s.from('canonical_events').select('product_id').eq('canonical_name', 'CANONICAL_ADD_TO_CART').gte('occurred_at', dayIso).not('product_id', 'is', null).limit(5000),
+      s.from('canonical_events').select('product_id').eq('canonical_name', 'CANONICAL_PURCHASE').gte('occurred_at', dayIso).not('product_id', 'is', null).limit(5000),
+    ]);
+    const agg = new Map<string, { atc: number; purch: number }>();
+    for (const r of pAtc ?? []) { const k = String((r as any).product_id); const cur = agg.get(k) ?? { atc: 0, purch: 0 }; cur.atc++; agg.set(k, cur); }
+    for (const r of pPur ?? []) { const k = String((r as any).product_id); const cur = agg.get(k) ?? { atc: 0, purch: 0 }; cur.purch++; agg.set(k, cur); }
+    const ids = Array.from(agg.keys());
+    let nameMap = new Map<string, string>();
+    if (ids.length) {
+      try {
+        const { data: prods } = await s.from('products').select('id,name').in('id', ids);
+        for (const p of prods ?? []) nameMap.set(String((p as any).id), (p as any).name ?? null);
+      } catch {}
+    }
+    for (const [id, v] of agg) {
+      const lost = Math.max(0, v.atc - v.purch);
+      const conv_rate = v.atc > 0 ? Math.round((v.purch / v.atc) * 1000) / 10 : null;
+      byProduct.push({ product_id: id, name: nameMap.get(id) ?? null, atc: v.atc, purchases: v.purch, lost, conv_rate });
+    }
+    byProduct.sort((a, b) => b.lost - a.lost || b.atc - a.atc);
+  } catch {}
+
+  return {
+    steps,
+    bottleneck,
+    by_page: byPage.slice(0, 8),
+    by_product: byProduct.slice(0, 8),
   };
 }
 
