@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
   const productId: string = String(body?.productId ?? HERO_PRODUCT_ID);
   const dryRun: boolean = body?.dryRun !== false; // default true
   const limit: number = Math.max(1, Math.min(2000, Number(body?.limit ?? 500)));
+  const offset: number = Math.max(0, Number(body?.offset ?? 0));
   const includeReasons: string[] | null = Array.isArray(body?.includeReasons) && body.includeReasons.length
     ? body.includeReasons.map(String)
     : null;
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
     .eq("product_id", productId)
     .eq("status", "rejected")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (includeReasons) q = q.in("rejection_reason", includeReasons);
 
   const { data: rows, error: qErr } = await q;
@@ -76,6 +77,8 @@ Deno.serve(async (req) => {
     dry_run: dryRun,
     product_id: productId,
     product_slug: product.slug,
+    offset,
+    limit,
     scanned: rows?.length ?? 0,
     passed: 0,
     blocked: 0,
