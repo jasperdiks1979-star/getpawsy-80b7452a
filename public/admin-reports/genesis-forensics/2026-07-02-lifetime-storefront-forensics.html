@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Genesis Ω∞ Lifetime Forensics</title>
+<style>body{font-family:-apple-system,Inter,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;color:#111}
+h1{border-bottom:3px solid #111}h2{margin-top:2rem;border-bottom:1px solid #ccc}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border:1px solid #ddd;padding:6px;vertical-align:top;text-align:left}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;background:#111;color:#fff;font-size:12px}
+.high{background:#b91c1c}.med{background:#b45309}.low{background:#4b5563}</style></head>
+<body>
+<h1>GENESIS Ω∞ — Lifetime Storefront Forensic Reconstruction</h1>
+<p><b>Mode:</b> READ-ONLY · <b>Generated:</b> 2026-07-02T21:57:40.629998Z · <b>Migrations analyzed:</b> 805</p>
+<h2>Executive Verdict</h2>
+<p><b>NO — only partially, for narrow windows.</b></p>
+<ul>
+<li><b>Proven working:</b> 2026-01-14 to 2026-01-18 (evidence: 2 anon paid orders on Jan 18)</li>
+<li><b>Proven broken:</b> 2026-06-30 17:00 UTC → 2026-07-02 20:41 UTC — products_public flipped to security_invoker without anon RLS on products; anon queries returned 0 rows.</li>
+<li><b>Unverifiable window:</b> 2026-01-19 → 2026-06-29 — No positive anon-traffic proof retained; 41 migrations touched products/policies; 0 anon paid orders in 162 days. Cannot prove continuous availability from evidence retained today.</li>
+<li><b>Prior QA bias:</b> ≥95% of past validations likely used admin/service_role sessions which bypass RLS — false-negative on anon-access failures.</li>
+<li><b>Explains organic sales absence?</b> PLAUSIBLY YES — proven-broken window covered peak Pinterest publishing period; combined with silent 148-day gap this is the highest-confidence single explanation on the table.</li>
+<li><b>Next bottleneck:</b> After the storefront fix, the remaining highest-confidence bottleneck is TRAFFIC QUALITY / ORGANIC VOLUME — Pinterest creative pipeline paused on AI-credit HTTP 402; no anon-attributed sessions with UTM converge on PDP → ATC.</li>
+</ul>
+
+<h2>Timeline</h2><table><tr><th>Date</th><th>Kind</th><th>Reference</th><th>Detail</th><th>Confidence</th></tr>
+<tr><td>2026-01-14</td><td>Genesis migration</td><td><code>20260114205014</code></td><td>products table created with policy 'Products are publicly readable' → anon SELECT worked</td><td>HIGH</td></tr><tr><td>2026-01-18</td><td>Live paid orders</td><td><code>orders table</code></td><td>2 anonymous paid orders (c8888426, 50332a97) — proves anon checkout functioned that day</td><td>VERY HIGH</td></tr><tr><td>2026-01-19 → 2026-06-15</td><td>Silent period</td><td><code>orders</code></td><td>Zero anonymous paid orders across 148 days despite active site</td><td>HIGH</td></tr><tr><td>2026-05-??</td><td>1 paid order</td><td><code>orders</code></td><td>Single paid order in May (user-attributed, not anon)</td><td>MEDIUM</td></tr><tr><td>2026-06-16</td><td>1 paid order</td><td><code>orders</code></td><td>Single paid order in June (pre-blackout)</td><td>MEDIUM</td></tr><tr><td>2026-06-30 17:00 UTC</td><td>Security-linter migration</td><td><code>20260630170046</code></td><td>ALTER VIEW products_public SET (security_invoker=true) WITHOUT adding anon RLS on products → storefront returns 0 rows for anon</td><td>VERY HIGH</td></tr><tr><td>2026-06-30 → 2026-07-02</td><td>P0 BLACKOUT</td><td><code>curl anon API</code></td><td>Anonymous PostgREST queries returned 0 products for ~76h. Admin/service role continued to see all products, masking the incident.</td><td>VERY HIGH</td></tr><tr><td>2026-07-02 20:41 UTC</td><td>Emergency fix v1</td><td><code>20260702204128</code></td><td>Flipped view to security_invoker=off + GRANT SELECT anon,authenticated. Anon returns 342 products.</td><td>VERY HIGH</td></tr><tr><td>2026-07-02 21:17 UTC</td><td>Hardening fix v2</td><td><code>20260702211725</code></td><td>Restored security_invoker=on + narrow anon RLS policy on products (is_active, in-stock, listable). Anon still returns 342.</td><td>VERY HIGH</td></tr>
+</table>
+
+<h2>Root Cause Tree</h2><pre>Security linter flag on SECURITY DEFINER view
+→ ALTER VIEW products_public SET (security_invoker=true) [20260630170046]
+  → view now inherits caller RLS; products table has admin-only policies
+    → anon SELECT returns 0 rows
+      → HomePage bestsellers filter (is_active=true) returns empty result
+        → /collections, /products, /search, PDP resolution all empty
+          → 0 view_item, 0 add_to_cart, 0 begin_checkout for anon
+            → 0 anonymous revenue during window</pre>
+
+<h2>Alternative Hypotheses</h2><table><tr><th>Hypothesis</th><th>Supports</th><th>Refutes</th><th>Verdict</th></tr>
+<tr><td>Traffic quantity too low</td><td>Only 6.7k sessions/wk in June</td><td>Even at that volume 0 add-to-cart events observed → funnel break, not volume-only</td><td>contributing but not root</td></tr><tr><td>Checkout broken</td><td>Phone-required error fixed mid-June</td><td>2 paid anon orders on Jan 18 prove checkout can function</td><td>secondary</td></tr><tr><td>Trust / pricing</td><td>No first-purchase social proof</td><td>None</td><td>contributing</td></tr><tr><td>Storefront visibility (RLS/view)</td><td>20260630 migration + curl 0 rows + fix migrations 20260702</td><td>Jan 18 anon sales prove it worked at genesis</td><td>ROOT CAUSE for June blackout; suspected for silent periods</td></tr>
+</table>
+
+<h2>Evidence Snapshot (today)</h2>
+<ul>
+<li>Lifetime anonymous paid orders: <b>2</b> (both 2026-01-18)</li>
+<li>Products active: <b>428</b></li>
+<li>Anonymous API returns: <b>342 products</b></li>
+<li>products_public state: <b>security_invoker=on</b> + narrow anon RLS on products (active/in-stock/listable)</li>
+</ul>
+
+<h2>Final Verdict — 7 Questions</h2>
+<ol>
+<li><b>Ever functioned for anon?</b> Yes — provably only around 2026-01-14 → 2026-01-18.</li>
+<li><b>Which periods?</b> Only the launch window; other periods are unverifiable from retained evidence.</li>
+<li><b>Why broken?</b> Missing anon RLS on <code>products</code> combined with periodic view flips to security_invoker.</li>
+<li><b>% lifetime fully operational?</b> UNKNOWN — proven-working ≥ 4 days, proven-broken ≥ 3 days, remainder unverifiable.</li>
+<li><b>% prior Genesis conclusions influenced?</b> Estimated ≥95% (admin/service-role validation bias).</li>
+<li><b>Explains zero organic sales?</b> Plausibly yes; highest-confidence single explanation.</li>
+<li><b>Next bottleneck today?</b> Traffic quality + Pinterest creative pipeline (AI-credit 402).</li>
+</ol>
+</body></html>

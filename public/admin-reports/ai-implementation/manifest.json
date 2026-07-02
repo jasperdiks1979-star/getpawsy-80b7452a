@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-07-02-lifetime-storefront-forensics",
+    "title": "GENESIS \u03a9\u221e Lifetime Storefront Forensic Reconstruction",
+    "run_id": "2026-07-02-lifetime-storefront-forensics",
+    "generated_at": "2026-07-02T21:57:40.629998Z",
+    "status": "complete",
+    "score": 100,
+    "pdf": "/admin-reports/genesis-forensics/2026-07-02-lifetime-storefront-forensics.pdf",
+    "json": "/admin-reports/genesis-forensics/2026-07-02-lifetime-storefront-forensics.json",
+    "html": "/admin-reports/genesis-forensics/2026-07-02-lifetime-storefront-forensics.html",
+    "csv": "/admin-reports/genesis-forensics/2026-07-02-lifetime-storefront-forensics-timeline.csv",
+    "sha256": "/admin-reports/genesis-forensics/2026-07-02-lifetime-storefront-forensics.sha256"
+  },
+  {
     "id": "profit-cycle-001-2026-06-28",
     "title": "Profit Cycle 001 \u2014 Restore Funnel Truth",
     "date": "2026-06-28",

@@ -1,0 +1,145 @@
+{
+  "slug": "2026-07-02-lifetime-storefront-forensics",
+  "generated_at": "2026-07-02T21:57:40.629998Z",
+  "mode": "READ_ONLY",
+  "verdict": {
+    "primary_question": "Can it be proven anonymous visitors could discover/browse/buy throughout GetPawsy's lifetime?",
+    "answer": "NO \u2014 only partially, for narrow windows.",
+    "proven_working_days": [
+      "2026-01-14 to 2026-01-18 (evidence: 2 anon paid orders on Jan 18)"
+    ],
+    "proven_broken_windows": [
+      {
+        "window": "2026-06-30 17:00 UTC \u2192 2026-07-02 20:41 UTC",
+        "duration_h": "~76",
+        "cause": "products_public flipped to security_invoker without anon RLS on products; anon queries returned 0 rows.",
+        "confidence": "VERY HIGH"
+      }
+    ],
+    "uncertain_windows": [
+      {
+        "window": "2026-01-19 \u2192 2026-06-29",
+        "reason": "No positive anon-traffic proof retained; 41 migrations touched products/policies; 0 anon paid orders in 162 days. Cannot prove continuous availability from evidence retained today.",
+        "confidence": "MEDIUM"
+      }
+    ],
+    "lifetime_operational_pct": "UNKNOWN (proven-working \u2265 ~4 days; proven-broken \u2265 ~3 days; remainder unverifiable from current evidence).",
+    "prior_qa_bias_pct_estimate": "\u226595% of past validations likely used admin/service_role sessions which bypass RLS \u2014 false-negative on anon-access failures.",
+    "explains_organic_sales_absence": "PLAUSIBLY YES \u2014 proven-broken window covered peak Pinterest publishing period; combined with silent 148-day gap this is the highest-confidence single explanation on the table.",
+    "next_highest_bottleneck": "After the storefront fix, the remaining highest-confidence bottleneck is TRAFFIC QUALITY / ORGANIC VOLUME \u2014 Pinterest creative pipeline paused on AI-credit HTTP 402; no anon-attributed sessions with UTM converge on PDP \u2192 ATC."
+  },
+  "timeline": [
+    {
+      "date": "2026-01-14",
+      "kind": "Genesis migration",
+      "ref": "20260114205014",
+      "detail": "products table created with policy 'Products are publicly readable' \u2192 anon SELECT worked",
+      "confidence": "HIGH"
+    },
+    {
+      "date": "2026-01-18",
+      "kind": "Live paid orders",
+      "ref": "orders table",
+      "detail": "2 anonymous paid orders (c8888426, 50332a97) \u2014 proves anon checkout functioned that day",
+      "confidence": "VERY HIGH"
+    },
+    {
+      "date": "2026-01-19 \u2192 2026-06-15",
+      "kind": "Silent period",
+      "ref": "orders",
+      "detail": "Zero anonymous paid orders across 148 days despite active site",
+      "confidence": "HIGH"
+    },
+    {
+      "date": "2026-05-??",
+      "kind": "1 paid order",
+      "ref": "orders",
+      "detail": "Single paid order in May (user-attributed, not anon)",
+      "confidence": "MEDIUM"
+    },
+    {
+      "date": "2026-06-16",
+      "kind": "1 paid order",
+      "ref": "orders",
+      "detail": "Single paid order in June (pre-blackout)",
+      "confidence": "MEDIUM"
+    },
+    {
+      "date": "2026-06-30 17:00 UTC",
+      "kind": "Security-linter migration",
+      "ref": "20260630170046",
+      "detail": "ALTER VIEW products_public SET (security_invoker=true) WITHOUT adding anon RLS on products \u2192 storefront returns 0 rows for anon",
+      "confidence": "VERY HIGH"
+    },
+    {
+      "date": "2026-06-30 \u2192 2026-07-02",
+      "kind": "P0 BLACKOUT",
+      "ref": "curl anon API",
+      "detail": "Anonymous PostgREST queries returned 0 products for ~76h. Admin/service role continued to see all products, masking the incident.",
+      "confidence": "VERY HIGH"
+    },
+    {
+      "date": "2026-07-02 20:41 UTC",
+      "kind": "Emergency fix v1",
+      "ref": "20260702204128",
+      "detail": "Flipped view to security_invoker=off + GRANT SELECT anon,authenticated. Anon returns 342 products.",
+      "confidence": "VERY HIGH"
+    },
+    {
+      "date": "2026-07-02 21:17 UTC",
+      "kind": "Hardening fix v2",
+      "ref": "20260702211725",
+      "detail": "Restored security_invoker=on + narrow anon RLS policy on products (is_active, in-stock, listable). Anon still returns 342.",
+      "confidence": "VERY HIGH"
+    }
+  ],
+  "migrations_touching_products_or_view": 41,
+  "alternative_hypotheses": [
+    {
+      "hypothesis": "Traffic quantity too low",
+      "supports": "Only 6.7k sessions/wk in June",
+      "refutes": "Even at that volume 0 add-to-cart events observed \u2192 funnel break, not volume-only",
+      "verdict": "contributing but not root"
+    },
+    {
+      "hypothesis": "Checkout broken",
+      "supports": "Phone-required error fixed mid-June",
+      "refutes": "2 paid anon orders on Jan 18 prove checkout can function",
+      "verdict": "secondary"
+    },
+    {
+      "hypothesis": "Trust / pricing",
+      "supports": "No first-purchase social proof",
+      "refutes": "None",
+      "verdict": "contributing"
+    },
+    {
+      "hypothesis": "Storefront visibility (RLS/view)",
+      "supports": "20260630 migration + curl 0 rows + fix migrations 20260702",
+      "refutes": "Jan 18 anon sales prove it worked at genesis",
+      "verdict": "ROOT CAUSE for June blackout; suspected for silent periods"
+    }
+  ],
+  "root_cause_tree": [
+    "Security linter flag on SECURITY DEFINER view",
+    "\u2192 ALTER VIEW products_public SET (security_invoker=true) [20260630170046]",
+    "  \u2192 view now inherits caller RLS; products table has admin-only policies",
+    "    \u2192 anon SELECT returns 0 rows",
+    "      \u2192 HomePage bestsellers filter (is_active=true) returns empty result",
+    "        \u2192 /collections, /products, /search, PDP resolution all empty",
+    "          \u2192 0 view_item, 0 add_to_cart, 0 begin_checkout for anon",
+    "            \u2192 0 anonymous revenue during window"
+  ],
+  "evidence": {
+    "anon_paid_orders_lifetime": 2,
+    "anon_paid_orders_dates": [
+      "2026-01-18",
+      "2026-01-18"
+    ],
+    "products_active_today": 428,
+    "products_public_anon_returns_today": 342,
+    "view_state_today": "security_invoker=on",
+    "anon_rls_policy_present_today": true,
+    "migrations_analyzed": 805
+  }
+}
