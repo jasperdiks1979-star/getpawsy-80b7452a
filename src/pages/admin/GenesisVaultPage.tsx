@@ -8,10 +8,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Archive, Download, ExternalLink, Eye, FileText, Filter, Pin, PinOff,
-  Search, Shield, Star, StarOff, Vault,
+  Search, Shield, ShieldAlert, ShieldCheck, Star, StarOff, Vault,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Helmet } from "react-helmet-async";
+import { toast } from "sonner";
 
 type Doc = {
   id: string;
@@ -55,6 +56,8 @@ export default function GenesisVaultPage() {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("All");
   const [preview, setPreview] = useState<Doc | null>(null);
+  const [verifyingAll, setVerifyingAll] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -117,6 +120,33 @@ export default function GenesisVaultPage() {
     window.open(d.public_path, "_blank", "noopener");
   };
 
+  const verify = async (opts: { documentId?: string } = {}) => {
+    const single = !!opts.documentId;
+    if (single) setVerifyingId(opts.documentId!);
+    else setVerifyingAll(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "genesis-vault-verify-integrity",
+        { body: single ? { document_id: opts.documentId } : { limit: 200 } },
+      );
+      if (error) throw error;
+      const d = data as {
+        checked: number; verified: number; mismatched: number;
+        missing_hash: number; missing_payload: number; errors: number;
+      };
+      const label = single ? "Document verified" : "Vault integrity checked";
+      const detail = `${d.verified}/${d.checked} verified · ${d.mismatched} mismatch · ${d.missing_hash} no hash · ${d.missing_payload} no payload · ${d.errors} errors`;
+      if (d.mismatched > 0) toast.error(label, { description: detail });
+      else toast.success(label, { description: detail });
+      await load();
+    } catch (e) {
+      toast.error("Integrity check failed", { description: (e as Error).message });
+    } finally {
+      if (single) setVerifyingId(null);
+      else setVerifyingAll(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Helmet>
@@ -162,6 +192,10 @@ export default function GenesisVaultPage() {
         </div>
         <Button variant="outline" onClick={() => load()}>
           <Filter className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+        <Button variant="outline" disabled={verifyingAll} onClick={() => verify()}>
+          <ShieldCheck className="w-4 h-4 mr-2" />
+          {verifyingAll ? "Verifying…" : "Verify integrity"}
         </Button>
       </div>
 
@@ -222,6 +256,17 @@ export default function GenesisVaultPage() {
                       <Button size="icon" variant="ghost" title={d.is_pinned ? "Unpin" : "Pin"}
                         onClick={() => toggle(d, "is_pinned")}>
                         {d.is_pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Verify SHA-256 integrity"
+                        disabled={verifyingId === d.id}
+                        onClick={() => verify({ documentId: d.id })}
+                      >
+                        {d.integrity_verified
+                          ? <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          : <ShieldAlert className="w-4 h-4 text-amber-600" />}
                       </Button>
                       <Button size="icon" variant="ghost" title="Preview" onClick={() => openDoc(d)}>
                         <Eye className="w-4 h-4" />
