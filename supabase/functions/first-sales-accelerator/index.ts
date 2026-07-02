@@ -98,18 +98,12 @@ async function buildWarRoom() {
     hero = { product_id: top.id, name, atc_7d: top.atc, purchases_7d: top.purch, score: top.score };
   }
 
-  // Live buyer heat
-  let hotVisitors = 0, warmVisitors = 0;
-  try {
-    const { data } = await s.from('canonical_sessions').select('engagement_score').gte('last_activity_at', new Date(Date.now() - 30 * 60_000).toISOString()).limit(500);
-    for (const r of data ?? []) {
-      const e = Number((r as any).engagement_score ?? 0);
-      if (e >= 70) hotVisitors++; else if (e >= 40) warmVisitors++;
-    }
-  } catch {}
+  // Live buyer heat — score real intent from canonical_events (last 30 min)
+  const buyerHeat = await scoreLiveBuyers(s);
+  const { hot: hotVisitors, warm: warmVisitors, buyingNow: buyingNowVisitors, cold: coldVisitors, top: topVisitors } = buyerHeat;
 
   // Single highest-value action
-  const nextAction = pickNextAction({ pv, atc, chk, purch, hero, leaks, hotVisitors });
+  const nextAction = pickNextAction({ pv, atc, chk, purch, hero, leaks, hotVisitors, buyingNowVisitors });
 
   return {
     captured_at: new Date().toISOString(),
@@ -125,15 +119,200 @@ async function buildWarRoom() {
       net_margin: revenue ? Math.round(revenue * 0.22 * 100) / 100 : 0,
       live_visitors_15m: live,
     },
-    live_buyers: { hot: hotVisitors, warm: warmVisitors },
+    live_buyers: {
+      buying_now: buyingNowVisitors,
+      hot: hotVisitors,
+      warm: warmVisitors,
+      cold: coldVisitors,
+      window_minutes: 30,
+      top: topVisitors,
+    },
     leaks: leaks.slice(0, 5),
     hero_product: hero,
     next_action: nextAction,
   };
 }
 
+// -----------------------------------------------------------------------------
+// Live Buyer Heat scoring
+// -----------------------------------------------------------------------------
+// Classifies visitors active in the last 30 minutes into
+//   BUYING_NOW → purchase captured, or checkout event in last 10 min
+//   HOT        → intent score ≥ 40 (typically add-to-cart + product depth)
+//   WARM       → intent score ≥ 15 (multi-product browsing / cart open)
+//   COLD       → any activity below WARM threshold
+// Weights are evidence-first: strong commercial actions dominate raw pageviews.
+type BuyerClass = 'BUYING_NOW' | 'HOT' | 'WARM' | 'COLD';
+type TopVisitor = {
+  session_id: string;
+  visitor_id: string | null;
+  class: BuyerClass;
+  score: number;
+  last_stage: string | null;
+  minutes_since_last: number;
+  events: number;
+  product_ids: string[];
+  distinct_products: number;
+  last_product_id: string | null;
+  country: string | null;
+  device: string | null;
+  utm_source: string | null;
+  landing_page: string | null;
+  signals: string[];
+};
+
+const EVENT_WEIGHTS: Record<string, number> = {
+  CANONICAL_PAGE_VIEW: 1,
+  CANONICAL_PRODUCT_VIEW: 4,
+  CANONICAL_CART: 8,
+  CANONICAL_ADD_TO_CART: 20,
+  CANONICAL_CHECKOUT: 40,
+  CANONICAL_PURCHASE: 100,
+};
+const EVENT_CAP: Record<string, number> = {
+  CANONICAL_PAGE_VIEW: 5,      // avoid rewarding refresh spam
+  CANONICAL_PRODUCT_VIEW: 5,   // 5 × 4 = 20 max
+};
+
+async function scoreLiveBuyers(s: any) {
+  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const empty = { hot: 0, warm: 0, buyingNow: 0, cold: 0, top: [] as TopVisitor[] };
+  let rows: any[] = [];
+  try {
+    const { data } = await s
+      .from('canonical_events')
+      .select('session_id,visitor_id,canonical_name,occurred_at,product_id,country,device,utm_source,landing_page,page_path')
+      .gte('occurred_at', since)
+      .not('session_id', 'is', null)
+      .order('occurred_at', { ascending: true })
+      .limit(4000);
+    rows = data ?? [];
+  } catch {
+    return empty;
+  }
+  if (!rows.length) return empty;
+
+  const bySession = new Map<string, any[]>();
+  for (const r of rows) {
+    const k = String(r.session_id);
+    const arr = bySession.get(k) ?? [];
+    arr.push(r);
+    bySession.set(k, arr);
+  }
+
+  const now = Date.now();
+  const visitors: TopVisitor[] = [];
+
+  for (const [sessionId, evs] of bySession) {
+    const counts: Record<string, number> = {};
+    const products = new Set<string>();
+    let lastEv = evs[0];
+    let lastProduct: string | null = null;
+    let lastCheckoutAt = 0;
+    let hasPurchase = false;
+
+    for (const e of evs) {
+      const n = String(e.canonical_name ?? '');
+      counts[n] = (counts[n] ?? 0) + 1;
+      if (e.product_id) {
+        products.add(String(e.product_id));
+        lastProduct = String(e.product_id);
+      }
+      if (n === 'CANONICAL_CHECKOUT') lastCheckoutAt = new Date(e.occurred_at).getTime();
+      if (n === 'CANONICAL_PURCHASE') hasPurchase = true;
+      lastEv = e;
+    }
+
+    // Raw score from event weights, capped per event type
+    let score = 0;
+    const signals: string[] = [];
+    for (const [name, c] of Object.entries(counts)) {
+      const w = EVENT_WEIGHTS[name] ?? 0;
+      if (!w) continue;
+      const capped = EVENT_CAP[name] ? Math.min(c, EVENT_CAP[name]) : c;
+      score += w * capped;
+      if (w >= 8) signals.push(`${name.replace('CANONICAL_', '').toLowerCase()}×${c}`);
+    }
+    // Depth bonus — multi-product browsing suggests active shopping
+    if (products.size >= 2) {
+      const bonus = Math.min(products.size, 4) * 3;
+      score += bonus;
+      signals.push(`${products.size} products viewed`);
+    }
+    // Recency boost
+    const lastMs = new Date(lastEv.occurred_at).getTime();
+    const minutesSince = Math.max(0, Math.round((now - lastMs) / 60_000));
+    if (minutesSince <= 2) { score += 12; signals.push('active <2m ago'); }
+    else if (minutesSince <= 5) { score += 6; }
+
+    // Classification
+    let klass: BuyerClass;
+    const checkoutRecent = lastCheckoutAt && (now - lastCheckoutAt) <= 10 * 60_000;
+    if (hasPurchase || checkoutRecent) klass = 'BUYING_NOW';
+    else if (score >= 40) klass = 'HOT';
+    else if (score >= 15) klass = 'WARM';
+    else klass = 'COLD';
+
+    visitors.push({
+      session_id: sessionId,
+      visitor_id: lastEv.visitor_id ?? null,
+      class: klass,
+      score: Math.round(score),
+      last_stage: lastEv.canonical_name ?? null,
+      minutes_since_last: minutesSince,
+      events: evs.length,
+      product_ids: Array.from(products),
+      distinct_products: products.size,
+      last_product_id: lastProduct,
+      country: lastEv.country ?? null,
+      device: lastEv.device ?? null,
+      utm_source: lastEv.utm_source ?? null,
+      landing_page: lastEv.landing_page ?? lastEv.page_path ?? null,
+      signals,
+    });
+  }
+
+  // Rank: BUYING_NOW → HOT → WARM → COLD, then score desc, then recency
+  const rank = (v: TopVisitor) =>
+    v.class === 'BUYING_NOW' ? 4 : v.class === 'HOT' ? 3 : v.class === 'WARM' ? 2 : 1;
+  visitors.sort((a, b) => (rank(b) - rank(a)) || (b.score - a.score) || (a.minutes_since_last - b.minutes_since_last));
+
+  // Enrich top visitors with product name
+  const top = visitors.slice(0, 10);
+  const productIds = Array.from(new Set(top.map((v) => v.last_product_id).filter(Boolean))) as string[];
+  const nameById = new Map<string, string>();
+  if (productIds.length) {
+    try {
+      const { data: pr } = await s.from('products').select('id,name').in('id', productIds);
+      for (const p of pr ?? []) nameById.set(String(p.id), String(p.name ?? ''));
+    } catch {}
+  }
+  for (const v of top) {
+    if (v.last_product_id && nameById.has(v.last_product_id)) {
+      (v as any).last_product_name = nameById.get(v.last_product_id);
+    }
+  }
+
+  return {
+    buyingNow: visitors.filter((v) => v.class === 'BUYING_NOW').length,
+    hot: visitors.filter((v) => v.class === 'HOT').length,
+    warm: visitors.filter((v) => v.class === 'WARM').length,
+    cold: visitors.filter((v) => v.class === 'COLD').length,
+    top,
+  };
+}
+
 function pickNextAction(ctx: any) {
-  const { pv, atc, chk, hero, leaks, hotVisitors } = ctx;
+  const { pv, atc, chk, hero, leaks, hotVisitors, buyingNowVisitors } = ctx;
+  if (buyingNowVisitors > 0) {
+    return {
+      action: 'Escort buying-now visitors through checkout',
+      why: `${buyingNowVisitors} visitor(s) reached checkout or purchase in the last 10 min`,
+      confidence: 88, expected_revenue: buyingNowVisitors * 60, expected_roi: 9.0,
+      eta_minutes: 2, rollback: 'Disable checkout assist widget',
+      evidence: { buying_now_visitors: buyingNowVisitors },
+    };
+  }
   if (hotVisitors > 0) {
     return {
       action: 'Trigger conversion assist on live hot visitors',

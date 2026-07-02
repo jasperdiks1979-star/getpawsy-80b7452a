@@ -11,7 +11,30 @@ import { toast } from "sonner";
 type WarRoom = {
   captured_at: string;
   today: { visitors: number | null; qualified_visitors: number | null; add_to_cart: number | null; checkouts: number | null; purchases: number | null; revenue: number; orders: number; gross_margin: number; net_margin: number; live_visitors_15m: number | null };
-  live_buyers: { hot: number; warm: number };
+  live_buyers: {
+    buying_now: number;
+    hot: number;
+    warm: number;
+    cold: number;
+    window_minutes: number;
+    top: Array<{
+      session_id: string;
+      visitor_id: string | null;
+      class: 'BUYING_NOW' | 'HOT' | 'WARM' | 'COLD';
+      score: number;
+      last_stage: string | null;
+      minutes_since_last: number;
+      events: number;
+      distinct_products: number;
+      last_product_id: string | null;
+      last_product_name?: string | null;
+      country: string | null;
+      device: string | null;
+      utm_source: string | null;
+      landing_page: string | null;
+      signals: string[];
+    }>;
+  };
   leaks: Array<{ label: string; loss_est: number; evidence: string }>;
   hero_product: { product_id: string; name: string | null; atc_7d: number; purchases_7d: number; score: number } | null;
   next_action: { action: string; why: string; confidence: number; expected_revenue: number; expected_roi: number; eta_minutes: number; rollback: string; evidence: any };
@@ -195,14 +218,84 @@ export default function RevenueWarRoomPage() {
         </Card>
 
         {/* Phase 4 — Live buyer detector */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" />Live Buyer Detector (30m)</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="border rounded p-2"><div className="text-[11px] text-muted-foreground">Hot</div><div className="text-xl font-semibold text-red-600">{data?.live_buyers.hot ?? 0}</div></div>
-              <div className="border rounded p-2"><div className="text-[11px] text-muted-foreground">Warm</div><div className="text-xl font-semibold text-amber-600">{data?.live_buyers.warm ?? 0}</div></div>
+        <Card className="md:col-span-2 xl:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Flame className="h-4 w-4 text-orange-500" />
+              Live Buyer Detector · last {data?.live_buyers.window_minutes ?? 30}m
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-4 gap-2">
+              <div className="border rounded p-2 bg-red-500/5 border-red-500/40">
+                <div className="text-[11px] text-muted-foreground">Buying Now</div>
+                <div className="text-xl font-semibold text-red-600">{data?.live_buyers.buying_now ?? 0}</div>
+              </div>
+              <div className="border rounded p-2 bg-orange-500/5 border-orange-500/40">
+                <div className="text-[11px] text-muted-foreground">Hot</div>
+                <div className="text-xl font-semibold text-orange-600">{data?.live_buyers.hot ?? 0}</div>
+              </div>
+              <div className="border rounded p-2 bg-amber-500/5 border-amber-500/40">
+                <div className="text-[11px] text-muted-foreground">Warm</div>
+                <div className="text-xl font-semibold text-amber-600">{data?.live_buyers.warm ?? 0}</div>
+              </div>
+              <div className="border rounded p-2">
+                <div className="text-[11px] text-muted-foreground">Cold</div>
+                <div className="text-xl font-semibold text-muted-foreground">{data?.live_buyers.cold ?? 0}</div>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mt-2">Scored from engagement_score on canonical_sessions.</div>
+
+            {data?.live_buyers.top && data.live_buyers.top.length > 0 ? (
+              <div className="border rounded overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 px-2 py-1.5 text-[11px] text-muted-foreground bg-muted/40 border-b">
+                  <div className="col-span-2">Class</div>
+                  <div className="col-span-1 text-right">Score</div>
+                  <div className="col-span-2">Stage</div>
+                  <div className="col-span-1 text-right">Ago</div>
+                  <div className="col-span-4">Looking at</div>
+                  <div className="col-span-2">Source</div>
+                </div>
+                {data.live_buyers.top.map((v) => {
+                  const cls =
+                    v.class === 'BUYING_NOW' ? 'bg-red-600 text-white' :
+                    v.class === 'HOT' ? 'bg-orange-500 text-white' :
+                    v.class === 'WARM' ? 'bg-amber-500 text-white' :
+                    'bg-muted text-muted-foreground';
+                  const label = v.class === 'BUYING_NOW' ? 'BUYING NOW' : v.class;
+                  const stage = (v.last_stage ?? '').replace('CANONICAL_', '').toLowerCase() || '—';
+                  const productLabel = v.last_product_name || v.last_product_id;
+                  return (
+                    <div key={v.session_id} className="grid grid-cols-12 gap-2 px-2 py-1.5 text-xs border-b last:border-b-0 items-center">
+                      <div className="col-span-2"><Badge className={cls}>{label}</Badge></div>
+                      <div className="col-span-1 text-right font-mono">{v.score}</div>
+                      <div className="col-span-2 truncate" title={stage}>{stage}</div>
+                      <div className="col-span-1 text-right text-muted-foreground">{v.minutes_since_last}m</div>
+                      <div className="col-span-4 truncate" title={v.signals.join(' · ')}>
+                        {productLabel ? (
+                          <Link to={`/admin/products?highlight=${v.last_product_id}`} className="text-primary hover:underline">
+                            {productLabel}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">{v.signals[0] ?? 'browsing'}</span>
+                        )}
+                        {v.distinct_products > 1 && (
+                          <span className="text-muted-foreground"> +{v.distinct_products - 1}</span>
+                        )}
+                      </div>
+                      <div className="col-span-2 truncate text-muted-foreground" title={[v.utm_source, v.country, v.device].filter(Boolean).join(' · ')}>
+                        {v.utm_source ?? 'direct'}{v.country ? ` · ${v.country}` : ''}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">No active visitors in the last 30 minutes.</div>
+            )}
+
+            <div className="text-[11px] text-muted-foreground">
+              Intent scored from canonical_events: page_view×1 · product_view×4 · cart×8 · add_to_cart×20 · checkout×40 · purchase×100 (multi-product & recency bonuses). Buying Now = purchase or checkout in last 10 min.
+            </div>
           </CardContent>
         </Card>
 
