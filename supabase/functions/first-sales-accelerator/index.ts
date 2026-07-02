@@ -226,8 +226,8 @@ async function certify() {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  const gate = await requireInternalOrAdmin(req);
-  if (!gate.ok) return gate.response;
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) return denied;
   const url = new URL(req.url);
   const action = url.searchParams.get('action') ?? 'warroom';
   try {
