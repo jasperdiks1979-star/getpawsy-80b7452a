@@ -3,6 +3,7 @@
 // simulations, writes certified report. Extends (does not duplicate) existing
 // Genesis systems. Reads channel availability from public.channel_intelligence_snapshots-driven UI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +71,8 @@ async function sha256Hex(s: string): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
