@@ -167,6 +167,7 @@ const EvidenceVaultPage = () => {
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="belastingdienst">Belastingdienst</TabsTrigger>
             <TabsTrigger value="backfill">Backfill queue</TabsTrigger>
+            <TabsTrigger value="anomalies">Anomalies</TabsTrigger>
           </TabsList>
 
           <TabsContent value="documents">
@@ -324,6 +325,10 @@ const EvidenceVaultPage = () => {
 
           <TabsContent value="backfill">
             <BackfillTasksPanel />
+          </TabsContent>
+
+          <TabsContent value="anomalies">
+            <AnomaliesPanel />
           </TabsContent>
         </Tabs>
       </div>
