@@ -2521,6 +2521,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="omega-architect"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisOmegaArchitectPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="finance"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
