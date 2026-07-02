@@ -2723,6 +2723,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="sales-readiness"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SalesReadinessPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pcie-v2-revenue-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
