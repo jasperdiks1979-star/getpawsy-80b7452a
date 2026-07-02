@@ -479,3 +479,6 @@ verify_jwt = true
 
 [functions.genesis-prc-orchestrator]
 verify_jwt = true
+
+[functions.genesis-golden-customer]
+verify_jwt = false
