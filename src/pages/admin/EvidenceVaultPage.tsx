@@ -167,6 +167,7 @@ const EvidenceVaultPage = () => {
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="belastingdienst">Belastingdienst</TabsTrigger>
             <TabsTrigger value="backfill">Backfill queue</TabsTrigger>
+            <TabsTrigger value="anomalies">Anomalies</TabsTrigger>
           </TabsList>
 
           <TabsContent value="documents">
@@ -325,6 +326,10 @@ const EvidenceVaultPage = () => {
           <TabsContent value="backfill">
             <BackfillTasksPanel />
           </TabsContent>
+
+          <TabsContent value="anomalies">
+            <AnomaliesPanel />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
@@ -393,6 +398,166 @@ const StripeImportPanel = () => {
 };
 
 export default EvidenceVaultPage;
+
+type Anomaly = {
+  id: string;
+  anomaly_type: string;
+  title: string;
+  detail: string | null;
+  supplier_slug: string | null;
+  z_score: number | null;
+  observed_minor: number | null;
+  expected_minor: number | null;
+  currency: string | null;
+  status: string;
+  metadata: any;
+  detected_at: string;
+};
+
+const ANOM_LABEL: Record<string, string> = {
+  duplicate_sha256: "Duplicate file",
+  duplicate_invoice_number: "Duplicate invoice #",
+  missing_invoice: "Missing invoice",
+  missing_vat: "Missing VAT",
+  incorrect_vat: "Incorrect VAT",
+  suspicious_payment: "Suspicious payment",
+};
+
+const AnomaliesPanel = () => {
+  const [rows, setRows] = useState<Anomaly[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [filter, setFilter] = useState<string>("open");
+
+  const load = async () => {
+    setLoading(true);
+    const q = supabase
+      .from("finance_anomalies")
+      .select("*")
+      .order("detected_at", { ascending: false })
+      .limit(200);
+    const { data } = filter === "all" ? await q : await q.eq("status", filter);
+    setRows((data ?? []) as Anomaly[]);
+    setLoading(false);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filter]);
+
+  const scan = async () => {
+    setScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("finance-anomaly-scan", { body: {} });
+      if (error) throw error;
+      toast.success(`Scan complete: ${data?.inserted ?? 0} new / ${data?.candidates ?? 0} candidates`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const setStatus = async (id: string, status: string) => {
+    await supabase.from("finance_anomalies").update({ status }).eq("id", id);
+    setRows(r => r.map(x => x.id === id ? { ...x, status } : x));
+  };
+
+  const counts = useMemo(() => {
+    const by: Record<string, number> = {};
+    for (const r of rows) by[r.anomaly_type] = (by[r.anomaly_type] ?? 0) + 1;
+    return by;
+  }, [rows]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Shield className="h-4 w-4" /> Financial Anomaly Detection
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Automatic scan for duplicates, missing invoices, incorrect VAT rates and statistically suspicious payments.
+          Findings are evidence-linked and indexed for the CFO chat.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={scanning} onClick={scan} className="gap-2">
+            {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Run anomaly scan
+          </Button>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="open">Open</option>
+            <option value="ack">Acknowledged</option>
+            <option value="resolved">Resolved</option>
+            <option value="ignored">Ignored</option>
+            <option value="all">All</option>
+          </select>
+          <span className="text-xs text-muted-foreground">
+            {loading ? "Loading…" : `${rows.length} findings`}
+          </span>
+        </div>
+
+        {Object.keys(counts).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(counts).map(([k, v]) => (
+              <Badge key={k} variant="outline" className="text-xs">
+                {ANOM_LABEL[k] ?? k}: {v}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {rows.map(r => {
+            const evIds: string[] = (r.metadata?.evidence_document_ids ?? []) as string[];
+            return (
+              <Card key={r.id} className="border-l-4" style={{
+                borderLeftColor:
+                  r.anomaly_type === "suspicious_payment" ? "hsl(var(--destructive))" :
+                  r.anomaly_type.startsWith("duplicate") ? "hsl(var(--primary))" :
+                  "hsl(var(--muted-foreground))",
+              }}>
+                <CardContent className="p-3 space-y-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-[10px]">{ANOM_LABEL[r.anomaly_type] ?? r.anomaly_type}</Badge>
+                        <span className="font-medium text-sm">{r.title}</span>
+                        {r.z_score != null && <Badge variant="outline" className="text-[10px]">z={r.z_score}</Badge>}
+                        <Badge variant={r.status === "open" ? "destructive" : "outline"} className="text-[10px]">{r.status}</Badge>
+                      </div>
+                      {r.detail && <p className="text-xs text-muted-foreground mt-1">{r.detail}</p>}
+                      {evIds.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+                          Evidence: {evIds.map(id => id.slice(0, 8)).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    {r.status === "open" && (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "ack")}>Ack</Button>
+                        <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "resolved")}>Resolve</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setStatus(r.id, "ignored")}>Ignore</Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          {!loading && rows.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No {filter === "all" ? "" : filter} findings. Click "Run anomaly scan" to detect issues.
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const ManualImportPanel = ({ onImported }: { onImported: () => void }) => {
   const [file, setFile] = useState<File | null>(null);
