@@ -1,0 +1,8 @@
+event_type	count	coalesce
+success	7307	20253
+warning	13	0
+probe_success	795	0
+probe_failed	149	0
+payment_required	162	0
+resumed	12	0
+(6 rows)
