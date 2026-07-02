@@ -360,6 +360,9 @@ export async function aiGatewayFetch(
       message: json?.error?.message ?? json?.message ?? "payment_required",
       raw: json,
     });
+    // Evidence-backed auto-recovery — some 402s are transient (per-key rate
+    // slice, race with a top-up). Kick a re-probe so a stale pause auto-clears.
+    await scheduleEvidenceRecovery(supabase, functionName);
     return { ok: false, status: 402, json, paused: true };
   }
   if (resp.status === 429) {
