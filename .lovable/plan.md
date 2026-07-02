@@ -1,71 +1,91 @@
 
-# Genesis Master Implementation + V11 / V11.1 — Staged Execution Plan
+# GENESIS Ω∞ — Canonical Attribution & Revenue Intelligence
 
-This is three enterprise-scale programs bundled into one directive (Master Implementation = 16 phases, V11 Credit Forensics = 16 phases, V11.1 AI Economics = 13 phases). Executing all 45 phases in a single turn would break `REUSE first, CONNECT second, BUILD only when necessary` — that rule requires discovery-first, evidence-first work with human checkpoints, not a monolithic build.
+Per the Build Justification Directive, this mission is delivered by **extending existing systems**, not creating parallel ones. Below is the 4-point justification, the concrete extension plan, and what will be shipped in a single safe run.
 
-I'll deliver in three waves. Each wave is independently shippable and produces an evidence artifact you can approve before the next wave starts. No thresholds lowered, no gates bypassed, no new production waves triggered.
+## Build Justification (why extend, not create new)
 
----
+1. **Existing is insufficient because:** `canonical_sessions` has only 21 columns and no immutable UTM/click-id snapshot; `analytics_traffic_classification` classifies at session level but does not run on every event; `cie_attribution_incidents` opens tickets but there is no operator-facing revenue-attribution surface. The Revenue War Room shows funnel counts but cannot answer "which Pinterest pin drove the most revenue".
+2. **Revenue impact:** unattributed sessions currently collapse into `direct`/`unknown`, hiding the true ROI of Pinterest / TikTok / Google spend. Correct attribution unlocks reallocation of ad + creative budget to sources with proven profit — the single largest lever we have on gross margin.
+3. **Why not modify existing is a lie — we ARE modifying existing.** New surface = one page (`/admin/revenue-attribution-center`) that reads from existing tables. All storage is added as columns/tables in the already-canonical namespaces (`canonical_*`, `cie_*`, `gad_*`). No parallel event pipeline.
+4. **Measurable impact:** Attribution Completeness %, UTM Coverage %, Source Classification Accuracy %, Revenue Traceability % — all computed nightly and stored in `genesis_perpetual_certifications` (SHA-256), so we can prove week-over-week improvement.
 
-## Wave A — Discovery & Truth (no UX changes, no credit spend)
+## What already exists (reused, not rebuilt)
 
-Goal: produce the evidence base every later phase depends on. Zero AI credits consumed by this wave.
+- `canonical_events` + `canonical_sessions` — event + session spine.
+- `canonical-ingest` edge function — semantic dedupe already live.
+- `cie-orchestrator` + `cie_attribution_incidents` + `cie_confidence_scores` — attribution gate.
+- `analytics_traffic_classification` — channel logic (needs extension, not replacement).
+- `gad_attributions` + `gad_events` — multi-model attribution ledger.
+- `first-sales-accelerator` — funnel snapshotting.
+- `gare-orchestrator` — Detect→Diagnose→Repair loop (used for self-repair, no new engine).
+- `genesis_perpetual_certifications` + Evidence Vault — SHA-256 certification.
 
-1. **Forensic inventory** (Master Phases 1–3): script-driven scan producing `public/admin-reports/genesis-inventory/`:
-   - `pages.tsv` — every route in `src/pages/**` + `src/App.tsx` router.
-   - `functions.tsv` — every `supabase/functions/*/index.ts` + `verify_jwt` + cron bindings.
-   - `tables.tsv` — from `information_schema` via psql (already have exec DB access).
-   - `reports.tsv` — every file under `public/admin-reports/**` + `genesis_documents`.
-   - `duplicates.json` — name-similarity + AST-signature clustering for pages and functions.
-2. **AI Credit Ledger backfill** (V11 Phases 1–2, V11.1 Phase 1): new `finance_ai_ledger` table + `finance-ai-ledger-backfill` edge function that joins `pinterest_credit_events`, `ai_trace_events`, `pcie2_creative_jobs`, `pinterest_creative_factory_jobs`, `cinematic_ad_jobs`, `ai_gateway_logs` (via tool). One row per gateway call with worker, product, job, model, credits, outcome, downstream pin id.
-3. **Pipeline trace reconstruction** (V11 Phase 3): read-only SQL views joining creative_job → assembly → publish_queue → pinterest_pins to compute exact drop-off per stage per day.
-4. **Evidence report v1** delivered as `/admin/reports` entry: `GENESIS-V11-AI-CREDIT-FORENSICS.pdf` + JSON with SHA-256. Answers the eight primary V11 questions with citations to ledger row ids. No fixes yet.
+## Extension Plan
 
-Deliverable: one PDF, one JSON manifest, one `finance_ai_ledger` table populated. You review before Wave B.
+### 1. Canonical UTM Engine (extends `canonical_sessions`)
+Migration adds immutable first-touch snapshot columns: `first_utm_source/medium/campaign/content/term`, `first_gclid`, `first_fbclid`, `first_ttclid`, `first_msclkid`, `first_pinterest_click_id`, `first_reddit_click_id`, `first_email_id`, `first_affiliate_id`, `first_referrer`, `first_landing_url`, `first_landing_url_normalized`, `redirect_chain jsonb`, `device`, `browser`, `country`, `region`, `city`, `timezone`, `language`, `screen_wxh`, and locks them with a `BEFORE UPDATE` trigger (immutable once non-null). Client-side: extend `resolveUtm` + `pushTrafficContext` to emit a one-shot `session_attribution_snapshot` CCI event on the first page of every session; `canonical-ingest` upserts the snapshot into `canonical_sessions` once.
 
----
+### 2. Source Classification Engine (extends `analytics_traffic_classification`)
+Rewrite the classifier as a single SQL function `public.classify_traffic_source(referrer, utm_source, utm_medium, click_ids jsonb) returns text` covering the 17 canonical channels from the directive. Called from `canonical-ingest` on every event (not just sessions), and backfilled once over the last 90d. `direct` only when referrer is null AND no utm/click ids.
 
-## Wave B — Genesis HQ shell + Economics layer (UI-only reuse)
+### 3–5. Product / Funnel / Landing Intelligence (extends `first-sales-accelerator`)
+Add three read-only SQL views on top of `canonical_events`:
+- `v_product_attribution_daily` — impressions→view→ATC→checkout→purchase→revenue→margin per product per day per source.
+- `v_funnel_intelligence_daily` — full funnel + conversion %, abandonment %, expected/lost/recovered revenue.
+- `v_landing_page_intelligence_daily` — visitors, bounce, scroll, CWV join, revenue, device/country split.
+Extend `first-sales-accelerator` with actions `productAttribution`, `funnelIntelligence`, `landingIntelligence` that read the views.
 
-Only starts after Wave A is approved (so we know what to reuse vs. duplicate).
+### 6. Session Replay Metadata (extends `analytics_session_quality`)
+Add columns: `dead_clicks`, `rage_clicks`, `back_button_uses`, `search_uses`, `menu_uses`, `filter_uses`, `variant_selections`, `coupon_attempts`, `shipping_estimator_uses`, `checkout_exits`. Wire counters in existing `installUxSignals` / `sessionQualitySignals`. No PII stored.
 
-1. **Genesis HQ root nav** (Master Phases 4, 12): new `/admin/hq` route rendering a single sidebar with the 18 sections from the directive. Each entry is a link to the **existing** page discovered in Wave A — no page rewrites, no widget duplication. Global command-palette search (⌘K) over pages, reports, products, orders, pins from Wave A's inventory + existing tables.
-2. **Homepage = Digital Boardroom** (Master Phase 5): `/admin/hq` default tab embeds the existing `GenesisBoardroomPage` widgets via composition, not copy.
-3. **Report Center** (Master Phase 7): `/admin/hq/reports` — auto-lists `genesis_documents` + filesystem scan of `public/admin-reports/**`, grouped by the 13 categories in the directive. Preview + signed-URL download. No new report generation.
-4. **AI Economics dashboard** (V11.1 Phases 2–10): `/admin/hq/ai-economics` reading exclusively from `finance_ai_ledger` + `orders` + `canonical_sessions` (Ω.3 truth). Widgets: cost/image, cost/pin, cost/visitor, cost/purchase, ROI, burn rate, forecast-to-empty. All numbers show `UNKNOWN` if join confidence <90 (Conversion Integrity rule).
-5. **Unified Truth enforcement** (Master Phase 9): every new widget calls a single `useTruthMetric(metric_key)` hook backed by `genesis_truth_metrics`. Conflicting sources → `UNKNOWN` badge, never a guess.
+### 7. Attribution Validation (extends `cie-orchestrator`)
+New CIE action `attribution.reconcile` cross-checks `canonical_events` ↔ `gad_events` ↔ `ga4_daily_snapshots` ↔ `orders`. Mismatches open a `cie_attribution_incidents` row and, when confidence ≥ 95, `gare-orchestrator` auto-repairs via the existing loop. No new engine.
 
-Deliverable: Genesis HQ live at `/admin/hq`, zero existing pages deleted, zero widgets duplicated, AI Economics dashboard populated from ledger.
+### 8. Attribution Center (ONE new admin page)
+`/admin/revenue-attribution-center` — the only new UI. Reads exclusively from the views above. Tabs: Sources · Campaigns · Products · Landing · Funnels · Revenue Cube (by country / device / browser / pin / TikTok creative / keyword / email / returning) · First vs Last vs Assisted. Auto-refresh 60s. Wired into the existing admin nav under Revenue.
 
----
+### 9. Business Questions Console (extends existing Mission Intelligence panel)
+Add "Attribution Q&A" card to Mission Intelligence that answers the 14 CEO questions with SQL against the views + evidence link to the Attribution Center.
 
-## Wave C — Safe fixes, leak stops, certification
+### 10. Self-Repair
+Uses the existing `gare-orchestrator` playbook system — add two playbooks: `attribution.reclassify_direct` and `attribution.backfill_utm_from_referrer`. No new orchestrator.
 
-Only after Waves A+B are green.
+### Certification
+Extend `first-sales-accelerator.nightlyAudit` to also compute and store:
+- attribution_completeness_pct
+- event_coverage_pct
+- utm_coverage_pct
+- source_classification_accuracy_pct
+- product_attribution_accuracy_pct
+- funnel_integrity_pct
+- revenue_traceability_pct
 
-1. **Safe-only credit leak stops** (V11 Phase 14, V11.1 Phase 7): from the Wave A evidence, disable *provably* duplicate retries and zombie workers using existing kill-switches (`pinterest_credit_state.image_generation_killed`, `pinterest_credit_state.autopilot_disabled`) — no threshold changes, no gate bypasses. Each stop logged to `governance_decision_log` with rollback SQL.
-2. **Break-even + simulator** (V11.1 Phases 8–9): pure-SQL functions + a read-only simulator UI card in AI Economics. No writes to production tables.
-3. **Duplicate merges** (Master Phase 3 tail): only for dashboards flagged `identical_ast=true` in Wave A. Each merge is one PR-sized migration you approve individually.
-4. **Mobile parity + self-audit** (Master Phases 14–15): Playwright sweep of every HQ route at 375/768/1280, report failures, patch layout only.
-5. **Final certifications**: `GENESIS-MASTER-IMPLEMENTATION-REPORT.pdf` + `GENESIS-V11.1-AI-ECONOMICS-REPORT.pdf`, both SHA-256 fingerprinted and archived to Report Center.
+into a new `genesis_perpetual_certifications` row (type=`revenue_attribution`) with SHA-256 payload hash. Auto-published to Evidence Vault + Report Center via existing pipeline.
 
----
+## Migrations (single batch, all with GRANTs)
 
-## Explicitly out of scope (per the directive's own constraints)
+1. `canonical_sessions` — add 20 first-touch columns + immutability trigger.
+2. `analytics_session_quality` — add 10 behavioural counters.
+3. Function `public.classify_traffic_source(...)`.
+4. Views `v_product_attribution_daily`, `v_funnel_intelligence_daily`, `v_landing_page_intelligence_daily`.
+5. Backfill 90d classification.
 
-- No new Pinterest generation waves (V11 rule).
-- No PRE / Native / Integrity threshold changes (V11 rule).
-- No rebuilding of existing dashboards (Master final rule).
-- No speculative ROI numbers — `UNKNOWN` wherever join confidence <90 (CIE rule).
-- Genome (Master Phase 10), Boardroom Layout Manager (Phase 13), Knowledge Vault (Phase 8) already exist at `/admin/genome`, `/admin/boardroom-v5`, `/admin/vault` — Wave B links to them, does not rebuild.
+## Files touched (extensions, no duplicates)
 
----
+- `supabase/functions/canonical-ingest/index.ts` — write first-touch snapshot, call classifier.
+- `supabase/functions/cie-orchestrator/index.ts` — add `attribution.reconcile`.
+- `supabase/functions/first-sales-accelerator/index.ts` — 3 new read actions + certification.
+- `supabase/functions/gare-orchestrator/index.ts` — 2 new playbooks.
+- `src/lib/utmNormalizer.ts` + `src/lib/cci.ts` — emit `session_attribution_snapshot` once.
+- `src/lib/ux-signals.ts` + `src/lib/sessionQuality.ts` — new counters.
+- **New:** `src/pages/admin/RevenueAttributionCenterPage.tsx` + route.
+- `src/pages/admin/MissionIntelligencePanel.tsx` — Attribution Q&A card.
 
-## Approval gate
+## Explicitly NOT built
+- No new events pipeline, no new session table, no new "attribution engine" service, no new certification table, no new orchestrator. Every capability lands inside an existing surface.
 
-Reply with one of:
-- **"Wave A"** — I start discovery + credit ledger backfill + V11 forensic report immediately.
-- **"All waves"** — I execute A → B → C sequentially, pausing only on hard errors.
-- **Edits** — tell me what to add, drop, or reorder and I'll revise this plan.
+## Rollout order (single safe run)
+1. Migrations (with GRANTs) → 2. Backfill classifier → 3. Edge function deploys → 4. Client instrumentation → 5. Attribution Center page → 6. Nightly certification job → 7. First certification signed & archived.
 
-Each wave lands ~20–40 files. Attempting all 45 phases in one turn would produce shallow, duplicated work — the exact anti-pattern this directive forbids.
+Approve to execute.
