@@ -10130,6 +10130,177 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_intelligence_reports: {
+        Row: {
+          active_channels: number
+          diversification_score: number
+          generated_at: string
+          id: string
+          markdown: string | null
+          sha256: string
+          summary: Json
+          top_actions: Json
+          top_spof_channel: string | null
+          top_spof_revenue_pct: number
+          unavailable_channels: number
+        }
+        Insert: {
+          active_channels?: number
+          diversification_score?: number
+          generated_at?: string
+          id?: string
+          markdown?: string | null
+          sha256: string
+          summary?: Json
+          top_actions?: Json
+          top_spof_channel?: string | null
+          top_spof_revenue_pct?: number
+          unavailable_channels?: number
+        }
+        Update: {
+          active_channels?: number
+          diversification_score?: number
+          generated_at?: string
+          id?: string
+          markdown?: string | null
+          sha256?: string
+          summary?: Json
+          top_actions?: Json
+          top_spof_channel?: string | null
+          top_spof_revenue_pct?: number
+          unavailable_channels?: number
+        }
+        Relationships: []
+      }
+      channel_intelligence_snapshots: {
+        Row: {
+          api_status: string | null
+          available: boolean
+          captured_at: string
+          channel_key: string
+          channel_label: string
+          confidence: number
+          conversion_rate: number
+          dependency_score: number
+          health_score: number
+          id: string
+          notes: string | null
+          owner: string | null
+          priority: string | null
+          purchase_share: number
+          purchases_30d: number
+          recovery_difficulty: number
+          revenue_30d_usd: number
+          revenue_share: number
+          spof_score: number
+          status: string
+          status_reason: string | null
+          third_party_dependency: string | null
+          trust_score: number
+          visitor_share: number
+          visitors_30d: number
+        }
+        Insert: {
+          api_status?: string | null
+          available?: boolean
+          captured_at?: string
+          channel_key: string
+          channel_label: string
+          confidence?: number
+          conversion_rate?: number
+          dependency_score?: number
+          health_score?: number
+          id?: string
+          notes?: string | null
+          owner?: string | null
+          priority?: string | null
+          purchase_share?: number
+          purchases_30d?: number
+          recovery_difficulty?: number
+          revenue_30d_usd?: number
+          revenue_share?: number
+          spof_score?: number
+          status?: string
+          status_reason?: string | null
+          third_party_dependency?: string | null
+          trust_score?: number
+          visitor_share?: number
+          visitors_30d?: number
+        }
+        Update: {
+          api_status?: string | null
+          available?: boolean
+          captured_at?: string
+          channel_key?: string
+          channel_label?: string
+          confidence?: number
+          conversion_rate?: number
+          dependency_score?: number
+          health_score?: number
+          id?: string
+          notes?: string | null
+          owner?: string | null
+          priority?: string | null
+          purchase_share?: number
+          purchases_30d?: number
+          recovery_difficulty?: number
+          revenue_30d_usd?: number
+          revenue_share?: number
+          spof_score?: number
+          status?: string
+          status_reason?: string | null
+          third_party_dependency?: string | null
+          trust_score?: number
+          visitor_share?: number
+          visitors_30d?: number
+        }
+        Relationships: []
+      }
+      channel_survival_simulations: {
+        Row: {
+          best_alternative: string | null
+          business_health_loss: number
+          channel_key: string | null
+          confidence: number
+          expected_revenue_loss_pct: number
+          expected_revenue_loss_usd: number
+          id: string
+          operational_impact: string | null
+          recommended_actions: Json
+          recovery_time_days: number | null
+          scenario: string
+          simulated_at: string
+        }
+        Insert: {
+          best_alternative?: string | null
+          business_health_loss?: number
+          channel_key?: string | null
+          confidence?: number
+          expected_revenue_loss_pct?: number
+          expected_revenue_loss_usd?: number
+          id?: string
+          operational_impact?: string | null
+          recommended_actions?: Json
+          recovery_time_days?: number | null
+          scenario: string
+          simulated_at?: string
+        }
+        Update: {
+          best_alternative?: string | null
+          business_health_loss?: number
+          channel_key?: string | null
+          confidence?: number
+          expected_revenue_loss_pct?: number
+          expected_revenue_loss_usd?: number
+          id?: string
+          operational_impact?: string | null
+          recommended_actions?: Json
+          recovery_time_days?: number | null
+          scenario?: string
+          simulated_at?: string
+        }
+        Relationships: []
+      }
       checkout_funnel_events: {
         Row: {
           bot_reason: string | null
