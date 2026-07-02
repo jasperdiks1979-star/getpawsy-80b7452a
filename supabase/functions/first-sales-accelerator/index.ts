@@ -103,7 +103,7 @@ async function buildWarRoom() {
   const { hot: hotVisitors, warm: warmVisitors, buyingNow: buyingNowVisitors, cold: coldVisitors, top: topVisitors } = buyerHeat;
 
   // Single highest-value action
-  const nextAction = pickNextAction({ pv, atc, chk, purch, hero, leaks, hotVisitors });
+  const nextAction = pickNextAction({ pv, atc, chk, purch, hero, leaks, hotVisitors, buyingNowVisitors });
 
   return {
     captured_at: new Date().toISOString(),
@@ -303,7 +303,16 @@ async function scoreLiveBuyers(s: any) {
 }
 
 function pickNextAction(ctx: any) {
-  const { pv, atc, chk, hero, leaks, hotVisitors } = ctx;
+  const { pv, atc, chk, hero, leaks, hotVisitors, buyingNowVisitors } = ctx;
+  if (buyingNowVisitors > 0) {
+    return {
+      action: 'Escort buying-now visitors through checkout',
+      why: `${buyingNowVisitors} visitor(s) reached checkout or purchase in the last 10 min`,
+      confidence: 88, expected_revenue: buyingNowVisitors * 60, expected_roi: 9.0,
+      eta_minutes: 2, rollback: 'Disable checkout assist widget',
+      evidence: { buying_now_visitors: buyingNowVisitors },
+    };
+  }
   if (hotVisitors > 0) {
     return {
       action: 'Trigger conversion assist on live hot visitors',
