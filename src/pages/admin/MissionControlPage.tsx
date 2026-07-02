@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
-  HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench,
+  HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
 } from "lucide-react";
 
 type Snap = {
@@ -126,6 +126,42 @@ export default function MissionControlPage() {
   });
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
+  const [verify, setVerify] = useState<{
+    running: boolean;
+    newSha: string | null;
+    newOverall: number | null;
+    newConfidence: number | null;
+    matches: boolean | null;
+    error: string | null;
+    ranAt: string | null;
+  }>({ running: false, newSha: null, newOverall: null, newConfidence: null, matches: null, error: null, ranAt: null });
+
+  const recomputeAndCompare = useCallback(async () => {
+    setVerify((v) => ({ ...v, running: true, error: null }));
+    try {
+      const { data, error } = await supabase.functions.invoke("bhi-compute", { body: {} });
+      if (error) throw error;
+      const newSha: string | null = (data as any)?.sha256 ?? null;
+      const newOverall = Number((data as any)?.overall ?? NaN);
+      const newConfidence = Number((data as any)?.confidence ?? NaN);
+      setVerify({
+        running: false,
+        newSha,
+        newOverall: Number.isFinite(newOverall) ? newOverall : null,
+        newConfidence: Number.isFinite(newConfidence) ? newConfidence : null,
+        matches: newSha && snap?.sha256 ? newSha === snap.sha256 : null,
+        error: null,
+        ranAt: new Date().toISOString(),
+      });
+      // Refresh the current snapshot so the UI reflects the just-persisted record.
+      await loadCore();
+    } catch (e: any) {
+      setVerify({
+        running: false, newSha: null, newOverall: null, newConfidence: null,
+        matches: null, error: e?.message ?? "Recompute failed", ranAt: new Date().toISOString(),
+      });
+    }
+  }, [snap?.sha256, loadCore]);
 
   const loadCore = useCallback(async () => {
     setLoading(true);
