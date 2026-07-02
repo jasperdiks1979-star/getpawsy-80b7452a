@@ -26926,6 +26926,152 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_golden_checks: {
+        Row: {
+          category: string
+          created_at: string
+          details: Json
+          duration_ms: number | null
+          id: string
+          name: string
+          observed: number | null
+          phase: string
+          run_id: string
+          severity: string
+          status: string
+          threshold: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          name: string
+          observed?: number | null
+          phase: string
+          run_id: string
+          severity?: string
+          status: string
+          threshold?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: Json
+          duration_ms?: number | null
+          id?: string
+          name?: string
+          observed?: number | null
+          phase?: string
+          run_id?: string
+          severity?: string
+          status?: string
+          threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_golden_checks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_golden_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_golden_runs: {
+        Row: {
+          cat_visible: number | null
+          checkout_ok: boolean | null
+          collections_visible: number | null
+          created_at: string
+          deployment_id: string | null
+          dog_visible: number | null
+          duration_ms: number | null
+          failed_count: number
+          finished_at: string | null
+          git_commit: string | null
+          id: string
+          journey_ok: boolean | null
+          migration_id: string | null
+          passed_count: number
+          phase: string | null
+          policy_checksum: string | null
+          products_visible: number | null
+          report: Json
+          rls_ok: boolean | null
+          search_visible: number | null
+          sha256: string | null
+          started_at: string
+          status: string
+          stripe_session_ok: boolean | null
+          target_url: string
+          trigger_source: string
+          view_checksum: string | null
+          warning_count: number
+        }
+        Insert: {
+          cat_visible?: number | null
+          checkout_ok?: boolean | null
+          collections_visible?: number | null
+          created_at?: string
+          deployment_id?: string | null
+          dog_visible?: number | null
+          duration_ms?: number | null
+          failed_count?: number
+          finished_at?: string | null
+          git_commit?: string | null
+          id?: string
+          journey_ok?: boolean | null
+          migration_id?: string | null
+          passed_count?: number
+          phase?: string | null
+          policy_checksum?: string | null
+          products_visible?: number | null
+          report?: Json
+          rls_ok?: boolean | null
+          search_visible?: number | null
+          sha256?: string | null
+          started_at?: string
+          status?: string
+          stripe_session_ok?: boolean | null
+          target_url: string
+          trigger_source?: string
+          view_checksum?: string | null
+          warning_count?: number
+        }
+        Update: {
+          cat_visible?: number | null
+          checkout_ok?: boolean | null
+          collections_visible?: number | null
+          created_at?: string
+          deployment_id?: string | null
+          dog_visible?: number | null
+          duration_ms?: number | null
+          failed_count?: number
+          finished_at?: string | null
+          git_commit?: string | null
+          id?: string
+          journey_ok?: boolean | null
+          migration_id?: string | null
+          passed_count?: number
+          phase?: string | null
+          policy_checksum?: string | null
+          products_visible?: number | null
+          report?: Json
+          rls_ok?: boolean | null
+          search_visible?: number | null
+          sha256?: string | null
+          started_at?: string
+          status?: string
+          stripe_session_ok?: boolean | null
+          target_url?: string
+          trigger_source?: string
+          view_checksum?: string | null
+          warning_count?: number
+        }
+        Relationships: []
+      }
       genesis_omega_architecture_scans: {
         Row: {
           admin_pages_count: number
@@ -27259,6 +27405,50 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      genesis_rls_migration_audit: {
+        Row: {
+          affects_anonymous: boolean
+          changed_objects: Json
+          created_at: string
+          detected_at: string
+          golden_run_id: string | null
+          id: string
+          migration_id: string
+          reason: string | null
+          verdict: string
+        }
+        Insert: {
+          affects_anonymous?: boolean
+          changed_objects?: Json
+          created_at?: string
+          detected_at?: string
+          golden_run_id?: string | null
+          id?: string
+          migration_id: string
+          reason?: string | null
+          verdict?: string
+        }
+        Update: {
+          affects_anonymous?: boolean
+          changed_objects?: Json
+          created_at?: string
+          detected_at?: string
+          golden_run_id?: string | null
+          id?: string
+          migration_id?: string
+          reason?: string | null
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_rls_migration_audit_golden_run_id_fkey"
+            columns: ["golden_run_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_golden_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       genesis_shareholder_letters: {
         Row: {
