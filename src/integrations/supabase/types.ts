@@ -25126,6 +25126,80 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_business_compass: {
+        Row: {
+          board_approval: boolean | null
+          century_test_pass: boolean | null
+          confidence: number | null
+          created_at: string
+          customer_trust: number | null
+          customer_value: number | null
+          cycle_id: string | null
+          decision: string | null
+          expected_roi: number | null
+          financial_risk: number | null
+          id: string
+          legal_risk: number | null
+          maintenance_cost: number | null
+          operational_simplicity: number | null
+          profit_impact: number | null
+          recommendation: string
+          revenue_impact: number | null
+          rollback_plan: string | null
+          technical_risk: number | null
+        }
+        Insert: {
+          board_approval?: boolean | null
+          century_test_pass?: boolean | null
+          confidence?: number | null
+          created_at?: string
+          customer_trust?: number | null
+          customer_value?: number | null
+          cycle_id?: string | null
+          decision?: string | null
+          expected_roi?: number | null
+          financial_risk?: number | null
+          id?: string
+          legal_risk?: number | null
+          maintenance_cost?: number | null
+          operational_simplicity?: number | null
+          profit_impact?: number | null
+          recommendation: string
+          revenue_impact?: number | null
+          rollback_plan?: string | null
+          technical_risk?: number | null
+        }
+        Update: {
+          board_approval?: boolean | null
+          century_test_pass?: boolean | null
+          confidence?: number | null
+          created_at?: string
+          customer_trust?: number | null
+          customer_value?: number | null
+          cycle_id?: string | null
+          decision?: string | null
+          expected_roi?: number | null
+          financial_risk?: number | null
+          id?: string
+          legal_risk?: number | null
+          maintenance_cost?: number | null
+          operational_simplicity?: number | null
+          profit_impact?: number | null
+          recommendation?: string
+          revenue_impact?: number | null
+          rollback_plan?: string | null
+          technical_risk?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_business_compass_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_perpetual_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       genesis_compliance_certifications: {
         Row: {
           automation_governance_score: number
@@ -25713,6 +25787,164 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      genesis_perpetual_certifications: {
+        Row: {
+          architectural_sustainability: number | null
+          business_sustainability: number | null
+          century_readiness: number | null
+          customer_sustainability: number | null
+          cycle_id: string | null
+          evidence: Json
+          executive_governance: number | null
+          financial_sustainability: number | null
+          fingerprint_sha256: string
+          id: string
+          issued_at: string
+          knowledge_sustainability: number | null
+          long_term_readiness: number | null
+          narrative: string | null
+          operational_sustainability: number | null
+          overall_company_maturity: number | null
+          technical_sustainability: number | null
+        }
+        Insert: {
+          architectural_sustainability?: number | null
+          business_sustainability?: number | null
+          century_readiness?: number | null
+          customer_sustainability?: number | null
+          cycle_id?: string | null
+          evidence?: Json
+          executive_governance?: number | null
+          financial_sustainability?: number | null
+          fingerprint_sha256: string
+          id?: string
+          issued_at?: string
+          knowledge_sustainability?: number | null
+          long_term_readiness?: number | null
+          narrative?: string | null
+          operational_sustainability?: number | null
+          overall_company_maturity?: number | null
+          technical_sustainability?: number | null
+        }
+        Update: {
+          architectural_sustainability?: number | null
+          business_sustainability?: number | null
+          century_readiness?: number | null
+          customer_sustainability?: number | null
+          cycle_id?: string | null
+          evidence?: Json
+          executive_governance?: number | null
+          financial_sustainability?: number | null
+          fingerprint_sha256?: string
+          id?: string
+          issued_at?: string
+          knowledge_sustainability?: number | null
+          long_term_readiness?: number | null
+          narrative?: string | null
+          operational_sustainability?: number | null
+          overall_company_maturity?: number | null
+          technical_sustainability?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_perpetual_certifications_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_perpetual_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_perpetual_cycles: {
+        Row: {
+          archived: Json
+          cycle_number: number
+          ended_at: string | null
+          executions: Json
+          explanations: Json
+          fingerprint_sha256: string | null
+          id: string
+          improvements: Json
+          learnings: Json
+          measurements: Json
+          observations: Json
+          priorities: Json
+          simulations: Json
+          started_at: string
+          status: string
+          understanding: Json
+          validations: Json
+        }
+        Insert: {
+          archived?: Json
+          cycle_number?: number
+          ended_at?: string | null
+          executions?: Json
+          explanations?: Json
+          fingerprint_sha256?: string | null
+          id?: string
+          improvements?: Json
+          learnings?: Json
+          measurements?: Json
+          observations?: Json
+          priorities?: Json
+          simulations?: Json
+          started_at?: string
+          status?: string
+          understanding?: Json
+          validations?: Json
+        }
+        Update: {
+          archived?: Json
+          cycle_number?: number
+          ended_at?: string | null
+          executions?: Json
+          explanations?: Json
+          fingerprint_sha256?: string | null
+          id?: string
+          improvements?: Json
+          learnings?: Json
+          measurements?: Json
+          observations?: Json
+          priorities?: Json
+          simulations?: Json
+          started_at?: string
+          status?: string
+          understanding?: Json
+          validations?: Json
+        }
+        Relationships: []
+      }
+      genesis_perpetual_principles: {
+        Row: {
+          body: string
+          code: string
+          created_at: string
+          id: string
+          immutable: boolean
+          pillar: string | null
+          title: string
+        }
+        Insert: {
+          body: string
+          code: string
+          created_at?: string
+          id?: string
+          immutable?: boolean
+          pillar?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          code?: string
+          created_at?: string
+          id?: string
+          immutable?: boolean
+          pillar?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       genesis_shareholder_letters: {
         Row: {
