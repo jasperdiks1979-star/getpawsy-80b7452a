@@ -2789,6 +2789,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="us-traffic-campaign"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <UsTrafficCampaignPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="revenue-attribution-center"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
