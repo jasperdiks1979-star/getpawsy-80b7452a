@@ -642,6 +642,48 @@ const BelastingdienstExportPanel = () => {
               Year-to-date ({now.getUTCFullYear()})
             </Button>
           </div>
+
+          <div className="pt-2 border-t border-primary/20">
+            <p className="text-xs font-medium text-foreground mb-2">
+              Instant full-year tax file (VAT + invoice evidence)
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+              <div>
+                <Label className="text-xs">Select year</Label>
+                <select
+                  className="mt-1 h-9 rounded-md border bg-background px-2 text-sm"
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                >
+                  {Array.from({ length: 6 }).map((_, i) => {
+                    const y = now.getUTCFullYear() - i;
+                    return <option key={y} value={y}>{y}</option>;
+                  })}
+                </select>
+              </div>
+              <Button
+                size="sm"
+                disabled={running}
+                onClick={() => { setPeriodType("year"); run({ periodType: "year", year, quarter: null }); }}
+                className="gap-2"
+              >
+                {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Download {year} dossier
+              </Button>
+              {[now.getUTCFullYear() - 1, now.getUTCFullYear() - 2].map((y) => (
+                <Button
+                  key={y}
+                  size="sm"
+                  variant="outline"
+                  disabled={running}
+                  onClick={() => { setPeriodType("year"); setYear(y); run({ periodType: "year", year: y, quarter: null }); }}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" /> {y} full year
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-4">
