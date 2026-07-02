@@ -432,6 +432,7 @@ const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultP
 const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
 const FinancialEvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/FinancialEvidenceVaultPage"));
 const CFOChatPage = lazyWithRetry(() => import("./pages/admin/CFOChatPage"));
+const CFOReportLibraryPage = lazyWithRetry(() => import("./pages/admin/CFOReportLibraryPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
@@ -2489,6 +2490,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <CFOChatPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="cfo-reports"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CFOReportLibraryPage />
                                 </Suspense>
                               }
                             />
