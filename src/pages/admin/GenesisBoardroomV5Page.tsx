@@ -92,7 +92,7 @@ function Visitors24hWidget() {
 function Atc24hWidget() {
   const { d, loading } = useMetric(async () => {
     const since = new Date(Date.now() - 86_400_000).toISOString();
-    const { count } = await supabase.from("canonical_events").select("id",{count:"exact",head:true}).eq("event_type","add_to_cart").gte("occurred_at", since);
+    const { count } = await (supabase.from("canonical_events") as any).select("id",{count:"exact",head:true}).eq("event_type","add_to_cart").gte("occurred_at", since);
     return count ?? 0;
   });
   return <StatShell title="Add-to-Cart 24h" value={d ?? 0} loading={loading} />;
