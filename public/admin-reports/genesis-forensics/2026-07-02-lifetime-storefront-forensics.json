@@ -1,6 +1,6 @@
 {
   "slug": "2026-07-02-lifetime-storefront-forensics",
-  "generated_at": "2026-07-02T21:57:13.268245Z",
+  "generated_at": "2026-07-02T21:57:40.629998Z",
   "mode": "READ_ONLY",
   "verdict": {
     "primary_question": "Can it be proven anonymous visitors could discover/browse/buy throughout GetPawsy's lifetime?",
