@@ -26183,6 +26183,518 @@ export type Database = {
         }
         Relationships: []
       }
+      genesis_v15_bottlenecks: {
+        Row: {
+          detected_at: string
+          domain: string
+          gap_pct: number | null
+          id: string
+          label: string
+          metric: string | null
+          metric_value: number | null
+          recommendation_id: string | null
+          severity: number | null
+          target_value: number | null
+        }
+        Insert: {
+          detected_at?: string
+          domain: string
+          gap_pct?: number | null
+          id?: string
+          label: string
+          metric?: string | null
+          metric_value?: number | null
+          recommendation_id?: string | null
+          severity?: number | null
+          target_value?: number | null
+        }
+        Update: {
+          detected_at?: string
+          domain?: string
+          gap_pct?: number | null
+          id?: string
+          label?: string
+          metric?: string | null
+          metric_value?: number | null
+          recommendation_id?: string | null
+          severity?: number | null
+          target_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_v15_bottlenecks_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v15_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_v15_briefings: {
+        Row: {
+          created_at: string
+          fingerprint_sha256: string | null
+          id: string
+          kind: string
+          kpis: Json
+          markdown: string
+          period: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          kind: string
+          kpis?: Json
+          markdown: string
+          period?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          kind?: string
+          kpis?: Json
+          markdown?: string
+          period?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      genesis_v15_certifications: {
+        Row: {
+          audit_readiness: number | null
+          automation_health: number | null
+          business_health: number | null
+          business_intelligence_score: number | null
+          created_at: string
+          executive_readiness: number | null
+          financial_health: number | null
+          fingerprint_sha256: string
+          id: string
+          infrastructure_health: number | null
+          issued_at: string
+          marketing_health: number | null
+          narrative: string | null
+          overall_genesis_intelligence: number | null
+          prediction_accuracy: number | null
+          subscores: Json
+          tax_readiness: number | null
+        }
+        Insert: {
+          audit_readiness?: number | null
+          automation_health?: number | null
+          business_health?: number | null
+          business_intelligence_score?: number | null
+          created_at?: string
+          executive_readiness?: number | null
+          financial_health?: number | null
+          fingerprint_sha256: string
+          id?: string
+          infrastructure_health?: number | null
+          issued_at?: string
+          marketing_health?: number | null
+          narrative?: string | null
+          overall_genesis_intelligence?: number | null
+          prediction_accuracy?: number | null
+          subscores?: Json
+          tax_readiness?: number | null
+        }
+        Update: {
+          audit_readiness?: number | null
+          automation_health?: number | null
+          business_health?: number | null
+          business_intelligence_score?: number | null
+          created_at?: string
+          executive_readiness?: number | null
+          financial_health?: number | null
+          fingerprint_sha256?: string
+          id?: string
+          infrastructure_health?: number | null
+          issued_at?: string
+          marketing_health?: number | null
+          narrative?: string | null
+          overall_genesis_intelligence?: number | null
+          prediction_accuracy?: number | null
+          subscores?: Json
+          tax_readiness?: number | null
+        }
+        Relationships: []
+      }
+      genesis_v15_entities: {
+        Row: {
+          attributes: Json
+          created_at: string
+          domain: string | null
+          entity_key: string
+          entity_type: string
+          health_score: number | null
+          id: string
+          label: string | null
+          last_observed_at: string | null
+          metrics: Json
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          domain?: string | null
+          entity_key: string
+          entity_type: string
+          health_score?: number | null
+          id?: string
+          label?: string | null
+          last_observed_at?: string | null
+          metrics?: Json
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          domain?: string | null
+          entity_key?: string
+          entity_type?: string
+          health_score?: number | null
+          id?: string
+          label?: string | null
+          last_observed_at?: string | null
+          metrics?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      genesis_v15_memory: {
+        Row: {
+          body: string | null
+          category: string
+          created_at: string
+          event_at: string
+          evidence: Json | null
+          id: string
+          importance: number | null
+          search_text: string | null
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          category: string
+          created_at?: string
+          event_at?: string
+          evidence?: Json | null
+          id?: string
+          importance?: number | null
+          search_text?: string | null
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          event_at?: string
+          evidence?: Json | null
+          id?: string
+          importance?: number | null
+          search_text?: string | null
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      genesis_v15_predictions: {
+        Row: {
+          actual_value: number | null
+          assumptions: Json | null
+          ci_high: number | null
+          ci_low: number | null
+          confidence: number | null
+          created_at: string
+          error_pct: number | null
+          horizon: string
+          id: string
+          metric: string
+          model: string | null
+          predicted_value: number | null
+          target_date: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          assumptions?: Json | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number | null
+          created_at?: string
+          error_pct?: number | null
+          horizon: string
+          id?: string
+          metric: string
+          model?: string | null
+          predicted_value?: number | null
+          target_date?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          assumptions?: Json | null
+          ci_high?: number | null
+          ci_low?: number | null
+          confidence?: number | null
+          created_at?: string
+          error_pct?: number | null
+          horizon?: string
+          id?: string
+          metric?: string
+          model?: string | null
+          predicted_value?: number | null
+          target_date?: string | null
+        }
+        Relationships: []
+      }
+      genesis_v15_recommendations: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          domain: string | null
+          estimated_effort: string | null
+          estimated_roi: number | null
+          evidence: Json | null
+          expected_impact: string | null
+          id: string
+          priority: number | null
+          problem: string
+          root_cause: string | null
+          status: string
+          suggested_actions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          domain?: string | null
+          estimated_effort?: string | null
+          estimated_roi?: number | null
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          priority?: number | null
+          problem: string
+          root_cause?: string | null
+          status?: string
+          suggested_actions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          domain?: string | null
+          estimated_effort?: string | null
+          estimated_roi?: number | null
+          evidence?: Json | null
+          expected_impact?: string | null
+          id?: string
+          priority?: number | null
+          problem?: string
+          root_cause?: string | null
+          status?: string
+          suggested_actions?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      genesis_v15_relationships: {
+        Row: {
+          created_at: string
+          evidence: Json | null
+          id: string
+          relation: string
+          source_id: string
+          target_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          relation: string
+          source_id: string
+          target_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          relation?: string
+          source_id?: string
+          target_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genesis_v15_relationships_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v15_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "genesis_v15_relationships_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "genesis_v15_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genesis_v15_root_causes: {
+        Row: {
+          change_direction: string | null
+          change_pct: number | null
+          confidence: number | null
+          created_at: string
+          drivers: Json
+          evidence: Json
+          id: string
+          kpi: string
+          narrative: string | null
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          change_direction?: string | null
+          change_pct?: number | null
+          confidence?: number | null
+          created_at?: string
+          drivers?: Json
+          evidence?: Json
+          id?: string
+          kpi: string
+          narrative?: string | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          change_direction?: string | null
+          change_pct?: number | null
+          confidence?: number | null
+          created_at?: string
+          drivers?: Json
+          evidence?: Json
+          id?: string
+          kpi?: string
+          narrative?: string | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
+      genesis_v15_simulations: {
+        Row: {
+          assumptions: Json | null
+          confidence: number | null
+          created_at: string
+          deltas: Json
+          expected_profit_delta: number | null
+          expected_revenue_delta: number | null
+          expected_roi: number | null
+          id: string
+          inputs: Json
+          name: string
+          predicted: Json
+          scenario: string | null
+        }
+        Insert: {
+          assumptions?: Json | null
+          confidence?: number | null
+          created_at?: string
+          deltas?: Json
+          expected_profit_delta?: number | null
+          expected_revenue_delta?: number | null
+          expected_roi?: number | null
+          id?: string
+          inputs?: Json
+          name: string
+          predicted?: Json
+          scenario?: string | null
+        }
+        Update: {
+          assumptions?: Json | null
+          confidence?: number | null
+          created_at?: string
+          deltas?: Json
+          expected_profit_delta?: number | null
+          expected_revenue_delta?: number | null
+          expected_roi?: number | null
+          id?: string
+          inputs?: Json
+          name?: string
+          predicted?: Json
+          scenario?: string | null
+        }
+        Relationships: []
+      }
+      genesis_v15_twin_snapshots: {
+        Row: {
+          ai_spend: number | null
+          aov: number | null
+          business_health_overall: number | null
+          captured_at: string
+          cash: number | null
+          conversion_rate: number | null
+          created_at: string
+          fingerprint_sha256: string | null
+          id: string
+          infra_spend: number | null
+          kpis: Json
+          orders: number | null
+          period: string
+          profit: number | null
+          revenue: number | null
+          subscores: Json
+          visitors: number | null
+        }
+        Insert: {
+          ai_spend?: number | null
+          aov?: number | null
+          business_health_overall?: number | null
+          captured_at?: string
+          cash?: number | null
+          conversion_rate?: number | null
+          created_at?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          infra_spend?: number | null
+          kpis?: Json
+          orders?: number | null
+          period?: string
+          profit?: number | null
+          revenue?: number | null
+          subscores?: Json
+          visitors?: number | null
+        }
+        Update: {
+          ai_spend?: number | null
+          aov?: number | null
+          business_health_overall?: number | null
+          captured_at?: string
+          cash?: number | null
+          conversion_rate?: number | null
+          created_at?: string
+          fingerprint_sha256?: string | null
+          id?: string
+          infra_spend?: number | null
+          kpis?: Json
+          orders?: number | null
+          period?: string
+          profit?: number | null
+          revenue?: number | null
+          subscores?: Json
+          visitors?: number | null
+        }
+        Relationships: []
+      }
       gi_attribution_events: {
         Row: {
           created_at: string
