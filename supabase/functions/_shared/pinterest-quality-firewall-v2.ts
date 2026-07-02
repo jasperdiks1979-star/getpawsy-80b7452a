@@ -187,7 +187,7 @@ export async function checkProductIntegrity(
 ): Promise<Record<string, { ok: boolean; reason?: string }>> {
   const checks: Record<string, { ok: boolean; reason?: string }> = {};
   const { data: prod } = await sb.from("products")
-    .select("id, slug, name, price, effective_stock, canonical_url")
+    .select("id, slug, name, price, effective_stock")
     .eq("id", input.productId).maybeSingle();
 
   if (!prod) {
