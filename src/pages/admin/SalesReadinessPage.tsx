@@ -51,11 +51,11 @@ export default function SalesReadinessPage() {
       .from("sales_readiness_snapshots").select("*")
       .order("captured_at", { ascending: false }).limit(1).maybeSingle();
     if (data) {
-      setSnapshot(data as Snapshot);
+      setSnapshot(data as unknown as Snapshot);
       const { data: subRows } = await supabase
         .from("sales_readiness_subscores").select("*")
-        .eq("snapshot_id", (data as Snapshot).id);
-      setSubs((subRows ?? []) as Sub[]);
+        .eq("snapshot_id", (data as { id: string }).id);
+      setSubs(((subRows ?? []) as any[]).map((r) => ({ ...r, key: r.subscore_key })) as Sub[]);
     }
     setLoading(false);
   }, []);
@@ -65,7 +65,7 @@ export default function SalesReadinessPage() {
     let q = supabase.from("sales_readiness_snapshots").select("*").order("captured_at", { ascending: true });
     if (since) q = q.gte("captured_at", since);
     const { data } = await q;
-    setHistory((data ?? []) as Snapshot[]);
+    setHistory((data ?? []) as unknown as Snapshot[]);
   }, [range]);
 
   useEffect(() => { loadLatest(); }, [loadLatest]);
@@ -92,10 +92,10 @@ export default function SalesReadinessPage() {
     const json = JSON.stringify(payload);
     const fingerprint = await sha256(json);
 
-    await supabase.from("sales_readiness_certifications").insert({
+    await supabase.from("sales_readiness_certifications").insert([{
       snapshot_id: snapshot.id, overall_score: snapshot.overall_score,
-      fingerprint_sha256: fingerprint, payload,
-    });
+      fingerprint_sha256: fingerprint, payload: payload as any,
+    }]);
 
     const pdf = new jsPDF({ unit: "pt", format: "a4" });
     const W = pdf.internal.pageSize.getWidth();
