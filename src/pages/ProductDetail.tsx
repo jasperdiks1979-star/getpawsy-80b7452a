@@ -1782,6 +1782,27 @@ const ProductDetail = () => {
             )}
 
             {/* Quantity & Actions - tracked for sticky bar visibility */}
+            {/*
+              Above-ATC trust strip — Mission First Revenue #3.
+              Three concrete signals directly above the buy box:
+                US warehouse · 3-5 day delivery · Stripe-secured payment
+              Copy-only, no icons that add visual weight, no external deps.
+              Rendered on every PDP; deterministic; safe rollback via git.
+            */}
+            <div
+              className="mt-2 flex flex-wrap items-center justify-start gap-x-3 gap-y-1 text-[11px] md:text-xs font-medium tracking-wide text-muted-foreground"
+              aria-label="Shipping and payment trust signals"
+            >
+              <span className="inline-flex items-center gap-1">
+                <span aria-hidden="true">🇺🇸</span>
+                <span>Ships from US warehouse</span>
+              </span>
+              <span aria-hidden="true" className="opacity-50">·</span>
+              <span>3–5 day delivery</span>
+              <span aria-hidden="true" className="opacity-50">·</span>
+              <span>Secure checkout by Stripe</span>
+            </div>
+
             <motion.div
               ref={mainAddToCartRef}
               id="pdp-buy-box"
