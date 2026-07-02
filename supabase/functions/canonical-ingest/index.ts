@@ -148,14 +148,25 @@ async function ingestCheckout(sb: ReturnType<typeof createClient>, sinceISO: str
     .map((e: any) => {
       const canonical = CHECKOUT_MAP[e.step];
       if (!canonical) return null;
+      // Prefer real attribution stashed in metadata.utm over the
+      // legacy `source` column which is hard-coded to 'client'.
+      const utm = (e.metadata && typeof e.metadata === "object" ? e.metadata.utm : null) || {};
+      const visitorId = e.metadata && typeof e.metadata === "object"
+        ? (typeof e.metadata.visitor_id === "string" ? e.metadata.visitor_id : null)
+        : null;
       return {
         occurred_at: e.created_at,
         canonical_name: canonical,
         source_system: "checkout_funnel",
         source_event_id: e.id,
+        visitor_id: visitorId,
         session_id: e.session_id,
         stripe_session_id: e.stripe_session_id,
-        utm_source: e.source,
+        utm_source: (typeof utm.source === "string" && utm.source) || e.source || null,
+        utm_medium: (typeof utm.medium === "string" && utm.medium) || null,
+        utm_campaign: (typeof utm.campaign === "string" && utm.campaign) || null,
+        utm_content: (typeof utm.content === "string" && utm.content) || null,
+        utm_term: (typeof utm.term === "string" && utm.term) || null,
         country: e.geo_country,
         device: e.device,
         value_cents: e.value ? Math.round(Number(e.value) * 100) : null,
