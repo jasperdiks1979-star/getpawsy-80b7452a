@@ -201,10 +201,9 @@ Deno.serve(async (req) => {
       };
       const hash = await sha256Hex(JSON.stringify(payload));
       const { data, error } = await sb.from("genesis_perpetual_certifications").insert({
-        certification_type: "revenue_attribution",
-        payload,
-        payload_hash: hash,
-        status: "certified",
+        narrative: `Revenue Attribution Certification — ${days}d window. Completeness ${coverage.attribution_completeness_pct}%, UTM ${coverage.utm_coverage_pct}%, Traceability ${coverage.revenue_traceability_pct}%.`,
+        evidence: payload,
+        fingerprint_sha256: hash,
       }).select().maybeSingle();
       if (error) throw error;
       return json({ ok: true, certification: data, hash });
