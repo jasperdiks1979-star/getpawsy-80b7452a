@@ -49,6 +49,49 @@ function dedup(parts: Array<string | null | undefined>): string {
   return parts.map((p) => p ?? "").join("|");
 }
 
+/**
+ * Semantic dedup key — collapses repeated clicks / redirects / page-reloads
+ * inside a short window into a single canonical event.
+ *
+ * Buckets:
+ *   PAGE_VIEW / ENGAGEMENT:  session + canonical + path        + 60s
+ *   PRODUCT_VIEW:            session + canonical + product     + 60s
+ *   ADD_TO_CART:             session + canonical + product     + 30s
+ *   CART:                    session + canonical               + 60s
+ *   CHECKOUT:                session + canonical + stripe_sess + 60s
+ *   PURCHASE:                order_id OR stripe_session_id (unique)
+ */
+function bucketISO(iso: string | null | undefined, seconds: number): string {
+  const t = iso ? new Date(iso).getTime() : Date.now();
+  const b = Math.floor(t / (seconds * 1000)) * seconds * 1000;
+  return new Date(b).toISOString();
+}
+
+function semanticDedupKey(input: {
+  source: string;
+  canonical: Canon;
+  session_id?: string | null;
+  product_id?: string | null;
+  page_path?: string | null;
+  stripe_session_id?: string | null;
+  order_id?: string | null;
+  occurred_at?: string | null;
+}): string {
+  const { source, canonical, session_id, product_id, page_path, stripe_session_id, order_id, occurred_at } = input;
+  if (canonical === "CANONICAL_PURCHASE") {
+    const anchor = order_id ?? stripe_session_id ?? session_id ?? "unknown";
+    return dedup([source, canonical, anchor]);
+  }
+  let windowSec = 60;
+  let anchor: string | null | undefined = null;
+  if (canonical === "CANONICAL_ADD_TO_CART") { windowSec = 30; anchor = product_id; }
+  else if (canonical === "CANONICAL_PRODUCT_VIEW") { anchor = product_id; }
+  else if (canonical === "CANONICAL_CHECKOUT") { anchor = stripe_session_id ?? null; }
+  else if (canonical === "CANONICAL_PAGE_VIEW") { anchor = page_path; }
+  else if (canonical === "CANONICAL_ENGAGEMENT") { anchor = page_path; }
+  return dedup([source, canonical, session_id, anchor, bucketISO(occurred_at, windowSec)]);
+}
+
 async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) {
   const { data, error } = await sb
     .from("cci_events")
@@ -77,7 +120,14 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         country: e.country,
         device: e.device,
         meta: e.meta ?? {},
-        dedup_key: dedup(["cci", e.id, e.session_id, canonical, e.product_id]),
+        dedup_key: semanticDedupKey({
+          source: "cci",
+          canonical,
+          session_id: e.session_id,
+          product_id: e.product_id ?? null,
+          page_path: e.page_path ?? null,
+          occurred_at: e.created_at,
+        }),
       };
     })
     .filter(Boolean);
@@ -111,7 +161,13 @@ async function ingestCheckout(sb: ReturnType<typeof createClient>, sinceISO: str
         value_cents: e.value ? Math.round(Number(e.value) * 100) : null,
         currency: e.currency,
         meta: e.metadata ?? {},
-        dedup_key: dedup(["checkout_funnel", e.id, e.session_id, canonical, e.stripe_session_id]),
+        dedup_key: semanticDedupKey({
+          source: "checkout_funnel",
+          canonical,
+          session_id: e.session_id,
+          stripe_session_id: e.stripe_session_id ?? null,
+          occurred_at: e.created_at,
+        }),
       };
     })
     .filter(Boolean);
@@ -140,7 +196,12 @@ async function ingestOrders(sb: ReturnType<typeof createClient>, sinceISO: strin
     value_cents: o.total_amount ? Math.round(Number(o.total_amount) * 100) : null,
     currency: o.currency,
     meta: {},
-    dedup_key: dedup(["orders", o.id, null, "CANONICAL_PURCHASE", o.stripe_session_id]),
+    dedup_key: semanticDedupKey({
+      source: "orders",
+      canonical: "CANONICAL_PURCHASE",
+      order_id: o.id,
+      stripe_session_id: o.stripe_session_id ?? null,
+    }),
   }));
   if (rows.length === 0) return 0;
   const { error: upErr } = await sb.from("canonical_events").upsert(rows as any, { onConflict: "dedup_key", ignoreDuplicates: true });
