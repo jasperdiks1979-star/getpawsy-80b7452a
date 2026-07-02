@@ -61304,6 +61304,66 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_audit_reports: {
+        Row: {
+          best_improvement: string
+          confidence: number
+          created_at: string
+          eta_minutes: number
+          evidence: Json
+          expected_revenue_usd: number
+          expected_roi: number
+          funnel: Json
+          hero_product: Json | null
+          id: string
+          improvement_reason: string | null
+          leaks: Json
+          live_buyers: Json | null
+          report_date: string
+          rollback: string | null
+          sha256: string
+          why_no_sale: string
+        }
+        Insert: {
+          best_improvement: string
+          confidence?: number
+          created_at?: string
+          eta_minutes?: number
+          evidence?: Json
+          expected_revenue_usd?: number
+          expected_roi?: number
+          funnel?: Json
+          hero_product?: Json | null
+          id?: string
+          improvement_reason?: string | null
+          leaks?: Json
+          live_buyers?: Json | null
+          report_date?: string
+          rollback?: string | null
+          sha256: string
+          why_no_sale: string
+        }
+        Update: {
+          best_improvement?: string
+          confidence?: number
+          created_at?: string
+          eta_minutes?: number
+          evidence?: Json
+          expected_revenue_usd?: number
+          expected_roi?: number
+          funnel?: Json
+          hero_product?: Json | null
+          id?: string
+          improvement_reason?: string | null
+          leaks?: Json
+          live_buyers?: Json | null
+          report_date?: string
+          rollback?: string | null
+          sha256?: string
+          why_no_sale?: string
+        }
+        Relationships: []
+      }
       revenue_pipeline_smoke_runs: {
         Row: {
           failed_stages: string[]
