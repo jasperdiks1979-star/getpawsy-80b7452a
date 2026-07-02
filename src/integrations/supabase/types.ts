@@ -10256,6 +10256,60 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_reallocation_events: {
+        Row: {
+          actor: string
+          budget_after: Json
+          budget_before: Json
+          created_at: string
+          dry_run: boolean
+          id: string
+          method: string
+          rationale: string | null
+          reallocated_from: Json
+          reallocated_to: Json
+          recommendations_obsoleted: number
+          recommendations_rescored: number
+          trigger_reason: string
+          triggered_at: string
+          unavailable_channels: string[]
+        }
+        Insert: {
+          actor?: string
+          budget_after?: Json
+          budget_before?: Json
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          method?: string
+          rationale?: string | null
+          reallocated_from?: Json
+          reallocated_to?: Json
+          recommendations_obsoleted?: number
+          recommendations_rescored?: number
+          trigger_reason: string
+          triggered_at?: string
+          unavailable_channels?: string[]
+        }
+        Update: {
+          actor?: string
+          budget_after?: Json
+          budget_before?: Json
+          created_at?: string
+          dry_run?: boolean
+          id?: string
+          method?: string
+          rationale?: string | null
+          reallocated_from?: Json
+          reallocated_to?: Json
+          recommendations_obsoleted?: number
+          recommendations_rescored?: number
+          trigger_reason?: string
+          triggered_at?: string
+          unavailable_channels?: string[]
+        }
+        Relationships: []
+      }
       channel_survival_simulations: {
         Row: {
           best_alternative: string | null
