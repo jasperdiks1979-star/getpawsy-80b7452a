@@ -273,7 +273,7 @@ async function buildAssets(admin: SupabaseAdmin) {
   const rows = data ?? [];
   const totalCost = sumBy(rows, (r) => r.purchase_amount_cents ?? 0);
   const totalBook = sumBy(rows, (r) => r.current_book_value_cents ?? 0);
-  const active = rows.filter((r) => (r.status ?? "active") === "active").length;
+  const active = rows.filter((r) => (r.asset_status ?? "active") === "active").length;
   const body = `<div class="kpis">
   <div class="kpi"><div class="l">Total cost</div><div class="n">${fmtMoney(totalCost)}</div></div>
   <div class="kpi"><div class="l">Book value</div><div class="n">${fmtMoney(totalBook)}</div></div>
@@ -284,7 +284,7 @@ async function buildAssets(admin: SupabaseAdmin) {
   date: r.purchase_date ?? "", name: r.name ?? "", category: r.category ?? "",
   cost: fmtMoney(r.purchase_amount_cents ?? 0, r.currency ?? "EUR"),
   book: fmtMoney(r.current_book_value_cents ?? 0, r.currency ?? "EUR"),
-  use: `${r.business_usage_pct ?? 100}%`, status: r.status ?? "active",
+  use: `${r.business_usage_pct ?? 100}%`, status: r.asset_status ?? "active",
 })), [
   { k: "date", label: "Purchased" }, { k: "name", label: "Asset" }, { k: "category", label: "Category" },
   { k: "use", label: "Business use", num: true }, { k: "cost", label: "Cost", num: true },
