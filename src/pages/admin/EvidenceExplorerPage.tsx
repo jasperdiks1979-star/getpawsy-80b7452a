@@ -66,8 +66,8 @@ const REGISTRY: Lineage[] = [
     category: "traffic",
     source_tables: ["canonical_events"],
     columns: ["session_id", "event_name", "event_at"],
-    sql: "SELECT count(*) FROM canonical_events WHERE event_name='page_view' AND event_at > now() - interval '5 minutes'",
-    freshness_source: { table: "canonical_events", column: "event_at" },
+    sql: "SELECT count(*) FROM canonical_events WHERE canonical_name='page_view' AND occurred_at > now() - interval '5 minutes'",
+    freshness_source: { table: "canonical_events", column: "occurred_at" },
     confidence_basis: "SessionQuality > 0.6 required; anomalies flagged in analytics_traffic_classification",
     formula: "count(page_view events in last 5m)",
     assumptions: ["Bots filtered via crawler_visits", "Deduplicated by canonical event_id"],
@@ -146,9 +146,9 @@ export default function EvidenceExplorerPage() {
 
       const bhiQ: any = supabase.from("bhi_snapshots").select("captured_at,confidence,sha256,overall_score").order("captured_at", { ascending: false }).limit(1).maybeSingle();
       const ordersQ: any = supabase.from("orders").select("total_amount,created_at").eq("status", "paid").gte("created_at", since);
-      const evQ: any = supabase.from("canonical_events").select("id,event_name,event_at,session_id,utm_source,country,device").order("event_at", { ascending: false }).limit(50);
+      const evQ: any = supabase.from("canonical_events").select("id,canonical_name,occurred_at,session_id,utm_source,country,device").order("occurred_at", { ascending: false }).limit(50);
       const decQ: any = supabase.from("governance_decision_log").select("id,timestamp,source_engine,decision_type,expected_metric,expected_value,confidence,outcome").order("timestamp", { ascending: false }).limit(25);
-      const missQ: any = supabase.from("canonical_events").select("id,utm_source,country,session_id", { count: "exact" }).gte("event_at", since).limit(500);
+      const missQ: any = supabase.from("canonical_events").select("id,utm_source,country,session_id", { count: "exact" }).gte("occurred_at", since).limit(500);
 
       const [bhi, ords, evs, decs, mrows] = await Promise.all([bhiQ, ordersQ, evQ, decQ, missQ]);
 
@@ -196,10 +196,10 @@ export default function EvidenceExplorerPage() {
           confidence: bhi?.data?.confidence ?? null,
         },
         {
-          source: "canonical_events.page_view",
+          source: "canonical_events (all)",
           label: "Pageviews (24h)",
           value: String(sample.length),
-          capturedAt: evs?.data?.[0]?.event_at ?? null,
+          capturedAt: evs?.data?.[0]?.occurred_at ?? null,
           confidence: sample.length > 100 ? 88 : sample.length > 0 ? 55 : null,
         },
       ];
@@ -384,8 +384,8 @@ export default function EvidenceExplorerPage() {
                 <tbody>
                   {events.map((e: any) => (
                     <tr key={e.id} className="border-t">
-                      <td className="py-1 pr-2 whitespace-nowrap">{fmtAge(e.event_at)}</td>
-                      <td className="pr-2 font-medium">{e.event_name}</td>
+                      <td className="py-1 pr-2 whitespace-nowrap">{fmtAge(e.occurred_at)}</td>
+                      <td className="pr-2 font-medium">{e.canonical_name}</td>
                       <td className="pr-2 text-muted-foreground">{e.utm_source || <em>—</em>}</td>
                       <td className="pr-2">{e.country || <em className="text-muted-foreground">—</em>}</td>
                       <td className="pr-2">{e.device || <em className="text-muted-foreground">—</em>}</td>
