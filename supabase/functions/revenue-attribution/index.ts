@@ -170,6 +170,146 @@ async function sha256Hex(input: string): Promise<string> {
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// ---------- CJIE (Customer Journey Intelligence) ----------
+async function cjieOverview(sb: ReturnType<typeof createClient>, days: number) {
+  const since = sinceISO(days);
+  const { data, error } = await sb.from("cjie_session_journeys")
+    .select("intent_class,abandonment_reason,reached_purchase,reached_atc,reached_checkout,classified_channel,duration_ms,event_count,trust_interactions,checkout_interactions,last_seen,intent_confidence,abandonment_confidence")
+    .gte("last_seen", since).limit(50000);
+  if (error) throw error;
+  const rows = data ?? [];
+  const total = rows.length;
+  const intent: Record<string, number> = {};
+  const abandon: Record<string, number> = {};
+  const channel: Record<string, { sessions: number; buyers: number }> = {};
+  let purchases = 0, atc = 0, checkout = 0, unknown = 0, trustHits = 0;
+  let intentConfSum = 0, abandonConfSum = 0, abandonRows = 0;
+  for (const r of rows) {
+    intent[String(r.intent_class ?? "Unknown")] = (intent[String(r.intent_class ?? "Unknown")] ?? 0) + 1;
+    if (r.abandonment_reason) {
+      abandon[String(r.abandonment_reason)] = (abandon[String(r.abandonment_reason)] ?? 0) + 1;
+      abandonConfSum += Number(r.abandonment_confidence ?? 0);
+      abandonRows++;
+    }
+    const ch = String(r.classified_channel ?? "unknown");
+    channel[ch] ??= { sessions: 0, buyers: 0 };
+    channel[ch].sessions++;
+    if (r.reached_purchase) { channel[ch].buyers++; purchases++; }
+    if (r.reached_atc) atc++;
+    if (r.reached_checkout) checkout++;
+    if (r.intent_class === "Unknown") unknown++;
+    intentConfSum += Number(r.intent_confidence ?? 0);
+    const ti = (r.trust_interactions ?? {}) as Record<string, unknown>;
+    if (ti && Object.keys(ti).length > 0) trustHits++;
+  }
+  const channelRows = Object.entries(channel).map(([c, v]) => ({
+    channel: c, sessions: v.sessions, buyers: v.buyers,
+    conversion_pct: pct(v.buyers, v.sessions),
+  })).sort((a, b) => b.sessions - a.sessions);
+  return {
+    window_days: days,
+    total_sessions: total,
+    reached_atc: atc,
+    reached_checkout: checkout,
+    reached_purchase: purchases,
+    intent_distribution: intent,
+    abandonment_distribution: abandon,
+    channel_conversion: channelRows,
+    journey_completeness_pct: pct(total - unknown, total),
+    behaviour_classification_pct: pct(total - unknown, total),
+    abandonment_classification_pct: pct(abandonRows - (abandon["Unknown"] ?? 0), abandonRows),
+    trust_classification_pct: pct(trustHits, total),
+    unknown_journey_pct: pct(unknown, total),
+    avg_intent_confidence: total ? Math.round((intentConfSum / total) * 100) / 100 : 0,
+    avg_abandon_confidence: abandonRows ? Math.round((abandonConfSum / abandonRows) * 100) / 100 : 0,
+  };
+}
+
+async function cjieLive(sb: ReturnType<typeof createClient>) {
+  const since = new Date(Date.now() - 30 * 60_000).toISOString();
+  const { data, error } = await sb.from("cjie_session_journeys")
+    .select("session_id,visitor_id,classified_channel,intent_class,intent_confidence,abandonment_reason,duration_ms,event_count,page_count,entry_page,exit_page,country,device,reached_atc,reached_checkout,reached_purchase,last_seen,stage_sequence")
+    .gte("last_seen", since).order("last_seen", { ascending: false }).limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function cjiePaths(sb: ReturnType<typeof createClient>) {
+  const { data, error } = await sb.from("v_journey_paths_top").select("*").limit(40);
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function cjieProducts(sb: ReturnType<typeof createClient>) {
+  const { data, error } = await sb.from("v_product_journey_health").select("*").limit(100);
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function cjieSessionDetail(sb: ReturnType<typeof createClient>, sessionId: string) {
+  const [{ data: j }, { data: events }] = await Promise.all([
+    sb.from("cjie_session_journeys").select("*").eq("session_id", sessionId).maybeSingle(),
+    sb.from("canonical_events").select("occurred_at,canonical_name,page_path,product_id,value_cents,meta")
+      .eq("session_id", sessionId).order("occurred_at", { ascending: true }).limit(500),
+  ]);
+  return { journey: j, events: events ?? [] };
+}
+
+async function cjieQuestions(sb: ReturnType<typeof createClient>, days: number) {
+  const since = sinceISO(days);
+  const [journeys, products, paths] = await Promise.all([
+    sb.from("cjie_session_journeys").select("classified_channel,device,country,intent_class,abandonment_reason,reached_purchase,entry_page,product_ids").gte("last_seen", since).limit(50000),
+    sb.from("v_product_journey_health").select("product_id,purchase_rate_pct,lost_after_atc,views").limit(500),
+    sb.from("v_journey_paths_top").select("path,sessions,conversion_pct,reached_purchase").limit(40),
+  ]);
+  const rows = journeys.data ?? [];
+  const byKey = (k: keyof typeof rows[number]) => {
+    const m = new Map<string, { s: number; b: number }>();
+    for (const r of rows) {
+      const key = String((r as any)[k] ?? "unknown");
+      const cur = m.get(key) ?? { s: 0, b: 0 };
+      cur.s++; if ((r as any).reached_purchase) cur.b++;
+      m.set(key, cur);
+    }
+    return [...m.entries()].map(([k, v]) => ({ key: k, sessions: v.s, buyers: v.b, conversion_pct: pct(v.b, v.s) }))
+      .sort((a, b) => b.buyers - a.buyers || b.sessions - a.sessions);
+  };
+  const entryPageCvr = byKey("entry_page" as any).filter((r) => r.sessions >= 3).slice(0, 10);
+  const deviceCvr = byKey("device" as any).slice(0, 10);
+  const countryCvr = byKey("country" as any).slice(0, 10);
+  const channelCvr = byKey("classified_channel" as any).slice(0, 10);
+  const bestPath = (paths.data ?? []).filter((p: any) => p.reached_purchase).sort((a: any, b: any) => b.sessions - a.sessions)[0] ?? null;
+  const worstProduct = (products.data ?? []).filter((p: any) => p.views >= 20).sort((a: any, b: any) => b.lost_after_atc - a.lost_after_atc)[0] ?? null;
+  return {
+    best_converting_journey: bestPath,
+    best_landing_pages: entryPageCvr,
+    worst_product_by_lost_atc: worstProduct,
+    best_channels: channelCvr,
+    device_conversion: deviceCvr,
+    country_conversion: countryCvr,
+    retarget_candidates_count: rows.filter((r: any) => !r.reached_purchase && (r.intent_class === "Abandoned Cart" || r.intent_class === "Checkout Hesitation" || r.intent_class === "High Purchase Intent")).length,
+  };
+}
+
+async function cjieCertify(sb: ReturnType<typeof createClient>, days: number) {
+  const [overview, questions] = await Promise.all([cjieOverview(sb, days), cjieQuestions(sb, days)]);
+  const payload = {
+    type: "customer_journey_intelligence",
+    window_days: days,
+    issued_at: new Date().toISOString(),
+    overview,
+    questions,
+  };
+  const hash = await sha256Hex(JSON.stringify(payload));
+  const { data, error } = await sb.from("genesis_perpetual_certifications").insert({
+    narrative: `CJIE Certification — ${days}d. Completeness ${overview.journey_completeness_pct}%, Behaviour ${overview.behaviour_classification_pct}%, Abandonment ${overview.abandonment_classification_pct}%, Trust ${overview.trust_classification_pct}%, Unknown ${overview.unknown_journey_pct}%.`,
+    evidence: payload,
+    fingerprint_sha256: hash,
+  }).select().maybeSingle();
+  if (error) throw error;
+  return { certification: data, hash };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const { ok, sb } = await requireAdmin(req);
@@ -208,6 +348,18 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return json({ ok: true, certification: data, hash });
     }
+    // ---- CJIE actions ----
+    if (action === "cjie_overview")   return json({ ok: true, overview: await cjieOverview(sb, days) });
+    if (action === "cjie_live")       return json({ ok: true, live: await cjieLive(sb) });
+    if (action === "cjie_paths")      return json({ ok: true, paths: await cjiePaths(sb) });
+    if (action === "cjie_products")   return json({ ok: true, products: await cjieProducts(sb) });
+    if (action === "cjie_questions")  return json({ ok: true, questions: await cjieQuestions(sb, days) });
+    if (action === "cjie_session") {
+      const sid = url.searchParams.get("session_id") ?? "";
+      if (!sid) return json({ ok: false, error: "session_id required" }, 400);
+      return json({ ok: true, ...(await cjieSessionDetail(sb, sid)) });
+    }
+    if (action === "cjie_certify")    return json({ ok: true, ...(await cjieCertify(sb, days)) });
     // overview
     const [sources, coverage] = await Promise.all([sourcesRollup(sb, days), coverageCert(sb, days)]);
     return json({ ok: true, sources, coverage });
