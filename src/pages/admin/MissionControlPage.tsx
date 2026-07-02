@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MissionControlCertification, { type DrillCtx } from "@/components/admin/MissionControlCertification";
+import MissionIntelligencePanel from "@/components/admin/MissionIntelligencePanel";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
@@ -43,6 +44,7 @@ type Briefing = {
 type Sub = {
   subscore_key: string; category: string; label: string;
   score: number; weight: number; confidence: number;
+  evidence?: any; note?: string | null;
 };
 
 function statusPill(score: number) {
@@ -155,7 +157,7 @@ export default function MissionControlPage() {
       if (bhi) {
         setSnap(bhi as unknown as Snap);
         const { data: subRows } = await supabase
-          .from("bhi_subscores").select("subscore_key,category,label,score,weight,confidence")
+          .from("bhi_subscores").select("subscore_key,category,label,score,weight,confidence,evidence,note")
           .eq("snapshot_id", (bhi as { id: string }).id);
         setSubs((subRows ?? []) as Sub[]);
       }
@@ -340,6 +342,16 @@ export default function MissionControlPage() {
             icon={HeartPulse}
           />
         </div>
+      </section>
+
+      {/* SECTION — EXECUTIVE INTELLIGENCE (CEO Mode, Top 10, Explainers) */}
+      <section>
+        <MissionIntelligencePanel
+          snap={snap as any}
+          subs={subs as any}
+          briefing={briefing as any}
+          loading={loading}
+        />
       </section>
 
       {/* SECTION 4 — CEO BRIEFING */}
