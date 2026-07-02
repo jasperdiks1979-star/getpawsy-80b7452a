@@ -54,6 +54,14 @@ Deno.serve(async (req) => {
   const limit = Math.min(Math.max(Number(body.limit ?? 100), 1), 200);
   const targetQueued = Math.min(Math.max(Number(body.target ?? 100), 1), 200);
   const verifyImages = body.verify_images !== false;
+  // Optional hero/product targeting. When set, only drafts for this
+  // product_id are considered and UTMs are tagged for US-buyer attribution.
+  const productFilter: string | null = typeof body.product_id === 'string' && body.product_id.length > 0
+    ? body.product_id
+    : null;
+  const audienceTag: string = typeof body.audience === 'string' && body.audience.length > 0
+    ? String(body.audience)
+    : (productFilter ? 'us_buyers' : '');
 
   const { data: run } = await sb.from('pcie2_assembly_runs').insert({ status: 'running' }).select().single();
   const runId = run!.id;
@@ -69,11 +77,12 @@ Deno.serve(async (req) => {
     .in('status', ['ready','queued','pending','publishing']);
   const existingKeys = new Set((existing || []).map(r => `${r.product_id}|${r.board_id}|${r.image_url}`));
 
-  const { data: drafts } = await sb.from('pcie2_creatives')
+  const draftsQuery = sb.from('pcie2_creatives')
     .select('id,product_id,headline,hook,body_text,cta,image_url,board_id,quality_score')
     .eq('status', 'draft')
-    .not('headline', 'is', null)
-    .limit(limit);
+    .not('headline', 'is', null);
+  if (productFilter) draftsQuery.eq('product_id', productFilter);
+  const { data: drafts } = await draftsQuery.limit(limit);
 
   for (const d of drafts || []) {
     scanned++;
@@ -119,7 +128,7 @@ Deno.serve(async (req) => {
     const { data: cMeta } = await sb.from('pcie2_creatives')
       .select('persona_id, emotion_id, hook_id, style_id, campaign_id')
       .eq('id', d.id).maybeSingle();
-    const campaign = cMeta?.campaign_id || 'pcie2';
+    const campaign = cMeta?.campaign_id || (productFilter ? 'hero_us_wave' : 'pcie2');
     const utmContent = cMeta?.persona_id
       ? `persona_${cMeta.persona_id}`
       : `creative_${d.id.slice(0,8)}`;
@@ -132,7 +141,8 @@ Deno.serve(async (req) => {
       boardId            ? `board_id=${boardId}`              : '',
       `campaign_id=${encodeURIComponent(campaign)}`,
     ].filter(Boolean).join('&');
-    const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${utmContent}&${attrParams}`;
+    const audienceParam = audienceTag ? `&audience=${encodeURIComponent(audienceTag)}` : '';
+    const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${utmContent}${audienceParam}&${attrParams}`;
     const description = (d.body_text || d.hook || p.name || '').slice(0, 480);
     const key = `${p.id}|${boardId}|${imageUrl}`;
     if (existingKeys.has(key)) { skipped++; bump('duplicate'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'SKIPPED', reason: 'duplicate' }); continue; }
