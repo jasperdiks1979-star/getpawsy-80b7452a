@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MissionControlCertification, { type DrillCtx } from "@/components/admin/MissionControlCertification";
 import MissionIntelligencePanel from "@/components/admin/MissionIntelligencePanel";
+import ExternalManualActionsCard from "@/components/admin/ExternalManualActionsCard";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bot, DollarSign, Gauge, Globe,
   HeartPulse, LineChart, RefreshCw, Rocket, Search, ShieldCheck, Users, Wallet, Wrench, FileCheck2,
