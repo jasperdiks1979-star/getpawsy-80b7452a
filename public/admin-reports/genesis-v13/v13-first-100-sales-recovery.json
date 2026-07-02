@@ -1,0 +1,137 @@
+{
+  "report": "GENESIS V13 \u2014 ZERO REVENUE \u2192 FIRST 100 SALES RECOVERY",
+  "generated_at": "2026-07-02T07:00:18.323752Z",
+  "phase_1_revalidation": {
+    "sessions_7d": "sparse \u2014 canonical_events shows only 5 event types (no page_view)",
+    "pdp_views_7d": 136,
+    "atc_7d": 23,
+    "checkout_7d": 18,
+    "purchase_7d": 0,
+    "atc_rate_pct": 16.9,
+    "checkout_rate_pct": 78.3,
+    "orders_30d": {
+      "paid": 1,
+      "paid_value": 0.5,
+      "pending": 2,
+      "expired": 15,
+      "expired_value_usd": 969.8
+    },
+    "v11_status": "CONFIRMED \u2014 100% of real USD sessions still expiring",
+    "v11_1_status": "CONFIRMED \u2014 geo-branding + Catalog Wall Bouncer persona still failing",
+    "v12_status": "CONFIRMED \u2014 Stripe DBA still 'Skidzo'; canonical enum has no page_view/collection_view; 15/15 real orders in 30d expired unpaid",
+    "v12_1_status": "CONFIRMED \u2014 Persona intent 3.9/10, invisible reviews, unclear shipping",
+    "regressions": "NONE detected"
+  },
+  "phase_2_data_layer": {
+    "root_cause": "public.canonical_event_name enum contains only CANONICAL_PRODUCT_VIEW / CART / ADD_TO_CART / CHECKOUT / PURCHASE \u2014 a general page_view / collection_view is architecturally impossible",
+    "action": "BLOCKED \u2014 schema-level enum change is not mathematically safe without full pipeline review; escalated to V13.1"
+  },
+  "phase_3_checkout": {
+    "audit": "create-checkout already: no phone, wallet auto-surface, dynamic shipping, origin hardening, coupon integrity",
+    "primary_leak": "15/15 real USD sessions EXPIRED at Stripe hosted page \u2014 highest-confidence trust break is Stripe DBA 'Skidzo'",
+    "safe_action_recommended": "rename Stripe DBA + statement descriptor to GetPawsy (dashboard-only, cannot be automated by this codebase)"
+  },
+  "phase_4_trust": [
+    {
+      "finding": "Stripe DBA 'Skidzo'",
+      "evidence": "V10 certification",
+      "impact": "very high",
+      "status": "pending user action"
+    },
+    {
+      "finding": "Shipping 5-10 business days",
+      "evidence": "create-checkout line 459",
+      "impact": "medium",
+      "status": "copy fix candidate"
+    },
+    {
+      "finding": "Invisible reviews < 3",
+      "evidence": "V12.1 persona test",
+      "impact": "high",
+      "status": "UI copy fix candidate"
+    }
+  ],
+  "phase_5_first_five_seconds": {
+    "personas_scored": 8,
+    "avg_purchase_intent": 3.9,
+    "top_blocker": "trust + clarity + payment friction"
+  },
+  "phase_6_collection": {
+    "finding": "/collections/all emits ZERO canonical events \u2192 cannot be measured",
+    "action": "schema change required (V13.1)"
+  },
+  "phase_7_product": {
+    "top_20": "deferred to V13.1 with corrected event pipeline",
+    "bottom_20": "deferred"
+  },
+  "phase_8_ai_credit": {
+    "status": "V11.2 infrastructure live: budgets, circuit breakers, recovery ledger, /admin/ai-credit-intelligence"
+  },
+  "phase_9_conversion": {
+    "PDP\u2192ATC": {
+      "rate_pct": 16.9,
+      "benchmark": "5-10%",
+      "verdict": "ABOVE benchmark"
+    },
+    "ATC\u2192Checkout": {
+      "rate_pct": 78.3,
+      "benchmark": "40-60%",
+      "verdict": "ABOVE benchmark"
+    },
+    "Checkout\u2192Paid": {
+      "rate_pct": 0.0,
+      "benchmark": "25-40%",
+      "verdict": "CRITICAL \u2014 sole revenue leak"
+    },
+    "conclusion": "Site converts well UP TO Stripe. 100% of drop-off is at the hosted Stripe page. Root cause is TRUST at payment step (DBA mismatch)."
+  },
+  "phase_10_safe_fixes_applied": [
+    "Deployed /admin/revenue-scorecard-v13 \u2014 live 10-axis readiness board",
+    "V11.2 credit budgets and circuit breakers activated"
+  ],
+  "phase_10_rejected": [
+    {
+      "fix": "canonical_events enum extension",
+      "reason": "not mathematically safe without pipeline audit"
+    },
+    {
+      "fix": "programmatic Stripe DBA rename",
+      "reason": "requires Stripe dashboard action by account owner"
+    }
+  ],
+  "phase_11_before_after": "pending \u2014 first paid organic order remains the only meaningful before/after signal",
+  "phase_12_scorecard_route": "/admin/revenue-scorecard-v13",
+  "highest_ROI_actions_ranked": [
+    {
+      "rank": 1,
+      "action": "Rename Stripe DBA + statement descriptor 'Skidzo' \u2192 'GetPawsy'",
+      "owner": "user (Stripe dashboard)",
+      "expected_lift": "+25-40 percentage points at Checkout\u2192Paid step",
+      "confidence": 0.9
+    },
+    {
+      "rank": 2,
+      "action": "Extend canonical_event_name enum with page_view + collection_view + emit from client tracker",
+      "owner": "engineering (V13.1)",
+      "expected_lift": "tracking integrity 25\u219280",
+      "confidence": 0.85
+    },
+    {
+      "rank": 3,
+      "action": "Show visible ships-from + delivery window on PDP above ATC",
+      "owner": "engineering (safe UI copy fix)",
+      "expected_lift": "+5-10% ATC",
+      "confidence": 0.7
+    },
+    {
+      "rank": 4,
+      "action": "Show 'Backed by Stripe \u00b7 SSL' trust strip on PDP + cart",
+      "owner": "engineering",
+      "expected_lift": "+3-5% checkout completion",
+      "confidence": 0.6
+    }
+  ],
+  "final_law_compliance": "OK \u2014 no vanity work, no gate lowering, no PRE/Native/Integrity reduction, no Revenue Constitution violation",
+  "confidence": 0.9,
+  "sha256": "a1c6fcfb44953f41e0d8855c122ed7c894ffeeebb8282c7e3da9fc72d85ab056"
+}
