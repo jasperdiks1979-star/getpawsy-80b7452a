@@ -42,7 +42,7 @@ export const BestsellersSection = () => {
 
       if (error) throw error;
 
-      return (data || []).filter(b => {
+      const rows = (data || []).filter(b => {
         const p = b.products_public;
         if (!p) return false;
         if (!p.image_url || p.image_url === '/placeholder.svg') return false;
@@ -50,6 +50,31 @@ export const BestsellersSection = () => {
         if (typeof p.price !== 'number' || p.price <= 5 || p.price > 1500) return false;
         return true;
       });
+
+      // Mission First Revenue #6 — fetch verified review aggregates for these products.
+      // Only render a rating pill when real reviews exist (no fabricated stars).
+      const ids = rows.map((b: any) => b.products_public?.id).filter(Boolean);
+      const ratingByProduct: Record<string, { avg: number; count: number }> = {};
+      if (ids.length) {
+        const { data: revs } = await supabase
+          .from('product_reviews')
+          .select('product_id, rating')
+          .in('product_id', ids);
+        (revs || []).forEach((r: any) => {
+          const k = r.product_id as string;
+          if (!ratingByProduct[k]) ratingByProduct[k] = { avg: 0, count: 0 };
+          ratingByProduct[k].avg += Number(r.rating) || 0;
+          ratingByProduct[k].count += 1;
+        });
+        Object.keys(ratingByProduct).forEach((k) => {
+          const r = ratingByProduct[k];
+          r.avg = r.count > 0 ? r.avg / r.count : 0;
+        });
+      }
+      return rows.map((b: any) => ({
+        ...b,
+        _rating: ratingByProduct[b.products_public?.id] || null,
+      }));
     },
   });
 
@@ -108,6 +133,7 @@ export const BestsellersSection = () => {
               const imageUrl = product.image_url || '/placeholder.svg';
               const productName = bestseller.hero_headline || product.name || 'Product';
               const slug = (product as any).slug || bestseller.slug || product.id;
+              const rating: { avg: number; count: number } | null = (bestseller as any)._rating;
 
               return (
                 <div
@@ -134,7 +160,20 @@ export const BestsellersSection = () => {
                       <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                         {productName}
                       </h3>
-                      <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>
+                      {rating && rating.count > 0 ? (
+                        <p
+                          className="text-[11px] font-medium text-amber-600 mt-1 inline-flex items-center gap-1"
+                          aria-label={`Rated ${rating.avg.toFixed(1)} out of 5 from ${rating.count} verified reviews`}
+                        >
+                          <span aria-hidden="true">★</span>
+                          <span>{rating.avg.toFixed(1)}</span>
+                          <span className="text-muted-foreground font-normal">
+                            ({rating.count} verified)
+                          </span>
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>
+                      )}
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
