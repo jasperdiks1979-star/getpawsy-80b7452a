@@ -5864,6 +5864,108 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credit_budgets: {
+        Row: {
+          created_at: string
+          credits_limit: number
+          credits_used: number
+          id: string
+          paused: boolean
+          paused_reason: string | null
+          period: string
+          scope: string
+          scope_key: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits_limit: number
+          credits_used?: number
+          id?: string
+          paused?: boolean
+          paused_reason?: string | null
+          period: string
+          scope: string
+          scope_key: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits_limit?: number
+          credits_used?: number
+          id?: string
+          paused?: boolean
+          paused_reason?: string | null
+          period?: string
+          scope?: string
+          scope_key?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
+      ai_credit_circuit_state: {
+        Row: {
+          circuit_key: string
+          failure_count: number
+          id: string
+          opened_at: string | null
+          reason: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          circuit_key: string
+          failure_count?: number
+          id?: string
+          opened_at?: string | null
+          reason?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          circuit_key?: string
+          failure_count?: number
+          id?: string
+          opened_at?: string | null
+          reason?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_credit_recovery_log: {
+        Row: {
+          created_at: string
+          credits_saved_estimate: number
+          detail: Json
+          event_type: string
+          id: string
+          scope_key: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_saved_estimate?: number
+          detail?: Json
+          event_type: string
+          id?: string
+          scope_key?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_saved_estimate?: number
+          detail?: Json
+          event_type?: string
+          id?: string
+          scope_key?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       ai_executive_snapshots: {
         Row: {
           ai_summary: string | null
