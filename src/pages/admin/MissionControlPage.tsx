@@ -101,6 +101,7 @@ function fmtCurrency(n: number) {
 
 const REPORT_LINKS: { title: string; to: string; icon: any }[] = [
   { title: "Business Health Index", to: "/admin/business-health", icon: Gauge },
+  { title: "Evidence Explorer", to: "/admin/evidence-explorer", icon: FileCheck2 },
   { title: "Sales Readiness", to: "/admin/sales-readiness", icon: Rocket },
   { title: "Revenue Command Center", to: "/admin/revenue-command-center", icon: DollarSign },
   { title: "Revenue Scorecard V13", to: "/admin/revenue-scorecard-v13", icon: LineChart },
