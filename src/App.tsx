@@ -2796,6 +2796,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="customer-journey-center"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CustomerJourneyCenterPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="recovery-center"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
