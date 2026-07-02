@@ -442,6 +442,7 @@ const GenesisBoardroomPage = lazyWithRetry(() => import("./pages/admin/GenesisBo
 const GenesisBoardroomV5Page = lazyWithRetry(() => import("./pages/admin/GenesisBoardroomV5Page"));
 const GenesisDigitalCompanyPage = lazyWithRetry(() => import("./pages/admin/GenesisDigitalCompanyPage"));
 const GenesisPerpetualCompanyPage = lazyWithRetry(() => import("./pages/admin/GenesisPerpetualCompanyPage"));
+const GenesisEnterpriseTwinPage = lazyWithRetry(() => import("./pages/admin/GenesisEnterpriseTwinPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
@@ -2579,6 +2580,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <GenesisPerpetualCompanyPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="enterprise-twin"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GenesisEnterpriseTwinPage />
                                 </Suspense>
                               }
                             />
