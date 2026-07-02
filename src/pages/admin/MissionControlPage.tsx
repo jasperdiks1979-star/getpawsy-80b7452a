@@ -155,12 +155,13 @@ export default function MissionControlPage() {
     startOfDay.setUTCHours(0, 0, 0, 0);
     const iso = startOfDay.toISOString();
 
+    const ordersQ: any = supabase.from("orders").select("total_amount,status", { count: "exact" });
+    const pinsQ: any = supabase.from("pinterest_pins").select("id", { count: "exact", head: true });
+    const visitorsQ: any = supabase.from("canonical_events").select("session_id", { count: "exact", head: true });
     const [ordersRes, pinsRes, visitorsRes] = await Promise.all([
-      supabase.from("orders").select("total_amount,status", { count: "exact" })
-        .gte("created_at", iso).eq("status", "paid"),
-      supabase.from("pinterest_pins").select("id", { count: "exact", head: true }).gte("created_at", iso),
-      supabase.from("canonical_events").select("session_id", { count: "exact", head: true })
-        .gte("event_at", iso).eq("event_name", "page_view"),
+      ordersQ.gte("created_at", iso).eq("status", "paid"),
+      pinsQ.gte("created_at", iso),
+      visitorsQ.gte("event_at", iso).eq("event_name", "page_view"),
     ]);
 
     const revenue = (ordersRes.data ?? []).reduce((acc, r: any) => acc + (Number(r.total_amount) || 0), 0);
