@@ -344,6 +344,16 @@ export default function MissionControlPage() {
         </div>
       </section>
 
+      {/* SECTION — EXECUTIVE INTELLIGENCE (CEO Mode, Top 10, Explainers) */}
+      <section>
+        <MissionIntelligencePanel
+          snap={snap as any}
+          subs={subs as any}
+          briefing={briefing as any}
+          loading={loading}
+        />
+      </section>
+
       {/* SECTION 4 — CEO BRIEFING */}
       <section>
         <Card>
