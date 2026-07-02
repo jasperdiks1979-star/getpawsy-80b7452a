@@ -69421,6 +69421,14 @@ export type Database = {
         Returns: Json
       }
       canonical_refresh_all: { Args: never; Returns: undefined }
+      canonical_session_apply_attribution: {
+        Args: { since: string }
+        Returns: number
+      }
+      canonical_session_refresh_with_attribution: {
+        Args: { since: string }
+        Returns: Json
+      }
       canonical_session_upsert_recent: {
         Args: { since: string }
         Returns: undefined
