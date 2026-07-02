@@ -53,12 +53,10 @@ export default function GenesisBoardroomPage() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: snap }, { data: mts }] = await Promise.all([
-        supabase.from("genesis_truth_snapshots").select("*").order("run_at", { ascending: false }).limit(1),
-        supabase.from("genesis_truth_metrics").select("metric_key,display_name,domain,status,canonical_source,confidence,unit").eq("status", "canonical"),
-      ]);
-      setTruth(((snap?.[0] as unknown) as TruthSnapshot) ?? null);
-      setMetrics((mts as unknown as TruthMetric[]) ?? []);
+      const snapRes: any = await supabase.from("genesis_truth_snapshots").select("*").order("run_at", { ascending: false }).limit(1);
+      const mtsRes: any = await supabase.from("genesis_truth_metrics").select("metric_key,display_name,domain,status,canonical_source,confidence,unit").eq("status", "canonical");
+      setTruth((snapRes.data?.[0] as TruthSnapshot | undefined) ?? null);
+      setMetrics((mtsRes.data as TruthMetric[] | null) ?? []);
 
       // Live KPIs — sourced from canonical tables only
       const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
