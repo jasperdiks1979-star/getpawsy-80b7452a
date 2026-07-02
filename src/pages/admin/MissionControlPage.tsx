@@ -175,10 +175,12 @@ export default function MissionControlPage() {
   const loadLive = useCallback(async () => {
     const since = new Date(Date.now() - 5 * 60_000).toISOString();
     const eventBuckets = ["page_view", "add_to_cart", "begin_checkout", "purchase"];
-    const results = await Promise.all(eventBuckets.map((name) =>
-      supabase.from("canonical_events").select("id", { count: "exact", head: true })
-        .gte("event_at", since).eq("event_name", name)
-    ));
+    const results = await Promise.all(
+      eventBuckets.map((name) => {
+        const q: any = supabase.from("canonical_events").select("id", { count: "exact", head: true });
+        return q.gte("event_at", since).eq("event_name", name);
+      })
+    );
     setLive({
       visitors: results[0].count ?? 0,
       addToCart: results[1].count ?? 0,
