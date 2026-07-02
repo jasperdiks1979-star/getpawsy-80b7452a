@@ -44348,6 +44348,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pcie2_dna_fingerprints: {
+        Row: {
+          angle: string | null
+          breed: string | null
+          camera: string | null
+          composition: string | null
+          concept: string | null
+          created_at: string
+          cta: string | null
+          dna_vector: Json
+          emotion: string | null
+          environment: string | null
+          headline_hash: string | null
+          id: string
+          image_phash: string | null
+          lighting: string | null
+          palette: string | null
+          product_id: string | null
+          prompt_hash: string
+          room: string | null
+        }
+        Insert: {
+          angle?: string | null
+          breed?: string | null
+          camera?: string | null
+          composition?: string | null
+          concept?: string | null
+          created_at?: string
+          cta?: string | null
+          dna_vector?: Json
+          emotion?: string | null
+          environment?: string | null
+          headline_hash?: string | null
+          id?: string
+          image_phash?: string | null
+          lighting?: string | null
+          palette?: string | null
+          product_id?: string | null
+          prompt_hash: string
+          room?: string | null
+        }
+        Update: {
+          angle?: string | null
+          breed?: string | null
+          camera?: string | null
+          composition?: string | null
+          concept?: string | null
+          created_at?: string
+          cta?: string | null
+          dna_vector?: Json
+          emotion?: string | null
+          environment?: string | null
+          headline_hash?: string | null
+          id?: string
+          image_phash?: string | null
+          lighting?: string | null
+          palette?: string | null
+          product_id?: string | null
+          prompt_hash?: string
+          room?: string | null
+        }
+        Relationships: []
+      }
       pcie2_engine_health: {
         Row: {
           active_concepts: number
@@ -45859,6 +45922,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pcie2_zero_waste_events: {
+        Row: {
+          created_at: string
+          credits_saved: number
+          id: string
+          job_id: string | null
+          meta: Json
+          outcome: string
+          phase: string
+          product_id: string | null
+          reasons: Json
+          score: number | null
+          threshold: number | null
+        }
+        Insert: {
+          created_at?: string
+          credits_saved?: number
+          id?: string
+          job_id?: string | null
+          meta?: Json
+          outcome: string
+          phase: string
+          product_id?: string | null
+          reasons?: Json
+          score?: number | null
+          threshold?: number | null
+        }
+        Update: {
+          created_at?: string
+          credits_saved?: number
+          id?: string
+          job_id?: string | null
+          meta?: Json
+          outcome?: string
+          phase?: string
+          product_id?: string | null
+          reasons?: Json
+          score?: number | null
+          threshold?: number | null
+        }
+        Relationships: []
       }
       pdp_health_audits: {
         Row: {
@@ -51054,6 +51159,7 @@ export type Database = {
           credits_remaining: number | null
           credits_used_since_set: number
           daily_burn_rate: number | null
+          daily_cap_hard: number | null
           daily_image_credit_cap: number
           emergency_creative_threshold: number
           emergency_mode: boolean
@@ -51077,11 +51183,15 @@ export type Database = {
           min_balance_credits: number
           notes: string | null
           paused: boolean
+          projected_waste_pct: number | null
           publishing_paused: boolean
           recent_402_count_1h: number
           recent_success_count_1h: number
+          rolling_reject_rate_100: number | null
           state: string
           updated_at: string
+          weekly_cap_hard: number | null
+          zero_waste_v2_shadow: boolean | null
         }
         Insert: {
           ai_generation_paused?: boolean
@@ -51094,6 +51204,7 @@ export type Database = {
           credits_remaining?: number | null
           credits_used_since_set?: number
           daily_burn_rate?: number | null
+          daily_cap_hard?: number | null
           daily_image_credit_cap?: number
           emergency_creative_threshold?: number
           emergency_mode?: boolean
@@ -51117,11 +51228,15 @@ export type Database = {
           min_balance_credits?: number
           notes?: string | null
           paused?: boolean
+          projected_waste_pct?: number | null
           publishing_paused?: boolean
           recent_402_count_1h?: number
           recent_success_count_1h?: number
+          rolling_reject_rate_100?: number | null
           state?: string
           updated_at?: string
+          weekly_cap_hard?: number | null
+          zero_waste_v2_shadow?: boolean | null
         }
         Update: {
           ai_generation_paused?: boolean
@@ -51134,6 +51249,7 @@ export type Database = {
           credits_remaining?: number | null
           credits_used_since_set?: number
           daily_burn_rate?: number | null
+          daily_cap_hard?: number | null
           daily_image_credit_cap?: number
           emergency_creative_threshold?: number
           emergency_mode?: boolean
@@ -51157,11 +51273,15 @@ export type Database = {
           min_balance_credits?: number
           notes?: string | null
           paused?: boolean
+          projected_waste_pct?: number | null
           publishing_paused?: boolean
           recent_402_count_1h?: number
           recent_success_count_1h?: number
+          rolling_reject_rate_100?: number | null
           state?: string
           updated_at?: string
+          weekly_cap_hard?: number | null
+          zero_waste_v2_shadow?: boolean | null
         }
         Relationships: []
       }
@@ -70162,6 +70282,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v_zero_waste_dashboard: {
+        Row: {
+          budget_blocks: number | null
+          credits_per_pin_estimate: number | null
+          credits_remaining: number | null
+          credits_saved: number | null
+          daily_cap_hard: number | null
+          dna_blocks: number | null
+          gateway_state: string | null
+          images_today: number | null
+          paused: boolean | null
+          pins_7d: number | null
+          pins_today: number | null
+          pre_gen_blocks: number | null
+          projected_waste_pct: number | null
+          prompt_blocks: number | null
+          reject_pct_7d: number | null
+          reject_pct_today: number | null
+          rejects_7d: number | null
+          rejects_today: number | null
+          rolling_reject_rate_100: number | null
+          total_7d: number | null
+          total_today: number | null
+          zero_waste_v2_shadow: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _canonical_upsert_alert: {
@@ -70986,6 +71133,7 @@ export type Database = {
         Args: { p_concepts: string[] }
         Returns: number
       }
+      pcie2_should_generate: { Args: { _product_id: string }; Returns: Json }
       pe_reschedule_crons: { Args: { p_secret: string }; Returns: Json }
       pinterest_canonical_category: { Args: { _raw: string }; Returns: string }
       pinterest_category_imbalance: {
@@ -71030,6 +71178,10 @@ export type Database = {
       }
       pinterest_publish_health: { Args: never; Returns: Json }
       pinterest_scheduler_health: { Args: never; Returns: Json }
+      pinterest_success_probability: {
+        Args: { _product_id: string }
+        Returns: number
+      }
       prie_kick: { Args: { p_trigger: string }; Returns: undefined }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_expired_ai_cache: { Args: never; Returns: number }
