@@ -44,6 +44,7 @@ type Briefing = {
 type Sub = {
   subscore_key: string; category: string; label: string;
   score: number; weight: number; confidence: number;
+  evidence?: any; note?: string | null;
 };
 
 function statusPill(score: number) {
