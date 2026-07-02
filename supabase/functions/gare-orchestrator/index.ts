@@ -430,11 +430,56 @@ async function snapshot(sb: ReturnType<typeof admin>) {
 async function status(sb: ReturnType<typeof admin>) {
   const [{ data: recent }, { data: pending }, { data: score }, { data: learning }] = await Promise.all([
     sb.from("gare_detections").select("*").order("detected_at", { ascending: false }).limit(20),
-    sb.from("gare_recovery_plans").select("*").eq("status", "pending").order("created_at", { ascending: false }).limit(20),
+    sb.from("gare_recovery_plans")
+      .select("*")
+      .in("status", ["pending", "scheduled"]) 
+      .order("expected_revenue_gain", { ascending: false, nullsFirst: false })
+      .order("confidence", { ascending: false, nullsFirst: false })
+      .limit(50),
     sb.from("gare_score_snapshots").select("*").order("captured_at", { ascending: false }).limit(1),
     sb.from("gare_learning").select("*").order("updated_at", { ascending: false }).limit(10),
   ]);
   return { recent, pending, score: score?.[0] ?? null, learning };
+}
+
+// V8 — Executive Morning Brief. Reads existing GARE tables only.
+async function morningBrief(sb: ReturnType<typeof admin>) {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const [{ count: detected }, { count: repaired }, { count: pendingCount }, { data: execs }, { data: topPlan }] = await Promise.all([
+    sb.from("gare_detections").select("id", { count: "exact", head: true }).gte("created_at", since),
+    sb.from("gare_executions").select("id", { count: "exact", head: true }).eq("outcome", "success").gte("started_at", since),
+    sb.from("gare_recovery_plans").select("id", { count: "exact", head: true }).in("status", ["pending", "scheduled"]),
+    sb.from("gare_executions").select("revenue_delta,bhi_delta").gte("started_at", since),
+    sb.from("gare_recovery_plans")
+      .select("id, plan, expected_revenue_gain, expected_bhi_gain, confidence, risk_level, status")
+      .in("status", ["pending", "scheduled"]) 
+      .order("expected_revenue_gain", { ascending: false, nullsFirst: false })
+      .order("confidence", { ascending: false, nullsFirst: false })
+      .limit(1),
+  ]);
+  const revenue = (execs ?? []).reduce((s, r) => s + Number(r.revenue_delta ?? 0), 0);
+  const bhi = (execs ?? []).reduce((s, r) => s + Number(r.bhi_delta ?? 0), 0);
+  const top = topPlan?.[0] ?? null;
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    detected_24h: detected ?? 0,
+    auto_repaired_24h: repaired ?? 0,
+    pending_approval: pendingCount ?? 0,
+    revenue_recovered_24h: revenue,
+    bhi_gained_24h: bhi,
+    top_recommendation: top
+      ? {
+          id: top.id,
+          action: (top.plan as { action?: string } | null)?.action ?? "Recovery plan",
+          why: (top.plan as { root_cause?: string } | null)?.root_cause ?? "unknown",
+          expected_revenue_gain: top.expected_revenue_gain,
+          expected_annual_gain: top.expected_revenue_gain != null ? Number(top.expected_revenue_gain) * 12 : null,
+          confidence: top.confidence,
+          risk_level: top.risk_level,
+          status: top.status,
+        }
+      : null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -452,6 +497,16 @@ Deno.serve(async (req) => {
     else if (action === "approve" && body.plan_id) {
       await sb.from("gare_recovery_plans").update({ status: "approved" }).eq("id", body.plan_id);
       result = { ok: true };
+    } else if (action === "reject" && body.plan_id) {
+      await sb.from("gare_recovery_plans")
+        .update({ status: "rejected", plan: { rejected_reason: body.reason ?? "manual" } })
+        .eq("id", body.plan_id);
+      result = { ok: true };
+    } else if (action === "schedule" && body.plan_id) {
+      await sb.from("gare_recovery_plans").update({ status: "scheduled" }).eq("id", body.plan_id);
+      result = { ok: true };
+    } else if (action === "morning-brief") {
+      result = await morningBrief(sb);
     } else result = { error: "unknown action" };
     return new Response(JSON.stringify({ ok: true, action, result }), {
       headers: { ...corsHeaders, "content-type": "application/json" },
