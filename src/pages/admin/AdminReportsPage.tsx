@@ -16,6 +16,18 @@ interface ReportItem {
 
 const REPORTS: ReportItem[] = [
   {
+    filename: "2026-07-02-genesis-v12-conversion-black-box.html",
+    title: "Genesis V12 — Conversion Black Box Report",
+    category: "Conversion Forensics · 0 purchases / 7d · 4 abandoned Stripe sessions · Top 25 fixes · SHA-256 dd1f83…",
+    path: "/admin-reports/genesis-v12/2026-07-02-genesis-v12-conversion-black-box.html",
+  },
+  {
+    filename: "2026-07-02-genesis-v12.1-first-impression-trust.html",
+    title: "Genesis V12.1 — First Impression & Trust Forensics",
+    category: "UX · 5s / 30s persona tests · Top 25 safe improvements · SHA-256 1811bd…",
+    path: "/admin-reports/genesis-v12/2026-07-02-genesis-v12.1-first-impression-trust.html",
+  },
+  {
     filename: "2026-07-01-lovable-expense-tax-forensics.pdf",
     title: "Genesis V11 — Lovable Expense & Tax Forensics Report",
     category: "Bookkeeping · Belastingdienst · Credits verified · Invoices §9 recovery",
