@@ -1,0 +1,11 @@
+id,title,severity,evidence,business_impact,revenue_impact,probability,mitigation,rollback,effort_hours,owner,confidence
+R1,Stripe DBA 'Skidzo' mismatch at hosted checkout,CRITICAL,18/18 real USD checkouts expired in 7d (mission-first-sale-report.json),100% payment step abandonment,Blocks first paid order,0.95,Rename Stripe public name + statement descriptor to GETPAWSY,Rename back in Stripe dashboard,0.1,USER,0.9
+R2,Zero organic acquisition velocity,CRITICAL,97% of sessions bot-classified; Real Human counters near-zero on US,No demand to convert,Prevents 100-sale trajectory,0.9,Daily hero pin cadence (already scheduled 14:10 UTC) + PAIP v1 quality gate,Pause cron,0,AUTONOMOUS,0.85
+R3,UTM completeness — 10.7% legacy direct/(none) regression,HIGH,attribution-backfill-verify last run,Distorts channel ROI,Misallocated Pinterest spend priority,0.8,Keep first-touch capture + KPI filter; monitor daily,n/a,1,AUTONOMOUS,0.85
+R4,canonical_event_name enum missing page_view / collection_view,HIGH,genesis-v13 report phase_2,Upper-funnel invisibility,Cannot optimise landing pages,0.9,V13.1 pipeline audit + safe enum extension,Enum values are additive; safe,4,ENGINEERING,0.75
+R5,Reviews hidden when <3 → weaker social proof,MEDIUM,V12.1 persona intent 3.9/10,Trust break above ATC,−3 to −8pp CVR,0.7,Auto-generated deterministic trust labels already live; seed real reviews,Revert copy,2,AUTONOMOUS,0.7
+R6,Apple Pay / Google Pay domain not yet verified,HIGH,mission-first-sale-report phase_2,Mobile CVR drag,−5 to −13pp mobile CVR,0.8,Verify getpawsy.pet in Stripe dashboard,n/a,0.1,USER,0.85
+R7,Google Ads suspended (channel unavailable),MEDIUM,channel-availability.ts,Removes paid discovery lever,Slower TTFR,1.0,Organic-first plan; reinstate later,n/a,0,USER,1.0
+R8,Shipping copy says 5–10 business days,MEDIUM,create-checkout line 459,Perceived slow fulfilment,−2 to −5pp CVR,0.6,Tighten to 3–7 for US-warehouse SKUs,Copy revert,1,ENGINEERING,0.7
+R9,Email lifecycle not wired,MEDIUM,No transactional/lifecycle sender configured,"No abandoned-cart, no post-purchase",−10 to −15% LTV,0.9,Wire domain + abandoned cart flow,Disable sender,6,ENGINEERING,0.8
+R10,HIBP leaked-password check not enabled,LOW,auth settings,Account safety hygiene,Negligible pre-scale,0.3,Toggle in auth settings,Toggle off,0.1,USER,1.0

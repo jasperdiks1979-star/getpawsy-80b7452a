@@ -1,0 +1,26 @@
+rank,action,rev_impact,confidence,effort_h,roi,priority,risk
+1,Rename Stripe DBA + statement descriptor → GETPAWSY,+25–40pp Checkout→Paid,0.9,0.1,extreme,P0,none
+2,Verify Apple Pay & enable Google Pay for getpawsy.pet,+5–13pp mobile CVR,0.85,0.2,extreme,P0,none
+3,Run daily hero pin cadence (PAIP v1 + PQIF v4),Only lever for organic traffic,0.8,0,very high,P0,low
+4,Tighten shipping copy to 3–7 business days for US-warehouse SKUs,+2–5pp CVR,0.7,1,high,P1,low
+5,Seed 3+ authentic reviews on hero SKU (Automatic Cat Litter Box),+3–8pp PDP→ATC,0.7,2,high,P1,low
+6,Wire abandoned-cart email (Resend + Cloud domain),+10–15% recoverable revenue,0.8,6,high,P1,low
+7,Extend canonical_event_name enum with page_view/collection_view (V13.1),Unlocks upper-funnel optimisation,0.75,4,high,P1,med
+8,Upload GetPawsy logo + brand color in Stripe branding,+1–3pp checkout completion,0.6,0.1,high,P1,none
+9,Publish 6 hero pins/day + 12 evergreen pins/day (rate-limited),Compounding organic traffic,0.75,0,high,P1,low
+10,Verify GSC + submit sitemap-index,Faster organic indexation,0.9,0.3,high,P1,none
+11,Enable HIBP leaked-password check,Security hygiene,1.0,0.1,med,P2,none
+12,Add PDP FAQ block with schema markup (top 6 SKUs),+SEO CTR + PDP conversion,0.7,4,med,P2,low
+13,Introduce post-purchase upsell (bundle discount),+8–12% AOV,0.65,6,med,P2,low
+14,Add sitewide trust bar (Stripe · SSL · 30-day returns · US ships),+2–4pp CVR,0.7,1,med,P2,none
+15,Add UGC gallery below fold on hero PDPs,+3–6pp PDP→ATC,0.6,4,med,P2,low
+16,Add exit-intent 10% coupon on cart page (first-time only),+5–8% recoverable checkouts,0.6,3,med,P2,low
+17,Cache LCP hero image via Cloudflare + preload,Better mobile LCP → SEO + CVR,0.8,1,med,P2,none
+18,Add product schema Aggregate Offer for collections,Richer SERP,0.7,2,med,P2,low
+19,Nightly Real Human counters snapshot to Executive War Room,Faster CEO signal,0.9,2,med,P2,none
+20,Automated Pinterest connection health probe,Prevents silent outages,0.85,2,med,P2,none
+21,Cross-sell rail on cart page for top-6 SKUs,+4–7% AOV,0.6,3,med,P3,low
+22,Add /reviews social-proof landing page,Modest trust lift,0.5,2,low,P3,none
+23,Add SMS opt-in on order confirmation,Retention channel,0.6,4,low,P3,low
+24,Enable Cloudflare Bot Fight + tighten rate limits on /api,Reduces analytics noise,0.8,1,low,P3,low
+25,CEO weekly digest email (Mission Control snapshot),Ops discipline,0.9,2,low,P3,none
