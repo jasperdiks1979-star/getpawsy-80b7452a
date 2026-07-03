@@ -94,14 +94,14 @@ async function collectCandidates(
   if (wantAll || opts.onlySource === "posted" || opts.onlySource === "queued" || opts.onlySource === "scheduled") {
     const { data } = await sb
       .from("pinterest_pin_queue")
-      .select("id, pinterest_pin_id, product_id, product_slug, pin_image_url, destination_link, pin_title, pin_description, status, created_at")
+      .select("id, pinterest_pin_id, product_id, product_slug, pin_image_url, destination_link, pin_title, pin_description, status, verification_state, created_at")
       .not("pin_image_url", "is", null)
       .not("product_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(opts.limit * 2);
     for (const r of (data ?? []) as any[]) {
       const src: Candidate["source"] =
-        r.status === "posted" ? "posted" :
+        (r.status === "posted" || (r.pinterest_pin_id && r.status !== "rejected")) ? "posted" :
         r.status === "scheduled" ? "scheduled" : "queued";
       if (opts.onlySource && opts.onlySource !== src) continue;
       out.push({
