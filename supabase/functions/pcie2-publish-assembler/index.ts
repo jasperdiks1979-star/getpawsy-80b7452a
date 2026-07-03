@@ -128,12 +128,19 @@ Deno.serve(async (req) => {
     const { data: cMeta } = await sb.from('pcie2_creatives')
       .select('persona_id, emotion_id, hook_id, style_id, campaign_id')
       .eq('id', d.id).maybeSingle();
-    const campaign = cMeta?.campaign_id || (productFilter ? 'hero_us_wave' : 'pcie2');
+    // Caller may pass an explicit `campaign` (e.g. hero-daily-publish sends
+    // `hero_daily`) so downstream attribution can group every hero-daily
+    // click into one bucket regardless of which creative fired.
+    const campaign =
+      (typeof (body as any)?.campaign === 'string' && (body as any).campaign) ||
+      cMeta?.campaign_id ||
+      (productFilter ? 'hero_us_wave' : 'pcie2');
     const utmContent = cMeta?.persona_id
       ? `persona_${cMeta.persona_id}`
       : `creative_${d.id.slice(0,8)}`;
     const attrParams = [
       `creative_id=${d.id}`,
+      `product_id=${p.id}`,
       cMeta?.persona_id  ? `persona_id=${cMeta.persona_id}`   : '',
       cMeta?.emotion_id  ? `emotion_id=${encodeURIComponent(cMeta.emotion_id)}` : '',
       cMeta?.hook_id     ? `hook_id=${cMeta.hook_id}`         : '',
