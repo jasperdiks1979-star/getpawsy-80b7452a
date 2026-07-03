@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Wrench, ShieldCheck } from "lucide-react";
+import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2 } from "lucide-react";
 
 interface RunRow {
   id: string;
@@ -46,6 +46,31 @@ interface SlugSyncRow {
   created_at: string;
 }
 
+interface HeroSyncRow {
+  id: string;
+  product_id: string;
+  before_image_url: string | null;
+  after_image_url: string;
+  reason: string;
+  rolled_back_at: string | null;
+  created_at: string;
+}
+
+interface ReportRow {
+  id: string;
+  generated_at: string;
+  pins_audited: number;
+  pins_pass: number;
+  pins_warning: number;
+  pins_fail: number;
+  hero_syncs: number;
+  wrong_url_fixed: number;
+  storage_prefix: string;
+  html_path: string | null;
+  csv_path: string | null;
+  json_path: string | null;
+}
+
 const REASON_COLORS: Record<string, string> = {
   valid: "bg-green-100 text-green-800",
   auto_repaired: "bg-blue-100 text-blue-800",
@@ -56,20 +81,30 @@ export default function PinterestIntegrityPage() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [slugLog, setSlugLog] = useState<SlugSyncRow[]>([]);
+  const [heroSyncs, setHeroSyncs] = useState<HeroSyncRow[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const [{ data: runRows }, { data: slugRows }] = await Promise.all([
+    const [{ data: runRows }, { data: slugRows }, { data: heroRows }, { data: reportRows }] = await Promise.all([
       supabase.from("pinterest_pin_audit_runs")
         .select("*").order("started_at", { ascending: false }).limit(30),
       supabase.from("pinterest_slug_sync_log")
         .select("*").order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("pinterest_hero_sync_log")
+        .select("id, product_id, before_image_url, after_image_url, reason, rolled_back_at, created_at")
+        .order("created_at", { ascending: false }).limit(50),
+      (supabase as any).from("pinterest_integrity_reports")
+        .select("id, generated_at, pins_audited, pins_pass, pins_warning, pins_fail, hero_syncs, wrong_url_fixed, storage_prefix, html_path, csv_path, json_path")
+        .order("generated_at", { ascending: false }).limit(20),
     ]);
     setRuns((runRows as RunRow[]) || []);
     setSlugLog((slugRows as SlugSyncRow[]) || []);
+    setHeroSyncs((heroRows as HeroSyncRow[]) || []);
+    setReports((reportRows as ReportRow[]) || []);
     const latest = (runRows as RunRow[])?.[0]?.id;
     if (latest) {
       setSelectedRun(latest);
@@ -78,6 +113,61 @@ export default function PinterestIntegrityPage() {
       setAudit((auditRows as AuditRow[]) || []);
     }
     setLoading(false);
+  }
+
+  async function syncMasters() {
+    setBusy("hero");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-master-creative-sync", {
+        body: { mode: "sync", limit: 200 },
+      });
+      if (error) throw error;
+      toast({
+        title: "Master creative sync complete",
+        description: `${data?.summary?.synced ?? 0} hero images synced, ${data?.summary?.skipped_same ?? 0} already in sync, ${data?.summary?.errors ?? 0} errors.`,
+      });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Hero sync failed", description: e?.message || String(e), variant: "destructive" });
+    } finally { setBusy(null); }
+  }
+
+  async function rollbackHero(logId: string) {
+    setBusy("rollback-" + logId);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-master-creative-sync", {
+        body: { mode: "rollback", log_id: logId },
+      });
+      if (error) throw error;
+      toast({ title: "Rolled back", description: data?.result?.status || "ok" });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Rollback failed", description: e?.message || String(e), variant: "destructive" });
+    } finally { setBusy(null); }
+  }
+
+  async function generateReport() {
+    setBusy("report");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-integrity-report", {
+        body: {},
+      });
+      if (error) throw error;
+      toast({
+        title: "Report generated",
+        description: `${data?.summary?.pins_audited ?? 0} pins · ${data?.summary?.pins_pass ?? 0} PASS · ${data?.summary?.pins_fail ?? 0} FAIL`,
+      });
+      if (data?.signed_urls?.html) window.open(data.signed_urls.html, "_blank");
+      await load();
+    } catch (e: any) {
+      toast({ title: "Report failed", description: e?.message || String(e), variant: "destructive" });
+    } finally { setBusy(null); }
+  }
+
+  async function openReport(path: string | null) {
+    if (!path) return;
+    const { data } = await supabase.storage.from("admin-reports").createSignedUrl(path, 3600);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
 
   useEffect(() => { load(); }, []);
@@ -137,6 +227,14 @@ export default function PinterestIntegrityPage() {
             {busy === "repair" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wrench className="h-4 w-4 mr-2" />}
             Audit + auto-repair
           </Button>
+          <Button size="sm" variant="secondary" onClick={syncMasters} disabled={busy !== null}>
+            {busy === "hero" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImageIcon className="h-4 w-4 mr-2" />}
+            Sync master creatives → PDP hero
+          </Button>
+          <Button size="sm" variant="secondary" onClick={generateReport} disabled={busy !== null}>
+            {busy === "report" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            Generate report
+          </Button>
         </div>
       </header>
 
@@ -183,6 +281,99 @@ export default function PinterestIntegrityPage() {
               })}
               {runs.length === 0 && (
                 <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">No audit runs yet. Click "Run audit" above.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h2 className="font-semibold mb-3">Master creative → PDP hero syncs</h2>
+        <p className="text-xs text-muted-foreground mb-2">
+          When an AI master creative is approved (published_at set, retired_at null, PRE integrity ≥ 95),
+          its image becomes the product's hero. Original CJ images stay in the gallery. Every sync is
+          reversible via the rollback button.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b">
+                <th className="py-2 pr-2">When</th>
+                <th className="py-2 pr-2">Product</th>
+                <th className="py-2 pr-2">Before</th>
+                <th className="py-2 pr-2">After</th>
+                <th className="py-2 pr-2">Status</th>
+                <th className="py-2 pr-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {heroSyncs.map(h => (
+                <tr key={h.id} className="border-b">
+                  <td className="py-1 pr-2">{new Date(h.created_at).toLocaleString()}</td>
+                  <td className="py-1 pr-2 font-mono">{h.product_id.slice(0, 8)}</td>
+                  <td className="py-1 pr-2">{h.before_image_url ? <img src={h.before_image_url} alt="" className="h-10 w-10 object-cover rounded" /> : "—"}</td>
+                  <td className="py-1 pr-2"><img src={h.after_image_url} alt="" className="h-10 w-10 object-cover rounded" /></td>
+                  <td className="py-1 pr-2">
+                    {h.rolled_back_at
+                      ? <Badge variant="outline">rolled back</Badge>
+                      : <Badge className="bg-green-100 text-green-800">active</Badge>}
+                  </td>
+                  <td className="py-1 pr-2">
+                    {!h.rolled_back_at && (
+                      <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => rollbackHero(h.id)}>
+                        <Undo2 className="h-3 w-3 mr-1" /> Rollback
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {heroSyncs.length === 0 && (
+                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No hero syncs yet. Click "Sync master creatives → PDP hero" above.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h2 className="font-semibold mb-3">Integrity report bundles</h2>
+        <p className="text-xs text-muted-foreground mb-2">
+          Each bundle is stored privately under <code>admin-reports/pinterest-integrity/</code> and contains
+          the JSON, CSV and HTML views of the underlying audit run.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b">
+                <th className="py-2 pr-3">Generated</th>
+                <th className="py-2 pr-3">Audited</th>
+                <th className="py-2 pr-3">PASS</th>
+                <th className="py-2 pr-3">WARN</th>
+                <th className="py-2 pr-3">FAIL</th>
+                <th className="py-2 pr-3">Hero syncs</th>
+                <th className="py-2 pr-3">Wrong URL fixed</th>
+                <th className="py-2 pr-3">Downloads</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map(r => (
+                <tr key={r.id} className="border-b">
+                  <td className="py-1 pr-3">{new Date(r.generated_at).toLocaleString()}</td>
+                  <td className="py-1 pr-3">{r.pins_audited}</td>
+                  <td className="py-1 pr-3 text-green-700">{r.pins_pass}</td>
+                  <td className="py-1 pr-3 text-amber-700">{r.pins_warning}</td>
+                  <td className="py-1 pr-3 text-red-700">{r.pins_fail}</td>
+                  <td className="py-1 pr-3">{r.hero_syncs}</td>
+                  <td className="py-1 pr-3">{r.wrong_url_fixed}</td>
+                  <td className="py-1 pr-3 space-x-2">
+                    <button className="underline" onClick={() => openReport(r.html_path)}>HTML</button>
+                    <button className="underline" onClick={() => openReport(r.csv_path)}>CSV</button>
+                    <button className="underline" onClick={() => openReport(r.json_path)}>JSON</button>
+                  </td>
+                </tr>
+              ))}
+              {reports.length === 0 && (
+                <tr><td colSpan={8} className="py-6 text-center text-muted-foreground">No reports yet. Click "Generate report" above.</td></tr>
               )}
             </tbody>
           </table>

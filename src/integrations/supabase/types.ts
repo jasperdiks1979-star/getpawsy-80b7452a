@@ -52145,6 +52145,59 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_hero_sync_log: {
+        Row: {
+          after_image_url: string
+          before_image_url: string | null
+          before_images: Json | null
+          created_at: string
+          created_by: string | null
+          creative_dna_id: string | null
+          id: string
+          pinterest_pin_id: string | null
+          product_id: string
+          reason: string
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+        }
+        Insert: {
+          after_image_url: string
+          before_image_url?: string | null
+          before_images?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creative_dna_id?: string | null
+          id?: string
+          pinterest_pin_id?: string | null
+          product_id: string
+          reason?: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+        }
+        Update: {
+          after_image_url?: string
+          before_image_url?: string | null
+          before_images?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creative_dna_id?: string | null
+          id?: string
+          pinterest_pin_id?: string | null
+          product_id?: string
+          reason?: string
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_hero_sync_log_creative_dna_id_fkey"
+            columns: ["creative_dna_id"]
+            isOneToOne: false
+            referencedRelation: "pei_creative_dna"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_historical_cleanup_runs: {
         Row: {
           created_at: string
@@ -52232,6 +52285,69 @@ export type Database = {
           notes?: string | null
           original_pin_id?: string | null
           reason?: string
+        }
+        Relationships: []
+      }
+      pinterest_integrity_reports: {
+        Row: {
+          csv_path: string | null
+          expected_revenue_recovered: number | null
+          generated_at: string
+          hero_syncs: number
+          html_path: string | null
+          id: string
+          json_path: string | null
+          pins_archived: number
+          pins_audited: number
+          pins_fail: number
+          pins_pass: number
+          pins_repaired: number
+          pins_warning: number
+          run_id: string | null
+          storage_prefix: string
+          summary: Json
+          visual_mismatches: number
+          wrong_url_fixed: number
+        }
+        Insert: {
+          csv_path?: string | null
+          expected_revenue_recovered?: number | null
+          generated_at?: string
+          hero_syncs?: number
+          html_path?: string | null
+          id?: string
+          json_path?: string | null
+          pins_archived?: number
+          pins_audited?: number
+          pins_fail?: number
+          pins_pass?: number
+          pins_repaired?: number
+          pins_warning?: number
+          run_id?: string | null
+          storage_prefix: string
+          summary?: Json
+          visual_mismatches?: number
+          wrong_url_fixed?: number
+        }
+        Update: {
+          csv_path?: string | null
+          expected_revenue_recovered?: number | null
+          generated_at?: string
+          hero_syncs?: number
+          html_path?: string | null
+          id?: string
+          json_path?: string | null
+          pins_archived?: number
+          pins_audited?: number
+          pins_fail?: number
+          pins_pass?: number
+          pins_repaired?: number
+          pins_warning?: number
+          run_id?: string | null
+          storage_prefix?: string
+          summary?: Json
+          visual_mismatches?: number
+          wrong_url_fixed?: number
         }
         Relationships: []
       }
