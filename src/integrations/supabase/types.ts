@@ -48003,6 +48003,328 @@ export type Database = {
           },
         ]
       }
+      pig_certifications: {
+        Row: {
+          certified_at: string | null
+          created_at: string
+          evidence: Json
+          expires_at: string | null
+          id: string
+          identity_score: number
+          match_kind: Database["public"]["Enums"]["pig_match_kind"]
+          node_id: string
+          passed: boolean
+          pre_score: number | null
+          product_id: string
+          quality_score: number | null
+          revenue_risk: number
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          certified_at?: string | null
+          created_at?: string
+          evidence?: Json
+          expires_at?: string | null
+          id?: string
+          identity_score?: number
+          match_kind?: Database["public"]["Enums"]["pig_match_kind"]
+          node_id: string
+          passed?: boolean
+          pre_score?: number | null
+          product_id: string
+          quality_score?: number | null
+          revenue_risk?: number
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          certified_at?: string | null
+          created_at?: string
+          evidence?: Json
+          expires_at?: string | null
+          id?: string
+          identity_score?: number
+          match_kind?: Database["public"]["Enums"]["pig_match_kind"]
+          node_id?: string
+          passed?: boolean
+          pre_score?: number | null
+          product_id?: string
+          quality_score?: number | null
+          revenue_risk?: number
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pig_certifications_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pig_duplicates: {
+        Row: {
+          created_at: string
+          duplicate_node: string
+          id: string
+          merged: boolean
+          method: string
+          primary_node: string
+          similarity: number
+        }
+        Insert: {
+          created_at?: string
+          duplicate_node: string
+          id?: string
+          merged?: boolean
+          method?: string
+          primary_node: string
+          similarity?: number
+        }
+        Update: {
+          created_at?: string
+          duplicate_node?: string
+          id?: string
+          merged?: boolean
+          method?: string
+          primary_node?: string
+          similarity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pig_duplicates_duplicate_node_fkey"
+            columns: ["duplicate_node"]
+            isOneToOne: false
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pig_duplicates_primary_node_fkey"
+            columns: ["primary_node"]
+            isOneToOne: false
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pig_edges: {
+        Row: {
+          confidence: number
+          created_at: string
+          from_node: string
+          id: string
+          kind: Database["public"]["Enums"]["pig_edge_kind"]
+          metadata: Json
+          to_node: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          from_node: string
+          id?: string
+          kind: Database["public"]["Enums"]["pig_edge_kind"]
+          metadata?: Json
+          to_node: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          from_node?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["pig_edge_kind"]
+          metadata?: Json
+          to_node?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pig_edges_from_node_fkey"
+            columns: ["from_node"]
+            isOneToOne: false
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pig_edges_to_node_fkey"
+            columns: ["to_node"]
+            isOneToOne: false
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pig_nodes: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["pig_node_kind"]
+          metadata: Json
+          product_id: string | null
+          source: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["pig_node_kind"]
+          metadata?: Json
+          product_id?: string | null
+          source?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["pig_node_kind"]
+          metadata?: Json
+          product_id?: string | null
+          source?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      pig_runs: {
+        Row: {
+          errors: Json
+          finished_at: string | null
+          id: string
+          run_kind: string
+          started_at: string
+          stats: Json
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          run_kind: string
+          started_at?: string
+          stats?: Json
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          run_kind?: string
+          started_at?: string
+          stats?: Json
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      pig_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      pig_visual_dna: {
+        Row: {
+          axes: Json | null
+          camera: string | null
+          composition: string | null
+          dominant_colors: Json | null
+          environment: string | null
+          extracted_at: string
+          furniture_kind: string | null
+          height_ratio: number | null
+          id: string
+          lighting: string | null
+          material_tags: string[] | null
+          node_id: string
+          palette_key: string | null
+          perceptual_hash: string | null
+          platform_count: number | null
+          shape_signature: string | null
+          species: string | null
+          updated_at: string
+          usage: string | null
+          vision_model: string | null
+          width_ratio: number | null
+        }
+        Insert: {
+          axes?: Json | null
+          camera?: string | null
+          composition?: string | null
+          dominant_colors?: Json | null
+          environment?: string | null
+          extracted_at?: string
+          furniture_kind?: string | null
+          height_ratio?: number | null
+          id?: string
+          lighting?: string | null
+          material_tags?: string[] | null
+          node_id: string
+          palette_key?: string | null
+          perceptual_hash?: string | null
+          platform_count?: number | null
+          shape_signature?: string | null
+          species?: string | null
+          updated_at?: string
+          usage?: string | null
+          vision_model?: string | null
+          width_ratio?: number | null
+        }
+        Update: {
+          axes?: Json | null
+          camera?: string | null
+          composition?: string | null
+          dominant_colors?: Json | null
+          environment?: string | null
+          extracted_at?: string
+          furniture_kind?: string | null
+          height_ratio?: number | null
+          id?: string
+          lighting?: string | null
+          material_tags?: string[] | null
+          node_id?: string
+          palette_key?: string | null
+          perceptual_hash?: string | null
+          platform_count?: number | null
+          shape_signature?: string | null
+          species?: string | null
+          updated_at?: string
+          usage?: string | null
+          vision_model?: string | null
+          width_ratio?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pig_visual_dna_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: true
+            referencedRelation: "pig_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pin_ab_experiments: {
         Row: {
           created_at: string
@@ -72420,6 +72742,34 @@ export type Database = {
         | "missing_headline"
         | "banned_phrase"
         | "other"
+      pig_edge_kind:
+        | "belongs_to"
+        | "variant_of"
+        | "duplicate_of"
+        | "hero_of"
+        | "gallery_of"
+        | "pinterest_of"
+        | "video_of"
+        | "ai_creative_of"
+        | "cj_original_of"
+        | "represents"
+      pig_match_kind:
+        | "exact"
+        | "variant"
+        | "family"
+        | "wrong"
+        | "duplicate"
+        | "unknown"
+      pig_node_kind:
+        | "product"
+        | "image"
+        | "video"
+        | "pinterest_pin"
+        | "ai_creative"
+        | "cj_image"
+        | "gallery_image"
+        | "hero_image"
+        | "pdp_image"
       release_issue_source: "validation_fail" | "custom"
       release_issue_status: "open" | "in_progress" | "resolved"
     }
@@ -72584,6 +72934,37 @@ export const Constants = {
         "missing_headline",
         "banned_phrase",
         "other",
+      ],
+      pig_edge_kind: [
+        "belongs_to",
+        "variant_of",
+        "duplicate_of",
+        "hero_of",
+        "gallery_of",
+        "pinterest_of",
+        "video_of",
+        "ai_creative_of",
+        "cj_original_of",
+        "represents",
+      ],
+      pig_match_kind: [
+        "exact",
+        "variant",
+        "family",
+        "wrong",
+        "duplicate",
+        "unknown",
+      ],
+      pig_node_kind: [
+        "product",
+        "image",
+        "video",
+        "pinterest_pin",
+        "ai_creative",
+        "cj_image",
+        "gallery_image",
+        "hero_image",
+        "pdp_image",
       ],
       release_issue_source: ["validation_fail", "custom"],
       release_issue_status: ["open", "in_progress", "resolved"],
