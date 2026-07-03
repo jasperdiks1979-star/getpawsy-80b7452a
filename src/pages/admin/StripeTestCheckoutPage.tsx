@@ -62,7 +62,9 @@ function StripeTestCheckoutInner() {
     const { data, error } = await invokeFunction<CreateResp>("admin-stripe-test-checkout", { body: {} });
     setCreating(false);
     if (error || !data?.url) {
-      toast.error(data?.error ?? error?.message ?? "Failed to create checkout");
+      const msg = `[admin-stripe-test-checkout] ${data?.code ?? ""} ${data?.error ?? error?.message ?? "Failed to create checkout"}`.trim();
+      console.error(msg, { data, error });
+      toast.error(msg);
       return;
     }
     setSession(data);
@@ -75,7 +77,12 @@ function StripeTestCheckoutInner() {
       body: sessionId ? { sessionId } : {},
     });
     setVerifying(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      const msg = `[admin-stripe-test-verify] ${error.message}`;
+      console.error(msg, { data, error });
+      toast.error(msg);
+      return;
+    }
     setVerify(data);
   }
 
@@ -86,7 +93,11 @@ function StripeTestCheckoutInner() {
       "admin-stripe-test-cleanup", { body: {} },
     );
     setCleaning(false);
-    if (error || !data?.ok) toast.error(data?.error ?? error?.message ?? "Cleanup failed");
+    if (error || !data?.ok) {
+      const msg = `[admin-stripe-test-cleanup] ${data?.error ?? error?.message ?? "Cleanup failed"}`;
+      console.error(msg, { data, error });
+      toast.error(msg);
+    }
     else toast.success("QA product disabled. Financial records preserved.");
   }
 

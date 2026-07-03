@@ -1,5 +1,14 @@
 project_id = "nojvgfbcjgipjxpfatmm"
 
+[functions.admin-stripe-test-checkout]
+verify_jwt = false
+
+[functions.admin-stripe-test-verify]
+verify_jwt = false
+
+[functions.admin-stripe-test-cleanup]
+verify_jwt = false
+
 [functions.pinterest-wave1-orchestrator]
 verify_jwt = false
 
