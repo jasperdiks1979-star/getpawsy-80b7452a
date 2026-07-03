@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +37,8 @@ async function invokeFn(name: string, body: unknown) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
   const body = await req.json().catch(() => ({}));
