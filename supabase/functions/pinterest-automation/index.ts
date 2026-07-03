@@ -19,5 +19,9 @@ Deno.serve((req) => {
     error: "pinterest-automation has been physically removed. PCIE2 is the only allowed publishing pipeline. Use pcie2-publisher.",
     sole_publisher: "pcie2-publisher",
     removed_at: "2026-06-26",
-  }), { status: 410, headers: { ...cors, "Content-Type": "application/json" } });
+    // Return 200 so supabase.functions.invoke() delivers this structured body
+    // to callers instead of throwing an opaque "non-2xx status code" error.
+    // The publish pipeline remains blocked by the `blocked:true` flag above and
+    // by scripts/pcie2-legacy-guard.mjs at deploy time. Do NOT re-enable logic.
+  }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
 });
