@@ -59,19 +59,14 @@ Deno.serve(async (req) => {
     passed,
   };
 
-  // Persist evidence document (best-effort — never fail the report on write errors).
-  await sb.from("evidence_documents").insert({
-    document_type: "attribution_backfill_verify",
-    title: `Attribution backfill verify — ${new Date().toISOString().slice(0,10)}`,
+  // Persist to governance decision log (append-only audit trail).
+  await sb.from("governance_decision_log").insert({
+    decision_type: "attribution_backfill_verify",
+    outcome: passed ? "pass" : "fail",
+    rationale: flags.join(" | ") || "clean",
     payload: report,
-    tags: ["attribution", "backfill", passed ? "pass" : "fail"],
-  }).select().maybeSingle();
-
-  await sb.from("analytics_daily_validation").insert({
-    check_name: "attribution_backfill_verify",
-    status: passed ? "pass" : "fail",
-    details: report,
   });
+  console.log(`[attribution-backfill-verify] ${passed ? "PASS" : "FAIL"} total=${total} literal_direct=${literalDirect} null_unknown=${nullUnknown}`);
 
   return new Response(JSON.stringify(report, null, 2), {
     status: 200,
