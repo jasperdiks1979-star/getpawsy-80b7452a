@@ -92,13 +92,16 @@ async function collectCandidates(
 
   // 1) pinterest_pin_queue (posted + not-yet-posted). Posted first — that is the visitor-facing risk.
   if (wantAll || opts.onlySource === "posted" || opts.onlySource === "queued" || opts.onlySource === "scheduled") {
-    const { data } = await sb
+    let q = sb
       .from("pinterest_pin_queue")
       .select("id, pinterest_pin_id, product_id, product_slug, pin_image_url, destination_link, pin_title, pin_description, status, verification_state, created_at")
       .not("pin_image_url", "is", null)
       .not("product_id", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(opts.limit * 2);
+      .order("created_at", { ascending: false });
+    if (opts.onlySource === "posted") q = q.eq("status", "posted");
+    else if (opts.onlySource === "scheduled") q = q.eq("status", "scheduled");
+    else if (opts.onlySource === "queued") q = q.in("status", ["queued", "draft", "failed"]);
+    const { data } = await q.limit(opts.limit * 2);
     for (const r of (data ?? []) as any[]) {
       const src: Candidate["source"] =
         (r.status === "posted" || (r.pinterest_pin_id && r.status !== "rejected")) ? "posted" :
