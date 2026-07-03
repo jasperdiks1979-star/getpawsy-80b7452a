@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, RefreshCw, ShieldCheck, AlertTriangle, ShieldAlert } from "lucide-react";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
 import {
   CANONICAL_ECOMMERCE_EVENTS,
   REQUIRED_GA4_PARAMS,
