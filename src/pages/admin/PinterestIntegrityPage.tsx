@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2 } from "lucide-react";
+import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2, History } from "lucide-react";
 
 interface RunRow {
   id: string;
@@ -164,6 +164,29 @@ export default function PinterestIntegrityPage() {
     } finally { setBusy(null); }
   }
 
+  async function runLegacySweep() {
+    setBusy("legacy");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-legacy-repair-sweep", {
+        body: {},
+      });
+      if (error) throw error;
+      const r = data?.rollup ?? {};
+      toast({
+        title: "Legacy sweep complete",
+        description:
+          `Inventoried ${r.legacy_pins_inventoried ?? 0} legacy pins · ` +
+          `audit valid ${r.audit?.valid ?? 0}/${r.audit?.total ?? 0} · ` +
+          `hero synced ${r.hero_sync?.synced ?? 0} · ` +
+          `report pass ${r.report?.pins_pass ?? 0}/${r.report?.pins_audited ?? 0}`,
+      });
+      if (r.report?.signed_urls?.html) window.open(r.report.signed_urls.html, "_blank");
+      await load();
+    } catch (e: any) {
+      toast({ title: "Legacy sweep failed", description: e?.message || String(e), variant: "destructive" });
+    } finally { setBusy(null); }
+  }
+
   async function openReport(path: string | null) {
     if (!path) return;
     const { data } = await supabase.storage.from("admin-reports").createSignedUrl(path, 3600);
@@ -234,6 +257,10 @@ export default function PinterestIntegrityPage() {
           <Button size="sm" variant="secondary" onClick={generateReport} disabled={busy !== null}>
             {busy === "report" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
             Generate report
+          </Button>
+          <Button size="sm" variant="destructive" onClick={runLegacySweep} disabled={busy !== null}>
+            {busy === "legacy" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <History className="h-4 w-4 mr-2" />}
+            Retro legacy sweep
           </Button>
         </div>
       </header>
