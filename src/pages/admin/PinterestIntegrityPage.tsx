@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2, History, Send } from "lucide-react";
+import { AutonomousOrchestratorPanel } from "@/components/admin/AutonomousOrchestratorPanel";
 
 interface RunRow {
   id: string;
@@ -305,6 +306,8 @@ export default function PinterestIntegrityPage() {
         <KPI label="Repaired" value={(latest?.summary as any)?.repaired ?? 0} tone="info" />
         <KPI label="% passing" value={passingPct === null ? "—" : `${passingPct}%`} tone={passingPct !== null && passingPct >= 99 ? "success" : "warn"} />
       </div>
+
+      <AutonomousOrchestratorPanel />
 
       <Card className="p-4">
         <h2 className="font-semibold mb-3">Recent audit runs</h2>
