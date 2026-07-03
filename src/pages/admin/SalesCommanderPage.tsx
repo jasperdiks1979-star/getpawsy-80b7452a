@@ -87,6 +87,8 @@ export default function SalesCommanderPage() {
 
         {err && <Card><CardContent className="pt-6 text-destructive">{err}</CardContent></Card>}
 
+        <CanonicalKpiStrip defaultRange="24h" />
+
         {conf && (
           <Card className="ring-1 ring-emerald-500/40">
             <CardHeader>
