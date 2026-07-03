@@ -39,6 +39,108 @@ export type UtmRecord = Partial<Record<UtmKey, string | null>>;
 
 const SESSION_PREV_PATH = 'gp_internal_prev_path';
 
+// ---------------------------------------------------------------------------
+// Preview / dev-tool referrer filter
+// ---------------------------------------------------------------------------
+// Traffic bouncing through the Lovable editor / preview domains must never be
+// counted as real acquisition. `isPreviewReferrer` centralises the list so
+// analytics, KPI views and the classifier all agree on what counts as
+// "internal_preview" vs a real external referrer.
+const PREVIEW_REFERRER_HOSTS = [
+  'lovable.dev',
+  'lovable.app',
+  'lovableproject.com',
+  'gptengineer.app',
+];
+
+export function isPreviewReferrer(referrer?: string | null): boolean {
+  const r = (referrer || '').toLowerCase();
+  if (!r) return false;
+  return PREVIEW_REFERRER_HOSTS.some((h) => r.includes(h));
+}
+
+// ---------------------------------------------------------------------------
+// First-touch attribution (session + long-lived)
+// ---------------------------------------------------------------------------
+// Persists the ORIGINAL referrer / UTM / landing page for the visitor so a
+// later purchase can be credited to the true entry channel even after the
+// URL has been rewritten by internal redirects. Written once per browser
+// (localStorage) and once per tab session (sessionStorage) — never
+// overwritten by a later, less-informative visit.
+const FIRST_TOUCH_KEYS = [
+  'first_referrer_domain',
+  'first_utm_source',
+  'first_utm_medium',
+  'first_utm_campaign',
+  'first_landing_page',
+  'first_seen_at',
+] as const;
+
+export type FirstTouch = Partial<Record<(typeof FIRST_TOUCH_KEYS)[number], string>>;
+
+function extractDomain(url?: string | null): string {
+  const raw = (url || '').trim();
+  if (!raw) return '';
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+export function readFirstTouch(): FirstTouch {
+  const local = safeLocal();
+  const session = safeSession();
+  const out: FirstTouch = {};
+  for (const key of FIRST_TOUCH_KEYS) {
+    const value = local?.getItem(key) || session?.getItem(key) || '';
+    if (value) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Capture the current page as the first-touch record IFF none exists yet.
+ * Idempotent: subsequent calls in the same browser are no-ops, so internal
+ * navigation cannot clobber the true entry channel.
+ */
+export function captureFirstTouch(opts?: {
+  utm?: UtmRecord;
+  referrer?: string | null;
+  landingPage?: string | null;
+}): FirstTouch {
+  const existing = readFirstTouch();
+  if (existing.first_seen_at) return existing;
+
+  const referrer =
+    opts?.referrer ?? (typeof document !== 'undefined' ? document.referrer : '');
+  const landing =
+    opts?.landingPage ??
+    (typeof window !== 'undefined'
+      ? `${window.location.pathname}${window.location.search}`
+      : '');
+  const utm = opts?.utm ?? readUtmFromSearch();
+
+  const record: FirstTouch = {
+    first_referrer_domain: extractDomain(referrer),
+    first_utm_source: utm.utm_source || '',
+    first_utm_medium: utm.utm_medium || '',
+    first_utm_campaign: utm.utm_campaign || '',
+    first_landing_page: landing,
+    first_seen_at: new Date().toISOString(),
+  };
+
+  const local = safeLocal();
+  const session = safeSession();
+  for (const key of FIRST_TOUCH_KEYS) {
+    const v = record[key];
+    if (!v) continue;
+    try { local?.setItem(key, v); } catch { /* quota */ }
+    try { session?.setItem(key, v); } catch { /* quota */ }
+  }
+  return record;
+}
+
 function safeSession(): Storage | null {
   try {
     if (typeof window === 'undefined') return null;
@@ -310,13 +412,11 @@ export function resolveUtm(opts?: {
   }
 
   // Final safety net: no explicit UTM, no session cache, no referrer
-  // inference → attribute as GA4-style direct/(none). This keeps the
-  // UTM completeness rate above 95% on the CEO report and prevents
-  // downstream analytics from silently dropping the event.
-  if (!merged.utm_source && !merged.utm_medium) {
-    merged.utm_source = 'direct';
-    merged.utm_medium = '(none)';
-  }
+  // inference → leave UTMs UNSET. Downstream classifier treats this as
+  // `unknown` (not `direct`). Stamping `direct/(none)` here previously
+  // polluted every internal link because `withUtm` / `appendUtmToPath`
+  // wrote the fallback into outgoing URLs, and the next navigation read
+  // it back as if it were a real source. See attribution cleanup hotfix.
 
   if (opts?.persist !== false) {
     persistUtmToSession(merged);
@@ -336,7 +436,14 @@ export function withUtm(
   const params = readSearch(base);
   for (const key of UTM_KEYS) {
     const value = utm[key];
-    if (value) {
+    // Never propagate the legacy `direct/(none)` fallback into outgoing
+    // URLs — that was the exact mechanism that made every internal link
+    // look like a `direct` acquisition on the next hop.
+    if (
+      value &&
+      !(key === 'utm_source' && value === 'direct') &&
+      !(key === 'utm_medium' && (value === '(none)' || value === 'none'))
+    ) {
       params.set(key, value);
     }
   }
