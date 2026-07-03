@@ -69595,6 +69595,61 @@ export type Database = {
           },
         ]
       }
+      real_human_channel_quality_7d: {
+        Row: {
+          bot_sessions: number | null
+          channel: string | null
+          confidence: number | null
+          human_pct: number | null
+          human_sessions: number | null
+          real_atc: number | null
+          real_atc_rate_pct: number | null
+          real_checkouts: number | null
+          real_pdp_views: number | null
+          real_purchase_rate_pct: number | null
+          real_purchases: number | null
+          real_revenue_cents: number | null
+          real_revenue_per_human: number | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
+      real_human_classifier_confidence_7d: {
+        Row: {
+          classified_excluded: number | null
+          classified_human: number | null
+          classifier_confidence_pct: number | null
+          possible_false_positives: number | null
+          suspected_false_negatives: number | null
+          total_sessions: number | null
+          unknown_sessions: number | null
+        }
+        Relationships: []
+      }
+      real_human_funnel_7d: {
+        Row: {
+          real_add_to_carts: number | null
+          real_checkouts: number | null
+          real_conversion_rate_pct: number | null
+          real_human_sessions: number | null
+          real_pdp_views: number | null
+          real_purchases: number | null
+        }
+        Relationships: []
+      }
+      real_human_product_ranking_7d: {
+        Row: {
+          product_id: string | null
+          real_atc: number | null
+          real_atc_rate_pct: number | null
+          real_checkouts: number | null
+          real_conversion_rate_pct: number | null
+          real_purchases: number | null
+          real_revenue_cents: number | null
+          real_views: number | null
+        }
+        Relationships: []
+      }
       real_human_sessions: {
         Row: {
           browser: string | null
