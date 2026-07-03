@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, AlertTriangle, ArrowLeft, Bot, Crown, DollarSign, Gauge, Loader2, RefreshCw, Rocket, ShieldAlert, Sparkles, Target, TrendingUp, Users, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
+import RealHumanIntelligencePanel from "@/components/admin/mission-control/RealHumanIntelligencePanel";
 
 // ---------- Types ----------
 type Priority = { key?: string; label?: string; category?: string; score?: number; confidence?: number; gap_points?: number; revenue_impact_est?: number; note?: string };
@@ -234,6 +235,9 @@ export default function ExecutiveWarRoomPage() {
         <Stat label="Visitors today" value={String(today.visitors)} icon={Users} />
         <Stat label="Conversion" value={conv == null ? "UNKNOWN" : `${conv.toFixed(2)}%`} icon={Target} />
       </section>
+
+      {/* REAL HUMAN INTELLIGENCE — Constitution source of truth */}
+      <RealHumanIntelligencePanel />
 
       {/* CONVERSION FUNNEL */}
       <Card>
