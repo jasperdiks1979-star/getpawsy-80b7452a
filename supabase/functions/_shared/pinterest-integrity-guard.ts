@@ -16,6 +16,12 @@
 // Returns a structured verdict so callers can log + persist the reason.
 
 import { evaluateProductRelevance, preEnabled } from "./pre-product-relevance.ts";
+import {
+  cachedVisualIdentity,
+  evaluateVisualIdentity,
+  persistVisualIdentity,
+  vpiEnabled,
+} from "./visual-product-identity.ts";
 
 export type IntegrityVerdict = {
   passed: boolean;
@@ -234,6 +240,56 @@ export async function verifyPinIntegrity(
         reason: `PRE error: ${(err as Error).message}`,
       };
       reasons.push("pre_error");
+    }
+  }
+
+  // 8. Phase 19 — Visual Product Identity (VPI). Same-product certification.
+  //    Uses cached score when fresh; otherwise runs Gemini vision comparison
+  //    against the full product reference set. Fail-closed when enabled.
+  if (imgOk && input.pin_image_url) {
+    try {
+      const vpiCfg = await vpiEnabled(supabase);
+      if (vpiCfg.enabled) {
+        const cached = await cachedVisualIdentity(supabase, input.product_id, input.pin_image_url);
+        let scoreOk = false;
+        let score = 0;
+        if (cached && cached.passed && cached.identity_score >= vpiCfg.minScore) {
+          scoreOk = true;
+          score = cached.identity_score;
+          checks.visual_identity = { ok: true, reason: `VPI cached ${score}/100` };
+        } else {
+          const vpi = await evaluateVisualIdentity(supabase, {
+            product_id: input.product_id,
+            product_slug: input.product_slug,
+            product_name: input.product_name,
+            pin_image_url: input.pin_image_url,
+            pin_title: input.pin_title,
+            pin_description: input.pin_description,
+            destination_link: input.destination_link,
+            source: "guard_live",
+          });
+          await persistVisualIdentity(supabase, {
+            product_id: input.product_id,
+            product_slug: input.product_slug,
+            product_name: input.product_name,
+            pin_image_url: input.pin_image_url,
+            pin_title: input.pin_title,
+            pin_description: input.pin_description,
+            destination_link: input.destination_link,
+            source: "guard_live",
+          }, vpi, null);
+          score = vpi.identity_score;
+          scoreOk = vpi.passed && score >= vpiCfg.minScore;
+          checks.visual_identity = scoreOk
+            ? { ok: true, reason: `VPI ${score}/100` }
+            : { ok: false, reason: `VPI ${score}/100 (${vpi.wrong_product_kind}): ${vpi.differences.slice(0, 2).join("; ")}` };
+        }
+        if (!scoreOk && vpiCfg.blockPublish) reasons.push("visual_identity_failed");
+      }
+    } catch (err) {
+      checks.visual_identity = { ok: false, reason: `VPI error: ${(err as Error).message}` };
+      // Fail-closed only when block_publish is on (default true) — the error path is treated as a fail.
+      reasons.push("visual_identity_error");
     }
   }
 
