@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertTriangle, Activity, RefreshCw } from "lucide-react";
+import { SessionJourneysPanel } from "@/components/admin/SessionJourneysPanel";
 
 type Bottleneck = {
   rank: number;
@@ -144,6 +145,8 @@ export default function ConversionWarRoomPage() {
               <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">{JSON.stringify(report.technical, null, 2)}</pre>
             </CardContent>
           </Card>
+
+          <SessionJourneysPanel />
         </>
       )}
     </div>
