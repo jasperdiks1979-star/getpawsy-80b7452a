@@ -1,0 +1,2 @@
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS wallet_type text;
+COMMENT ON COLUMN public.orders.wallet_type IS 'Detected wallet used at Stripe checkout: apple_pay | google_pay | link | card | null';

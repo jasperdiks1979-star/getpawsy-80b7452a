@@ -41156,6 +41156,7 @@ export type Database = {
           tracking_number: string | null
           updated_at: string
           user_id: string | null
+          wallet_type: string | null
         }
         Insert: {
           cj_order_created_at?: string | null
@@ -41182,6 +41183,7 @@ export type Database = {
           tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
+          wallet_type?: string | null
         }
         Update: {
           cj_order_created_at?: string | null
@@ -41208,6 +41210,7 @@ export type Database = {
           tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
+          wallet_type?: string | null
         }
         Relationships: []
       }
