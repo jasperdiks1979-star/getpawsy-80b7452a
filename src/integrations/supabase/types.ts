@@ -69595,6 +69595,40 @@ export type Database = {
           },
         ]
       }
+      real_human_sessions: {
+        Row: {
+          browser: string | null
+          classified_channel: string | null
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          landing_page: string | null
+          last_seen_at: string | null
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          order_id: string | null
+          os: string | null
+          referrer: string | null
+          screen_wxh: string | null
+          session_id: string | null
+          tsi_bucket: string | null
+          tsi_classification: string | null
+          tsi_confidence: number | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_id: string | null
+        }
+        Relationships: []
+      }
+      real_human_sessions_counters_7d: {
+        Row: {
+          excluded_sessions_7d: number | null
+          real_human_sessions_7d: number | null
+          real_human_us_sessions_7d: number | null
+          total_sessions_7d: number | null
+        }
+        Relationships: []
+      }
       referral_codes_public: {
         Row: {
           code: string | null
@@ -71066,6 +71100,27 @@ export type Database = {
       increment_pinterest_pin_click: {
         Args: { p_pin_id: string; p_product_id: string; p_product_url?: string }
         Returns: undefined
+      }
+      is_real_human_session: {
+        Args: {
+          p_browser: string
+          p_country: string
+          p_device: string
+          p_first_seen_at: string
+          p_landing_page: string
+          p_last_seen_at: string
+          p_os: string
+          p_referrer: string
+          p_screen_wxh: string
+          p_session_id: string
+          p_tsi_bucket: string
+          p_tsi_is_bot: boolean
+          p_tsi_is_internal: boolean
+          p_utm_campaign: string
+          p_utm_medium: string
+          p_utm_source: string
+        }
+        Returns: boolean
       }
       is_trusted_session: { Args: { _session_id: string }; Returns: boolean }
       list_admin_assignees: {
