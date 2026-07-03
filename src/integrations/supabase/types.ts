@@ -66576,6 +66576,51 @@ export type Database = {
           },
         ]
       }
+      stripe_test_checkout_log: {
+        Row: {
+          admin_email: string | null
+          admin_user_id: string | null
+          amount_cents: number
+          checkout_url: string | null
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          product_id: string | null
+          status: string
+          stripe_mode: string
+          stripe_session_id: string
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_user_id?: string | null
+          amount_cents: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          product_id?: string | null
+          status?: string
+          stripe_mode: string
+          stripe_session_id: string
+        }
+        Update: {
+          admin_email?: string | null
+          admin_user_id?: string | null
+          amount_cents?: number
+          checkout_url?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          product_id?: string | null
+          status?: string
+          stripe_mode?: string
+          stripe_session_id?: string
+        }
+        Relationships: []
+      }
       supplier_import_logs: {
         Row: {
           completed_at: string | null
