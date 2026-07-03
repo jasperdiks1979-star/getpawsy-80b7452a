@@ -307,6 +307,8 @@ export default function FunnelHealth() {
         </div>
       </header>
 
+      <CanonicalKpiStrip defaultRange="24h" />
+
       {/* QA simulation buttons */}
       <Card>
         <CardHeader className="pb-3">
