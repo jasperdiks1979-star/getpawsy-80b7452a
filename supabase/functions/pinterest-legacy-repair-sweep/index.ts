@@ -19,6 +19,7 @@
 // ------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { isAiGenerationPaused } from "../_shared/pinterest-credit-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -112,7 +113,20 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* empty body ok */ }
   const cutoff = typeof body.legacy_cutoff === "string" ? body.legacy_cutoff : DEFAULT_LEGACY_CUTOFF;
-  const skipHeroSync = body.skip_hero_sync === true;
+  const skipHeroSyncRequested = body.skip_hero_sync === true;
+  // Layer split — the deterministic Pinterest Integrity Engine (Layer A) must
+  // always run to completion. AI-dependent enrichment (Layer B: hero sync,
+  // creative regen, PRE) is gated on live credit availability and silently
+  // skipped when the AI generation lane is paused. This guarantees the
+  // integrity audit keeps protecting GetPawsy at AI balance = 0.
+  const aiState = await isAiGenerationPaused(sb).catch(() => ({ paused: false, state: "green" as const }));
+  const aiAvailable = !aiState.paused;
+  const skipHeroSync = skipHeroSyncRequested || !aiAvailable;
+  // Default audit mode: `posted` targets the 74 legacy live pins that own
+  // real destination URLs. `all` also sweeps 2k+ rejected/draft rows which
+  // exceeds the per-invocation wall-clock budget.
+  const auditMode = (typeof body.audit_mode === "string" ? body.audit_mode : "posted");
+  const auditBatchSize = Math.min(Number(body.batch_size) || 200, 400);
 
   // ------------------------------------------------------------------
   // PHASE 1 — Inventory legacy posted pins (evidence, not mutation).
@@ -147,7 +161,7 @@ Deno.serve(async (req) => {
   const t2 = Date.now();
   const audit = await invoke(
     "pinterest-integrity-audit",
-    { mode: "all", autorepair: true, batch_size: 500 },
+    { mode: auditMode, autorepair: true, batch_size: auditBatchSize },
     authHeader,
   );
   results.push({ phase: "integrity_audit", ok: audit.ok, ms: Date.now() - t2, data: audit.data, error: audit.error });
@@ -174,7 +188,10 @@ Deno.serve(async (req) => {
   // Only touches products whose pei_creative_dna has published_at set and
   // integrity score >= 95. Every write is journaled + rollback-safe.
   // ------------------------------------------------------------------
-  let hero: { ok: boolean; data?: unknown; error?: string } = { ok: true, data: { skipped: true } };
+  let hero: { ok: boolean; data?: unknown; error?: string } = {
+    ok: true,
+    data: { skipped: true, reason: skipHeroSyncRequested ? "operator_requested" : "ai_unavailable", ai_state: aiState.state },
+  };
   const t5 = Date.now();
   if (!skipHeroSync) {
     hero = await invoke(
@@ -183,7 +200,13 @@ Deno.serve(async (req) => {
       authHeader,
     );
   }
-  results.push({ phase: "hero_sync", ok: hero.ok, ms: Date.now() - t5, data: hero.data, error: hero.error });
+  results.push({
+    phase: "hero_sync",
+    ok: hero.ok,
+    ms: Date.now() - t5,
+    data: hero.data,
+    error: hero.error,
+  });
 
   // ------------------------------------------------------------------
   // PHASE 6 — Certification report bundle (JSON + CSV + HTML in
@@ -207,6 +230,16 @@ Deno.serve(async (req) => {
     trace_id: traceId,
     legacy_cutoff: cutoff,
     legacy_pins_inventoried: legacyIds.size,
+    ai_lane: {
+      available: aiAvailable,
+      state: aiState.state,
+      layer_b_skipped: !aiAvailable || skipHeroSyncRequested,
+      note: aiAvailable
+        ? "Layer A (deterministic) + Layer B (AI enrichment) both executed."
+        : "AI unavailable. Deterministic audit completed. Layer B (hero sync / creative regen) skipped.",
+    },
+    audit_mode: auditMode,
+    audit_batch_size: auditBatchSize,
     audit: {
       total: auditSummary.total ?? 0,
       valid: auditSummary.valid ?? 0,
