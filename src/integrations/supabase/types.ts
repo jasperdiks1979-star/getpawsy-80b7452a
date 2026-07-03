@@ -36446,6 +36446,66 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_quality_scores: {
+        Row: {
+          audited_at: string
+          avg_scroll_depth: number | null
+          bounce_rate: number | null
+          clarity_score: number
+          cls: number | null
+          created_at: string
+          evidence: Json
+          human_sessions_24h: number
+          id: string
+          issues: Json
+          lcp_ms: number | null
+          overall_score: number
+          pinterest_consistency_score: number
+          sample_size: number
+          speed_score: number
+          trust_score: number
+          url: string
+        }
+        Insert: {
+          audited_at?: string
+          avg_scroll_depth?: number | null
+          bounce_rate?: number | null
+          clarity_score?: number
+          cls?: number | null
+          created_at?: string
+          evidence?: Json
+          human_sessions_24h?: number
+          id?: string
+          issues?: Json
+          lcp_ms?: number | null
+          overall_score?: number
+          pinterest_consistency_score?: number
+          sample_size?: number
+          speed_score?: number
+          trust_score?: number
+          url: string
+        }
+        Update: {
+          audited_at?: string
+          avg_scroll_depth?: number | null
+          bounce_rate?: number | null
+          clarity_score?: number
+          cls?: number | null
+          created_at?: string
+          evidence?: Json
+          human_sessions_24h?: number
+          id?: string
+          issues?: Json
+          lcp_ms?: number | null
+          overall_score?: number
+          pinterest_consistency_score?: number
+          sample_size?: number
+          speed_score?: number
+          trust_score?: number
+          url?: string
+        }
+        Relationships: []
+      }
       loss_making_notifications: {
         Row: {
           created_at: string
@@ -39242,6 +39302,57 @@ export type Database = {
           summary?: string | null
           threats?: Json
           worst_ai?: string | null
+        }
+        Relationships: []
+      }
+      module_activation_gates: {
+        Row: {
+          activated_at: string | null
+          category: string
+          created_at: string
+          current_confidence: number
+          current_samples: number
+          description: string
+          evaluation_query: string | null
+          evidence: Json
+          is_active: boolean
+          last_evaluated_at: string
+          module_key: string
+          required_confidence: number
+          required_samples: number
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          category: string
+          created_at?: string
+          current_confidence?: number
+          current_samples?: number
+          description: string
+          evaluation_query?: string | null
+          evidence?: Json
+          is_active?: boolean
+          last_evaluated_at?: string
+          module_key: string
+          required_confidence?: number
+          required_samples?: number
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          category?: string
+          created_at?: string
+          current_confidence?: number
+          current_samples?: number
+          description?: string
+          evaluation_query?: string | null
+          evidence?: Json
+          is_active?: boolean
+          last_evaluated_at?: string
+          module_key?: string
+          required_confidence?: number
+          required_samples?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -60105,6 +60216,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_quality_scores: {
+        Row: {
+          breakdown: Json
+          computed_at: string
+          created_at: string
+          creative_dna_score: number
+          id: string
+          overall_score: number
+          pdp_health_score: number
+          product_id: string
+          review_score: number
+          sample_size: number
+          winner_score: number
+        }
+        Insert: {
+          breakdown?: Json
+          computed_at?: string
+          created_at?: string
+          creative_dna_score?: number
+          id?: string
+          overall_score?: number
+          pdp_health_score?: number
+          product_id: string
+          review_score?: number
+          sample_size?: number
+          winner_score?: number
+        }
+        Update: {
+          breakdown?: Json
+          computed_at?: string
+          created_at?: string
+          creative_dna_score?: number
+          id?: string
+          overall_score?: number
+          pdp_health_score?: number
+          product_id?: string
+          review_score?: number
+          sample_size?: number
+          winner_score?: number
+        }
+        Relationships: []
+      }
       product_replacement_candidates: {
         Row: {
           candidate_product_id: string
@@ -70929,6 +71082,15 @@ export type Database = {
         }[]
       }
       ede_recalc_weights: { Args: never; Returns: Json }
+      evaluate_module_gates: {
+        Args: never
+        Returns: {
+          current_confidence: number
+          current_samples: number
+          is_active: boolean
+          module_key: string
+        }[]
+      }
       evaluate_render_trace_alerts: {
         Args: { p_record?: boolean }
         Returns: Json
@@ -71522,6 +71684,7 @@ export type Database = {
             }
             Returns: string
           }
+      module_is_active: { Args: { _module_key: string }; Returns: boolean }
       pcie2_claim_creative_jobs: {
         Args: { p_limit?: number; p_token?: string }
         Returns: {
