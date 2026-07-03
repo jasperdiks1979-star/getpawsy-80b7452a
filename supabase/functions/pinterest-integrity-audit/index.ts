@@ -29,6 +29,47 @@ const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") || "";
 
 const tid = () => crypto.randomUUID().slice(0, 8);
 
+// Deterministic-lane hard limits. The audit runs without AI, but it does
+// perform live HTTP validation against getpawsy.pet. Without bounds a single
+// invocation would exhaust the edge-function wall-clock budget (~150s) and
+// finish with pins_total=0 — the exact failure mode we are repairing.
+const PER_FETCH_TIMEOUT_MS = 6000;
+const CONCURRENCY = 8;
+const FLUSH_EVERY = 50;      // persist audit rows every N processed
+const MAX_ROWS_PER_RUN = 400; // hard ceiling per invocation
+
+async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return await Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`${label}_timeout_${ms}ms`)), ms)),
+  ]);
+}
+
+async function mapConcurrent<I, O>(
+  items: I[],
+  concurrency: number,
+  fn: (item: I, idx: number) => Promise<O>,
+  onEach?: (out: O, idx: number) => void | Promise<void>,
+): Promise<O[]> {
+  const results: O[] = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= items.length) return;
+      try {
+        results[idx] = await fn(items[idx], idx);
+      } catch (e) {
+        // Never let a single row kill the pool.
+        results[idx] = { __err: (e as Error).message } as unknown as O;
+      }
+      if (onEach) { try { await onEach(results[idx], idx); } catch { /* swallow */ } }
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 type Source = "pin_queue" | "pins" | "video_queue" | "publish_queue";
 
 interface Row {
@@ -165,7 +206,10 @@ Deno.serve(async (req) => {
 
   const offset = Math.max(0, Number(body.offset) || Number(url.searchParams.get("offset")) || 0);
   const dedupe = body.dedupe === true || url.searchParams.get("dedupe") === "true";
-  const rows = await gatherRows(sb, mode, limit, offset, dedupe);
+  const gathered = await gatherRows(sb, mode, limit, offset, dedupe);
+  // Hard ceiling — the deterministic lane guarantees completion per invocation.
+  // Callers that need more should paginate via `offset` across multiple runs.
+  const rows = gathered.slice(0, MAX_ROWS_PER_RUN);
 
   const buckets: Record<string, number> = {
     total: 0, valid: 0, broken: 0,
@@ -180,10 +224,39 @@ Deno.serve(async (req) => {
   const videoUpdates: Array<{ oldUrl: string; newUrl: string }> = [];
   const publishUpdates: Array<{ oldUrl: string; newUrl: string }> = [];
 
-  for (const r of rows) {
-    buckets.total++;
-    buckets[`by_source_${r.source}`]++;
-    const verdict = await validateDestination(sb, r.destination_url);
+  // Periodic-flush helpers so a mid-run edge-runtime timeout still leaves
+  // partial evidence in pinterest_pin_audit + pinterest_pin_audit_runs.
+  const rowBuffer: any[] = [];
+  const flushRows = async () => {
+    if (rowBuffer.length === 0) return;
+    const chunk = rowBuffer.splice(0, rowBuffer.length);
+    for (let i = 0; i < chunk.length; i += 200) {
+      await sb.from("pinterest_pin_audit").insert(chunk.slice(i, i + 200));
+    }
+  };
+  const flushRunProgress = async () => {
+    await sb.from("pinterest_pin_audit_runs").update({
+      pins_total: buckets.total,
+      pins_valid: buckets.valid,
+      pins_broken: buckets.broken,
+      summary: { ...buckets, mode, autorepair, in_progress: true, offset, rows_pending: rows.length - buckets.total },
+    }).eq("id", runId);
+  };
+
+  const processOne = async (r: Row) => {
+    const verdict = await withTimeout(
+      validateDestination(sb, r.destination_url),
+      PER_FETCH_TIMEOUT_MS,
+      "validate_destination",
+    ).catch((e: Error) => ({
+      ok: false,
+      final_resolved_url: null,
+      http_status: null,
+      product_slug_found: false,
+      validation_status: "invalid" as const,
+      last_validation_error: "destination_404" as const,
+      reason_detail: e.message,
+    }));
     let strategy = "valid";
     let newUrl: string | null = verdict.final_resolved_url;
 
@@ -193,10 +266,17 @@ Deno.serve(async (req) => {
       buckets[reason] = (buckets[reason] || 0) + 1;
 
       if (autorepair) {
-        const resolved = await resolveDestination(sb, r.destination_url);
+        const resolved = await withTimeout(
+          resolveDestination(sb, r.destination_url),
+          PER_FETCH_TIMEOUT_MS,
+          "resolve_destination",
+        ).catch(() => ({ ok: false, target: null as string | null, step: "not_found" as string }));
         if (resolved.ok && resolved.target && resolved.step !== "category" && resolved.step !== "not_found") {
-          // Re-validate the resolved target
-          const reVerdict = await validateDestination(sb, resolved.target);
+          const reVerdict = await withTimeout(
+            validateDestination(sb, resolved.target),
+            PER_FETCH_TIMEOUT_MS,
+            "revalidate_destination",
+          ).catch(() => ({ ok: false } as any));
           if (reVerdict.ok) {
             strategy = `repaired_via_${resolved.step}`;
             newUrl = resolved.target;
@@ -228,7 +308,7 @@ Deno.serve(async (req) => {
       buckets.valid++;
     }
 
-    auditRows.push({
+    rowBuffer.push({
       run_id: runId,
       source: r.source,
       pin_queue_id: r.pin_queue_id,
@@ -243,12 +323,27 @@ Deno.serve(async (req) => {
       repair_strategy: strategy,
       notes: verdict.reason_detail || verdict.last_validation_error || null,
     });
-  }
+  };
 
-  // Persist audit rows
-  for (let i = 0; i < auditRows.length; i += 200) {
-    await sb.from("pinterest_pin_audit").insert(auditRows.slice(i, i + 200));
-  }
+  await mapConcurrent(
+    rows,
+    CONCURRENCY,
+    async (r) => {
+      buckets.total++;
+      buckets[`by_source_${r.source}`]++;
+      await processOne(r);
+      return true;
+    },
+    async (_out, idx) => {
+      if ((idx + 1) % FLUSH_EVERY === 0) {
+        await flushRows();
+        await flushRunProgress();
+      }
+    },
+  );
+  // Final flush of any remaining buffered rows.
+  await flushRows();
+  void auditRows;
 
   // Persist queue updates
   for (const u of queueUpdates) {
