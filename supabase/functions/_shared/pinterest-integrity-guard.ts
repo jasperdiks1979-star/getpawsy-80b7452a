@@ -22,6 +22,7 @@ import {
   persistVisualIdentity,
   vpiEnabled,
 } from "./visual-product-identity.ts";
+import { readVisualTruth } from "./product-identity-graph.ts";
 
 export type IntegrityVerdict = {
   passed: boolean;
@@ -290,6 +291,29 @@ export async function verifyPinIntegrity(
       checks.visual_identity = { ok: false, reason: `VPI error: ${(err as Error).message}` };
       // Fail-closed only when block_publish is on (default true) — the error path is treated as a fail.
       reasons.push("visual_identity_error");
+    }
+  }
+
+  // 9. Phase 20 — Product Identity Graph (Visual Truth API).
+  //    Pure DB read; no AI credits. Fails closed when a certification exists
+  //    but is not passing. When no certification exists yet, we skip (the
+  //    PIG sweep will backfill) — VPI above already enforces same-product.
+  if (imgOk && input.pin_image_url) {
+    try {
+      const truth = await readVisualTruth(supabase, input.product_id, input.pin_image_url);
+      if (truth.reason === "pig_disabled") {
+        // engine off — no gating
+      } else if (truth.reason === "node_not_found" || truth.reason === "no_certification") {
+        checks.visual_truth = { ok: true, reason: `PIG pending (${truth.reason})` };
+      } else if (!truth.certified) {
+        checks.visual_truth = { ok: false, reason: `PIG uncertified ${truth.identity_score}/100 (${truth.match_kind})` };
+        reasons.push("visual_truth_failed");
+      } else {
+        checks.visual_truth = { ok: true, reason: `PIG certified ${truth.identity_score}/100 (${truth.match_kind})` };
+      }
+    } catch (err) {
+      checks.visual_truth = { ok: false, reason: `PIG error: ${(err as Error).message}` };
+      reasons.push("visual_truth_error");
     }
   }
 

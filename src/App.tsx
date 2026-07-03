@@ -626,6 +626,7 @@ const EvolutionIntelligencePage = lazyWithRetry(() => import("./pages/admin/Evol
 const RevenueReportPage = lazyWithRetry(() => import("./pages/admin/RevenueReportPage"));
 const PinterestIntegrityPage = lazyWithRetry(() => import("./pages/admin/PinterestIntegrityPage"));
 const VisualProductIntegrityPage = lazyWithRetry(() => import("./pages/admin/VisualProductIntegrityPage"));
+const ProductIdentityGraphPage = lazyWithRetry(() => import("./pages/admin/ProductIdentityGraphPage"));
 const PinterestWarmupPage = lazyWithRetry(() => import("./pages/admin/PinterestWarmupPage"));
 const PinterestVideoQueuePage = lazyWithRetry(() => import("./pages/admin/PinterestVideoQueuePage"));
 const PinterestVideoAutopilotDashboard = lazyWithRetry(() => import("./pages/admin/PinterestVideoAutopilotDashboard"));
@@ -3997,6 +3998,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <VisualProductIntegrityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="product-identity-graph"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductIdentityGraphPage />
                                 </Suspense>
                               }
                             />
