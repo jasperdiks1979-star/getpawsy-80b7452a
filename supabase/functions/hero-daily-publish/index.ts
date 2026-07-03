@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
     target: DAILY_BUDGET,
     limit: DAILY_BUDGET * 4, // scan window; assembler self-caps at target
     verify_images: true,
+    // Explicit UTM campaign for every generated pin destination.
+    campaign: 'hero_daily',
   }));
 
   // 60s spacer so we never burst the underlying Pinterest API.
@@ -89,6 +91,8 @@ Deno.serve(async (req) => {
     productId: HERO_PRODUCT_ID,
     dryRun: false,
     limit: DAILY_BUDGET,
+    rewriteDestination: true,
+    campaign: 'hero_daily',
   }));
 
   const finished_at = new Date().toISOString();
