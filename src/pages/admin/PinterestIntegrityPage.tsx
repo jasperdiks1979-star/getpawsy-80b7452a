@@ -287,6 +287,14 @@ export default function PinterestIntegrityPage() {
             {busy === "legacy" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <History className="h-4 w-4 mr-2" />}
             Retro legacy sweep
           </Button>
+          <Button size="sm" variant="outline" onClick={() => runApprovedSweep(false)} disabled={busy !== null}>
+            {busy === "sweep_dry" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+            Approved sweep (dry)
+          </Button>
+          <Button size="sm" variant="default" onClick={() => runApprovedSweep(true)} disabled={busy !== null}>
+            {busy === "sweep_exec" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+            Publish approved (max 20)
+          </Button>
         </div>
       </header>
 
