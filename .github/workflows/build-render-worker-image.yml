@@ -24,6 +24,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "Dockerfile"
       - "render-worker/**"
       - "remotion/**"
       - ".github/workflows/build-render-worker-image.yml"
