@@ -57760,6 +57760,164 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_visual_identity_audits: {
+        Row: {
+          axes: Json
+          best_reference_image: string | null
+          created_at: string
+          destination_link: string | null
+          differences: Json
+          id: string
+          identity_score: number
+          latency_ms: number | null
+          passed: boolean
+          pin_image_url: string
+          pin_queue_id: string | null
+          pinterest_pin_id: string | null
+          product_id: string
+          product_slug: string
+          raw: Json | null
+          recommended_action: string
+          repair_notes: string | null
+          repair_status: string
+          run_id: string | null
+          same_product: boolean
+          source: string
+          vision_model: string | null
+          wrong_product_kind: string
+        }
+        Insert: {
+          axes?: Json
+          best_reference_image?: string | null
+          created_at?: string
+          destination_link?: string | null
+          differences?: Json
+          id?: string
+          identity_score?: number
+          latency_ms?: number | null
+          passed?: boolean
+          pin_image_url: string
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id: string
+          product_slug: string
+          raw?: Json | null
+          recommended_action?: string
+          repair_notes?: string | null
+          repair_status?: string
+          run_id?: string | null
+          same_product?: boolean
+          source: string
+          vision_model?: string | null
+          wrong_product_kind?: string
+        }
+        Update: {
+          axes?: Json
+          best_reference_image?: string | null
+          created_at?: string
+          destination_link?: string | null
+          differences?: Json
+          id?: string
+          identity_score?: number
+          latency_ms?: number | null
+          passed?: boolean
+          pin_image_url?: string
+          pin_queue_id?: string | null
+          pinterest_pin_id?: string | null
+          product_id?: string
+          product_slug?: string
+          raw?: Json | null
+          recommended_action?: string
+          repair_notes?: string | null
+          repair_status?: string
+          run_id?: string | null
+          same_product?: boolean
+          source?: string
+          vision_model?: string | null
+          wrong_product_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_visual_identity_audits_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_visual_identity_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_visual_identity_runs: {
+        Row: {
+          ai_calls: number
+          ai_lane: string
+          finished_at: string | null
+          id: string
+          mode: string
+          notes: string | null
+          pins_fail: number
+          pins_pass: number
+          pins_repaired: number
+          pins_replace_required: number
+          pins_scored: number
+          pins_total: number
+          scope: string
+          started_at: string
+          summary: Json
+        }
+        Insert: {
+          ai_calls?: number
+          ai_lane?: string
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          pins_fail?: number
+          pins_pass?: number
+          pins_repaired?: number
+          pins_replace_required?: number
+          pins_scored?: number
+          pins_total?: number
+          scope?: string
+          started_at?: string
+          summary?: Json
+        }
+        Update: {
+          ai_calls?: number
+          ai_lane?: string
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          notes?: string | null
+          pins_fail?: number
+          pins_pass?: number
+          pins_repaired?: number
+          pins_replace_required?: number
+          pins_scored?: number
+          pins_total?: number
+          scope?: string
+          started_at?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
+      pinterest_visual_identity_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       pinterest_voice_assignments: {
         Row: {
           assigned_at: string
