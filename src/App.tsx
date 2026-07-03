@@ -975,6 +975,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/admin/stripe-test-checkout"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <StripeTestCheckoutPage />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/wishlist"
                             element={
                               <Suspense fallback={<RouteLoader />}>
