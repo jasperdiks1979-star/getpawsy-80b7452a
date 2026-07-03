@@ -5,7 +5,7 @@ import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
 import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
 import { pushTrafficContext } from '@/lib/traffic';
-import { resolveUtm, syncUtmToUrl } from '@/lib/utmNormalizer';
+import { resolveUtm, syncUtmToUrl, captureFirstTouch } from '@/lib/utmNormalizer';
 import { installUxSignals } from '@/lib/ux-signals';
 import { armEngagementStart } from '@/lib/engagementStart';
 import { installSessionQuality, sessionQualitySignals } from '@/lib/sessionQuality';
@@ -42,6 +42,11 @@ const TrackerInner = () => {
     try {
       const resolved = resolveUtm({ search: window.location.search });
       syncUtmToUrl(resolved);
+      // First-touch snapshot (idempotent): pins the ORIGINAL referrer,
+      // UTM and landing page for this browser so a later purchase can
+      // still be credited to the true entry channel, even after internal
+      // navigation rewrites the URL.
+      captureFirstTouch({ utm: resolved });
     } catch {
       /* non-fatal — never block render or analytics */
     }
