@@ -175,22 +175,45 @@ Deno.serve(async (req) => {
   }
 
   if (!dryRun && report.pass_ids.length > 0) {
-    // Reinstate ONLY the passing rows. Everything else is left untouched.
-    const { error: updErr, count } = await sb
-      .from("pinterest_pin_queue")
-      .update({
-        status: "draft",
-        rejection_reason: null,
-        updated_at: new Date().toISOString(),
-      }, { count: "exact" })
-      .in("id", report.pass_ids);
-    if (updErr) {
-      return new Response(
-        JSON.stringify({ ok: false, error: updErr.message, report }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Reinstate ONLY the passing rows. Optionally rewrite the destination
+    // link so reinstated legacy pins carry canonical Pinterest UTMs
+    // (utm_source=pinterest & utm_medium=organic & utm_campaign=<campaign>
+    // & utm_content=creative_<id8> & product_id=<uuid>) — matches the
+    // pcie2-publish-assembler tagging scheme.
+    const rewrite = body?.rewriteDestination === true;
+    const campaign = String(body?.campaign || "hero_daily");
+    const SITE = Deno.env.get("PUBLIC_SITE_URL") || "https://getpawsy.pet";
+    let count = 0;
+    if (rewrite) {
+      for (const id of report.pass_ids) {
+        const dest = `${SITE}/products/${product.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=creative_${String(id).slice(0, 8)}&product_id=${productId}`;
+        const { error: upErr } = await sb.from("pinterest_pin_queue").update({
+          status: "draft",
+          rejection_reason: null,
+          destination_link: dest,
+          external_url: dest,
+          updated_at: new Date().toISOString(),
+        }).eq("id", id);
+        if (!upErr) count++;
+      }
+    } else {
+      const { error: updErr, count: c } = await sb
+        .from("pinterest_pin_queue")
+        .update({
+          status: "draft",
+          rejection_reason: null,
+          updated_at: new Date().toISOString(),
+        }, { count: "exact" })
+        .in("id", report.pass_ids);
+      if (updErr) {
+        return new Response(
+          JSON.stringify({ ok: false, error: updErr.message, report }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      count = c ?? report.pass_ids.length;
     }
-    report.reinstated = count ?? report.pass_ids.length;
+    report.reinstated = count;
   }
 
   return new Response(JSON.stringify(report), {
