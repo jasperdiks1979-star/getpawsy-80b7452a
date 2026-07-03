@@ -41,7 +41,7 @@ const MAX_LIMIT = 200;
 const CONCURRENCY = 4;
 
 type Candidate = {
-  source: "posted" | "queued" | "scheduled" | "video" | "legacy";
+  source: "posted" | "queued" | "scheduled" | "video" | "legacy" | "orphan_live";
   pin_queue_id: string | null;
   pinterest_pin_id: string | null;
   product_id: string | null;
@@ -145,6 +145,70 @@ async function collectCandidates(
     } catch (_) { /* table may not exist */ }
   }
 
+  // 3) Orphan live pins that were published before queue rows were fully
+  // backfilled. These are still visitor-facing because their UUID is present
+  // in Pinterest publish logs / performance tables even when pinterest_pin_queue
+  // has no row. Treat them as live audit candidates; same-category is not a pass.
+  if ((wantAll || opts.onlySource === "posted" || opts.onlySource === "legacy") && out.length < opts.limit) {
+    try {
+      const { data: logs } = await sb
+        .from("pinterest_publish_logs")
+        .select("pin_queue_id, image_url, pin_title, destination_link, request_payload, response_payload, created_at")
+        .eq("status", "success")
+        .not("request_payload", "is", null)
+        .not("response_payload", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(Math.min(500, opts.limit * 12));
+
+      const existingIds = new Set(out.map((c) => c.pin_queue_id).filter(Boolean));
+      const orphanIds = Array.from(new Set(
+        (logs ?? [])
+          .map((l: any) => String(l.pin_queue_id ?? l.request_payload?.link?.match(/[?&]pin_id=([^&]+)/)?.[1] ?? ""))
+          .filter(Boolean),
+      )).filter((id) => !existingIds.has(id));
+
+      const { data: existingRows } = orphanIds.length
+        ? await sb.from("pinterest_pin_queue").select("id").in("id", orphanIds)
+        : { data: [] };
+      const materialized = new Set((existingRows ?? []).map((r: any) => String(r.id)));
+
+      const productIds = Array.from(new Set(
+        (logs ?? [])
+          .map((l: any) => {
+            const link = String(l.destination_link ?? l.request_payload?.link ?? "");
+            const m = link.match(/\/products\/([^?/#]+)/);
+            return m?.[1] ?? null;
+          })
+          .filter(Boolean),
+      ));
+      const { data: products } = productIds.length
+        ? await sb.from("products").select("id,slug").in("slug", productIds)
+        : { data: [] };
+      const productBySlug = new Map((products ?? []).map((p: any) => [String(p.slug), p]));
+
+      for (const l of (logs ?? []) as any[]) {
+        if (out.length >= opts.limit) break;
+        const link = String(l.destination_link ?? l.request_payload?.link ?? l.response_payload?.link ?? "");
+        const queueId = String(l.pin_queue_id ?? link.match(/[?&]pin_id=([^&]+)/)?.[1] ?? "") || null;
+        if (!queueId || materialized.has(queueId) || existingIds.has(queueId)) continue;
+        const slug = link.match(/\/products\/([^?/#]+)/)?.[1] ?? null;
+        const product = slug ? productBySlug.get(slug) : null;
+        if (!product?.id) continue;
+        out.push({
+          source: "orphan_live",
+          pin_queue_id: queueId,
+          pinterest_pin_id: String(l.response_payload?.id ?? "") || null,
+          product_id: product.id,
+          product_slug: slug,
+          pin_image_url: String(l.image_url ?? l.request_payload?.media_source?.url ?? "") || null,
+          destination_link: link || null,
+          pin_title: String(l.pin_title ?? l.request_payload?.title ?? "") || null,
+          pin_description: String(l.request_payload?.description ?? "") || null,
+        });
+      }
+    } catch (_) { /* older environments may not have publish logs */ }
+  }
+
   return out.filter((c) => c.pin_image_url && c.product_id).slice(0, opts.limit);
 }
 
@@ -238,8 +302,13 @@ async function repairFailures(
       if (f.c.pin_queue_id) {
         try {
           await sb.from("pinterest_pin_queue").update({
-            status: "rejected",
+            status: "paused",
+            pin_verified: false,
+            verification_state: "visual_mismatch_confirmed",
+            validation_status: "failed",
+            repair_strategy: "replace_or_correct_destination",
             rejection_reason: `vpi_replace_required:${f.kind}`,
+            verification_failure_reason: `visual_identity_fail:${f.identity}`,
             updated_at: new Date().toISOString(),
           }).eq("id", f.c.pin_queue_id);
         } catch (_) {}
