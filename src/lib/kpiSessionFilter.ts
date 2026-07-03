@@ -64,10 +64,15 @@ export function hasLegacyDirectFallback(s: KpiSessionInput): boolean {
   }
   const lp = (s.landing_page ?? "").toLowerCase();
   if (!lp) return false;
-  // literal + urlencoded forms
+  // literal + urlencoded forms, including malformed encodings such as
+  // `%28none%28` observed in the wild (double-open-paren regression).
+  if (!lp.includes("utm_source=direct")) return false;
   return (
-    lp.includes("utm_source=direct") &&
-    (lp.includes("utm_medium=%28none%29") || lp.includes("utm_medium=(none)"))
+    lp.includes("utm_medium=(none)") ||
+    lp.includes("utm_medium=%28none%29") ||
+    // malformed: `%28none%28`, `%28none`, `(none(` — any `(none` prefix
+    // for utm_medium is treated as the legacy fallback marker.
+    /utm_medium=(%28|\()none/.test(lp)
   );
 }
 
