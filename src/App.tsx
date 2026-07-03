@@ -3993,6 +3993,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="visual-product-integrity"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <VisualProductIntegrityPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
