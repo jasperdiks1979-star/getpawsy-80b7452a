@@ -1,75 +1,77 @@
-# Analytics Integrity Certification — Plan
 
-## Scope (as you selected)
+# Phase 17 — Revenue Forensics & Conversion Intelligence Engine
 
-- Read-only audit report of every mismatch between the 4 target dashboards.
-- Build **one** canonical service, `analytics-canonical` edge function + `useCanonicalFunnel` hook.
-- Migrate the 4 dashboards to consume it. Everything else keeps its current queries and gets a deprecation note.
+Phase 17 as written is ~12 major subsystems. Building all of it in one pass would take dozens of migrations + edge functions and would almost certainly regress live traffic, Stripe, Pinterest, and the canonical analytics engine we just certified in Phase 16. I'm proposing a **4-wave rollout** where each wave ships as one atomic unit, is verifiable end-to-end, and each wave's evidence unlocks the next.
 
-Target dashboards:
-1. Visitor World Map (`VisitorWorldMap.tsx` / `LiveMap.tsx`)
-2. Visitor Summary / Clean Analytics Panel (`CleanAnalyticsPanel.tsx`)
-3. Funnel Health Center (`FunnelHealthCenter.tsx`, `FunnelHealth.tsx`)
-4. Sales Commander (`SalesCommanderPage.tsx`)
+Nothing below touches Stripe, checkout, order writes, email, Twilio, or Pinterest publishing. All work sits on top of the Phase 16 canonical engine (`analytics-canonical` + `useCanonicalFunnel` + `real_human_sessions`) as the single source of truth.
 
-## Canonical definitions (locked)
+---
 
-All counts are **distinct sessions**, filtered `is_bot=false AND classification IN ('verified_user','probable_user') AND qa IS NOT TRUE`, from `lp_funnel_events` unless noted.
+## Wave A — Session Forensics + Bot Segmentation (Parts 2, 3, 5)
 
-| Metric | Definition |
-|---|---|
-| `visitors` | distinct `session_id` with any event in window |
-| `sessions` | same as visitors (session = visit) |
-| `page_views` | `event_name='page_view'` — raw count, not deduped |
-| `product_views` | distinct sessions with `event_name='view_item'` |
-| `add_to_cart` | distinct sessions with `event_name='add_to_cart'` |
-| `view_cart` | distinct sessions with `event_name='view_cart'` |
-| `checkout_started` | distinct sessions with `event_name='begin_checkout'` |
-| `purchases` | distinct `orders.id` where `status='paid'` in window (independent of funnel gate) |
-| `revenue` | `SUM(orders.total_amount)` where `status='paid'` |
-| `conversion_rate` | `purchases / visitors` |
+Foundation everything else depends on. Without a complete per-session journey record, Parts 4/6/9/10/11 have nothing to reason over.
 
-World Map country breakdown uses `geo_country` from the same rows. No dashboard may compute these differently.
+- New table `session_forensics` (one row per session): entry_page, utm, pin_id, ad_id, country, device, browser, viewport, screen, first_seen, last_seen, max_scroll_depth, rage_clicks, dead_clicks, hesitation_ms, time_on_site_ms, cart_opened, checkout_started, purchased, exit_page, exit_reason (enum: bounce / short_visit / cart_abandon / checkout_abandon / payment_fail / purchased / bot).
+- New table `session_journey_steps` (append-only): session_id, ts, step (`landing|product_view|scroll_25|scroll_50|scroll_75|read_desc|add_to_cart|view_cart|begin_checkout|payment|purchase|exit`), meta jsonb.
+- Ingest via existing `installUxSignals` + `sessionQuality` + `recordFunnelStep` — wire them to a new lightweight edge function `session-forensics-ingest` that batches writes (already have rage/dead click capture — just persist).
+- Bot segmentation: reuse existing `is_real_human_session` SQL. Add view `session_forensics_human` filtered through it. Every downstream KPI reads the view, never the raw table.
+- Admin page tab "Session Journeys" on existing `/admin/conversion-war-room` — list last 200 sessions with expandable journey timeline.
 
-## Deliverables
+Deliverable: for any session in the last 24h you can see the exact ordered journey and why it exited.
 
-### 1. Audit report — `docs/analytics-integrity-audit-2026-07-03.md`
-For each of the 4 dashboards: source table(s), current SQL/filter, timezone, bot filter, US-only filter, resulting number for last 10h, and the delta vs canonical. Root cause for each mismatch (e.g. World Map counting `page_path='/cart'` pageviews instead of `add_to_cart` events; Visitor Summary reading `visitor_activity` which lacks the bot filter).
+## Wave B — AI Root Cause Engine + Product/Pin Intelligence (Parts 4, 9, 10)
 
-### 2. Canonical service — `supabase/functions/analytics-canonical/index.ts`
-- Input: `{ from, to, geo?: 'US'|'all' }`
-- Output: one JSON with every metric above + per-country breakdown + funnel array `[page_view, view_item, add_to_cart, view_cart, begin_checkout, purchase]`.
-- Uses service role; enforces the Clean filter server-side.
-- 30s in-memory cache keyed on inputs.
-- `verify_jwt = true` (admin-only).
+Runs hourly on Wave A data.
 
-### 3. Client hook — `src/hooks/useCanonicalFunnel.ts`
-Thin wrapper over `supabase.functions.invoke('analytics-canonical', ...)` with react-query, 30s staleTime. Returns typed `CanonicalFunnel`.
+- Edge function `revenue-root-cause` (cron, hourly): aggregates `session_forensics_human` grouped by exit_reason × dimension (product, pin_id, utm_source, browser, country, device). Emits ranked list into new table `root_cause_findings` (rank, dimension, value, drop_rate, sample_size, confidence, evidence jsonb, suggested_repair).
+- Product Intelligence: view `product_intelligence_scores` aggregating traffic/engagement/trust/conversion/revenue/organic scores per product from existing tables + Wave A. No new writers.
+- Pin Intelligence: extend existing `pinterest_pin_verdicts` — no new table; add `revenue_cents_last_30d` computed column via existing `pinterest-revenue-brain`.
+- Confidence gate: reuse CIE >90 rule from `mem://compliance/conversion-integrity-rules`. Findings under threshold flagged advisory-only.
 
-### 4. Migrations
-- `VisitorWorldMap` / `LiveMap`: replace its own query with `useCanonicalFunnel`. Country markers driven by canonical per-country breakdown. `cart` marker = sessions with `add_to_cart` (not `/cart` pageviews).
-- `CleanAnalyticsPanel`: drop local calculations; render numbers straight from hook.
-- `FunnelHealthCenter` / `FunnelHealth`: replace the KPI cards + funnel bars with hook data. Keep the existing latest-events inspector and QA sim buttons unchanged.
-- `SalesCommanderPage`: KPI strip (visitors, ATC, checkout, purchases, revenue, CVR) reads hook.
+## Wave C — Revenue Intelligence Center + Shop Quality Audit (Parts 6, 11)
 
-### 5. Self-test — `src/test/canonical-funnel.test.ts`
-Given a fixed set of `lp_funnel_events` + `orders` fixtures, assert the canonical service returns the exact expected counts and that dashboard renderers show identical numbers.
+Single new admin page `/admin/revenue-intelligence` composed entirely from existing hooks + Wave A/B outputs. No duplicate data pipelines.
 
-### 6. Before/After certification block
-Appended to the audit doc: last-10h numbers per dashboard, before vs after, PASS/FAIL per metric, dashboard consistency score (=100% when all 4 render identical numbers).
+- Panels: Live visitors/carts/checkout/purchases (from `useCanonicalFunnel` 1h window), top exit reasons (Wave A), ranked root causes (Wave B), Pinterest/TikTok/Google ROI (existing `revenue-command-center` aggregator), AI credit ROI (existing gateway logs + `pinterest_revenue_brain_runs`), health score.
+- Shop Quality Audit edge function `shop-quality-audit` (nightly cron): scores image alt coverage, page speed (Lighthouse JSON already emitted by `.github/workflows/lighthouse.yml`), description length, trust badges present, schema present, mobile CTA visibility. Persisted in `shop_quality_scores`.
+
+## Wave D — Safe Auto-Fixes + Self-Test + AI Credit ROI Guard (Parts 7, 8, 12)
+
+Only after A/B/C are stable.
+
+- `revenue-auto-fix` edge function (manual trigger + daily cron with dry-run default): scans `shop_quality_scores` and applies **only whitelisted fixes** — missing alt text (generate via Lovable AI), missing OpenGraph, missing schema, stale sitemap entries. Every mutation logged in `auto_fix_log` with before/after and rollback token. Never touches prices, copy, business logic.
+- AI Credit ROI Guard: extend `pinterest-revenue-brain` retirement rule — creative with >1000 impressions AND CTR < 0.5× category avg AND revenue = 0 → auto-archive. Already exists partially; add revenue gate.
+- Self-Test: extend existing `scripts/genesis-golden-customer.mjs` to run through Wave A journey and assert every step lands in `session_journey_steps`. Ships as GitHub Action `self-test-conversion-integrity.yml` nightly.
+- Certification report generated by `revenue-root-cause` → written to `docs/phase17-certification-YYYY-MM-DD.md`.
+
+## Part 1 (Global Reconciliation) — status
+
+Already delivered in Phase 16. Wave A/B/C **must consume** `useCanonicalFunnel` and `real_human_sessions`. Any dashboard found computing its own numbers is a bug to fix, not new work.
+
+---
+
+## Technical stack
+
+- **Backend:** 4 new tables (`session_forensics`, `session_journey_steps`, `root_cause_findings`, `shop_quality_scores`, `auto_fix_log`), all with GRANTs + RLS admin-only + service-role writes.
+- **Edge functions:** `session-forensics-ingest`, `revenue-root-cause`, `shop-quality-audit`, `revenue-auto-fix`.
+- **Client:** extend existing tracking hooks — no new tracker components. One new admin page. New tab in Conversion War Room.
+- **Crons:** 3 (hourly root cause, nightly shop audit, nightly self-test).
+- **Zero changes to:** Stripe flow, order writes, checkout, email, Twilio, Pinterest publishing, `canonical_events` schema, `analytics-canonical` output shape.
 
 ## Out of scope (explicit)
 
-- No changes to event *emission* (client `funnelEvents.ts`, GA4 config, gtag, DataLayer).
-- No changes to `visitor_activity` writers or Stripe webhook.
-- Other admin dashboards (Traffic Command Center, Revenue AI, TikTok/Pinterest funnels, UTM Conversion Events, etc.) keep their current queries. They will get a `// TODO(canonical): migrate to useCanonicalFunnel` comment so future work is obvious. No silent behavioral change to them.
-- No GA4 Data API reconciliation in this pass (would require GA4 credentials + quota work). Called out as follow-up.
+- Third-party session replay (rrweb/FullStory) — cost + PII review needed first; Wave A gives synthesized replay from event stream, which covers the forensic use case without recording DOM.
+- Auto-editing product copy, prices, or images — outside "safe fix" boundary.
+- Reconciling GA4 Data API vs internal (Phase 16 established internal canonical as truth; adding GA4 reconciliation is a separate phase).
 
 ## Risks
 
-- Numbers on migrated dashboards will drop vs today because the Clean filter is stricter than what World Map currently uses. This is expected and correct; it's the whole point of the certification.
-- If `lp_funnel_events` is missing events that only exist in `visitor_activity` (legacy rows), historical windows may look lower. Audit report will quantify this and, if material, I'll add a one-time backfill migration proposal for you to approve separately — not in this pass.
+- Wave A ingest volume: every session writes 5–15 journey rows. Mitigation: batch on `visibilitychange` + 10s flush.
+- Root cause false positives at low sample sizes. Mitigation: hard `n>=30` gate before findings surface in UI.
+- Auto-fix regressions. Mitigation: dry-run default + rollback log + whitelist.
 
-## Acceptance
+## Ask
 
-- One edge function, one hook, four migrated dashboards, one audit doc, one test file — all four dashboards render identical numbers for the same window.
+Approve **Wave A only** now. I'll ship it end-to-end with evidence (real session journey rendered in admin, bot vs human split matching canonical), then propose Wave B after you review. This is the only way to keep every wave verifiable and reversible.
+
+If you'd rather I ship all 4 waves in one pass anyway, say "ship all waves" and I will — but expect several iterations to stabilize and temporary dashboard noise while intermediate pieces land.

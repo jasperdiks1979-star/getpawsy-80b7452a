@@ -69756,6 +69756,98 @@ export type Database = {
         }
         Relationships: []
       }
+      session_forensics: {
+        Row: {
+          add_to_cart_at: string | null
+          begin_checkout_at: string | null
+          browser: string | null
+          cart_opened: boolean | null
+          checkout_started: boolean | null
+          city: string | null
+          country: string | null
+          currency: string | null
+          dead_clicks: number | null
+          device: string | null
+          entry_page: string | null
+          exit_reason: string | null
+          first_seen_at: string | null
+          form_abandons: number | null
+          furthest_step: string | null
+          last_seen_at: string | null
+          last_step: string | null
+          max_scroll_depth: number | null
+          order_id: string | null
+          os: string | null
+          payment_at: string | null
+          product_id: string | null
+          product_name: string | null
+          purchase_at: string | null
+          purchased: boolean | null
+          rage_clicks: number | null
+          referrer: string | null
+          session_id: string | null
+          stripe_session_id: string | null
+          time_on_site_seconds: number | null
+          traffic_type: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          value: number | null
+          view_cart_at: string | null
+          visitor_id: string | null
+        }
+        Relationships: []
+      }
+      session_forensics_human: {
+        Row: {
+          add_to_cart_at: string | null
+          begin_checkout_at: string | null
+          browser: string | null
+          cart_opened: boolean | null
+          checkout_started: boolean | null
+          city: string | null
+          country: string | null
+          currency: string | null
+          dead_clicks: number | null
+          device: string | null
+          entry_page: string | null
+          exit_reason: string | null
+          first_seen_at: string | null
+          form_abandons: number | null
+          furthest_step: string | null
+          last_seen_at: string | null
+          last_step: string | null
+          max_scroll_depth: number | null
+          order_id: string | null
+          os: string | null
+          payment_at: string | null
+          product_id: string | null
+          product_name: string | null
+          purchase_at: string | null
+          purchased: boolean | null
+          rage_clicks: number | null
+          referrer: string | null
+          session_id: string | null
+          stripe_session_id: string | null
+          time_on_site_seconds: number | null
+          traffic_type: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          value: number | null
+          view_cart_at: string | null
+          visitor_id: string | null
+        }
+        Relationships: []
+      }
+      session_journey_steps: {
+        Row: {
+          session_id: string | null
+          step: string | null
+          ts: string | null
+        }
+        Relationships: []
+      }
       us_attribution_events_v: {
         Row: {
           created_at: string | null
