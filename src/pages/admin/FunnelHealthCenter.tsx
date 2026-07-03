@@ -372,6 +372,8 @@ export default function FunnelHealthCenter() {
         </div>
       </header>
 
+      <CanonicalKpiStrip defaultRange="24h" />
+
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
