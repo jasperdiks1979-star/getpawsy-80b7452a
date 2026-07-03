@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { VisitorWorldMap } from "@/components/admin/VisitorWorldMap";
 import { CleanAnalyticsPanel } from "@/components/admin/CleanAnalyticsPanel";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Share2, Check, Globe2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -139,6 +140,9 @@ const LiveMap = () => {
 
         {/* Map Container */}
         <main className="container py-6">
+          <div className="mb-6">
+            <CanonicalKpiStrip defaultRange="24h" />
+          </div>
           <div className="mb-6">
             <CleanAnalyticsPanel />
           </div>

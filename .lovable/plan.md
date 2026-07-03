@@ -1,92 +1,75 @@
+# Analytics Integrity Certification — Plan
 
-# GENESIS Ω∞ — ZERO-WASTE PINTEREST AI ENGINE V2
+## Scope (as you selected)
 
-Goal: cut reject-rate from ~72% to <10% and credits/published pin from ~18 to <2 by making the **existing** `pcie2-*` pipeline strictly **Prediction First**. No parallel systems, no new dashboards — extend what's there.
+- Read-only audit report of every mismatch between the 4 target dashboards.
+- Build **one** canonical service, `analytics-canonical` edge function + `useCanonicalFunnel` hook.
+- Migrate the 4 dashboards to consume it. Everything else keeps its current queries and gets a deprecation note.
 
-## Guiding rules
+Target dashboards:
+1. Visitor World Map (`VisitorWorldMap.tsx` / `LiveMap.tsx`)
+2. Visitor Summary / Clean Analytics Panel (`CleanAnalyticsPanel.tsx`)
+3. Funnel Health Center (`FunnelHealthCenter.tsx`, `FunnelHealth.tsx`)
+4. Sales Commander (`SalesCommanderPage.tsx`)
 
-- Zero parallel pipelines. Every phase modifies existing `pcie2-*` / `pinterest-*` functions and existing tables.
-- One new dashboard tab inside `MissionControlPage.tsx` — no new admin page.
-- All gates default to **hard-block**, not warn. Feature-flagged for instant rollback via `pcie2_frozen_rules`.
-- Every decision writes an `evidence` row so we can prove the credit-saving after the fact.
+## Canonical definitions (locked)
 
-## Phases → files touched
+All counts are **distinct sessions**, filtered `is_bot=false AND classification IN ('verified_user','probable_user') AND qa IS NOT TRUE`, from `lp_funnel_events` unless noted.
 
-### 1. Pre-Generation Intelligence (Success Probability ≥95)
-- Add SQL function `public.pinterest_success_probability(product_id)` returning 0–100 based on: margin, US stock, PDP completeness, images, variants, reviews, price sanity, last-used cooldown, historical CTR, shopping intent, PRE score.
-- Extend `pcie2-creative-seed/index.ts`: call the fn; abort seed with `reason='pre_gen_below_95'` when score <95. Write to `pcie2_pipeline_trace`.
+| Metric | Definition |
+|---|---|
+| `visitors` | distinct `session_id` with any event in window |
+| `sessions` | same as visitors (session = visit) |
+| `page_views` | `event_name='page_view'` — raw count, not deduped |
+| `product_views` | distinct sessions with `event_name='view_item'` |
+| `add_to_cart` | distinct sessions with `event_name='add_to_cart'` |
+| `view_cart` | distinct sessions with `event_name='view_cart'` |
+| `checkout_started` | distinct sessions with `event_name='begin_checkout'` |
+| `purchases` | distinct `orders.id` where `status='paid'` in window (independent of funnel gate) |
+| `revenue` | `SUM(orders.total_amount)` where `status='paid'` |
+| `conversion_rate` | `purchases / visitors` |
 
-### 2. Duplicate DNA Detector (≤20% match, 365d window)
-- New table `pcie2_dna_fingerprints` (prompt_hash, image_phash, dna_vector jsonb, camera, angle, lighting, palette, environment, headline_hash, emotion, cta, breed, room, created_at).
-- New edge fn `pcie2-dna-guard` — cosine/Jaccard match vs last 365d; abort at >20%.
-- Wire into `pcie2-creative-worker` **before** the AI call.
+World Map country breakdown uses `geo_country` from the same rows. No dashboard may compute these differently.
 
-### 3. Prompt Certification (all 16 axes ≥95)
-- Extend `pcie2-creative-intelligence` with `certifyPrompt(prompt, product)` → cheap Gemini-flash JSON scorer (single ~0.0005 credit call, cached in `ai_prompt_cache`).
-- Abort generation when any axis <95. Persist to `pcie2_ci_scores`.
+## Deliverables
 
-### 4. Image Budget Controller
-- Extend existing `pinterest_credit_state` + `ai_credit_budgets`. Add columns: `projected_waste_pct`, `rolling_reject_rate_100`, `daily_cap`, `weekly_cap`.
-- New shared helper `_shared/budget-guard.ts`. Every generation entrypoint calls it first. STOP conditions: waste>10%, buffer<threshold, gateway red, reject-rate(last 100)>15%.
-- Fix stale-state bug (from prior forensic): probe TTL cap 15 min; auto-clear on 3 consecutive 200s.
+### 1. Audit report — `docs/analytics-integrity-audit-2026-07-03.md`
+For each of the 4 dashboards: source table(s), current SQL/filter, timezone, bot filter, US-only filter, resulting number for last 10h, and the delta vs canonical. Root cause for each mismatch (e.g. World Map counting `page_path='/cart'` pageviews instead of `add_to_cart` events; Visitor Summary reading `visitor_activity` which lacks the bot filter).
 
-### 5. Post-Generation QA (18 checks ≥95)
-- Extend `pcie2-step5-validate`: add vision-based QA via Gemini-flash-image (landing similarity, product visibility, cropping, US household fit, pet emotion, realism, color grading). Reject <95 → recycle prompt seed, do **not** re-generate blindly.
+### 2. Canonical service — `supabase/functions/analytics-canonical/index.ts`
+- Input: `{ from, to, geo?: 'US'|'all' }`
+- Output: one JSON with every metric above + per-country breakdown + funnel array `[page_view, view_item, add_to_cart, view_cart, begin_checkout, purchase]`.
+- Uses service role; enforces the Clean filter server-side.
+- 30s in-memory cache keyed on inputs.
+- `verify_jwt = true` (admin-only).
 
-### 6. Self-Learning DNA
-- Extend `pcie2-learning-engine` + `pcie2-performance-sync`: every published pin's outcome (impressions→purchase, revenue/AI-credit) mutates `pcie2_trait_weights` and populates `pcie2_creative_winners` (Winner DNA) / new `pcie2_failure_dna` view. Prompt-seed generator biases sampling by weight.
+### 3. Client hook — `src/hooks/useCanonicalFunnel.ts`
+Thin wrapper over `supabase.functions.invoke('analytics-canonical', ...)` with react-query, 30s staleTime. Returns typed `CanonicalFunnel`.
 
-### 7. Failure Prevention (hardening)
-- Extend `pcie2-self-healer`: dedupe queue on insert (unique idx on `dna_hash`), empty-prompt guard, sold-out guard (`us_stock=0` abort), broken-URL check, Pinterest-API circuit breaker, retry cap = 2, stale-state watchdog.
+### 4. Migrations
+- `VisitorWorldMap` / `LiveMap`: replace its own query with `useCanonicalFunnel`. Country markers driven by canonical per-country breakdown. `cart` marker = sessions with `add_to_cart` (not `/cart` pageviews).
+- `CleanAnalyticsPanel`: drop local calculations; render numbers straight from hook.
+- `FunnelHealthCenter` / `FunnelHealth`: replace the KPI cards + funnel bars with hook data. Keep the existing latest-events inspector and QA sim buttons unchanged.
+- `SalesCommanderPage`: KPI strip (visitors, ATC, checkout, purchases, revenue, CVR) reads hook.
 
-### 8. Mission Control tab (no new page)
-- Add tab **"Zero-Waste Engine"** to `src/pages/admin/MissionControlPage.tsx` with tiles: credits, credits/pin, reject%, publish%, wasted, saved, predicted waste, real waste, images today, pins today, revenue today, revenue/credit, top winners, worst losers, pipeline health, prediction accuracy, buffer, gateway, queue, gen-success%. Data via one new view `v_zero_waste_dashboard`.
+### 5. Self-test — `src/test/canonical-funnel.test.ts`
+Given a fixed set of `lp_funnel_events` + `orders` fixtures, assert the canonical service returns the exact expected counts and that dashboard renderers show identical numbers.
 
-### 9. Autonomous Optimizer (nightly)
-- Extend existing `pcie2-nightly-quality-loop` cron: analyze last 24h, mutate `pcie2_trait_weights`, roll board/timing/headline/CTA/keyword winners. No new cron.
+### 6. Before/After certification block
+Appended to the audit doc: last-10h numbers per dashboard, before vs after, PASS/FAIL per metric, dashboard consistency score (=100% when all 4 render identical numbers).
 
-### 10. Success criteria certification
-- Extend `pcie2-e2e-test`: gate that asserts all KPIs (reject<10%, credits/pin<2, dup=0%, prediction>95%, gen-success>95%, gateway-failures<1%). Emits SHA-256 certificate row into `ceo_production_certificates`.
+## Out of scope (explicit)
 
-## Technical details
+- No changes to event *emission* (client `funnelEvents.ts`, GA4 config, gtag, DataLayer).
+- No changes to `visitor_activity` writers or Stripe webhook.
+- Other admin dashboards (Traffic Command Center, Revenue AI, TikTok/Pinterest funnels, UTM Conversion Events, etc.) keep their current queries. They will get a `// TODO(canonical): migrate to useCanonicalFunnel` comment so future work is obvious. No silent behavioral change to them.
+- No GA4 Data API reconciliation in this pass (would require GA4 credentials + quota work). Called out as follow-up.
 
-### New DB objects (single migration)
-```
-create function public.pinterest_success_probability(_product_id uuid) returns numeric ...
-create table public.pcie2_dna_fingerprints (...)  + GRANTs + RLS
-create table public.pcie2_failure_dna (...)       + GRANTs + RLS
-create view  public.v_zero_waste_dashboard as ... (security_invoker)
-alter table public.pinterest_credit_state add column projected_waste_pct, rolling_reject_rate_100, daily_cap, weekly_cap;
-create unique index pcie2_publish_queue_dna_uidx on public.pcie2_publish_queue(dna_hash) where status in ('pending','processing');
-```
+## Risks
 
-### New shared modules
-- `supabase/functions/_shared/budget-guard.ts` — single source of truth for STOP logic.
-- `supabase/functions/_shared/dna-hash.ts` — pHash + prompt-DNA vector helpers.
+- Numbers on migrated dashboards will drop vs today because the Clean filter is stricter than what World Map currently uses. This is expected and correct; it's the whole point of the certification.
+- If `lp_funnel_events` is missing events that only exist in `visitor_activity` (legacy rows), historical windows may look lower. Audit report will quantify this and, if material, I'll add a one-time backfill migration proposal for you to approve separately — not in this pass.
 
-### Edge functions extended (no new fn except `pcie2-dna-guard`)
-`pcie2-creative-seed`, `pcie2-creative-worker`, `pcie2-creative-intelligence`, `pcie2-step5-validate`, `pcie2-learning-engine`, `pcie2-performance-sync`, `pcie2-self-healer`, `pcie2-nightly-quality-loop`, `pcie2-e2e-test`.
+## Acceptance
 
-### Frontend
-Only `src/pages/admin/MissionControlPage.tsx` + one new tab component `src/components/admin/mission-control/ZeroWasteEnginePanel.tsx`.
-
-### Rollback plan
-Every gate reads `pcie2_frozen_rules.zero_waste_v2_enabled` (default true). Setting it to false restores prior behavior instantly. Migration is additive — no destructive drops.
-
-### Dry-run before persist
-Because this touches the credit-critical path, I will run in **shadow mode** (`shadow=true` in `pcie2_frozen_rules`) for the first hour: gates compute scores + log rejections but do not block, so we measure real vs predicted reject-rate against live data before hard-enforcing.
-
-### Evidence deliverable
-`/mnt/documents/zero-waste-v2/` will contain: baseline metrics (SQL), post-shadow metrics, config diff, SHA-256 certificate, rollback SQL, file list.
-
-## Estimated impact (from current forensic data)
-- Reject rate: 71.9% → target <10% (Phases 1–3 predicted to catch >85% of current rejects pre-generation).
-- Credits/published pin: ~18 → target <2.
-- Monthly savings at current volume: ≈**16 credits × 1,000 pins/mo = 16k image credits/mo saved**.
-
-## Ask before I build
-1. Confirm **shadow-mode first hour** before hard-enforcing (recommended, prevents accidental full-stop).
-2. Confirm `pcie2-dna-guard` may use cheap **Gemini-flash-lite** for embedding scoring (~0.0005 credits/call — pays for itself vs one avoided image at ~0.04).
-3. Confirm the single Mission Control tab (no new page) is acceptable.
-
-Reply "go" (or with changes) and I will implement all 10 phases in one build pass.
+- One edge function, one hook, four migrated dashboards, one audit doc, one test file — all four dashboards render identical numbers for the same window.
