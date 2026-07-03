@@ -4,6 +4,7 @@ import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, ExternalLink, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,13 +58,35 @@ function StripeTestCheckoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function invokeRaw<T>(name: string, body: unknown = {}): Promise<{ data: T | null; status: number; error?: string }> {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess?.session?.access_token;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token ?? ""}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body ?? {}),
+    });
+    const text = await res.text();
+    let parsed: any = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text }; }
+    if (!res.ok) {
+      return { data: parsed, status: res.status, error: parsed?.error ?? `HTTP ${res.status}` };
+    }
+    return { data: parsed, status: res.status };
+  }
+
   async function runCreate() {
     setCreating(true);
-    const { data, error } = await invokeFunction<CreateResp>("admin-stripe-test-checkout", { body: {} });
+    const { data, status, error } = await invokeRaw<CreateResp>("admin-stripe-test-checkout");
     setCreating(false);
     if (error || !data?.url) {
-      const msg = `[admin-stripe-test-checkout] ${data?.code ?? ""} ${data?.error ?? error?.message ?? "Failed to create checkout"}`.trim();
-      console.error(msg, { data, error });
+      const msg = `[admin-stripe-test-checkout] HTTP ${status} — ${error ?? "Failed"} ${data ? JSON.stringify(data) : ""}`;
+      console.error(msg, { data, status });
       toast.error(msg);
       return;
     }
@@ -73,13 +96,11 @@ function StripeTestCheckoutInner() {
 
   async function runVerify(sessionId?: string) {
     setVerifying(true);
-    const { data, error } = await invokeFunction<VerifyResp>("admin-stripe-test-verify", {
-      body: sessionId ? { sessionId } : {},
-    });
+    const { data, status, error } = await invokeRaw<VerifyResp>("admin-stripe-test-verify", sessionId ? { sessionId } : {});
     setVerifying(false);
     if (error) {
-      const msg = `[admin-stripe-test-verify] ${error.message}`;
-      console.error(msg, { data, error });
+      const msg = `[admin-stripe-test-verify] HTTP ${status} — ${error} ${data ? JSON.stringify(data) : ""}`;
+      console.error(msg, { data, status });
       toast.error(msg);
       return;
     }
@@ -89,16 +110,13 @@ function StripeTestCheckoutInner() {
   async function runCleanup() {
     if (!confirm("Disable the internal QA product? Orders and payments are preserved.")) return;
     setCleaning(true);
-    const { data, error } = await invokeFunction<{ ok: boolean; error?: string }>(
-      "admin-stripe-test-cleanup", { body: {} },
-    );
+    const { data, status, error } = await invokeRaw<{ ok: boolean; error?: string }>("admin-stripe-test-cleanup");
     setCleaning(false);
     if (error || !data?.ok) {
-      const msg = `[admin-stripe-test-cleanup] ${data?.error ?? error?.message ?? "Cleanup failed"}`;
-      console.error(msg, { data, error });
+      const msg = `[admin-stripe-test-cleanup] HTTP ${status} — ${error ?? "Cleanup failed"} ${data ? JSON.stringify(data) : ""}`;
+      console.error(msg, { data, status });
       toast.error(msg);
-    }
-    else toast.success("QA product disabled. Financial records preserved.");
+    } else toast.success("QA product disabled. Financial records preserved.");
   }
 
   return (
