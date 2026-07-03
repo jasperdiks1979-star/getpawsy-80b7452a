@@ -1,5 +1,9 @@
-// US-only clean analytics + diagnostics for the Visitor World Map.
-// Server-side aggregation (no 1000-row cap) so 24h/7d/30d are accurate.
+// world-map-debug — LEGACY response shape, CANONICAL source of truth.
+// As of the Analytics Integrity Certification pass, this function no longer
+// aggregates `visitor_activity` on its own. It reads `canonical_events` +
+// `orders(paid|completed)` (same query the `analytics-canonical` service uses)
+// and reshapes the result into the response CleanAnalyticsPanel already
+// consumes, so every dashboard now converges on the same numbers.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -13,6 +17,7 @@ const RANGE_MS: Record<Range, number> = {
   "7d": 7 * 24 * 60 * 60 * 1000,
   "30d": 30 * 24 * 60 * 60 * 1000,
 };
+const RANGE_HOURS: Record<Range, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
 
 export const US_VALUES = new Set([
   "us", "usa", "u.s.", "u.s.a.", "united states", "united states of america",
@@ -105,56 +110,57 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Page through to bypass 1000-row cap
+    // ── Canonical source of truth ─────────────────────────────────
+    // Read canonical_events (already deduped, QA-excluded at ingest) and
+    // orders(paid|completed). Everything below just aggregates from that.
     const all: any[] = [];
     const PAGE = 1000;
     let from = 0;
     while (true) {
-      const { data, error } = await supabase
-        .from("visitor_activity")
-        .select("session_id,visitor_id,country,city,latitude,longitude,page_path,activity_type,order_id,order_value,utm_source,utm_medium,referrer,referrer_category,is_internal,created_at")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
+      let q = supabase
+        .from("canonical_events")
+        .select("canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,utm_source,utm_medium,referrer,country,city,device")
+        .gte("occurred_at", since)
+        .order("occurred_at", { ascending: false })
         .range(from, from + PAGE - 1);
+      if (usOnly) q = q.eq("country", "US");
+      const { data, error } = await q;
       if (error) throw error;
       if (!data || data.length === 0) break;
       all.push(...data);
       if (data.length < PAGE) break;
       from += PAGE;
-      if (from > 200_000) break; // hard safety cap
+      if (from > 200_000) break;
     }
 
+    // canonical_events already filters QA/bots at ingest, so exclusion
+    // counters are structural-only. We keep the response shape stable for the
+    // legacy dashboard, but the numbers are canonical.
     const total_raw_events = all.length;
-    let excluded_internal = 0, excluded_bots = 0, excluded_admin = 0, excluded_non_us = 0;
+    const excluded_internal = 0;
+    const excluded_bots = 0;
+    const excluded_admin = 0;
+    const excluded_non_us = 0; // pre-filtered at query level when usOnly
     const bot_reasons: Record<string, number> = {};
-    const bot_samples: Array<{ reason: string; path: string; browser: string | null; referrer: string | null; utm_source: string | null; country: string | null; created_at: string }> = [];
+    const bot_samples: any[] = [];
+    const clean = all;
 
-    const clean: any[] = [];
-    for (const r of all) {
-      if (r.is_internal === true) { excluded_internal++; continue; }
-      const path = r.page_path || "";
-      if (ADMIN_PATH_RE.test(path)) { excluded_admin++; continue; }
-      const bot = detectBot(r);
-      if (bot.isBot) {
-        excluded_bots++;
-        const reason = bot.reason || "unknown";
-        bot_reasons[reason] = (bot_reasons[reason] || 0) + 1;
-        if (bot_samples.length < 20) {
-          bot_samples.push({
-            reason,
-            path,
-            browser: r.browser ?? null,
-            referrer: r.referrer ?? null,
-            utm_source: r.utm_source ?? null,
-            country: r.country ?? null,
-            created_at: r.created_at,
-          });
-        }
-        continue;
-      }
-      if (usOnly && !isUS(r.country)) { excluded_non_us++; continue; }
-      clean.push(r);
+    // Also fetch paid orders for the same window (revenue/purchase truth).
+    const { data: paidOrders } = await supabase
+      .from("orders")
+      .select("id,total_amount,status,created_at,shipping_address")
+      .in("status", ["paid", "completed"])
+      .gte("created_at", since)
+      .limit(5000);
+    let filteredPaid = paidOrders ?? [];
+    if (usOnly) {
+      filteredPaid = filteredPaid.filter((o: any) => {
+        const c = o?.shipping_address?.country || o?.shipping_address?.country_code;
+        return isUS(c);
+      });
     }
+    const paidById = new Map<string, any>();
+    for (const o of filteredPaid) paidById.set(o.id, o);
 
     // ── Deduplicated metric accumulators ─────────────────────────────
     // Visitors: distinct (visitor_id || session_id), nulls excluded.
@@ -186,7 +192,7 @@ Deno.serve(async (req) => {
       if (r.visitor_id) visitorsStrict.add(r.visitor_id);
       if (r.session_id) sessions.add(r.session_id);
 
-      const at = (r.activity_type || "browsing").toLowerCase();
+      const name = String(r.canonical_name || "");
       const path: string = r.page_path || "";
 
       // Source classification runs on every clean row (independent of pageview gate)
@@ -197,62 +203,43 @@ Deno.serve(async (req) => {
       const ck = r.country || "Unknown";
       let c = countries.get(ck);
       if (!c) {
-        c = { country: ck, visitors: new Set(), sessions: new Set(), pageviews: 0, pvSeen: new Set(), cart: 0, checkout: 0, purchases: new Set(), lat: r.latitude ?? undefined, lng: r.longitude ?? undefined, city: r.city ?? undefined };
+        c = { country: ck, visitors: new Set(), sessions: new Set(), pageviews: 0, pvSeen: new Set(), cart: 0, checkout: 0, purchases: new Set(), lat: undefined, lng: undefined, city: r.city ?? undefined };
         countries.set(ck, c);
       }
       c.visitors.add(vkey);
       if (r.session_id) c.sessions.add(r.session_id);
 
-      // ── Pageview gate ──
-      const isPageview = PAGEVIEW_TYPES.has(at) && !NON_PAGEVIEW_TYPES.has(at);
-      if (!isPageview) {
-        dropped_non_pageview_type++;
-      } else {
+      if (name === "CANONICAL_PAGE_VIEW" || name === "CANONICAL_PRODUCT_VIEW") {
         pageviews_raw++;
-        // 1-minute bucket dedup: same visitor + same path within 60s = 1 pageview
-        const bucket = Math.floor(new Date(r.created_at).getTime() / 60_000);
-        const pvKey = `${vkey}|${path}|${bucket}`;
-        if (pvSeen.has(pvKey)) {
-          deduped_pageviews++;
-        } else {
-          pvSeen.add(pvKey);
-          pageviews++;
-          c.pvSeen.add(pvKey);
-          c.pageviews++;
-
-          // Product view still derived from pageview path (canonical for PDP views).
-          if (path.startsWith("/products/")) {
-            const k = `${vkey}|${path}`;
-            if (!productSeen.has(k)) { productSeen.add(k); product_views++; }
-          }
+        pageviews++;
+        c.pageviews++;
+        if (name === "CANONICAL_PRODUCT_VIEW") {
+          const k = `${vkey}|pv`;
+          if (!productSeen.has(k)) { productSeen.add(k); product_views++; }
         }
+      } else {
+        dropped_non_pageview_type++;
       }
 
-      // ── Canonical funnel counters (single source of truth) ──
-      // add_to_cart  ← activity_type IN ('add_to_cart','cart')
-      // begin_checkout ← activity_type IN ('begin_checkout','checkout')
-      // Deduped per session so refresh storms and dual-writes (cart+add_to_cart
-      // for the same click) count as one. Same definition as lp_funnel_events
-      // and sourceAuditBreakdown.
-      if (at === "add_to_cart" || at === "cart") {
+      if (name === "CANONICAL_ADD_TO_CART" || name === "CANONICAL_CART") {
         const k = `${vkey}|atc`;
         if (!cartSeen.has(k)) { cartSeen.add(k); cart_views++; c.cart++; }
       }
-      if (at === "begin_checkout" || at === "checkout") {
+      if (name === "CANONICAL_CHECKOUT") {
         const k = `${vkey}|co`;
         if (!checkoutSeen.has(k)) { checkoutSeen.add(k); checkout_started++; c.checkout++; }
       }
 
-      // Purchases dedup by order_id (independent of pageview gate)
-      if (r.order_id && !purchaseSeen.has(r.order_id)) {
-        purchaseSeen.add(r.order_id);
-        purchases++;
-        c.purchases.add(r.order_id);
-      }
+      // Purchase counts come from `orders` below, not from canonical events,
+      // so revenue truth stays authoritative. Country attribution is still
+      // derived here when the event carries the order id.
+      if (r.order_id) c.purchases.add(r.order_id);
     }
+    // Purchase count = distinct paid orders in window (matches canonical service).
+    purchases = filteredPaid.length;
 
-    const earliest = all.reduce<string | null>((min, r) => (!min || r.created_at < min ? r.created_at : min), null);
-    const latest = all.reduce<string | null>((max, r) => (!max || r.created_at > max ? r.created_at : max), null);
+    const earliest = all.reduce<string | null>((min, r) => (!min || r.occurred_at < min ? r.occurred_at : min), null);
+    const latest = all.reduce<string | null>((max, r) => (!max || r.occurred_at > max ? r.occurred_at : max), null);
 
     const warnings: string[] = [];
     if (range !== "24h" && clean.length === 0) warnings.push("No clean events in range — check filters or seeding.");
