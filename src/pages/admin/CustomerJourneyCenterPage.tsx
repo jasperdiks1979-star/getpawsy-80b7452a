@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Activity, Compass, ShieldCheck, RefreshCw, Loader2, Award, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import QualityAndGatesPanel from "@/components/admin/QualityAndGatesPanel";
 
 type Overview = {
   total_sessions: number;
@@ -190,6 +191,7 @@ export default function CustomerJourneyCenterPage() {
           <TabsTrigger value="intent">Intent & Abandonment</TabsTrigger>
           <TabsTrigger value="paths">Journey paths</TabsTrigger>
           <TabsTrigger value="products">Product health</TabsTrigger>
+          <TabsTrigger value="quality">Quality & Gates</TabsTrigger>
           <TabsTrigger value="questions">Ask Genesis</TabsTrigger>
         </TabsList>
 
@@ -366,6 +368,10 @@ export default function CustomerJourneyCenterPage() {
               </p>
             } />
           </div>
+        </TabsContent>
+
+        <TabsContent value="quality" className="mt-4">
+          <QualityAndGatesPanel />
         </TabsContent>
       </Tabs>
 
