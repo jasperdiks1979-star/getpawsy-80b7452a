@@ -4002,6 +4002,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="product-identity-graph"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ProductIdentityGraphPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-warmup"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
