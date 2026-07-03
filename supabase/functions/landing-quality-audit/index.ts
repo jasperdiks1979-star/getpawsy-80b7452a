@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
     // 1. Pull landing pages that got real human traffic last 7d.
     const { data: landings, error: e1 } = await supabase
       .from("real_human_sessions")
-      .select("landing_page, session_id, duration_ms, max_scroll_depth, reached_atc, referrer, utm_source")
-      .gte("first_seen", new Date(Date.now() - 7 * 86400_000).toISOString())
+      .select("landing_page, session_id, first_seen_at, last_seen_at, referrer, utm_source, last_stage, order_id")
+      .gte("first_seen_at", new Date(Date.now() - 7 * 86400_000).toISOString())
       .not("landing_page", "is", null)
       .limit(5000);
     if (e1) throw e1;
@@ -42,10 +42,15 @@ Deno.serve(async (req) => {
     let inserted = 0;
     for (const [url, rows] of byUrl.entries()) {
       const n = rows.length;
-      const bounces = rows.filter((r) => (r.duration_ms ?? 0) < 3000).length;
+      const bounces = rows.filter((r) => {
+        const dur = new Date(r.last_seen_at).getTime() - new Date(r.first_seen_at).getTime();
+        return dur < 3000;
+      }).length;
       const bounceRate = n > 0 ? bounces / n : 0;
-      const avgScroll = n > 0 ? rows.reduce((s, r) => s + (r.max_scroll_depth ?? 0), 0) / n : 0;
-      const atcRate = n > 0 ? rows.filter((r) => r.reached_atc).length / n : 0;
+      const avgScroll = 0; // deterministic 0 until scroll signals join is wired
+      const atcRate = n > 0
+        ? rows.filter((r) => ["add_to_cart","begin_checkout","purchase"].includes(String(r.last_stage))).length / n
+        : 0;
       const pinterestShare = n > 0
         ? rows.filter((r) => (r.utm_source ?? "").toLowerCase() === "pinterest" || (r.referrer ?? "").includes("pinterest")).length / n
         : 0;
