@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertTriangle, Activity, RefreshCw } from "lucide-react";
 import { SessionJourneysPanel } from "@/components/admin/SessionJourneysPanel";
+import { RevenueForensicsPanel } from "@/components/admin/RevenueForensicsPanel";
 
 type Bottleneck = {
   rank: number;
@@ -146,6 +147,7 @@ export default function ConversionWarRoomPage() {
             </CardContent>
           </Card>
 
+          <RevenueForensicsPanel />
           <SessionJourneysPanel />
         </>
       )}
