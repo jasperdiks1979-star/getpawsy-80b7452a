@@ -392,9 +392,13 @@ Deno.serve(async (req) => {
 
     try {
       await sb.from("pinterest_integrity_reports").insert({
-        report_type: "approved_publish_sweep",
         run_id: runId,
-        storage_bucket: "admin-reports",
+        pins_audited: rows.length,
+        pins_pass: counts.READY ?? 0,
+        pins_warning: counts.WAITING_AI ?? 0,
+        pins_fail: (counts.BLOCKED ?? 0) + (counts.FAILED ?? 0),
+        pins_repaired: plan.length,
+        storage_prefix: basePath,
         json_path: jsonPath,
         html_path: htmlPath,
         summary,
