@@ -220,20 +220,27 @@ Deno.serve(async (req) => {
           c.pvSeen.add(pvKey);
           c.pageviews++;
 
-          // Funnel counts only fire on true pageviews, deduplicated per visitor+path
+          // Product view still derived from pageview path (canonical for PDP views).
           if (path.startsWith("/products/")) {
             const k = `${vkey}|${path}`;
             if (!productSeen.has(k)) { productSeen.add(k); product_views++; }
           }
-          if (path === "/cart") {
-            const k = `${vkey}|cart`;
-            if (!cartSeen.has(k)) { cartSeen.add(k); cart_views++; c.cart++; }
-          }
-          if (path === "/checkout") {
-            const k = `${vkey}|checkout`;
-            if (!checkoutSeen.has(k)) { checkoutSeen.add(k); checkout_started++; c.checkout++; }
-          }
         }
+      }
+
+      // ── Canonical funnel counters (single source of truth) ──
+      // add_to_cart  ← activity_type IN ('add_to_cart','cart')
+      // begin_checkout ← activity_type IN ('begin_checkout','checkout')
+      // Deduped per session so refresh storms and dual-writes (cart+add_to_cart
+      // for the same click) count as one. Same definition as lp_funnel_events
+      // and sourceAuditBreakdown.
+      if (at === "add_to_cart" || at === "cart") {
+        const k = `${vkey}|atc`;
+        if (!cartSeen.has(k)) { cartSeen.add(k); cart_views++; c.cart++; }
+      }
+      if (at === "begin_checkout" || at === "checkout") {
+        const k = `${vkey}|co`;
+        if (!checkoutSeen.has(k)) { checkoutSeen.add(k); checkout_started++; c.checkout++; }
       }
 
       // Purchases dedup by order_id (independent of pageview gate)
