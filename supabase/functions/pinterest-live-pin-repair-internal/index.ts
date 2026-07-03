@@ -55,6 +55,101 @@ Deno.serve(async (req) => {
   const report: any[] = [];
   let processed = 0, succeeded = 0, failed = 0, deleted = 0;
 
+  // Existing repair queue archive path: if VPI/PIG has certified a live pin as
+  // the wrong visual product and no exact active product exists, remove the
+  // remote Pinterest pin and keep the local queue row paused/failed. This is
+  // fail-closed and does not create a replacement unless a certified draft has
+  // already been attached by the normal replacement workflow.
+  {
+    let archiveQuery = sb
+      .from("pinterest_live_pin_repair_queue")
+      .select("id, pin_queue_id, pinterest_pin_id, details, updated_at")
+      .eq("recommended_action", "archive")
+      .eq("severity", "critical")
+      .eq("status", "approved")
+      .not("pinterest_pin_id", "is", null);
+    if (targetIds) archiveQuery = archiveQuery.in("id", targetIds);
+    const { data: archiveRows } = await archiveQuery.order("updated_at", { ascending: true }).limit(batch);
+
+    for (const row of archiveRows ?? []) {
+      processed++;
+      const oldPinId = String(row.pinterest_pin_id || "");
+      const entry: any = { repair_queue_id: row.id, old_pin_id: oldPinId, action: "archive", status: "pending" };
+      if (!oldPinId) {
+        entry.status = "skipped";
+        entry.error = "missing_pinterest_pin_id";
+        failed++;
+        report.push(entry);
+        continue;
+      }
+      const del = await pin(token, `/pins/${oldPinId}`, { method: "DELETE" });
+      const deleteOk = del.status === 204 || del.status === 404;
+      entry.deleted = deleteOk;
+      entry.delete_status = del.status;
+      if (deleteOk) {
+        deleted++;
+        succeeded++;
+        await sb.from("pinterest_live_pin_repair_queue").update({
+          status: "done",
+          updated_at: new Date().toISOString(),
+          details: {
+            ...(row.details ?? {}),
+            execution: {
+              executed_at: new Date().toISOString(),
+              old_pin_id: oldPinId,
+              deleted: true,
+              archive_only: true,
+              reason: "visual_identity_mismatch_confirmed",
+            },
+          },
+        }).eq("id", row.id);
+        if (row.pin_queue_id) {
+          await sb.from("pinterest_pin_queue").update({
+            status: "paused",
+            pin_verified: false,
+            validation_status: "failed",
+            verification_state: "visual_mismatch_confirmed",
+            repair_strategy: "replace_or_correct_destination",
+            rejection_reason: "visual_identity_mismatch_remote_archived",
+            updated_at: new Date().toISOString(),
+          }).eq("id", row.pin_queue_id);
+        }
+        await sb.from("pinterest_pin_deletion_verifications").upsert({
+          pinterest_pin_id: oldPinId,
+          queue_id: row.pin_queue_id,
+          status: del.status === 404 ? "deleted" : "deleted",
+          http_status: del.status,
+          error: null,
+          verified_at: new Date().toISOString(),
+        }, { onConflict: "pinterest_pin_id" });
+      } else {
+        failed++;
+        entry.status = "delete_failed";
+        entry.error = `HTTP ${del.status}: ${JSON.stringify(del.body).slice(0, 200)}`;
+        await sb.from("pinterest_live_pin_repair_queue").update({
+          updated_at: new Date().toISOString(),
+          details: {
+            ...(row.details ?? {}),
+            execution: {
+              executed_at: new Date().toISOString(),
+              old_pin_id: oldPinId,
+              deleted: false,
+              archive_only: true,
+              error: entry.error,
+            },
+          },
+        }).eq("id", row.id);
+      }
+      entry.status = deleteOk ? "complete" : entry.status;
+      report.push(entry);
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if ((archiveRows ?? []).length > 0) {
+      return json({ ok: true, processed, succeeded, failed, deleted, pinterest_urls: [], failures: report.filter(r => r.status !== "complete"), report });
+    }
+  }
+
   for (let bi = 0; bi < maxBatches; bi++) {
     let query = sb
       .from("pinterest_live_pin_repair_queue")
