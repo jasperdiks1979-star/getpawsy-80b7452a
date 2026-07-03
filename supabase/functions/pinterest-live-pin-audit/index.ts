@@ -132,6 +132,8 @@ Deno.serve(async (req) => {
   let regenerateCount = 0;
   const repairRows: any[] = [];
   const repairKeys = new Set<string>();
+  const currentLiveQueueIds = new Set(livePins.map((p) => String(p.id)));
+  const currentLivePinterestIds = new Set(livePins.map((p) => String(p.pinterest_pin_id ?? "")).filter(Boolean));
 
   for (const p of livePins) {
     const { violations, normalizedCategory } = detectViolations(p);
@@ -200,8 +202,13 @@ Deno.serve(async (req) => {
         .eq("run_id", latestRun.id)
         .eq("passed", false);
 
-      visualMismatches = (vpiFails ?? []).length;
-      for (const f of (vpiFails ?? []) as any[]) {
+      const currentVpiFails = ((vpiFails ?? []) as any[]).filter((f: any) =>
+        (f.pin_queue_id && currentLiveQueueIds.has(String(f.pin_queue_id))) ||
+        (f.pinterest_pin_id && currentLivePinterestIds.has(String(f.pinterest_pin_id)))
+      );
+
+      visualMismatches = currentVpiFails.length;
+      for (const f of currentVpiFails) {
         const key = f.pin_queue_id ? `queue:${f.pin_queue_id}` : `pin:${f.pinterest_pin_id}`;
         if (repairKeys.has(key)) continue;
         const action = f.recommended_action === "replace_pin" ? "archive" : "replace";
