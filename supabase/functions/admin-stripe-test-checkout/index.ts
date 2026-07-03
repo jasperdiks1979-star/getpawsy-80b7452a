@@ -15,7 +15,11 @@ const corsHeaders = {
 const TEST_PRODUCT_ID = "2559507b-2d8c-44c1-9a50-ace931756356";
 const TEST_PRODUCT_SLUG = "internal-stripe-production-test-do-not-index";
 const TEST_PRODUCT_NAME = "Stripe Production Test";
-const TEST_PRODUCT_PRICE_CENTS = 50; // $0.50
+// Account presentment currency is EUR. Stripe minimum is €0.50, and USD→EUR
+// conversion of $0.50 falls below that (~€0.44 → amount_too_small). Charge
+// €1.00 in EUR directly so the wallet 1-tap test always clears the minimum.
+const TEST_PRODUCT_PRICE_CENTS = 100; // €1.00
+const TEST_PRODUCT_CURRENCY = "eur";
 const DAILY_LIMIT = 3;
 
 serve(async (req) => {
@@ -120,10 +124,10 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: TEST_PRODUCT_CURRENCY,
             unit_amount: TEST_PRODUCT_PRICE_CENTS,
             product_data: {
-              name: "LIVE TEST — GetPawsy Stripe QA ($0.50)",
+              name: "LIVE TEST — GetPawsy Stripe QA (€1.00)",
               description:
                 "Internal live-mode QA charge. Real card. No shipping. Refundable.",
               metadata: {
@@ -165,7 +169,7 @@ serve(async (req) => {
       stripe_session_id: session.id,
       stripe_mode: stripeMode,
       amount_cents: TEST_PRODUCT_PRICE_CENTS,
-      currency: "usd",
+      currency: TEST_PRODUCT_CURRENCY,
       checkout_url: session.url,
       product_id: TEST_PRODUCT_ID,
       status: "created",
