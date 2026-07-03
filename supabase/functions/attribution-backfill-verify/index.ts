@@ -60,11 +60,16 @@ Deno.serve(async (req) => {
   };
 
   // Persist to governance decision log (append-only audit trail).
+  const today = new Date().toISOString().slice(0, 10);
   await sb.from("governance_decision_log").insert({
+    source_engine: "attribution-backfill-verify",
     decision_type: "attribution_backfill_verify",
+    proposal: report,
+    actual_metric: "literal_direct_none_sessions_7d",
+    actual_value: literalDirect,
     outcome: passed ? "pass" : "fail",
-    rationale: flags.join(" | ") || "clean",
-    payload: report,
+    learning_status: passed ? "resolved" : "action_required",
+    dedupe_key: `attribution_backfill_verify:${today}`,
   });
   console.log(`[attribution-backfill-verify] ${passed ? "PASS" : "FAIL"} total=${total} literal_direct=${literalDirect} null_unknown=${nullUnknown}`);
 
