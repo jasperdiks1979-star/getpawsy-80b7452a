@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertTriangle, CheckCircle2, Loader2, PlayCircle, ShieldCheck, ShieldAlert,
 } from 'lucide-react';
+import { CanonicalKpiStrip } from '@/components/admin/CanonicalKpiStrip';
 import {
   fireUserAddToCart, fireCheckoutClick, fireCheckoutEvent, firePdpView,
 } from '@/lib/funnelEvents';
