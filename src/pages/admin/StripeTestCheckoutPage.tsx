@@ -27,10 +27,11 @@ interface VerifyResp {
   stripePaymentStatus?: string;
   paymentIntentStatus?: string | null;
   walletType?: string | null;
+  walletLabel?: string | null;
   amountTotal?: number | null;
   currency?: string | null;
   customerEmail?: string | null;
-  order?: { id: string; status: string; total_amount: number } | null;
+  order?: { id: string; status: string; total_amount: number; wallet_type?: string | null } | null;
   orderCreated?: boolean;
   orderPaid?: boolean;
   productHidden?: boolean;
@@ -178,6 +179,10 @@ function StripeTestCheckoutInner() {
               <div className={`font-bold ${verify.verdict === "PASS" ? "text-green-600" : "text-destructive"}`}>
                 {verify.verdict === "PASS" ? <ShieldCheck className="inline h-4 w-4 mr-1" /> : <AlertTriangle className="inline h-4 w-4 mr-1" />}
                 {verify.verdict ?? "—"}
+              </div>
+              <div className="font-medium">
+                Wallet: {verify.walletLabel ?? (verify.walletType ? verify.walletType : "—")}
+                {verify.walletType ? " ✅" : ""}
               </div>
               <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(verify, null, 2)}</pre>
             </div>
