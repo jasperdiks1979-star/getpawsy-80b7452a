@@ -94,10 +94,10 @@ export default function PinterestIntegrityPage() {
         .select("*").order("started_at", { ascending: false }).limit(30),
       supabase.from("pinterest_slug_sync_log")
         .select("*").order("created_at", { ascending: false }).limit(50),
-      supabase.from("pinterest_hero_sync_log")
+      (supabase as any).from("pinterest_hero_sync_log")
         .select("id, product_id, before_image_url, after_image_url, reason, rolled_back_at, created_at")
         .order("created_at", { ascending: false }).limit(50),
-      supabase.from("pinterest_integrity_reports")
+      (supabase as any).from("pinterest_integrity_reports")
         .select("id, generated_at, pins_audited, pins_pass, pins_warning, pins_fail, hero_syncs, wrong_url_fixed, storage_prefix, html_path, csv_path, json_path")
         .order("generated_at", { ascending: false }).limit(20),
     ]);
