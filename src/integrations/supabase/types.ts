@@ -62670,6 +62670,56 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_auto_fix_log: {
+        Row: {
+          after_value: Json | null
+          applied_at: string
+          before_value: Json | null
+          dry_run: boolean
+          expected_impact: string | null
+          finding_id: string | null
+          fix_type: string
+          id: string
+          rollback_token: string
+          status: string
+          target: string
+        }
+        Insert: {
+          after_value?: Json | null
+          applied_at?: string
+          before_value?: Json | null
+          dry_run?: boolean
+          expected_impact?: string | null
+          finding_id?: string | null
+          fix_type: string
+          id?: string
+          rollback_token: string
+          status?: string
+          target: string
+        }
+        Update: {
+          after_value?: Json | null
+          applied_at?: string
+          before_value?: Json | null
+          dry_run?: boolean
+          expected_impact?: string | null
+          finding_id?: string | null
+          fix_type?: string
+          id?: string
+          rollback_token?: string
+          status?: string
+          target?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_auto_fix_log_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_root_cause_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_pipeline_smoke_runs: {
         Row: {
           failed_stages: string[]
@@ -62691,6 +62741,104 @@ export type Database = {
           passed?: boolean
           ran_at?: string
           stages?: Json
+        }
+        Relationships: []
+      }
+      revenue_root_cause_findings: {
+        Row: {
+          auto_fixable: boolean
+          confidence: number
+          created_at: string
+          dimension_value: string
+          est_revenue_loss_cents: number
+          evidence: Json
+          exit_reason: string | null
+          finding_type: string
+          id: string
+          pct_of_total: number
+          rank: number
+          run_id: string
+          sessions: number
+          suggested_repair: string | null
+        }
+        Insert: {
+          auto_fixable?: boolean
+          confidence: number
+          created_at?: string
+          dimension_value: string
+          est_revenue_loss_cents?: number
+          evidence?: Json
+          exit_reason?: string | null
+          finding_type: string
+          id?: string
+          pct_of_total: number
+          rank: number
+          run_id: string
+          sessions: number
+          suggested_repair?: string | null
+        }
+        Update: {
+          auto_fixable?: boolean
+          confidence?: number
+          created_at?: string
+          dimension_value?: string
+          est_revenue_loss_cents?: number
+          evidence?: Json
+          exit_reason?: string | null
+          finding_type?: string
+          id?: string
+          pct_of_total?: number
+          rank?: number
+          run_id?: string
+          sessions?: number
+          suggested_repair?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_root_cause_findings_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_root_cause_runs"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      revenue_root_cause_runs: {
+        Row: {
+          baseline_aov_cents: number
+          baseline_cvr: number
+          duration_ms: number | null
+          error: string | null
+          generated_at: string
+          ok: boolean
+          run_id: string
+          total_purchases: number
+          total_sessions: number
+          window_hours: number
+        }
+        Insert: {
+          baseline_aov_cents?: number
+          baseline_cvr?: number
+          duration_ms?: number | null
+          error?: string | null
+          generated_at?: string
+          ok?: boolean
+          run_id?: string
+          total_purchases?: number
+          total_sessions?: number
+          window_hours: number
+        }
+        Update: {
+          baseline_aov_cents?: number
+          baseline_cvr?: number
+          duration_ms?: number | null
+          error?: string | null
+          generated_at?: string
+          ok?: boolean
+          run_id?: string
+          total_purchases?: number
+          total_sessions?: number
+          window_hours?: number
         }
         Relationships: []
       }
