@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async";
 import { AdminRouteGuard } from "@/components/auth/AdminRouteGuard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, ExternalLink, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,7 +40,6 @@ interface VerifyResp {
 }
 
 function StripeTestCheckoutInner() {
-  const { invokeFunction } = useAuthenticatedFetch();
   const [creating, setCreating] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [cleaning, setCleaning] = useState(false);
