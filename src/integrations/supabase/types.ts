@@ -70450,6 +70450,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      attribution_backfill_reasons_7d: {
+        Args: never
+        Returns: {
+          pct: number
+          reason: string
+          sessions: number
+        }[]
+      }
       bulk_reactivate_cat_dog_products: {
         Args: never
         Returns: {
