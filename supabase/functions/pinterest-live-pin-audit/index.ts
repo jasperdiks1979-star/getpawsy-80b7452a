@@ -125,11 +125,13 @@ Deno.serve(async (req) => {
   const DUP_THRESHOLD = 5;
 
   let categoryViolations = 0;
+  let visualMismatches = 0;
   let duplicatePins = 0;
   let replaceCount = 0;
   let archiveCount = 0;
   let regenerateCount = 0;
   const repairRows: any[] = [];
+  const repairKeys = new Set<string>();
 
   for (const p of livePins) {
     const { violations, normalizedCategory } = detectViolations(p);
@@ -175,7 +177,61 @@ Deno.serve(async (req) => {
         hook_cluster_size: p.hook_group ? hookCounts[p.hook_group] : 0,
       },
     });
+    repairKeys.add(`queue:${p.id}`);
   }
+
+  // Visual Product Identity is the authoritative same-commercial-product gate.
+  // Category checks can be clean while the model/SKU is still wrong, so the
+  // live audit summary must include latest VPI failures and never report zero
+  // wrong products solely because category text matched.
+  try {
+    const { data: latestRun } = await supabase
+      .from("pinterest_visual_identity_runs")
+      .select("id")
+      .eq("scope", "posted")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestRun?.id) {
+      const { data: vpiFails } = await supabase
+        .from("pinterest_visual_identity_audits")
+        .select("pin_queue_id,pinterest_pin_id,product_slug,destination_link,wrong_product_kind,recommended_action,identity_score,differences")
+        .eq("run_id", latestRun.id)
+        .eq("passed", false);
+
+      visualMismatches = (vpiFails ?? []).length;
+      for (const f of (vpiFails ?? []) as any[]) {
+        const key = f.pin_queue_id ? `queue:${f.pin_queue_id}` : `pin:${f.pinterest_pin_id}`;
+        if (repairKeys.has(key)) continue;
+        const action = f.recommended_action === "replace_pin" ? "archive" : "replace";
+        if (action === "archive") archiveCount++;
+        else replaceCount++;
+        repairRows.push({
+          pin_queue_id: f.pin_queue_id,
+          pinterest_pin_id: f.pinterest_pin_id,
+          product_slug: f.product_slug,
+          category_key: "visual_identity",
+          board_name: null,
+          overlay_text: null,
+          pin_title: null,
+          hook_group: null,
+          destination_link: f.destination_link,
+          violation_types: ["visual_identity_mismatch", f.wrong_product_kind ?? "different_model"],
+          recommended_action: action,
+          severity: "critical",
+          audit_run_id: auditRunId,
+          details: {
+            visual_identity_run_id: latestRun.id,
+            identity_score: f.identity_score,
+            same_category_not_pass: true,
+            differences: f.differences ?? [],
+          },
+        });
+        repairKeys.add(key);
+      }
+    }
+  } catch (_) { /* VPI tables may be absent in older environments */ }
 
   // Persist queue rows (idempotent per run id)
   let inserted = 0;
@@ -213,9 +269,10 @@ Deno.serve(async (req) => {
     audit_run_id: auditRunId,
     publishing_paused: true,
     total_live_pins_audited: livePins.length,
-    total_mismatched_pins: categoryViolations,
+    total_mismatched_pins: categoryViolations + visualMismatches,
     total_duplicate_pins: duplicatePins,
     total_category_violations: categoryViolations,
+    total_visual_mismatches: visualMismatches,
     replacement_queue_size: replaceCount,
     archive_queue_size: archiveCount,
     regenerate_queue_size: regenerateCount,
