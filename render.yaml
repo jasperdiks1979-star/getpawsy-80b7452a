@@ -8,10 +8,11 @@
 # status 128 on every push — generating "deploy failed" emails even though
 # the previous good GHCR image kept serving traffic and heartbeating.
 #
-# Defensive fix shipped alongside this blueprint: the frontend Dockerfile is
-# now `Dockerfile.frontend` (not `Dockerfile`). There is intentionally NO
-# `Dockerfile` at the repo root, so Render auto-detect cannot mis-route the
-# worker service to it again. The frontend is deployed by Lovable, not Render.
+# Defensive fix: the frontend Dockerfile is `Dockerfile.frontend`, while the
+# repository-root `Dockerfile` is now a compatibility shim that builds the same
+# cinematic render worker as `render-worker/Dockerfile`. This protects legacy
+# Render services still configured for the default root Dockerfile from failing
+# with `open Dockerfile: no such file or directory`.
 #
 # This blueprint makes `getpawsy-render-worker` build from
 # `render-worker/Dockerfile`, whose CMD is `node render-worker/start.mjs`.
