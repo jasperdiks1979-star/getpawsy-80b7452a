@@ -1,7 +1,9 @@
-import { corsHeaders, svc, ok, err } from "../_shared/acos-common.ts";
+import { corsHeaders, svc, ok, err, requireAdmin } from "../_shared/acos-common.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.res;
   const traceId = crypto.randomUUID();
   try {
     const sb = svc();

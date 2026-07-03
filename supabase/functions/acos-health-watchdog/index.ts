@@ -1,4 +1,4 @@
-import { corsHeaders, svc, ok, err } from "../_shared/acos-common.ts";
+import { corsHeaders, svc, ok, err, requireAdmin } from "../_shared/acos-common.ts";
 
 const ENGINES = [
   "acos-revenue-brain","acos-score-engine","acos-winner-detect","acos-loser-detect",
@@ -23,6 +23,8 @@ async function raiseAlert(sb: ReturnType<typeof svc>, severity: string, source: 
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.res;
   const traceId = crypto.randomUUID();
   try {
     const sb = svc();
