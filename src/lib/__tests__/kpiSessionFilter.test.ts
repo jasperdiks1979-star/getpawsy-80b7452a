@@ -55,6 +55,72 @@ describe("classifyKpiSession", () => {
     ).toBe(true);
   });
 
+  // Regression fixtures — reproduce the exact malformed query string
+  // observed in production logs (`%28none%28`, i.e. `(none(` — a broken
+  // encoding of `(none)`) plus adjacent variants. All must fall into
+  // the `excluded_legacy_direct` bucket so they never leak into KPIs.
+  it("buckets the literal malformed `%28none%28` regression as excluded_legacy_direct", () => {
+    const fixtures: Array<{ name: string; landing_page: string }> = [
+      {
+        name: "root-malformed-double-open-paren",
+        landing_page: "/?utm_source=direct&utm_medium=%28none%28",
+      },
+      {
+        name: "pdp-malformed-double-open-paren",
+        landing_page:
+          "/products/ufo-cat-tree?utm_source=direct&utm_medium=%28none%28&utm_campaign=hero_daily",
+      },
+      {
+        name: "uppercase-malformed",
+        landing_page: "/?UTM_SOURCE=DIRECT&UTM_MEDIUM=%28NONE%28",
+      },
+      {
+        name: "literal-parens-malformed",
+        landing_page: "/cart?utm_source=direct&utm_medium=(none(",
+      },
+      {
+        name: "truncated-open-paren-only",
+        landing_page: "/?utm_source=direct&utm_medium=%28none",
+      },
+    ];
+    for (const f of fixtures) {
+      expect(
+        classifyKpiSession({ landing_page: f.landing_page }),
+        `fixture ${f.name} should bucket as excluded_legacy_direct`,
+      ).toBe("excluded_legacy_direct");
+      expect(
+        hasLegacyDirectFallback({ landing_page: f.landing_page }),
+        `fixture ${f.name} should trip hasLegacyDirectFallback`,
+      ).toBe(true);
+    }
+  });
+
+  it("excludes the malformed regression from KPI aggregation via filterKpiSessions", () => {
+    const rows = [
+      { session_id: "clean", referrer: "https://www.pinterest.com/pin/1" },
+      {
+        session_id: "regression",
+        landing_page: "/?utm_source=direct&utm_medium=%28none%28",
+      },
+    ];
+    const metrics = computeKpiMetrics(rows);
+    expect(metrics.excluded_legacy_direct).toBe(1);
+    expect(metrics.included).toBe(1);
+    expect(filterKpiSessions(rows).map((r) => r.session_id)).toEqual(["clean"]);
+
+    const report = kpiAuditReport(rows);
+    expect(report.ok).toBe(false);
+    expect(report.violations).toBe(1);
+  });
+
+  it("assertKpiEligible throws KpiAssertionError on the malformed regression", () => {
+    expect(() =>
+      assertKpiEligible({
+        landing_page: "/?utm_source=direct&utm_medium=%28none%28",
+      }),
+    ).toThrow(KpiAssertionError);
+  });
+
   it("includes real external referrers", () => {
     expect(
       classifyKpiSession({ referrer: "https://www.pinterest.com/pin/1" }),
