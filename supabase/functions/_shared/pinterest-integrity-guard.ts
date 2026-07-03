@@ -22,6 +22,7 @@ import {
   persistVisualIdentity,
   vpiEnabled,
 } from "./visual-product-identity.ts";
+import { readVisualTruth } from "./product-identity-graph.ts";
 
 export type IntegrityVerdict = {
   passed: boolean;
