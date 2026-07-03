@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2, History } from "lucide-react";
+import { Loader2, RefreshCw, Wrench, ShieldCheck, Image as ImageIcon, FileText, Undo2, History, Send } from "lucide-react";
 
 interface RunRow {
   id: string;
@@ -187,6 +187,31 @@ export default function PinterestIntegrityPage() {
     } finally { setBusy(null); }
   }
 
+  async function runApprovedSweep(execute: boolean) {
+    setBusy(execute ? "sweep_exec" : "sweep_dry");
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-approved-publish-sweep", {
+        body: { execute, max_publish: 20, interval_seconds: 120, inventory_limit: 500 },
+      });
+      if (error) throw error;
+      const c = data?.counts ?? {};
+      toast({
+        title: execute ? "Approved publish sweep — staged" : "Approved publish sweep — dry run",
+        description:
+          `Ready ${c.READY ?? 0} · Waiting AI ${c.WAITING_AI ?? 0} · ` +
+          `Blocked ${c.BLOCKED ?? 0} · Failed ${c.FAILED ?? 0}` +
+          (execute ? ` · Staged ${data?.staged ?? 0} (first ${data?.first_scheduled_at ?? "-"})` : ""),
+      });
+      if (data?.report?.html_path) {
+        const { data: signed } = await supabase.storage.from("admin-reports").createSignedUrl(data.report.html_path, 3600);
+        if (signed?.signedUrl) window.open(signed.signedUrl, "_blank");
+      }
+      await load();
+    } catch (e: any) {
+      toast({ title: "Approved sweep failed", description: e?.message || String(e), variant: "destructive" });
+    } finally { setBusy(null); }
+  }
+
   async function openReport(path: string | null) {
     if (!path) return;
     const { data } = await supabase.storage.from("admin-reports").createSignedUrl(path, 3600);
@@ -261,6 +286,14 @@ export default function PinterestIntegrityPage() {
           <Button size="sm" variant="destructive" onClick={runLegacySweep} disabled={busy !== null}>
             {busy === "legacy" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <History className="h-4 w-4 mr-2" />}
             Retro legacy sweep
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => runApprovedSweep(false)} disabled={busy !== null}>
+            {busy === "sweep_dry" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+            Approved sweep (dry)
+          </Button>
+          <Button size="sm" variant="default" onClick={() => runApprovedSweep(true)} disabled={busy !== null}>
+            {busy === "sweep_exec" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+            Publish approved (max 20)
           </Button>
         </div>
       </header>
