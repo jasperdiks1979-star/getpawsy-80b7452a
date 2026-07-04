@@ -1932,12 +1932,12 @@ export const VisitorWorldMap = () => {
             <DynamicSourceFilter
               value={sourceFilter}
               onChange={(v) => setSourceFilter(v)}
-              rows={(rawActivities ?? displayActivities ?? []).map((a) => ({
+              rows={sourceFilterSessions.map((a) => ({
                 utm_source: a.utm_source ?? null,
                 utm_medium: a.utm_medium ?? null,
                 utm_campaign: a.utm_campaign ?? null,
                 referrer: a.referrer ?? null,
-                referrer_category: a.referrer_category ?? null,
+                referrer_category: null,
                 page_path: a.page_path ?? null,
               }))}
               showInactive={showInactiveSources}
@@ -2359,6 +2359,28 @@ export const VisitorWorldMap = () => {
             <CreditCard className="w-3 h-3" />
             {counts.checkout} afrekenen
           </Badge>
+        </div>
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mt-3 text-[11px]"
+          data-testid="world-map-render-diagnostics"
+          data-canonical-sessions={mapDiagnostics.canonicalSessions}
+          data-sessions-with-geo={mapDiagnostics.sessionsWithGeo}
+          data-marker-features={mapDiagnostics.markerFeatures}
+          data-heatmap-features={mapDiagnostics.heatmapFeatures}
+          data-sessions-without-geo={mapDiagnostics.sessionsWithoutGeo}
+          data-filtered-us-only={mapDiagnostics.filteredOutByUsOnly}
+          data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
+          data-rendered-mapbox-source-features={renderedMapboxSourceFeatureCount}
+          data-testid-canonical-source="analytics-canonical"
+        >
+          <Stat label="Canonical sessions" value={mapDiagnostics.canonicalSessions} />
+          <Stat label="Sessions with geo" value={mapDiagnostics.sessionsWithGeo} tone={mapDiagnostics.sessionsWithGeo ? "good" : "warn"} />
+          <Stat label="Marker features" value={mapDiagnostics.markerFeatures} tone={mapDiagnostics.markerFeatures ? "good" : "warn"} />
+          <Stat label="Heatmap features" value={mapDiagnostics.heatmapFeatures} tone={mapDiagnostics.heatmapFeatures ? "good" : "warn"} />
+          <Stat label="Sessions without geo" value={mapDiagnostics.sessionsWithoutGeo} />
+          <Stat label="US-only filtered" value={mapDiagnostics.filteredOutByUsOnly} />
+          <Stat label="Internal/test filtered" value={mapDiagnostics.filteredOutByInternalTest} />
+          <Stat label="Mapbox source" value={renderedMapboxSourceFeatureCount} tone={renderedMapboxSourceFeatureCount ? "good" : "warn"} />
         </div>
         {showHeatmap && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
