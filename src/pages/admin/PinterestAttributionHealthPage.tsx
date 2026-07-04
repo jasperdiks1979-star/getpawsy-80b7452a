@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Activity, AlertTriangle, RefreshCw, Wrench, Link2 } from "lucide-react";
 import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+import { useCanonicalFunnel } from "@/hooks/useCanonicalFunnel";
+
+// PR-2 slice 3: Pinterest Attribution business KPIs (Sessions, Product Views,
+// ATC, Checkout, Purchases, Revenue, CVR, AOV, RPV, RPS) MUST come from
+// analytics-canonical. The `pinterest_attribution_health` counters below are
+// diagnostic-only — they explain WHERE conversions came from, never HOW MANY
+// business conversions exist. Any drift between the two is an attribution
+// coverage gap, not a KPI restatement.
 
 type HealthRow = {
   id: string;
@@ -43,6 +51,13 @@ export default function PinterestAttributionHealthPage() {
   const [chain, setChain] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const canonical = useCanonicalFunnel({ hours: 24, geo: "all" });
+  const t = canonical.data?.totals;
+  const money = (n: number, ccy?: string) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: (ccy || "EUR").toUpperCase() }).format(n);
+  const aov  = t && t.purchases > 0 ? t.revenue / t.purchases : 0;
+  const rpv  = t && t.visitors  > 0 ? t.revenue / t.visitors  : 0;
+  const rps  = t && t.sessions  > 0 ? t.revenue / t.sessions  : 0;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,6 +91,33 @@ export default function PinterestAttributionHealthPage() {
     <div className="container mx-auto p-6 space-y-6">
       <Helmet><title>Attribution Health — Pinterest</title></Helmet>
       <CanonicalKpiStrip defaultRange="24h" title="Canonical truth — Pinterest Attribution" />
+
+      {/* Canonical-derived business KPIs unique to this page: AOV / RPV / RPS.
+          Sessions / ATC / Checkout / Purchases / Revenue / CVR are in the
+          CanonicalKpiStrip above — same source, same numbers everywhere. */}
+      <Card className="ring-1 ring-emerald-500/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            Canonical business KPIs (24h)
+            <Badge variant="outline" className="text-[10px]">source: analytics-canonical</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">AOV</div>
+            <div className="text-xl font-semibold tabular-nums">{money(aov, t?.currency)}</div>
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Revenue per Visitor</div>
+            <div className="text-xl font-semibold tabular-nums">{money(rpv, t?.currency)}</div>
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Revenue per Session</div>
+            <div className="text-xl font-semibold tabular-nums">{money(rps, t?.currency)}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -117,6 +159,10 @@ export default function PinterestAttributionHealthPage() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="col-span-2 md:col-span-4 flex items-center gap-2 -mb-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">Attribution coverage</h2>
+          <Badge variant="secondary" className="text-[10px]">Diagnostic only · not a business KPI</Badge>
+        </div>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs">Coverage (24h)</CardTitle></CardHeader>
           <CardContent>

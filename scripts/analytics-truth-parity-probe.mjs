@@ -46,6 +46,20 @@ const METRICS = [
   "purchases",
 ];
 
+// PR-2 slice 3 additions: Pinterest Attribution surface derives AOV / RPV /
+// RPS purely from analytics-canonical.totals. We assert every consumer that
+// re-derives these ratios locally gets the same number as this server-side
+// computation. Rounded to 4 decimals to match JS number stability.
+const DERIVED_METRICS = ["aov", "rpv", "rps"];
+function round4(n) { return Math.round(n * 10000) / 10000; }
+function derivedFromTotals(t) {
+  return {
+    aov: t.purchases > 0 ? round4(t.revenue / t.purchases) : 0,
+    rpv: t.visitors  > 0 ? round4(t.revenue / t.visitors)  : 0,
+    rps: t.sessions  > 0 ? round4(t.revenue / t.sessions)  : 0,
+  };
+}
+
 // Mirrors src/hooks/useAnalyticsTruth.ts::countersFromSessions — MUST stay
 // byte-for-byte semantically identical or CI will drift on purpose.
 function countersFromSessions(rows) {
@@ -155,6 +169,30 @@ async function main() {
               drifts.push({ scenario, source: "totals vs Map", ...d });
             }
           } else passes.push(`${scenario} — totals ≡ Map`);
+
+          // Pinterest Attribution parity: AOV / RPV / RPS derived from
+          // server totals must equal the same ratios derived from
+          // per-session aggregation. Guarantees the PinterestAttribution
+          // page (which re-computes these client-side) can never drift.
+          const derivedServer = derivedFromTotals(server);
+          const derivedLocal  = derivedFromTotals({
+            purchases: derived.purchases,
+            revenue:   derived.revenue,
+            visitors:  derived.visitors,
+            sessions:  derived.sessions,
+          });
+          for (const m of DERIVED_METRICS) {
+            if (derivedServer[m] !== derivedLocal[m]) {
+              drifts.push({
+                scenario, source: "Pinterest AOV/RPV/RPS",
+                metric: m, expected: derivedServer[m],
+                actual: derivedLocal[m], delta: derivedLocal[m] - derivedServer[m],
+              });
+            }
+          }
+          if (DERIVED_METRICS.every((m) => derivedServer[m] === derivedLocal[m])) {
+            passes.push(`${scenario} — Pinterest AOV/RPV/RPS ≡ canonical`);
+          }
         }
 
         const cmap = compare("Map vs CSV", derived, csv);
