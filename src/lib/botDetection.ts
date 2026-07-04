@@ -181,10 +181,17 @@ export function recordEventTimingSample(): void {
     const raw = sessionStorage.getItem(TIMING_BUFFER_KEY);
     const buf: number[] = raw ? JSON.parse(raw) : [];
     buf.push(now);
-    while (buf.length > 6) buf.shift();
+    while (buf.length > 8) buf.shift();
     sessionStorage.setItem(TIMING_BUFFER_KEY, JSON.stringify(buf));
-    if (buf.length >= 3) {
-      const span = buf[buf.length - 1] - buf[buf.length - 3];
+    // Exempt sessions with verified human engagement older than 30s.
+    // Real users often trigger clustered events (sticky_atc_visible →
+    // add_to_cart → view_cart) after a genuine PDP dwell; those bursts
+    // were being false-positived as bots. UA/webdriver signals in
+    // classifyOnce() still catch headless traffic on their own.
+    const engagedAge = engagementVerifiedAgeMs();
+    if (engagedAge !== null && engagedAge > 30_000) return;
+    if (buf.length >= 5) {
+      const span = buf[buf.length - 1] - buf[buf.length - 5];
       if (span < 500) {
         const cur = readCached() ?? classifyOnce();
         if (!cur.is_bot) {
