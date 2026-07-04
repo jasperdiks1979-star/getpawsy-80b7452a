@@ -777,87 +777,94 @@ export const VisitorWorldMap = () => {
     if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
-    if (!mapInstance.isStyleLoaded()) {
-      const onIdle = () => {
-        setRenderedMapboxSourceFeatureCount(markerFeatures.length);
-      };
-      mapInstance.once("idle", onIdle);
-      return;
-    }
-    const geojsonData = markerFeaturesToGeoJson(markerFeatures);
-    const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
+    let cancelled = false;
 
-    if (existingSource) {
-      existingSource.setData(geojsonData);
-    } else {
-      mapInstance.addSource("visitor-map-source", {
-        type: "geojson",
-        data: geojsonData,
-      });
-    }
-
-    if (!mapInstance.getLayer("visitor-heatmap")) {
-      mapInstance.addLayer({
-        id: "visitor-heatmap",
-        type: "heatmap",
-        source: "visitor-map-source",
-        layout: { visibility: showHeatmap ? "visible" : "none" },
-        paint: {
-          "heatmap-weight": ["get", "weight"],
-          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0, "rgba(0, 0, 255, 0)",
-            0.1, "rgba(65, 105, 225, 0.5)",
-            0.3, "rgba(0, 255, 255, 0.6)",
-            0.5, "rgba(0, 255, 0, 0.7)",
-            0.7, "rgba(255, 255, 0, 0.8)",
-            0.9, "rgba(255, 165, 0, 0.9)",
-            1, "rgba(255, 0, 0, 1)"
-          ],
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 9, 30],
-          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.95, 7, 1, 9, 0.5],
-        },
-      });
-    }
-
-    if (!mapInstance.getLayer("visitor-markers")) {
-      mapInstance.addLayer({
-        id: "visitor-markers",
-        type: "circle",
-        source: "visitor-map-source",
-        layout: { visibility: showHeatmap ? "none" : "visible" },
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 2, 8, 6, 14],
-          "circle-color": ["get", "color"],
-          "circle-opacity": 0.95,
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 2,
-          "circle-stroke-opacity": 0.9,
-          "circle-blur": 0.05,
-        },
-      });
-    }
-
-    mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
-    mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
-    markersRef.current.forEach((marker) => {
-      marker.getElement().style.display = showHeatmap ? "none" : "block";
-    });
-
-    setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
-    const updateRenderedCount = () => {
-      try {
-        const rendered = mapInstance.querySourceFeatures("visitor-map-source").length;
-        setRenderedMapboxSourceFeatureCount(rendered || geojsonData.features.length);
-      } catch {
-        setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+    const applyCanonicalFeatures = () => {
+      if (cancelled || !map.current) return;
+      if (!mapInstance.isStyleLoaded()) {
+        mapInstance.once("idle", applyCanonicalFeatures);
+        return;
       }
+
+      const geojsonData = markerFeaturesToGeoJson(markerFeatures);
+      const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
+
+      if (existingSource) {
+        existingSource.setData(geojsonData);
+      } else {
+        mapInstance.addSource("visitor-map-source", {
+          type: "geojson",
+          data: geojsonData,
+        });
+      }
+
+      if (!mapInstance.getLayer("visitor-heatmap")) {
+        mapInstance.addLayer({
+          id: "visitor-heatmap",
+          type: "heatmap",
+          source: "visitor-map-source",
+          layout: { visibility: showHeatmap ? "visible" : "none" },
+          paint: {
+            "heatmap-weight": ["get", "weight"],
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(0, 0, 255, 0)",
+              0.1, "rgba(65, 105, 225, 0.5)",
+              0.3, "rgba(0, 255, 255, 0.6)",
+              0.5, "rgba(0, 255, 0, 0.7)",
+              0.7, "rgba(255, 255, 0, 0.8)",
+              0.9, "rgba(255, 165, 0, 0.9)",
+              1, "rgba(255, 0, 0, 1)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 9, 30],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.95, 7, 1, 9, 0.5],
+          },
+        });
+      }
+
+      if (!mapInstance.getLayer("visitor-markers")) {
+        mapInstance.addLayer({
+          id: "visitor-markers",
+          type: "circle",
+          source: "visitor-map-source",
+          layout: { visibility: showHeatmap ? "none" : "visible" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 2, 8, 6, 14],
+            "circle-color": ["get", "color"],
+            "circle-opacity": 0.95,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+            "circle-stroke-opacity": 0.9,
+            "circle-blur": 0.05,
+          },
+        });
+      }
+
+      mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
+      mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
+      markersRef.current.forEach((marker) => {
+        marker.getElement().style.display = showHeatmap ? "none" : "block";
+      });
+
+      setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+      const updateRenderedCount = () => {
+        if (cancelled) return;
+        try {
+          const rendered = mapInstance.querySourceFeatures("visitor-map-source").length;
+          setRenderedMapboxSourceFeatureCount(rendered || geojsonData.features.length);
+        } catch {
+          setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+        }
+      };
+      if (mapInstance.loaded()) updateRenderedCount();
+      else mapInstance.once("idle", updateRenderedCount);
     };
-    if (mapInstance.loaded()) updateRenderedCount();
-    else mapInstance.once("idle", updateRenderedCount);
+
+    applyCanonicalFeatures();
+    return () => { cancelled = true; };
   }, [showHeatmap, markerFeatures, mapLoaded]);
 
   // Auto-fly map to show filtered visitors when source filter changes
