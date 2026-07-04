@@ -147,6 +147,19 @@ async function seedAdmin(context: any, page: any) {
   await page.route(`**/${BACKEND_HOST}/functions/v1/get-mapbox-token`, (route: any) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ token: "pk.test-token" }) }),
   );
+  await page.route("https://api.mapbox.com/styles/v1/mapbox/dark-v11**", (route: any) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        version: 8,
+        name: "test-style",
+        sources: {},
+        layers: [{ id: "background", type: "background", paint: { "background-color": "#061014" } }],
+      }),
+    }),
+  );
+  await page.route("https://events.mapbox.com/**", (route: any) => route.fulfill({ status: 204, body: "" }));
   await page.route(`**/${BACKEND_HOST}/rest/v1/**`, (route: any) =>
     route.fulfill({ status: 200, contentType: "application/json", headers: { "content-range": "0-0/0" }, body: JSON.stringify([]) }),
   );
@@ -166,6 +179,7 @@ test.describe("Visitor World Map canonical visual render", () => {
       markerFeatures: Number(el.getAttribute("data-marker-features")),
       heatmapFeatures: Number(el.getAttribute("data-heatmap-features")),
       sessionsWithoutGeo: Number(el.getAttribute("data-sessions-without-geo")),
+      renderedMapboxSourceFeatures: Number(el.getAttribute("data-rendered-mapbox-source-features")),
     }));
 
     expect(values.canonicalSessions).toBe(3);
@@ -176,6 +190,7 @@ test.describe("Visitor World Map canonical visual render", () => {
     if (values.sessionsWithGeo > 0) {
       expect(values.markerFeatures).toBe(values.sessionsWithGeo);
       expect(values.heatmapFeatures).toBe(values.sessionsWithGeo);
+      expect(values.renderedMapboxSourceFeatures).toBeGreaterThan(0);
     }
   });
 });
