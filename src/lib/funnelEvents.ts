@@ -237,6 +237,25 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
     });
     if (env.is_bot && !input.qa) return; // never count bot ATC (except QA)
     if (env.deduped && !input.qa) return; // collapsed inside 10s window
+    // FORENSIC (temporary): expose gate decision to QA harness via window
+    try {
+      (globalThis as any).__gp_last_atc = {
+        ts: Date.now(),
+        session_id: env.session_id,
+        product_id: fallbackProductKey,
+        idempotency_key: env.idempotency_key,
+        is_bot: env.is_bot,
+        bot_reason: env.bot_reason,
+        deduped: env.deduped,
+        classification: env.classification,
+        geo_country: env.geo_country,
+        geo_tier: env.geo_tier,
+        qa: !!input.qa,
+        branch: 'insert_attempted',
+      };
+      // eslint-disable-next-line no-console
+      console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+    } catch { /* ignore */ }
     // Reserve the 10s bucket only for real (non-QA) events that will insert.
     if (!input.qa) markDeduped(env.idempotency_key);
 
