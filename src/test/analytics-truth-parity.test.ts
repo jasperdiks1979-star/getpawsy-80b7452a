@@ -95,8 +95,11 @@ describe("analytics-truth parity — counter set", () => {
     // truthCounters which is countersFromSessions(filtered)):
     const summaryTotals = counters;
 
-    // Zero-drift certification for the reported incident:
-    expect(mapBadges.cart + mapBadges.checkout).toBe(counters.add_to_cart + counters.view_cart);
+    // Zero-drift certification for the reported incident: the cart badge
+    // + checkout badge partition of the funnel below "browsing" must equal
+    // the count of sessions that reached ATC (every checkout session also
+    // reached ATC in our writer contract).
+    expect(mapBadges.cart + mapBadges.checkout).toBe(counters.add_to_cart);
     expect(csvCounters.add_to_cart).toBe(summaryTotals.add_to_cart);
     expect(csvCounters.checkout_started).toBe(summaryTotals.checkout_started);
     expect(csvCounters.sessions).toBe(mapBadges.browsing + mapBadges.cart + mapBadges.checkout);
