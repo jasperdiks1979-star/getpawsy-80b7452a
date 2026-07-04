@@ -533,60 +533,31 @@ export const VisitorWorldMap = () => {
     refetchIntervalMs: timeRange === "live" ? 10_000 : 60_000,
   });
 
-  // Truth-filtered session list — respects the SAME client filters as the
-  // map (excludeInternal / activityFilter / sourceFilter). Every counter,
-  // badge, CSV row, and Summary line below is derived from this array, so
-  // they are guaranteed byte-identical for identical filter selections.
-  const truthSessions: TruthSession[] = useMemo(() => {
-    const rows = truth?.sessions ?? [];
-    return rows.filter((s) => {
-      if (excludeInternal && s.is_internal) return false;
-      if (activityFilter === "cart" && !(s.has_add_to_cart || s.has_view_cart)) return false;
-      if (activityFilter === "checkout" && !s.has_checkout) return false;
-      if (activityFilter === "browsing" && (s.has_add_to_cart || s.has_view_cart || s.has_checkout)) return false;
-      if (sourceFilter !== "all") {
-        const canonical = resolveCanonicalSource({
-          utm_source: s.utm_source,
-          utm_medium: s.utm_medium,
-          utm_campaign: s.utm_campaign,
-          referrer: s.referrer,
-          referrer_category: null,
-          page_path: s.page_path,
-        });
-        if (canonical !== sourceFilter) return false;
-      }
-      return true;
-    });
-  }, [truth, excludeInternal, activityFilter, sourceFilter]);
+  // Canonical map model — the SAME truth session list powers counters, CSV,
+  // Summary, visible markers, and the heatmap source. `visitor_activity` is
+  // no longer a marker truth source; it remains only for diagnostic audit
+  // tables and realtime notification toasts.
+  const mapModel = useMemo(
+    () => buildWorldMapModel(truth?.sessions ?? [], { activityFilter, sourceFilter, usOnly, excludeInternal }),
+    [truth, activityFilter, sourceFilter, usOnly, excludeInternal],
+  );
+  const sourceFilterSessions = mapModel.sourceFilterSessions;
+  const truthSessions = mapModel.truthSessions;
+  const markerFeatures = mapModel.markerFeatures;
+  const heatmapFeatures = mapModel.heatmapFeatures;
+  const mapDiagnostics = mapModel.diagnostics;
 
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
-  const truthSessionIds = useMemo(() => new Set(truthSessions.map((s) => s.session_id)), [truthSessions]);
-  // REGRESSION-FIX (P0 zero-visitors): writers on canonical_events and
-  // visitor_activity use different session_id namespaces (UUID vs
-  // `<epoch>-<rand>`), so intersecting markers by session_id alone yields
-  // zero overlap even when both stores have valid rows for the same real
-  // visitors. Accept an activity if EITHER its session_id or its
-  // visitor_id is present in the canonical truth set. visitor_activity is
-  // still only a geo/marker feed — never a counter source.
-  const truthVisitorIds = useMemo(
-    () => new Set(truthSessions.map((s) => s.visitor_id).filter(Boolean) as string[]),
-    [truthSessions],
-  );
-
-  const filteredActivities = displayActivities?.filter((a) => {
+  const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
     if (!matchesSourceFilter(a)) return false;
-    // Certification-critical: only display markers/heatmap for real
-    // visitors that canonical counts. Match by session_id OR visitor_id so
-    // schema-namespace drift between the two writers cannot silently zero
-    // the map while counters remain populated.
-    if (truth) {
-      const sidOk = truthSessionIds.has(a.session_id);
-      const vidOk = !!a.visitor_id && truthVisitorIds.has(a.visitor_id);
-      if (!sidOk && !vidOk) return false;
-    }
     return true;
-  });
+  }).filter((a): a is VisitorActivity & { latitude: number; longitude: number } => (
+    typeof a.latitude === "number" &&
+    typeof a.longitude === "number" &&
+    Number.isFinite(a.latitude) &&
+    Number.isFinite(a.longitude)
+  )).map((a) => ({ ...a, source: a.utm_source || a.referrer_category || "direct", is_internal: false }));
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
