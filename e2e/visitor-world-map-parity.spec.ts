@@ -363,6 +363,78 @@ test.describe("Visitor World Map canonical parity", () => {
     expect(markerBreakdown.checkout).toBeLessThanOrEqual(EXPECTED.checkoutStarted);
     expect(markerBreakdown.cart + markerBreakdown.checkout).toBeLessThanOrEqual(EXPECTED.addToCart + EXPECTED.checkoutStarted);
 
+    // ---------- 1c) Per-marker GeoJSON property parity ----------
+    // Every marker feature the map renders must, property-for-property,
+    // reflect the canonical session it was derived from — same activity
+    // classification, same source, same coords, and the canonical=true
+    // provenance flag. Any drift proves a parallel truth source.
+    const markerFeaturesJson = await page.evaluate(() => {
+      const el = document.querySelector('[data-testid="world-map-marker-features-json"]');
+      return el?.textContent ?? "[]";
+    });
+    const renderedMarkers = JSON.parse(markerFeaturesJson) as Array<{
+      session_id: string;
+      visitor_id: string | null;
+      activity_type: string;
+      source: string;
+      canonical: boolean;
+      country: string | null;
+      city: string | null;
+      latitude: number;
+      longitude: number;
+    }>;
+    expect(renderedMarkers).toHaveLength(EXPECTED_MARKERS.total);
+
+    // Build the ground-truth marker map from the same fixture the mocked
+    // canonical endpoint returned. Sessions without valid coords must NOT
+    // appear as markers; sessions with coords must appear exactly once.
+    const expectedActivity = (s: (typeof canonicalSessions)[number]) => {
+      if (s.has_checkout || s.has_purchase) return "checkout";
+      if (s.has_add_to_cart || s.has_view_cart) return "cart";
+      return "browsing";
+    };
+    const expectedMarkerBySession = new Map(
+      canonicalSessions
+        .filter((s) => typeof s.latitude === "number" && typeof s.longitude === "number")
+        .map((s) => [
+          s.session_id,
+          {
+            session_id: s.session_id,
+            visitor_id: s.visitor_id,
+            activity_type: expectedActivity(s),
+            source: s.source,
+            canonical: true,
+            country: s.country,
+            city: s.city,
+            latitude: s.latitude,
+            longitude: s.longitude,
+          },
+        ]),
+    );
+
+    // No extraneous markers (parallel truth guard).
+    for (const marker of renderedMarkers) {
+      expect(expectedMarkerBySession.has(marker.session_id)).toBe(true);
+    }
+    // Every geo-eligible canonical session is rendered exactly once.
+    const renderedIds = renderedMarkers.map((m) => m.session_id).sort();
+    expect(renderedIds).toEqual(Array.from(expectedMarkerBySession.keys()).sort());
+
+    // Property-for-property equality per marker.
+    for (const marker of renderedMarkers) {
+      const expected = expectedMarkerBySession.get(marker.session_id)!;
+      expect(marker).toEqual(expected);
+      expect(marker.canonical).toBe(true);
+    }
+
+    // No session without valid coords leaked into the marker layer.
+    const nogeoIds = canonicalSessions
+      .filter((s) => s.latitude === null || s.longitude === null)
+      .map((s) => s.session_id);
+    for (const id of nogeoIds) {
+      expect(renderedIds).not.toContain(id);
+    }
+
     // Badges (Dutch labels, source-of-truth for the visible counters row).
     await expect(page.getByText(`${EXPECTED.visitors} unieke bezoekers`)).toBeVisible();
     await expect(page.getByText(`${EXPECTED.browsingBadge} pageviews`)).toBeVisible();
