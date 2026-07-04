@@ -170,6 +170,20 @@ const EXPECTED = {
   sessionsWithoutGeo: 1,
 };
 
+// Marker/heatmap ground truth derived from the fixture. Weight scheme
+// (mirrors markerFeaturesToGeoJson): checkout=3, cart=2, browsing=1.
+//   canon-1 → cart      (weight 2)
+//   canon-2 → checkout  (weight 3)
+//   canon-4 → browsing  (weight 1)
+//   canon-3-nogeo excluded (no coords).
+const EXPECTED_MARKERS = {
+  total: 3,
+  checkout: 1,
+  cart: 1,
+  browsing: 1,
+  heatmapWeightTotal: 2 + 3 + 1,
+};
+
 function canonicalFixture() {
   return {
     ok: true,
@@ -321,6 +335,33 @@ test.describe("Visitor World Map canonical parity", () => {
     expect(diag.sessionsWithoutGeo).toBe(EXPECTED.sessionsWithoutGeo);
     expect(diag.markerFeatures).toBe(EXPECTED.sessionsWithGeo);
     expect(diag.renderedMapboxSourceFeatures).toBeGreaterThan(0);
+
+    // ---------- 1b) Marker breakdown + heatmap intensity parity ----------
+    // Marker counts per activity_type AND the total heatmap intensity weight
+    // must be byte-identical to what the canonical truth set produces —
+    // otherwise the visible map would over/under-represent conversions.
+    const markerBreakdown = await diagnostics.evaluate((el) => ({
+      total: Number(el.getAttribute("data-marker-features")),
+      heatmap: Number(el.getAttribute("data-heatmap-features")),
+      checkout: Number(el.getAttribute("data-marker-checkout")),
+      cart: Number(el.getAttribute("data-marker-cart")),
+      browsing: Number(el.getAttribute("data-marker-browsing")),
+      heatmapWeightTotal: Number(el.getAttribute("data-heatmap-weight-total")),
+    }));
+    expect(markerBreakdown.total).toBe(EXPECTED_MARKERS.total);
+    expect(markerBreakdown.heatmap).toBe(EXPECTED_MARKERS.total);
+    expect(markerBreakdown.checkout).toBe(EXPECTED_MARKERS.checkout);
+    expect(markerBreakdown.cart).toBe(EXPECTED_MARKERS.cart);
+    expect(markerBreakdown.browsing).toBe(EXPECTED_MARKERS.browsing);
+    expect(markerBreakdown.heatmapWeightTotal).toBe(EXPECTED_MARKERS.heatmapWeightTotal);
+    // Rendered Mapbox source count must equal marker count — marker and
+    // heatmap layers share the SAME `visitor-map-source`, so any drift
+    // between markers and heatmap intensity would indicate parallel truth.
+    expect(diag.renderedMapboxSourceFeatures).toBe(EXPECTED_MARKERS.total);
+    // Per-activity marker totals must also reconcile with canonical funnel
+    // counters: checkout markers ≤ checkout_started, cart markers ≤ ATC.
+    expect(markerBreakdown.checkout).toBeLessThanOrEqual(EXPECTED.checkoutStarted);
+    expect(markerBreakdown.cart + markerBreakdown.checkout).toBeLessThanOrEqual(EXPECTED.addToCart + EXPECTED.checkoutStarted);
 
     // Badges (Dutch labels, source-of-truth for the visible counters row).
     await expect(page.getByText(`${EXPECTED.visitors} unieke bezoekers`)).toBeVisible();

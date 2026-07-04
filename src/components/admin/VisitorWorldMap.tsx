@@ -2416,6 +2416,10 @@ export const VisitorWorldMap = () => {
           data-sessions-with-geo={mapDiagnostics.sessionsWithGeo}
           data-marker-features={mapDiagnostics.markerFeatures}
           data-heatmap-features={mapDiagnostics.heatmapFeatures}
+          data-heatmap-weight-total={markerFeatures.reduce((sum, f) => sum + (f.activity_type === "checkout" ? 3 : f.activity_type === "cart" ? 2 : 1), 0)}
+          data-marker-checkout={markerFeatures.filter((f) => f.activity_type === "checkout").length}
+          data-marker-cart={markerFeatures.filter((f) => f.activity_type === "cart").length}
+          data-marker-browsing={markerFeatures.filter((f) => f.activity_type === "browsing").length}
           data-sessions-without-geo={mapDiagnostics.sessionsWithoutGeo}
           data-filtered-us-only={mapDiagnostics.filteredOutByUsOnly}
           data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
