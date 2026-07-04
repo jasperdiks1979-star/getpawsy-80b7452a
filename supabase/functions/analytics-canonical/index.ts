@@ -123,12 +123,15 @@ Deno.serve(async (req) => {
     while (true) {
       let q = supabase
         .from("canonical_events")
-        .select("canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,utm_source,utm_medium,referrer,country,device")
+        .select("canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,utm_source,utm_medium,utm_campaign,referrer,country,city,device")
         .gte("occurred_at", since)
         .lte("occurred_at", until)
         .order("occurred_at", { ascending: false })
         .range(from, from + PAGE - 1);
-      if (geo === "US") q = q.eq("country", "US");
+      // Do NOT filter canonical_events by `country = 'US'` here. The writer
+      // stores mixed values (`US`, `USA`, `United States`) and many rows are
+      // country-null until the visitor_activity geo enrichment below runs.
+      // Geo filtering is applied after enrichment on the per-session truth set.
       const { data, error } = await q;
       if (error) throw error;
       if (!data || data.length === 0) break;
@@ -203,20 +206,6 @@ Deno.serve(async (req) => {
 
     // funnel is built AFTER totals below (needs the reconciled per-session set).
 
-    const countries = Array.from(perCountry.entries()).map(([country, c]) => ({
-      country,
-      visitors: c.visitors.size,
-      sessions: c.sessions.size,
-      page_views: c.pv,
-      add_to_cart: c.atc.size,
-      checkout_started: c.co.size,
-      purchases: c.pur.size,
-    })).sort((a, b) => b.visitors - a.visitors);
-
-    const sources = Array.from(perSource.entries()).map(([source, ss]) => ({
-      source, sessions: ss.size,
-    })).sort((a, b) => b.sessions - a.sessions);
-
     // ── per-session aggregation (truth envelope) ─────────────
     // One row per session, derived from the SAME canonical_events array
     // used for totals. This is what map markers, CSV and Summary consume.
@@ -266,7 +255,7 @@ Deno.serve(async (req) => {
           device: r.device ?? null,
           utm_source: r.utm_source ?? null,
           utm_medium: r.utm_medium ?? null,
-          utm_campaign: null,
+          utm_campaign: r.utm_campaign ?? null,
           referrer: r.referrer ?? null,
           page_path: r.page_path ?? null,
           has_product_view: false,
@@ -306,7 +295,7 @@ Deno.serve(async (req) => {
       const batch = sessionIds.slice(i, i + CHUNK);
       const { data: va, error: vaErr } = await supabase
         .from("visitor_activity")
-        .select("session_id,visitor_id,latitude,longitude,is_internal,utm_campaign,order_value")
+        .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("session_id", batch)
         .order("created_at", { ascending: false });
       if (vaErr) continue; // enrichment failure must not break the truth envelope
@@ -315,6 +304,8 @@ Deno.serve(async (req) => {
         if (!s) continue;
         if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
         if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
+        if (!s.country && row.country) s.country = row.country;
+        if (!s.city && row.city) s.city = row.city;
         if (row.is_internal === true) s.is_internal = true;
         if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
         const ov = Number(row.order_value || 0);
@@ -338,7 +329,7 @@ Deno.serve(async (req) => {
       const batch = visitorIds.slice(i, i + CHUNK);
       const { data: va, error: vaErr } = await supabase
         .from("visitor_activity")
-        .select("visitor_id,latitude,longitude,is_internal,utm_campaign,order_value")
+        .select("visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("visitor_id", batch)
         .order("created_at", { ascending: false });
       if (vaErr) continue;
@@ -348,6 +339,8 @@ Deno.serve(async (req) => {
         for (const s of targets) {
           if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
           if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
+          if (!s.country && row.country) s.country = row.country;
+          if (!s.city && row.city) s.city = row.city;
           if (row.is_internal === true) s.is_internal = true;
           if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
           const ov = Number(row.order_value || 0);
@@ -356,16 +349,49 @@ Deno.serve(async (req) => {
       }
     }
 
-    const sessionsArr = Array.from(sessionAgg.values()).sort(
+    const allSessionsArr = Array.from(sessionAgg.values()).sort(
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
     );
+    const sessionsArr = geo === "US"
+      ? allSessionsArr.filter((s) => isUS(s.country))
+      : allSessionsArr;
+
+    const cleanSessionsArr = sessionsArr.filter((s) => !s.is_internal);
+
+    const countryAgg = new Map<string, { visitors: Set<string>; sessions: number; page_views: number; add_to_cart: number; checkout_started: number; purchases: number }>();
+    const sourceAgg = new Map<string, number>();
+    for (const s of cleanSessionsArr) {
+      const country = s.country || "Unknown";
+      const c = countryAgg.get(country) ?? { visitors: new Set<string>(), sessions: 0, page_views: 0, add_to_cart: 0, checkout_started: 0, purchases: 0 };
+      c.visitors.add(s.visitor_id || s.session_id);
+      c.sessions += 1;
+      c.page_views += s.page_views;
+      if (s.has_add_to_cart) c.add_to_cart += 1;
+      if (s.has_checkout) c.checkout_started += 1;
+      if (s.has_purchase) c.purchases += 1;
+      countryAgg.set(country, c);
+      sourceAgg.set(s.source, (sourceAgg.get(s.source) ?? 0) + 1);
+    }
+    const countries = Array.from(countryAgg.entries()).map(([country, c]) => ({
+      country,
+      visitors: c.visitors.size,
+      sessions: c.sessions,
+      page_views: c.page_views,
+      add_to_cart: c.add_to_cart,
+      checkout_started: c.checkout_started,
+      purchases: c.purchases,
+    })).sort((a, b) => b.visitors - a.visitors);
+    const sources = Array.from(sourceAgg.entries()).map(([source, sessions]) => ({
+      source,
+      sessions,
+    })).sort((a, b) => b.sessions - a.sessions);
 
     // ── totals derived from sessionAgg (parity by construction) ────────
     // Every counter Map/CSV/Summary shows is computed the same way here.
     const visitorsSet = new Set<string>();
     let pvSum = 0, atc = 0, viewCart = 0, checkout = 0, purchase = 0;
     let orderValueSum = 0;
-    for (const s of sessionsArr) {
+    for (const s of cleanSessionsArr) {
       visitorsSet.add(s.visitor_id || s.session_id);
       pvSum += s.page_views;
       if (s.has_add_to_cart) atc++;
@@ -376,9 +402,9 @@ Deno.serve(async (req) => {
     }
     const totals = {
       visitors: visitorsSet.size,
-      sessions: sessionsArr.length,
+      sessions: cleanSessionsArr.length,
       page_views: pvSum,
-      product_views: perStage.CANONICAL_PRODUCT_VIEW.size,
+      product_views: cleanSessionsArr.filter((s) => s.has_product_view).length,
       add_to_cart: atc,
       view_cart: viewCart,
       checkout_started: checkout,

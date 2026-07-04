@@ -3,6 +3,7 @@ import type { TruthSession } from "@/hooks/useAnalyticsTruth";
 import {
   assertWorldMapRenderInvariant,
   buildWorldMapModel,
+  isUsTruthSession,
   markerFeaturesToGeoJson,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
@@ -36,6 +37,14 @@ function session(overrides: Partial<TruthSession>): TruthSession {
 }
 
 describe("Visitor World Map canonical render features", () => {
+  it("recognizes every backend US country spelling used by canonical and geo enrichment", () => {
+    expect(isUsTruthSession({ country: "US" } as TruthSession)).toBe(true);
+    expect(isUsTruthSession({ country: "USA" } as TruthSession)).toBe(true);
+    expect(isUsTruthSession({ country: "United States" } as TruthSession)).toBe(true);
+    expect(isUsTruthSession({ country: "United States of America" } as TruthSession)).toBe(true);
+    expect(isUsTruthSession({ country: "France" } as TruthSession)).toBe(false);
+  });
+
   it("builds markers and heatmap points directly from canonical sessions with geo", () => {
     const rows = [
       session({ session_id: "geo-1", latitude: 40.7128, longitude: -74.006, page_views: 3 }),
