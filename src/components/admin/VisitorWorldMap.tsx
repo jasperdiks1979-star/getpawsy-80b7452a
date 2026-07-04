@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
+import { useAnalyticsTruth, countersFromSessions, type TruthSession } from "@/hooks/useAnalyticsTruth";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -509,10 +510,60 @@ export const VisitorWorldMap = () => {
   };
 
   // Filter activities based on selected activity type AND source
-  const filteredActivities = displayActivities?.filter(a => 
-    (activityFilter === "all" || a.activity_type === activityFilter) &&
-    matchesSourceFilter(a)
-  );
+  // ------------------------------------------------------------------
+  // PR-1 analytics-truth: the counter/badge/CSV/Summary path now derives
+  // exclusively from `analytics-canonical` via `useAnalyticsTruth`. The
+  // visitor_activity fetch above is retained ONLY to supply lat/lng and
+  // activity_type for the map/heatmap animation. Its rows are intersected
+  // with the truth session set below so map markers cannot drift from the
+  // certified counter values.
+  // ------------------------------------------------------------------
+  const truthHoursRaw = getTimeRangeMs() / 3_600_000;
+  const truthHours = Math.max(1, Math.round(truthHoursRaw)); // canonical fn floors sub-hour ranges to 1h
+  const { data: truth } = useAnalyticsTruth({
+    hours: truthHours,
+    geo: usOnly ? "US" : "all",
+    refetchIntervalMs: timeRange === "live" ? 10_000 : 60_000,
+  });
+
+  // Truth-filtered session list — respects the SAME client filters as the
+  // map (excludeInternal / activityFilter / sourceFilter). Every counter,
+  // badge, CSV row, and Summary line below is derived from this array, so
+  // they are guaranteed byte-identical for identical filter selections.
+  const truthSessions: TruthSession[] = useMemo(() => {
+    const rows = truth?.sessions ?? [];
+    return rows.filter((s) => {
+      if (excludeInternal && s.is_internal) return false;
+      if (activityFilter === "cart" && !(s.has_add_to_cart || s.has_view_cart)) return false;
+      if (activityFilter === "checkout" && !s.has_checkout) return false;
+      if (activityFilter === "browsing" && (s.has_add_to_cart || s.has_view_cart || s.has_checkout)) return false;
+      if (sourceFilter !== "all") {
+        const canonical = resolveCanonicalSource({
+          utm_source: s.utm_source,
+          utm_medium: s.utm_medium,
+          utm_campaign: s.utm_campaign,
+          referrer: s.referrer,
+          referrer_category: null,
+          page_path: s.page_path,
+        });
+        if (canonical !== sourceFilter) return false;
+      }
+      return true;
+    });
+  }, [truth, excludeInternal, activityFilter, sourceFilter]);
+
+  const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
+  const truthSessionIds = useMemo(() => new Set(truthSessions.map((s) => s.session_id)), [truthSessions]);
+
+  const filteredActivities = displayActivities?.filter((a) => {
+    if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
+    if (!matchesSourceFilter(a)) return false;
+    // Certification-critical: when the truth response has landed, only
+    // display markers/heatmap for sessions the canonical service counts.
+    // Prevents "map shows N markers but counter says M" drift.
+    if (truth && !truthSessionIds.has(a.session_id)) return false;
+    return true;
+  });
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
@@ -1211,14 +1262,40 @@ export const VisitorWorldMap = () => {
     addHotSpotMarkers();
   }, [filteredActivities, mapLoaded, showHotSpots, showHeatmap]);
 
-  // Count activities by type (from filtered data)
-  const counts = {
-    browsing: filteredActivities?.filter(a => a.activity_type === "browsing").length || 0,
-    cart: filteredActivities?.filter(a => a.activity_type === "cart").length || 0,
-    checkout: filteredActivities?.filter(a => a.activity_type === "checkout").length || 0,
-  };
+  // Counters — derived from truth.sessions when available, so badges here
+  // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
+  // legacy visitor_activity aggregation only while the canonical fetch is
+  // still in flight, and warn so any regression is loud.
+  const counts = truth
+    ? {
+        browsing: truthSessions.filter(
+          (s) => !s.has_add_to_cart && !s.has_view_cart && !s.has_checkout,
+        ).length,
+        cart: truthSessions.filter(
+          (s) => (s.has_add_to_cart || s.has_view_cart) && !s.has_checkout,
+        ).length,
+        checkout: truthSessions.filter((s) => s.has_checkout).length,
+      }
+    : {
+        browsing: filteredActivities?.filter((a) => a.activity_type === "browsing").length || 0,
+        cart: filteredActivities?.filter((a) => a.activity_type === "cart").length || 0,
+        checkout: filteredActivities?.filter((a) => a.activity_type === "checkout").length || 0,
+      };
 
-  const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
+  const totalVisitors = truth
+    ? truthCounters.visitors
+    : new Set(filteredActivities?.map((a) => a.session_id)).size;
+
+  if (import.meta.env.DEV && truth && filteredActivities) {
+    const activityDerived = new Set(filteredActivities.map((a) => a.session_id)).size;
+    if (activityDerived !== truthSessionIds.size) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[analytics-truth] marker/counter drift",
+        { activityDerived, truthCount: truthSessionIds.size, timeRange, usOnly },
+      );
+    }
+  }
 
   // Enriched audit breakdown + Pinterest drilldown — unfiltered (raw) data so
   // the panel exposes internal/bot/preview traffic that the active toggles
@@ -1441,173 +1518,50 @@ export const VisitorWorldMap = () => {
   // ---------------------------------------------------------------------------
   const [isExporting, setIsExporting] = useState(false);
 
+  // ---------------------------------------------------------------------
+  // CSV export — serializes the SAME truth-filtered session list that
+  // powers the counters and badges. No parallel visitor_activity fetch.
+  // Certification: Map counter cart === CSV cart === Summary cart ===
+  // Clean Analytics Panel cart, for the same (timeRange, filters).
+  // ---------------------------------------------------------------------
   const exportToCSV = useCallback(async () => {
     setIsExporting(true);
     try {
-      // 1. Verse, volledige fetch voor de actieve tijdsperiode (los van de
-      //    realtime cache + UI filters — gebruiker wil "alles wat er was").
-      const cutoff =
-        timeRange === "live"
-          ? new Date(Date.now() - 60 * 1000).toISOString()
-          : new Date(Date.now() - getTimeRangeMs()).toISOString();
-
-      const tsCol = timeRange === "live" ? "last_seen_at" : "created_at";
-
-      // Page through 1000-row chunks (PostgREST default cap) zodat lange
-      // periodes (24h / 7d / 30d) nooit stilletjes afgekapt worden.
-      const pageSize = 1000;
-      let from = 0;
-      const all: VisitorActivityFull[] = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from("visitor_activity")
-          .select("*")
-          .gte(tsCol, cutoff)
-          .order("created_at", { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        const batch = (data || []) as unknown as VisitorActivityFull[];
-        all.push(...batch);
-        if (batch.length < pageSize) break;
-        from += pageSize;
-      }
-
-      if (all.length === 0) {
+      if (truthSessions.length === 0) {
         toast({ title: "Geen data", description: "Geen bezoekersactiviteit in deze periode.", duration: 3000 });
         return;
       }
-
-      // 2. Sessie-aggregaten: pageviews, sessieduur, eerste/laatste pad,
-      //    funnel-stage bereikt, omzet, etc.
-      type SessionAgg = {
-        firstAt: string;
-        lastAt: string;
-        pageviews: number;
-        uniquePages: Set<string>;
-        landingPath: string | null;
-        exitPath: string | null;
-        reachedCart: boolean;
-        reachedCheckout: boolean;
-        orderValueMax: number;
-        visitorId: string | null;
-      };
-      const sessions = new Map<string, SessionAgg>();
-      for (const r of all) {
-        const s = sessions.get(r.session_id);
-        const ts = r.created_at;
-        if (!s) {
-          sessions.set(r.session_id, {
-            firstAt: ts,
-            lastAt: r.last_seen_at || ts,
-            pageviews: 1,
-            uniquePages: new Set(r.page_path ? [r.page_path] : []),
-            landingPath: r.page_path ?? null,
-            exitPath: r.page_path ?? null,
-            reachedCart: r.activity_type === "cart" || r.activity_type === "checkout",
-            reachedCheckout: r.activity_type === "checkout",
-            orderValueMax: Number(r.order_value || 0),
-            visitorId: r.visitor_id ?? null,
-          });
-        } else {
-          if (ts < s.firstAt) { s.firstAt = ts; s.landingPath = r.page_path ?? s.landingPath; }
-          const lastSeen = r.last_seen_at || ts;
-          if (lastSeen > s.lastAt) { s.lastAt = lastSeen; s.exitPath = r.page_path ?? s.exitPath; }
-          s.pageviews += 1;
-          if (r.page_path) s.uniquePages.add(r.page_path);
-          if (r.activity_type === "cart" || r.activity_type === "checkout") s.reachedCart = true;
-          if (r.activity_type === "checkout") s.reachedCheckout = true;
-          if (r.order_value && Number(r.order_value) > s.orderValueMax) s.orderValueMax = Number(r.order_value);
-          if (!s.visitorId && r.visitor_id) s.visitorId = r.visitor_id;
-        }
-      }
-
-      // 3. Terugkerende bezoekers: visitor_id met >1 unieke session_id.
-      const sessionsPerVisitor = new Map<string, Set<string>>();
-      for (const [sid, s] of sessions) {
-        if (!s.visitorId) continue;
-        const set = sessionsPerVisitor.get(s.visitorId) || new Set();
-        set.add(sid);
-        sessionsPerVisitor.set(s.visitorId, set);
-      }
-
-      // 4. CSV kolommen — alles wat we meten, plus afgeleide sessie-velden.
       const headers = [
-        "created_at", "last_seen_at", "session_id", "visitor_id", "is_returning_visitor", "sessions_for_visitor",
-        "activity_type", "page_path",
-        "session_first_at", "session_last_at", "session_duration_seconds",
-        "session_pageviews", "session_unique_pages", "session_landing_path", "session_exit_path",
-        "reached_cart", "reached_checkout", "session_order_value",
+        "session_id", "visitor_id", "first_seen_at", "last_seen_at",
+        "session_duration_seconds", "page_views",
         "country", "city", "latitude", "longitude",
-        "device_type", "browser", "screen_width", "screen_height",
-        "referrer", "referrer_category",
-        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-        "product_id", "product_name", "product_price", "product_quantity",
-        "order_id", "order_value",
-        "is_internal",
+        "source", "device", "utm_source", "utm_medium", "utm_campaign",
+        "referrer", "page_path",
+        "has_product_view", "has_add_to_cart", "has_view_cart",
+        "has_checkout", "has_purchase", "order_value", "is_internal",
       ];
-
       const escape = (v: unknown): string => {
         if (v === null || v === undefined) return "";
         const s = typeof v === "string" ? v : String(v);
-        // RFC-4180: quote + double interne quotes wanneer nodig
         if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
         return s;
       };
-
-      const rows = all.map((r) => {
-        const s = sessions.get(r.session_id)!;
-        const durationSec = Math.max(
-          0,
-          Math.round((new Date(s.lastAt).getTime() - new Date(s.firstAt).getTime()) / 1000),
-        );
-        const visitorSessionCount = s.visitorId ? (sessionsPerVisitor.get(s.visitorId)?.size ?? 1) : 1;
+      const rows = truthSessions.map((s) => {
+        const dur = Math.max(0, Math.round(
+          (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
+        ));
         return [
-          r.created_at,
-          r.last_seen_at ?? "",
-          r.session_id,
-          r.visitor_id ?? "",
-          visitorSessionCount > 1 ? "true" : "false",
-          visitorSessionCount,
-          r.activity_type,
-          r.page_path ?? "",
-          s.firstAt,
-          s.lastAt,
-          durationSec,
-          s.pageviews,
-          s.uniquePages.size,
-          s.landingPath ?? "",
-          s.exitPath ?? "",
-          s.reachedCart ? "true" : "false",
-          s.reachedCheckout ? "true" : "false",
-          s.orderValueMax || "",
-          r.country ?? "",
-          r.city ?? "",
-          r.latitude ?? "",
-          r.longitude ?? "",
-          r.device_type ?? "",
-          r.browser ?? "",
-          r.screen_width ?? "",
-          r.screen_height ?? "",
-          r.referrer ?? "",
-          r.referrer_category ?? "",
-          r.utm_source ?? "",
-          r.utm_medium ?? "",
-          r.utm_campaign ?? "",
-          r.utm_term ?? "",
-          r.utm_content ?? "",
-          r.product_id ?? "",
-          r.product_name ?? "",
-          r.product_price ?? "",
-          r.product_quantity ?? "",
-          r.order_id ?? "",
-          r.order_value ?? "",
-          r.is_internal === null || r.is_internal === undefined ? "" : String(r.is_internal),
+          s.session_id, s.visitor_id ?? "", s.first_seen_at, s.last_seen_at,
+          dur, s.page_views,
+          s.country ?? "", s.city ?? "", s.latitude ?? "", s.longitude ?? "",
+          s.source, s.device ?? "", s.utm_source ?? "", s.utm_medium ?? "", s.utm_campaign ?? "",
+          s.referrer ?? "", s.page_path ?? "",
+          s.has_product_view, s.has_add_to_cart, s.has_view_cart,
+          s.has_checkout, s.has_purchase, s.order_value, s.is_internal,
         ].map(escape).join(";");
       });
-
       const csvContent = [headers.join(";"), ...rows].join("\n");
-      const bom = "\uFEFF";
-      const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
@@ -1619,10 +1573,9 @@ export const VisitorWorldMap = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
       toast({
         title: "Export gereed",
-        description: `${all.length} rows, ${sessions.size} sessies geëxporteerd.`,
+        description: `${truthSessions.length} sessies · ${truthCounters.add_to_cart} ATC · ${truthCounters.checkout_started} checkout (canonical-truth)`,
         duration: 3000,
       });
     } catch (err) {
@@ -1635,7 +1588,7 @@ export const VisitorWorldMap = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [timeRange]);
+  }, [timeRange, truthSessions, truthCounters]);
 
   // ---------------------------------------------------------------------------
   // Summary report — kort .md rapport met totalen per land, per bron en
@@ -1644,117 +1597,48 @@ export const VisitorWorldMap = () => {
   // ---------------------------------------------------------------------------
   const [isSummarizing, setIsSummarizing] = useState(false);
 
+  // ---------------------------------------------------------------------
+  // Summary export — iterates the SAME truth-filtered session list. Cart
+  // and Checkout totals here are byte-identical to the counter badges and
+  // to the CSV totals for the same filter selection.
+  // ---------------------------------------------------------------------
   const exportSummary = useCallback(async () => {
     setIsSummarizing(true);
     try {
-      const cutoff =
-        timeRange === "live"
-          ? new Date(Date.now() - 60 * 1000).toISOString()
-          : new Date(Date.now() - getTimeRangeMs()).toISOString();
-      const tsCol = timeRange === "live" ? "last_seen_at" : "created_at";
-
-      // Zelfde paging-strategie als de CSV — anders zou een 24h+ snapshot
-      // stilletjes op 1000 rows worden afgekapt.
-      const pageSize = 1000;
-      let from = 0;
-      const all: VisitorActivityFull[] = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from("visitor_activity")
-          .select("*")
-          .gte(tsCol, cutoff)
-          .order("created_at", { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        const batch = (data || []) as unknown as VisitorActivityFull[];
-        all.push(...batch);
-        if (batch.length < pageSize) break;
-        from += pageSize;
-      }
-
-      if (all.length === 0) {
+      if (truthSessions.length === 0) {
         toast({ title: "Geen data", description: "Geen bezoekersactiviteit in deze periode.", duration: 3000 });
         return;
       }
-
-      // Per-sessie aggregatie — sessieduur = laatste activity_time (of
-      // last_seen_at) − eerste activity_time, geclamped op 0.
-      type SessAgg = {
-        firstAt: number;
-        lastAt: number;
-        country: string;
-        source: string;
-        reachedCart: boolean;
-        reachedCheckout: boolean;
-        orderValueMax: number;
-        isInternal: boolean;
-      };
-      const sessions = new Map<string, SessAgg>();
-      for (const r of all) {
-        // Pinterest komt vaak binnen zonder utm_source — heuristiek matcht
-        // de logica uit de map-filter zelf zodat de cijfers consistent zijn.
-        const source =
-          r.utm_source?.toLowerCase() ||
-          (r.referrer_category === "social" ? "social" : null) ||
-          r.referrer_category ||
-          "direct";
-        const ts = new Date(r.created_at).getTime();
-        const lastSeen = r.last_seen_at ? new Date(r.last_seen_at).getTime() : ts;
-        const s = sessions.get(r.session_id);
-        if (!s) {
-          sessions.set(r.session_id, {
-            firstAt: ts,
-            lastAt: lastSeen,
-            country: r.country || "Onbekend",
-            source,
-            reachedCart: r.activity_type !== "browsing",
-            reachedCheckout: r.activity_type === "checkout",
-            orderValueMax: Number(r.order_value || 0),
-            isInternal: r.is_internal === true,
-          });
-        } else {
-          if (ts < s.firstAt) s.firstAt = ts;
-          if (lastSeen > s.lastAt) s.lastAt = lastSeen;
-          if (s.country === "Onbekend" && r.country) s.country = r.country;
-          if (s.source === "direct" && source !== "direct") s.source = source;
-          if (r.activity_type !== "browsing") s.reachedCart = true;
-          if (r.activity_type === "checkout") s.reachedCheckout = true;
-          if (r.order_value && Number(r.order_value) > s.orderValueMax) s.orderValueMax = Number(r.order_value);
-          if (r.is_internal === true) s.isInternal = true;
-        }
-      }
-
-      // Aggregaties per dimensie. We exclude internal traffic uit de
-      // hoofdcijfers maar vermelden het apart, conform de internal-traffic
-      // sanitation policy.
-      const externalSessions = Array.from(sessions.values()).filter(s => !s.isInternal);
-      const internalCount = sessions.size - externalSessions.length;
-
-      const byCountry = new Map<string, { sessions: number; cart: number; checkout: number; revenue: number }>();
-      const bySource = new Map<string, { sessions: number; cart: number; checkout: number; revenue: number }>();
-      let durationSum = 0;
+      type Bucket = { sessions: number; cart: number; checkout: number; revenue: number };
+      const byCountry = new Map<string, Bucket>();
+      const bySource = new Map<string, Bucket>();
       const durations: number[] = [];
-      for (const s of externalSessions) {
-        const dur = Math.max(0, Math.round((s.lastAt - s.firstAt) / 1000));
-        durationSum += dur;
+      for (const s of truthSessions) {
+        const dur = Math.max(0, Math.round(
+          (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
+        ));
         durations.push(dur);
-        const c = byCountry.get(s.country) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
-        c.sessions++; if (s.reachedCart) c.cart++; if (s.reachedCheckout) c.checkout++; c.revenue += s.orderValueMax;
-        byCountry.set(s.country, c);
+        const country = s.country || "Onbekend";
+        const c = byCountry.get(country) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
+        c.sessions++;
+        if (s.has_add_to_cart || s.has_view_cart) c.cart++;
+        if (s.has_checkout) c.checkout++;
+        c.revenue += s.order_value;
+        byCountry.set(country, c);
         const src = bySource.get(s.source) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
-        src.sessions++; if (s.reachedCart) src.cart++; if (s.reachedCheckout) src.checkout++; src.revenue += s.orderValueMax;
+        src.sessions++;
+        if (s.has_add_to_cart || s.has_view_cart) src.cart++;
+        if (s.has_checkout) src.checkout++;
+        src.revenue += s.order_value;
         bySource.set(s.source, src);
       }
-
-      const avgDuration = externalSessions.length ? Math.round(durationSum / externalSessions.length) : 0;
-      // Median is robuuster tegen heartbeat-uitschieters dan het gemiddelde.
       const sortedDur = [...durations].sort((a, b) => a - b);
+      const avgDuration = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
       const medianDuration = sortedDur.length
         ? sortedDur.length % 2
           ? sortedDur[(sortedDur.length - 1) / 2]
           : Math.round((sortedDur[sortedDur.length / 2 - 1] + sortedDur[sortedDur.length / 2]) / 2)
         : 0;
-
       const fmtDur = (sec: number) => {
         if (sec < 60) return `${sec}s`;
         const m = Math.floor(sec / 60);
@@ -1765,23 +1649,24 @@ export const VisitorWorldMap = () => {
       const fmtRev = (n: number) => (n ? `$${n.toFixed(2)}` : "—");
 
       const periodLabel = TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label ?? timeRange;
-      const totalEvents = all.length;
-
       const sortedCountries = Array.from(byCountry.entries()).sort((a, b) => b[1].sessions - a[1].sessions);
       const sortedSources = Array.from(bySource.entries()).sort((a, b) => b[1].sessions - a[1].sessions);
 
       const lines: string[] = [];
       lines.push(`# Bezoekersrapport — ${periodLabel}`);
       lines.push("");
-      lines.push(`_Gegenereerd: ${new Date().toLocaleString("nl-NL")}_`);
+      lines.push(`_Gegenereerd: ${new Date().toLocaleString("nl-NL")} · Bron: analytics-canonical (truth envelope)_`);
       lines.push("");
       lines.push("## Totalen");
       lines.push("");
-      lines.push(`- Sessies (extern): **${externalSessions.length}**`);
-      lines.push(`- Sessies (intern, uitgesloten): ${internalCount}`);
-      lines.push(`- Activiteits-events: ${totalEvents}`);
-      lines.push(`- In winkelwagen: **${externalSessions.filter(s => s.reachedCart).length}** (${fmtPct(externalSessions.filter(s => s.reachedCart).length, externalSessions.length)})`);
-      lines.push(`- Checkout gestart: **${externalSessions.filter(s => s.reachedCheckout).length}** (${fmtPct(externalSessions.filter(s => s.reachedCheckout).length, externalSessions.length)})`);
+      lines.push(`- Sessies: **${truthCounters.sessions}**`);
+      lines.push(`- Unieke bezoekers: **${truthCounters.visitors}**`);
+      lines.push(`- Pageviews: ${truthCounters.page_views}`);
+      lines.push(`- Add to Cart: **${truthCounters.add_to_cart}** (${fmtPct(truthCounters.add_to_cart, truthCounters.sessions)})`);
+      lines.push(`- View Cart: ${truthCounters.view_cart}`);
+      lines.push(`- Checkout gestart: **${truthCounters.checkout_started}** (${fmtPct(truthCounters.checkout_started, truthCounters.sessions)})`);
+      lines.push(`- Purchases: **${truthCounters.purchases}**`);
+      lines.push(`- Omzet: ${fmtRev(truthCounters.revenue)}`);
       lines.push(`- Gem. sessieduur: **${fmtDur(avgDuration)}** (mediaan ${fmtDur(medianDuration)})`);
       lines.push("");
       lines.push("## Top landen");
@@ -1814,7 +1699,7 @@ export const VisitorWorldMap = () => {
 
       toast({
         title: "Samenvatting gereed",
-        description: `${externalSessions.length} sessies · ${sortedCountries.length} landen · ${sortedSources.length} bronnen`,
+        description: `${truthCounters.sessions} sessies · ATC ${truthCounters.add_to_cart} · checkout ${truthCounters.checkout_started} (canonical-truth)`,
         duration: 3000,
       });
     } catch (err) {
@@ -1827,7 +1712,7 @@ export const VisitorWorldMap = () => {
     } finally {
       setIsSummarizing(false);
     }
-  }, [timeRange]);
+  }, [timeRange, truthSessions, truthCounters]);
 
   // Minimal fullscreen mode - only map with floating close button
   if (isFullscreen && fullscreenMinimal) {

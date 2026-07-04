@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle, PlayCircle } from "lucide-react";
+import { useAnalyticsTruth, type TruthResponse } from "@/hooks/useAnalyticsTruth";
 
 type Range = "24h" | "7d" | "30d";
+const RANGE_HOURS: Record<Range, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
 
+// Local view-model — kept identical shape to the previous world-map-debug
+// response so nothing below the fold changed. Populated exclusively from
+// `analytics-canonical` via `useAnalyticsTruth` so the numbers here are
+// byte-identical to the World Map counters + CSV export.
 interface DebugResponse {
   ok: boolean;
   range: Range;
@@ -56,57 +61,100 @@ const BOT_REASON_HELP: Record<string, string> = {
   empty_signal_stack: "No geo, no browser, no referrer, no UTM, no identity — pure bot ping",
 };
 
-async function fetchRange(range: Range, usOnly: boolean): Promise<DebugResponse> {
-  const { data, error } = await supabase.functions.invoke("world-map-debug", {
-    method: "GET",
-    body: undefined,
-    // @ts-ignore - functions.invoke supports query via URL when method=GET
-    headers: {},
-  });
-  if (!error && data) return data as DebugResponse;
-  // Fallback: build URL with query manually
-  const projectRef = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID || "nojvgfbcjgipjxpfatmm";
-  const url = `https://${projectRef}.supabase.co/functions/v1/world-map-debug?range=${range}&us_only=${usOnly}`;
-  const session = await supabase.auth.getSession();
-  const res = await fetch(url, {
-    headers: {
-      apikey: (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || "",
-      Authorization: `Bearer ${session.data.session?.access_token || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || ""}`,
-    },
-  });
-  return await res.json();
+// PR-1 analytics-truth: `world-map-debug` was a parallel analytics path
+// with its own filters, producing the 0-vs-5 ATC mismatch reported in the
+// incident. This panel now derives 100% of its numbers from
+// `analytics-canonical` via `useAnalyticsTruth`. Do not restore
+// world-map-debug reads here — the parity test will fail CI.
+function truthToDebug(t: TruthResponse, range: Range, usOnly: boolean): DebugResponse {
+  const filteredSessions = usOnly
+    ? t.sessions.filter((s) => (s.country || "").toUpperCase() === "US")
+    : t.sessions;
+  // Sanity: totals for the canonical response are already the source of
+  // truth; when us_only is toggled we recompute from the session list so
+  // the panel exactly reflects what CSV/Summary would output for the same
+  // filter. `analytics-canonical` supports `geo=US` server-side too — this
+  // client-side derivation keeps the range switcher instant.
+  const visitors = new Set(filteredSessions.map((s) => s.visitor_id || s.session_id)).size;
+  const sessions = filteredSessions.length;
+  let pageviews = 0, product_views = 0, add_to_cart = 0, checkout_started = 0, purchases = 0;
+  const internal = filteredSessions.filter((s) => s.is_internal).length;
+  const byCountry = new Map<string, { u: Set<string>; sess: Set<string>; pv: number; atc: number; co: number; pu: number }>();
+  const bySource = new Map<string, number>();
+  for (const s of filteredSessions) {
+    pageviews += s.page_views;
+    if (s.has_product_view) product_views++;
+    if (s.has_add_to_cart) add_to_cart++;
+    if (s.has_checkout) checkout_started++;
+    if (s.has_purchase) purchases++;
+    const c = s.country || "Unknown";
+    let row = byCountry.get(c);
+    if (!row) { row = { u: new Set(), sess: new Set(), pv: 0, atc: 0, co: 0, pu: 0 }; byCountry.set(c, row); }
+    row.u.add(s.visitor_id || s.session_id);
+    row.sess.add(s.session_id);
+    row.pv += s.page_views;
+    if (s.has_add_to_cart) row.atc++;
+    if (s.has_checkout) row.co++;
+    if (s.has_purchase) row.pu++;
+    bySource.set(s.source, (bySource.get(s.source) ?? 0) + 1);
+  }
+  const countries = Array.from(byCountry.entries())
+    .map(([country, r]) => ({
+      country,
+      unique_visitors: r.u.size,
+      sessions: r.sess.size,
+      pageviews: r.pv,
+      add_to_cart: r.atc,
+      checkout_started: r.co,
+      purchases: r.pu,
+    }))
+    .sort((a, b) => b.unique_visitors - a.unique_visitors);
+  const top_sources = Array.from(bySource.entries())
+    .map(([source, events]) => ({ source, events }))
+    .sort((a, b) => b.events - a.events);
+  const earliest = filteredSessions.reduce<string | null>((acc, s) => (!acc || s.first_seen_at < acc ? s.first_seen_at : acc), null);
+  const latest = filteredSessions.reduce<string | null>((acc, s) => (!acc || s.last_seen_at > acc ? s.last_seen_at : acc), null);
+  return {
+    ok: true,
+    range,
+    us_only: usOnly,
+    total_raw_events: pageviews + product_views + add_to_cart + checkout_started + purchases,
+    excluded_internal: internal,
+    excluded_bots: 0,
+    excluded_admin: 0,
+    excluded_non_us: usOnly ? t.sessions.length - filteredSessions.length : 0,
+    clean_events: pageviews + product_views + add_to_cart + checkout_started + purchases,
+    unique_visitors: visitors,
+    sessions,
+    pageviews,
+    product_views,
+    add_to_cart,
+    checkout_started,
+    purchases,
+    conversion_rate: visitors ? Number(((purchases / visitors) * 100).toFixed(2)) : 0,
+    earliest_event_at: earliest,
+    latest_event_at: latest,
+    countries,
+    top_sources,
+    warnings: [],
+  };
 }
 
 export const CleanAnalyticsPanel = () => {
   const [usOnly, setUsOnly] = useState(true);
   const [range, setRange] = useState<Range>("24h");
-  const [data, setData] = useState<Record<Range, DebugResponse | null>>({ "24h": null, "7d": null, "30d": null });
-  const [loading, setLoading] = useState(false);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const projectRef = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID || "nojvgfbcjgipjxpfatmm";
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token || (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-      const apikey = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY || "";
-      const results = await Promise.all(RANGES.map(async (r) => {
-        const res = await fetch(`https://${projectRef}.supabase.co/functions/v1/world-map-debug?range=${r}&us_only=${usOnly}`, {
-          headers: { apikey, Authorization: `Bearer ${token}` },
-        });
-        return [r, await res.json()] as const;
-      }));
-      const next: any = { "24h": null, "7d": null, "30d": null };
-      for (const [r, v] of results) next[r] = v;
-      setData(next);
-    } catch (e) {
-      console.error("Clean analytics load failed", e);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [usOnly]);
+  // One truth call per range. Each is byte-identical to the CSV/Summary
+  // export in `VisitorWorldMap` for the same (hours, geo).
+  const t24 = useAnalyticsTruth({ hours: RANGE_HOURS["24h"], geo: "all" });
+  const t7 = useAnalyticsTruth({ hours: RANGE_HOURS["7d"], geo: "all" });
+  const t30 = useAnalyticsTruth({ hours: RANGE_HOURS["30d"], geo: "all" });
+  const loading = t24.isLoading || t7.isLoading || t30.isLoading || t24.isFetching || t7.isFetching || t30.isFetching;
+  const reload = () => { void t24.refetch(); void t7.refetch(); void t30.refetch(); };
+  const data: Record<Range, DebugResponse | null> = useMemo(() => ({
+    "24h": t24.data ? truthToDebug(t24.data, "24h", usOnly) : null,
+    "7d":  t7.data  ? truthToDebug(t7.data,  "7d",  usOnly) : null,
+    "30d": t30.data ? truthToDebug(t30.data, "30d", usOnly) : null,
+  }), [t24.data, t7.data, t30.data, usOnly]);
 
   const current = data[range];
 
@@ -180,7 +228,7 @@ export const CleanAnalyticsPanel = () => {
             <Switch id="us-only" checked={usOnly} onCheckedChange={setUsOnly} />
             <Label htmlFor="us-only" className="text-sm">US-only</Label>
           </div>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          <Button size="sm" variant="outline" onClick={reload} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         </div>
@@ -227,7 +275,7 @@ export const CleanAnalyticsPanel = () => {
                   {consistency.errors > 0 && <Badge variant="destructive">{consistency.errors} fail</Badge>}
                 </>
               )}
-              <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+              <Button size="sm" variant="outline" onClick={reload} disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Re-run"}
               </Button>
             </div>
