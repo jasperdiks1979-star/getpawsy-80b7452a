@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
+import { useAnalyticsTruth, countersFromSessions, type TruthSession } from "@/hooks/useAnalyticsTruth";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -509,10 +510,60 @@ export const VisitorWorldMap = () => {
   };
 
   // Filter activities based on selected activity type AND source
-  const filteredActivities = displayActivities?.filter(a => 
-    (activityFilter === "all" || a.activity_type === activityFilter) &&
-    matchesSourceFilter(a)
-  );
+  // ------------------------------------------------------------------
+  // PR-1 analytics-truth: the counter/badge/CSV/Summary path now derives
+  // exclusively from `analytics-canonical` via `useAnalyticsTruth`. The
+  // visitor_activity fetch above is retained ONLY to supply lat/lng and
+  // activity_type for the map/heatmap animation. Its rows are intersected
+  // with the truth session set below so map markers cannot drift from the
+  // certified counter values.
+  // ------------------------------------------------------------------
+  const truthHoursRaw = getTimeRangeMs() / 3_600_000;
+  const truthHours = Math.max(1, Math.round(truthHoursRaw)); // canonical fn floors sub-hour ranges to 1h
+  const { data: truth } = useAnalyticsTruth({
+    hours: truthHours,
+    geo: usOnly ? "US" : "all",
+    refetchIntervalMs: timeRange === "live" ? 10_000 : 60_000,
+  });
+
+  // Truth-filtered session list — respects the SAME client filters as the
+  // map (excludeInternal / activityFilter / sourceFilter). Every counter,
+  // badge, CSV row, and Summary line below is derived from this array, so
+  // they are guaranteed byte-identical for identical filter selections.
+  const truthSessions: TruthSession[] = useMemo(() => {
+    const rows = truth?.sessions ?? [];
+    return rows.filter((s) => {
+      if (excludeInternal && s.is_internal) return false;
+      if (activityFilter === "cart" && !(s.has_add_to_cart || s.has_view_cart)) return false;
+      if (activityFilter === "checkout" && !s.has_checkout) return false;
+      if (activityFilter === "browsing" && (s.has_add_to_cart || s.has_view_cart || s.has_checkout)) return false;
+      if (sourceFilter !== "all") {
+        const canonical = resolveCanonicalSource({
+          utm_source: s.utm_source,
+          utm_medium: s.utm_medium,
+          utm_campaign: s.utm_campaign,
+          referrer: s.referrer,
+          referrer_category: null,
+          page_path: s.page_path,
+        });
+        if (canonical !== sourceFilter) return false;
+      }
+      return true;
+    });
+  }, [truth, excludeInternal, activityFilter, sourceFilter]);
+
+  const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
+  const truthSessionIds = useMemo(() => new Set(truthSessions.map((s) => s.session_id)), [truthSessions]);
+
+  const filteredActivities = displayActivities?.filter((a) => {
+    if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
+    if (!matchesSourceFilter(a)) return false;
+    // Certification-critical: when the truth response has landed, only
+    // display markers/heatmap for sessions the canonical service counts.
+    // Prevents "map shows N markers but counter says M" drift.
+    if (truth && !truthSessionIds.has(a.session_id)) return false;
+    return true;
+  });
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
@@ -1211,14 +1262,40 @@ export const VisitorWorldMap = () => {
     addHotSpotMarkers();
   }, [filteredActivities, mapLoaded, showHotSpots, showHeatmap]);
 
-  // Count activities by type (from filtered data)
-  const counts = {
-    browsing: filteredActivities?.filter(a => a.activity_type === "browsing").length || 0,
-    cart: filteredActivities?.filter(a => a.activity_type === "cart").length || 0,
-    checkout: filteredActivities?.filter(a => a.activity_type === "checkout").length || 0,
-  };
+  // Counters — derived from truth.sessions when available, so badges here
+  // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
+  // legacy visitor_activity aggregation only while the canonical fetch is
+  // still in flight, and warn so any regression is loud.
+  const counts = truth
+    ? {
+        browsing: truthSessions.filter(
+          (s) => !s.has_add_to_cart && !s.has_view_cart && !s.has_checkout,
+        ).length,
+        cart: truthSessions.filter(
+          (s) => (s.has_add_to_cart || s.has_view_cart) && !s.has_checkout,
+        ).length,
+        checkout: truthSessions.filter((s) => s.has_checkout).length,
+      }
+    : {
+        browsing: filteredActivities?.filter((a) => a.activity_type === "browsing").length || 0,
+        cart: filteredActivities?.filter((a) => a.activity_type === "cart").length || 0,
+        checkout: filteredActivities?.filter((a) => a.activity_type === "checkout").length || 0,
+      };
 
-  const totalVisitors = new Set(filteredActivities?.map(a => a.session_id)).size;
+  const totalVisitors = truth
+    ? truthCounters.visitors
+    : new Set(filteredActivities?.map((a) => a.session_id)).size;
+
+  if (import.meta.env.DEV && truth && filteredActivities) {
+    const activityDerived = new Set(filteredActivities.map((a) => a.session_id)).size;
+    if (activityDerived !== truthSessionIds.size) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[analytics-truth] marker/counter drift",
+        { activityDerived, truthCount: truthSessionIds.size, timeRange, usOnly },
+      );
+    }
+  }
 
   // Enriched audit breakdown + Pinterest drilldown — unfiltered (raw) data so
   // the panel exposes internal/bot/preview traffic that the active toggles
