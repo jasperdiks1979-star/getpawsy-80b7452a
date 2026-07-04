@@ -988,6 +988,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/admin/analytics/visitor-world-map-pro/stabilization"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <VisitorMapStabilizationPage />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/admin/stripe-test-checkout"
                             element={
                               <Suspense fallback={<RouteLoader />}>
