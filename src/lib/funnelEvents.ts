@@ -327,6 +327,14 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       },
     };
     void supabase.from('lp_funnel_events').insert(row as never).then(({ error }) => {
+      try {
+        (globalThis as any).__gp_last_atc = {
+          ...((globalThis as any).__gp_last_atc || {}),
+          insert_done: true,
+          insert_error: error ? { code: error.code, message: error.message } : null,
+        };
+        console.info('[ATC-FORENSIC-INSERT]', error ? error : 'ok');
+      } catch { /* ignore */ }
       if (error && error.code !== '23505') {
         console.debug('[funnelEvents] ATC insert failed:', error.message);
       }
