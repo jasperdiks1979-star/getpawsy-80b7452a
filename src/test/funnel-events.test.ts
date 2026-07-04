@@ -22,6 +22,7 @@ vi.mock('@/lib/botDetection', () => ({
     traffic_quality_score: 90,
   })),
   recordEventTimingSample: vi.fn(),
+  markEngagementVerified: vi.fn(),
 }));
 
 vi.mock('@/lib/attribution', () => ({
