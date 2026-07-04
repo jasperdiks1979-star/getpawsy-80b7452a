@@ -2473,6 +2473,17 @@ export const VisitorWorldMap = () => {
 
         {/* Stats Row */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
+          {isLiveNow && (
+            <div
+              className="basis-full flex items-center gap-2 px-3 py-2 rounded-md border border-green-500/50 bg-green-500/10 text-xs text-green-800 dark:text-green-200"
+              data-testid="world-map-live-mode-banner"
+              role="status"
+            >
+              <Radio className="w-4 h-4 animate-pulse text-green-600 dark:text-green-400" />
+              <span className="font-semibold">Live presence</span>
+              <span>— realtime bezoekers (heartbeat &lt; 120s). Dit is GEEN canonieke KPI. Voor omzet / conversie: gebruik Laatste 5h / 10h / 24h.</span>
+            </div>
+          )}
           <Badge variant="secondary" className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             {selectedTimeRangeLabel}
@@ -2483,10 +2494,18 @@ export const VisitorWorldMap = () => {
               {ACTIVITY_LABELS[activityFilter]}
             </Badge>
           )}
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge
+            variant="outline"
+            className={`flex items-center gap-1 ${isLiveNow ? "border-green-500 text-green-700 dark:text-green-300" : ""}`}
+          >
             <Users className="w-3 h-3" />
-            {totalVisitors} unieke bezoekers
+            {totalVisitors} {isLiveNow ? "live bezoekers" : "unieke bezoekers"}
           </Badge>
+          {isLiveNow && (
+            <Badge variant="outline" className="flex items-center gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300">
+              niet-canoniek
+            </Badge>
+          )}
           <Badge 
             variant="outline" 
             className="flex items-center gap-1"
