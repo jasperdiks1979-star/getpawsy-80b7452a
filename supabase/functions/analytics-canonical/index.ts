@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
           device: r.device ?? null,
           utm_source: r.utm_source ?? null,
           utm_medium: r.utm_medium ?? null,
-          utm_campaign: null,
+          utm_campaign: r.utm_campaign ?? null,
           referrer: r.referrer ?? null,
           page_path: r.page_path ?? null,
           has_product_view: false,

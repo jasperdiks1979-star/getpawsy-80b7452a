@@ -146,9 +146,10 @@ async function main() {
       if (geo === "US") {
         const allEnvelope = await callCanonical({ hours, geo: "all" });
         const expectedUsSessions = allEnvelope.sessions.filter((s) => isUS(s.country)).length;
+        const geoScenario = `h=${hours} geo=US`;
         if (expectedUsSessions > 0 && envelope.sessions.length !== expectedUsSessions) {
           drifts.push({
-            scenario: `h=${hours} geo=US`,
+            scenario: geoScenario,
             source: "US geo filter",
             metric: "sessions",
             expected: expectedUsSessions,
@@ -156,7 +157,7 @@ async function main() {
             delta: envelope.sessions.length - expectedUsSessions,
           });
         } else {
-          passes.push(`${scenario} — US geo filter ≡ enriched canonical sessions`);
+          passes.push(`${geoScenario} — US geo filter ≡ enriched canonical sessions`);
         }
       }
       for (const clean of CLEANS) {
