@@ -192,7 +192,7 @@ export default function PinterestAttributionHealthPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs">Purchases</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs">Attributed purchases</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{latest?.attributed_purchases ?? 0}</div>
             <div className="text-xs text-muted-foreground">of {latest?.purchases ?? 0} <Pct a={latest?.attributed_purchases ?? 0} b={latest?.purchases ?? 0} /></div>
@@ -243,7 +243,7 @@ export default function PinterestAttributionHealthPage() {
                 <tr className="text-left text-muted-foreground border-b">
                   <th className="py-2">When</th>
                   <th>Coverage</th>
-                  <th>Sessions</th>
+                  <th>Attr. sessions</th>
                   <th>Views</th>
                   <th>ATC</th>
                   <th>Purchase</th>
