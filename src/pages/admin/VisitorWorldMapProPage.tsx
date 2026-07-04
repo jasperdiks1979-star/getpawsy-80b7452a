@@ -63,6 +63,13 @@ export default function VisitorWorldMapProPage() {
   const [state, setState] = useState<ProToolbarState>(loadInitialState);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [followSelected, setFollowSelected] = useState(false);
+  const [mapDiagnostics, setMapDiagnostics] = useState({
+    liveMarkersRendered: 0,
+    liveClusters: 0,
+    selectedLiveSessionId: null as string | null,
+    followMode: false,
+  });
 
   const isLive = state.timeRange === "live";
   const livePresence = useLivePresence({
@@ -112,6 +119,16 @@ export default function VisitorWorldMapProPage() {
     setSelectedSessionId(sessionId);
     setDrawerOpen(true);
   }, []);
+
+  const handleMapDiagnostics = useCallback(
+    (d: {
+      liveMarkersRendered: number;
+      liveClusters: number;
+      selectedLiveSessionId: string | null;
+      followMode: boolean;
+    }) => setMapDiagnostics(d),
+    [],
+  );
 
   return (
     <HelmetProvider>
@@ -179,6 +196,10 @@ export default function VisitorWorldMapProPage() {
                 initialActivityFilter={state.activity}
                 initialUsOnly={state.usOnly}
                 initialExcludeInternal={state.excludeInternal}
+                selectedLiveSessionId={isLive ? selectedSessionId : null}
+                followSelectedLiveSession={isLive && followSelected}
+                onLiveVisitorSelect={isLive ? openVisitor : undefined}
+                onLiveMapDiagnostics={isLive ? handleMapDiagnostics : undefined}
               />
             </section>
 
@@ -187,11 +208,36 @@ export default function VisitorWorldMapProPage() {
               className="hidden lg:block"
             >
               {isLive ? (
-                <LiveVisitorFeed
-                  rows={livePresence.rows}
-                  selectedSessionId={selectedSessionId}
-                  onSelect={openVisitor}
-                />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-[11px]">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={followSelected}
+                        onChange={(e) => setFollowSelected(e.target.checked)}
+                        disabled={!selectedSessionId}
+                      />
+                      <span>Follow selected visitor</span>
+                    </label>
+                    {selectedSessionId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSessionId(null);
+                          setFollowSelected(false);
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <LiveVisitorFeed
+                    rows={livePresence.rows}
+                    selectedSessionId={selectedSessionId}
+                    onSelect={openVisitor}
+                  />
+                </div>
               ) : (
                 <div className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
                   <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-foreground">
@@ -216,7 +262,7 @@ export default function VisitorWorldMapProPage() {
                 diagnostics={livePresence.diagnostics}
                 activeSessions={new Set(livePresence.rows.map((r) => r.session_id)).size}
                 sessionsWithGeo={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
-                liveMarkers={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
+                liveMarkers={mapDiagnostics.liveMarkersRendered || livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
                 liveCanonicalOverlap={overlap.overlapAny}
               />
             ) : (
