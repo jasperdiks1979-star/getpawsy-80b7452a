@@ -108,14 +108,15 @@ describe("Visitor World Map Pro — ProToolbar", () => {
   });
 
   it("shows the Live-mode banner when period is 'live' and hides it otherwise", () => {
-    const { rerender } = render(
+    const live = render(
       <ToolbarHarness
         initial={{ timeRange: "live", source: "all", activity: "all", usOnly: false, excludeInternal: true }}
       />,
     );
     expect(screen.getByTestId("vwm-pro-live-banner")).toBeInTheDocument();
+    live.unmount();
 
-    rerender(
+    render(
       <ToolbarHarness
         initial={{ timeRange: "24h", source: "all", activity: "all", usOnly: false, excludeInternal: true }}
       />,
