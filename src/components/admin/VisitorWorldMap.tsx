@@ -2606,6 +2606,16 @@ export const VisitorWorldMap = () => {
             value={canonicalFeatureAudit.orphanCount}
             tone={canonicalFeatureAudit.orphanCount === 0 ? "good" : "bad"}
           />
+          {isLiveNow && (
+            <>
+              <Stat label="Live activity rows" value={liveModel.diagnostics.liveActivityRows} tone="neutral" />
+              <Stat label="Active live visitors" value={liveModel.diagnostics.activeLiveVisitors} tone={liveModel.diagnostics.activeLiveVisitors ? "good" : "warn"} />
+              <Stat label="Live with geo" value={liveModel.diagnostics.liveWithGeo} tone={liveModel.diagnostics.liveWithGeo ? "good" : "warn"} />
+              <Stat label="Live markers rendered" value={liveModel.diagnostics.liveMarkersRendered} tone={liveModel.diagnostics.liveMarkersRendered ? "good" : "warn"} />
+              <Stat label="Live↔canonical (session)" value={liveModel.diagnostics.overlapSession} />
+              <Stat label="Live↔canonical (visitor)" value={liveModel.diagnostics.overlapVisitor} />
+            </>
+          )}
         </div>
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-2 text-[11px]"
