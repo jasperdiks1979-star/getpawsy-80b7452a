@@ -31,6 +31,8 @@ import {
   assertWorldMapRenderInvariant,
   buildWorldMapModel,
   markerFeaturesToGeoJson,
+  markerFeaturesToGeoJsonWithCanonical,
+  auditCanonicalFeatureFlags,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
@@ -548,6 +550,18 @@ export const VisitorWorldMap = () => {
   const heatmapFeatures = mapModel.heatmapFeatures;
   const mapDiagnostics = mapModel.diagnostics;
 
+  // Canonical truth session_id set — the ONLY authorized source of session
+  // identities for map features. Any rendered marker whose session_id is
+  // missing from this set is an "orphan" (parallel truth leak).
+  const canonicalSessionIdSet = useMemo(
+    () => new Set((truth?.sessions ?? []).map((s) => s.session_id).filter(Boolean)),
+    [truth],
+  );
+  const canonicalFeatureAudit = useMemo(
+    () => auditCanonicalFeatureFlags(markerFeatures, canonicalSessionIdSet),
+    [markerFeatures, canonicalSessionIdSet],
+  );
+
   // Overlap diagnostics — how many session_ids / visitor_ids from the raw
   // `visitor_activity` stream also appear in the canonical truth envelope.
   // Surfaces the namespace mismatch that caused the P0 marker regression, so
@@ -821,7 +835,7 @@ export const VisitorWorldMap = () => {
         return;
       }
 
-      const geojsonData = markerFeaturesToGeoJson(markerFeatures);
+      const geojsonData = markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
@@ -900,7 +914,7 @@ export const VisitorWorldMap = () => {
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded]);
+  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
@@ -2421,6 +2435,9 @@ export const VisitorWorldMap = () => {
           data-marker-cart={markerFeatures.filter((f) => f.activity_type === "cart").length}
           data-marker-browsing={markerFeatures.filter((f) => f.activity_type === "browsing").length}
           data-sessions-without-geo={mapDiagnostics.sessionsWithoutGeo}
+          data-canonical-features={canonicalFeatureAudit.canonicalCount}
+          data-orphan-features={canonicalFeatureAudit.orphanCount}
+          data-orphan-session-ids={canonicalFeatureAudit.orphanSessionIds.join(",")}
           data-filtered-us-only={mapDiagnostics.filteredOutByUsOnly}
           data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
           data-rendered-mapbox-source-features={renderedMapboxSourceFeatureCount}
@@ -2451,7 +2468,7 @@ export const VisitorWorldMap = () => {
                   visitor_id: f.visitor_id ?? null,
                   activity_type: f.activity_type,
                   source: f.source,
-                  canonical: true,
+                  canonical: canonicalSessionIdSet.has(f.session_id),
                   country: f.country,
                   city: f.city,
                   latitude: f.latitude,
@@ -2468,6 +2485,11 @@ export const VisitorWorldMap = () => {
           <Stat label="US-only filtered" value={mapDiagnostics.filteredOutByUsOnly} />
           <Stat label="Internal/test filtered" value={mapDiagnostics.filteredOutByInternalTest} />
           <Stat label="Mapbox source" value={renderedMapboxSourceFeatureCount} tone={renderedMapboxSourceFeatureCount ? "good" : "warn"} />
+          <Stat
+            label="Orphan features"
+            value={canonicalFeatureAudit.orphanCount}
+            tone={canonicalFeatureAudit.orphanCount === 0 ? "good" : "bad"}
+          />
         </div>
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-2 text-[11px]"

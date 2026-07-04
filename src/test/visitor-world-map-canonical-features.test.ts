@@ -5,6 +5,10 @@ import {
   buildWorldMapModel,
   isUsTruthSession,
   markerFeaturesToGeoJson,
+  markerFeaturesToGeoJsonWithCanonical,
+  auditCanonicalFeatureFlags,
+  assertZeroOrphanFeatures,
+  type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
 function session(overrides: Partial<TruthSession>): TruthSession {
@@ -107,5 +111,59 @@ describe("Visitor World Map canonical render features", () => {
       markerFeatures: 0,
       heatmapFeatures: 0,
     })).toBe(false);
+  });
+
+  it("stamps canonical=true only for features whose session_id is in the canonical truth set", () => {
+    const model = buildWorldMapModel(
+      [
+        session({ session_id: "truth-1", latitude: 40, longitude: -74 }),
+        session({ session_id: "truth-2", latitude: 41, longitude: -75, has_add_to_cart: true }),
+      ],
+      { activityFilter: "all", sourceFilter: "all", usOnly: false, excludeInternal: true },
+    );
+    // Inject a synthetic orphan (a feature whose session_id is NOT in the
+    // canonical truth envelope) to prove the audit detects parallel truth.
+    const orphan: WorldMapMarkerFeature = {
+      ...model.markerFeatures[0],
+      id: "orphan-x",
+      session_id: "orphan-x",
+    };
+    const features = [...model.markerFeatures, orphan];
+    const canonicalIds = new Set(["truth-1", "truth-2"]);
+
+    const audit = auditCanonicalFeatureFlags(features, canonicalIds);
+    expect(audit.total).toBe(3);
+    expect(audit.canonicalCount).toBe(2);
+    expect(audit.orphanCount).toBe(1);
+    expect(audit.orphanSessionIds).toEqual(["orphan-x"]);
+    expect(assertZeroOrphanFeatures(audit)).toBe(false);
+
+    const geojson = markerFeaturesToGeoJsonWithCanonical(features, canonicalIds);
+    const canonicalFlags = geojson.features.map((f) => ({ id: f.properties?.session_id, canonical: f.properties?.canonical }));
+    expect(canonicalFlags).toEqual([
+      { id: "truth-1", canonical: true },
+      { id: "truth-2", canonical: true },
+      { id: "orphan-x", canonical: false },
+    ]);
+  });
+
+  it("zero-orphan invariant holds when every rendered feature comes from the canonical set", () => {
+    const model = buildWorldMapModel(
+      [
+        session({ session_id: "a", latitude: 10, longitude: 20 }),
+        session({ session_id: "b", latitude: 11, longitude: 21, has_checkout: true, has_purchase: true }),
+      ],
+      { activityFilter: "all", sourceFilter: "all", usOnly: false, excludeInternal: true },
+    );
+    const canonicalIds = new Set(["a", "b"]);
+    const audit = auditCanonicalFeatureFlags(model.markerFeatures, canonicalIds);
+    expect(audit.orphanCount).toBe(0);
+    expect(audit.canonicalCount).toBe(2);
+    expect(assertZeroOrphanFeatures(audit)).toBe(true);
+    // Default (no set) geojson stamps canonical=true for backward compat.
+    const geojson = markerFeaturesToGeoJson(model.markerFeatures);
+    for (const f of geojson.features) {
+      expect(f.properties?.canonical).toBe(true);
+    }
   });
 });

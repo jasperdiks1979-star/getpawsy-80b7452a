@@ -158,6 +158,22 @@ export function buildWorldMapModel(
 }
 
 export function markerFeaturesToGeoJson(features: WorldMapMarkerFeature[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return markerFeaturesToGeoJsonWithCanonical(features, null);
+}
+
+/**
+ * Same as `markerFeaturesToGeoJson`, but stamps each feature's `canonical`
+ * property against a ground-truth set of canonical session_ids. Any feature
+ * whose session_id is NOT in the set is marked `canonical: false` and is an
+ * "orphan" — proof of a parallel truth source leaking into the render layer.
+ *
+ * When `canonicalSessionIds` is `null`, every feature is treated as canonical
+ * (used only for backwards compat with the plain export above).
+ */
+export function markerFeaturesToGeoJsonWithCanonical(
+  features: WorldMapMarkerFeature[],
+  canonicalSessionIds: ReadonlySet<string> | null,
+): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
     type: "FeatureCollection",
     features: features.map((feature) => ({
@@ -170,7 +186,7 @@ export function markerFeaturesToGeoJson(features: WorldMapMarkerFeature[]): GeoJ
         weight: feature.activity_type === "checkout" ? 3 : feature.activity_type === "cart" ? 2 : 1,
         color: feature.activity_type === "checkout" ? "#22c55e" : feature.activity_type === "cart" ? "#f97316" : "#ef4444",
         source: feature.source,
-        canonical: true,
+        canonical: canonicalSessionIds ? canonicalSessionIds.has(feature.session_id) : true,
       },
       geometry: {
         type: "Point" as const,
@@ -178,6 +194,53 @@ export function markerFeaturesToGeoJson(features: WorldMapMarkerFeature[]): GeoJ
       },
     })),
   };
+}
+
+export interface CanonicalFeatureAudit {
+  total: number;
+  canonicalCount: number;
+  orphanCount: number;
+  orphanSessionIds: string[];
+  flags: Map<string, boolean>;
+}
+
+/**
+ * Audits a rendered marker set against the canonical visitor truth session
+ * ids. Every feature MUST resolve to `canonical=true` (present in the truth
+ * set) or be recorded as an orphan. Zero orphans is the invariant the render
+ * layer must uphold.
+ */
+export function auditCanonicalFeatureFlags(
+  features: WorldMapMarkerFeature[],
+  canonicalSessionIds: ReadonlySet<string>,
+): CanonicalFeatureAudit {
+  const flags = new Map<string, boolean>();
+  const orphanSessionIds: string[] = [];
+  let canonicalCount = 0;
+  for (const feature of features) {
+    const isCanonical = canonicalSessionIds.has(feature.session_id);
+    flags.set(feature.id, isCanonical);
+    if (isCanonical) {
+      canonicalCount += 1;
+    } else {
+      orphanSessionIds.push(feature.session_id);
+    }
+  }
+  return {
+    total: features.length,
+    canonicalCount,
+    orphanCount: orphanSessionIds.length,
+    orphanSessionIds,
+    flags,
+  };
+}
+
+/**
+ * Zero-orphan render invariant: every rendered marker feature must correspond
+ * to a canonical truth session. Returns `true` when the invariant holds.
+ */
+export function assertZeroOrphanFeatures(audit: Pick<CanonicalFeatureAudit, "orphanCount">): boolean {
+  return audit.orphanCount === 0;
 }
 
 export function assertWorldMapRenderInvariant(diagnostics: Pick<WorldMapDiagnostics, "sessionsWithGeo" | "markerFeatures" | "heatmapFeatures">): boolean {

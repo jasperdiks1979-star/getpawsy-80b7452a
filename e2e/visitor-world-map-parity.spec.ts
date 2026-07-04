@@ -329,12 +329,22 @@ test.describe("Visitor World Map canonical parity", () => {
       sessionsWithoutGeo: Number(el.getAttribute("data-sessions-without-geo")),
       markerFeatures: Number(el.getAttribute("data-marker-features")),
       renderedMapboxSourceFeatures: Number(el.getAttribute("data-rendered-mapbox-source-features")),
+      canonicalFeatures: Number(el.getAttribute("data-canonical-features")),
+      orphanFeatures: Number(el.getAttribute("data-orphan-features")),
+      orphanSessionIds: el.getAttribute("data-orphan-session-ids") ?? "",
     }));
     expect(diag.canonicalSessions).toBe(EXPECTED.sessions);
     expect(diag.sessionsWithGeo).toBe(EXPECTED.sessionsWithGeo);
     expect(diag.sessionsWithoutGeo).toBe(EXPECTED.sessionsWithoutGeo);
     expect(diag.markerFeatures).toBe(EXPECTED.sessionsWithGeo);
     expect(diag.renderedMapboxSourceFeatures).toBeGreaterThan(0);
+    // Zero-orphan render invariant: every rendered marker must correspond
+    // to a canonical truth session_id. Any orphan proves a parallel truth
+    // source leaked into the map render layer.
+    expect(diag.orphanFeatures).toBe(0);
+    expect(diag.orphanSessionIds).toBe("");
+    expect(diag.canonicalFeatures).toBe(EXPECTED.sessionsWithGeo);
+    expect(diag.canonicalFeatures).toBe(diag.markerFeatures);
 
     // ---------- 1b) Marker breakdown + heatmap intensity parity ----------
     // Marker counts per activity_type AND the total heatmap intensity weight
