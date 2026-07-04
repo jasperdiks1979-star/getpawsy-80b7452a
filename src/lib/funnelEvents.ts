@@ -235,8 +235,34 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
-    if (env.is_bot && !input.qa) return; // never count bot ATC (except QA)
-    if (env.deduped && !input.qa) return; // collapsed inside 10s window
+    if (env.is_bot && !input.qa) {
+      try {
+        (globalThis as any).__gp_last_atc = {
+          ts: Date.now(), branch: 'gate_is_bot',
+          session_id: env.session_id, product_id: fallbackProductKey,
+          idempotency_key: env.idempotency_key,
+          is_bot: env.is_bot, bot_reason: env.bot_reason,
+          deduped: env.deduped, classification: env.classification,
+          geo_country: env.geo_country, geo_tier: env.geo_tier, qa: false,
+        };
+        console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+      } catch { /* ignore */ }
+      return; // never count bot ATC (except QA)
+    }
+    if (env.deduped && !input.qa) {
+      try {
+        (globalThis as any).__gp_last_atc = {
+          ts: Date.now(), branch: 'gate_deduped',
+          session_id: env.session_id, product_id: fallbackProductKey,
+          idempotency_key: env.idempotency_key,
+          is_bot: env.is_bot, bot_reason: env.bot_reason,
+          deduped: env.deduped, classification: env.classification,
+          geo_country: env.geo_country, geo_tier: env.geo_tier, qa: false,
+        };
+        console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+      } catch { /* ignore */ }
+      return; // collapsed inside 10s window
+    }
     // FORENSIC (temporary): expose gate decision to QA harness via window
     try {
       (globalThis as any).__gp_last_atc = {
