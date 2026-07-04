@@ -39,7 +39,7 @@ export default function VisitorMapStabilizationPage() {
       .order("ran_at", { ascending: false })
       .limit(48);
     if (error) toast.error(error.message);
-    else setRuns((data ?? []) as Run[]);
+    else setRuns(((data ?? []) as unknown) as Run[]);
     setLoading(false);
   };
 
