@@ -135,30 +135,38 @@ async function loadReferenceImages(
   supabase: any,
   productId: string,
   productHero: string | null,
-  max = 6,
+  productImagesArr: unknown = null,
+  max = 12,
 ): Promise<string[]> {
   const out = new Set<string>();
   if (productHero && /^https:\/\//i.test(productHero)) out.add(productHero);
 
-  const tryTables = [
-    { table: "product_gallery_images", cols: "image_url,sort_order", order: "sort_order" },
-    { table: "product_media", cols: "image_url,position", order: "position" },
-    { table: "cj_product_images", cols: "image_url", order: null },
-  ];
-  for (const t of tryTables) {
+  // 1) products.images (jsonb array of urls) — canonical gallery.
+  const arr = Array.isArray(productImagesArr) ? productImagesArr : [];
+  for (const raw of arr) {
     if (out.size >= max) break;
+    const u = typeof raw === "string" ? raw : (raw && typeof raw === "object" ? ((raw as any).url ?? (raw as any).src ?? (raw as any).image_url) : null);
+    if (typeof u === "string" && /^https:\/\//i.test(u)) out.add(u);
+  }
+
+  // 2) product_media (storage_url / supplier_url) — legacy variant gallery.
+  if (out.size < max) {
     try {
-      let q = supabase.from(t.table).select(t.cols).eq("product_id", productId).limit(max);
-      if (t.order) q = q.order(t.order, { ascending: true });
-      const { data, error } = await q;
-      if (error) continue;
+      const { data } = await supabase
+        .from("product_media")
+        .select("storage_url,supplier_url,media_type,sort_order")
+        .eq("product_id", productId)
+        .eq("media_type", "image")
+        .order("sort_order", { ascending: true })
+        .limit(max * 2);
       for (const r of (data ?? []) as any[]) {
-        const u = r?.image_url;
+        const u = r?.storage_url || r?.supplier_url;
         if (typeof u === "string" && /^https:\/\//i.test(u)) out.add(u);
         if (out.size >= max) break;
       }
-    } catch (_) { /* table may not exist in this env */ }
+    } catch (_) { /* non-fatal */ }
   }
+
   // Media audit CLEAN images are also safe references
   if (out.size < max) {
     try {
@@ -224,18 +232,23 @@ export async function evaluateVisualIdentity(
   // Resolve product hero + gallery references
   const { data: product } = await supabase
     .from("products")
-    .select("id,slug,name,image_url,description,is_active,primary_species")
+    .select("id,slug,name,image_url,images,description,is_active,primary_species")
     .eq("id", input.product_id)
     .maybeSingle();
   if (!product) return failClosed(input, model, "product_not_found", Date.now() - t0);
 
-  const refs = await loadReferenceImages(supabase, input.product_id, product.image_url ?? null);
+  const refs = await loadReferenceImages(supabase, input.product_id, product.image_url ?? null, product.images ?? null);
   if (refs.length === 0) {
     return failClosed(input, model, "no_reference_images", Date.now() - t0);
   }
 
+  const enrichedInput: VpiInput = {
+    ...input,
+    product_name: product.name || input.product_name,
+    product_description: product.description ?? input.product_description,
+  };
   const content: any[] = [
-    { type: "text", text: buildPrompt({ ...input, product_name: product.name, product_description: product.description ?? input.product_description }, refs) },
+    { type: "text", text: buildPrompt(enrichedInput, refs) },
     { type: "image_url", image_url: { url: input.pin_image_url } },
   ];
   for (const r of refs) content.push({ type: "image_url", image_url: { url: r } });
@@ -287,8 +300,14 @@ export async function evaluateVisualIdentity(
     hero: num(parsed.hero_score),
   };
   const identity = composite(axes);
-  const sameProduct = parsed.same_product === true &&
-    axes.shape >= 98 && axes.structure >= 98 && identity >= 98;
+  // STRICT gate (P0 directive): every product-defining axis must be ≥99.
+  // Environment and scale are allowed to vary (photography context differs).
+  const STRICT_AXES: Array<keyof VpiAxes> = [
+    "shape", "structure", "geometry", "material", "color",
+    "platform", "species", "usage", "furniture", "hero",
+  ];
+  const axisMin = STRICT_AXES.reduce((m, k) => Math.min(m, axes[k]), 100);
+  const sameProduct = parsed.same_product === true && identity >= 99 && axisMin >= 99;
 
   const bestIdx = num(parsed.best_reference_index, -1);
   const bestRef = bestIdx >= 0 && bestIdx < refs.length ? refs[bestIdx] : refs[0] ?? null;
@@ -389,8 +408,8 @@ export async function vpiEnabled(supabase: any): Promise<{ enabled: boolean; min
     for (const r of (data ?? [])) map[(r as any).key] = (r as any).value;
     return {
       enabled: map.enabled !== false,
-      minScore: Number(map.min_identity_score ?? 98) || 98,
+      minScore: Number(map.min_identity_score ?? 99) || 99,
       blockPublish: map.block_publish !== false,
     };
-  } catch { return { enabled: true, minScore: 98, blockPublish: true }; }
+  } catch { return { enabled: true, minScore: 99, blockPublish: true }; }
 }
