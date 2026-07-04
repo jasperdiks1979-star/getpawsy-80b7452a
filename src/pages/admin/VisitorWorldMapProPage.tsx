@@ -106,10 +106,13 @@ export default function VisitorWorldMapProPage() {
         </header>
 
         <main className="mx-auto w-full max-w-[1800px] px-4 py-4">
-          {/* KPI header slot — reuses the existing canonical KPI strip. */}
-          <section aria-label="Canonical KPI header" className="mb-4">
-            <CanonicalKpiStrip defaultRange="24h" />
-          </section>
+          <div className="mb-3">
+            <ProToolbar state={state} onChange={handleChange} />
+          </div>
+
+          <div className="mb-4">
+            <ProKpiHeader state={state} />
+          </div>
 
           {/* Desktop grid: left filters | map | right feed.
               On <lg the columns collapse to a single stack so the mobile
@@ -122,12 +125,19 @@ export default function VisitorWorldMapProPage() {
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-foreground">
                 Filters
               </div>
-              Advanced filters (source, activity, geo, device) will move here
-              in Stage 3. The existing in-map filters remain active for now.
+              Primary filters live in the toolbar above. Advanced faceted
+              filters (device, browser, campaign) move here in a later stage.
             </aside>
 
-            <section aria-label="Map area" className="min-h-[600px]">
-              <VisitorWorldMapV2 />
+            <section aria-label="Map area" data-testid="vwm-pro-map-slot" className="min-h-[600px]">
+              <VisitorWorldMapV2
+                key={mapKey}
+                initialTimeRange={proTimeRangeToMapTimeRange(state.timeRange)}
+                initialSourceFilter={state.source}
+                initialActivityFilter={state.activity}
+                initialUsOnly={state.usOnly}
+                initialExcludeInternal={state.excludeInternal}
+              />
             </section>
 
             <aside
