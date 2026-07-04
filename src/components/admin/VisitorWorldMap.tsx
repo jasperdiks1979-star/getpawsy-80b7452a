@@ -67,6 +67,7 @@ function MiniList({ title, rows, empty }: { title: string; rows: Array<{ k: stri
 interface VisitorActivity {
   id: string;
   session_id: string;
+  visitor_id?: string | null;
   activity_type: "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
   latitude: number | null;
   longitude: number | null;
@@ -554,14 +555,30 @@ export const VisitorWorldMap = () => {
 
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
   const truthSessionIds = useMemo(() => new Set(truthSessions.map((s) => s.session_id)), [truthSessions]);
+  // REGRESSION-FIX (P0 zero-visitors): writers on canonical_events and
+  // visitor_activity use different session_id namespaces (UUID vs
+  // `<epoch>-<rand>`), so intersecting markers by session_id alone yields
+  // zero overlap even when both stores have valid rows for the same real
+  // visitors. Accept an activity if EITHER its session_id or its
+  // visitor_id is present in the canonical truth set. visitor_activity is
+  // still only a geo/marker feed — never a counter source.
+  const truthVisitorIds = useMemo(
+    () => new Set(truthSessions.map((s) => s.visitor_id).filter(Boolean) as string[]),
+    [truthSessions],
+  );
 
   const filteredActivities = displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
     if (!matchesSourceFilter(a)) return false;
-    // Certification-critical: when the truth response has landed, only
-    // display markers/heatmap for sessions the canonical service counts.
-    // Prevents "map shows N markers but counter says M" drift.
-    if (truth && !truthSessionIds.has(a.session_id)) return false;
+    // Certification-critical: only display markers/heatmap for real
+    // visitors that canonical counts. Match by session_id OR visitor_id so
+    // schema-namespace drift between the two writers cannot silently zero
+    // the map while counters remain populated.
+    if (truth) {
+      const sidOk = truthSessionIds.has(a.session_id);
+      const vidOk = !!a.visitor_id && truthVisitorIds.has(a.visitor_id);
+      if (!sidOk && !vidOk) return false;
+    }
     return true;
   });
 
