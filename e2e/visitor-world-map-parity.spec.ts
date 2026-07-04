@@ -12,14 +12,28 @@ const BACKEND_REF = "nojvgfbcjgipjxpfatmm";
 const BACKEND_HOST = `${BACKEND_REF}.supabase.co`;
 const STORAGE_KEY = `sb-${BACKEND_REF}-auth-token`;
 
+function b64url(input: Record<string, unknown>) {
+  return Buffer.from(JSON.stringify(input)).toString("base64url");
+}
+
+function createTestJwt(userId: string) {
+  return [
+    b64url({ alg: "none", typ: "JWT" }),
+    b64url({ sub: userId, aud: "authenticated", role: "authenticated", exp: Math.floor(Date.now() / 1000) + 3600 }),
+    "test-signature",
+  ].join(".");
+}
+
+const fakeUserId = "00000000-0000-0000-0000-000000000001";
+
 const fakeSession = {
-  access_token: "fake.jwt.token",
+  access_token: createTestJwt(fakeUserId),
   refresh_token: "fake-refresh",
   expires_in: 3600,
   expires_at: Math.floor(Date.now() / 1000) + 3600,
   token_type: "bearer",
   user: {
-    id: "00000000-0000-0000-0000-000000000001",
+    id: fakeUserId,
     aud: "authenticated",
     role: "authenticated",
     email: "admin@example.test",
