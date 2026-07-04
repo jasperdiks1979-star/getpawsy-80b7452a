@@ -491,3 +491,6 @@ verify_jwt = true
 
 [functions.genesis-golden-customer]
 verify_jwt = false
+
+[functions.qa-purchase-e2e]
+verify_jwt = false
