@@ -979,6 +979,14 @@ const App = () => {
                             }
                           />
                           <Route
+                            path="/admin/analytics/visitor-world-map-pro"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <VisitorWorldMapProPage />
+                              </Suspense>
+                            }
+                          />
+                          <Route
                             path="/admin/stripe-test-checkout"
                             element={
                               <Suspense fallback={<RouteLoader />}>
