@@ -2485,6 +2485,11 @@ export const VisitorWorldMap = () => {
           <Stat label="US-only filtered" value={mapDiagnostics.filteredOutByUsOnly} />
           <Stat label="Internal/test filtered" value={mapDiagnostics.filteredOutByInternalTest} />
           <Stat label="Mapbox source" value={renderedMapboxSourceFeatureCount} tone={renderedMapboxSourceFeatureCount ? "good" : "warn"} />
+          <Stat
+            label="Orphan features"
+            value={canonicalFeatureAudit.orphanCount}
+            tone={canonicalFeatureAudit.orphanCount === 0 ? "good" : "bad"}
+          />
         </div>
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-2 text-[11px]"
