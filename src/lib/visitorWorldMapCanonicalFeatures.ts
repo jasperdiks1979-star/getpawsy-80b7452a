@@ -3,7 +3,7 @@ import type { TruthSession } from "@/hooks/useAnalyticsTruth";
 
 export type WorldMapActivityFilter = "all" | "browsing" | "cart" | "checkout";
 export type WorldMapSourceFilter = "all" | CanonicalSource;
-export type WorldMapActivityType = "browsing" | "cart" | "checkout";
+export type WorldMapActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
 
 export interface WorldMapMarkerFeature {
   id: string;
