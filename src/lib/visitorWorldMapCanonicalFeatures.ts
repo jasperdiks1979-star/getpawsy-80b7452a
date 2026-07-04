@@ -169,6 +169,8 @@ export function markerFeaturesToGeoJson(features: WorldMapMarkerFeature[]): GeoJ
         activity_type: feature.activity_type,
         weight: feature.activity_type === "checkout" ? 3 : feature.activity_type === "cart" ? 2 : 1,
         color: feature.activity_type === "checkout" ? "#22c55e" : feature.activity_type === "cart" ? "#f97316" : "#ef4444",
+        source: feature.source,
+        canonical: true,
       },
       geometry: {
         type: "Point" as const,
