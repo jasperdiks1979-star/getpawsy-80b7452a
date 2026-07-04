@@ -777,6 +777,13 @@ export const VisitorWorldMap = () => {
     if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
+    if (!mapInstance.isStyleLoaded()) {
+      const onIdle = () => {
+        setRenderedMapboxSourceFeatureCount(markerFeatures.length);
+      };
+      mapInstance.once("idle", onIdle);
+      return;
+    }
     const geojsonData = markerFeaturesToGeoJson(markerFeatures);
     const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
