@@ -212,6 +212,23 @@ export interface UserAddToCartInput {
  */
 export function fireUserAddToCart(input: UserAddToCartInput): void {
   try {
+    // QA-only bypass: when localStorage.gp_qa_atc_bypass=1 is set on THIS
+    // browser, force the event to be tagged qa=true so it bypasses the
+    // bot / dedupe gates and proves the insert path for headless E2E.
+    // Never trust a URL param or cookie for this — must be set manually.
+    let qaEffective = !!input.qa;
+    try {
+      if (!qaEffective && typeof localStorage !== 'undefined' &&
+          localStorage.getItem('gp_qa_atc_bypass') === '1') {
+        qaEffective = true;
+      }
+    } catch { /* ignore */ }
+    const forensicOn = (() => {
+      try {
+        return typeof localStorage !== 'undefined' &&
+          localStorage.getItem('gp_atc_forensic') === '1';
+      } catch { return false; }
+    })();
     // Degraded path: product_id and/or slug missing → STILL record the
     // event so the Clean KPI dashboard can count the intent and segment
     // it by classification / geo_tier / device. Without this fallback we
@@ -235,7 +252,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       variant_id: input.variant_id ?? null,
       event: 'add_to_cart',
     });
-    if (env.is_bot && !input.qa) {
+    if (env.is_bot && !qaEffective) {
       try {
         (globalThis as any).__gp_last_atc = {
           ts: Date.now(), branch: 'gate_is_bot',
@@ -245,11 +262,11 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
           deduped: env.deduped, classification: env.classification,
           geo_country: env.geo_country, geo_tier: env.geo_tier, qa: false,
         };
-        console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+        if (forensicOn) console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
       } catch { /* ignore */ }
       return; // never count bot ATC (except QA)
     }
-    if (env.deduped && !input.qa) {
+    if (env.deduped && !qaEffective) {
       try {
         (globalThis as any).__gp_last_atc = {
           ts: Date.now(), branch: 'gate_deduped',
@@ -259,11 +276,11 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
           deduped: env.deduped, classification: env.classification,
           geo_country: env.geo_country, geo_tier: env.geo_tier, qa: false,
         };
-        console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+        if (forensicOn) console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
       } catch { /* ignore */ }
       return; // collapsed inside 10s window
     }
-    // FORENSIC (temporary): expose gate decision to QA harness via window
+    // Forensic breadcrumb (always set on window, only logged when opt-in).
     try {
       (globalThis as any).__gp_last_atc = {
         ts: Date.now(),
@@ -276,14 +293,13 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
         classification: env.classification,
         geo_country: env.geo_country,
         geo_tier: env.geo_tier,
-        qa: !!input.qa,
+        qa: qaEffective,
         branch: 'insert_attempted',
       };
-      // eslint-disable-next-line no-console
-      console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
+      if (forensicOn) console.info('[ATC-FORENSIC]', (globalThis as any).__gp_last_atc);
     } catch { /* ignore */ }
     // Reserve the 10s bucket only for real (non-QA) events that will insert.
-    if (!input.qa) markDeduped(env.idempotency_key);
+    if (!qaEffective) markDeduped(env.idempotency_key);
 
     const last = getLastTouch() ?? classifySource();
     const first = getFirstTouch() ?? last;
@@ -310,7 +326,7 @@ export function fireUserAddToCart(input: UserAddToCartInput): void {
       validation_status: degraded ? 'degraded' : 'verified',
       degraded,
       ...qualityFields(env),
-      ...(input.qa ? { classification: 'qa', qa: true } : { qa: false }),
+      ...(qaEffective ? { classification: 'qa', qa: true } : { qa: false }),
       raw_payload: {
         slug: input.slug ?? null,
         qty: input.qty,
@@ -747,6 +763,46 @@ export function fireStickyAtcView(input: { product_id?: string | null; source_co
     event_name: 'sticky_atc_visible',
     source_component: input.source_component ?? 'pdp_sticky_cta',
     product_id: input.product_id ?? null,
+  });
+}
+
+/**
+ * Sticky add-to-cart bar was CLICKED. Fired from the button's click handler
+ * BEFORE the CartContext.addItem call, so we can measure impression→click
+ * separately from add_to_cart insert success.
+ */
+export function fireStickyAtcClick(input: {
+  product_id?: string | null;
+  source_component?: string;
+}): void {
+  fireLpEvent({
+    event_name: 'sticky_atc_click',
+    source_component: input.source_component ?? 'pdp_sticky_cta',
+    product_id: input.product_id ?? null,
+  });
+}
+
+/**
+ * Cart was hydrated from localStorage on session bootstrap (returning
+ * visitor). Distinguishes "user came back with items" from an in-session
+ * add_to_cart, so `view_cart` without ATC is no longer a phantom funnel gap.
+ * Fire ONCE per session (dedupe via 10s bucket + session-scoped guard).
+ */
+export function fireCartRestored(input: {
+  item_count: number;
+  cart_value?: number | null;
+}): void {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      if (sessionStorage.getItem('gp_cart_restored_fired') === '1') return;
+      sessionStorage.setItem('gp_cart_restored_fired', '1');
+    }
+  } catch { /* ignore */ }
+  fireLpEvent({
+    event_name: 'cart_restored',
+    source_component: 'cart_bootstrap',
+    value: input.cart_value ?? null,
+    extra: { item_count: input.item_count },
   });
 }
 

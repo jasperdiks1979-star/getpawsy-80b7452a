@@ -28,6 +28,8 @@ const getFireUserAddToCart = () =>
   import('@/lib/funnelEvents').then(m => m.fireUserAddToCart);
 const getFireUserRemoveFromCart = () =>
   import('@/lib/funnelEvents').then(m => m.fireUserRemoveFromCart);
+const getFireCartRestored = () =>
+  import('@/lib/funnelEvents').then(m => m.fireCartRestored);
 
 export interface CartItem {
   id: string;
@@ -147,6 +149,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       debouncedSync(items);
     }
   }, [items, debouncedSync]);
+
+  // Once per session, if the cart was hydrated from localStorage with
+ // items, emit `cart_restored` so `view_cart` without an in-session
+  // add_to_cart is no longer counted as a broken funnel.
+  useEffect(() => {
+    if (items.length === 0) return;
+    const cartValue = items.reduce((s, it) => s + it.price * it.quantity, 0);
+    getFireCartRestored()
+      .then(fn => fn({ item_count: items.length, cart_value: Math.round(cartValue * 100) / 100 }))
+      .catch(() => {});
+    // Intentionally run only once on mount — the helper self-dedupes per session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Set email for abandoned cart tracking
   const setAbandonedCartEmail = useCallback((email: string) => {

@@ -18,16 +18,19 @@ import { Button } from '@/components/ui/button';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { useHaptic } from '@/hooks/useHaptic';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { fireStickyAtcClick } from '@/lib/funnelEvents';
 
 interface Props {
   onCtaClick: () => void;
   inStock: boolean;
   price: number;
+  /** Product id passed through so we can attribute the sticky click. */
+  productId?: string;
   /** Optional override for CTA label. Defaults to "Add to Cart". */
   ctaLabel?: string;
 }
 
-export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Cart' }: Props) {
+export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel = 'Add to Cart' }: Props) {
   const [visible, setVisible] = useState(false);
   const [hiddenByScroll, setHiddenByScroll] = useState(false);
   const lastY = useRef(0);
@@ -80,6 +83,12 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
 
   const handleTap = () => {
     if (v2 && inStock) haptic.trigger('medium');
+    // Attribution: record sticky_atc_click BEFORE the ATC handler fires so
+    // impression → click can be measured independently of add_to_cart
+    // writer success. Non-blocking; never throws.
+    try {
+      fireStickyAtcClick({ product_id: productId ?? null, source_component: 'pdp_sticky_cta' });
+    } catch { /* ignore */ }
     onCtaClick();
   };
 
@@ -136,7 +145,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, ctaLabel = 'Add to Ca
           </span>
         </div>
         <Button
-          onClick={onCtaClick}
+          onClick={handleTap}
           disabled={!inStock}
           className="ml-auto h-12 flex-1 gap-2 text-sm font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl active:scale-[0.98] transition-transform"
         >
