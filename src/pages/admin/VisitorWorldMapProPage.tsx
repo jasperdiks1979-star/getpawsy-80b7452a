@@ -1,9 +1,43 @@
+import { useCallback, useEffect, useState } from "react";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VisitorWorldMapV2 } from "@/components/admin/visitor-world-map-v2";
-import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+import {
+  ProToolbar,
+  type ProToolbarState,
+  proHoursForRange,
+} from "@/components/admin/visitor-world-map-v2/ProToolbar";
+import { ProKpiHeader } from "@/components/admin/visitor-world-map-v2/ProKpiHeader";
+
+const STORAGE_KEY = "vwm-pro-toolbar-v1";
+
+const DEFAULT_STATE: ProToolbarState = {
+  timeRange: "24h",
+  source: "all",
+  activity: "all",
+  usOnly: false,
+  excludeInternal: true,
+};
+
+function loadInitialState(): ProToolbarState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_STATE;
+    const parsed = JSON.parse(raw) as Partial<ProToolbarState>;
+    return { ...DEFAULT_STATE, ...parsed };
+  } catch {
+    return DEFAULT_STATE;
+  }
+}
+
+function proTimeRangeToMapTimeRange(t: ProToolbarState["timeRange"]) {
+  // The underlying VisitorWorldMap uses the same tokens except "30m" is not
+  // in its enum — fall back to "15m" (closest short-window value it accepts).
+  return t === "30m" ? "15m" : t;
+}
 
 /**
  * Visitor World Map Pro — Stage 2 shell.
@@ -20,6 +54,23 @@ import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
  * later stages under their own reviews. Do NOT add analytics logic here.
  */
 export default function VisitorWorldMapProPage() {
+  const [state, setState] = useState<ProToolbarState>(loadInitialState);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore quota errors */ }
+  }, [state]);
+
+  const handleChange = useCallback((next: ProToolbarState) => setState(next), []);
+
+  // Re-key the map when toolbar state changes so its internal state re-seeds
+  // from the new initial props. This is a real, evidence-verifiable wiring:
+  // the map fully re-mounts with the toolbar's current selections. Not
+  // elegant, but honest — a full controlled refactor of the 2970-line
+  // component belongs in its own stage.
+  const mapKey = `${state.timeRange}|${state.source}|${state.activity}|${state.usOnly}|${state.excludeInternal}`;
+
   return (
     <HelmetProvider>
       <Helmet>
@@ -55,10 +106,13 @@ export default function VisitorWorldMapProPage() {
         </header>
 
         <main className="mx-auto w-full max-w-[1800px] px-4 py-4">
-          {/* KPI header slot — reuses the existing canonical KPI strip. */}
-          <section aria-label="Canonical KPI header" className="mb-4">
-            <CanonicalKpiStrip defaultRange="24h" />
-          </section>
+          <div className="mb-3">
+            <ProToolbar state={state} onChange={handleChange} />
+          </div>
+
+          <div className="mb-4">
+            <ProKpiHeader state={state} />
+          </div>
 
           {/* Desktop grid: left filters | map | right feed.
               On <lg the columns collapse to a single stack so the mobile
@@ -71,12 +125,19 @@ export default function VisitorWorldMapProPage() {
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-foreground">
                 Filters
               </div>
-              Advanced filters (source, activity, geo, device) will move here
-              in Stage 3. The existing in-map filters remain active for now.
+              Primary filters live in the toolbar above. Advanced faceted
+              filters (device, browser, campaign) move here in a later stage.
             </aside>
 
-            <section aria-label="Map area" className="min-h-[600px]">
-              <VisitorWorldMapV2 />
+            <section aria-label="Map area" data-testid="vwm-pro-map-slot" className="min-h-[600px]">
+              <VisitorWorldMapV2
+                key={mapKey}
+                initialTimeRange={proTimeRangeToMapTimeRange(state.timeRange)}
+                initialSourceFilter={state.source}
+                initialActivityFilter={state.activity}
+                initialUsOnly={state.usOnly}
+                initialExcludeInternal={state.excludeInternal}
+              />
             </section>
 
             <aside

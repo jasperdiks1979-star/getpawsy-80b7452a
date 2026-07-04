@@ -163,7 +163,29 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
   { value: "30d", label: "Laatste 30 dagen", minutes: 24 * 60 * 30 },
 ];
 
-export const VisitorWorldMap = () => {
+/**
+ * Optional controlled seed values. When provided (e.g. by the Visitor World
+ * Map Pro page toolbar) they replace the component's default initial state
+ * for the corresponding controls. This is intentionally a one-way seed —
+ * the map still owns the state after mount, and the Pro page achieves live
+ * synchronisation by re-keying the component whenever the toolbar changes.
+ * No behavioural change for callers that omit the prop.
+ */
+export interface VisitorWorldMapProps {
+  initialTimeRange?: TimeRange;
+  initialSourceFilter?: SourceFilter;
+  initialActivityFilter?: "all" | "browsing" | "cart" | "checkout";
+  initialUsOnly?: boolean;
+  initialExcludeInternal?: boolean;
+}
+
+export const VisitorWorldMap = ({
+  initialTimeRange,
+  initialSourceFilter,
+  initialActivityFilter,
+  initialUsOnly,
+  initialExcludeInternal,
+}: VisitorWorldMapProps = {}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -203,14 +225,14 @@ export const VisitorWorldMap = () => {
       setMapContainerReady(prev => !prev);
     }
   }, []);
-  const [timeRange, setTimeRange] = useState<TimeRange>("15m");
+  const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange ?? "15m");
   const [liveActivities, setLiveActivities] = useState<VisitorActivity[]>([]);
   // Default to Mercator on mobile (loads ~2x faster than 3D globe)
   const [mapProjection, setMapProjection] = useState<"globe" | "mercator">(() => {
     if (typeof window === "undefined") return "globe";
     return window.innerWidth < 768 ? "mercator" : "globe";
   });
-  const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">("all");
+  const [activityFilter, setActivityFilter] = useState<"all" | "browsing" | "cart" | "checkout">(initialActivityFilter ?? "all");
   const [checkoutNotifications, setCheckoutNotifications] = useState(() => {
     const saved = localStorage.getItem("checkout-notifications-enabled");
     return saved !== null ? saved === "true" : true;
@@ -225,7 +247,7 @@ export const VisitorWorldMap = () => {
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(initialSourceFilter ?? "all");
   const [showInactiveSources, setShowInactiveSources] = useState<boolean>(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
@@ -238,8 +260,12 @@ export const VisitorWorldMap = () => {
   // US-only is OFF by default — most rows have unresolved geo (TikTok in-app
   // browsers often block third-party IP-geo providers), so US-only would hide
   // valid traffic. Internal/test (NL) traffic is still excluded by default.
-  const [usOnly, setUsOnly] = useState(() => localStorage.getItem("map-us-only") === "true");
-  const [excludeInternal, setExcludeInternal] = useState(() => localStorage.getItem("map-exclude-internal") !== "false");
+  const [usOnly, setUsOnly] = useState(() =>
+    initialUsOnly !== undefined ? initialUsOnly : localStorage.getItem("map-us-only") === "true",
+  );
+  const [excludeInternal, setExcludeInternal] = useState(() =>
+    initialExcludeInternal !== undefined ? initialExcludeInternal : localStorage.getItem("map-exclude-internal") !== "false",
+  );
   useEffect(() => { localStorage.setItem("map-us-only", String(usOnly)); }, [usOnly]);
   useEffect(() => { localStorage.setItem("map-exclude-internal", String(excludeInternal)); }, [excludeInternal]);
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);

@@ -13,4 +13,7 @@
 // Do NOT add divergent logic here. If a change is worth making, make it
 // in the underlying component so the mobile widget and Pro page stay
 // byte-for-byte identical — that is the whole point of V2.
-export { VisitorWorldMap as VisitorWorldMapV2 } from "@/components/admin/VisitorWorldMap";
+export {
+  VisitorWorldMap as VisitorWorldMapV2,
+  type VisitorWorldMapProps as VisitorWorldMapV2Props,
+} from "@/components/admin/VisitorWorldMap";
