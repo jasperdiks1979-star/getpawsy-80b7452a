@@ -835,7 +835,7 @@ export const VisitorWorldMap = () => {
         return;
       }
 
-      const geojsonData = markerFeaturesToGeoJson(markerFeatures);
+      const geojsonData = markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
