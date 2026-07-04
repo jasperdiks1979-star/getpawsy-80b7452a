@@ -10,7 +10,7 @@
  * "real user action" in the /admin/funnel-health dashboard.
  */
 import { supabase } from '@/integrations/supabase/client';
-import { getBotClassification, recordEventTimingSample } from '@/lib/botDetection';
+import { getBotClassification, recordEventTimingSample, markEngagementVerified } from '@/lib/botDetection';
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
 import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
 import { getDeviceClassification } from '@/lib/deviceClassify';
@@ -677,6 +677,10 @@ export function firePdpView(input: {
   price?: number | null;
   qa?: boolean;
 }): void {
+  // A real PDP view is a strong human-engagement signal. Mark the session
+  // as verified so later ATC-and-later funnel events are exempt from the
+  // impossible_timing bot heuristic.
+  markEngagementVerified();
   fireLpEvent({
     event_name: 'pdp_view',
     source_component: 'pdp',

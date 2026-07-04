@@ -5,7 +5,8 @@
  *   1. User-agent regex (crawlers, headless, scrapers).
  *   2. `navigator.webdriver === true` (Selenium, Playwright, Puppeteer).
  *   3. Missing browser signals (no `navigator.languages`, no `screen.width`).
- *   4. Impossible event timing (≥3 events fired within <500ms of each other).
+ *   4. Impossible event timing (≥5 events fired within <500ms window AND
+ *      no prior verified human engagement — see markEngagementVerified).
  *
  * Result is cached per browser session in `sessionStorage` so every event
  * write picks up the same classification. `traffic_quality_score` is 0-100
@@ -15,6 +16,35 @@
 
 const STORAGE_KEY = 'gp_bot_classification_v1';
 const TIMING_BUFFER_KEY = 'gp_bot_timing_buffer_v1';
+const ENGAGEMENT_MARK_KEY = 'gp_engagement_verified_at_v1';
+
+/**
+ * Mark this session as having verified human engagement (real pdp_view /
+ * view_item). Exempts later ATC-and-later funnel events from the
+ * impossible_timing heuristic, which was false-positiving real engaged
+ * users between sticky_atc_visible and add_to_cart.
+ */
+export function markEngagementVerified(): void {
+  try {
+    if (!sessionStorage.getItem(ENGAGEMENT_MARK_KEY)) {
+      sessionStorage.setItem(ENGAGEMENT_MARK_KEY, String(Date.now()));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function engagementVerifiedAgeMs(): number | null {
+  try {
+    const raw = sessionStorage.getItem(ENGAGEMENT_MARK_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    return Date.now() - n;
+  } catch {
+    return null;
+  }
+}
 
 const CRAWLER_PATTERNS = [
   'bot', 'crawler', 'spider', 'scraper', 'headless', 'phantom',
@@ -151,10 +181,17 @@ export function recordEventTimingSample(): void {
     const raw = sessionStorage.getItem(TIMING_BUFFER_KEY);
     const buf: number[] = raw ? JSON.parse(raw) : [];
     buf.push(now);
-    while (buf.length > 6) buf.shift();
+    while (buf.length > 8) buf.shift();
     sessionStorage.setItem(TIMING_BUFFER_KEY, JSON.stringify(buf));
-    if (buf.length >= 3) {
-      const span = buf[buf.length - 1] - buf[buf.length - 3];
+    // Exempt sessions with verified human engagement older than 30s.
+    // Real users often trigger clustered events (sticky_atc_visible →
+    // add_to_cart → view_cart) after a genuine PDP dwell; those bursts
+    // were being false-positived as bots. UA/webdriver signals in
+    // classifyOnce() still catch headless traffic on their own.
+    const engagedAge = engagementVerifiedAgeMs();
+    if (engagedAge !== null && engagedAge > 30_000) return;
+    if (buf.length >= 5) {
+      const span = buf[buf.length - 1] - buf[buf.length - 5];
       if (span < 500) {
         const cur = readCached() ?? classifyOnce();
         if (!cur.is_bot) {
