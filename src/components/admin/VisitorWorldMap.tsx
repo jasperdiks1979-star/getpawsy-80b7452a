@@ -770,66 +770,34 @@ export const VisitorWorldMap = () => {
     };
   }, [autoRotate, mapLoaded]);
 
-  // Update heatmap layer
+  // Update canonical Mapbox source/layers. Markers and heatmap points are both
+  // generated from `analytics-canonical.sessions[]` with valid lat/lng — no
+  // parallel `visitor_activity` visual truth.
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities) return;
+    if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
+    const geojsonData = markerFeaturesToGeoJson(markerFeatures);
+    const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
-    // Remove existing heatmap layer and source if they exist
-    if (mapInstance.getLayer("visitor-heatmap")) {
-      mapInstance.removeLayer("visitor-heatmap");
-    }
-    if (mapInstance.getSource("visitor-heatmap-source")) {
-      mapInstance.removeSource("visitor-heatmap-source");
-    }
-
-    if (showHeatmap) {
-      // Hide markers when showing heatmap
-      markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = "none";
-      });
-
-      // Create GeoJSON data for heatmap
-      const geojsonData: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: filteredActivities
-          .filter((a) => a.latitude && a.longitude)
-          .map((activity) => ({
-            type: "Feature" as const,
-            properties: {
-              weight: ACTIVITY_WEIGHTS[activity.activity_type],
-            },
-            geometry: {
-              type: "Point" as const,
-              coordinates: [activity.longitude!, activity.latitude!],
-            },
-          })),
-      };
-
-      // Add heatmap source
-      mapInstance.addSource("visitor-heatmap-source", {
+    if (existingSource) {
+      existingSource.setData(geojsonData);
+    } else {
+      mapInstance.addSource("visitor-map-source", {
         type: "geojson",
         data: geojsonData,
       });
+    }
 
-      // Add heatmap layer
+    if (!mapInstance.getLayer("visitor-heatmap")) {
       mapInstance.addLayer({
         id: "visitor-heatmap",
         type: "heatmap",
-        source: "visitor-heatmap-source",
+        source: "visitor-map-source",
+        layout: { visibility: showHeatmap ? "visible" : "none" },
         paint: {
-          // Increase weight based on activity type
           "heatmap-weight": ["get", "weight"],
-          // Increase intensity as zoom level increases
-          "heatmap-intensity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 1,
-            9, 3
-          ],
-          // Color ramp for heatmap - from cold to hot
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
           "heatmap-color": [
             "interpolate",
             ["linear"],
@@ -842,31 +810,48 @@ export const VisitorWorldMap = () => {
             0.9, "rgba(255, 165, 0, 0.9)",
             1, "rgba(255, 0, 0, 1)"
           ],
-          // Adjust radius based on zoom
-          "heatmap-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 15,
-            9, 30
-          ],
-          // Transition from heatmap to circle layer at higher zoom
-          "heatmap-opacity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            7, 1,
-            9, 0.5
-          ],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 9, 30],
+          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.95, 7, 1, 9, 0.5],
         },
       });
-    } else {
-      // Show markers when heatmap is disabled
-      markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = "block";
+    }
+
+    if (!mapInstance.getLayer("visitor-markers")) {
+      mapInstance.addLayer({
+        id: "visitor-markers",
+        type: "circle",
+        source: "visitor-map-source",
+        layout: { visibility: showHeatmap ? "none" : "visible" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 2, 8, 6, 14],
+          "circle-color": ["get", "color"],
+          "circle-opacity": 0.95,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2,
+          "circle-stroke-opacity": 0.9,
+          "circle-blur": 0.05,
+        },
       });
     }
-  }, [showHeatmap, filteredActivities, mapLoaded, activityFilter]);
+
+    mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
+    mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
+    markersRef.current.forEach((marker) => {
+      marker.getElement().style.display = showHeatmap ? "none" : "block";
+    });
+
+    setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+    const updateRenderedCount = () => {
+      try {
+        const rendered = mapInstance.querySourceFeatures("visitor-map-source").length;
+        setRenderedMapboxSourceFeatureCount(rendered || geojsonData.features.length);
+      } catch {
+        setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+      }
+    };
+    if (mapInstance.loaded()) updateRenderedCount();
+    else mapInstance.once("idle", updateRenderedCount);
+  }, [showHeatmap, markerFeatures, mapLoaded]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
