@@ -183,23 +183,28 @@ Deno.serve(async (req) => {
   }
 
   // Visual Product Identity is the authoritative same-commercial-product gate.
-  // Category checks can be clean while the model/SKU is still wrong, so the
-  // live audit summary must include latest VPI failures and never report zero
-  // wrong products solely because category text matched.
+  // P0 rewrite: the audit MUST trigger a fresh strict VPI sweep against every
+  // live pin in THIS run and report the certification off that fresh run only.
+  // Stale "latest run" lookups previously let mismatches (cat tent → dog canopy
+  // bed) go uncounted because they were not re-scored.
+  let vpiRunId: string | null = null;
+  let unverifiedLive = 0;
   try {
-    const { data: latestRun } = await supabase
-      .from("pinterest_visual_identity_runs")
-      .select("id")
-      .eq("scope", "posted")
-      .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const supaUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Fire strict VPI: force=1 (bypass cache), scope=posted, limit=200 (>= live count).
+    const vpiRes = await fetch(
+      `${supaUrl}/functions/v1/pinterest-visual-identity-audit?mode=full&only_source=posted&force=1&limit=200`,
+      { method: "POST", headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: "{}" },
+    );
+    const vpiJson = await vpiRes.json().catch(() => ({}));
+    vpiRunId = vpiJson?.run_id ?? null;
 
-    if (latestRun?.id) {
+    if (vpiRunId) {
       const { data: vpiFails } = await supabase
         .from("pinterest_visual_identity_audits")
-        .select("pin_queue_id,pinterest_pin_id,product_slug,destination_link,wrong_product_kind,recommended_action,identity_score,differences")
-        .eq("run_id", latestRun.id)
+        .select("pin_queue_id,pinterest_pin_id,product_slug,destination_link,wrong_product_kind,recommended_action,identity_score,differences,axes,best_reference_image,pin_image_url")
+        .eq("run_id", vpiRunId)
         .eq("passed", false);
 
       const currentVpiFails = ((vpiFails ?? []) as any[]).filter((f: any) =>
@@ -208,6 +213,19 @@ Deno.serve(async (req) => {
       );
 
       visualMismatches = currentVpiFails.length;
+
+      // Single-publish-path check: how many currently-live pins were NOT
+      // re-verified in this run? A well-formed pipeline covers 100%.
+      const { data: vpiAll } = await supabase
+        .from("pinterest_visual_identity_audits")
+        .select("pin_queue_id,pinterest_pin_id")
+        .eq("run_id", vpiRunId);
+      const scoredQueue = new Set(((vpiAll ?? []) as any[]).map((r: any) => String(r.pin_queue_id ?? "")).filter(Boolean));
+      const scoredPin = new Set(((vpiAll ?? []) as any[]).map((r: any) => String(r.pinterest_pin_id ?? "")).filter(Boolean));
+      unverifiedLive = livePins.filter((p: any) =>
+        !scoredQueue.has(String(p.id)) && !scoredPin.has(String(p.pinterest_pin_id ?? ""))
+      ).length;
+
       for (const f of currentVpiFails) {
         const key = f.pin_queue_id ? `queue:${f.pin_queue_id}` : `pin:${f.pinterest_pin_id}`;
         if (repairKeys.has(key)) continue;
@@ -229,14 +247,19 @@ Deno.serve(async (req) => {
           severity: "critical",
           audit_run_id: auditRunId,
           details: {
-            visual_identity_run_id: latestRun.id,
+            visual_identity_run_id: vpiRunId,
             identity_score: f.identity_score,
-            same_category_not_pass: true,
+            axes: f.axes ?? null,
+            best_reference_image: f.best_reference_image ?? null,
+            pin_image_url: f.pin_image_url ?? null,
             differences: f.differences ?? [],
+            evidence_note: "Fresh strict VPI (≥99, gallery-wide comparison)",
           },
         });
         repairKeys.add(key);
       }
+    } else {
+      unverifiedLive = livePins.length;
     }
   } catch (_) { /* VPI tables may be absent in older environments */ }
 
@@ -276,6 +299,8 @@ Deno.serve(async (req) => {
     audit_run_id: auditRunId,
     publishing_paused: true,
     total_live_pins_audited: livePins.length,
+    vpi_run_id: vpiRunId,
+    unverified_live_pins: unverifiedLive,
     total_mismatched_pins: categoryViolations + visualMismatches,
     total_duplicate_pins: duplicatePins,
     total_category_violations: categoryViolations,
@@ -286,6 +311,17 @@ Deno.serve(async (req) => {
     queue_rows_persisted: inserted,
     top_duplicate_overlays: topOverlays,
     top_duplicate_headlines: topHeadlines,
+    certification: {
+      // PASS only if EVERY live pin was scored AND zero visual/category mismatches.
+      status: (unverifiedLive === 0 && visualMismatches === 0 && categoryViolations === 0) ? "PASS" : "FAIL",
+      requirements: {
+        live_pins: livePins.length,
+        scored_pins: livePins.length - unverifiedLive,
+        visual_fails: visualMismatches,
+        category_fails: categoryViolations,
+        unverified_live: unverifiedLive,
+      },
+    },
   };
 
   return new Response(JSON.stringify(report), {
