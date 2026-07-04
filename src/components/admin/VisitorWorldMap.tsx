@@ -2534,6 +2534,14 @@ export const VisitorWorldMap = () => {
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mt-3 text-[11px]"
           data-testid="world-map-render-diagnostics"
+          data-mode={isLiveNow ? "live" : "canonical"}
+          data-live-activity-rows={liveModel.diagnostics.liveActivityRows}
+          data-live-active-visitors={liveModel.diagnostics.activeLiveVisitors}
+          data-live-with-geo={liveModel.diagnostics.liveWithGeo}
+          data-live-markers-rendered={liveModel.diagnostics.liveMarkersRendered}
+          data-live-overlap-session={liveModel.diagnostics.overlapSession}
+          data-live-overlap-visitor={liveModel.diagnostics.overlapVisitor}
+          data-canonical-sessions-in-period={mapDiagnostics.canonicalSessions}
           data-canonical-sessions={mapDiagnostics.canonicalSessions}
           data-sessions-with-geo={mapDiagnostics.sessionsWithGeo}
           data-marker-features={mapDiagnostics.markerFeatures}
