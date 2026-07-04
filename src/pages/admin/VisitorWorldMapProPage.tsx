@@ -10,6 +10,10 @@ import {
   proHoursForRange,
 } from "@/components/admin/visitor-world-map-v2/ProToolbar";
 import { ProKpiHeader } from "@/components/admin/visitor-world-map-v2/ProKpiHeader";
+import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVisitorFeed";
+import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
+import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
+import { useLivePresence } from "@/hooks/useLivePresence";
 
 const STORAGE_KEY = "vwm-pro-toolbar-v1";
 
@@ -55,6 +59,15 @@ function proTimeRangeToMapTimeRange(t: ProToolbarState["timeRange"]) {
  */
 export default function VisitorWorldMapProPage() {
   const [state, setState] = useState<ProToolbarState>(loadInitialState);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const isLive = state.timeRange === "live";
+  const livePresence = useLivePresence({
+    enabled: isLive,
+    usOnly: state.usOnly,
+    excludeInternal: state.excludeInternal,
+  });
 
   useEffect(() => {
     try {
@@ -70,6 +83,11 @@ export default function VisitorWorldMapProPage() {
   // elegant, but honest — a full controlled refactor of the 2970-line
   // component belongs in its own stage.
   const mapKey = `${state.timeRange}|${state.source}|${state.activity}|${state.usOnly}|${state.excludeInternal}`;
+
+  const openVisitor = useCallback((sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setDrawerOpen(true);
+  }, []);
 
   return (
     <HelmetProvider>
@@ -142,14 +160,24 @@ export default function VisitorWorldMapProPage() {
 
             <aside
               aria-label="Live visitor feed (Stage 5 placeholder)"
-              className="hidden rounded-lg border bg-card p-3 text-xs text-muted-foreground lg:block"
+              className="hidden lg:block"
             >
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-foreground">
-                Live visitor feed
-              </div>
-              Right-hand realtime feed lands in Stage 5. No parallel data
-              pipeline will be introduced — it will read the same canonical
-              sessions and the isolated live-presence source already in use.
+              {isLive ? (
+                <LiveVisitorFeed
+                  rows={livePresence.rows}
+                  selectedSessionId={selectedSessionId}
+                  onSelect={openVisitor}
+                />
+              ) : (
+                <div className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-foreground">
+                    Live visitor feed
+                  </div>
+                  Switch the period selector to <strong>Live now</strong> to see
+                  active visitors in real time. Presence is diagnostic only and
+                  never contributes to canonical KPIs.
+                </div>
+              )}
             </aside>
           </div>
 
@@ -157,16 +185,34 @@ export default function VisitorWorldMapProPage() {
               today; Stage 6+ groups them here under collapsible sections. */}
           <section
             aria-label="Diagnostics (Stage 6+ placeholder)"
-            className="mt-4 rounded-lg border bg-card p-3 text-xs text-muted-foreground"
+            className="mt-4"
           >
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-foreground">
-              Diagnostics
-            </div>
-            Canonical / geo / Pinterest / delivery / developer diagnostic
-            panels stay inside the map component for now and will be lifted
-            into collapsible groups here in a later stage.
+            {isLive ? (
+              <LiveDiagnosticsPanel
+                diagnostics={livePresence.diagnostics}
+                activeSessions={new Set(livePresence.rows.map((r) => r.session_id)).size}
+                sessionsWithGeo={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
+                liveMarkers={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
+                liveCanonicalOverlap={0}
+              />
+            ) : (
+              <div className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-foreground">
+                  Diagnostics
+                </div>
+                Canonical / geo / Pinterest / delivery / developer diagnostic
+                panels stay inside the map component. Live-presence diagnostics
+                appear here when the period selector is set to <strong>Live now</strong>.
+              </div>
+            )}
           </section>
         </main>
+
+        <LiveVisitorDrawer
+          sessionId={selectedSessionId}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+        />
       </div>
     </HelmetProvider>
   );
