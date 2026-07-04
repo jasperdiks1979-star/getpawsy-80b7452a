@@ -6,6 +6,9 @@ export interface LiveDiagnosticsPanelProps {
   sessionsWithGeo: number;
   liveMarkers: number;
   liveCanonicalOverlap: number;
+  liveClusters?: number;
+  selectedLiveSessionId?: string | null;
+  followMode?: boolean;
 }
 
 function dot(color: string) {
@@ -18,6 +21,9 @@ export function LiveDiagnosticsPanel({
   sessionsWithGeo,
   liveMarkers,
   liveCanonicalOverlap,
+  liveClusters,
+  selectedLiveSessionId,
+  followMode,
 }: LiveDiagnosticsPanelProps) {
   const transportColor =
     diagnostics.transport === "websocket"
@@ -40,7 +46,18 @@ export function LiveDiagnosticsPanel({
         <dt>Active sessions</dt><dd className="text-foreground">{activeSessions}</dd>
         <dt>Sessions with geo</dt><dd className="text-foreground">{sessionsWithGeo}</dd>
         <dt>Live markers</dt><dd className="text-foreground">{liveMarkers}</dd>
+        {typeof liveClusters === "number" && (
+          <>
+            <dt>Live clusters</dt><dd className="text-foreground">{liveClusters}</dd>
+          </>
+        )}
         <dt>Live↔canonical overlap</dt><dd className="text-foreground">{liveCanonicalOverlap}</dd>
+        <dt>Selected visitor</dt>
+        <dd className="text-foreground">
+          {selectedLiveSessionId ? `${selectedLiveSessionId.slice(0, 8)}…` : "—"}
+        </dd>
+        <dt>Follow mode</dt>
+        <dd className="text-foreground">{followMode ? "on" : "off"}</dd>
         <dt>Websocket status</dt><dd className="text-foreground">{diagnostics.websocketStatus}</dd>
         <dt>Last heartbeat</dt>
         <dd className="text-foreground">
