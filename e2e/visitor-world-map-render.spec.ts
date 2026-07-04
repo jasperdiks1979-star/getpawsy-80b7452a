@@ -138,9 +138,6 @@ async function seedAdmin(context: any, page: any) {
     }
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fakeSession) });
   });
-  await page.route(`**/${BACKEND_HOST}/rest/v1/user_roles**`, (route: any) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ role: "admin" }) }),
-  );
   await page.route(`**/${BACKEND_HOST}/functions/v1/analytics-canonical`, (route: any) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(canonicalFixture()) }),
   );
@@ -162,6 +159,9 @@ async function seedAdmin(context: any, page: any) {
   await page.route("https://events.mapbox.com/**", (route: any) => route.fulfill({ status: 204, body: "" }));
   await page.route(`**/${BACKEND_HOST}/rest/v1/**`, (route: any) =>
     route.fulfill({ status: 200, contentType: "application/json", headers: { "content-range": "0-0/0" }, body: JSON.stringify([]) }),
+  );
+  await page.route(`**/${BACKEND_HOST}/rest/v1/user_roles**`, (route: any) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ role: "admin" }) }),
   );
 }
 
