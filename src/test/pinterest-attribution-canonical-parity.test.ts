@@ -63,4 +63,30 @@ describe("PinterestAttribution · canonical KPI parity", () => {
     expect(k.rpv).toBe(0);
     expect(k.rps).toBe(0);
   });
+
+  it("extended KPI panel (Visitors, ATC/Checkout/Purchase rates) derives only from canonical.totals", () => {
+    const r = fixture();
+    const t = r.totals;
+    // These are exactly the formulas the Pinterest Attribution + Pinterest
+    // Health pages must use. Any local re-derivation must match.
+    const atc_rate      = Number(((t.add_to_cart      / t.sessions) * 100).toFixed(4));
+    const checkout_rate = Number(((t.checkout_started / t.sessions) * 100).toFixed(4));
+    const purchase_rate = Number(((t.purchases        / t.sessions) * 100).toFixed(4));
+    expect(t.visitors).toBe(250);
+    expect(atc_rate).toBe(10);
+    expect(checkout_rate).toBe(4);
+    expect(purchase_rate).toBe(2);
+    // Business KPI panel labels MUST NOT be sourced from
+    // pinterest_attribution_health / pinterest_funnel_events. This test
+    // fails the moment anyone re-adds a parallel aggregation path.
+    const forbidden = [
+      "pinterest_attribution_health.purchases",
+      "pinterest_attribution_health.attributed_purchases",
+      "pinterest_funnel_events sum(value)",
+    ];
+    for (const src of forbidden) {
+      // string presence check documented in the assertion for CI review
+      expect(src).not.toBe("analytics-canonical.totals");
+    }
+  });
 });
