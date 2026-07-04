@@ -26,7 +26,13 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
-import { useAnalyticsTruth, countersFromSessions, type TruthSession } from "@/hooks/useAnalyticsTruth";
+import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
+import {
+  assertWorldMapRenderInvariant,
+  buildWorldMapModel,
+  markerFeaturesToGeoJson,
+  type WorldMapMarkerFeature,
+} from "@/lib/visitorWorldMapCanonicalFeatures";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
