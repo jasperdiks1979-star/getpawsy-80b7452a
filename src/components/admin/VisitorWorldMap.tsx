@@ -33,6 +33,10 @@ import {
   markerFeaturesToGeoJson,
   markerFeaturesToGeoJsonWithCanonical,
   auditCanonicalFeatureFlags,
+  buildLivePresenceModel,
+  livePresenceMarkersToGeoJson,
+  type CanonicalFunnelFlags,
+  type LivePresenceActivity,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
@@ -148,7 +152,7 @@ const ACTIVITY_WEIGHTS = {
 type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "30d";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
-  { value: "live", label: "Live (15 min)", minutes: 15 },
+  { value: "live", label: "Live now", minutes: 2 },
   { value: "15m", label: "Laatste 15 min", minutes: 15 },
   { value: "1h", label: "Laatste uur", minutes: 60 },
   { value: "2.5h", label: "Laatste 2,5 uur", minutes: 150 },
@@ -423,12 +427,14 @@ export const VisitorWorldMap = () => {
       const timeRangeMs = getTimeRangeMs();
       
       if (timeRange === "live") {
-        // For LIVE mode: only show sessions with heartbeat in the last 60 seconds
-        const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+        // For LIVE mode: only show sessions with heartbeat in the last 120 seconds.
+        // This is realtime presence — see live presence model in
+        // src/lib/visitorWorldMapCanonicalFeatures.ts. It never feeds canonical KPIs.
+        const liveWindowSince = new Date(Date.now() - 120 * 1000).toISOString();
         let q = supabase
           .from("visitor_activity")
           .select("*")
-          .gte("last_seen_at", sixtySecondsAgo)
+          .gte("last_seen_at", liveWindowSince)
           .order("last_seen_at", { ascending: false });
         if (excludeInternal) q = q.or("is_internal.is.null,is_internal.eq.false");
         if (usOnly) q = q.in("country", ["United States", "USA", "US"]);
@@ -561,6 +567,77 @@ export const VisitorWorldMap = () => {
     () => auditCanonicalFeatureFlags(markerFeatures, canonicalSessionIdSet),
     [markerFeatures, canonicalSessionIdSet],
   );
+
+  // ---------------------------------------------------------------------
+  // LIVE PRESENCE MODE
+  // ---------------------------------------------------------------------
+  // Realtime presence sourced from visitor_activity.last_seen_at within the
+  // last 120s (see live-query above). Cart/checkout badges here are ONLY
+  // set when a canonical funnel event exists for the same session/visitor,
+  // so live presence CANNOT leak into business KPIs.
+  const isLiveNow = timeRange === "live";
+  const canonicalVisitorIdSet = useMemo(
+    () => new Set((truth?.sessions ?? []).map((s) => s.visitor_id).filter((v): v is string => !!v)),
+    [truth],
+  );
+  const canonicalFunnelBySession = useMemo(() => {
+    const map = new Map<string, CanonicalFunnelFlags>();
+    for (const s of truth?.sessions ?? []) {
+      map.set(s.session_id, {
+        has_add_to_cart: !!s.has_add_to_cart,
+        has_view_cart: !!s.has_view_cart,
+        has_checkout: !!s.has_checkout,
+        has_purchase: !!s.has_purchase,
+      });
+    }
+    return map;
+  }, [truth]);
+  const canonicalFunnelByVisitor = useMemo(() => {
+    const map = new Map<string, CanonicalFunnelFlags>();
+    for (const s of truth?.sessions ?? []) {
+      if (!s.visitor_id) continue;
+      const existing = map.get(s.visitor_id);
+      map.set(s.visitor_id, {
+        has_add_to_cart: (existing?.has_add_to_cart ?? false) || !!s.has_add_to_cart,
+        has_view_cart: (existing?.has_view_cart ?? false) || !!s.has_view_cart,
+        has_checkout: (existing?.has_checkout ?? false) || !!s.has_checkout,
+        has_purchase: (existing?.has_purchase ?? false) || !!s.has_purchase,
+      });
+    }
+    return map;
+  }, [truth]);
+  const liveModel = useMemo(() => {
+    if (!isLiveNow) {
+      return {
+        markers: [],
+        counts: { browsing: 0, cart: 0, checkout: 0 },
+        totalLiveVisitors: 0,
+        diagnostics: { liveActivityRows: 0, activeLiveVisitors: 0, liveWithGeo: 0, liveMarkersRendered: 0, overlapSession: 0, overlapVisitor: 0 },
+      };
+    }
+    const activityRows: LivePresenceActivity[] = (activities ?? []).map((a) => ({
+      session_id: a.session_id,
+      visitor_id: a.visitor_id ?? null,
+      latitude: a.latitude,
+      longitude: a.longitude,
+      country: a.country,
+      city: a.city,
+      page_path: a.page_path ?? null,
+      referrer: a.referrer ?? null,
+      referrer_category: a.referrer_category ?? null,
+      utm_source: a.utm_source ?? null,
+      utm_medium: a.utm_medium ?? null,
+      utm_campaign: a.utm_campaign ?? null,
+      last_seen_at: a.last_seen_at,
+      created_at: a.created_at,
+    }));
+    return buildLivePresenceModel(activityRows, {
+      canonicalBySession: canonicalFunnelBySession,
+      canonicalByVisitor: canonicalFunnelByVisitor,
+      canonicalSessionIds: canonicalSessionIdSet,
+      canonicalVisitorIds: canonicalVisitorIdSet,
+    });
+  }, [isLiveNow, activities, canonicalFunnelBySession, canonicalFunnelByVisitor, canonicalSessionIdSet, canonicalVisitorIdSet]);
 
   // Overlap diagnostics — how many session_ids / visitor_ids from the raw
   // `visitor_activity` stream also appear in the canonical truth envelope.
@@ -835,7 +912,11 @@ export const VisitorWorldMap = () => {
         return;
       }
 
-      const geojsonData = markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
+      // Live mode renders visitor_activity heartbeat features (presence);
+      // canonical mode renders analytics-canonical features (business truth).
+      const geojsonData = isLiveNow
+        ? livePresenceMarkersToGeoJson(liveModel.markers)
+        : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
@@ -914,7 +995,7 @@ export const VisitorWorldMap = () => {
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet]);
+  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
@@ -1321,7 +1402,7 @@ export const VisitorWorldMap = () => {
   // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
   // legacy visitor_activity aggregation only while the canonical fetch is
   // still in flight, and warn so any regression is loud.
-  const counts = truth
+  const canonicalCounts = truth
     ? {
         browsing: truthSessions.filter(
           (s) => !s.has_add_to_cart && !s.has_view_cart && !s.has_checkout,
@@ -1336,10 +1417,14 @@ export const VisitorWorldMap = () => {
         cart: filteredActivities?.filter((a) => a.activity_type === "cart").length || 0,
         checkout: filteredActivities?.filter((a) => a.activity_type === "checkout").length || 0,
       };
-
-  const totalVisitors = truth
+  const canonicalTotalVisitors = truth
     ? truthCounters.visitors
     : new Set(filteredActivities?.map((a) => a.session_id)).size;
+
+  // In live mode the counters show REALTIME PRESENCE only. They are labeled
+  // as such in the UI so operators cannot confuse them with canonical KPIs.
+  const counts = isLiveNow ? liveModel.counts : canonicalCounts;
+  const totalVisitors = isLiveNow ? liveModel.totalLiveVisitors : canonicalTotalVisitors;
 
   if (import.meta.env.DEV && truth && filteredActivities) {
     if (!assertWorldMapRenderInvariant(mapDiagnostics)) {
@@ -2280,8 +2365,10 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              disabled={isExporting}
-              title="Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"
+              disabled={isExporting || isLiveNow}
+              title={isLiveNow
+                ? "CSV / Samenvatting werken alleen op canonieke periodes (5h / 10h / 24h). Live now toont realtime presence, geen KPI-data."
+                : "Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"}
             >
               {isExporting ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -2296,8 +2383,10 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportSummary}
-              disabled={isSummarizing}
-              title="Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"
+              disabled={isSummarizing || isLiveNow}
+              title={isLiveNow
+                ? "CSV / Samenvatting werken alleen op canonieke periodes (5h / 10h / 24h). Live now toont realtime presence, geen KPI-data."
+                : "Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"}
             >
               {isSummarizing ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -2384,6 +2473,17 @@ export const VisitorWorldMap = () => {
 
         {/* Stats Row */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
+          {isLiveNow && (
+            <div
+              className="basis-full flex items-center gap-2 px-3 py-2 rounded-md border border-green-500/50 bg-green-500/10 text-xs text-green-800 dark:text-green-200"
+              data-testid="world-map-live-mode-banner"
+              role="status"
+            >
+              <Radio className="w-4 h-4 animate-pulse text-green-600 dark:text-green-400" />
+              <span className="font-semibold">Live presence</span>
+              <span>— realtime bezoekers (heartbeat &lt; 120s). Dit is GEEN canonieke KPI. Voor omzet / conversie: gebruik Laatste 5h / 10h / 24h.</span>
+            </div>
+          )}
           <Badge variant="secondary" className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             {selectedTimeRangeLabel}
@@ -2394,10 +2494,18 @@ export const VisitorWorldMap = () => {
               {ACTIVITY_LABELS[activityFilter]}
             </Badge>
           )}
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge
+            variant="outline"
+            className={`flex items-center gap-1 ${isLiveNow ? "border-green-500 text-green-700 dark:text-green-300" : ""}`}
+          >
             <Users className="w-3 h-3" />
-            {totalVisitors} unieke bezoekers
+            {totalVisitors} {isLiveNow ? "live bezoekers" : "unieke bezoekers"}
           </Badge>
+          {isLiveNow && (
+            <Badge variant="outline" className="flex items-center gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300">
+              niet-canoniek
+            </Badge>
+          )}
           <Badge 
             variant="outline" 
             className="flex items-center gap-1"
@@ -2426,6 +2534,14 @@ export const VisitorWorldMap = () => {
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mt-3 text-[11px]"
           data-testid="world-map-render-diagnostics"
+          data-mode={isLiveNow ? "live" : "canonical"}
+          data-live-activity-rows={liveModel.diagnostics.liveActivityRows}
+          data-live-active-visitors={liveModel.diagnostics.activeLiveVisitors}
+          data-live-with-geo={liveModel.diagnostics.liveWithGeo}
+          data-live-markers-rendered={liveModel.diagnostics.liveMarkersRendered}
+          data-live-overlap-session={liveModel.diagnostics.overlapSession}
+          data-live-overlap-visitor={liveModel.diagnostics.overlapVisitor}
+          data-canonical-sessions-in-period={mapDiagnostics.canonicalSessions}
           data-canonical-sessions={mapDiagnostics.canonicalSessions}
           data-sessions-with-geo={mapDiagnostics.sessionsWithGeo}
           data-marker-features={mapDiagnostics.markerFeatures}
@@ -2490,6 +2606,16 @@ export const VisitorWorldMap = () => {
             value={canonicalFeatureAudit.orphanCount}
             tone={canonicalFeatureAudit.orphanCount === 0 ? "good" : "bad"}
           />
+          {isLiveNow && (
+            <>
+              <Stat label="Live activity rows" value={liveModel.diagnostics.liveActivityRows} tone="neutral" />
+              <Stat label="Active live visitors" value={liveModel.diagnostics.activeLiveVisitors} tone={liveModel.diagnostics.activeLiveVisitors ? "good" : "warn"} />
+              <Stat label="Live with geo" value={liveModel.diagnostics.liveWithGeo} tone={liveModel.diagnostics.liveWithGeo ? "good" : "warn"} />
+              <Stat label="Live markers rendered" value={liveModel.diagnostics.liveMarkersRendered} tone={liveModel.diagnostics.liveMarkersRendered ? "good" : "warn"} />
+              <Stat label="Live↔canonical (session)" value={liveModel.diagnostics.overlapSession} />
+              <Stat label="Live↔canonical (visitor)" value={liveModel.diagnostics.overlapVisitor} />
+            </>
+          )}
         </div>
         <div
           className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-2 text-[11px]"
