@@ -243,6 +243,198 @@ export function assertZeroOrphanFeatures(audit: Pick<CanonicalFeatureAudit, "orp
   return audit.orphanCount === 0;
 }
 
+// ==========================================================================
+// Live presence mode
+// --------------------------------------------------------------------------
+// "Live now" is realtime presence sourced from `visitor_activity.last_seen_at`
+// within the last N seconds. It is DELIBERATELY separate from canonical
+// business KPIs. Cart/checkout badges on live markers are only allowed when
+// the same session_id/visitor_id has a canonical funnel event — presence
+// alone never promotes a visitor into a cart/checkout counter.
+// ==========================================================================
+
+export interface LivePresenceActivity {
+  session_id: string;
+  visitor_id?: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  country: string | null;
+  city: string | null;
+  page_path?: string | null;
+  referrer?: string | null;
+  referrer_category?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  last_seen_at?: string;
+  created_at: string;
+}
+
+export interface CanonicalFunnelFlags {
+  has_add_to_cart: boolean;
+  has_view_cart: boolean;
+  has_checkout: boolean;
+  has_purchase: boolean;
+}
+
+export interface LivePresenceMarker {
+  session_id: string;
+  visitor_id: string | null;
+  latitude: number;
+  longitude: number;
+  country: string | null;
+  city: string | null;
+  page_path: string | null;
+  source: string;
+  last_seen_at: string;
+  activity_type: "browsing" | "cart" | "checkout";
+  isCanonical: boolean;
+  canonicalMatchBy: "session" | "visitor" | null;
+}
+
+export interface LivePresenceDiagnostics {
+  liveActivityRows: number;
+  activeLiveVisitors: number;
+  liveWithGeo: number;
+  liveMarkersRendered: number;
+  overlapSession: number;
+  overlapVisitor: number;
+}
+
+export interface LivePresenceModel {
+  markers: LivePresenceMarker[];
+  diagnostics: LivePresenceDiagnostics;
+  counts: { browsing: number; cart: number; checkout: number };
+  totalLiveVisitors: number;
+}
+
+function resolveLiveActivityType(
+  session_id: string,
+  visitor_id: string | null | undefined,
+  canonicalBySession: ReadonlyMap<string, CanonicalFunnelFlags>,
+  canonicalByVisitor: ReadonlyMap<string, CanonicalFunnelFlags>,
+): { activity_type: LivePresenceMarker["activity_type"]; matchBy: "session" | "visitor" | null } {
+  const bySession = canonicalBySession.get(session_id);
+  const byVisitor = visitor_id ? canonicalByVisitor.get(visitor_id) : undefined;
+  const flags = bySession ?? byVisitor;
+  const matchBy: "session" | "visitor" | null = bySession ? "session" : byVisitor ? "visitor" : null;
+  if (!flags) return { activity_type: "browsing", matchBy };
+  if (flags.has_checkout || flags.has_purchase) return { activity_type: "checkout", matchBy };
+  if (flags.has_add_to_cart || flags.has_view_cart) return { activity_type: "cart", matchBy };
+  return { activity_type: "browsing", matchBy };
+}
+
+/**
+ * Build the live presence marker model from `visitor_activity` rows already
+ * filtered to the last-N-seconds heartbeat window. Deduplicates by session,
+ * requires valid geo for a marker, and cross-references canonical funnel
+ * flags so cart/checkout badges NEVER derive from presence alone.
+ */
+export function buildLivePresenceModel(
+  activities: LivePresenceActivity[],
+  opts: {
+    canonicalBySession: ReadonlyMap<string, CanonicalFunnelFlags>;
+    canonicalByVisitor: ReadonlyMap<string, CanonicalFunnelFlags>;
+    canonicalSessionIds: ReadonlySet<string>;
+    canonicalVisitorIds: ReadonlySet<string>;
+  },
+): LivePresenceModel {
+  // Dedupe by session_id, keep the row with the latest last_seen_at.
+  const bySession = new Map<string, LivePresenceActivity>();
+  for (const a of activities) {
+    const existing = bySession.get(a.session_id);
+    const ts = (row: LivePresenceActivity) => new Date(row.last_seen_at || row.created_at).getTime();
+    if (!existing || ts(a) > ts(existing)) bySession.set(a.session_id, a);
+  }
+  const deduped = Array.from(bySession.values());
+
+  let liveWithGeo = 0;
+  let overlapSession = 0;
+  let overlapVisitor = 0;
+  const markers: LivePresenceMarker[] = [];
+
+  for (const a of deduped) {
+    if (opts.canonicalSessionIds.has(a.session_id)) overlapSession += 1;
+    if (a.visitor_id && opts.canonicalVisitorIds.has(a.visitor_id)) overlapVisitor += 1;
+    if (!isValidLatLng(a.latitude, a.longitude)) continue;
+    liveWithGeo += 1;
+    const { activity_type, matchBy } = resolveLiveActivityType(
+      a.session_id,
+      a.visitor_id ?? null,
+      opts.canonicalBySession,
+      opts.canonicalByVisitor,
+    );
+    markers.push({
+      session_id: a.session_id,
+      visitor_id: a.visitor_id ?? null,
+      latitude: a.latitude as number,
+      longitude: a.longitude as number,
+      country: a.country,
+      city: a.city,
+      page_path: a.page_path ?? null,
+      source: a.utm_source || a.referrer_category || "direct",
+      last_seen_at: a.last_seen_at || a.created_at,
+      activity_type,
+      isCanonical: opts.canonicalSessionIds.has(a.session_id) || (!!a.visitor_id && opts.canonicalVisitorIds.has(a.visitor_id)),
+      canonicalMatchBy: matchBy,
+    });
+  }
+
+  const counts = {
+    browsing: markers.filter((m) => m.activity_type === "browsing").length,
+    cart: markers.filter((m) => m.activity_type === "cart").length,
+    checkout: markers.filter((m) => m.activity_type === "checkout").length,
+  };
+
+  return {
+    markers,
+    counts,
+    totalLiveVisitors: deduped.length,
+    diagnostics: {
+      liveActivityRows: activities.length,
+      activeLiveVisitors: deduped.length,
+      liveWithGeo,
+      liveMarkersRendered: markers.length,
+      overlapSession,
+      overlapVisitor,
+    },
+  };
+}
+
+/**
+ * Serialize live presence markers into a Mapbox GeoJSON FeatureCollection.
+ * Features carry `mode: "live"` and a `canonical` flag reflecting whether the
+ * session_id/visitor_id exists in the canonical truth set, so downstream code
+ * can distinguish presence markers from KPI-eligible ones.
+ */
+export function livePresenceMarkersToGeoJson(markers: LivePresenceMarker[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+  return {
+    type: "FeatureCollection",
+    features: markers.map((m) => ({
+      type: "Feature" as const,
+      properties: {
+        id: m.session_id,
+        session_id: m.session_id,
+        visitor_id: m.visitor_id ?? "",
+        activity_type: m.activity_type,
+        weight: m.activity_type === "checkout" ? 3 : m.activity_type === "cart" ? 2 : 1,
+        color: m.activity_type === "checkout" ? "#22c55e" : m.activity_type === "cart" ? "#f97316" : "#ef4444",
+        source: m.source,
+        canonical: m.isCanonical,
+        mode: "live",
+        last_seen_at: m.last_seen_at,
+        country: m.country,
+        city: m.city,
+        page_path: m.page_path,
+      },
+      geometry: {
+        type: "Point" as const,
+        coordinates: [m.longitude, m.latitude],
+      },
+    })),
+  };
+}
+
 export function assertWorldMapRenderInvariant(diagnostics: Pick<WorldMapDiagnostics, "sessionsWithGeo" | "markerFeatures" | "heatmapFeatures">): boolean {
   return diagnostics.sessionsWithGeo === 0 || (diagnostics.markerFeatures > 0 && diagnostics.heatmapFeatures > 0);
 }
