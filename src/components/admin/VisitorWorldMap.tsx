@@ -548,6 +548,41 @@ export const VisitorWorldMap = () => {
   const heatmapFeatures = mapModel.heatmapFeatures;
   const mapDiagnostics = mapModel.diagnostics;
 
+  // Overlap diagnostics — how many session_ids / visitor_ids from the raw
+  // `visitor_activity` stream also appear in the canonical truth envelope.
+  // Surfaces the namespace mismatch that caused the P0 marker regression, so
+  // operators can see at-a-glance whether geo hydration is bridging via
+  // session_id, visitor_id, or neither for the current filter window.
+  const overlapDiagnostics = useMemo(() => {
+    const truthSessionIds = new Set((truth?.sessions ?? []).map((s) => s.session_id).filter(Boolean));
+    const truthVisitorIds = new Set(
+      (truth?.sessions ?? []).map((s) => s.visitor_id).filter((v): v is string => !!v),
+    );
+    const activityRows = rawActivities ?? [];
+    const activitySessionIds = new Set(activityRows.map((a) => a.session_id).filter(Boolean));
+    const activityVisitorIds = new Set(
+      activityRows.map((a) => a.visitor_id).filter((v): v is string => !!v),
+    );
+    let sessionOverlap = 0;
+    activitySessionIds.forEach((sid) => {
+      if (truthSessionIds.has(sid)) sessionOverlap += 1;
+    });
+    let visitorOverlap = 0;
+    activityVisitorIds.forEach((vid) => {
+      if (truthVisitorIds.has(vid)) visitorOverlap += 1;
+    });
+    return {
+      truthSessionIds: truthSessionIds.size,
+      truthVisitorIds: truthVisitorIds.size,
+      activitySessionIds: activitySessionIds.size,
+      activityVisitorIds: activityVisitorIds.size,
+      sessionOverlap,
+      visitorOverlap,
+      sessionOverlapPct: activitySessionIds.size ? Math.round((sessionOverlap / activitySessionIds.size) * 100) : 0,
+      visitorOverlapPct: activityVisitorIds.size ? Math.round((visitorOverlap / activityVisitorIds.size) * 100) : 0,
+    };
+  }, [truth, rawActivities]);
+
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
   const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
