@@ -179,17 +179,20 @@ export function buildLiveVisitorProfile(
   const productRow = [...sorted].reverse().find((r) => !!r.product_name || !!r.product_id) ?? null;
   const purchaseRow = [...sorted].reverse().find((r) => (r.activity_type || "").toLowerCase() === "purchase");
   const latestWithPage = [...sorted].reverse().find((r) => !!r.page_path) ?? null;
+  const anyDevice = [...sorted].reverse().find((r) => !!r.device_type) ?? null;
+  const anyBrowser = [...sorted].reverse().find((r) => !!r.browser) ?? null;
+  const anyScreen = [...sorted].reverse().find((r) => r.screen_width && r.screen_height) ?? null;
 
-  const width = latest.screen_width ?? null;
-  const height = latest.screen_height ?? null;
+  const width = anyScreen?.screen_width ?? null;
+  const height = anyScreen?.screen_height ?? null;
 
   return {
     session_id: latest.session_id,
     visitor_id: latest.visitor_id ?? null,
     country: latest.country ?? null,
     city: latest.city ?? null,
-    device: latest.device_type ?? null,
-    browser: latest.browser ?? null,
+    device: anyDevice?.device_type ?? null,
+    browser: anyBrowser?.browser ?? null,
     screen: width && height ? `${width}×${height}` : null,
     landing_page: first.page_path ?? sorted.find((r) => !!r.page_path)?.page_path ?? null,
     current_page: latest.page_path ?? latestWithPage?.page_path ?? null,
