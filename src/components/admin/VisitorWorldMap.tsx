@@ -912,7 +912,11 @@ export const VisitorWorldMap = () => {
         return;
       }
 
-      const geojsonData = markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
+      // Live mode renders visitor_activity heartbeat features (presence);
+      // canonical mode renders analytics-canonical features (business truth).
+      const geojsonData = isLiveNow
+        ? livePresenceMarkersToGeoJson(liveModel.markers)
+        : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
