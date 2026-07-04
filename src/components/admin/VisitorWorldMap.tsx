@@ -163,6 +163,7 @@ export const VisitorWorldMap = () => {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
   const mapTokenRef = useRef<string | null>(null);
