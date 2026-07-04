@@ -52,6 +52,10 @@ const METRICS = [
 // computation. Rounded to 4 decimals to match JS number stability.
 const DERIVED_METRICS = ["aov", "rpv", "rps"];
 function round4(n) { return Math.round(n * 10000) / 10000; }
+function isUS(country) {
+  const c = String(country || "").trim().toLowerCase();
+  return c === "us" || c === "usa" || c === "united states" || c === "united states of america";
+}
 function derivedFromTotals(t) {
   return {
     aov: t.purchases > 0 ? round4(t.revenue / t.purchases) : 0,
@@ -139,6 +143,22 @@ async function main() {
   for (const hours of HOURS) {
     for (const geo of GEOS) {
       const envelope = await callCanonical({ hours, geo });
+      if (geo === "US") {
+        const allEnvelope = await callCanonical({ hours, geo: "all" });
+        const expectedUsSessions = allEnvelope.sessions.filter((s) => isUS(s.country)).length;
+        if (expectedUsSessions > 0 && envelope.sessions.length !== expectedUsSessions) {
+          drifts.push({
+            scenario: `h=${hours} geo=US`,
+            source: "US geo filter",
+            metric: "sessions",
+            expected: expectedUsSessions,
+            actual: envelope.sessions.length,
+            delta: envelope.sessions.length - expectedUsSessions,
+          });
+        } else {
+          passes.push(`${scenario} — US geo filter ≡ enriched canonical sessions`);
+        }
+      }
       for (const clean of CLEANS) {
         const rows = clean
           ? envelope.sessions.filter((s) => !s.is_internal)
