@@ -95,7 +95,7 @@ PIN CONTEXT
 - description: ${(i.pin_description ?? "").slice(0, 300)}
 - destination: ${i.destination_link ?? ""}
 
-Score each identity axis 0-100 (100 = perfect match, <98 = detectable difference).
+Score each identity axis 0-100 (100 = perfect match, <99 = detectable difference).
 Return JSON with EXACTLY this shape:
 {
   "same_product": true | false,
@@ -119,7 +119,9 @@ Return JSON with EXACTLY this shape:
 }
 
 Rules:
-- If ANY axis < 98, same_product MUST be false unless the axis is 'environment' (photography context can vary).
+- If ANY axis < 99, same_product MUST be false. Only 'environment' and 'scale' may fall below 99 for photography-context reasons.
+- If the pin depicts a different species (cat vs dog, or vs another animal), same_product MUST be false. Species is exact.
+- If the pin depicts a different intended use (bed vs tent, tree vs scratcher, carrier vs harness), same_product MUST be false.
 - If the pin depicts a different number of platforms, scratching posts, doors, stairs, tunnels — same_product is false.
 - If the pin depicts a different dominant color, wood pattern, or fabric — same_product is false.
 - If you cannot see the product clearly in the pin, set unknown_object.
