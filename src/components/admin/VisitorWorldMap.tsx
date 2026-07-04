@@ -2365,8 +2365,10 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              disabled={isExporting}
-              title="Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"
+              disabled={isExporting || isLiveNow}
+              title={isLiveNow
+                ? "CSV / Samenvatting werken alleen op canonieke periodes (5h / 10h / 24h). Live now toont realtime presence, geen KPI-data."
+                : "Exporteer alle bezoekersdata van deze periode (incl. paginabezoeken, sessieduur, terugkerende bezoekers, traffic-bron, device, UTM, orderwaarde)"}
             >
               {isExporting ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -2381,8 +2383,10 @@ export const VisitorWorldMap = () => {
               variant="outline"
               size="sm"
               onClick={exportSummary}
-              disabled={isSummarizing}
-              title="Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"
+              disabled={isSummarizing || isLiveNow}
+              title={isLiveNow
+                ? "CSV / Samenvatting werken alleen op canonieke periodes (5h / 10h / 24h). Live now toont realtime presence, geen KPI-data."
+                : "Download samenvatting (totalen per land + bron, gemiddelde sessieduur) voor dezelfde periode"}
             >
               {isSummarizing ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
