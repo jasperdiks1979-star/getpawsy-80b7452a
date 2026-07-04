@@ -1,5 +1,8 @@
 // analytics-canonical — the ONE source of truth for every dashboard.
-// Reads `canonical_events` + `orders` (paid) with the Clean filter baked in.
+// Reads `canonical_events` + `orders` (paid) with the Clean filter baked in,
+// and enriches per-session geo/internal signals from `visitor_activity` so
+// the truth envelope (`sessions[]`) can power maps and CSV exports without
+// any dashboard re-querying `visitor_activity` for counter-producing metrics.
 // Never expose raw or per-dashboard-specific counts elsewhere; every admin
 // dashboard MUST consume this function via `useCanonicalFunnel`.
 //
@@ -17,8 +20,18 @@
 //   countries: [{ country, visitors, sessions, page_views, add_to_cart,
 //                 checkout_started, purchases }],
 //   sources:   [{ source, sessions }],
+//   sessions:  [{ session_id, visitor_id, country, city, latitude, longitude,
+//                 first_seen_at, last_seen_at, page_views, source, device,
+//                 utm_source, utm_medium, utm_campaign, referrer, page_path,
+//                 has_product_view, has_add_to_cart, has_view_cart,
+//                 has_checkout, has_purchase, order_value, is_internal }],
 //   sample_event: { ... } | null,   // one recent canonical event for debugging
 // }
+//
+// Certification note (PR-1 analytics-truth): counter-producing surfaces
+// (World Map counters, badges, CSV/Summary export, Clean Analytics Panel)
+// MUST derive from `totals` + `sessions[]` — never from a parallel
+// `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -217,6 +230,110 @@ Deno.serve(async (req) => {
       source, sessions: ss.size,
     })).sort((a, b) => b.sessions - a.sessions);
 
+    // ── per-session aggregation (truth envelope) ─────────────
+    // One row per session, derived from the SAME canonical_events array
+    // used for totals. This is what map markers, CSV and Summary consume.
+    type SessionAgg = {
+      session_id: string;
+      visitor_id: string | null;
+      country: string | null;
+      city: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      first_seen_at: string;
+      last_seen_at: string;
+      page_views: number;
+      source: string;
+      device: string | null;
+      utm_source: string | null;
+      utm_medium: string | null;
+      utm_campaign: string | null;
+      referrer: string | null;
+      page_path: string | null;
+      has_product_view: boolean;
+      has_add_to_cart: boolean;
+      has_view_cart: boolean;
+      has_checkout: boolean;
+      has_purchase: boolean;
+      order_value: number;
+      is_internal: boolean;
+    };
+    const sessionAgg = new Map<string, SessionAgg>();
+    for (const r of events) {
+      const sid = r.session_id;
+      if (!sid) continue;
+      const stage = r.canonical_name as Stage;
+      let s = sessionAgg.get(sid);
+      if (!s) {
+        s = {
+          session_id: sid,
+          visitor_id: r.visitor_id ?? null,
+          country: r.country ?? null,
+          city: r.city ?? null,
+          latitude: null,
+          longitude: null,
+          first_seen_at: r.occurred_at,
+          last_seen_at: r.occurred_at,
+          page_views: 0,
+          source: classifySource(r),
+          device: r.device ?? null,
+          utm_source: r.utm_source ?? null,
+          utm_medium: r.utm_medium ?? null,
+          utm_campaign: null,
+          referrer: r.referrer ?? null,
+          page_path: r.page_path ?? null,
+          has_product_view: false,
+          has_add_to_cart: false,
+          has_view_cart: false,
+          has_checkout: false,
+          has_purchase: false,
+          order_value: 0,
+          is_internal: false,
+        };
+        sessionAgg.set(sid, s);
+      }
+      if (r.occurred_at < s.first_seen_at) s.first_seen_at = r.occurred_at;
+      if (r.occurred_at > s.last_seen_at) s.last_seen_at = r.occurred_at;
+      if (stage === "CANONICAL_PAGE_VIEW") s.page_views += 1;
+      if (stage === "CANONICAL_PRODUCT_VIEW") s.has_product_view = true;
+      if (stage === "CANONICAL_ADD_TO_CART") s.has_add_to_cart = true;
+      if (stage === "CANONICAL_CART") s.has_view_cart = true;
+      if (stage === "CANONICAL_CHECKOUT") s.has_checkout = true;
+      if (stage === "CANONICAL_PURCHASE") s.has_purchase = true;
+      if (!s.visitor_id && r.visitor_id) s.visitor_id = r.visitor_id;
+      if (!s.country && r.country) s.country = r.country;
+      if (!s.city && r.city) s.city = r.city;
+    }
+
+    // Enrich with lat/lng + is_internal from visitor_activity for the same
+    // session_ids. This is READ-ONLY and never contributes to counts — only
+    // adds map-display fields. Chunked to keep the `.in()` list manageable.
+    const sessionIds = Array.from(sessionAgg.keys());
+    const CHUNK = 500;
+    for (let i = 0; i < sessionIds.length; i += CHUNK) {
+      const batch = sessionIds.slice(i, i + CHUNK);
+      const { data: va, error: vaErr } = await supabase
+        .from("visitor_activity")
+        .select("session_id,latitude,longitude,is_internal,utm_campaign,order_value")
+        .in("session_id", batch)
+        .order("created_at", { ascending: false });
+      if (vaErr) continue; // enrichment failure must not break the truth envelope
+      for (const row of va ?? []) {
+        const s = sessionAgg.get(row.session_id as string);
+        if (!s) continue;
+        if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
+        if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
+        if (row.is_internal === true) s.is_internal = true;
+        if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
+        const ov = Number(row.order_value || 0);
+        if (ov > s.order_value) s.order_value = ov;
+      }
+    }
+
+    const sessionsArr = Array.from(sessionAgg.values()).sort(
+      (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
+    );
+
     const sample = events[0] ?? null;
 
     const respBody = {
@@ -227,6 +344,7 @@ Deno.serve(async (req) => {
       funnel,
       countries,
       sources,
+      sessions: sessionsArr,
       sample_event: sample,
       generated_at: new Date().toISOString(),
     };
