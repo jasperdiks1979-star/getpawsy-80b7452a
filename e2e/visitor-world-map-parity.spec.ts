@@ -228,8 +228,17 @@ async function seedAdmin(context: any, page: any) {
       const href = this.getAttribute("href") || "";
       const name = this.getAttribute("download") || "";
       if (name && href.startsWith("blob:")) {
-        const text = w.__blobStore.get(href) ?? "";
-        w.__capturedDownloads[name] = { name, text };
+        w.__capturedDownloads[name] = { name, text: w.__blobStore.get(href) ?? "" };
+        if (!w.__capturedDownloads[name].text) {
+          const started = Date.now();
+          const timer = window.setInterval(() => {
+            const text = w.__blobStore.get(href) ?? "";
+            if (text || Date.now() - started > 5000) {
+              w.__capturedDownloads[name] = { name, text };
+              window.clearInterval(timer);
+            }
+          }, 25);
+        }
         return; // suppress actual navigation
       }
       return originalClick.call(this);
