@@ -129,7 +129,10 @@ describe("analytics-truth parity — source contract", () => {
   const WorldMap = fs.readFileSync("src/components/admin/VisitorWorldMap.tsx", "utf-8");
 
   it("CleanAnalyticsPanel no longer reads from world-map-debug", () => {
-    expect(CleanPanel).not.toMatch(/world-map-debug/);
+    // Only forbid ACTUAL invocations. Mentions in comments/warnings are fine
+    // and useful for archaeology when someone tries to re-add the old path.
+    expect(CleanPanel).not.toMatch(/functions\.invoke\(["']world-map-debug["']/);
+    expect(CleanPanel).not.toMatch(/\/functions\/v1\/world-map-debug/);
   });
 
   it("CleanAnalyticsPanel derives numbers from useAnalyticsTruth", () => {
