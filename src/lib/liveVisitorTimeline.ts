@@ -178,6 +178,7 @@ export function buildLiveVisitorProfile(
   const has = (t: string) => sorted.some((r) => (r.activity_type || "").toLowerCase() === t);
   const productRow = [...sorted].reverse().find((r) => !!r.product_name || !!r.product_id) ?? null;
   const purchaseRow = [...sorted].reverse().find((r) => (r.activity_type || "").toLowerCase() === "purchase");
+  const latestWithPage = [...sorted].reverse().find((r) => !!r.page_path) ?? null;
 
   const width = latest.screen_width ?? null;
   const height = latest.screen_height ?? null;
@@ -190,8 +191,8 @@ export function buildLiveVisitorProfile(
     device: latest.device_type ?? null,
     browser: latest.browser ?? null,
     screen: width && height ? `${width}×${height}` : null,
-    landing_page: first.page_path ?? null,
-    current_page: latest.page_path ?? null,
+    landing_page: first.page_path ?? sorted.find((r) => !!r.page_path)?.page_path ?? null,
+    current_page: latest.page_path ?? latestWithPage?.page_path ?? null,
     previous_page: distinctPages.length >= 2 ? distinctPages[distinctPages.length - 2] : null,
     current_product: productRow?.product_name ?? null,
     current_category: productRow?.product_category ?? null,
