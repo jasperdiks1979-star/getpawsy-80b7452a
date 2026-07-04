@@ -67,6 +67,7 @@ function MiniList({ title, rows, empty }: { title: string; rows: Array<{ k: stri
 interface VisitorActivity {
   id: string;
   session_id: string;
+  visitor_id?: string | null;
   activity_type: "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "purchase";
   latitude: number | null;
   longitude: number | null;
