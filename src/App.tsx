@@ -339,6 +339,7 @@ const FunnelHealthPage = lazyWithRetry(() => import("./pages/admin/FunnelHealthC
 const ProductionValidationPage = lazyWithRetry(() => import("./pages/admin/ProductionValidationPage"));
 const ProductionSafetyCertificationPage = lazyWithRetry(() => import("./pages/admin/ProductionSafetyCertificationPage"));
 const LiveEventsPage = lazyWithRetry(() => import("./pages/admin/LiveEventsPage"));
+const AtcAnalyticsPanelPage = lazyWithRetry(() => import("./pages/admin/AtcAnalyticsPanel"));
 const BotThresholdReportPage = lazyWithRetry(() => import("./pages/admin/BotThresholdReport"));
 const CleanKpiDashboardPage = lazyWithRetry(() => import("./pages/admin/CleanKpiDashboard"));
 const DegradedEventsPage = lazyWithRetry(() => import("./pages/admin/DegradedEventsPage"));
@@ -4593,6 +4594,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <LiveEventsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="atc-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AtcAnalyticsPanelPage />
                                 </Suspense>
                               }
                             />
