@@ -548,6 +548,41 @@ export const VisitorWorldMap = () => {
   const heatmapFeatures = mapModel.heatmapFeatures;
   const mapDiagnostics = mapModel.diagnostics;
 
+  // Overlap diagnostics — how many session_ids / visitor_ids from the raw
+  // `visitor_activity` stream also appear in the canonical truth envelope.
+  // Surfaces the namespace mismatch that caused the P0 marker regression, so
+  // operators can see at-a-glance whether geo hydration is bridging via
+  // session_id, visitor_id, or neither for the current filter window.
+  const overlapDiagnostics = useMemo(() => {
+    const truthSessionIds = new Set((truth?.sessions ?? []).map((s) => s.session_id).filter(Boolean));
+    const truthVisitorIds = new Set(
+      (truth?.sessions ?? []).map((s) => s.visitor_id).filter((v): v is string => !!v),
+    );
+    const activityRows = rawActivities ?? [];
+    const activitySessionIds = new Set(activityRows.map((a) => a.session_id).filter(Boolean));
+    const activityVisitorIds = new Set(
+      activityRows.map((a) => a.visitor_id).filter((v): v is string => !!v),
+    );
+    let sessionOverlap = 0;
+    activitySessionIds.forEach((sid) => {
+      if (truthSessionIds.has(sid)) sessionOverlap += 1;
+    });
+    let visitorOverlap = 0;
+    activityVisitorIds.forEach((vid) => {
+      if (truthVisitorIds.has(vid)) visitorOverlap += 1;
+    });
+    return {
+      truthSessionIds: truthSessionIds.size,
+      truthVisitorIds: truthVisitorIds.size,
+      activitySessionIds: activitySessionIds.size,
+      activityVisitorIds: activityVisitorIds.size,
+      sessionOverlap,
+      visitorOverlap,
+      sessionOverlapPct: activitySessionIds.size ? Math.round((sessionOverlap / activitySessionIds.size) * 100) : 0,
+      visitorOverlapPct: activityVisitorIds.size ? Math.round((visitorOverlap / activityVisitorIds.size) * 100) : 0,
+    };
+  }, [truth, rawActivities]);
+
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
   const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
@@ -2386,6 +2421,17 @@ export const VisitorWorldMap = () => {
           data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
           data-rendered-mapbox-source-features={renderedMapboxSourceFeatureCount}
           data-testid-canonical-source="analytics-canonical"
+          data-truth-session-ids={overlapDiagnostics.truthSessionIds}
+          data-truth-visitor-ids={overlapDiagnostics.truthVisitorIds}
+          data-activity-session-ids={overlapDiagnostics.activitySessionIds}
+          data-activity-visitor-ids={overlapDiagnostics.activityVisitorIds}
+          data-session-overlap={overlapDiagnostics.sessionOverlap}
+          data-visitor-overlap={overlapDiagnostics.visitorOverlap}
+          data-filter-time-range={timeRange}
+          data-filter-activity={activityFilter}
+          data-filter-source={sourceFilter}
+          data-filter-us-only={usOnly ? "true" : "false"}
+          data-filter-exclude-internal={excludeInternal ? "true" : "false"}
         >
           <Stat label="Canonical sessions" value={mapDiagnostics.canonicalSessions} />
           <Stat label="Sessions with geo" value={mapDiagnostics.sessionsWithGeo} tone={mapDiagnostics.sessionsWithGeo ? "good" : "warn"} />
@@ -2395,6 +2441,38 @@ export const VisitorWorldMap = () => {
           <Stat label="US-only filtered" value={mapDiagnostics.filteredOutByUsOnly} />
           <Stat label="Internal/test filtered" value={mapDiagnostics.filteredOutByInternalTest} />
           <Stat label="Mapbox source" value={renderedMapboxSourceFeatureCount} tone={renderedMapboxSourceFeatureCount ? "good" : "warn"} />
+        </div>
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-2 mt-2 text-[11px]"
+          data-testid="world-map-overlap-diagnostics"
+        >
+          <Stat label="Truth session_ids" value={overlapDiagnostics.truthSessionIds} />
+          <Stat label="Activity session_ids" value={overlapDiagnostics.activitySessionIds} />
+          <Stat
+            label="session_id overlap"
+            value={`${overlapDiagnostics.sessionOverlap} (${overlapDiagnostics.sessionOverlapPct}%)`}
+            tone={overlapDiagnostics.sessionOverlap ? "good" : "warn"}
+          />
+          <Stat label="Truth visitor_ids" value={overlapDiagnostics.truthVisitorIds} />
+          <Stat label="Activity visitor_ids" value={overlapDiagnostics.activityVisitorIds} />
+          <Stat
+            label="visitor_id overlap"
+            value={`${overlapDiagnostics.visitorOverlap} (${overlapDiagnostics.visitorOverlapPct}%)`}
+            tone={overlapDiagnostics.visitorOverlap ? "good" : "warn"}
+          />
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground"
+          data-testid="world-map-filter-diagnostics"
+        >
+          <span className="font-medium text-foreground">Filters:</span>
+          <Badge variant="outline" className="font-mono">timeRange={timeRange}</Badge>
+          <Badge variant="outline" className="font-mono">activity={activityFilter}</Badge>
+          <Badge variant="outline" className="font-mono">source={sourceFilter}</Badge>
+          <Badge variant="outline" className="font-mono">usOnly={usOnly ? "true" : "false"}</Badge>
+          <Badge variant="outline" className="font-mono">excludeInternal={excludeInternal ? "true" : "false"}</Badge>
+          <Badge variant="outline" className="font-mono">canonicalGeo={usOnly ? "US" : "all"}</Badge>
+          <Badge variant="outline" className="font-mono">truthHours={truthHours}</Badge>
         </div>
         {showHeatmap && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
