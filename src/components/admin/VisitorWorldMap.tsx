@@ -2437,6 +2437,29 @@ export const VisitorWorldMap = () => {
           data-filter-us-only={usOnly ? "true" : "false"}
           data-filter-exclude-internal={excludeInternal ? "true" : "false"}
         >
+          {/* Machine-readable marker feature dump for parity tests.
+              Renders the exact per-marker properties (session_id, activity,
+              source, canonical flag, coords) derived from the canonical
+              truth set — so tests can assert property-level parity. */}
+          <script
+            type="application/json"
+            data-testid="world-map-marker-features-json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(
+                markerFeatures.map((f) => ({
+                  session_id: f.session_id,
+                  visitor_id: f.visitor_id ?? null,
+                  activity_type: f.activity_type,
+                  source: f.source,
+                  canonical: true,
+                  country: f.country,
+                  city: f.city,
+                  latitude: f.latitude,
+                  longitude: f.longitude,
+                })),
+              ),
+            }}
+          />
           <Stat label="Canonical sessions" value={mapDiagnostics.canonicalSessions} />
           <Stat label="Sessions with geo" value={mapDiagnostics.sessionsWithGeo} tone={mapDiagnostics.sessionsWithGeo ? "good" : "warn"} />
           <Stat label="Marker features" value={mapDiagnostics.markerFeatures} tone={mapDiagnostics.markerFeatures ? "good" : "warn"} />
