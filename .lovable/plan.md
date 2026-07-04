@@ -1,111 +1,85 @@
-# Analytics Truth Certification — Execution Plan
+# Restore "Live now" mode on the Visitor World Map
 
-**Goal:** For any (timeframe, filters), every surface (World Map, Summary, CSV, API, Canonical, Journey, Funnel, Sales Commander, Revenue) returns **byte-identical numbers**. One source of truth, everything else is a thin wrapper.
+## Goal
+Bring back a true realtime presence view on the Visitor World Map, cleanly separated from canonical business KPIs. `analytics-canonical` remains the only source of business truth (counters, CSV, Summary, parity tests). "Live now" is presence-only, sourced from `visitor_activity.last_seen_at` within the last 120 seconds, and cannot leak into KPI totals.
 
-This is not a bug patch — it is an architectural convergence. I'll work autonomously through 13 phases and stop only for hard blockers or destructive changes.
+## What the user will see
 
----
+- A new **"Live now"** entry at the top of the existing period selector on the Visitor World Map (replacing the current confusing "Live (15 min)" label).
+- When "Live now" is active:
+  - The map shows one marker per active visitor (last_seen within 120s) with valid geo.
+  - Above the map, a clearly-labeled **"Live presence — realtime, not a business KPI"** banner.
+  - The counters row switches to Live labels: "X live visitors", "Y with geo", "Z browsing / cart / checkout" — where cart/checkout badges are only shown if a canonical session/visitor row confirms the funnel state.
+  - CSV / Summary export buttons are disabled with a tooltip explaining they only apply to canonical periods.
+- When any "Last Nh / Nd" option is active: behavior is exactly as today (canonical truth), and existing parity tests must keep passing byte-for-byte.
 
-## Phase 1 — Inventory (read-only, ~1–2 hrs of tool calls)
+## Technical details
 
-Enumerate every analytics consumer and producer:
+### File touched
+Only `src/components/admin/VisitorWorldMap.tsx` for the mode switch + rendering. New pure helpers go in `src/lib/visitorWorldMapCanonicalFeatures.ts`. Unit test added; existing parity e2e untouched.
 
-- Grep the repo for direct reads of: `visitor_activity`, `canonical_events`, `canonical_sessions`, `lp_funnel_events`, `checkout_funnel_events`, `analytics_funnel_waterfall`, `analytics_session_quality`, `session_forensics*`, `session_journey_steps`, `cie_*`, `gi_ga4_events`, `orders`.
-- List every edge function under `supabase/functions/` matching `analytics-*`, `canonical-*`, `world-map*`, `export*`, `visitor-*`, `funnel-*`, `cie-*`.
-- List every React hook under `src/hooks/` and every admin page under `src/pages/admin/` that queries those tables/functions.
-- Produce `docs/analytics-truth/phase1-inventory.md` with one row per consumer: file · reads · joins · filters · groupby · dedupe · tz · country norm · session key · visitor key · source · internal/US/bot/QA/synthetic gates.
+### 1. Mode flag
+- Add `const isLiveNow = timeRange === "live";`
+- Update `TIME_RANGE_OPTIONS`: `{ value: "live", label: "Live now", minutes: 2 }`. `getTimeRangeMs()` for canonical unchanged elsewhere (canonical hours still clamp to `Math.max(1, ...)`).
+- Live query window: `Date.now() - 120_000` (was 60s).
 
-## Phase 2 — Dataflow graph
+### 2. Live marker features (new pure helper)
+`buildLivePresenceMarkers(activities, canonicalSessionIds, canonicalVisitorFunnelById): LivePresenceMarker[]`
+- Dedupe `activities` by `session_id`, keep row with latest `last_seen_at`.
+- Keep only rows with valid lat/lng (reuses `isValidLatLng`).
+- `activity_type` for each marker:
+  - `"checkout"` if canonical map (by session_id or visitor_id) marks `has_checkout || has_purchase`.
+  - `"cart"` if canonical marks `has_add_to_cart || has_view_cart`.
+  - `"browsing"` otherwise. **Cart/checkout badges never derive from `visitor_activity` alone** — enforcing the rule "badges only if canonical event exists".
+- Returns `{ session_id, visitor_id, latitude, longitude, country, city, page_path, source, activity_type, last_seen_at, isCanonical: canonicalSet.has(session_id) }`.
 
-Generate a Mermaid diagram (`/mnt/documents/analytics-dataflow.mmd`) showing browser → edge fn → table → view/RPC → hook → widget for every visible number (Map counters, Map markers, heatmap, Summary cards, CSV, exports).
+### 3. Rendering swap in the Mapbox effect
+Where the current effect calls `markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet)`, branch on `isLiveNow`:
+- `isLiveNow` → build GeoJSON from `liveMarkerFeatures` (canonical flag comes from the intersection). Includes `mode: "live"` property on each feature.
+- else → unchanged canonical path.
+Effect deps get `isLiveNow` and `liveMarkerFeatures`.
 
-## Phase 3 — Trace 20 real sessions
+### 4. Counters + labels
+- `counts` and `totalVisitors` remain canonical-derived when not live.
+- When `isLiveNow`:
+  - `totalVisitors = liveMarkerSessions.size` (across live activities, geo not required).
+  - `counts = { browsing, cart, checkout }` from live markers' `activity_type` (which was already intersected with canonical for cart/checkout).
+  - Badges swap "unieke bezoekers" → "live bezoekers", plus a small warning chip "Live presence · niet-canoniek".
+- Fullscreen "Nu online" block already exists; extend it to read the live count when in live mode.
 
-Pick 20 recent real (non-bot, non-QA) sessions from `canonical_sessions`. For each, join across `visitor_activity`, `canonical_events`, `lp_funnel_events`, `analytics_funnel_waterfall`, `orders`, `gi_ga4_events`. Emit `docs/analytics-truth/phase3-session-trace.csv` and flag every divergence (event present in one source, missing in another; country/source mismatch; duration disagreement).
+### 5. CSV / Summary in live mode
+- Buttons stay visible but `disabled` with tooltip `"CSV / Samenvatting werken alleen op canonieke periodes (5h / 10h / 24h)"`. Prevents accidental non-canonical exports.
 
-## Phase 4 — Prove every UI number
+### 6. Diagnostics panel (extra data-attributes on the existing block)
+- `data-mode` = `"live"` | `"canonical"`
+- `data-live-activity-rows` = raw `activities.length` in live mode
+- `data-live-active-visitors` = deduped session count (all, incl. no geo)
+- `data-live-with-geo` = live rows with valid coords
+- `data-live-markers-rendered` = `liveMarkerFeatures.length`
+- `data-live-overlap-session` = live session_ids present in canonical set
+- `data-live-overlap-visitor` = live visitor_ids present in canonical visitor set
+- `data-canonical-sessions-in-period` = existing canonical count (unchanged)
+Visible Stat pills mirror the same values when in live mode.
 
-For each visible metric on World Map + Summary + CSV, extract the exact SQL/RPC actually executed today, run it side-by-side over the last 5h / 24h / 7d, and record deltas in `docs/analytics-truth/phase4-metric-parity.md`. Explain every non-zero delta before fixing anything.
+### 7. Zero-KPI-leak invariant
+- Canonical `truth`, `truthSessions`, `truthCounters`, `mapDiagnostics`, `canonicalFeatureAudit`, CSV, and Summary code paths are **not** modified. Live values are stored in separate variables (`liveMarkerFeatures`, `liveCounts`, `liveTotalVisitors`) and only branched at the render call sites.
+- Existing e2e `visitor-world-map-parity.spec.ts` and `visitor-world-map-render.spec.ts` continue to run on canonical periods and must remain green.
 
-## Phase 5 — Remove parallel truths (the actual fix)
+### 8. Tests
+- New unit test `src/test/visitor-world-map-live-presence.test.ts`:
+  - Given 3 live activities (1 with geo+canonical cart, 1 with geo+not-in-canonical, 1 without geo) and a canonical set, `buildLivePresenceMarkers` returns 2 markers, cart badge only where canonical confirms it, isCanonical flag correct.
+  - Deduplication by `session_id` picks latest `last_seen_at`.
+  - No mutation of canonical arrays.
+- Typecheck (`bunx tsgo`) + vitest must pass.
 
-Introduce **one** canonical analytics service:
+## Out of scope (explicit non-goals)
+- No changes to `analytics-canonical`.
+- No changes to CSV / Summary content.
+- No new realtime channels; the existing `visitor_activity` subscription and `useQuery` polling are reused.
+- No changes to the Clean Analytics Panel or KPI strip.
 
-- Edge function: `supabase/functions/analytics-truth/index.ts` — single entry point, accepts `{ hours, filters }`, returns the full analytics envelope (visitors, sessions, pageviews, product_views, atc, view_cart, cart_restored, begin_checkout, purchases, revenue, duration, per-country breakdown, per-session marker list). Reads only from `canonical_sessions` + `canonical_events` (which are already the merge target). All bot/QA/internal/US filters implemented **once** here.
-- Client hook: `src/hooks/useAnalyticsTruth.ts` — the ONLY hook allowed to produce these numbers. `useCanonicalFunnel` and existing dashboards get rewritten as thin selectors over its response.
-- CSV export edge function: `analytics-truth-export` — imports the exact same query builder from `analytics-truth` (shared `_shared/truth-query.ts`) and streams CSV. No independent SQL.
-- Delete / stub every other analytics fetch path with a runtime `console.warn` + fallback to `useAnalyticsTruth` so nothing silently forks.
-
-## Phase 6 — Counter reconciliation
-
-Run the new service for 5h/10h/24h/7d/30d and diff against Map / Summary / CSV / API / Canonical. All five must match to the row. Store results in `docs/analytics-truth/phase6-reconciliation.md`. Any mismatch = FAIL, iterate.
-
-## Phase 7 — Visual map validation
-
-Assert every map marker `session_id` exists exactly once in the canonical session list returned by `analytics-truth`. Marker count, heatmap intensity, country count, cart badge, checkout badge all derive from the same `sessions[]` array — no independent overlays.
-
-## Phase 8 — Filter validation
-
-Move all filter logic (US-only, exclude internal, exclude synthetic/QA/bot, inactive, date range, source, device, country) into a single `applyTruthFilters()` helper in `_shared/truth-query.ts`. Every surface calls it — no local `.filter()` on the client that changes counts.
-
-## Phase 9 — Duration validation
-
-Investigate the ~2s average despite multi-pageview sessions. Audit the writers for `heartbeat`, click, scroll, `visibilitychange`, focus/blur, `last_seen`, `engaged_duration` on `canonical_sessions` / `analytics_session_quality`. Fix the writer (most likely: `last_seen` never updated after initial insert, or engaged_duration computed only at session start). Recompute historical duration in the truth query as `max(event.ts) - min(event.ts)` per session as the authoritative value.
-
-## Phase 10 — Export certification
-
-CSV export literally serializes the same JSON envelope produced by `analytics-truth`. Zero duplicate SQL. Test: fetch UI JSON + CSV for identical params, parse CSV, deep-equal.
-
-## Phase 11 — Live QA
-
-Playwright script (`e2e/analytics-truth-qa.spec.ts`): fresh session → Home → PDP → Sticky ATC → normal ATC → View Cart → Checkout → Return. Then hit `analytics-truth` with that `session_id` and assert every stage present, and that Map/Summary/CSV/Journey/Funnel/Revenue all show the same session with the same values.
-
-## Phase 12 — Regression tests
-
-- Vitest suite `src/test/analytics-truth-parity.test.ts` — mocks a fixture dataset, asserts Map == Summary == CSV == API == Canonical for visitors/pageviews/atc/checkout/purchases/revenue/duration/country.
-- GitHub Actions workflow `.github/workflows/analytics-truth-parity.yml` — runs the suite + a live parity probe against staging on every PR. Fails CI on any drift.
-
-## Phase 13 — Final certification report
-
-`docs/analytics-truth/CERTIFICATION.md` with: root causes, architecture diagram, every changed file, every changed SQL, before/after numbers per timeframe, regression results, live QA evidence, remaining risks, rollback plan (revert the wrapper commits — canonical tables untouched).
-
----
-
-## Technical section
-
-**Root-cause hypothesis (to be proven in Phase 3–4, not assumed):**
-1. Multiple hooks each query different source tables (`visitor_activity` vs `canonical_events` vs `lp_funnel_events`) with different bot/internal/US filters → same metric, different numbers.
-2. Map counters read a summary RPC; CSV export re-queries raw tables with a different `WHERE` → 44 vs 44, but 0 vs 5 ATC because one path filters `is_bot` and the other doesn't.
-3. Duration writer never updates `last_seen` after mount → duration frozen at ~2s.
-
-**Non-destructive guarantees:**
-- No table drops. No column renames. No RLS changes beyond additive read grants for the new edge function (service role).
-- Canonical tables (`canonical_events`, `canonical_sessions`) are the merge target — everything else becomes read-only for dashboards.
-- Old hooks kept as deprecated shims for one release, emitting `console.warn` so we can find any missed caller.
-
-**Files created (new):**
-- `supabase/functions/analytics-truth/index.ts`
-- `supabase/functions/analytics-truth-export/index.ts`
-- `supabase/functions/_shared/truth-query.ts`
-- `src/hooks/useAnalyticsTruth.ts`
-- `src/test/analytics-truth-parity.test.ts`
-- `e2e/analytics-truth-qa.spec.ts`
-- `.github/workflows/analytics-truth-parity.yml`
-- `docs/analytics-truth/{phase1-inventory,phase3-session-trace,phase4-metric-parity,phase6-reconciliation,CERTIFICATION}.md`
-- `/mnt/documents/analytics-dataflow.mmd`
-
-**Files rewritten as thin wrappers (expected, confirmed in Phase 1):**
-- `src/hooks/useCanonicalFunnel.ts`
-- Every admin analytics page that currently has its own supabase query for these metrics (World Map, Summary, CSV export, Funnel Health, Sales Commander, Revenue Forensics, Customer Journey, Conversion War Room).
-
-**Scope of this run:** all 13 phases, autonomously. I will pause and ask only if I discover a destructive change is required (schema drop, RLS tightening that could break prod, or removal of a dashboard the user still uses).
-
-**Estimated effort:** large — several hundred tool calls across investigation, edge function authoring, hook refactors, and verification. I'll batch aggressively and report progress at end of each phase.
-
----
-
-## Confirm before I start
-
-This plan will refactor most analytics-reading code in the app onto one service. It is the right fix for the "44 vs 44 but 0 vs 5" class of bug, and there is no shortcut that also satisfies "zero tolerance / identical numbers everywhere."
-
-Approve and I begin at Phase 1 immediately.
+## Acceptance
+- Selecting "Live now" shows markers for visitors active in the last 120s (proven with a local Playwright smoke against `/live-map` after seeding one live `visitor_activity` row).
+- Switching back to "Last 24h" restores the exact canonical numbers; parity e2e stays green.
+- Live counters carry a "not-canonical" label; CSV/Summary buttons are disabled in live mode.
+- Diagnostics attributes expose every count the acceptance list requires.
