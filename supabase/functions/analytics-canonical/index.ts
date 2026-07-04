@@ -295,13 +295,18 @@ Deno.serve(async (req) => {
     // Enrich with lat/lng + is_internal from visitor_activity for the same
     // session_ids. This is READ-ONLY and never contributes to counts — only
     // adds map-display fields. Chunked to keep the `.in()` list manageable.
+    //
+    // REGRESSION-FIX: writers on canonical_events and visitor_activity use
+    // different session_id namespaces (UUID vs `<epoch>-<rand>`). When the
+    // session_id join yields nothing, fall back to visitor_id so the truth
+    // envelope still carries geo/is_internal and the map can render markers.
     const sessionIds = Array.from(sessionAgg.keys());
     const CHUNK = 500;
     for (let i = 0; i < sessionIds.length; i += CHUNK) {
       const batch = sessionIds.slice(i, i + CHUNK);
       const { data: va, error: vaErr } = await supabase
         .from("visitor_activity")
-        .select("session_id,latitude,longitude,is_internal,utm_campaign,order_value")
+        .select("session_id,visitor_id,latitude,longitude,is_internal,utm_campaign,order_value")
         .in("session_id", batch)
         .order("created_at", { ascending: false });
       if (vaErr) continue; // enrichment failure must not break the truth envelope
@@ -314,6 +319,40 @@ Deno.serve(async (req) => {
         if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
         const ov = Number(row.order_value || 0);
         if (ov > s.order_value) s.order_value = ov;
+      }
+    }
+
+    // Fallback enrichment by visitor_id for sessions still missing geo.
+    // Guarantees map markers cannot go to zero just because a session_id
+    // namespace mismatch exists between the two writers.
+    const byVisitor = new Map<string, SessionAgg[]>();
+    for (const s of sessionAgg.values()) {
+      if (s.latitude != null && s.longitude != null) continue;
+      if (!s.visitor_id) continue;
+      const arr = byVisitor.get(s.visitor_id) ?? [];
+      arr.push(s);
+      byVisitor.set(s.visitor_id, arr);
+    }
+    const visitorIds = Array.from(byVisitor.keys());
+    for (let i = 0; i < visitorIds.length; i += CHUNK) {
+      const batch = visitorIds.slice(i, i + CHUNK);
+      const { data: va, error: vaErr } = await supabase
+        .from("visitor_activity")
+        .select("visitor_id,latitude,longitude,is_internal,utm_campaign,order_value")
+        .in("visitor_id", batch)
+        .order("created_at", { ascending: false });
+      if (vaErr) continue;
+      for (const row of va ?? []) {
+        const targets = byVisitor.get(row.visitor_id as string);
+        if (!targets) continue;
+        for (const s of targets) {
+          if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
+          if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
+          if (row.is_internal === true) s.is_internal = true;
+          if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
+          const ov = Number(row.order_value || 0);
+          if (ov > s.order_value) s.order_value = ov;
+        }
       }
     }
 
