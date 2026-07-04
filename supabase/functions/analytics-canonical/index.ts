@@ -198,19 +198,8 @@ Deno.serve(async (req) => {
     }
 
     const purchases_count = purchases.length;
-    const totals = {
-      visitors: visitors.size,
-      sessions: sessions.size,
-      page_views: page_views_raw,
-      product_views: perStage.CANONICAL_PRODUCT_VIEW.size,
-      add_to_cart: perStage.CANONICAL_ADD_TO_CART.size,
-      view_cart: perStage.CANONICAL_CART.size,
-      checkout_started: perStage.CANONICAL_CHECKOUT.size,
-      purchases: purchases_count,
-      revenue: Number(revenue.toFixed(2)),
-      currency,
-      conversion_rate: visitors.size > 0 ? +((purchases_count / visitors.size) * 100).toFixed(2) : 0,
-    };
+    // NOTE: `totals` intentionally aggregated later from `sessionAgg` so
+    // Map/CSV/Summary parity holds by construction. See below.
 
     const funnel = STAGES.map((stage) => ({
       stage,
