@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { HelmetProvider, Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -16,7 +16,6 @@ import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/Li
 import { useLivePresence } from "@/hooks/useLivePresence";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
-import { useMemo } from "react";
 
 const STORAGE_KEY = "vwm-pro-toolbar-v1";
 
