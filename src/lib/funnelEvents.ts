@@ -766,6 +766,46 @@ export function fireStickyAtcView(input: { product_id?: string | null; source_co
   });
 }
 
+/**
+ * Sticky add-to-cart bar was CLICKED. Fired from the button's click handler
+ * BEFORE the CartContext.addItem call, so we can measure impression→click
+ * separately from add_to_cart insert success.
+ */
+export function fireStickyAtcClick(input: {
+  product_id?: string | null;
+  source_component?: string;
+}): void {
+  fireLpEvent({
+    event_name: 'sticky_atc_click',
+    source_component: input.source_component ?? 'pdp_sticky_cta',
+    product_id: input.product_id ?? null,
+  });
+}
+
+/**
+ * Cart was hydrated from localStorage on session bootstrap (returning
+ * visitor). Distinguishes "user came back with items" from an in-session
+ * add_to_cart, so `view_cart` without ATC is no longer a phantom funnel gap.
+ * Fire ONCE per session (dedupe via 10s bucket + session-scoped guard).
+ */
+export function fireCartRestored(input: {
+  item_count: number;
+  cart_value?: number | null;
+}): void {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      if (sessionStorage.getItem('gp_cart_restored_fired') === '1') return;
+      sessionStorage.setItem('gp_cart_restored_fired', '1');
+    }
+  } catch { /* ignore */ }
+  fireLpEvent({
+    event_name: 'cart_restored',
+    source_component: 'cart_bootstrap',
+    value: input.cart_value ?? null,
+    extra: { item_count: input.item_count },
+  });
+}
+
 /** Rage click — ≥3 clicks within 800ms on the same target. */
 export function fireRageClick(input: {
   product_id?: string | null;
