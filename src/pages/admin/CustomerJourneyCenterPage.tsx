@@ -92,6 +92,9 @@ export default function CustomerJourneyCenterPage() {
   const hours = Math.max(1, Number(days) || 7) * 24;
   const canonical = useCanonicalFunnel({ hours, geo: "all" });
   const t = canonical.data?.totals;
+  const fmt = (n: number | undefined) => (n ?? 0).toLocaleString();
+  const money = (n: number | undefined, ccy: string | undefined) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: (ccy || "EUR").toUpperCase() }).format(n ?? 0);
 
   const load = async () => {
     setLoading(true);
