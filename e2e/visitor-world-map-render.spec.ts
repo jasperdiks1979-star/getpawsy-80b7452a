@@ -186,6 +186,9 @@ test.describe("Visitor World Map canonical visual render", () => {
 
     const diagnostics = page.getByTestId("world-map-render-diagnostics");
     await expect(diagnostics).toBeVisible();
+    await expect
+      .poll(async () => Number(await diagnostics.getAttribute("data-rendered-mapbox-source-features")))
+      .toBeGreaterThan(0);
 
     const values = await diagnostics.evaluate((el) => ({
       canonicalSessions: Number(el.getAttribute("data-canonical-sessions")),

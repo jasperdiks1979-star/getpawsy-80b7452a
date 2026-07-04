@@ -164,7 +164,7 @@ const EXPECTED = {
   purchases: 1, // canon-2
   revenue: 49.9,
   browsingBadge: 2, // sessions with no cart/checkout: canon-3-nogeo, canon-4
-  cartBadge: 2, // has_add_to_cart || has_view_cart: canon-1, canon-2
+  cartBadge: 1, // cart-only sessions; checkout sessions are counted in checkout
   checkoutBadge: 1, // canon-2
   sessionsWithGeo: 3,
   sessionsWithoutGeo: 1,
@@ -296,17 +296,22 @@ test.describe("Visitor World Map canonical parity", () => {
     // ---------- 1) On-screen counters ----------
     const diagnostics = page.getByTestId("world-map-render-diagnostics");
     await expect(diagnostics).toBeVisible();
+    await expect
+      .poll(async () => Number(await diagnostics.getAttribute("data-rendered-mapbox-source-features")))
+      .toBeGreaterThan(0);
 
     const diag = await diagnostics.evaluate((el) => ({
       canonicalSessions: Number(el.getAttribute("data-canonical-sessions")),
       sessionsWithGeo: Number(el.getAttribute("data-sessions-with-geo")),
       sessionsWithoutGeo: Number(el.getAttribute("data-sessions-without-geo")),
       markerFeatures: Number(el.getAttribute("data-marker-features")),
+      renderedMapboxSourceFeatures: Number(el.getAttribute("data-rendered-mapbox-source-features")),
     }));
     expect(diag.canonicalSessions).toBe(EXPECTED.sessions);
     expect(diag.sessionsWithGeo).toBe(EXPECTED.sessionsWithGeo);
     expect(diag.sessionsWithoutGeo).toBe(EXPECTED.sessionsWithoutGeo);
     expect(diag.markerFeatures).toBe(EXPECTED.sessionsWithGeo);
+    expect(diag.renderedMapboxSourceFeatures).toBeGreaterThan(0);
 
     // Badges (Dutch labels, source-of-truth for the visible counters row).
     await expect(page.getByText(`${EXPECTED.visitors} unieke bezoekers`)).toBeVisible();
