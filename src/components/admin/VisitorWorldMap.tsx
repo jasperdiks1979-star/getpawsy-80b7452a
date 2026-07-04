@@ -39,6 +39,11 @@ import {
   type LivePresenceActivity,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
+import {
+  clusterMarkers,
+  computeBoundsForMarkers,
+  resolveFollowTarget,
+} from "@/lib/liveMapLayer";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -177,6 +182,26 @@ export interface VisitorWorldMapProps {
   initialActivityFilter?: "all" | "browsing" | "cart" | "checkout";
   initialUsOnly?: boolean;
   initialExcludeInternal?: boolean;
+  /**
+   * Stage 5b live-mode integration hooks. All optional so legacy callers
+   * (/dashboard compact widget, /live-map) are unaffected.
+   *
+   * - `selectedLiveSessionId` highlights a marker and enables follow mode.
+   * - `followSelectedLiveSession` recenters on the selection when it moves.
+   * - `onLiveVisitorSelect` fires when a live-mode marker is clicked, so the
+   *   Pro page can open its visitor drawer.
+   * - `onLiveMapDiagnostics` reports rendered/cluster counts + selection so
+   *   the Pro diagnostics panel reflects the actual Mapbox source state.
+   */
+  selectedLiveSessionId?: string | null;
+  followSelectedLiveSession?: boolean;
+  onLiveVisitorSelect?: (sessionId: string) => void;
+  onLiveMapDiagnostics?: (diag: {
+    liveMarkersRendered: number;
+    liveClusters: number;
+    selectedLiveSessionId: string | null;
+    followMode: boolean;
+  }) => void;
 }
 
 export const VisitorWorldMap = ({
@@ -185,6 +210,10 @@ export const VisitorWorldMap = ({
   initialActivityFilter,
   initialUsOnly,
   initialExcludeInternal,
+  selectedLiveSessionId = null,
+  followSelectedLiveSession = false,
+  onLiveVisitorSelect,
+  onLiveMapDiagnostics,
 }: VisitorWorldMapProps = {}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -1123,18 +1152,51 @@ export const VisitorWorldMap = ({
       // Create custom marker element
       const el = document.createElement("div");
       el.className = "visitor-marker";
+      // Selection highlight: any activity in this group matching the current
+      // selection promotes the marker to a highlighted state (thicker ring +
+      // higher z-index) so the operator can visually track it on the map.
+      const groupSessionIds = groupActivities
+        .map((a) => (a as { session_id?: string | null }).session_id)
+        .filter((s): s is string => !!s);
+      const isSelectedGroup =
+        !!selectedLiveSessionId && groupSessionIds.includes(selectedLiveSessionId);
+      const primarySessionId = groupSessionIds[0] ?? null;
+      if (primarySessionId) el.dataset.sessionId = primarySessionId;
+      if (isSelectedGroup) el.dataset.selected = "true";
       el.style.cssText = `
         width: ${size}px;
         height: ${size}px;
         background-color: ${color};
-        border: 2px solid ${hasPinterest && sourceFilter === "all" ? "#E60023" : "white"};
+        border: ${isSelectedGroup ? "3px" : "2px"} solid ${
+          isSelectedGroup
+            ? "#3b82f6"
+            : hasPinterest && sourceFilter === "all"
+            ? "#E60023"
+            : "white"
+        };
         border-radius: 50%;
         cursor: pointer;
-        box-shadow: 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40;
+        box-shadow: ${
+          isSelectedGroup
+            ? `0 0 0 3px rgba(59,130,246,0.35), 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
+            : `0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
+        };
         animation: pulse 2s ease-in-out infinite;
         display: ${showHeatmap ? "none" : "block"};
         position: relative;
+        z-index: ${isSelectedGroup ? "5" : "1"};
       `;
+
+      // Emit selection when the marker is clicked. Skipped when no callback
+      // is wired (legacy /dashboard, /live-map). Uses `mousedown` so it fires
+      // before Mapbox's popup mount and works even if the popup swallows the
+      // click on nested SVG icons.
+      if (onLiveVisitorSelect && primarySessionId) {
+        el.addEventListener("mousedown", (event) => {
+          event.stopPropagation();
+          onLiveVisitorSelect(primarySessionId);
+        });
+      }
 
       // Add Pinterest badge icon when source filter is "all" and has Pinterest traffic
       if (hasPinterest && sourceFilter === "all") {
@@ -1246,7 +1308,80 @@ export const VisitorWorldMap = ({
       markersRef.current.push(marker);
     });
     mapPerfMark("first-paint");
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
+  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Stage 5b — live-mode Mapbox integrations
+  // ────────────────────────────────────────────────────────────────────────
+  // These effects are strictly no-op when `isLiveNow` is false, so canonical
+  // mode renders exactly as before. They also short-circuit whenever the
+  // required optional props are not supplied by the caller.
+
+  // Live auto-fit: when the live buffer of geo-tagged markers changes, fit
+  // Mapbox to the padded bounds so operators immediately see the active
+  // visitors on screen. Uses `computeBoundsForMarkers` from `liveMapLayer`.
+  useEffect(() => {
+    if (!isLiveNow || !map.current || !mapLoaded) return;
+    if (followSelectedLiveSession && selectedLiveSessionId) return; // follow mode wins
+    const bounds = computeBoundsForMarkers(liveModel.markers);
+    if (!bounds) return;
+    try {
+      map.current.fitBounds(
+        [
+          [bounds.west, bounds.south],
+          [bounds.east, bounds.north],
+        ],
+        { padding: isFullscreen ? 80 : 60, maxZoom: 5, duration: 900 },
+      );
+    } catch {
+      // Mapbox rejects degenerate bounds in edge cases; ignore.
+    }
+  }, [isLiveNow, liveModel, mapLoaded, isFullscreen, followSelectedLiveSession, selectedLiveSessionId]);
+
+  // Follow selected visitor: recenter (no zoom change) whenever the
+  // selection's latest geo coordinate changes.
+  useEffect(() => {
+    if (!isLiveNow || !map.current || !mapLoaded) return;
+    if (!followSelectedLiveSession || !selectedLiveSessionId) return;
+    const target = resolveFollowTarget(
+      (displayActivities ?? []).map((a) => ({
+        session_id: a.session_id,
+        latitude: (a as { latitude?: number | null }).latitude ?? null,
+        longitude: (a as { longitude?: number | null }).longitude ?? null,
+        created_at: (a as { created_at?: string }).created_at ?? new Date().toISOString(),
+        last_seen_at: (a as { last_seen_at?: string }).last_seen_at ?? null,
+      })),
+      selectedLiveSessionId,
+    );
+    if (!target) return;
+    try {
+      map.current.easeTo({ center: [target.longitude, target.latitude], duration: 900 });
+    } catch {
+      // ignore
+    }
+  }, [isLiveNow, followSelectedLiveSession, selectedLiveSessionId, displayActivities, mapLoaded]);
+
+  // Diagnostics: notify the Pro page of what the Mapbox source actually
+  // rendered so its diagnostics panel reflects the map state, not just the
+  // client-side buffer. Cluster count uses the pure `clusterMarkers` helper.
+  useEffect(() => {
+    if (!onLiveMapDiagnostics) return;
+    const clusters = isLiveNow
+      ? clusterMarkers(
+          liveModel.markers.map((m) => ({
+            session_id: m.session_id,
+            latitude: m.latitude,
+            longitude: m.longitude,
+          })),
+        )
+      : [];
+    onLiveMapDiagnostics({
+      liveMarkersRendered: isLiveNow ? liveModel.markers.length : 0,
+      liveClusters: clusters.length,
+      selectedLiveSessionId,
+      followMode: !!followSelectedLiveSession,
+    });
+  }, [isLiveNow, liveModel, selectedLiveSessionId, followSelectedLiveSession, onLiveMapDiagnostics]);
 
   // Update hot spot markers when data changes
   useEffect(() => {
