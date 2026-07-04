@@ -1,0 +1,33 @@
+name: Analytics Truth Parity
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/analytics-canonical/**"
+      - "src/hooks/useAnalyticsTruth.ts"
+      - "src/components/admin/VisitorWorldMap.tsx"
+      - "src/components/admin/CleanAnalyticsPanel.tsx"
+      - "scripts/analytics-truth-parity-probe.mjs"
+      - ".github/workflows/analytics-truth-parity.yml"
+  schedule:
+    # Hourly live probe against production so drift is detected within 60m.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Analytics Truth live-parity probe
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          PROBE_HOURS: "5,10,24"
+          PROBE_GEOS: "US,all"
+          PROBE_CLEAN: "true,false"
+        run: node scripts/analytics-truth-parity-probe.mjs

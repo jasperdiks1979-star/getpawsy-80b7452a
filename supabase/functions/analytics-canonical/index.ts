@@ -1,4 +1,5 @@
 // analytics-canonical — the ONE source of truth for every dashboard.
+// (PR-3 redeploy marker — truth envelope must include sessions[])
 // Reads `canonical_events` + `orders` (paid) with the Clean filter baked in,
 // and enriches per-session geo/internal signals from `visitor_activity` so
 // the truth envelope (`sessions[]`) can power maps and CSV exports without
@@ -197,24 +198,10 @@ Deno.serve(async (req) => {
     }
 
     const purchases_count = purchases.length;
-    const totals = {
-      visitors: visitors.size,
-      sessions: sessions.size,
-      page_views: page_views_raw,
-      product_views: perStage.CANONICAL_PRODUCT_VIEW.size,
-      add_to_cart: perStage.CANONICAL_ADD_TO_CART.size,
-      view_cart: perStage.CANONICAL_CART.size,
-      checkout_started: perStage.CANONICAL_CHECKOUT.size,
-      purchases: purchases_count,
-      revenue: Number(revenue.toFixed(2)),
-      currency,
-      conversion_rate: visitors.size > 0 ? +((purchases_count / visitors.size) * 100).toFixed(2) : 0,
-    };
+    // NOTE: `totals` intentionally aggregated later from `sessionAgg` so
+    // Map/CSV/Summary parity holds by construction. See below.
 
-    const funnel = STAGES.map((stage) => ({
-      stage,
-      count: stage === "CANONICAL_PURCHASE" ? purchases_count : (stage === "CANONICAL_PAGE_VIEW" ? page_views_raw : perStage[stage].size),
-    }));
+    // funnel is built AFTER totals below (needs the reconciled per-session set).
 
     const countries = Array.from(perCountry.entries()).map(([country, c]) => ({
       country,
@@ -333,6 +320,46 @@ Deno.serve(async (req) => {
     const sessionsArr = Array.from(sessionAgg.values()).sort(
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
     );
+
+    // ── totals derived from sessionAgg (parity by construction) ────────
+    // Every counter Map/CSV/Summary shows is computed the same way here.
+    const visitorsSet = new Set<string>();
+    let pvSum = 0, atc = 0, viewCart = 0, checkout = 0, purchase = 0;
+    let orderValueSum = 0;
+    for (const s of sessionsArr) {
+      visitorsSet.add(s.visitor_id || s.session_id);
+      pvSum += s.page_views;
+      if (s.has_add_to_cart) atc++;
+      if (s.has_view_cart) viewCart++;
+      if (s.has_checkout) checkout++;
+      if (s.has_purchase) purchase++;
+      orderValueSum += s.order_value;
+    }
+    const totals = {
+      visitors: visitorsSet.size,
+      sessions: sessionsArr.length,
+      page_views: pvSum,
+      product_views: perStage.CANONICAL_PRODUCT_VIEW.size,
+      add_to_cart: atc,
+      view_cart: viewCart,
+      checkout_started: checkout,
+      purchases: purchases_count,
+      revenue: Number(revenue.toFixed(2)),
+      currency,
+      conversion_rate: visitorsSet.size > 0
+        ? +((purchases_count / visitorsSet.size) * 100).toFixed(2) : 0,
+    };
+
+    const funnel = STAGES.map((stage) => ({
+      stage,
+      count:
+        stage === "CANONICAL_PURCHASE" ? purchases_count :
+        stage === "CANONICAL_PAGE_VIEW" ? pvSum :
+        stage === "CANONICAL_ADD_TO_CART" ? atc :
+        stage === "CANONICAL_CART" ? viewCart :
+        stage === "CANONICAL_CHECKOUT" ? checkout :
+        perStage[stage].size,
+    }));
 
     const sample = events[0] ?? null;
 
