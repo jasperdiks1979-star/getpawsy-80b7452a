@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertTriangle, Activity, RefreshCw } from "lucide-react";
 import { SessionJourneysPanel } from "@/components/admin/SessionJourneysPanel";
 import { RevenueForensicsPanel } from "@/components/admin/RevenueForensicsPanel";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
 
 type Bottleneck = {
   rank: number;
@@ -59,6 +60,7 @@ export default function ConversionWarRoomPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <CanonicalKpiStrip defaultRange="24h" title="Canonical truth — War Room" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">
