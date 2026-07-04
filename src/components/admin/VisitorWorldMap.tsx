@@ -31,6 +31,8 @@ import {
   assertWorldMapRenderInvariant,
   buildWorldMapModel,
   markerFeaturesToGeoJson,
+  markerFeaturesToGeoJsonWithCanonical,
+  auditCanonicalFeatureFlags,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
