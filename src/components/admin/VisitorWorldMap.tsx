@@ -855,11 +855,10 @@ export const VisitorWorldMap = () => {
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities || filteredActivities.length === 0) return;
+    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
     if (sourceFilter === "all") return; // Don't auto-fly for "all"
 
-    const withCoords = filteredActivities.filter(a => a.latitude && a.longitude);
-    if (withCoords.length === 0) return;
+    const withCoords = markerFeatures;
 
     // Calculate bounding box
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
@@ -883,7 +882,20 @@ export const VisitorWorldMap = () => {
       zoom,
       duration: 1500,
     });
-  }, [sourceFilter, filteredActivities, mapLoaded]);
+  }, [sourceFilter, markerFeatures, mapLoaded]);
+
+  // Keep canonical geo features in view after the canonical response loads.
+  useEffect(() => {
+    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const bounds = new mapboxgl.LngLatBounds();
+    markerFeatures.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
+    if (bounds.isEmpty()) return;
+    map.current.fitBounds(bounds, {
+      padding: isFullscreen ? 80 : 60,
+      maxZoom: markerFeatures.length === 1 ? 5 : 3.5,
+      duration: 900,
+    });
+  }, [markerFeatures, mapLoaded, isFullscreen]);
 
   // Update markers when activities change
   useEffect(() => {
