@@ -148,7 +148,7 @@ const ACTIVITY_WEIGHTS = {
 type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "30d";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
-  { value: "live", label: "Live (15 min)", minutes: 15 },
+  { value: "live", label: "Live now", minutes: 2 },
   { value: "15m", label: "Laatste 15 min", minutes: 15 },
   { value: "1h", label: "Laatste uur", minutes: 60 },
   { value: "2.5h", label: "Laatste 2,5 uur", minutes: 150 },
