@@ -1,4 +1,5 @@
 // analytics-canonical — the ONE source of truth for every dashboard.
+// (PR-3 redeploy marker — truth envelope must include sessions[])
 // Reads `canonical_events` + `orders` (paid) with the Clean filter baked in,
 // and enriches per-session geo/internal signals from `visitor_activity` so
 // the truth envelope (`sessions[]`) can power maps and CSV exports without
