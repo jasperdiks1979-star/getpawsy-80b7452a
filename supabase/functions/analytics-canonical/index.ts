@@ -356,9 +356,11 @@ Deno.serve(async (req) => {
       ? allSessionsArr.filter((s) => isUS(s.country))
       : allSessionsArr;
 
+    const cleanSessionsArr = sessionsArr.filter((s) => !s.is_internal);
+
     const countryAgg = new Map<string, { visitors: Set<string>; sessions: number; page_views: number; add_to_cart: number; checkout_started: number; purchases: number }>();
     const sourceAgg = new Map<string, number>();
-    for (const s of sessionsArr) {
+    for (const s of cleanSessionsArr) {
       const country = s.country || "Unknown";
       const c = countryAgg.get(country) ?? { visitors: new Set<string>(), sessions: 0, page_views: 0, add_to_cart: 0, checkout_started: 0, purchases: 0 };
       c.visitors.add(s.visitor_id || s.session_id);
@@ -389,7 +391,7 @@ Deno.serve(async (req) => {
     const visitorsSet = new Set<string>();
     let pvSum = 0, atc = 0, viewCart = 0, checkout = 0, purchase = 0;
     let orderValueSum = 0;
-    for (const s of sessionsArr) {
+    for (const s of cleanSessionsArr) {
       visitorsSet.add(s.visitor_id || s.session_id);
       pvSum += s.page_views;
       if (s.has_add_to_cart) atc++;
@@ -400,9 +402,9 @@ Deno.serve(async (req) => {
     }
     const totals = {
       visitors: visitorsSet.size,
-      sessions: sessionsArr.length,
+      sessions: cleanSessionsArr.length,
       page_views: pvSum,
-      product_views: sessionsArr.filter((s) => s.has_product_view).length,
+      product_views: cleanSessionsArr.filter((s) => s.has_product_view).length,
       add_to_cart: atc,
       view_cart: viewCart,
       checkout_started: checkout,
