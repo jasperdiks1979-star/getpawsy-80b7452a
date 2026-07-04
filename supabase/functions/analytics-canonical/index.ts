@@ -201,10 +201,7 @@ Deno.serve(async (req) => {
     // NOTE: `totals` intentionally aggregated later from `sessionAgg` so
     // Map/CSV/Summary parity holds by construction. See below.
 
-    const funnel = STAGES.map((stage) => ({
-      stage,
-      count: stage === "CANONICAL_PURCHASE" ? purchases_count : (stage === "CANONICAL_PAGE_VIEW" ? page_views_raw : perStage[stage].size),
-    }));
+    // funnel is built AFTER totals below (needs the reconciled per-session set).
 
     const countries = Array.from(perCountry.entries()).map(([country, c]) => ({
       country,
