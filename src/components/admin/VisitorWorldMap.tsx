@@ -1344,11 +1344,11 @@ export const VisitorWorldMap = ({
     if (!isLiveNow || !map.current || !mapLoaded) return;
     if (!followSelectedLiveSession || !selectedLiveSessionId) return;
     const target = resolveFollowTarget(
-      (rawActivities ?? []).map((a) => ({
+      (displayActivities ?? []).map((a) => ({
         session_id: a.session_id,
-        latitude: a.latitude ?? null,
-        longitude: a.longitude ?? null,
-        created_at: a.created_at,
+        latitude: (a as { latitude?: number | null }).latitude ?? null,
+        longitude: (a as { longitude?: number | null }).longitude ?? null,
+        created_at: (a as { created_at?: string }).created_at ?? new Date().toISOString(),
         last_seen_at: (a as { last_seen_at?: string }).last_seen_at ?? null,
       })),
       selectedLiveSessionId,
@@ -1359,7 +1359,7 @@ export const VisitorWorldMap = ({
     } catch {
       // ignore
     }
-  }, [isLiveNow, followSelectedLiveSession, selectedLiveSessionId, rawActivities, mapLoaded]);
+  }, [isLiveNow, followSelectedLiveSession, selectedLiveSessionId, displayActivities, mapLoaded]);
 
   // Diagnostics: notify the Pro page of what the Mapbox source actually
   // rendered so its diagnostics panel reflects the map state, not just the
