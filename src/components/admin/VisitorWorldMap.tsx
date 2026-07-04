@@ -39,6 +39,11 @@ import {
   type LivePresenceActivity,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
+import {
+  clusterMarkers,
+  computeBoundsForMarkers,
+  resolveFollowTarget,
+} from "@/lib/liveMapLayer";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -177,6 +182,26 @@ export interface VisitorWorldMapProps {
   initialActivityFilter?: "all" | "browsing" | "cart" | "checkout";
   initialUsOnly?: boolean;
   initialExcludeInternal?: boolean;
+  /**
+   * Stage 5b live-mode integration hooks. All optional so legacy callers
+   * (/dashboard compact widget, /live-map) are unaffected.
+   *
+   * - `selectedLiveSessionId` highlights a marker and enables follow mode.
+   * - `followSelectedLiveSession` recenters on the selection when it moves.
+   * - `onLiveVisitorSelect` fires when a live-mode marker is clicked, so the
+   *   Pro page can open its visitor drawer.
+   * - `onLiveMapDiagnostics` reports rendered/cluster counts + selection so
+   *   the Pro diagnostics panel reflects the actual Mapbox source state.
+   */
+  selectedLiveSessionId?: string | null;
+  followSelectedLiveSession?: boolean;
+  onLiveVisitorSelect?: (sessionId: string) => void;
+  onLiveMapDiagnostics?: (diag: {
+    liveMarkersRendered: number;
+    liveClusters: number;
+    selectedLiveSessionId: string | null;
+    followMode: boolean;
+  }) => void;
 }
 
 export const VisitorWorldMap = ({
@@ -185,6 +210,10 @@ export const VisitorWorldMap = ({
   initialActivityFilter,
   initialUsOnly,
   initialExcludeInternal,
+  selectedLiveSessionId = null,
+  followSelectedLiveSession = false,
+  onLiveVisitorSelect,
+  onLiveMapDiagnostics,
 }: VisitorWorldMapProps = {}) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
