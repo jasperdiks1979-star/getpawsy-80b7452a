@@ -423,12 +423,14 @@ export const VisitorWorldMap = () => {
       const timeRangeMs = getTimeRangeMs();
       
       if (timeRange === "live") {
-        // For LIVE mode: only show sessions with heartbeat in the last 60 seconds
-        const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
+        // For LIVE mode: only show sessions with heartbeat in the last 120 seconds.
+        // This is realtime presence — see live presence model in
+        // src/lib/visitorWorldMapCanonicalFeatures.ts. It never feeds canonical KPIs.
+        const liveWindowSince = new Date(Date.now() - 120 * 1000).toISOString();
         let q = supabase
           .from("visitor_activity")
           .select("*")
-          .gte("last_seen_at", sixtySecondsAgo)
+          .gte("last_seen_at", liveWindowSince)
           .order("last_seen_at", { ascending: false });
         if (excludeInternal) q = q.or("is_internal.is.null,is_internal.eq.false");
         if (usOnly) q = q.in("country", ["United States", "USA", "US"]);
