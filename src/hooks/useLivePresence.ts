@@ -15,6 +15,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { LiveVisitorActivityRow, LiveConnectionDiagnostics } from "@/lib/liveVisitorTimeline";
 import { LIVE_HEARTBEAT_TTL_SECONDS } from "@/lib/liveVisitorTimeline";
+import {
+  applyLiveFilters,
+  type LiveActivityFilter,
+  type LiveSourceFilter,
+} from "@/lib/liveMapLayer";
 
 const LIVE_WINDOW_MS = LIVE_HEARTBEAT_TTL_SECONDS * 1000;
 const POLL_INTERVAL_MS = 5_000;
@@ -24,6 +29,8 @@ export interface UseLivePresenceOptions {
   usOnly?: boolean;
   excludeInternal?: boolean;
   excludeBots?: boolean;
+  source?: LiveSourceFilter;
+  activity?: LiveActivityFilter;
 }
 
 export interface UseLivePresenceResult {
@@ -35,7 +42,14 @@ export interface UseLivePresenceResult {
 }
 
 export function useLivePresence(opts: UseLivePresenceOptions): UseLivePresenceResult {
-  const { enabled, usOnly = false, excludeInternal = true, excludeBots = true } = opts;
+  const {
+    enabled,
+    usOnly = false,
+    excludeInternal = true,
+    excludeBots = true,
+    source = "all",
+    activity = "all",
+  } = opts;
 
   const [wsStatus, setWsStatus] = useState<LiveConnectionDiagnostics["websocketStatus"]>(
     enabled ? "connecting" : "disabled",
@@ -186,8 +200,15 @@ export function useLivePresence(opts: UseLivePresenceOptions): UseLivePresenceRe
     };
   }, [enabled, wsStatus, lastHeartbeatAt, droppedHeartbeats, reconnectAttempts, latencyMs, liveRows]);
 
+  // Source/activity filters live in the client so toolbar changes reshape the
+  // buffer without a refetch and the WebSocket stays coherent.
+  const filteredRows = useMemo(
+    () => applyLiveFilters(liveRows, { source, activity }),
+    [liveRows, source, activity],
+  );
+
   return {
-    rows: liveRows,
+    rows: filteredRows,
     isLoading: query.isLoading,
     error: (query.error as Error) ?? null,
     diagnostics,
