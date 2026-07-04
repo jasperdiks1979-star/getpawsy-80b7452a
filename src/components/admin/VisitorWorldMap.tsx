@@ -33,6 +33,10 @@ import {
   markerFeaturesToGeoJson,
   markerFeaturesToGeoJsonWithCanonical,
   auditCanonicalFeatureFlags,
+  buildLivePresenceModel,
+  livePresenceMarkersToGeoJson,
+  type CanonicalFunnelFlags,
+  type LivePresenceActivity,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 
