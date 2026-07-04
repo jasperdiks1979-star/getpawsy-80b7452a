@@ -1402,7 +1402,7 @@ export const VisitorWorldMap = () => {
   // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
   // legacy visitor_activity aggregation only while the canonical fetch is
   // still in flight, and warn so any regression is loud.
-  const counts = truth
+  const canonicalCounts = truth
     ? {
         browsing: truthSessions.filter(
           (s) => !s.has_add_to_cart && !s.has_view_cart && !s.has_checkout,
@@ -1417,10 +1417,14 @@ export const VisitorWorldMap = () => {
         cart: filteredActivities?.filter((a) => a.activity_type === "cart").length || 0,
         checkout: filteredActivities?.filter((a) => a.activity_type === "checkout").length || 0,
       };
-
-  const totalVisitors = truth
+  const canonicalTotalVisitors = truth
     ? truthCounters.visitors
     : new Set(filteredActivities?.map((a) => a.session_id)).size;
+
+  // In live mode the counters show REALTIME PRESENCE only. They are labeled
+  // as such in the UI so operators cannot confuse them with canonical KPIs.
+  const counts = isLiveNow ? liveModel.counts : canonicalCounts;
+  const totalVisitors = isLiveNow ? liveModel.totalLiveVisitors : canonicalTotalVisitors;
 
   if (import.meta.env.DEV && truth && filteredActivities) {
     if (!assertWorldMapRenderInvariant(mapDiagnostics)) {
