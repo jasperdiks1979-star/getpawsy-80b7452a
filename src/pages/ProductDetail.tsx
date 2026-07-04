@@ -2205,6 +2205,7 @@ const ProductDetail = () => {
             onCtaClick={handleAddToCart}
             inStock={inStock}
             price={activePrice}
+            productId={product?.id}
             ctaLabel={
               getConversionFlag('dynamicAtcLabel')
                 ? getEmotionalCopy(product.category, product.name).ctaLabel
