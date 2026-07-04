@@ -67165,6 +67165,45 @@ export type Database = {
         }
         Relationships: []
       }
+      stabilization_runs: {
+        Row: {
+          checks: Json
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          incidents: Json
+          metrics: Json
+          monitor: string
+          ran_at: string
+          status: string
+        }
+        Insert: {
+          checks?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          incidents?: Json
+          metrics?: Json
+          monitor?: string
+          ran_at?: string
+          status: string
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          incidents?: Json
+          metrics?: Json
+          monitor?: string
+          ran_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       stock_notifications: {
         Row: {
           created_at: string
