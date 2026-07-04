@@ -34,6 +34,7 @@ type SessionType = "real" | "qa" | "bot" | "degraded";
 
 type Row = {
   event_name: string;
+  session_id: string | null;
   is_bot: boolean | null;
   qa: boolean | null;
   degraded: boolean | null;
@@ -92,7 +93,7 @@ export default function AtcAnalyticsPanel() {
     const { data, error } = await supabase
       .from("lp_funnel_events")
       .select(
-        "event_name,is_bot,qa,degraded,time_to_visible_ms,time_to_click_ms,delta_ms,dwell_ms",
+        "event_name,session_id,is_bot,qa,degraded,time_to_visible_ms,time_to_click_ms,delta_ms,dwell_ms",
       )
       .in("event_name", EVENTS as unknown as string[])
       .gte("created_at", sinceIso)
@@ -157,6 +158,37 @@ export default function AtcAnalyticsPanel() {
     return totals;
   }, [rows]);
 
+  // Funnel: unique sessions that fired each step, per session type.
+  const funnel = useMemo(() => {
+    const sets: Record<SessionType, Record<EventName, Set<string>>> = {
+      real: { sticky_atc_visible: new Set(), sticky_atc_click: new Set(), add_to_cart: new Set(), cart_restored: new Set() },
+      qa: { sticky_atc_visible: new Set(), sticky_atc_click: new Set(), add_to_cart: new Set(), cart_restored: new Set() },
+      bot: { sticky_atc_visible: new Set(), sticky_atc_click: new Set(), add_to_cart: new Set(), cart_restored: new Set() },
+      degraded: { sticky_atc_visible: new Set(), sticky_atc_click: new Set(), add_to_cart: new Set(), cart_restored: new Set() },
+    };
+    for (const r of rows) {
+      if (!r.session_id) continue;
+      if (!(EVENTS as readonly string[]).includes(r.event_name)) continue;
+      sets[classify(r)][r.event_name as EventName].add(r.session_id);
+    }
+    const bySession: Record<SessionType, Array<{
+      event: EventName; sessions: number; convFromPrev: number | null; convFromTop: number | null; dropFromPrev: number | null;
+    }>> = { real: [], qa: [], bot: [], degraded: [] };
+    for (const st of ["real", "qa", "bot", "degraded"] as SessionType[]) {
+      const top = sets[st][EVENTS[0]].size;
+      let prev = 0;
+      EVENTS.forEach((ev, i) => {
+        const n = sets[st][ev].size;
+        const convFromPrev = i === 0 ? null : prev > 0 ? (n / prev) * 100 : null;
+        const dropFromPrev = convFromPrev === null ? null : 100 - convFromPrev;
+        const convFromTop = top > 0 ? (n / top) * 100 : null;
+        bySession[st].push({ event: ev, sessions: n, convFromPrev, convFromTop, dropFromPrev });
+        prev = n;
+      });
+    }
+    return bySession;
+  }, [rows]);
+
   const badgeVariant = (st: SessionType) =>
     st === "real" ? "default"
       : st === "qa" ? "secondary"
@@ -217,6 +249,80 @@ export default function AtcAnalyticsPanel() {
           <Badge variant="outline" className="text-xs">
             total events: {rows.length.toLocaleString()}
           </Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Funnel conversion & drop-off (unique sessions)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {(["real", "qa", "bot", "degraded"] as SessionType[]).map((st) => {
+            const steps = funnel[st];
+            const top = steps[0]?.sessions ?? 0;
+            return (
+              <div key={st} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant={badgeVariant(st)} className="text-xs">{st}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {top.toLocaleString()} sessions entered funnel
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {steps.map((s, i) => {
+                    const widthPct = s.convFromTop ?? 0;
+                    return (
+                      <div key={s.event} className="space-y-0.5">
+                        <div className="flex items-center justify-between text-xs font-mono">
+                          <span className="truncate">{s.event}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {s.sessions.toLocaleString()} ·{" "}
+                            {s.convFromTop !== null ? `${s.convFromTop.toFixed(1)}% of top` : "—"}
+                            {i > 0 && s.convFromPrev !== null && (
+                              <>
+                                {" · "}
+                                <span className={
+                                  (s.dropFromPrev ?? 0) > 50
+                                    ? "text-destructive"
+                                    : (s.dropFromPrev ?? 0) > 25
+                                    ? "text-yellow-600 dark:text-yellow-400"
+                                    : "text-green-600 dark:text-green-400"
+                                }>
+                                  {s.convFromPrev.toFixed(1)}% step conv
+                                  {" · "}
+                                  −{(s.dropFromPrev ?? 0).toFixed(1)}% drop
+                                </span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        <div className="h-3 w-full rounded bg-muted overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              st === "real" ? "bg-primary"
+                                : st === "qa" ? "bg-secondary-foreground/60"
+                                : st === "bot" ? "bg-destructive"
+                                : "bg-muted-foreground/60"
+                            }`}
+                            style={{ width: `${Math.max(0, Math.min(100, widthPct))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-xs text-muted-foreground">
+            Each bar = unique sessions reaching that step as % of sessions that
+            entered the funnel (sticky_atc_visible). Step conv = conversion from
+            the previous step; drop = 1 − step conv. cart_restored is measured
+            against sessions that saw sticky_atc_visible in the same range and
+            may exceed add_to_cart when carts are rehydrated from storage.
+          </p>
         </CardContent>
       </Card>
 
