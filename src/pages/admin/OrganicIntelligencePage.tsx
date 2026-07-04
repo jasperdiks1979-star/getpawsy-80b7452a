@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Play, Brain, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
 
 type Run = { id: string; status: string; target_label: string | null; created_at: string; duration_ms: number | null; steps_completed: number };
 type Report = { id: string; run_id: string; target_label: string | null; summary: string | null; report_md: string | null; report_json: any; created_at: string };
@@ -54,6 +55,7 @@ export default function OrganicIntelligencePage() {
   return (
     <div className="p-6 space-y-6">
       <Helmet><title>Organic Intelligence — Sales Brain</title></Helmet>
+      <CanonicalKpiStrip defaultRange="24h" title="Canonical truth — Organic Intelligence" />
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Brain className="h-6 w-6" /> Organic Intelligence Loop</h1>

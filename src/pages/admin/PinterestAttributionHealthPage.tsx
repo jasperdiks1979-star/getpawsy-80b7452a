@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Activity, AlertTriangle, RefreshCw, Wrench, Link2 } from "lucide-react";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
 
 type HealthRow = {
   id: string;
@@ -74,6 +75,7 @@ export default function PinterestAttributionHealthPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Helmet><title>Attribution Health — Pinterest</title></Helmet>
+      <CanonicalKpiStrip defaultRange="24h" title="Canonical truth — Pinterest Attribution" />
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
