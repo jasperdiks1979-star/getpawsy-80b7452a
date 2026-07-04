@@ -264,6 +264,9 @@ export default function VisitorWorldMapProPage() {
                 sessionsWithGeo={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
                 liveMarkers={mapDiagnostics.liveMarkersRendered || livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
                 liveCanonicalOverlap={overlap.overlapAny}
+                liveClusters={mapDiagnostics.liveClusters}
+                selectedLiveSessionId={selectedSessionId}
+                followMode={followSelected}
               />
             ) : (
               <div className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
