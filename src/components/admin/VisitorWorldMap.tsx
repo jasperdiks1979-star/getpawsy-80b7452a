@@ -26,7 +26,13 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
-import { useAnalyticsTruth, countersFromSessions, type TruthSession } from "@/hooks/useAnalyticsTruth";
+import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
+import {
+  assertWorldMapRenderInvariant,
+  buildWorldMapModel,
+  markerFeaturesToGeoJson,
+  type WorldMapMarkerFeature,
+} from "@/lib/visitorWorldMapCanonicalFeatures";
 
 function Stat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "good" | "bad" | "warn" | "neutral" }) {
   const cls = tone === "good"
@@ -157,6 +163,7 @@ export const VisitorWorldMap = () => {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
   const mapTokenRef = useRef<string | null>(null);
@@ -527,60 +534,31 @@ export const VisitorWorldMap = () => {
     refetchIntervalMs: timeRange === "live" ? 10_000 : 60_000,
   });
 
-  // Truth-filtered session list — respects the SAME client filters as the
-  // map (excludeInternal / activityFilter / sourceFilter). Every counter,
-  // badge, CSV row, and Summary line below is derived from this array, so
-  // they are guaranteed byte-identical for identical filter selections.
-  const truthSessions: TruthSession[] = useMemo(() => {
-    const rows = truth?.sessions ?? [];
-    return rows.filter((s) => {
-      if (excludeInternal && s.is_internal) return false;
-      if (activityFilter === "cart" && !(s.has_add_to_cart || s.has_view_cart)) return false;
-      if (activityFilter === "checkout" && !s.has_checkout) return false;
-      if (activityFilter === "browsing" && (s.has_add_to_cart || s.has_view_cart || s.has_checkout)) return false;
-      if (sourceFilter !== "all") {
-        const canonical = resolveCanonicalSource({
-          utm_source: s.utm_source,
-          utm_medium: s.utm_medium,
-          utm_campaign: s.utm_campaign,
-          referrer: s.referrer,
-          referrer_category: null,
-          page_path: s.page_path,
-        });
-        if (canonical !== sourceFilter) return false;
-      }
-      return true;
-    });
-  }, [truth, excludeInternal, activityFilter, sourceFilter]);
+  // Canonical map model — the SAME truth session list powers counters, CSV,
+  // Summary, visible markers, and the heatmap source. `visitor_activity` is
+  // no longer a marker truth source; it remains only for diagnostic audit
+  // tables and realtime notification toasts.
+  const mapModel = useMemo(
+    () => buildWorldMapModel(truth?.sessions ?? [], { activityFilter, sourceFilter, usOnly, excludeInternal }),
+    [truth, activityFilter, sourceFilter, usOnly, excludeInternal],
+  );
+  const sourceFilterSessions = mapModel.sourceFilterSessions;
+  const truthSessions = mapModel.truthSessions;
+  const markerFeatures = mapModel.markerFeatures;
+  const heatmapFeatures = mapModel.heatmapFeatures;
+  const mapDiagnostics = mapModel.diagnostics;
 
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
-  const truthSessionIds = useMemo(() => new Set(truthSessions.map((s) => s.session_id)), [truthSessions]);
-  // REGRESSION-FIX (P0 zero-visitors): writers on canonical_events and
-  // visitor_activity use different session_id namespaces (UUID vs
-  // `<epoch>-<rand>`), so intersecting markers by session_id alone yields
-  // zero overlap even when both stores have valid rows for the same real
-  // visitors. Accept an activity if EITHER its session_id or its
-  // visitor_id is present in the canonical truth set. visitor_activity is
-  // still only a geo/marker feed — never a counter source.
-  const truthVisitorIds = useMemo(
-    () => new Set(truthSessions.map((s) => s.visitor_id).filter(Boolean) as string[]),
-    [truthSessions],
-  );
-
-  const filteredActivities = displayActivities?.filter((a) => {
+  const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
     if (!matchesSourceFilter(a)) return false;
-    // Certification-critical: only display markers/heatmap for real
-    // visitors that canonical counts. Match by session_id OR visitor_id so
-    // schema-namespace drift between the two writers cannot silently zero
-    // the map while counters remain populated.
-    if (truth) {
-      const sidOk = truthSessionIds.has(a.session_id);
-      const vidOk = !!a.visitor_id && truthVisitorIds.has(a.visitor_id);
-      if (!sidOk && !vidOk) return false;
-    }
     return true;
-  });
+  }).filter((a): a is VisitorActivity & { latitude: number; longitude: number } => (
+    typeof a.latitude === "number" &&
+    typeof a.longitude === "number" &&
+    Number.isFinite(a.latitude) &&
+    Number.isFinite(a.longitude)
+  )).map((a) => ({ ...a, source: a.utm_source || a.referrer_category || "direct", is_internal: false }));
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
@@ -792,111 +770,109 @@ export const VisitorWorldMap = () => {
     };
   }, [autoRotate, mapLoaded]);
 
-  // Update heatmap layer
+  // Update canonical Mapbox source/layers. Markers and heatmap points are both
+  // generated from `analytics-canonical.sessions[]` with valid lat/lng — no
+  // parallel `visitor_activity` visual truth.
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities) return;
+    if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
+    let cancelled = false;
 
-    // Remove existing heatmap layer and source if they exist
-    if (mapInstance.getLayer("visitor-heatmap")) {
-      mapInstance.removeLayer("visitor-heatmap");
-    }
-    if (mapInstance.getSource("visitor-heatmap-source")) {
-      mapInstance.removeSource("visitor-heatmap-source");
-    }
+    const applyCanonicalFeatures = () => {
+      if (cancelled || !map.current) return;
+      if (!mapInstance.isStyleLoaded()) {
+        mapInstance.once("idle", applyCanonicalFeatures);
+        return;
+      }
 
-    if (showHeatmap) {
-      // Hide markers when showing heatmap
+      const geojsonData = markerFeaturesToGeoJson(markerFeatures);
+      const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
+
+      if (existingSource) {
+        existingSource.setData(geojsonData);
+      } else {
+        mapInstance.addSource("visitor-map-source", {
+          type: "geojson",
+          data: geojsonData,
+        });
+      }
+
+      if (!mapInstance.getLayer("visitor-heatmap")) {
+        mapInstance.addLayer({
+          id: "visitor-heatmap",
+          type: "heatmap",
+          source: "visitor-map-source",
+          layout: { visibility: showHeatmap ? "visible" : "none" },
+          paint: {
+            "heatmap-weight": ["get", "weight"],
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(0, 0, 255, 0)",
+              0.1, "rgba(65, 105, 225, 0.5)",
+              0.3, "rgba(0, 255, 255, 0.6)",
+              0.5, "rgba(0, 255, 0, 0.7)",
+              0.7, "rgba(255, 255, 0, 0.8)",
+              0.9, "rgba(255, 165, 0, 0.9)",
+              1, "rgba(255, 0, 0, 1)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 9, 30],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.95, 7, 1, 9, 0.5],
+          },
+        });
+      }
+
+      if (!mapInstance.getLayer("visitor-markers")) {
+        mapInstance.addLayer({
+          id: "visitor-markers",
+          type: "circle",
+          source: "visitor-map-source",
+          layout: { visibility: showHeatmap ? "none" : "visible" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 2, 8, 6, 14],
+            "circle-color": ["get", "color"],
+            "circle-opacity": 0.95,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+            "circle-stroke-opacity": 0.9,
+            "circle-blur": 0.05,
+          },
+        });
+      }
+
+      mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
+      mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
       markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = "none";
+        marker.getElement().style.display = showHeatmap ? "none" : "block";
       });
 
-      // Create GeoJSON data for heatmap
-      const geojsonData: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: filteredActivities
-          .filter((a) => a.latitude && a.longitude)
-          .map((activity) => ({
-            type: "Feature" as const,
-            properties: {
-              weight: ACTIVITY_WEIGHTS[activity.activity_type],
-            },
-            geometry: {
-              type: "Point" as const,
-              coordinates: [activity.longitude!, activity.latitude!],
-            },
-          })),
+      setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+      const updateRenderedCount = () => {
+        if (cancelled) return;
+        try {
+          const rendered = mapInstance.querySourceFeatures("visitor-map-source").length;
+          setRenderedMapboxSourceFeatureCount(rendered || geojsonData.features.length);
+        } catch {
+          setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
+        }
       };
+      if (mapInstance.loaded()) updateRenderedCount();
+      else mapInstance.once("idle", updateRenderedCount);
+    };
 
-      // Add heatmap source
-      mapInstance.addSource("visitor-heatmap-source", {
-        type: "geojson",
-        data: geojsonData,
-      });
-
-      // Add heatmap layer
-      mapInstance.addLayer({
-        id: "visitor-heatmap",
-        type: "heatmap",
-        source: "visitor-heatmap-source",
-        paint: {
-          // Increase weight based on activity type
-          "heatmap-weight": ["get", "weight"],
-          // Increase intensity as zoom level increases
-          "heatmap-intensity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 1,
-            9, 3
-          ],
-          // Color ramp for heatmap - from cold to hot
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0, "rgba(0, 0, 255, 0)",
-            0.1, "rgba(65, 105, 225, 0.5)",
-            0.3, "rgba(0, 255, 255, 0.6)",
-            0.5, "rgba(0, 255, 0, 0.7)",
-            0.7, "rgba(255, 255, 0, 0.8)",
-            0.9, "rgba(255, 165, 0, 0.9)",
-            1, "rgba(255, 0, 0, 1)"
-          ],
-          // Adjust radius based on zoom
-          "heatmap-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            0, 15,
-            9, 30
-          ],
-          // Transition from heatmap to circle layer at higher zoom
-          "heatmap-opacity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            7, 1,
-            9, 0.5
-          ],
-        },
-      });
-    } else {
-      // Show markers when heatmap is disabled
-      markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = "block";
-      });
-    }
-  }, [showHeatmap, filteredActivities, mapLoaded, activityFilter]);
+    applyCanonicalFeatures();
+    return () => { cancelled = true; };
+  }, [showHeatmap, markerFeatures, mapLoaded]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities || filteredActivities.length === 0) return;
+    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
     if (sourceFilter === "all") return; // Don't auto-fly for "all"
 
-    const withCoords = filteredActivities.filter(a => a.latitude && a.longitude);
-    if (withCoords.length === 0) return;
+    const withCoords = markerFeatures;
 
     // Calculate bounding box
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
@@ -920,7 +896,20 @@ export const VisitorWorldMap = () => {
       zoom,
       duration: 1500,
     });
-  }, [sourceFilter, filteredActivities, mapLoaded]);
+  }, [sourceFilter, markerFeatures, mapLoaded]);
+
+  // Keep canonical geo features in view after the canonical response loads.
+  useEffect(() => {
+    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const bounds = new mapboxgl.LngLatBounds();
+    markerFeatures.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
+    if (bounds.isEmpty()) return;
+    map.current.fitBounds(bounds, {
+      padding: isFullscreen ? 80 : 60,
+      maxZoom: markerFeatures.length === 1 ? 5 : 3.5,
+      duration: 900,
+    });
+  }, [markerFeatures, mapLoaded, isFullscreen]);
 
   // Update markers when activities change
   useEffect(() => {
@@ -1304,12 +1293,11 @@ export const VisitorWorldMap = () => {
     : new Set(filteredActivities?.map((a) => a.session_id)).size;
 
   if (import.meta.env.DEV && truth && filteredActivities) {
-    const activityDerived = new Set(filteredActivities.map((a) => a.session_id)).size;
-    if (activityDerived !== truthSessionIds.size) {
+    if (!assertWorldMapRenderInvariant(mapDiagnostics)) {
       // eslint-disable-next-line no-console
       console.warn(
-        "[analytics-truth] marker/counter drift",
-        { activityDerived, truthCount: truthSessionIds.size, timeRange, usOnly },
+        "[analytics-truth] canonical sessions have geo but produced no rendered map features",
+        { ...mapDiagnostics, timeRange, usOnly, excludeInternal, sourceFilter },
       );
     }
   }
@@ -1958,12 +1946,12 @@ export const VisitorWorldMap = () => {
             <DynamicSourceFilter
               value={sourceFilter}
               onChange={(v) => setSourceFilter(v)}
-              rows={(rawActivities ?? displayActivities ?? []).map((a) => ({
+              rows={sourceFilterSessions.map((a) => ({
                 utm_source: a.utm_source ?? null,
                 utm_medium: a.utm_medium ?? null,
                 utm_campaign: a.utm_campaign ?? null,
                 referrer: a.referrer ?? null,
-                referrer_category: a.referrer_category ?? null,
+                referrer_category: null,
                 page_path: a.page_path ?? null,
               }))}
               showInactive={showInactiveSources}
@@ -2385,6 +2373,28 @@ export const VisitorWorldMap = () => {
             <CreditCard className="w-3 h-3" />
             {counts.checkout} afrekenen
           </Badge>
+        </div>
+        <div
+          className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mt-3 text-[11px]"
+          data-testid="world-map-render-diagnostics"
+          data-canonical-sessions={mapDiagnostics.canonicalSessions}
+          data-sessions-with-geo={mapDiagnostics.sessionsWithGeo}
+          data-marker-features={mapDiagnostics.markerFeatures}
+          data-heatmap-features={mapDiagnostics.heatmapFeatures}
+          data-sessions-without-geo={mapDiagnostics.sessionsWithoutGeo}
+          data-filtered-us-only={mapDiagnostics.filteredOutByUsOnly}
+          data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
+          data-rendered-mapbox-source-features={renderedMapboxSourceFeatureCount}
+          data-testid-canonical-source="analytics-canonical"
+        >
+          <Stat label="Canonical sessions" value={mapDiagnostics.canonicalSessions} />
+          <Stat label="Sessions with geo" value={mapDiagnostics.sessionsWithGeo} tone={mapDiagnostics.sessionsWithGeo ? "good" : "warn"} />
+          <Stat label="Marker features" value={mapDiagnostics.markerFeatures} tone={mapDiagnostics.markerFeatures ? "good" : "warn"} />
+          <Stat label="Heatmap features" value={mapDiagnostics.heatmapFeatures} tone={mapDiagnostics.heatmapFeatures ? "good" : "warn"} />
+          <Stat label="Sessions without geo" value={mapDiagnostics.sessionsWithoutGeo} />
+          <Stat label="US-only filtered" value={mapDiagnostics.filteredOutByUsOnly} />
+          <Stat label="Internal/test filtered" value={mapDiagnostics.filteredOutByInternalTest} />
+          <Stat label="Mapbox source" value={renderedMapboxSourceFeatureCount} tone={renderedMapboxSourceFeatureCount ? "good" : "warn"} />
         </div>
         {showHeatmap && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
