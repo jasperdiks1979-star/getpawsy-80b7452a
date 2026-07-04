@@ -1281,12 +1281,11 @@ export const VisitorWorldMap = () => {
     : new Set(filteredActivities?.map((a) => a.session_id)).size;
 
   if (import.meta.env.DEV && truth && filteredActivities) {
-    const activityDerived = new Set(filteredActivities.map((a) => a.session_id)).size;
-    if (activityDerived !== truthSessionIds.size) {
+    if (!assertWorldMapRenderInvariant(mapDiagnostics)) {
       // eslint-disable-next-line no-console
       console.warn(
-        "[analytics-truth] marker/counter drift",
-        { activityDerived, truthCount: truthSessionIds.size, timeRange, usOnly },
+        "[analytics-truth] canonical sessions have geo but produced no rendered map features",
+        { ...mapDiagnostics, timeRange, usOnly, excludeInternal, sourceFilter },
       );
     }
   }
