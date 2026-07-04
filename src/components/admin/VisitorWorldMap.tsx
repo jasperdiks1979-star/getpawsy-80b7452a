@@ -550,6 +550,18 @@ export const VisitorWorldMap = () => {
   const heatmapFeatures = mapModel.heatmapFeatures;
   const mapDiagnostics = mapModel.diagnostics;
 
+  // Canonical truth session_id set — the ONLY authorized source of session
+  // identities for map features. Any rendered marker whose session_id is
+  // missing from this set is an "orphan" (parallel truth leak).
+  const canonicalSessionIdSet = useMemo(
+    () => new Set((truth?.sessions ?? []).map((s) => s.session_id).filter(Boolean)),
+    [truth],
+  );
+  const canonicalFeatureAudit = useMemo(
+    () => auditCanonicalFeatureFlags(markerFeatures, canonicalSessionIdSet),
+    [markerFeatures, canonicalSessionIdSet],
+  );
+
   // Overlap diagnostics — how many session_ids / visitor_ids from the raw
   // `visitor_activity` stream also appear in the canonical truth envelope.
   // Surfaces the namespace mismatch that caused the P0 marker regression, so
