@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Activity, MousePointerClick, ShoppingCart, CreditCard, DollarSign, Loader2, CheckCircle2, AlertTriangle, RefreshCw, Link2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
+import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+
+// PR-2 slice 3: Business KPIs on this page (Sessions, PDP Views, ATC,
+// Checkouts, Purchases, Revenue, CVR, AOV) MUST come from analytics-canonical.
+// The Pinterest-native counters below (from `pinterest_funnel_events` and
+// `pinterest_attribution_sessions`) are Pinterest-scoped diagnostics only:
+// they explain WHICH pins/products drove attributed activity, never HOW MANY
+// business conversions exist. Any drift vs canonical is an attribution
+// coverage gap, not a KPI restatement.
 
 type Kpi = {
   sessions: number;
@@ -301,6 +310,7 @@ export default function PinterestHealth() {
   return (
     <div className="p-6 space-y-6">
       <Helmet><title>Pinterest Health — Admin</title></Helmet>
+      <CanonicalKpiStrip defaultRange="30d" title="Business performance — analytics-canonical" />
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Pinterest Health</h1>
@@ -476,14 +486,18 @@ export default function PinterestHealth() {
         </CardContent>
       </Card>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="flex items-center gap-2 pt-2">
+        <h2 className="text-sm font-semibold text-muted-foreground">Pinterest-attributed activity (last 30d)</h2>
+        <Badge variant="secondary" className="text-[10px]">Diagnostic only · not a business KPI · source: pinterest_funnel_events</Badge>
+      </div>
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 opacity-90">
         {[
-          { label: "Sessions", value: kpi.sessions, icon: Activity },
-          { label: "PDP Views", value: kpi.pdpViews, icon: MousePointerClick },
-          { label: "Add To Cart", value: kpi.addToCart, icon: ShoppingCart },
-          { label: "Checkouts", value: kpi.checkout, icon: CreditCard },
-          { label: "Purchases", value: kpi.purchases, icon: DollarSign },
-          { label: "Revenue (USD)", value: `$${kpi.revenue.toFixed(2)}`, icon: DollarSign },
+          { label: "Pin-attributed sessions", value: kpi.sessions, icon: Activity },
+          { label: "Pin-attributed PDPs", value: kpi.pdpViews, icon: MousePointerClick },
+          { label: "Pin-attributed ATC", value: kpi.addToCart, icon: ShoppingCart },
+          { label: "Pin-attributed checkouts", value: kpi.checkout, icon: CreditCard },
+          { label: "Pin-attributed purchases", value: kpi.purchases, icon: DollarSign },
+          { label: "Pin-attributed revenue (USD)", value: `$${kpi.revenue.toFixed(2)}`, icon: DollarSign },
         ].map(({ label, value, icon: Icon }) => (
           <Card key={label}>
             <CardContent className="p-4">
@@ -496,11 +510,17 @@ export default function PinterestHealth() {
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-base">Funnel quality</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              Pinterest funnel quality
+              <Badge variant="secondary" className="text-[10px]">Diagnostic only</Badge>
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span>Conversion rate</span><span className="font-medium">{cr}%</span></div>
-            <div className="flex justify-between"><span>ATC → Purchase</span><span className="font-medium">{kpi.addToCart > 0 ? ((kpi.purchases / kpi.addToCart) * 100).toFixed(1) : "0.0"}%</span></div>
-            <div className="flex justify-between"><span>Avg order value</span><span className="font-medium">${kpi.purchases > 0 ? (kpi.revenue / kpi.purchases).toFixed(2) : "0.00"}</span></div>
+            <div className="flex justify-between"><span>Pin-attributed CVR</span><span className="font-medium">{cr}%</span></div>
+            <div className="flex justify-between"><span>Pin-attributed ATC → Purchase</span><span className="font-medium">{kpi.addToCart > 0 ? ((kpi.purchases / kpi.addToCart) * 100).toFixed(1) : "0.0"}%</span></div>
+            <div className="flex justify-between"><span>Pin-attributed AOV</span><span className="font-medium">${kpi.purchases > 0 ? (kpi.revenue / kpi.purchases).toFixed(2) : "0.00"}</span></div>
+            <p className="text-[11px] text-muted-foreground pt-1">Business CVR/AOV are in the canonical strip at the top of this page.</p>
           </CardContent>
         </Card>
         <Card>
