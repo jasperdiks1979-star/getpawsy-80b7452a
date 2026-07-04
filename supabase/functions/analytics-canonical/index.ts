@@ -321,6 +321,46 @@ Deno.serve(async (req) => {
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
     );
 
+    // ── totals derived from sessionAgg (parity by construction) ────────
+    // Every counter Map/CSV/Summary shows is computed the same way here.
+    const visitorsSet = new Set<string>();
+    let pvSum = 0, atc = 0, viewCart = 0, checkout = 0, purchase = 0;
+    let orderValueSum = 0;
+    for (const s of sessionsArr) {
+      visitorsSet.add(s.visitor_id || s.session_id);
+      pvSum += s.page_views;
+      if (s.has_add_to_cart) atc++;
+      if (s.has_view_cart) viewCart++;
+      if (s.has_checkout) checkout++;
+      if (s.has_purchase) purchase++;
+      orderValueSum += s.order_value;
+    }
+    const totals = {
+      visitors: visitorsSet.size,
+      sessions: sessionsArr.length,
+      page_views: pvSum,
+      product_views: perStage.CANONICAL_PRODUCT_VIEW.size,
+      add_to_cart: atc,
+      view_cart: viewCart,
+      checkout_started: checkout,
+      purchases: purchases_count,
+      revenue: Number(revenue.toFixed(2)),
+      currency,
+      conversion_rate: visitorsSet.size > 0
+        ? +((purchases_count / visitorsSet.size) * 100).toFixed(2) : 0,
+    };
+
+    const funnel = STAGES.map((stage) => ({
+      stage,
+      count:
+        stage === "CANONICAL_PURCHASE" ? purchases_count :
+        stage === "CANONICAL_PAGE_VIEW" ? pvSum :
+        stage === "CANONICAL_ADD_TO_CART" ? atc :
+        stage === "CANONICAL_CART" ? viewCart :
+        stage === "CANONICAL_CHECKOUT" ? checkout :
+        perStage[stage].size,
+    }));
+
     const sample = events[0] ?? null;
 
     const respBody = {
