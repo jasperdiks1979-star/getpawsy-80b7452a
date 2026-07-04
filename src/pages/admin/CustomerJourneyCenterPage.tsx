@@ -10,6 +10,7 @@ import { Activity, Compass, ShieldCheck, RefreshCw, Loader2, Award, AlertTriangl
 import { toast } from "sonner";
 import QualityAndGatesPanel from "@/components/admin/QualityAndGatesPanel";
 import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+import { useCanonicalFunnel } from "@/hooks/useCanonicalFunnel";
 
 type Overview = {
   total_sessions: number;
@@ -81,6 +82,19 @@ export default function CustomerJourneyCenterPage() {
   const [questions, setQuestions] = useState<any | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<any | null>(null);
+
+  // PR-2 slice 2: business KPIs must come from analytics-canonical, NOT from
+  // `cjie_session_journeys`. CJIE is retained below as diagnostic-only
+  // (per-session timelines, intent/abandonment distributions, paths). The
+  // top KPI grid (sessions / ATC / checkout / purchases / revenue / CVR) is
+  // driven by `useCanonicalFunnel` with a matching time window so parity
+  // with every other admin dashboard is guaranteed by construction.
+  const hours = Math.max(1, Number(days) || 7) * 24;
+  const canonical = useCanonicalFunnel({ hours, geo: "all" });
+  const t = canonical.data?.totals;
+  const fmt = (n: number | undefined) => (n ?? 0).toLocaleString();
+  const money = (n: number | undefined, ccy: string | undefined) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: (ccy || "EUR").toUpperCase() }).format(n ?? 0);
 
   const load = async () => {
     setLoading(true);
@@ -178,12 +192,59 @@ export default function CustomerJourneyCenterPage() {
         </div>
       )}
 
+      {/* Business KPIs — canonical truth. Same source as CanonicalKpiStrip,
+          Funnel Health, Sales Commander, World Map. */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold">Business KPIs · analytics-canonical</h2>
+          <Badge variant="outline" className="text-[10px]">
+            source: analytics-canonical · window: {hours}h · clean
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <MetricCard label="Sessions"    value={fmt(t?.sessions)} />
+          <MetricCard label="Add-to-cart" value={fmt(t?.add_to_cart)} />
+          <MetricCard label="Checkout"    value={fmt(t?.checkout_started)} />
+          <MetricCard label="Purchases"   value={fmt(t?.purchases)} accent />
+          <MetricCard label="Revenue"     value={money(t?.revenue, t?.currency)} accent />
+          <MetricCard label="CVR"         value={`${(t?.conversion_rate ?? 0).toFixed(2)}%`} />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+          <MetricCard
+            label="ATC rate"
+            value={t && t.sessions > 0 ? `${((t.add_to_cart / t.sessions) * 100).toFixed(2)}%` : "0%"}
+          />
+          <MetricCard
+            label="Checkout rate"
+            value={t && t.sessions > 0 ? `${((t.checkout_started / t.sessions) * 100).toFixed(2)}%` : "0%"}
+          />
+          <MetricCard
+            label="Purchase rate"
+            value={t && t.sessions > 0 ? `${((t.purchases / t.sessions) * 100).toFixed(2)}%` : "0%"}
+          />
+        </div>
+        {canonical.error && (
+          <p className="text-xs text-destructive mt-2">
+            canonical error: {(canonical.error as Error).message}
+          </p>
+        )}
+      </div>
+
+      {/* CJIE diagnostic-only totals — kept for parity investigation, never
+          used as business KPIs. Any drift vs canonical above indicates an
+          instrumentation gap in `cjie_session_journeys` and is expected. */}
       {overview && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MetricCard label="Sessions" value={overview.total_sessions.toString()} />
-          <MetricCard label="Add-to-cart" value={overview.reached_atc.toString()} />
-          <MetricCard label="Checkout" value={overview.reached_checkout.toString()} />
-          <MetricCard label="Purchases" value={overview.reached_purchase.toString()} accent />
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">CJIE diagnostic totals (per-session classifier)</h2>
+            <Badge variant="secondary" className="text-[10px]">diagnostic-only · not a KPI</Badge>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 opacity-80">
+            <MetricCard label="CJIE sessions"   value={overview.total_sessions.toString()} />
+            <MetricCard label="CJIE add-to-cart" value={overview.reached_atc.toString()} />
+            <MetricCard label="CJIE checkout"    value={overview.reached_checkout.toString()} />
+            <MetricCard label="CJIE purchases"   value={overview.reached_purchase.toString()} />
+          </div>
         </div>
       )}
 
