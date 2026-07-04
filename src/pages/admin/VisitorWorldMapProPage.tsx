@@ -14,6 +14,9 @@ import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVis
 import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
 import { useLivePresence } from "@/hooks/useLivePresence";
+import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
+import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
+import { useMemo } from "react";
 
 const STORAGE_KEY = "vwm-pro-toolbar-v1";
 
@@ -67,7 +70,29 @@ export default function VisitorWorldMapProPage() {
     enabled: isLive,
     usOnly: state.usOnly,
     excludeInternal: state.excludeInternal,
+    source: state.source,
+    activity: state.activity,
   });
+
+  // Canonical truth set for live↔canonical overlap. Read-only; never
+  // contributes to KPI counters (those are owned by ProKpiHeader/useAnalyticsTruth).
+  const truth = useAnalyticsTruth({
+    hours: 24,
+    geo: state.usOnly ? "US" : "all",
+    enabled: isLive,
+    refetchIntervalMs: 60_000,
+  });
+
+  const overlap = useMemo(() => {
+    if (!isLive) return { liveSessions: 0, overlapSession: 0, overlapVisitor: 0, overlapAny: 0 };
+    const sessionIds = new Set((truth.data?.sessions ?? []).map((s) => s.session_id));
+    const visitorIds = new Set(
+      (truth.data?.sessions ?? [])
+        .map((s) => s.visitor_id)
+        .filter((v): v is string => !!v),
+    );
+    return computeLiveCanonicalOverlap(livePresence.rows, sessionIds, visitorIds);
+  }, [isLive, truth.data, livePresence.rows]);
 
   useEffect(() => {
     try {
@@ -193,7 +218,7 @@ export default function VisitorWorldMapProPage() {
                 activeSessions={new Set(livePresence.rows.map((r) => r.session_id)).size}
                 sessionsWithGeo={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
                 liveMarkers={livePresence.rows.filter((r) => r.latitude != null && r.longitude != null).length}
-                liveCanonicalOverlap={0}
+                liveCanonicalOverlap={overlap.overlapAny}
               />
             ) : (
               <div className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
