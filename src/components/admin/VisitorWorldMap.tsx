@@ -1152,18 +1152,51 @@ export const VisitorWorldMap = ({
       // Create custom marker element
       const el = document.createElement("div");
       el.className = "visitor-marker";
+      // Selection highlight: any activity in this group matching the current
+      // selection promotes the marker to a highlighted state (thicker ring +
+      // higher z-index) so the operator can visually track it on the map.
+      const groupSessionIds = groupActivities
+        .map((a) => (a as { session_id?: string | null }).session_id)
+        .filter((s): s is string => !!s);
+      const isSelectedGroup =
+        !!selectedLiveSessionId && groupSessionIds.includes(selectedLiveSessionId);
+      const primarySessionId = groupSessionIds[0] ?? null;
+      if (primarySessionId) el.dataset.sessionId = primarySessionId;
+      if (isSelectedGroup) el.dataset.selected = "true";
       el.style.cssText = `
         width: ${size}px;
         height: ${size}px;
         background-color: ${color};
-        border: 2px solid ${hasPinterest && sourceFilter === "all" ? "#E60023" : "white"};
+        border: ${isSelectedGroup ? "3px" : "2px"} solid ${
+          isSelectedGroup
+            ? "#3b82f6"
+            : hasPinterest && sourceFilter === "all"
+            ? "#E60023"
+            : "white"
+        };
         border-radius: 50%;
         cursor: pointer;
-        box-shadow: 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40;
+        box-shadow: ${
+          isSelectedGroup
+            ? `0 0 0 3px rgba(59,130,246,0.35), 0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
+            : `0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
+        };
         animation: pulse 2s ease-in-out infinite;
         display: ${showHeatmap ? "none" : "block"};
         position: relative;
+        z-index: ${isSelectedGroup ? "5" : "1"};
       `;
+
+      // Emit selection when the marker is clicked. Skipped when no callback
+      // is wired (legacy /dashboard, /live-map). Uses `mousedown` so it fires
+      // before Mapbox's popup mount and works even if the popup swallows the
+      // click on nested SVG icons.
+      if (onLiveVisitorSelect && primarySessionId) {
+        el.addEventListener("mousedown", (event) => {
+          event.stopPropagation();
+          onLiveVisitorSelect(primarySessionId);
+        });
+      }
 
       // Add Pinterest badge icon when source filter is "all" and has Pinterest traffic
       if (hasPinterest && sourceFilter === "all") {
