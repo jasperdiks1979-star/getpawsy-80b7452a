@@ -514,6 +514,7 @@ const AiTraceExplorerPage = lazyWithRetry(() => import("./pages/admin/AiTraceExp
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const VisitorWorldMapProPage = lazyWithRetry(() => import("./pages/admin/VisitorWorldMapProPage"));
+const VisitorMapStabilizationPage = lazyWithRetry(() => import("./pages/admin/VisitorMapStabilizationPage"));
 const StripeTestCheckoutPage = lazyWithRetry(() => import("./pages/admin/StripeTestCheckoutPage"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
 const CjVideoDiagnostic = lazyWithRetry(() => import("./pages/admin/CjVideoDiagnostic"));
