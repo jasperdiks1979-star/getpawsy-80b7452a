@@ -568,6 +568,77 @@ export const VisitorWorldMap = () => {
     [markerFeatures, canonicalSessionIdSet],
   );
 
+  // ---------------------------------------------------------------------
+  // LIVE PRESENCE MODE
+  // ---------------------------------------------------------------------
+  // Realtime presence sourced from visitor_activity.last_seen_at within the
+  // last 120s (see live-query above). Cart/checkout badges here are ONLY
+  // set when a canonical funnel event exists for the same session/visitor,
+  // so live presence CANNOT leak into business KPIs.
+  const isLiveNow = timeRange === "live";
+  const canonicalVisitorIdSet = useMemo(
+    () => new Set((truth?.sessions ?? []).map((s) => s.visitor_id).filter((v): v is string => !!v)),
+    [truth],
+  );
+  const canonicalFunnelBySession = useMemo(() => {
+    const map = new Map<string, CanonicalFunnelFlags>();
+    for (const s of truth?.sessions ?? []) {
+      map.set(s.session_id, {
+        has_add_to_cart: !!s.has_add_to_cart,
+        has_view_cart: !!s.has_view_cart,
+        has_checkout: !!s.has_checkout,
+        has_purchase: !!s.has_purchase,
+      });
+    }
+    return map;
+  }, [truth]);
+  const canonicalFunnelByVisitor = useMemo(() => {
+    const map = new Map<string, CanonicalFunnelFlags>();
+    for (const s of truth?.sessions ?? []) {
+      if (!s.visitor_id) continue;
+      const existing = map.get(s.visitor_id);
+      map.set(s.visitor_id, {
+        has_add_to_cart: (existing?.has_add_to_cart ?? false) || !!s.has_add_to_cart,
+        has_view_cart: (existing?.has_view_cart ?? false) || !!s.has_view_cart,
+        has_checkout: (existing?.has_checkout ?? false) || !!s.has_checkout,
+        has_purchase: (existing?.has_purchase ?? false) || !!s.has_purchase,
+      });
+    }
+    return map;
+  }, [truth]);
+  const liveModel = useMemo(() => {
+    if (!isLiveNow) {
+      return {
+        markers: [],
+        counts: { browsing: 0, cart: 0, checkout: 0 },
+        totalLiveVisitors: 0,
+        diagnostics: { liveActivityRows: 0, activeLiveVisitors: 0, liveWithGeo: 0, liveMarkersRendered: 0, overlapSession: 0, overlapVisitor: 0 },
+      };
+    }
+    const activityRows: LivePresenceActivity[] = (activities ?? []).map((a) => ({
+      session_id: a.session_id,
+      visitor_id: a.visitor_id ?? null,
+      latitude: a.latitude,
+      longitude: a.longitude,
+      country: a.country,
+      city: a.city,
+      page_path: a.page_path ?? null,
+      referrer: a.referrer ?? null,
+      referrer_category: a.referrer_category ?? null,
+      utm_source: a.utm_source ?? null,
+      utm_medium: a.utm_medium ?? null,
+      utm_campaign: a.utm_campaign ?? null,
+      last_seen_at: a.last_seen_at,
+      created_at: a.created_at,
+    }));
+    return buildLivePresenceModel(activityRows, {
+      canonicalBySession: canonicalFunnelBySession,
+      canonicalByVisitor: canonicalFunnelByVisitor,
+      canonicalSessionIds: canonicalSessionIdSet,
+      canonicalVisitorIds: canonicalVisitorIdSet,
+    });
+  }, [isLiveNow, activities, canonicalFunnelBySession, canonicalFunnelByVisitor, canonicalSessionIdSet, canonicalVisitorIdSet]);
+
   // Overlap diagnostics — how many session_ids / visitor_ids from the raw
   // `visitor_activity` stream also appear in the canonical truth envelope.
   // Surfaces the namespace mismatch that caused the P0 marker regression, so
