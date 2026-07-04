@@ -2435,6 +2435,9 @@ export const VisitorWorldMap = () => {
           data-marker-cart={markerFeatures.filter((f) => f.activity_type === "cart").length}
           data-marker-browsing={markerFeatures.filter((f) => f.activity_type === "browsing").length}
           data-sessions-without-geo={mapDiagnostics.sessionsWithoutGeo}
+          data-canonical-features={canonicalFeatureAudit.canonicalCount}
+          data-orphan-features={canonicalFeatureAudit.orphanCount}
+          data-orphan-session-ids={canonicalFeatureAudit.orphanSessionIds.join(",")}
           data-filtered-us-only={mapDiagnostics.filteredOutByUsOnly}
           data-filtered-internal-test={mapDiagnostics.filteredOutByInternalTest}
           data-rendered-mapbox-source-features={renderedMapboxSourceFeatureCount}
@@ -2465,7 +2468,7 @@ export const VisitorWorldMap = () => {
                   visitor_id: f.visitor_id ?? null,
                   activity_type: f.activity_type,
                   source: f.source,
-                  canonical: true,
+                  canonical: canonicalSessionIdSet.has(f.session_id),
                   country: f.country,
                   city: f.city,
                   latitude: f.latitude,
