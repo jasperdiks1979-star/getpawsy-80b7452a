@@ -1,0 +1,142 @@
+=== EDGE FUNCTIONS (analytics-related) ===
+acos-revenue-brain
+ai-conversion-engine
+ai-revenue-insights
+analytics-alert-evaluator
+analytics-canonical
+analytics-daily-validation
+analytics-engagement-start
+analytics-funnel-ingest
+analytics-health-probe
+analytics-session-quality
+analytics-truth-engine
+arie-funnel-ingest
+attribution-backfill-verify
+attribution-health-test
+canonical-health-check
+canonical-ingest
+canonical-ingest-monitor
+canonical-refresh
+cie-auto-repair
+cie-ga4-adapter
+cie-meta-adapter
+cie-orchestrator
+cie-pinterest-adapter
+cie-synthetic-nightly
+cie-tiktok-adapter
+cie-v4-dna-backfill
+cie-v4-learn
+cinematic-system-truth
+conversion-reality-analyzer
+cv5-analytics-sync
+executive-revenue-report
+export-cwv-evidence
+export-diagnostics
+export-logs
+export-merchant-feed
+export-products-csv
+export-to-sheets
+finance-accountant-export
+finance-belastingdienst-export
+first-sales-accelerator
+ga4-analytics
+ga4-secret-diagnostic
+genesis-conversion-intelligence
+genesis-omega-truth
+gv36-attribution-stitcher
+mi-revenue-attribution
+mi-visitor-hook
+monitoring-conversion-tracker
+pcie-v2-creative-director
+pcie-v2-revenue-intelligence
+pcie2-adaptive-learning-governor
+pcie2-bootstrap-run
+pcie2-concept-graph
+pcie2-creative-engine
+pcie2-creative-intelligence
+pcie2-creative-seed
+pcie2-creative-worker
+pcie2-e2e-test
+pcie2-evidence-governor
+pcie2-headline-engine
+pcie2-hook-engine
+pcie2-learning-engine
+pcie2-nightly-quality-loop
+pcie2-performance-sync
+pcie2-product-classifier
+pcie2-publish-assembler
+pcie2-publisher
+pcie2-self-healer
+pcie2-step5-validate
+pcie2-xai-engine
+pinterest-analytics-sync
+pinterest-attribution-accelerator
+pinterest-attribution-validation
+pinterest-conversion-audit
+pinterest-conversion-nightly
+pinterest-conversion-repair
+pinterest-pin-attribution
+pinterest-product-conversion-score
+pinterest-revenue-ai
+pinterest-revenue-alerts
+pinterest-revenue-attribution-v3
+pinterest-revenue-autopilot
+pinterest-revenue-brain
+pinterest-revenue-control
+pinterest-revenue-engine
+pinterest-revenue-engine-loop
+pinterest-revenue-engine-v2
+pinterest-revenue-optimize
+pinterest-revenue-v4-bootstrap
+pinterest-revenue-v4-dashboard
+pinterest-traffic-forensics
+prie-revenue-predictor
+render-forensics
+revenue-accelerator
+revenue-ai-category-profile
+revenue-ai-dashboard
+revenue-ai-executive-report
+revenue-ai-failover
+revenue-ai-loser-suppress
+revenue-ai-orchestrator
+revenue-ai-perf-rollup
+revenue-ai-product-eliminator
+revenue-ai-queue-guard
+revenue-ai-revenue-score
+revenue-ai-trend-detect
+revenue-ai-voice-allocator
+revenue-ai-winner-clone
+revenue-ai-winner-detect
+revenue-alert-monitor
+revenue-attribution
+revenue-command-center
+revenue-pipeline-smoke
+revenue-priority-v2
+revenue-root-cause
+rr-funnel-validator
+sales-commander
+sales-readiness-compute
+sync-ga4-daily
+track-checkout-funnel
+warehouse-missed-revenue-scan
+world-map-debug
+
+=== TABLE READS (client + edge, grouped) ===
+  visitor_activity : 75 files
+  canonical_events : 38 files
+  canonical_sessions : 29 files
+  lp_funnel_events : 50 files
+  checkout_funnel_events : 32 files
+  analytics_funnel_waterfall : 21 files
+  analytics_session_quality : 8 files
+  session_forensics : 3 files
+  session_forensics_human : 3 files
+  session_journey_steps : 3 files
+  gi_ga4_events : 2 files
+  cie_events : 8 files
+  cie_sessions : 5 files
+  cie_journey_steps : 3 files
+  orders : 136 files
+
+=== ANALYTICS EDGE FUNCTIONS FULL LIST ===
+851
