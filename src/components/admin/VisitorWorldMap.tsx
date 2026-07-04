@@ -1308,7 +1308,80 @@ export const VisitorWorldMap = ({
       markersRef.current.push(marker);
     });
     mapPerfMark("first-paint");
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter]);
+  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Stage 5b — live-mode Mapbox integrations
+  // ────────────────────────────────────────────────────────────────────────
+  // These effects are strictly no-op when `isLiveNow` is false, so canonical
+  // mode renders exactly as before. They also short-circuit whenever the
+  // required optional props are not supplied by the caller.
+
+  // Live auto-fit: when the live buffer of geo-tagged markers changes, fit
+  // Mapbox to the padded bounds so operators immediately see the active
+  // visitors on screen. Uses `computeBoundsForMarkers` from `liveMapLayer`.
+  useEffect(() => {
+    if (!isLiveNow || !map.current || !mapLoaded) return;
+    if (followSelectedLiveSession && selectedLiveSessionId) return; // follow mode wins
+    const bounds = computeBoundsForMarkers(liveModel.markers);
+    if (!bounds) return;
+    try {
+      map.current.fitBounds(
+        [
+          [bounds.west, bounds.south],
+          [bounds.east, bounds.north],
+        ],
+        { padding: isFullscreen ? 80 : 60, maxZoom: 5, duration: 900 },
+      );
+    } catch {
+      // Mapbox rejects degenerate bounds in edge cases; ignore.
+    }
+  }, [isLiveNow, liveModel, mapLoaded, isFullscreen, followSelectedLiveSession, selectedLiveSessionId]);
+
+  // Follow selected visitor: recenter (no zoom change) whenever the
+  // selection's latest geo coordinate changes.
+  useEffect(() => {
+    if (!isLiveNow || !map.current || !mapLoaded) return;
+    if (!followSelectedLiveSession || !selectedLiveSessionId) return;
+    const target = resolveFollowTarget(
+      (rawActivities ?? []).map((a) => ({
+        session_id: a.session_id,
+        latitude: a.latitude ?? null,
+        longitude: a.longitude ?? null,
+        created_at: a.created_at,
+        last_seen_at: (a as { last_seen_at?: string }).last_seen_at ?? null,
+      })),
+      selectedLiveSessionId,
+    );
+    if (!target) return;
+    try {
+      map.current.easeTo({ center: [target.longitude, target.latitude], duration: 900 });
+    } catch {
+      // ignore
+    }
+  }, [isLiveNow, followSelectedLiveSession, selectedLiveSessionId, rawActivities, mapLoaded]);
+
+  // Diagnostics: notify the Pro page of what the Mapbox source actually
+  // rendered so its diagnostics panel reflects the map state, not just the
+  // client-side buffer. Cluster count uses the pure `clusterMarkers` helper.
+  useEffect(() => {
+    if (!onLiveMapDiagnostics) return;
+    const clusters = isLiveNow
+      ? clusterMarkers(
+          liveModel.markers.map((m) => ({
+            session_id: m.session_id,
+            latitude: m.latitude,
+            longitude: m.longitude,
+          })),
+        )
+      : [];
+    onLiveMapDiagnostics({
+      liveMarkersRendered: isLiveNow ? liveModel.markers.length : 0,
+      liveClusters: clusters.length,
+      selectedLiveSessionId,
+      followMode: !!followSelectedLiveSession,
+    });
+  }, [isLiveNow, liveModel, selectedLiveSessionId, followSelectedLiveSession, onLiveMapDiagnostics]);
 
   // Update hot spot markers when data changes
   useEffect(() => {
