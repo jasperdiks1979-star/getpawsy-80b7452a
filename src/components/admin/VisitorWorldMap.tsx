@@ -914,7 +914,7 @@ export const VisitorWorldMap = () => {
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded]);
+  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
