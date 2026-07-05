@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,15 +6,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  AlertTriangle, ArrowUpRight, BarChart3, Boxes, Building2,
-  FileText, Landmark, MessageSquareText, Receipt, Shield, TrendingUp, Wallet,
+  AlertTriangle, ArrowUpRight, BarChart3, Boxes,
+  FileText, Landmark, MessageSquareText, Receipt, RefreshCw, Shield, TrendingUp, Wallet,
 } from "lucide-react";
 import { FinanceIngestionPanel } from "@/components/admin/finance/FinanceIngestionPanel";
+import { EntitySelector } from "@/components/admin/finance/EntitySelector";
+import { TaxReadinessPanel } from "@/components/admin/finance/TaxReadinessPanel";
 
-type Entity = { id: string; slug: string; legal_name: string; trade_name: string | null; base_currency: string; is_default: boolean };
-type HealthScore = { score_name: string | null; score_value: number | null; score_grade: string | null; computed_at: string | null };
+type HealthScore = {
+  score_name: string | null;
+  score_value: number | null;
+  score_grade: string | null;
+  computed_at: string | null;
+  details?: any;
+};
 type Alert = { id: string; severity: string; alert_type: string; title: string; created_at: string };
 type VatSummary = { period_type: string | null; period_year: number | null; period_number: number | null; recoverable_minor: number | null; outstanding_minor: number | null; currency: string | null };
 type Roi = { day: string; supplier: string; spend: number; revenue: number; orders_count: number; roas: number | null };
@@ -38,82 +44,109 @@ const quickLinks = [
 
 export default function FinanceCommanderPage() {
   const { isLoading } = useAuth();
-  const [entities, setEntities] = useState<Entity[]>([]);
   const [entityId, setEntityId] = useState<string>("all");
   const [health, setHealth] = useState<HealthScore | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [vat, setVat] = useState<VatSummary | null>(null);
   const [roi, setRoi] = useState<Roi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshingHealth, setRefreshingHealth] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    const [h, a, v, r] = await Promise.all([
+      supabase.from("finance_health_scores")
+        .select("score_name,score_value,score_grade,computed_at,details")
+        .eq("score_key", "finance_health_v2")
+        .order("computed_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("finance_alerts").select("id,severity,alert_type,title,created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(6),
+      supabase.from("finance_vat_summaries").select("period_type,period_year,period_number,recoverable_minor,outstanding_minor,currency").order("period_year", { ascending: false }).order("period_number", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
+      supabase.from("v_finance_channel_roi" as any).select("*").order("day", { ascending: false }).limit(30),
+    ]);
+    if (h.data) setHealth(h.data as unknown as HealthScore);
+    if (a.data) setAlerts(a.data as Alert[]);
+    if (v.data) setVat(v.data as unknown as VatSummary);
+    if (r.data) setRoi(r.data as unknown as Roi[]);
+    setLoading(false);
+
+    // If no v2 snapshot exists, compute one silently on first mount
+    if (!h.data) {
+      const { data } = await supabase.functions.invoke("finance-health-score", { body: { entity_id: null } });
+      if (data?.ok) {
+        setHealth({
+          score_name: "Finance Health (v2, weighted)",
+          score_value: data.overall,
+          score_grade: data.grade,
+          computed_at: new Date().toISOString(),
+          details: data.details,
+        });
+      }
+    }
+  }, []);
+
+  const recomputeHealth = useCallback(async () => {
+    setRefreshingHealth(true);
+    const { data } = await supabase.functions.invoke("finance-health-score", {
+      body: { entity_id: entityId && entityId !== "all" ? entityId : null },
+    });
+    if (data?.ok) {
+      setHealth({
+        score_name: "Finance Health (v2, weighted)",
+        score_value: data.overall,
+        score_grade: data.grade,
+        computed_at: new Date().toISOString(),
+        details: data.details,
+      });
+    }
+    setRefreshingHealth(false);
+  }, [entityId]);
 
   useEffect(() => {
     if (isLoading) return;
-    (async () => {
-      setLoading(true);
-      const [e, h, a, v, r] = await Promise.all([
-        supabase.from("finance_entities").select("*").order("is_default", { ascending: false }),
-        supabase.from("finance_health_scores").select("score_name,score_value,score_grade,computed_at").order("computed_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("finance_alerts").select("id,severity,alert_type,title,created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(6),
-        supabase.from("finance_vat_summaries").select("period_type,period_year,period_number,recoverable_minor,outstanding_minor,currency").order("period_year", { ascending: false }).order("period_number", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
-        supabase.from("v_finance_channel_roi" as any).select("*").order("day", { ascending: false }).limit(30),
-      ]);
-      if (e.data) {
-        setEntities(e.data as Entity[]);
-        const def = (e.data as Entity[]).find(x => x.is_default);
-        if (def) setEntityId(def.id);
-      }
-      if (h.data) setHealth(h.data as unknown as HealthScore);
-      if (a.data) setAlerts(a.data as Alert[]);
-      if (v.data) setVat(v.data as unknown as VatSummary);
-      if (r.data) setRoi(r.data as unknown as Roi[]);
-      setLoading(false);
-    })();
-  }, [isLoading]);
+    void loadDashboard();
+  }, [isLoading, loadDashboard]);
 
   const totalSpend = roi.reduce((s, r) => s + Number(r.spend || 0), 0);
   const totalRevenue = roi.reduce((s, r) => s + Number(r.revenue || 0), 0);
   const blendedRoas = totalSpend > 0 ? (totalRevenue / totalSpend).toFixed(2) : "—";
 
+  const healthSignals: Array<{ key: string; label: string; score: number; reason: string; action?: string }> =
+    Array.isArray(health?.details?.signals) ? health!.details.signals : [];
+  const worstSignals = [...healthSignals].sort((a, b) => a.score - b.score).slice(0, 3);
+
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 max-w-full">
       <Helmet>
         <title>Finance Commander — GetPawsy Admin</title>
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
 
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-semibold flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            Finance Commander
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Single source of truth for bookkeeping, VAT, evidence and channel ROI.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          <Select value={entityId} onValueChange={setEntityId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Select entity" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All entities</SelectItem>
-              {entities.map(e => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.trade_name || e.legal_name} {e.is_default && "· default"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <header className="space-y-1">
+        <h1 className="text-xl md:text-3xl font-semibold flex items-center gap-2">
+          <Shield className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+          Finance Commander
+        </h1>
+        <p className="text-xs md:text-sm text-muted-foreground">
+          Single source of truth for bookkeeping, VAT, evidence and channel ROI.
+        </p>
       </header>
 
+      <EntitySelector value={entityId} onChange={setEntityId} />
+
       {/* KPI strip */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Finance health</CardTitle></CardHeader>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-sm text-muted-foreground">Finance health</CardTitle>
+            <Button size="sm" variant="ghost" className="h-6 px-1" onClick={recomputeHealth} disabled={refreshingHealth}>
+              <RefreshCw className={`h-3 w-3 ${refreshingHealth ? "animate-spin" : ""}`} />
+            </Button>
+          </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold">{health?.score_value ?? "—"}<span className="text-base text-muted-foreground">/100</span></div>
-            <div className="text-xs text-muted-foreground">{health?.score_name ?? "no snapshot yet"}{health?.score_grade ? ` · ${health.score_grade}` : ""}</div>
+            <div className="text-xs text-muted-foreground truncate">
+              {health?.score_name ?? "no snapshot yet"}{health?.score_grade ? ` · grade ${health.score_grade}` : ""}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -143,6 +176,32 @@ export default function FinanceCommanderPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Health 2.0 lowest-scoring signals */}
+      {worstSignals.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" /> Health signals needing attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-3">
+            {worstSignals.map((s) => (
+              <div key={s.key} className="rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium">{s.label}</span>
+                  <Badge variant={s.score < 60 ? "destructive" : s.score < 80 ? "secondary" : "outline"}>{s.score}</Badge>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.reason}</div>
+                {s.action && <div className="mt-1 text-xs text-primary line-clamp-2">→ {s.action}</div>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tax Readiness */}
+      <TaxReadinessPanel entityId={entityId} />
 
       {/* Alerts + Quick links */}
       <div className="grid gap-4 lg:grid-cols-3">
