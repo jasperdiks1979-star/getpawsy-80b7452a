@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
     const vatMinor = amountVat != null ? Math.round(Number(amountVat) * 100) : null;
 
     const title = [
-      supplierName ?? "Manual upload",
+      canonicalName ?? "Manual upload",
       documentType,
       invoiceNumber ? `#${invoiceNumber}` : null,
       documentDate ?? null,
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
       category,
       subcategory: ai?.category_hint ?? null,
       supplier_id: supplierId,
-      supplier_name: supplierName,
+      supplier_name: canonicalName,
       document_date: documentDate,
       period_start: periodStart,
       period_end: periodEnd,
