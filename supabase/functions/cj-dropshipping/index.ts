@@ -1126,20 +1126,17 @@ serve(async (req) => {
     if (rateLimitError) {
       console.error('Rate limit check failed:', rateLimitError);
     } else if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
-      console.log(`Rate limit exceeded for user: ${userId}`);
-      return new Response(
-        JSON.stringify({ 
+      log(`rate limit exceeded for user: ${userId}`);
+      return errorResponse(
+        {
           error: 'Rate limit exceeded. Please try again later.',
-          reset_at: rateLimitData[0].reset_at
-        }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'X-RateLimit-Remaining': '0',
+          code: 'RATE_LIMITED',
+          reset_at: rateLimitData[0].reset_at,
+        },
+        429,
+        {
+          'X-RateLimit-Remaining': '0',
             'X-RateLimit-Reset': rateLimitData[0].reset_at
-          } 
         }
       );
     }
@@ -1292,16 +1289,10 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('CJ Dropshipping error:', errorMessage);
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        success: false 
-      }),
-      {
-        status: 500,
-        headers: jsonHeaders,
-      }
+    errlog('CJ Dropshipping error:', errorMessage);
+    return errorResponse(
+      { error: errorMessage, success: false, code: 'INTERNAL_ERROR' },
+      500
     );
   }
 });
