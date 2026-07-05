@@ -222,6 +222,9 @@ export default function FinanceCommanderPage() {
            </div>}
         </CardContent>
       </Card>
+
+      {/* Ingestion */}
+      <FinanceIngestionPanel entityId={entityId} />
     </div>
   );
 }
