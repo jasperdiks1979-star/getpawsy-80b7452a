@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Expose-Headers': 'x-request-id',
 };
 
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
@@ -930,9 +931,21 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
 }
 
 serve(async (req) => {
+  // Correlation id: reuse incoming x-request-id if provided (allows client<->server trace stitching),
+  // otherwise mint a fresh UUID. Included in every log line and every response (body + header).
+  const reqId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': reqId };
+  const log = (...args: unknown[]) => console.log(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const errlog = (...args: unknown[]) => console.error(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const errorResponse = (body: Record<string, unknown>, status: number, extraHeaders: Record<string, string> = {}) =>
+    new Response(JSON.stringify({ ...body, request_id: reqId }), {
+      status,
+      headers: { ...jsonHeaders, ...extraHeaders },
+    });
+  log(`incoming ${req.method} ${new URL(req.url).pathname}`);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: { ...corsHeaders, 'x-request-id': reqId } });
   }
 
   try {
@@ -948,17 +961,14 @@ serve(async (req) => {
     // Authenticate user - require admin role (skipped when internal secret matches)
     const authHeader = req.headers.get('Authorization');
     if (isInternal) {
-      console.log('cj-dropshipping: authenticated via INTERNAL_FUNCTION_SECRET');
+      log('cj-dropshipping: authenticated via INTERNAL_FUNCTION_SECRET');
     } else {
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('No authorization header provided');
-      return new Response(
-        JSON.stringify({
+      errlog('No authorization header provided');
+      return errorResponse({
           error: 'Unauthorized - missing or malformed Authorization header. Expected "Authorization: Bearer <access_token>".',
           code: 'AUTH_HEADER_MISSING',
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 401);
     }
 
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -972,14 +982,11 @@ serve(async (req) => {
     // Quick structural check before hitting Supabase
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
-      console.error('Malformed JWT: expected 3 segments, got', tokenParts.length);
-      return new Response(
-        JSON.stringify({
+      errlog('Malformed JWT: expected 3 segments, got', tokenParts.length);
+      return errorResponse({
           error: 'Unauthorized - malformed access token (not a valid JWT).',
           code: 'AUTH_TOKEN_MALFORMED',
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 401);
     }
 
     // Decode payload once so we can classify downstream failures (expired vs missing sub vs invalid signature)
@@ -989,14 +996,11 @@ serve(async (req) => {
         atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/'))
       );
     } catch (e) {
-      console.error('JWT payload base64 decode failed:', e);
-      return new Response(
-        JSON.stringify({
+      errlog('JWT payload base64 decode failed:', e);
+      return errorResponse({
           error: 'Unauthorized - access token payload is not valid base64/JSON.',
           code: 'AUTH_TOKEN_MALFORMED',
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 401);
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
@@ -1005,65 +1009,56 @@ serve(async (req) => {
 
     if (expClaim !== null && expClaim <= nowSec) {
       const ageMin = Math.round((nowSec - expClaim) / 60);
-      console.error(`Token expired ${ageMin} minute(s) ago`);
-      return new Response(
-        JSON.stringify({
+      errlog(`Token expired ${ageMin} minute(s) ago`);
+      return errorResponse({
           error: `Unauthorized - access token expired ${ageMin} minute(s) ago. Refresh your session and retry.`,
           code: 'AUTH_TOKEN_EXPIRED',
           expiredAt: expClaim,
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 401);
     }
 
     if (!subClaim) {
-      console.error('Token missing sub claim');
-      return new Response(
-        JSON.stringify({
+      errlog('Token missing sub claim');
+      return errorResponse({
           error: 'Unauthorized - access token is missing the "sub" claim. Sign out and sign back in to mint a fresh token.',
           code: 'AUTH_TOKEN_MISSING_SUB',
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 401);
     }
 
     const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
     
     if (claimsError || !claimsData?.claims?.sub) {
-      console.error('Token validation via getClaims failed:', claimsError || 'Missing sub claim');
+      errlog('Token validation via getClaims failed:', claimsError || 'Missing sub claim');
       
       // Fallback 1: validate the token with the service-role client (bypasses anon JWKS issues)
       const { data: userData, error: userError } = await adminSupabase.auth.getUser(token);
 
       if (userError || !userData?.user) {
-        console.error('adminSupabase.getUser(token) also failed:', userError);
+        errlog('adminSupabase.getUser(token) also failed:', userError);
 
         // Fallback 2: we already validated exp + sub above from the decoded payload.
         // The signature couldn't be verified by either client, but the token is
         // well-formed and unexpired — accept it (Supabase gateway also verifies when verify_jwt=true).
         const userErrMsg = (userError as { message?: string } | null)?.message || '';
         if (/signature|invalid.*jwt|jwks/i.test(userErrMsg)) {
-          console.error('Token signature could not be verified:', userErrMsg);
-          return new Response(
-            JSON.stringify({
+          errlog('Token signature could not be verified:', userErrMsg);
+          return errorResponse({
               error: 'Unauthorized - access token signature could not be verified. Sign out and sign back in.',
               code: 'AUTH_TOKEN_INVALID_SIGNATURE',
               detail: userErrMsg,
-            }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+            }, 401);
         }
         userId = subClaim;
-        console.log(`Authenticated user via JWT payload decode (both verifiers failed): ${userId}`);
+        log(`Authenticated user via JWT payload decode (both verifiers failed): ${userId}`);
       } else {
         userId = userData.user.id;
-        console.log(`Authenticated user via adminSupabase.getUser(token): ${userId}`);
+        log(`Authenticated user via adminSupabase.getUser(token): ${userId}`);
       }
     } else {
       userId = claimsData.claims.sub as string;
-      console.log(`Authenticated user via getClaims: ${userId}`);
+      log(`Authenticated user via getClaims: ${userId}`);
     }
-    console.log(`Authenticated user: ${userId}`);
+    log(`Authenticated user: ${userId}`);
 
     // Check if user is admin
     const { data: roleData, error: roleError } = await adminSupabase
@@ -1075,29 +1070,23 @@ serve(async (req) => {
 
     if (roleError || !roleData) {
       if (roleError) {
-        console.error('Admin role lookup failed:', roleError);
-        return new Response(
-          JSON.stringify({
+        errlog('Admin role lookup failed:', roleError);
+        return errorResponse({
             error: 'Forbidden - could not verify admin role. Please retry.',
             code: 'AUTH_ROLE_LOOKUP_FAILED',
             detail: roleError.message,
-          }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+          }, 403);
       }
-      console.error(`Forbidden: user ${userId} lacks admin role`);
-      return new Response(
-        JSON.stringify({
+      errlog(`Forbidden: user ${userId} lacks admin role`);
+      return errorResponse({
           error: 'Forbidden - this endpoint requires the "admin" role. Your account does not have the required authorization scope.',
           code: 'AUTH_SCOPE_MISSING',
           requiredRole: 'admin',
           userId,
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        }, 403);
     }
 
-    console.log(`Admin verified for user: ${userId}`);
+    log(`Admin verified for user: ${userId}`);
     } // end !isInternal auth block
 
     // Check rate limit (100 requests per hour for CJ API) — skipped for internal calls
@@ -1111,29 +1100,26 @@ serve(async (req) => {
       });
 
     if (rateLimitError) {
-      console.error('Rate limit check failed:', rateLimitError);
+      errlog('Rate limit check failed:', rateLimitError);
     } else if (rateLimitData && rateLimitData.length > 0 && !rateLimitData[0].allowed) {
-      console.log(`Rate limit exceeded for user: ${userId}`);
-      return new Response(
-        JSON.stringify({ 
+      log(`rate limit exceeded for user: ${userId}`);
+      return errorResponse(
+        {
           error: 'Rate limit exceeded. Please try again later.',
-          reset_at: rateLimitData[0].reset_at
-        }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'X-RateLimit-Remaining': '0',
+          code: 'RATE_LIMITED',
+          reset_at: rateLimitData[0].reset_at,
+        },
+        429,
+        {
+          'X-RateLimit-Remaining': '0',
             'X-RateLimit-Reset': rateLimitData[0].reset_at
-          } 
         }
       );
     }
     }
 
     const { action, ...params } = await req.json();
-    console.log(`CJ Dropshipping action: ${action}`, params);
+    log(`CJ Dropshipping action: ${action}`, params);
 
     // Get access token first
     const accessToken = await getAccessToken();
@@ -1274,21 +1260,15 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
     });
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('CJ Dropshipping error:', errorMessage);
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        success: false 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    errlog('CJ Dropshipping error:', errorMessage);
+    return errorResponse(
+      { error: errorMessage, success: false, code: 'INTERNAL_ERROR' },
+      500
     );
   }
 });
