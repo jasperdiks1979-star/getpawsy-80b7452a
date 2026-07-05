@@ -389,14 +389,25 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Recent imports
+              <FileText className="h-4 w-4" /> Import history
             </CardTitle>
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search supplier or type"
+                className="pl-7 h-8 text-xs"
+              />
+            </div>
           </CardHeader>
           <CardContent>
-            {recent.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No documents yet.</div>
+            {filteredRecent.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                {query ? "No matches." : "No documents yet."}
+              </div>
             ) : (
               <div className="max-h-80 overflow-auto">
                 <table className="w-full text-sm">
@@ -409,7 +420,7 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
                     </tr>
                   </thead>
                   <tbody>
-                    {recent.map(d => (
+                    {filteredRecent.map(d => (
                       <tr key={d.id} className="border-t">
                         <td className="py-1 pr-2 whitespace-nowrap">{d.document_date ?? d.created_at.slice(0, 10)}</td>
                         <td className="py-1 pr-2 truncate max-w-[140px]">{d.supplier_name ?? d.title ?? "—"}</td>
