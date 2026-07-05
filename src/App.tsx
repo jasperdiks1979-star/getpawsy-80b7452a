@@ -2646,6 +2646,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="finance-commander"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <FinanceCommanderPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="financial-health"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
