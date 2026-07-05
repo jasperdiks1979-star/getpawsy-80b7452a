@@ -8,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Upload, FileText, Landmark, RefreshCw, CheckCircle2, XCircle,
-  AlertTriangle, Loader2, Inbox,
+  AlertTriangle, Loader2, Inbox, Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 type Route = "bank" | "invoice";
 type Status = "pending" | "uploading" | "success" | "error" | "skipped";
@@ -108,6 +109,8 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
   const [recent, setRecent] = useState<RecentDoc[]>([]);
   const [loadingSide, setLoadingSide] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [batchStart, setBatchStart] = useState<number | null>(null);
 
   const refreshSide = useCallback(async () => {
     setLoadingSide(true);
@@ -192,14 +195,34 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
 
   const runAll = async () => {
     const queue = items.filter(i => i.status === "pending" || i.status === "error");
+    setBatchStart(Date.now());
     for (const it of queue) {
       await uploadOne(it);
     }
     await refreshSide();
+    setBatchStart(null);
     toast.success(`Processed ${queue.length} file${queue.length === 1 ? "" : "s"}`);
   };
 
   const clearDone = () => setItems(prev => prev.filter(i => i.status !== "success" && i.status !== "skipped"));
+
+  const completedCount = items.filter(i => ["success", "skipped", "error"].includes(i.status)).length;
+  const totalToProcess = items.length;
+  const batchPct = totalToProcess ? Math.round((completedCount / totalToProcess) * 100) : 0;
+  const etaSec = (() => {
+    if (!batchStart || completedCount === 0 || completedCount >= totalToProcess) return null;
+    const elapsed = (Date.now() - batchStart) / 1000;
+    const perFile = elapsed / completedCount;
+    return Math.round(perFile * (totalToProcess - completedCount));
+  })();
+
+  const q = query.trim().toLowerCase();
+  const filteredRecent = q
+    ? recent.filter(d =>
+        (d.supplier_name || "").toLowerCase().includes(q) ||
+        (d.title || "").toLowerCase().includes(q) ||
+        (d.document_type || "").toLowerCase().includes(q))
+    : recent;
 
   return (
     <div className="space-y-4">
@@ -240,6 +263,15 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
 
           {items.length > 0 && (
             <>
+              {items.length > 1 && (
+                <div className="rounded-md border bg-muted/30 p-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Batch progress {completedCount}/{totalToProcess}</span>
+                    <span>{etaSec != null ? `ETA ~${etaSec}s` : batchStart ? "estimating…" : ""}</span>
+                  </div>
+                  <Progress value={batchPct} className="h-1.5" />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Button size="sm" onClick={runAll} disabled={items.every(i => i.status === "uploading")}>
                   Process {items.filter(i => i.status === "pending" || i.status === "error").length} file(s)
@@ -357,14 +389,25 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4" /> Recent imports
+              <FileText className="h-4 w-4" /> Import history
             </CardTitle>
+            <div className="relative w-full sm:w-56">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search supplier or type"
+                className="pl-7 h-8 text-xs"
+              />
+            </div>
           </CardHeader>
           <CardContent>
-            {recent.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No documents yet.</div>
+            {filteredRecent.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                {query ? "No matches." : "No documents yet."}
+              </div>
             ) : (
               <div className="max-h-80 overflow-auto">
                 <table className="w-full text-sm">
@@ -377,7 +420,7 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
                     </tr>
                   </thead>
                   <tbody>
-                    {recent.map(d => (
+                    {filteredRecent.map(d => (
                       <tr key={d.id} className="border-t">
                         <td className="py-1 pr-2 whitespace-nowrap">{d.document_date ?? d.created_at.slice(0, 10)}</td>
                         <td className="py-1 pr-2 truncate max-w-[140px]">{d.supplier_name ?? d.title ?? "—"}</td>
