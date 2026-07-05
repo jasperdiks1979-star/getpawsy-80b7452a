@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 
 type Entity = { id: string; slug: string; legal_name: string; trade_name: string | null; base_currency: string; is_default: boolean };
-type HealthScore = { score: number | null; category: string | null; captured_at: string | null };
+type HealthScore = { score_name: string | null; score_value: number | null; score_grade: string | null; computed_at: string | null };
 type Alert = { id: string; severity: string; alert_type: string; title: string; created_at: string };
-type VatSummary = { period_label: string | null; period_year: number | null; period_quarter: number | null; recoverable_vat_minor: number | null; owed_vat_minor: number | null; status: string | null };
+type VatSummary = { period_type: string | null; period_year: number | null; period_number: number | null; recoverable_minor: number | null; outstanding_minor: number | null; currency: string | null };
 type Roi = { day: string; supplier: string; spend: number; revenue: number; orders_count: number; roas: number | null };
 
 const fmtEUR = (n: number | null | undefined) =>
@@ -51,20 +51,20 @@ export default function FinanceCommanderPage() {
       setLoading(true);
       const [e, h, a, v, r] = await Promise.all([
         supabase.from("finance_entities").select("*").order("is_default", { ascending: false }),
-        supabase.from("finance_health_scores").select("score,category,captured_at").order("captured_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("finance_health_scores").select("score_name,score_value,score_grade,computed_at").order("computed_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("finance_alerts").select("id,severity,alert_type,title,created_at").eq("is_resolved", false).order("created_at", { ascending: false }).limit(6),
-        supabase.from("finance_vat_summaries").select("period_label,period_year,period_quarter,recoverable_vat_minor,owed_vat_minor,status").order("period_year", { ascending: false }).order("period_quarter", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("v_finance_channel_roi").select("*").order("day", { ascending: false }).limit(30),
+        supabase.from("finance_vat_summaries").select("period_type,period_year,period_number,recoverable_minor,outstanding_minor,currency").order("period_year", { ascending: false }).order("period_number", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
+        supabase.from("v_finance_channel_roi" as any).select("*").order("day", { ascending: false }).limit(30),
       ]);
       if (e.data) {
         setEntities(e.data as Entity[]);
         const def = (e.data as Entity[]).find(x => x.is_default);
         if (def) setEntityId(def.id);
       }
-      if (h.data) setHealth(h.data as HealthScore);
+      if (h.data) setHealth(h.data as unknown as HealthScore);
       if (a.data) setAlerts(a.data as Alert[]);
-      if (v.data) setVat(v.data as VatSummary);
-      if (r.data) setRoi(r.data as Roi[]);
+      if (v.data) setVat(v.data as unknown as VatSummary);
+      if (r.data) setRoi(r.data as unknown as Roi[]);
       setLoading(false);
     })();
   }, [isLoading]);
@@ -111,20 +111,20 @@ export default function FinanceCommanderPage() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Finance health</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{health?.score ?? "—"}<span className="text-base text-muted-foreground">/100</span></div>
-            <div className="text-xs text-muted-foreground">{health?.category ?? "no snapshot yet"}</div>
+            <div className="text-3xl font-semibold">{health?.score_value ?? "—"}<span className="text-base text-muted-foreground">/100</span></div>
+            <div className="text-xs text-muted-foreground">{health?.score_name ?? "no snapshot yet"}{health?.score_grade ? ` · ${health.score_grade}` : ""}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Latest VAT period</CardTitle></CardHeader>
           <CardContent>
             <div className="text-lg font-semibold">
-              {vat?.period_label ?? (vat?.period_year ? `${vat.period_year} Q${vat.period_quarter}` : "—")}
+              {vat?.period_year ? `${vat.period_year}${vat.period_number != null ? ` ${vat.period_type === "quarter" ? "Q" : ""}${vat.period_number}` : ""}` : "—"}
             </div>
             <div className="text-xs text-muted-foreground">
-              Recoverable {fmtMinor(vat?.recoverable_vat_minor ?? null)} · Owed {fmtMinor(vat?.owed_vat_minor ?? null)}
+              Recoverable {fmtMinor(vat?.recoverable_minor ?? null)} · Outstanding {fmtMinor(vat?.outstanding_minor ?? null)}
             </div>
-            {vat?.status && <Badge variant="outline" className="mt-1">{vat.status}</Badge>}
+            {vat?.currency && <Badge variant="outline" className="mt-1">{vat.currency}</Badge>}
           </CardContent>
         </Card>
         <Card>
