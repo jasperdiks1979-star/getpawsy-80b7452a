@@ -935,8 +935,8 @@ serve(async (req) => {
   // otherwise mint a fresh UUID. Included in every log line and every response (body + header).
   const reqId = req.headers.get('x-request-id') || crypto.randomUUID();
   const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': reqId };
-  const log = (...args: unknown[]) => log(`[cj-dropshipping][req=${reqId}]`, ...args);
-  const errlog = (...args: unknown[]) => errlog(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const log = (...args: unknown[]) => console.log(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const errlog = (...args: unknown[]) => console.error(`[cj-dropshipping][req=${reqId}]`, ...args);
   const errorResponse = (body: Record<string, unknown>, status: number, extraHeaders: Record<string, string> = {}) =>
     new Response(JSON.stringify({ ...body, request_id: reqId }), {
       status,
