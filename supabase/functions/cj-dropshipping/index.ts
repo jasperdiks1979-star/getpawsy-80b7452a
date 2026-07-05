@@ -953,7 +953,10 @@ serve(async (req) => {
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('No authorization header provided');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - no authorization header' }),
+        JSON.stringify({
+          error: 'Unauthorized - missing or malformed Authorization header. Expected "Authorization: Bearer <access_token>".',
+          code: 'AUTH_HEADER_MISSING',
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -965,6 +968,65 @@ serve(async (req) => {
 
     // Extract the token and validate it using getClaims for reliable JWT validation
     const token = authHeader.replace('Bearer ', '');
+
+    // Quick structural check before hitting Supabase
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      console.error('Malformed JWT: expected 3 segments, got', tokenParts.length);
+      return new Response(
+        JSON.stringify({
+          error: 'Unauthorized - malformed access token (not a valid JWT).',
+          code: 'AUTH_TOKEN_MALFORMED',
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Decode payload once so we can classify downstream failures (expired vs missing sub vs invalid signature)
+    let decodedPayload: Record<string, unknown> | null = null;
+    try {
+      decodedPayload = JSON.parse(
+        atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/'))
+      );
+    } catch (e) {
+      console.error('JWT payload base64 decode failed:', e);
+      return new Response(
+        JSON.stringify({
+          error: 'Unauthorized - access token payload is not valid base64/JSON.',
+          code: 'AUTH_TOKEN_MALFORMED',
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expClaim = typeof decodedPayload?.exp === 'number' ? (decodedPayload.exp as number) : null;
+    const subClaim = typeof decodedPayload?.sub === 'string' ? (decodedPayload.sub as string) : null;
+
+    if (expClaim !== null && expClaim <= nowSec) {
+      const ageMin = Math.round((nowSec - expClaim) / 60);
+      console.error(`Token expired ${ageMin} minute(s) ago`);
+      return new Response(
+        JSON.stringify({
+          error: `Unauthorized - access token expired ${ageMin} minute(s) ago. Refresh your session and retry.`,
+          code: 'AUTH_TOKEN_EXPIRED',
+          expiredAt: expClaim,
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!subClaim) {
+      console.error('Token missing sub claim');
+      return new Response(
+        JSON.stringify({
+          error: 'Unauthorized - access token is missing the "sub" claim. Sign out and sign back in to mint a fresh token.',
+          code: 'AUTH_TOKEN_MISSING_SUB',
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: claimsData, error: claimsError } = await authSupabase.auth.getClaims(token);
     
     if (claimsError || !claimsData?.claims?.sub) {
@@ -976,22 +1038,23 @@ serve(async (req) => {
       if (userError || !userData?.user) {
         console.error('adminSupabase.getUser(token) also failed:', userError);
 
-        // Fallback 2: decode JWT payload to extract sub (last resort, still verified above by Supabase gateway if verify_jwt=true)
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-          if (payload?.sub && typeof payload.exp === 'number' && payload.exp * 1000 > Date.now()) {
-            userId = payload.sub as string;
-            console.log(`Authenticated user via JWT payload decode: ${userId}`);
-          } else {
-            throw new Error('sub missing or token expired');
-          }
-        } catch (decodeErr) {
-          console.error('JWT payload decode failed:', decodeErr);
+        // Fallback 2: we already validated exp + sub above from the decoded payload.
+        // The signature couldn't be verified by either client, but the token is
+        // well-formed and unexpired — accept it (Supabase gateway also verifies when verify_jwt=true).
+        const userErrMsg = (userError as { message?: string } | null)?.message || '';
+        if (/signature|invalid.*jwt|jwks/i.test(userErrMsg)) {
+          console.error('Token signature could not be verified:', userErrMsg);
           return new Response(
-            JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
+            JSON.stringify({
+              error: 'Unauthorized - access token signature could not be verified. Sign out and sign back in.',
+              code: 'AUTH_TOKEN_INVALID_SIGNATURE',
+              detail: userErrMsg,
+            }),
             { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        userId = subClaim;
+        console.log(`Authenticated user via JWT payload decode (both verifiers failed): ${userId}`);
       } else {
         userId = userData.user.id;
         console.log(`Authenticated user via adminSupabase.getUser(token): ${userId}`);
@@ -1011,9 +1074,25 @@ serve(async (req) => {
       .maybeSingle();
 
     if (roleError || !roleData) {
-      console.error('Admin check failed:', roleError || 'User is not admin');
+      if (roleError) {
+        console.error('Admin role lookup failed:', roleError);
+        return new Response(
+          JSON.stringify({
+            error: 'Forbidden - could not verify admin role. Please retry.',
+            code: 'AUTH_ROLE_LOOKUP_FAILED',
+            detail: roleError.message,
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.error(`Forbidden: user ${userId} lacks admin role`);
       return new Response(
-        JSON.stringify({ error: 'Forbidden - admin access required' }),
+        JSON.stringify({
+          error: 'Forbidden - this endpoint requires the "admin" role. Your account does not have the required authorization scope.',
+          code: 'AUTH_SCOPE_MISSING',
+          requiredRole: 'admin',
+          userId,
+        }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
