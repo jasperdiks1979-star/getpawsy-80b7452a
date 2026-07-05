@@ -297,6 +297,13 @@ Deno.serve(async (req) => {
         .from("visitor_activity")
         .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("session_id", batch)
+        // MONOTONICITY FIX: bound enrichment to the same time window as the
+        // canonical_events query. Without this, an unrelated historical
+        // visitor_activity row with is_internal=true can retroactively flag
+        // a session as internal — causing 24h totals to drop below 10h for
+        // the same filters (10h=26 → 24h=23 was the reported symptom).
+        .gte("created_at", since)
+        .lte("created_at", until)
         .order("created_at", { ascending: false });
       if (vaErr) continue; // enrichment failure must not break the truth envelope
       for (const row of va ?? []) {
@@ -331,6 +338,9 @@ Deno.serve(async (req) => {
         .from("visitor_activity")
         .select("visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("visitor_id", batch)
+        // Same monotonicity guard as the session_id enrichment above.
+        .gte("created_at", since)
+        .lte("created_at", until)
         .order("created_at", { ascending: false });
       if (vaErr) continue;
       for (const row of va ?? []) {
@@ -357,6 +367,28 @@ Deno.serve(async (req) => {
       : allSessionsArr;
 
     const cleanSessionsArr = sessionsArr.filter((s) => !s.is_internal);
+
+    // ── diagnostics: makes monotonicity + geo failures self-explaining ─
+    const sessionsWithGeo = cleanSessionsArr.filter(
+      (s) => s.latitude != null && s.longitude != null,
+    ).length;
+    const sessionsWithoutGeo = cleanSessionsArr.length - sessionsWithGeo;
+    const filteredOutByInternal = sessionsArr.length - cleanSessionsArr.length;
+    const filteredOutByUsOnly = geo === "US"
+      ? allSessionsArr.length - sessionsArr.length
+      : 0;
+    const diagnostics = {
+      canonical_sessions: allSessionsArr.length,
+      sessions_after_geo_filter: sessionsArr.length,
+      sessions_after_internal_filter: cleanSessionsArr.length,
+      sessions_with_geo: sessionsWithGeo,
+      sessions_without_geo: sessionsWithoutGeo,
+      filtered_out_by_us_only: filteredOutByUsOnly,
+      filtered_out_by_internal: filteredOutByInternal,
+      window_since: since,
+      window_until: until,
+      window_hours: hours,
+    };
 
     const countryAgg = new Map<string, { visitors: Set<string>; sessions: number; page_views: number; add_to_cart: number; checkout_started: number; purchases: number }>();
     const sourceAgg = new Map<string, number>();
@@ -438,6 +470,7 @@ Deno.serve(async (req) => {
       sources,
       sessions: sessionsArr,
       sample_event: sample,
+      diagnostics,
       generated_at: new Date().toISOString(),
     };
 
