@@ -72748,7 +72748,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer" | "accountant" | "auditor"
+      app_role: "admin" | "customer" | "accountant" | "auditor" | "finance"
       canonical_event_name:
         | "CANONICAL_PAGE_VIEW"
         | "CANONICAL_PRODUCT_VIEW"
@@ -72938,7 +72938,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer", "accountant", "auditor"],
+      app_role: ["admin", "customer", "accountant", "auditor", "finance"],
       canonical_event_name: [
         "CANONICAL_PAGE_VIEW",
         "CANONICAL_PRODUCT_VIEW",
