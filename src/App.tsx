@@ -446,6 +446,7 @@ const GenesisDigitalCompanyPage = lazyWithRetry(() => import("./pages/admin/Gene
 const GenesisPerpetualCompanyPage = lazyWithRetry(() => import("./pages/admin/GenesisPerpetualCompanyPage"));
 const GenesisEnterpriseTwinPage = lazyWithRetry(() => import("./pages/admin/GenesisEnterpriseTwinPage"));
 const FinanceIntelligencePage = lazyWithRetry(() => import("./pages/admin/FinanceIntelligencePage"));
+const FinanceCommanderPage = lazyWithRetry(() => import("./pages/admin/FinanceCommanderPage"));
 const FinancialHealthPage = lazyWithRetry(() => import("./pages/admin/FinancialHealthPage"));
 const CEOCommandCenterPage = lazyWithRetry(() => import("./pages/admin/CEOCommandCenterPage"));
 const AccountantPortalPage = lazyWithRetry(() => import("./pages/admin/AccountantPortalPage"));
