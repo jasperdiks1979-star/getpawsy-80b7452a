@@ -8,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Upload, FileText, Landmark, RefreshCw, CheckCircle2, XCircle,
-  AlertTriangle, Loader2, Inbox,
+  AlertTriangle, Loader2, Inbox, Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 type Route = "bank" | "invoice";
 type Status = "pending" | "uploading" | "success" | "error" | "skipped";
@@ -108,6 +109,8 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
   const [recent, setRecent] = useState<RecentDoc[]>([]);
   const [loadingSide, setLoadingSide] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [batchStart, setBatchStart] = useState<number | null>(null);
 
   const refreshSide = useCallback(async () => {
     setLoadingSide(true);
@@ -192,14 +195,34 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
 
   const runAll = async () => {
     const queue = items.filter(i => i.status === "pending" || i.status === "error");
+    setBatchStart(Date.now());
     for (const it of queue) {
       await uploadOne(it);
     }
     await refreshSide();
+    setBatchStart(null);
     toast.success(`Processed ${queue.length} file${queue.length === 1 ? "" : "s"}`);
   };
 
   const clearDone = () => setItems(prev => prev.filter(i => i.status !== "success" && i.status !== "skipped"));
+
+  const completedCount = items.filter(i => ["success", "skipped", "error"].includes(i.status)).length;
+  const totalToProcess = items.length;
+  const batchPct = totalToProcess ? Math.round((completedCount / totalToProcess) * 100) : 0;
+  const etaSec = (() => {
+    if (!batchStart || completedCount === 0 || completedCount >= totalToProcess) return null;
+    const elapsed = (Date.now() - batchStart) / 1000;
+    const perFile = elapsed / completedCount;
+    return Math.round(perFile * (totalToProcess - completedCount));
+  })();
+
+  const q = query.trim().toLowerCase();
+  const filteredRecent = q
+    ? recent.filter(d =>
+        (d.supplier_name || "").toLowerCase().includes(q) ||
+        (d.title || "").toLowerCase().includes(q) ||
+        (d.document_type || "").toLowerCase().includes(q))
+    : recent;
 
   return (
     <div className="space-y-4">
@@ -240,6 +263,15 @@ export function FinanceIngestionPanel({ entityId }: { entityId: string | null })
 
           {items.length > 0 && (
             <>
+              {items.length > 1 && (
+                <div className="rounded-md border bg-muted/30 p-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Batch progress {completedCount}/{totalToProcess}</span>
+                    <span>{etaSec != null ? `ETA ~${etaSec}s` : batchStart ? "estimating…" : ""}</span>
+                  </div>
+                  <Progress value={batchPct} className="h-1.5" />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Button size="sm" onClick={runAll} disabled={items.every(i => i.status === "uploading")}>
                   Process {items.filter(i => i.status === "pending" || i.status === "error").length} file(s)
