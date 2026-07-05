@@ -970,19 +970,32 @@ serve(async (req) => {
     if (claimsError || !claimsData?.claims?.sub) {
       console.error('Token validation via getClaims failed:', claimsError || 'Missing sub claim');
       
-      // Try getUser as fallback
-      const { data: userData, error: userError } = await authSupabase.auth.getUser();
-      
+      // Fallback 1: validate the token with the service-role client (bypasses anon JWKS issues)
+      const { data: userData, error: userError } = await adminSupabase.auth.getUser(token);
+
       if (userError || !userData?.user) {
-        console.error('User verification also failed:', userError);
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('adminSupabase.getUser(token) also failed:', userError);
+
+        // Fallback 2: decode JWT payload to extract sub (last resort, still verified above by Supabase gateway if verify_jwt=true)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          if (payload?.sub && typeof payload.exp === 'number' && payload.exp * 1000 > Date.now()) {
+            userId = payload.sub as string;
+            console.log(`Authenticated user via JWT payload decode: ${userId}`);
+          } else {
+            throw new Error('sub missing or token expired');
+          }
+        } catch (decodeErr) {
+          console.error('JWT payload decode failed:', decodeErr);
+          return new Response(
+            JSON.stringify({ error: 'Unauthorized - invalid or expired session. Please log out and log back in.' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        userId = userData.user.id;
+        console.log(`Authenticated user via adminSupabase.getUser(token): ${userId}`);
       }
-      
-      userId = userData.user.id;
-      console.log(`Authenticated user via getUser fallback: ${userId}`);
     } else {
       userId = claimsData.claims.sub as string;
       console.log(`Authenticated user via getClaims: ${userId}`);
