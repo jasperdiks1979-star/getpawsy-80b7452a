@@ -11,6 +11,7 @@ import {
   AlertTriangle, ArrowUpRight, BarChart3, Boxes, Building2,
   FileText, Landmark, MessageSquareText, Receipt, Shield, TrendingUp, Wallet,
 } from "lucide-react";
+import { FinanceIngestionPanel } from "@/components/admin/finance/FinanceIngestionPanel";
 
 type Entity = { id: string; slug: string; legal_name: string; trade_name: string | null; base_currency: string; is_default: boolean };
 type HealthScore = { score_name: string | null; score_value: number | null; score_grade: string | null; computed_at: string | null };
@@ -221,6 +222,9 @@ export default function FinanceCommanderPage() {
            </div>}
         </CardContent>
       </Card>
+
+      {/* Ingestion */}
+      <FinanceIngestionPanel entityId={entityId} />
     </div>
   );
 }
