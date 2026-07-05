@@ -931,9 +931,21 @@ async function getProductsForImport(accessToken: string, productIds: string[]) {
 }
 
 serve(async (req) => {
+  // Correlation id: reuse incoming x-request-id if provided (allows client<->server trace stitching),
+  // otherwise mint a fresh UUID. Included in every log line and every response (body + header).
+  const reqId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': reqId };
+  const log = (...args: unknown[]) => console.log(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const errlog = (...args: unknown[]) => console.error(`[cj-dropshipping][req=${reqId}]`, ...args);
+  const errorResponse = (body: Record<string, unknown>, status: number, extraHeaders: Record<string, string> = {}) =>
+    new Response(JSON.stringify({ ...body, request_id: reqId }), {
+      status,
+      headers: { ...jsonHeaders, ...extraHeaders },
+    });
+  log(`incoming ${req.method} ${new URL(req.url).pathname}`);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: { ...corsHeaders, 'x-request-id': reqId } });
   }
 
   try {
