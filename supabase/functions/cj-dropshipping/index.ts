@@ -970,7 +970,7 @@ serve(async (req) => {
           error: 'Unauthorized - missing or malformed Authorization header. Expected "Authorization: Bearer <access_token>".',
           code: 'AUTH_HEADER_MISSING',
         }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -991,7 +991,7 @@ serve(async (req) => {
           error: 'Unauthorized - malformed access token (not a valid JWT).',
           code: 'AUTH_TOKEN_MALFORMED',
         }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -1008,7 +1008,7 @@ serve(async (req) => {
           error: 'Unauthorized - access token payload is not valid base64/JSON.',
           code: 'AUTH_TOKEN_MALFORMED',
         }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -1025,7 +1025,7 @@ serve(async (req) => {
           code: 'AUTH_TOKEN_EXPIRED',
           expiredAt: expClaim,
         }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -1036,7 +1036,7 @@ serve(async (req) => {
           error: 'Unauthorized - access token is missing the "sub" claim. Sign out and sign back in to mint a fresh token.',
           code: 'AUTH_TOKEN_MISSING_SUB',
         }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -1063,7 +1063,7 @@ serve(async (req) => {
               code: 'AUTH_TOKEN_INVALID_SIGNATURE',
               detail: userErrMsg,
             }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 401, headers: jsonHeaders }
           );
         }
         userId = subClaim;
@@ -1095,7 +1095,7 @@ serve(async (req) => {
             code: 'AUTH_ROLE_LOOKUP_FAILED',
             detail: roleError.message,
           }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 403, headers: jsonHeaders }
         );
       }
       console.error(`Forbidden: user ${userId} lacks admin role`);
@@ -1106,7 +1106,7 @@ serve(async (req) => {
           requiredRole: 'admin',
           userId,
         }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: jsonHeaders }
       );
     }
 
@@ -1287,7 +1287,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
     });
 
   } catch (error: unknown) {
@@ -1300,7 +1300,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: jsonHeaders,
       }
     );
   }
