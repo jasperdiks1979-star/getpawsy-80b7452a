@@ -1,62 +1,79 @@
-# Visitor World Map Pro V2 — Staged Production Refactor
+## Phase 0 — Forensic Audit Result (STOP: most of this is already built)
 
-This is a multi-week program, not a single-turn edit. Trying to ship every deliverable (new admin page, enterprise-grade dashboard, timeline replay, websocket live engine, session detail drawer, resizable/dockable panels, render-worker infra audit, CI parity extensions, session-duration rewrite, Pinterest attribution audit, exhaustive test suite) in one uninterrupted run would guarantee exactly the "fabricated PASS" outcome the brief forbids. I'm proposing a staged plan where each stage is independently verifiable with real evidence before the next begins.
+GetPawsy already ships a production Finance Commander subsystem. Building the 14-phase spec from scratch would duplicate hundreds of existing objects and destabilize production. Below is what I found.
 
-Ground rule reaffirmed: **all business KPIs read only from `analytics-canonical` via `useAnalyticsTruth`**. Live presence stays isolated (already implemented, `mode=live`, no KPI leak). Diagnostics stay labelled "Diagnostic only".
+### Existing routes (already live under /admin)
+- `/admin/finance` → `FinanceIntelligencePage.tsx`
+- `/admin/cfo` → `CFOChatPage.tsx`
+- `/admin/cfo-reports` → `CFOReportLibraryPage.tsx`
+- `/admin/accountant` → `AccountantPortalPage.tsx`
+- `/admin/payments` → `AdminPaymentsPage.tsx`
 
-## Stage 0 — Inventory & baseline (no code changes)
-- Enumerate every current consumer of visitor/session data: `VisitorWorldMap`, `CleanAnalyticsPanel`, `CanonicalKpiStrip`, `LiveVisitorInspector`, CSV/Summary exports, mobile widget, any legacy desktop map.
-- Confirm whether a separate "desktop" implementation still exists, or if `VisitorWorldMap` is already the shared component. This determines whether Stage 1 is a merge or just a rename+extend.
-- Capture screenshots on iPhone / iPad / laptop / desktop widths against the current build as the baseline for "after" comparisons.
-- Output: short written inventory committed to `docs/visitor-world-map-v2/inventory.md`.
+### Existing edge functions (13 finance + stripe pipeline)
+`finance-accountant-export`, `finance-alerts-scan`, `finance-anomaly-scan`, `finance-asset-depreciate`, `finance-asset-detect`, `finance-backfill-scan`, `finance-belastingdienst-export`, `finance-cfo-chat`, `finance-cfo-reports`, `finance-manual-import`, `finance-search-reindex`, `finance-v14-1-certify`, `finance-vat-reconcile`, `stripe-evidence-import`, `stripe-webhook`.
 
-## Stage 1 — Single component: `VisitorWorldMapV2`
-- Rename/extract the current `VisitorWorldMap` into `src/components/admin/visitor-world-map-v2/` with subcomponents (`Toolbar`, `KpiHeader`, `MapCanvas`, `LeftFilters`, `RightFeed`, `DiagnosticsPanels`).
-- Old `VisitorWorldMap` becomes a thin re-export so nothing else breaks.
-- Responsive layout via CSS grid + container queries; **one** component renders on all viewports.
-- Acceptance: existing e2e parity tests still green; visual diff on mobile matches baseline.
+### Existing tables (30 finance/evidence/supplier tables)
 
-## Stage 2 — New admin route: Visitor World Map Pro
-- Add route `Admin → Analytics → Visitor World Map Pro` mounting `VisitorWorldMapV2` in "pro" layout (wider grid, left+right sidebars visible ≥1280px, collapsible <1280px).
-- Compact widget on existing pages keeps working via the same component in "compact" mode.
-- Acceptance: navigating between compact widget and Pro page shows identical numbers for the same filters.
+```text
+finance_actions              finance_alerts              finance_annual_dossiers
+finance_anomalies            finance_asset_documents     finance_asset_events
+finance_assets               finance_backfill_scans      finance_backfill_tasks
+finance_connectors           finance_credit_ledger       finance_expense_categories
+finance_health_history       finance_health_scores       finance_import_tasks
+finance_reports              finance_risk_findings       finance_search_index
+finance_subscriptions        finance_vat_reconciliations finance_vat_summaries
+evidence_documents (42 cols) evidence_payments           evidence_suppliers
+evidence_links               evidence_timeline           evidence_backup_checks
+supplier_products            supplier_import_logs        stripe_test_checkout_log
+```
 
-## Stage 3 — Toolbar, filter, and KPI surface
-- Time selector: `live, 30m, 1h, 2.5h, 5h, 10h, 24h, 7d, 30d, custom`.
-- Source / activity / quick-filter selectors as specified.
-- KPI header cards: only the metrics `analytics-canonical` already returns. Any metric not yet in the canonical envelope (AOV, RPV, RPS, avg session duration, bounce, heartbeat %, scroll %, engagement %) is listed explicitly as "not yet available from canonical — pending Stage 6" rather than fabricated.
-- Saved filter presets in `localStorage` (no new table yet).
+### Coverage vs your 14-phase spec
 
-## Stage 4 — Live mode hardening
-- Current live presence pipeline stays; add the visible "LIVE PRESENCE — realtime only, not canonical, business KPIs disabled" banner and disable KPI cards while live.
-- Realtime updates via existing Supabase Realtime channel on `visitor_activity`; no new websocket infra.
-- Acceptance: switching between "Live now" and "Last 24h" flips banner + KPI availability; canonical numbers unchanged.
+| Spec phase | Status | Notes |
+|---|---|---|
+| P1 Central schema | DONE | 30 tables, richer than spec |
+| P2 Ingestion (PDF/CSV/XLSX/OCR) | DONE | `finance-manual-import` + `import_tasks` + `backfill_tasks` |
+| P3 AI classification | DONE | `finance-anomaly-scan`, `finance_expense_categories`, confidence fields present |
+| P4 Bank reconciliation | PARTIAL | `finance_backfill_scans` exists; no ING/Revolut parser yet |
+| P5 VAT engine | DONE | `finance_vat_reconciliations`, `finance_vat_summaries`, `finance-belastingdienst-export` |
+| P6 Asset register | DONE | `finance_assets`, `finance_asset_events`, `finance_asset_documents`, depreciation cron |
+| P7 Evidence vault | DONE | Full `evidence_*` family (documents, payments, suppliers, timeline, links, backup checks) |
+| P8 Finance AI | DONE | `finance-cfo-chat`, `finance-cfo-reports`, `finance-alerts-scan`, `finance_anomalies` |
+| P9 Dashboards | PARTIAL | 5 pages exist; no unified "Finance Commander" landing that composes them |
+| P10 GetPawsy integration | PARTIAL | Stripe wired; Pinterest/TikTok/GA4 cost joins not wired to finance |
+| P11 Import wizards | PARTIAL | Generic importer exists; per-source parsers (ING/Revolut/Odido/Apple) missing |
+| P12 Safety | DONE | Soft-delete / audit / version fields present on existing tables |
+| P13 Performance | DONE | `finance_search_index` + reindex function |
+| P14 Certification | DONE | `finance-v14-1-certify` |
 
-## Stage 5 — Right sidebar visitor feed + session detail drawer
-- Feed of live/recent visitors with the fields the canonical + activity sources already expose. Fields that don't exist yet (bot score, fraud score, AI purchase probability, confidence score) are marked "not tracked" — not invented.
-- Session detail drawer built from `canonical_events` for the selected `session_id`.
+### Gaps to close (this plan only builds these)
 
-## Stage 6 — Data-quality investigations (separate, evidence-first)
-Each of these gets its own PR with root-cause writeup + parity test, not a hand-wave:
-- **Pageview parity.** Reproduce the mismatch across Dashboard / CSV / Summary / Canonical / Report with real numbers, identify the diverging code path, fix, add parity test in `src/test/`.
-- **Session duration.** Audit heartbeat writer + engagement gate; propose fix; only ship after we can show measured vs previous values.
-- **Pinterest attribution.** Trace one Pinterest session end-to-end through `analytics-canonical`, Sales Commander, Customer Journey, Organic Intelligence, Revenue Forensics; document any drift.
+1. **Multi-entity readiness** — add nullable `entity_id uuid` + `entities` table + backfill default `Skidzo`. No breaking changes.
+2. **`finance` app_role** — extend `app_role` enum, update `AccountantPortalPage`/`FinanceIntelligencePage`/`CFOChatPage`/`CFOReportLibraryPage`/`AdminPaymentsPage` guards to accept `admin OR finance`.
+3. **Bank statement parsers** — new edge function `finance-bank-parse` (ING + Revolut PDF/CSV auto-detect) writing into existing `finance_import_tasks` → `evidence_payments`.
+4. **Vendor-specific invoice adapters** — extend `finance-manual-import` with adapters for Odido, Apple/Amac, Lovable, OpenAI, Shopify, CJ (patterns only; document schema stays).
+5. **Finance Commander landing page** — new `/admin/finance-commander` composing existing widgets (KPIs from `finance_health_scores`, alerts from `finance_alerts`, VAT quarter from `finance_vat_summaries`, cash flow from `evidence_payments`, missing-evidence tiles). No duplicate data pipelines.
+6. **Cost joins for ROI/ROAS/CAC** — SQL view `v_finance_channel_roi` joining `finance_expense_categories` × `orders` × existing Pinterest/TikTok/GA4 daily rollups. Consumed by Finance Commander.
 
-## Stage 7 — Desktop productivity extras
-Only after Stages 1–5 are green: resizable panels (`react-resizable-panels`), fullscreen map, keyboard shortcuts, layout persistence, one-click export, timeline replay.
+### What I will NOT do
+- Recreate any `finance_*` or `evidence_*` table.
+- Duplicate `finance-cfo-*`, `finance-vat-reconcile`, `finance-anomaly-scan`, `finance-belastingdienst-export`, `stripe-evidence-import`, `stripe-webhook`.
+- Touch Sales Commander, Organic Intelligence, Analytics Gold Standard, Visitor World Map, Pinterest, Creative Factory, CJ, Growth Lab, Funnel Health, GA4 canonical events, production validation.
 
-## Stage 8 — Render Worker audit
-Separate track. Inspect `render-worker/` config, Render env vars, `RENDER_WORKER_SECRET` / `SUPABASE_URL` presence, boot-loop logs. Deliver a written audit + concrete fixes. Not bundled into the map refactor.
+### Delivery order (one integrated wave, per your instruction)
 
-## Stage 9 — CI parity extensions
-Extend `.github/workflows/analytics-truth-parity.yml` and `scripts/analytics-truth-parity-probe.mjs` to also assert: Desktop==Mobile (same component now, so trivially true — assert via a rendered snapshot), CSV==Summary==Canonical==Widget==Map for pageviews, revenue, purchases, ATC, checkout.
+1. Migration: `entities` table + `entity_id` nullable everywhere on finance/evidence tables + `finance` role in `app_role` enum + `has_finance_access(uid)` security-definer function.
+2. Guard update: 5 finance pages switch to `has_finance_access`.
+3. Edge function: `finance-bank-parse` (ING + Revolut).
+4. Edge function extension: adapter registry inside `finance-manual-import` for Odido/Apple/Lovable/OpenAI/Shopify/CJ (invoked automatically by supplier detection).
+5. SQL view: `v_finance_channel_roi`.
+6. New page: `/admin/finance-commander` composing existing hooks + new ROI view.
+7. Nav link + route registration.
+8. Validation: reuse `finance-v14-1-certify` to certify the extended surface.
 
-## Certification policy
-No stage is marked PASS without: (a) the file diff, (b) `tsgo` + vitest green, (c) Playwright screenshot evidence at the relevant viewport, (d) for parity claims, the actual numbers side-by-side. Stages where a claim can't be honestly certified will be returned as FAIL with the blocking evidence, per the brief.
+### Manual actions I will need from you afterward
+- Upload the invoice ZIP from the previous mission (Lovable/Stripe PDFs).
+- Upload ING + Revolut statements (PDF or CSV).
+- Grant your accountant the new `finance` role via `/admin/users`.
 
-## What I need from you to start
-1. Approve this staged plan (or tell me which stages to drop / reorder).
-2. Confirm Stage 1 scope: is there still a separate legacy "desktop" map component I need to find and merge, or is `src/components/admin/VisitorWorldMap.tsx` already the only implementation? (A quick "yes it's the only one" or "look under X" saves a full-repo audit.)
-3. Confirm Stage 8 (Render Worker) can be handled as a parallel track by itself — it doesn't belong inside the map refactor.
-
-Once approved I'll execute Stage 0 → Stage 1 in the next turn and stop for review before Stage 2, so each stage's PASS is real.
+Approve this plan and I will implement steps 1–8 in one integrated build. Reject and tell me what to change (e.g. drop multi-entity, keep single guard, add more parsers).

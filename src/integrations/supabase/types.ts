@@ -21000,6 +21000,7 @@ export type Database = {
           description: string | null
           document_date: string | null
           document_type: string
+          entity_id: string | null
           file_size: number | null
           id: string
           imported_at: string
@@ -21044,6 +21045,7 @@ export type Database = {
           description?: string | null
           document_date?: string | null
           document_type: string
+          entity_id?: string | null
           file_size?: number | null
           id?: string
           imported_at?: string
@@ -21088,6 +21090,7 @@ export type Database = {
           description?: string | null
           document_date?: string | null
           document_type?: string
+          entity_id?: string | null
           file_size?: number | null
           id?: string
           imported_at?: string
@@ -21123,6 +21126,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "evidence_documents_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "evidence_documents_is_duplicate_of_fkey"
             columns: ["is_duplicate_of"]
@@ -21217,6 +21227,7 @@ export type Database = {
           bank_txn_reference: string | null
           created_at: string
           currency: string
+          entity_id: string | null
           id: string
           invoice_document_id: string | null
           metadata: Json
@@ -21234,6 +21245,7 @@ export type Database = {
           bank_txn_reference?: string | null
           created_at?: string
           currency?: string
+          entity_id?: string | null
           id?: string
           invoice_document_id?: string | null
           metadata?: Json
@@ -21251,6 +21263,7 @@ export type Database = {
           bank_txn_reference?: string | null
           created_at?: string
           currency?: string
+          entity_id?: string | null
           id?: string
           invoice_document_id?: string | null
           metadata?: Json
@@ -21264,6 +21277,13 @@ export type Database = {
           vat_minor?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "evidence_payments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "evidence_payments_invoice_document_id_fkey"
             columns: ["invoice_document_id"]
@@ -21612,6 +21632,7 @@ export type Database = {
           belastingdienst_ready: boolean
           completeness_score: number
           created_at: string
+          entity_id: string | null
           fiscal_year: number
           generated_at: string | null
           id: string
@@ -21628,6 +21649,7 @@ export type Database = {
           belastingdienst_ready?: boolean
           completeness_score?: number
           created_at?: string
+          entity_id?: string | null
           fiscal_year: number
           generated_at?: string | null
           id?: string
@@ -21644,6 +21666,7 @@ export type Database = {
           belastingdienst_ready?: boolean
           completeness_score?: number
           created_at?: string
+          entity_id?: string | null
           fiscal_year?: number
           generated_at?: string | null
           id?: string
@@ -21656,7 +21679,15 @@ export type Database = {
           total_vat_minor?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_annual_dossiers_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_anomalies: {
         Row: {
@@ -21816,6 +21847,7 @@ export type Database = {
           current_book_value_cents: number | null
           depreciation_method: string | null
           depreciation_years: number | null
+          entity_id: string | null
           id: string
           metadata: Json | null
           name: string
@@ -21840,6 +21872,7 @@ export type Database = {
           current_book_value_cents?: number | null
           depreciation_method?: string | null
           depreciation_years?: number | null
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
           name: string
@@ -21864,6 +21897,7 @@ export type Database = {
           current_book_value_cents?: number | null
           depreciation_method?: string | null
           depreciation_years?: number | null
+          entity_id?: string | null
           id?: string
           metadata?: Json | null
           name?: string
@@ -21880,6 +21914,13 @@ export type Database = {
           warranty_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_assets_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "finance_assets_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -22110,6 +22151,48 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_entities: {
+        Row: {
+          base_currency: string
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          legal_name: string
+          slug: string
+          trade_name: string | null
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          base_currency?: string
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_name: string
+          slug: string
+          trade_name?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          base_currency?: string
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_name?: string
+          slug?: string
+          trade_name?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
       finance_expense_categories: {
         Row: {
           color: string | null
@@ -22217,6 +22300,7 @@ export type Database = {
           created_at: string
           currency: string | null
           due_at: string | null
+          entity_id: string | null
           evidence_document_id: string | null
           expected_amount_minor: number | null
           expected_type: string
@@ -22231,6 +22315,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           due_at?: string | null
+          entity_id?: string | null
           evidence_document_id?: string | null
           expected_amount_minor?: number | null
           expected_type?: string
@@ -22245,6 +22330,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           due_at?: string | null
+          entity_id?: string | null
           evidence_document_id?: string | null
           expected_amount_minor?: number | null
           expected_type?: string
@@ -22257,6 +22343,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "finance_import_tasks_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "finance_import_tasks_evidence_document_id_fkey"
             columns: ["evidence_document_id"]
             isOneToOne: false
@@ -22268,6 +22361,7 @@ export type Database = {
       finance_reports: {
         Row: {
           created_at: string
+          entity_id: string | null
           file_size: number | null
           generated_at: string
           id: string
@@ -22283,6 +22377,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          entity_id?: string | null
           file_size?: number | null
           generated_at?: string
           id?: string
@@ -22298,6 +22393,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          entity_id?: string | null
           file_size?: number | null
           generated_at?: string
           id?: string
@@ -22311,7 +22407,15 @@ export type Database = {
           summary?: Json
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_reports_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_risk_findings: {
         Row: {
@@ -22408,6 +22512,7 @@ export type Database = {
           created_at: string
           currency: string
           duplicate_of: string | null
+          entity_id: string | null
           expected_next_invoice_at: string | null
           id: string
           is_active: boolean
@@ -22430,6 +22535,7 @@ export type Database = {
           created_at?: string
           currency?: string
           duplicate_of?: string | null
+          entity_id?: string | null
           expected_next_invoice_at?: string | null
           id?: string
           is_active?: boolean
@@ -22452,6 +22558,7 @@ export type Database = {
           created_at?: string
           currency?: string
           duplicate_of?: string | null
+          entity_id?: string | null
           expected_next_invoice_at?: string | null
           id?: string
           is_active?: boolean
@@ -22467,7 +22574,15 @@ export type Database = {
           updated_at?: string
           vat_pct?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_subscriptions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_vat_reconciliations: {
         Row: {
@@ -22477,6 +22592,7 @@ export type Database = {
           delta_minor: number
           delta_pct: number
           details: Json
+          entity_id: string | null
           evidence_document_id: string | null
           evidence_sha256: string | null
           flagged_documents: Json
@@ -22499,6 +22615,7 @@ export type Database = {
           delta_minor?: number
           delta_pct?: number
           details?: Json
+          entity_id?: string | null
           evidence_document_id?: string | null
           evidence_sha256?: string | null
           flagged_documents?: Json
@@ -22521,6 +22638,7 @@ export type Database = {
           delta_minor?: number
           delta_pct?: number
           details?: Json
+          entity_id?: string | null
           evidence_document_id?: string | null
           evidence_sha256?: string | null
           flagged_documents?: Json
@@ -22538,6 +22656,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "finance_vat_reconciliations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "finance_vat_reconciliations_evidence_document_id_fkey"
             columns: ["evidence_document_id"]
             isOneToOne: false
@@ -22552,6 +22677,7 @@ export type Database = {
           created_at: string
           currency: string
           details: Json
+          entity_id: string | null
           id: string
           invoice_count: number
           non_recoverable_minor: number
@@ -22569,6 +22695,7 @@ export type Database = {
           created_at?: string
           currency?: string
           details?: Json
+          entity_id?: string | null
           id?: string
           invoice_count?: number
           non_recoverable_minor?: number
@@ -22586,6 +22713,7 @@ export type Database = {
           created_at?: string
           currency?: string
           details?: Json
+          entity_id?: string | null
           id?: string
           invoice_count?: number
           non_recoverable_minor?: number
@@ -22598,7 +22726,15 @@ export type Database = {
           updated_at?: string
           vat_total_minor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_vat_summaries_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       first_sales_certifications: {
         Row: {
@@ -71169,6 +71305,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_finance_channel_roi: {
+        Row: {
+          day: string | null
+          orders_count: number | null
+          revenue: number | null
+          roas: number | null
+          spend: number | null
+          supplier: string | null
+        }
+        Relationships: []
+      }
       v_fse_envelope_quality: {
         Row: {
           event_kind: string | null
@@ -72238,6 +72385,7 @@ export type Database = {
         Args: { n: number; successes: number; z?: number }
         Returns: number
       }
+      has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -72748,7 +72896,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer" | "accountant" | "auditor"
+      app_role: "admin" | "customer" | "accountant" | "auditor" | "finance"
       canonical_event_name:
         | "CANONICAL_PAGE_VIEW"
         | "CANONICAL_PRODUCT_VIEW"
@@ -72938,7 +73086,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer", "accountant", "auditor"],
+      app_role: ["admin", "customer", "accountant", "auditor", "finance"],
       canonical_event_name: [
         "CANONICAL_PAGE_VIEW",
         "CANONICAL_PRODUCT_VIEW",
