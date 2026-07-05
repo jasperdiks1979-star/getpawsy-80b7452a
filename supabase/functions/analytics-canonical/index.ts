@@ -34,6 +34,7 @@
 // MUST derive from `totals` + `sessions[]` — never from a parallel
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,6 +94,9 @@ const TTL_MS = 30_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
 
   try {
     const url = new URL(req.url);
