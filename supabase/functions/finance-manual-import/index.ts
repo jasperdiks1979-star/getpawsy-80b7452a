@@ -44,6 +44,35 @@ function slugify(s: string): string {
   return s.toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "unknown";
 }
 
+// Supplier adapter registry — canonicalises vendor patterns so
+// downstream categorisation / matching stays consistent regardless of
+// how the AI transcribes the header. Extend as new vendors appear.
+const SUPPLIER_ADAPTERS: Array<{
+  match: RegExp;
+  slug: string;
+  name: string;
+  category: string;
+  country?: string;
+  website?: string;
+}> = [
+  { match: /lovable\.dev|lovable\.app|\blovable\b/i, slug: "lovable", name: "Lovable", category: "Software", country: "SE", website: "https://lovable.dev" },
+  { match: /openai\.com|\bopenai\b|chatgpt/i, slug: "openai", name: "OpenAI", category: "AI", country: "US", website: "https://openai.com" },
+  { match: /stripe\.com|\bstripe\b/i, slug: "stripe", name: "Stripe", category: "Payments", country: "US", website: "https://stripe.com" },
+  { match: /shopify\.com|\bshopify\b/i, slug: "shopify", name: "Shopify", category: "Ecommerce", country: "CA", website: "https://shopify.com" },
+  { match: /cjdropshipping|cj[- ]?dropshipping/i, slug: "cj-dropshipping", name: "CJ Dropshipping", category: "Fulfillment", country: "CN", website: "https://cjdropshipping.com" },
+  { match: /apple\.com\/bill|\bapple inc\b|\bamac\b/i, slug: "apple", name: "Apple", category: "Hardware", country: "US", website: "https://apple.com" },
+  { match: /\bodido\b|t-mobile netherlands|t-mobile nl/i, slug: "odido", name: "Odido", category: "Telecom", country: "NL", website: "https://odido.nl" },
+  { match: /google (cloud|ads|workspace|ireland)/i, slug: "google", name: "Google", category: "Software", country: "IE", website: "https://google.com" },
+  { match: /\bmeta platforms\b|facebook ireland/i, slug: "meta", name: "Meta", category: "Marketing", country: "IE", website: "https://meta.com" },
+];
+
+function applySupplierAdapter(rawName: string | null, ocrHint: string | null): (typeof SUPPLIER_ADAPTERS)[number] | null {
+  const hay = `${rawName ?? ""} ${ocrHint ?? ""}`.trim();
+  if (!hay) return null;
+  for (const a of SUPPLIER_ADAPTERS) if (a.match.test(hay)) return a;
+  return null;
+}
+
 const EXTRACT_SCHEMA_PROMPT = `You are a Dutch/EU/US bookkeeping OCR assistant. Read the attached invoice, receipt, or bill and return STRICT JSON with these fields (null if not present, never invent):
 {
   "supplier_name": string|null,
@@ -174,7 +203,9 @@ Deno.serve(async (req) => {
     const override = body.override ?? {};
 
     const supplierName: string | null = override.supplier_name ?? ai?.supplier_name ?? body.hint_supplier ?? null;
-    const supplierSlug = supplierName ? slugify(supplierName) : null;
+    const adapter = applySupplierAdapter(supplierName, ai?.category_hint ?? null);
+    const canonicalName = adapter?.name ?? supplierName;
+    const supplierSlug = adapter?.slug ?? (canonicalName ? slugify(canonicalName) : null);
     const documentType: string = override.document_type ?? ai?.document_type ?? body.hint_document_type ?? "invoice";
     const invoiceNumber: string | null = override.invoice_number ?? ai?.invoice_number ?? null;
     const documentDate: string | null = override.document_date ?? ai?.document_date ?? null;
@@ -183,24 +214,24 @@ Deno.serve(async (req) => {
     const currency: string | null = (override.currency ?? ai?.currency ?? null)?.toUpperCase?.() ?? null;
     const amountTotal: number | null = override.amount_total ?? ai?.amount_total ?? null;
     const amountVat: number | null = override.amount_vat ?? ai?.amount_vat ?? null;
-    const category: string = override.category ?? ai?.category_hint ?? body.hint_category ?? "expense";
+    const category: string = override.category ?? adapter?.category ?? ai?.category_hint ?? body.hint_category ?? "expense";
     const taxCountry: string | null = override.tax_country ?? ai?.tax_country ?? ai?.supplier_country ?? null;
     const confidence: number = typeof ai?.confidence === "number" ? ai.confidence : (ai ? 0.6 : 0.0);
 
     // Upsert supplier
     let supplierId: string | null = null;
-    if (supplierName && supplierSlug) {
+    if (canonicalName && supplierSlug) {
       const { data: sup } = await admin.from("evidence_suppliers")
         .select("id").eq("slug", supplierSlug).maybeSingle();
       if (sup?.id) {
         supplierId = sup.id;
       } else {
         const { data: created, error: cErr } = await admin.from("evidence_suppliers").insert({
-          name: supplierName,
+          name: canonicalName,
           slug: supplierSlug,
-          website: ai?.supplier_website ?? null,
+          website: adapter?.website ?? ai?.supplier_website ?? null,
           vat_number: ai?.supplier_vat_number ?? null,
-          country: ai?.supplier_country ?? null,
+          country: adapter?.country ?? ai?.supplier_country ?? null,
           currency: currency ?? "USD",
           category: category,
         }).select("id").single();
@@ -213,7 +244,7 @@ Deno.serve(async (req) => {
     const vatMinor = amountVat != null ? Math.round(Number(amountVat) * 100) : null;
 
     const title = [
-      supplierName ?? "Manual upload",
+      canonicalName ?? "Manual upload",
       documentType,
       invoiceNumber ? `#${invoiceNumber}` : null,
       documentDate ?? null,
@@ -227,7 +258,7 @@ Deno.serve(async (req) => {
       category,
       subcategory: ai?.category_hint ?? null,
       supplier_id: supplierId,
-      supplier_name: supplierName,
+      supplier_name: canonicalName,
       document_date: documentDate,
       period_start: periodStart,
       period_end: periodEnd,
