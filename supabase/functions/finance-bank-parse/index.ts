@@ -209,7 +209,7 @@ Rules: amount is signed (negative=debit/outflow, positive=credit/inflow). Never 
       description: String(t.description || ""),
       counterparty: t.counterparty ?? null,
       reference: t.reference ?? null,
-    })).filter((t) => t.paid_at && isFinite(t.amount_minor));
+    })).filter((t: ParsedTxn) => t.paid_at && isFinite(t.amount_minor));
   } catch (e) {
     console.error("bank pdf json parse", e);
     return [];
