@@ -1,0 +1,1 @@
+ALTER VIEW public.v_finance_channel_roi SET (security_invoker = true);
