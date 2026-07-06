@@ -17,6 +17,7 @@ import { SupplierIntelligencePanel } from "@/components/admin/finance/SupplierIn
 import { ChannelCostIntelligencePanel } from "@/components/admin/finance/ChannelCostIntelligencePanel";
 import { CFODashboardPanel } from "@/components/admin/finance/CFODashboardPanel";
 import { FinanceMonitorsPanel } from "@/components/admin/finance/FinanceMonitorsPanel";
+import { ForensicDocumentsPanel } from "@/components/admin/finance/ForensicDocumentsPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -206,6 +207,9 @@ export default function FinanceCommanderPage() {
 
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />
+
+      {/* Wave D1: Forensic Document Understanding */}
+      <ForensicDocumentsPanel entityId={entityId === "all" ? null : entityId} />
 
       {/* Wave B: CFO Dashboard */}
       <CFODashboardPanel entityId={entityId} />
