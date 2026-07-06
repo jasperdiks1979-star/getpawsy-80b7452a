@@ -21387,10 +21387,18 @@ export type Database = {
       }
       evidence_suppliers: {
         Row: {
+          avg_invoice_minor: number | null
           category: string | null
+          confidence_score: number | null
           country: string | null
           created_at: string
           currency: string | null
+          duplicate_history: number
+          expected_bookkeeping_category: string | null
+          expected_currency: string | null
+          expected_cycle: string | null
+          expected_layout: Json
+          expected_vat_pct: number | null
           first_invoice_at: string | null
           health_score: number | null
           id: string
@@ -21398,9 +21406,12 @@ export type Database = {
           invoice_completeness_pct: number | null
           invoice_count: number
           latest_invoice_at: string | null
+          learned_patterns: Json
           metadata: Json
+          missing_invoice_history: number
           name: string
           notes: string | null
+          profile_last_computed_at: string | null
           risk_score: number | null
           slug: string
           spend_ytd_cents: number | null
@@ -21408,12 +21419,21 @@ export type Database = {
           updated_at: string
           vat_number: string | null
           website: string | null
+          yoy_spend_minor: number | null
         }
         Insert: {
+          avg_invoice_minor?: number | null
           category?: string | null
+          confidence_score?: number | null
           country?: string | null
           created_at?: string
           currency?: string | null
+          duplicate_history?: number
+          expected_bookkeeping_category?: string | null
+          expected_currency?: string | null
+          expected_cycle?: string | null
+          expected_layout?: Json
+          expected_vat_pct?: number | null
           first_invoice_at?: string | null
           health_score?: number | null
           id?: string
@@ -21421,9 +21441,12 @@ export type Database = {
           invoice_completeness_pct?: number | null
           invoice_count?: number
           latest_invoice_at?: string | null
+          learned_patterns?: Json
           metadata?: Json
+          missing_invoice_history?: number
           name: string
           notes?: string | null
+          profile_last_computed_at?: string | null
           risk_score?: number | null
           slug: string
           spend_ytd_cents?: number | null
@@ -21431,12 +21454,21 @@ export type Database = {
           updated_at?: string
           vat_number?: string | null
           website?: string | null
+          yoy_spend_minor?: number | null
         }
         Update: {
+          avg_invoice_minor?: number | null
           category?: string | null
+          confidence_score?: number | null
           country?: string | null
           created_at?: string
           currency?: string | null
+          duplicate_history?: number
+          expected_bookkeeping_category?: string | null
+          expected_currency?: string | null
+          expected_cycle?: string | null
+          expected_layout?: Json
+          expected_vat_pct?: number | null
           first_invoice_at?: string | null
           health_score?: number | null
           id?: string
@@ -21444,9 +21476,12 @@ export type Database = {
           invoice_completeness_pct?: number | null
           invoice_count?: number
           latest_invoice_at?: string | null
+          learned_patterns?: Json
           metadata?: Json
+          missing_invoice_history?: number
           name?: string
           notes?: string | null
+          profile_last_computed_at?: string | null
           risk_score?: number | null
           slug?: string
           spend_ytd_cents?: number | null
@@ -21454,6 +21489,7 @@ export type Database = {
           updated_at?: string
           vat_number?: string | null
           website?: string | null
+          yoy_spend_minor?: number | null
         }
         Relationships: []
       }
@@ -22524,6 +22560,98 @@ export type Database = {
           },
         ]
       }
+      finance_reconciliation_matches: {
+        Row: {
+          amount_delta_minor: number | null
+          confidence: number
+          created_at: string
+          created_by: string
+          date_delta_days: number | null
+          entity_id: string | null
+          id: string
+          invoice_document_id: string | null
+          match_signals: Json
+          match_status: string
+          match_type: string
+          payment_id: string | null
+          reasoning: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          superseded_by: string | null
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_delta_minor?: number | null
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          date_delta_days?: number | null
+          entity_id?: string | null
+          id?: string
+          invoice_document_id?: string | null
+          match_signals?: Json
+          match_status?: string
+          match_type: string
+          payment_id?: string | null
+          reasoning?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          superseded_by?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_delta_minor?: number | null
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          date_delta_days?: number | null
+          entity_id?: string | null
+          id?: string
+          invoice_document_id?: string | null
+          match_signals?: Json
+          match_status?: string
+          match_type?: string
+          payment_id?: string | null
+          reasoning?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          superseded_by?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_reconciliation_matches_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_reconciliation_matches_invoice_document_id_fkey"
+            columns: ["invoice_document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_reconciliation_matches_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_reconciliation_matches_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_reports: {
         Row: {
           created_at: string
@@ -22675,18 +22803,25 @@ export type Database = {
           amount_minor: number
           cadence: string
           cancelled_at: string | null
+          confidence_score: number | null
           created_at: string
           currency: string
+          cycle_detected: string | null
           duplicate_of: string | null
           entity_id: string | null
           expected_next_invoice_at: string | null
+          forecast_annual_minor: number | null
           id: string
+          intel_last_computed_at: string | null
           is_active: boolean
           last_seen_at: string | null
           missing_invoice_flag: boolean | null
           notes: string | null
           price_history: Json
+          price_trend: string | null
           product_name: string
+          reasoning: Json
+          renewal_risk: string | null
           renews_at: string | null
           started_at: string | null
           supplier_slug: string
@@ -22698,18 +22833,25 @@ export type Database = {
           amount_minor: number
           cadence: string
           cancelled_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           currency?: string
+          cycle_detected?: string | null
           duplicate_of?: string | null
           entity_id?: string | null
           expected_next_invoice_at?: string | null
+          forecast_annual_minor?: number | null
           id?: string
+          intel_last_computed_at?: string | null
           is_active?: boolean
           last_seen_at?: string | null
           missing_invoice_flag?: boolean | null
           notes?: string | null
           price_history?: Json
+          price_trend?: string | null
           product_name: string
+          reasoning?: Json
+          renewal_risk?: string | null
           renews_at?: string | null
           started_at?: string | null
           supplier_slug: string
@@ -22721,18 +22863,25 @@ export type Database = {
           amount_minor?: number
           cadence?: string
           cancelled_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           currency?: string
+          cycle_detected?: string | null
           duplicate_of?: string | null
           entity_id?: string | null
           expected_next_invoice_at?: string | null
+          forecast_annual_minor?: number | null
           id?: string
+          intel_last_computed_at?: string | null
           is_active?: boolean
           last_seen_at?: string | null
           missing_invoice_flag?: boolean | null
           notes?: string | null
           price_history?: Json
+          price_trend?: string | null
           product_name?: string
+          reasoning?: Json
+          renewal_risk?: string | null
           renews_at?: string | null
           started_at?: string | null
           supplier_slug?: string
@@ -22746,6 +22895,56 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_supplier_memory: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          last_seen_at: string
+          observations: number
+          reasoning: string | null
+          rule_key: string
+          rule_value: Json
+          source: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          observations?: number
+          reasoning?: string | null
+          rule_key: string
+          rule_value: Json
+          source?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          observations?: number
+          reasoning?: string | null
+          rule_key?: string
+          rule_value?: Json
+          source?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_supplier_memory_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
             referencedColumns: ["id"]
           },
         ]
