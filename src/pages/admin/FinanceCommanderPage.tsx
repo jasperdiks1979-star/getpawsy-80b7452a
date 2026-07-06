@@ -13,6 +13,10 @@ import {
 import { FinanceIngestionPanel } from "@/components/admin/finance/FinanceIngestionPanel";
 import { EntitySelector } from "@/components/admin/finance/EntitySelector";
 import { TaxReadinessPanel } from "@/components/admin/finance/TaxReadinessPanel";
+import { SupplierIntelligencePanel } from "@/components/admin/finance/SupplierIntelligencePanel";
+import { ChannelCostIntelligencePanel } from "@/components/admin/finance/ChannelCostIntelligencePanel";
+import { CFODashboardPanel } from "@/components/admin/finance/CFODashboardPanel";
+import { FinanceMonitorsPanel } from "@/components/admin/finance/FinanceMonitorsPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -202,6 +206,18 @@ export default function FinanceCommanderPage() {
 
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />
+
+      {/* Wave B: CFO Dashboard */}
+      <CFODashboardPanel entityId={entityId} />
+
+      {/* Wave B: Channel Cost Intelligence */}
+      <ChannelCostIntelligencePanel entityId={entityId} />
+
+      {/* Wave B: Supplier Intelligence */}
+      <SupplierIntelligencePanel entityId={entityId} />
+
+      {/* Wave B: Finance AI Monitors */}
+      <FinanceMonitorsPanel entityId={entityId} />
 
       {/* Alerts + Quick links */}
       <div className="grid gap-4 lg:grid-cols-3">
