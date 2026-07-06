@@ -20992,137 +20992,215 @@ export type Database = {
       evidence_documents: {
         Row: {
           amount_minor: number | null
+          bookkeeping_category: string | null
+          bookkeeping_readiness: string | null
           category: string
           classification: string | null
           classification_confidence: number | null
+          country: string | null
           created_at: string
           currency: string | null
           description: string | null
           document_date: string | null
           document_type: string
+          due_date: string | null
           entity_id: string | null
+          expense_category: string | null
+          extraction_confidence: number | null
           file_size: number | null
+          fx_rate: number | null
           id: string
+          import_vat_minor: number | null
           imported_at: string
           integrity_verified: boolean
+          invoice_date: string | null
           invoice_number: string | null
           is_duplicate_of: string | null
           is_immutable: boolean
+          kvk: string | null
           last_verified: string | null
+          legal_name: string | null
           metadata: Json
           mime_type: string | null
+          missing_fields: Json
+          non_deductible_vat_minor: number | null
+          ocr_confidence: number | null
           ocr_status: string
           ocr_text: string | null
           original_filename: string | null
+          payment_date: string | null
+          payment_method: string | null
           period_end: string | null
           period_start: string | null
+          po_number: string | null
           public_path: string | null
+          quality_reasons: Json
+          quality_score: number | null
+          recoverable_vat_minor: number | null
           reference: string | null
+          reverse_charge: boolean | null
           search_vector: unknown
           sha256: string
           source: string | null
           storage_bucket: string
           storage_path: string | null
           subcategory: string | null
+          subtotal_minor: number | null
           supersedes: string | null
           supplier_id: string | null
           supplier_name: string | null
           tags: string[]
           tax_country: string | null
           title: string
+          total_minor: number | null
           updated_at: string
           uploader: string | null
+          validation_state: string | null
           vat_minor: number | null
+          vat_number: string | null
+          vat_pct: number | null
           version: number
         }
         Insert: {
           amount_minor?: number | null
+          bookkeeping_category?: string | null
+          bookkeeping_readiness?: string | null
           category: string
           classification?: string | null
           classification_confidence?: number | null
+          country?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           document_date?: string | null
           document_type: string
+          due_date?: string | null
           entity_id?: string | null
+          expense_category?: string | null
+          extraction_confidence?: number | null
           file_size?: number | null
+          fx_rate?: number | null
           id?: string
+          import_vat_minor?: number | null
           imported_at?: string
           integrity_verified?: boolean
+          invoice_date?: string | null
           invoice_number?: string | null
           is_duplicate_of?: string | null
           is_immutable?: boolean
+          kvk?: string | null
           last_verified?: string | null
+          legal_name?: string | null
           metadata?: Json
           mime_type?: string | null
+          missing_fields?: Json
+          non_deductible_vat_minor?: number | null
+          ocr_confidence?: number | null
           ocr_status?: string
           ocr_text?: string | null
           original_filename?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
           period_end?: string | null
           period_start?: string | null
+          po_number?: string | null
           public_path?: string | null
+          quality_reasons?: Json
+          quality_score?: number | null
+          recoverable_vat_minor?: number | null
           reference?: string | null
+          reverse_charge?: boolean | null
           search_vector?: unknown
           sha256: string
           source?: string | null
           storage_bucket?: string
           storage_path?: string | null
           subcategory?: string | null
+          subtotal_minor?: number | null
           supersedes?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           tags?: string[]
           tax_country?: string | null
           title: string
+          total_minor?: number | null
           updated_at?: string
           uploader?: string | null
+          validation_state?: string | null
           vat_minor?: number | null
+          vat_number?: string | null
+          vat_pct?: number | null
           version?: number
         }
         Update: {
           amount_minor?: number | null
+          bookkeeping_category?: string | null
+          bookkeeping_readiness?: string | null
           category?: string
           classification?: string | null
           classification_confidence?: number | null
+          country?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           document_date?: string | null
           document_type?: string
+          due_date?: string | null
           entity_id?: string | null
+          expense_category?: string | null
+          extraction_confidence?: number | null
           file_size?: number | null
+          fx_rate?: number | null
           id?: string
+          import_vat_minor?: number | null
           imported_at?: string
           integrity_verified?: boolean
+          invoice_date?: string | null
           invoice_number?: string | null
           is_duplicate_of?: string | null
           is_immutable?: boolean
+          kvk?: string | null
           last_verified?: string | null
+          legal_name?: string | null
           metadata?: Json
           mime_type?: string | null
+          missing_fields?: Json
+          non_deductible_vat_minor?: number | null
+          ocr_confidence?: number | null
           ocr_status?: string
           ocr_text?: string | null
           original_filename?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
           period_end?: string | null
           period_start?: string | null
+          po_number?: string | null
           public_path?: string | null
+          quality_reasons?: Json
+          quality_score?: number | null
+          recoverable_vat_minor?: number | null
           reference?: string | null
+          reverse_charge?: boolean | null
           search_vector?: unknown
           sha256?: string
           source?: string | null
           storage_bucket?: string
           storage_path?: string | null
           subcategory?: string | null
+          subtotal_minor?: number | null
           supersedes?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           tags?: string[]
           tax_country?: string | null
           title?: string
+          total_minor?: number | null
           updated_at?: string
           uploader?: string | null
+          validation_state?: string | null
           vat_minor?: number | null
+          vat_number?: string | null
+          vat_pct?: number | null
           version?: number
         }
         Relationships: [
@@ -22151,6 +22229,56 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_document_extractions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          document_id: string
+          document_version: number
+          extractor: string
+          id: string
+          model: string | null
+          normalized: Json
+          raw_extraction: Json
+          reasoning: Json
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          document_version?: number
+          extractor: string
+          id?: string
+          model?: string | null
+          normalized?: Json
+          raw_extraction?: Json
+          reasoning?: Json
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          document_version?: number
+          extractor?: string
+          id?: string
+          model?: string | null
+          normalized?: Json
+          raw_extraction?: Json
+          reasoning?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_document_extractions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_entities: {
         Row: {
           base_currency: string
@@ -22353,6 +22481,44 @@ export type Database = {
             foreignKeyName: "finance_import_tasks_evidence_document_id_fkey"
             columns: ["evidence_document_id"]
             isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_invoice_quality: {
+        Row: {
+          checks: Json
+          computed_at: string
+          document_id: string
+          id: string
+          reasons: Json
+          recommendations: Json
+          score: number
+        }
+        Insert: {
+          checks?: Json
+          computed_at?: string
+          document_id: string
+          id?: string
+          reasons?: Json
+          recommendations?: Json
+          score: number
+        }
+        Update: {
+          checks?: Json
+          computed_at?: string
+          document_id?: string
+          id?: string
+          reasons?: Json
+          recommendations?: Json
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_invoice_quality_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
             referencedRelation: "evidence_documents"
             referencedColumns: ["id"]
           },
@@ -22577,6 +22743,96 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "finance_subscriptions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_vat_classifications: {
+        Row: {
+          bucket: string
+          confidence: number | null
+          country: string | null
+          created_at: string
+          document_id: string
+          entity_id: string | null
+          fiscal_year: number | null
+          id: string
+          import_vat: boolean
+          mixed: boolean
+          non_deductible_minor: number | null
+          oss: boolean
+          outside_eu: boolean
+          private_use_pct: number | null
+          quarter: string | null
+          reasoning: Json
+          recoverable_minor: number | null
+          reverse_charge: boolean
+          source: string
+          updated_at: string
+          vat_minor: number | null
+          vat_pct: number | null
+        }
+        Insert: {
+          bucket: string
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          document_id: string
+          entity_id?: string | null
+          fiscal_year?: number | null
+          id?: string
+          import_vat?: boolean
+          mixed?: boolean
+          non_deductible_minor?: number | null
+          oss?: boolean
+          outside_eu?: boolean
+          private_use_pct?: number | null
+          quarter?: string | null
+          reasoning?: Json
+          recoverable_minor?: number | null
+          reverse_charge?: boolean
+          source?: string
+          updated_at?: string
+          vat_minor?: number | null
+          vat_pct?: number | null
+        }
+        Update: {
+          bucket?: string
+          confidence?: number | null
+          country?: string | null
+          created_at?: string
+          document_id?: string
+          entity_id?: string | null
+          fiscal_year?: number | null
+          id?: string
+          import_vat?: boolean
+          mixed?: boolean
+          non_deductible_minor?: number | null
+          oss?: boolean
+          outside_eu?: boolean
+          private_use_pct?: number | null
+          quarter?: string | null
+          reasoning?: Json
+          recoverable_minor?: number | null
+          reverse_charge?: boolean
+          source?: string
+          updated_at?: string
+          vat_minor?: number | null
+          vat_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_vat_classifications_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_vat_classifications_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "finance_entities"
