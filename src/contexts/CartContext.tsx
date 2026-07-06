@@ -69,7 +69,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('pawsy-cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Legacy shapes: `{items:[...]}`, `null`, object, or corrupted string.
+      // Guarantee we always hand React an array — a non-array here caused
+      // `items.reduce is not a function` to crash the entire storefront
+      // (blocking ATC / checkout for every visitor).
+      const arr = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray((parsed as { items?: unknown })?.items)
+          ? (parsed as { items: CartItem[] }).items
+          : [];
+      return arr.filter(
+        (it): it is CartItem =>
+          !!it && typeof it === 'object' &&
+          typeof (it as CartItem).id === 'string' &&
+          typeof (it as CartItem).quantity === 'number' &&
+          typeof (it as CartItem).price === 'number',
+      );
     } catch {
       localStorage.removeItem('pawsy-cart');
       return [];
@@ -436,8 +453,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   }, [items.length]);
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const safeItems = Array.isArray(items) ? items : [];
+  const totalItems = safeItems.reduce((sum, item) => sum + (item?.quantity ?? 0), 0);
+  const totalPrice = safeItems.reduce((sum, item) => sum + (item?.price ?? 0) * (item?.quantity ?? 0), 0);
 
   return (
     <CartContext.Provider value={{
