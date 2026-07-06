@@ -31,6 +31,8 @@ import { AccountantExportCenterPanel } from "@/components/admin/finance/Accounta
 import { CorrectionsLogPanel } from "@/components/admin/finance/CorrectionsLogPanel";
 import { ImportQueueMonitorPanel } from "@/components/admin/finance/ImportQueueMonitorPanel";
 import { LearningRulesCenterPanel } from "@/components/admin/finance/LearningRulesCenterPanel";
+import { FinanceStateProvider, useFinanceState } from "@/lib/finance/state/FinanceStateProvider";
+import { ContradictionBanner } from "@/components/admin/finance/shared/ContradictionBanner";
 
 type HealthScore = {
   score_name: string | null;
@@ -63,6 +65,28 @@ const quickLinks = [
 export default function FinanceCommanderPage() {
   const { isLoading } = useAuth();
   const [entityId, setEntityId] = useState<string>("all");
+  const canonicalEntity = entityId && entityId !== "all" ? entityId : null;
+  return (
+    <FinanceStateProvider entityId={canonicalEntity}>
+      <FinanceCommanderInner
+        isLoading={isLoading}
+        entityId={entityId}
+        setEntityId={setEntityId}
+      />
+    </FinanceStateProvider>
+  );
+}
+
+function FinanceCommanderInner({
+  isLoading,
+  entityId,
+  setEntityId,
+}: {
+  isLoading: boolean;
+  entityId: string;
+  setEntityId: (v: string) => void;
+}) {
+  const { state: canonical } = useFinanceState();
   const [health, setHealth] = useState<HealthScore | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [vat, setVat] = useState<VatSummary | null>(null);
@@ -161,9 +185,14 @@ export default function FinanceCommanderPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{health?.score_value ?? "—"}<span className="text-base text-muted-foreground">/100</span></div>
+            <div className="text-3xl font-semibold">
+              {health?.score_value ?? canonical.finance_readiness.value ?? "—"}
+              <span className="text-base text-muted-foreground">/100</span>
+            </div>
             <div className="text-xs text-muted-foreground truncate">
-              {health?.score_name ?? "no snapshot yet"}{health?.score_grade ? ` · grade ${health.score_grade}` : ""}
+              {health?.score_name ??
+                (canonical.loading ? "Loading canonical state…" : "Finance readiness (canonical)")}
+              {health?.score_grade ? ` · grade ${health.score_grade}` : ""}
             </div>
           </CardContent>
         </Card>
@@ -208,7 +237,9 @@ export default function FinanceCommanderPage() {
               <div key={s.key} className="rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">{s.label}</span>
-                  <Badge variant={s.score < 60 ? "destructive" : s.score < 80 ? "secondary" : "outline"}>{s.score}</Badge>
+                  <Badge variant={s.score < 60 ? "destructive" : s.score < 80 ? "secondary" : "outline"}>
+                    {s.score}/100
+                  </Badge>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.reason}</div>
                 {s.action && <div className="mt-1 text-xs text-primary line-clamp-2">→ {s.action}</div>}
@@ -217,6 +248,9 @@ export default function FinanceCommanderPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Canonical contradiction detector */}
+      <ContradictionBanner />
 
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />

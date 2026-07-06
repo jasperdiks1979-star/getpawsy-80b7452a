@@ -1,105 +1,70 @@
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * Belastingdienst Readiness — pure view over canonical FinanceState.
+ * Readiness % is upper-bounded by tax_readiness in reconcile.ts, and a
+ * Verified badge is impossible while any contradiction exists.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Landmark, RefreshCw } from "lucide-react";
-import { readinessStatus, STATUS_VARIANT } from "@/lib/finance/format";
+import { useFinanceState } from "@/lib/finance/state/FinanceStateProvider";
+import { StatusBadge } from "./shared/StatusBadge";
+import { ExplainPopover } from "./shared/ExplainPopover";
+import { formatMoneyMinor } from "@/lib/finance/format";
 
-type Resp = {
-  ok: boolean;
-  period: { year: number; quarter: number; start: string; end: string };
-  totals: {
-    recoverable_minor: number; reverse_charge_minor: number;
-    import_vat_minor: number; non_deductible_minor: number; potential_minor: number;
-  };
-  counts: {
-    invoices: number; receipts: number; payments: number;
-    missing_invoices: number; missing_receipts: number;
-    unmatched_payments: number; low_confidence_documents: number;
-    vat_classifications: number;
-  };
-  readiness_pct: number;
-  status: "ready" | "review" | "unsafe";
-  disclaimer: string;
-};
-
-const fmt = (m: number | null | undefined) =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(m / 100);
-
-function derivedStatus(d: Resp) {
-  // Canonical: never show Verified if any evidence is missing or payments unmatched.
-  const s = readinessStatus({
-    readinessPct: d.readiness_pct,
-    missingInvoices: d.counts.missing_invoices,
-    missingReceipts: d.counts.missing_receipts,
-    unmatchedPayments: d.counts.unmatched_payments,
-    confidence: d.readiness_pct,
-  });
-  return { label: s, variant: STATUS_VARIANT[s] };
-}
-
-export function BelastingdienstReadinessPanel({ entityId }: { entityId: string | null }) {
-  const [data, setData] = useState<Resp | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data } = await supabase.functions.invoke("finance-belastingdienst-readiness", {
-      body: { entity_id: entityId },
-    });
-    setData(data as Resp);
-    setLoading(false);
-  }, [entityId]);
-
-  useEffect(() => { void load(); }, [load]);
-
-  const st = data ? derivedStatus(data) : null;
+export function BelastingdienstReadinessPanel(_props: { entityId?: string | null }) {
+  const { state, refresh } = useFinanceState();
+  const b = state.belastingdienst;
 
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2 flex-wrap">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex items-center gap-2 flex-wrap">
           <Landmark className="h-4 w-4" /> Belastingdienst Readiness
-          {data && <Badge variant="outline">{data.period.year} Q{data.period.quarter}</Badge>}
-          {st && <Badge variant={st.variant}>{st.label}</Badge>}
+          <Badge variant="outline">{state.period.label}</Badge>
+          <StatusBadge status={b.status} />
+          <ExplainPopover title="Belastingdienst readiness" explanation={b.explanation} bullets={b.sources.map((s) => `Source: ${s}`)} />
         </CardTitle>
-        <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+        <Button size="sm" variant="ghost" onClick={() => void refresh()} disabled={state.loading}>
+          <RefreshCw className={`h-3 w-3 ${state.loading ? "animate-spin" : ""}`} />
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
-        {!data ? (
-          <div className="text-sm text-muted-foreground">{loading ? "Loading…" : "No data."}</div>
-        ) : (
-          <>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Readiness</span>
-                <span className="font-semibold">{data.readiness_pct}%</span>
-              </div>
-              <Progress value={data.readiness_pct} className="h-2" />
-            </div>
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-muted-foreground">Readiness</span>
+            <span className="font-semibold tabular-nums">{b.value}%</span>
+          </div>
+          <Progress value={b.value} className="h-2" />
+        </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-              <Cell label="Recoverable VAT" value={fmt(data.totals.recoverable_minor)} />
-              <Cell label="Reverse-charge" value={fmt(data.totals.reverse_charge_minor)} />
-              <Cell label="Import VAT" value={fmt(data.totals.import_vat_minor)} />
-              <Cell label="Non-deductible" value={fmt(data.totals.non_deductible_minor)} />
-              <Cell label="Potential VAT" value={fmt(data.totals.potential_minor)} />
-            </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+          <Cell label="Recoverable VAT" value={formatMoneyMinor(state.vat.recoverable_minor.value)} />
+          <Cell label="Reverse-charge" value={formatMoneyMinor(state.vat.reverse_charge_minor.value)} />
+          <Cell label="Import VAT" value={formatMoneyMinor(state.vat.import_vat_minor.value)} />
+          <Cell label="Non-deductible" value={formatMoneyMinor(state.vat.non_deductible_minor.value)} />
+          <Cell label="Potential VAT" value={formatMoneyMinor(state.vat.potential_minor.value)} />
+        </div>
 
-            <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant={data.counts.missing_invoices ? "destructive" : "outline"}>{data.counts.missing_invoices} missing invoices</Badge>
-              <Badge variant={data.counts.missing_receipts ? "destructive" : "outline"}>{data.counts.missing_receipts} missing receipts</Badge>
-              <Badge variant={data.counts.unmatched_payments ? "destructive" : "outline"}>{data.counts.unmatched_payments} unmatched payments</Badge>
-              <Badge variant={data.counts.low_confidence_documents ? "secondary" : "outline"}>{data.counts.low_confidence_documents} low-confidence docs</Badge>
-              <Badge variant="outline">{data.counts.vat_classifications} VAT classifications</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">{data.disclaimer}</p>
-          </>
-        )}
+        <div className="flex flex-wrap gap-2 text-xs">
+          <Badge variant={state.missing_invoices.value ? "destructive" : "outline"}>
+            {state.missing_invoices.value} missing invoices
+          </Badge>
+          <Badge variant={state.missing_receipts.value ? "destructive" : "outline"}>
+            {state.missing_receipts.value} missing receipts
+          </Badge>
+          <Badge variant={state.unmatched_payments.value ? "destructive" : "outline"}>
+            {state.unmatched_payments.value} unmatched payments
+          </Badge>
+          <Badge variant={state.low_confidence_documents.value ? "secondary" : "outline"}>
+            {state.low_confidence_documents.value} low-confidence docs
+          </Badge>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Finance Commander prepares the filing package — it never files returns automatically.
+        </p>
       </CardContent>
     </Card>
   );
