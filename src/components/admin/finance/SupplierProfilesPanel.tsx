@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Brain, RefreshCw, Search } from "lucide-react";
+import {
+  formatMoneyMinor,
+  normalizeSupplierConfidence,
+  STATUS_VARIANT,
+  displaySupplier,
+  type FinanceStatus,
+} from "@/lib/finance/format";
 
 type Profile = {
   id: string; name: string; slug: string;
@@ -17,14 +24,14 @@ type Profile = {
 };
 
 const fmt = (m: number | null | undefined, cur = "EUR") =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: cur }).format(m / 100);
+  formatMoneyMinor(m, cur, "No spend recorded");
 
-function labelFor(p: Profile) {
-  const c = p.confidence_score ?? 0;
-  if (c >= 80) return { text: "Verified", v: "default" as const };
-  if (c >= 50) return { text: "Needs Review", v: "secondary" as const };
-  if (c > 0) return { text: "Estimated", v: "outline" as const };
-  return { text: "Missing Evidence", v: "destructive" as const };
+function labelFor(p: Profile): { text: FinanceStatus; pct: number } {
+  const pct = normalizeSupplierConfidence(p.confidence_score);
+  if (pct >= 80) return { text: "Verified", pct };
+  if (pct >= 50) return { text: "Needs Review", pct };
+  if (pct > 0) return { text: "Estimated", pct };
+  return { text: "Missing Evidence", pct };
 }
 
 export function SupplierProfilesPanel({ entityId: _entityId }: { entityId: string | null }) {
@@ -92,15 +99,15 @@ export function SupplierProfilesPanel({ entityId: _entityId }: { entityId: strin
                 const lab = labelFor(r);
                 return (
                   <tr key={r.id} className="border-t">
-                    <td className="py-1 pr-3 font-medium">{r.name}</td>
-                    <td className="py-1 pr-3">{r.expected_cycle ?? "—"}</td>
-                    <td className="py-1 pr-3">{r.expected_vat_pct != null ? `${r.expected_vat_pct}%` : "—"}</td>
-                    <td className="py-1 pr-3 text-muted-foreground">{r.expected_bookkeeping_category ?? "—"}</td>
+                    <td className="py-1 pr-3 font-medium">{displaySupplier({ name: r.name, slug: r.slug, hasEvidence: (r.confidence_score ?? 0) > 0 })}</td>
+                    <td className="py-1 pr-3">{r.expected_cycle ?? "Pending"}</td>
+                    <td className="py-1 pr-3">{r.expected_vat_pct != null ? `${Math.round(r.expected_vat_pct)}%` : "Pending VAT classification"}</td>
+                    <td className="py-1 pr-3 text-muted-foreground">{r.expected_bookkeeping_category ?? "Waiting supplier learning"}</td>
                     <td className="py-1 pr-3 text-right">{fmt(r.avg_invoice_minor, r.expected_currency ?? "EUR")}</td>
                     <td className="py-1 pr-3 text-right">{fmt(r.yoy_spend_minor, r.expected_currency ?? "EUR")}</td>
                     <td className="py-1 pr-3 text-right">{r.missing_invoice_history}</td>
                     <td className="py-1 pr-3 text-right">{r.duplicate_history}</td>
-                    <td className="py-1"><Badge variant={lab.v}>{lab.text} · {r.confidence_score ?? 0}</Badge></td>
+                    <td className="py-1"><Badge variant={STATUS_VARIANT[lab.text]}>{lab.text} · {lab.pct}%</Badge></td>
                   </tr>
                 );
               })}</tbody>
