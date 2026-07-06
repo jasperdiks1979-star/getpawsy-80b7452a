@@ -18,6 +18,10 @@ import { ChannelCostIntelligencePanel } from "@/components/admin/finance/Channel
 import { CFODashboardPanel } from "@/components/admin/finance/CFODashboardPanel";
 import { FinanceMonitorsPanel } from "@/components/admin/finance/FinanceMonitorsPanel";
 import { ForensicDocumentsPanel } from "@/components/admin/finance/ForensicDocumentsPanel";
+import { SupplierProfilesPanel } from "@/components/admin/finance/SupplierProfilesPanel";
+import { ReconciliationCenterPanel } from "@/components/admin/finance/ReconciliationCenterPanel";
+import { SubscriptionIntelligencePanel } from "@/components/admin/finance/SubscriptionIntelligencePanel";
+import { OpenFinanceTasksPanel } from "@/components/admin/finance/OpenFinanceTasksPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -210,6 +214,18 @@ export default function FinanceCommanderPage() {
 
       {/* Wave D1: Forensic Document Understanding */}
       <ForensicDocumentsPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D2: Supplier Profiles 2.0 */}
+      <SupplierProfilesPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D2: Reconciliation Center */}
+      <ReconciliationCenterPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D2: Subscription Intelligence */}
+      <SubscriptionIntelligencePanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D2: Open Finance Tasks */}
+      <OpenFinanceTasksPanel entityId={entityId === "all" ? null : entityId} />
 
       {/* Wave B: CFO Dashboard */}
       <CFODashboardPanel entityId={entityId} />
