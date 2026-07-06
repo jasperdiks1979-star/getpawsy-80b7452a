@@ -36,6 +36,7 @@ import { ContradictionBanner } from "@/components/admin/finance/shared/Contradic
 import { ConnectorHealthPanel } from "@/components/admin/finance/ConnectorHealthPanel";
 import { UnknownEvidencePanel } from "@/components/admin/finance/UnknownEvidencePanel";
 import { VatIntelligencePanel } from "@/components/admin/finance/VatIntelligencePanel";
+import { FinanceCopilotBriefingPanel } from "@/components/admin/finance/FinanceCopilotBriefingPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -254,6 +255,9 @@ function FinanceCommanderInner({
 
       {/* Canonical contradiction detector */}
       <ContradictionBanner />
+
+      {/* Phase 7+8+11+12 — Copilot briefing + production certification */}
+      <FinanceCopilotBriefingPanel entityId={entityId === "all" ? null : entityId} />
 
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />
