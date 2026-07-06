@@ -7,6 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import { FileSearch, RefreshCw, Sparkles, Landmark, Gauge, Search } from "lucide-react";
+import {
+  formatMoneyMinor,
+  formatDate,
+  documentStatus,
+  formatConfidence,
+  formatScore,
+  STATUS_VARIANT,
+  displaySupplier,
+} from "@/lib/finance/format";
 
 type Doc = {
   id: string;
@@ -28,14 +37,7 @@ type Doc = {
 };
 
 const fmtMinor = (m: number | null | undefined, cur = "EUR") =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: cur }).format(m / 100);
-
-function stateBadge(s: string | null | undefined) {
-  if (s === "verified") return { label: "Verified", v: "default" as const };
-  if (s === "needs_review") return { label: "Needs Review", v: "secondary" as const };
-  if (s === "missing_evidence") return { label: "Missing Evidence", v: "destructive" as const };
-  return { label: "Estimated", v: "outline" as const };
-}
+  formatMoneyMinor(m, cur, "Total not extracted");
 
 export function ForensicDocumentsPanel({ entityId }: { entityId: string | null }) {
   const [rows, setRows] = useState<Doc[]>([]);
@@ -118,18 +120,21 @@ export function ForensicDocumentsPanel({ entityId }: { entityId: string | null }
                 </thead>
                 <tbody>
                   {filtered.map((d) => {
-                    const b = stateBadge(d.validation_state);
+                    const ds = documentStatus(d);
                     return (
                       <tr key={d.id} className="border-t">
                         <td className="py-1 pr-3">
                           <button className="text-left font-medium hover:underline" onClick={() => openDoc(d)}>{d.title}</button>
                           {d.invoice_number && <div className="text-[10px] text-muted-foreground">#{d.invoice_number}</div>}
                         </td>
-                        <td className="py-1 pr-3 text-muted-foreground">{d.supplier_name ?? "—"}</td>
-                        <td className="py-1 pr-3 text-xs">{d.invoice_date ?? d.document_date ?? "—"}</td>
+                        <td className="py-1 pr-3 text-muted-foreground">{displaySupplier({ name: d.supplier_name, invoiceNumber: d.invoice_number, hasEvidence: true })}</td>
+                        <td className="py-1 pr-3 text-xs">{formatDate(d.invoice_date ?? d.document_date, "Invoice date missing")}</td>
                         <td className="py-1 pr-3 text-right">{fmtMinor(d.total_minor ?? d.amount_minor, d.currency ?? "EUR")}</td>
-                        <td className="py-1 pr-3 text-right">{d.quality_score != null ? `${d.quality_score}` : "—"}</td>
-                        <td className="py-1 pr-3"><Badge variant={b.v}>{b.label}</Badge></td>
+                        <td className="py-1 pr-3 text-right">{formatScore(d.quality_score)}</td>
+                        <td className="py-1 pr-3">
+                          <Badge variant={STATUS_VARIANT[ds.status]}>{ds.status}</Badge>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{ds.hint}</div>
+                        </td>
                         <td className="py-1 text-right whitespace-nowrap">
                           <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => invoke("finance-forensic-extract", d)} disabled={busy?.startsWith("finance-forensic-extract")}>
                             <Sparkles className="h-3 w-3 mr-1" />Extract
@@ -161,12 +166,12 @@ export function ForensicDocumentsPanel({ entityId }: { entityId: string | null }
               <section>
                 <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">Header</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <Field k="Supplier" v={active.supplier_name} />
-                  <Field k="VAT number" v={active.vat_number} />
-                  <Field k="Invoice #" v={active.invoice_number} />
-                  <Field k="Invoice date" v={active.invoice_date} />
+                  <Field k="Supplier" v={displaySupplier({ name: active.supplier_name, invoiceNumber: active.invoice_number, hasEvidence: true })} />
+                  <Field k="VAT number" v={active.vat_number ?? "Not on invoice"} />
+                  <Field k="Invoice #" v={active.invoice_number ?? "Not extracted"} />
+                  <Field k="Invoice date" v={formatDate(active.invoice_date, "Invoice date missing")} />
                   <Field k="Total" v={fmtMinor(active.total_minor ?? active.amount_minor, active.currency ?? "EUR")} />
-                  <Field k="Confidence" v={active.extraction_confidence != null ? `${Math.round(active.extraction_confidence * 100)}%` : "—"} />
+                  <Field k="Confidence" v={formatConfidence(active.extraction_confidence)} />
                 </div>
                 {Array.isArray(active.missing_fields) && active.missing_fields.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -235,7 +240,7 @@ function Field({ k, v }: { k: string; v: string | null | undefined }) {
   return (
     <div className="rounded border px-2 py-1">
       <div className="text-[10px] uppercase text-muted-foreground">{k}</div>
-      <div className="text-xs font-medium">{v ?? "—"}</div>
+      <div className="text-xs font-medium">{v == null || v === "" ? "Not available yet" : v}</div>
     </div>
   );
 }

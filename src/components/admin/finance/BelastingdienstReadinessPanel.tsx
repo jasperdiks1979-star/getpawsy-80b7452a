@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Landmark, RefreshCw } from "lucide-react";
+import { readinessStatus, STATUS_VARIANT } from "@/lib/finance/format";
 
 type Resp = {
   ok: boolean;
@@ -27,11 +28,17 @@ type Resp = {
 const fmt = (m: number | null | undefined) =>
   m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(m / 100);
 
-const statusBadge = (s: Resp["status"]) => {
-  if (s === "ready") return { label: "Verified", variant: "default" as const };
-  if (s === "review") return { label: "Needs Review", variant: "secondary" as const };
-  return { label: "Missing Evidence", variant: "destructive" as const };
-};
+function derivedStatus(d: Resp) {
+  // Canonical: never show Verified if any evidence is missing or payments unmatched.
+  const s = readinessStatus({
+    readinessPct: d.readiness_pct,
+    missingInvoices: d.counts.missing_invoices,
+    missingReceipts: d.counts.missing_receipts,
+    unmatchedPayments: d.counts.unmatched_payments,
+    confidence: d.readiness_pct,
+  });
+  return { label: s, variant: STATUS_VARIANT[s] };
+}
 
 export function BelastingdienstReadinessPanel({ entityId }: { entityId: string | null }) {
   const [data, setData] = useState<Resp | null>(null);
@@ -48,7 +55,7 @@ export function BelastingdienstReadinessPanel({ entityId }: { entityId: string |
 
   useEffect(() => { void load(); }, [load]);
 
-  const st = data ? statusBadge(data.status) : null;
+  const st = data ? derivedStatus(data) : null;
 
   return (
     <Card>
