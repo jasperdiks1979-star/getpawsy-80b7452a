@@ -240,7 +240,7 @@ function Field({ k, v }: { k: string; v: string | null | undefined }) {
   return (
     <div className="rounded border px-2 py-1">
       <div className="text-[10px] uppercase text-muted-foreground">{k}</div>
-      <div className="text-xs font-medium">{v ?? "—"}</div>
+      <div className="text-xs font-medium">{v == null || v === "" ? "Not available yet" : v}</div>
     </div>
   );
 }
