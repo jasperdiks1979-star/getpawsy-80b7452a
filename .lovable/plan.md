@@ -1,61 +1,79 @@
-# Finance Commander Intelligence Engine — Delivery Plan
+# Finance Commander — Canonical State Engine Refactor
 
-This is a 14-phase forensic-accounting expansion (~30+ edge functions, ~15 UI panels, schema extensions, VAT engine, learning loop, exports). Shipping it in one turn would be irresponsible — it would either be shallow across the board or break existing Finance Commander functionality. I will deliver it in **4 additive waves**, each independently reviewable, typechecked, and reversible. Nothing existing gets rewritten; every table/edge function/UI is additive.
+Goal: eliminate every remaining contradiction (Tax Readiness 67% vs Belastingdienst 100%; KPI 29 missing vs Tax 18 missing; supplier confidence 29% vs 100%; raw reconciliation JSON; desktop tables on mobile) by making every Finance panel a pure view over one canonical state object.
 
-## Guardrails (apply to every wave)
-- Zero rewrites of existing Finance Commander code, Pinterest, Organic Intel, Sales Commander, Creative Factory, CJ, Stripe, Analytics, GA4, Funnel Health, Visitor World Map.
-- All schema changes are additive columns / new tables with GRANTs + RLS + `has_finance_access`.
-- Every enriched field carries `confidence`, `source`, `reasoning` — labels: Verified / Estimated / Needs Review / Missing Evidence.
-- No auto tax filing. Ever.
-- Every correction writes to a learning table so future OCR/classification improves.
-- Idempotent imports (SHA-256 on file + supplier + invoice_number).
+Strictly scoped to Finance Commander. No changes to Pinterest, Creative Factory, Analytics, GA4, Sales Commander, Organic Intelligence, Growth Lab, Checkout, Stripe flow, CJ, or DB schemas.
 
-## Wave D1 — Forensic Document + VAT Core (Phases 1, 3, 5)
-New/extended tables (additive columns on `evidence_documents`, new tables for enrichment):
-- Extend `evidence_documents` with: `legal_name, vat_number, kvk, invoice_number, po_number, invoice_date, due_date, payment_date, currency, fx_rate, subtotal_minor, vat_minor, vat_pct, total_minor, reverse_charge, import_vat_minor, non_deductible_vat_minor, recoverable_vat_minor, country, entity_id, payment_method, bookkeeping_category, expense_category, ocr_confidence, extraction_confidence, missing_fields jsonb, validation_state, bookkeeping_readiness, quality_score, quality_reasons jsonb`.
-- New table `finance_document_extractions` — versioned raw AI/OCR extractions (never overwritten).
-- New table `finance_vat_classifications` — per-document VAT bucket + reasoning.
-- New table `finance_invoice_quality` — 15-check forensic score.
+## Architecture
 
-Edge functions:
-- `finance-forensic-extract` — reads existing OCR + Lovable AI (`google/gemini-3-flash-preview`) → writes enrichment + confidence + missing_fields. Idempotent per document version.
-- `finance-vat-classify` — Dutch VAT engine (21/9/0/RC/import/OSS/outside-EU/mixed/private) with per-line reasoning.
-- `finance-invoice-quality` — 15-check forensic scorer.
+```text
+edge fns (finance-kpi-strip, finance-tax-readiness,
+finance-belastingdienst, finance-health-signals,
+finance-supplier-*, finance-reconcile-*, …)
+                │
+                ▼
+   useCanonicalFinanceState()  ◄── single React hook
+                │  (merges + reconciles all sources,
+                │   runs Contradiction Detector,
+                │   produces one FinanceState object)
+                ▼
+   FinanceStateProvider (Context)
+                │
+   ┌────────────┼─────────────┬─────────────┬────────────┐
+   ▼            ▼             ▼             ▼            ▼
+ KPI Strip  Tax Readiness  Belasting-   Health       Supplier
+                           dienst       Signals      panels
+   (pure presentation — no fetches, no math, no status logic)
+```
 
-UI (additive):
-- `ForensicDocumentDrawer.tsx` — expand row in Import Center / Supplier view to show extraction, VAT classification, quality checks, confidence.
-- Extends existing `TaxReadinessPanel` with per-bucket VAT breakdown pulled from `finance_vat_classifications`.
+## Deliverables
 
-## Wave D2 — Supplier & Subscription Intelligence 2.0 + Reconciliation (Phases 2, 6, 7)
-- Extend `evidence_suppliers` with: `expected_layout jsonb, expected_cycle, expected_vat_pct, expected_currency, expected_bookkeeping_category, avg_invoice_minor, yoy_spend_minor, missing_invoice_history int, duplicate_history int, risk_score, learned_patterns jsonb`.
-- New table `finance_supplier_memory` — per-supplier learned rules from corrections.
-- Extend `finance_subscriptions` with: `cycle_detected, next_expected_at, price_trend, duplicate_of, unused_since, forecast_annual_minor, renewal_risk`.
-- Edge functions:
-  - `finance-supplier-learn` — recomputes supplier profile from history + corrections.
-  - `finance-reconcile-payments` — invoice ↔ bank ↔ Stripe ↔ subscription matching; creates `Missing Invoice`, `Outstanding Payment`, `Duplicate Evidence` items in existing `finance_anomalies`.
-  - `finance-subscription-intel` — cycle/duplicate/unused detection + 12-month forecast.
-- UI: extend existing `SupplierIntelligencePanel` with drill-down; new `SubscriptionIntelligencePanel.tsx`; new `ReconciliationPanel.tsx`.
+### New files
+- `src/lib/finance/state/types.ts` — `FinanceState`, `FinanceStatus` union (`Verified | Estimated | Needs Review | Missing Evidence | Pending | Waiting Evidence | No Activity | Not Applicable | Unknown`), metric envelopes `{value, status, explanation, sources[]}`.
+- `src/lib/finance/state/statusEngine.ts` — single `resolveStatus(metric, ctx)` function. Only place status is computed.
+- `src/lib/finance/state/reconcile.ts` — merges raw edge-fn payloads into one canonical object. Picks the **single** authoritative source per metric (e.g. `missing_invoices` = tax-readiness result; KPI + Health + Belastingdienst all consume that number). Downgrades any dependent metric that outranks its base (Belastingdienst ≤ Tax Readiness; VAT-refund confidence ≤ evidence confidence; supplier confidence ≤ doc confidence).
+- `src/lib/finance/state/contradictionDetector.ts` — asserts invariants; returns `Contradiction[]`. Verified is blocked whenever any invariant fails.
+- `src/lib/finance/state/useCanonicalFinanceState.ts` + `FinanceStateProvider.tsx` — one fetcher, one context. All panels consume via `useFinanceState()` / selectors.
+- `src/lib/finance/state/explain.ts` — turns raw signals (recon scores, supplier learning inputs) into CFO-readable bullet lists.
+- `src/components/admin/finance/shared/ResponsiveTable.tsx` — table on desktop, stacked cards on mobile. Used by every list panel.
+- `src/components/admin/finance/shared/StatusBadge.tsx`, `MetricCell.tsx`, `ExplainPopover.tsx`.
+- `src/components/admin/finance/shared/ContradictionBanner.tsx` — surfaces detector output at top of Finance Commander page.
 
-## Wave D3 — Belastingdienst Readiness + CFO Insights + KPI Strip + Anomaly Learning (Phases 4, 8, 9, 11, 13, KPI)
-- Edge functions:
-  - `finance-bookkeeping-classify` — expense classifier with 95% threshold → Needs Review below.
-  - `finance-belastingdienst-readiness` — extends readiness with completeness matrix + traffic lights per quarter/entity.
-  - `finance-cfo-daily` — writes daily insight snapshot (burn, runway, top savings, refund estimate, risks) to existing `finance_reports`.
-  - `finance-vat-refund-estimate` — quarterly/YTD/annual recoverable VAT with assumptions log.
-  - Extend `finance-anomaly-scan` with duplicates / VAT / entity / currency / subscription / cost-spike / missing-evidence detectors.
-- UI:
-  - New `BelastingdienstReadinessPanel.tsx` (green/yellow/red per quarter, per entity).
-  - New `CFOInsightsPanel.tsx` (daily insights with reasoning).
-  - New `VatRefundEstimatorPanel.tsx` (assumptions visible).
-  - New `KpiStrip.tsx` at top of Finance Commander — Recoverable VAT, Outstanding VAT, Next refund estimate, Evidence completeness, Supplier confidence, Avg invoice quality, Duplicate risk, Missing invoices/receipts, Unmatched payments, Tax/Bookkeeping/Accountant readiness, Financial confidence score.
+### Edits (presentation-only, no local math)
+- `FinanceCommanderPage.tsx` — wrap in `FinanceStateProvider`; render `ContradictionBanner`.
+- `FinanceKpiStripPanel.tsx`, `TaxReadinessPanel.tsx`, `BelastingdienstReadinessPanel.tsx`, `OpenFinanceTasksPanel.tsx`, `ForensicDocumentsPanel.tsx`, `SupplierProfilesPanel.tsx`, `SupplierIntelligencePanel.tsx`, `ReconciliationCenterPanel.tsx`, `VatRefundEstimatorPanel.tsx`, plus Health Signals / Imports / Exports / Developer panels — strip local fetches + status logic, read from `useFinanceState()`, adopt `ResponsiveTable` + `StatusBadge` + `MetricCell`.
+- Reconciliation panel — hide raw JSON/scores; show `Exact Match / Strong Match / Needs Review` + ticked criteria + "N candidates evaluated".
+- Supplier Intelligence — every % has an `ExplainPopover` listing the inputs (invoices analysed, extraction quality, classification confidence, learning progress).
+- Document rows — show pipeline stage badge (`Uploaded → OCR → Extraction → VAT → Supplier → Verified`) instead of bare "Invoice date missing".
 
-## Wave D4 — Accountant Exports + Learning Loop + Performance Hardening (Phases 10, 12, 14)
-- Extend `finance-accountant-export` with export shapes for Exact Online, Moneybird, Twinfield, AFAS, e-Boekhouden (CSV/XLSX/PDF/JSON) + full audit + bookkeeper ZIP package including reconciliation reports.
-- New table `finance_corrections_log` — every manual UI edit writes here; `finance-learn-from-corrections` cron promotes stable patterns into supplier memory + classifier weights.
-- Performance: extend `finance-manual-import` with a queued worker path (parallel OCR up to N, retry queue, progress rows on `finance_import_tasks`, resumable ZIP expansion, idempotency via SHA-256).
-- UI: `AccountantExportCenter.tsx`, "Why did the AI decide this?" panel wired to `reasoning` JSON, correction capture on every editable field.
+### Backend (backward-compatible only, no schema change)
+- New edge fn `finance-canonical-state` that fan-outs to existing fns server-side, applies the same reconcile logic, and returns one payload. Frontend prefers this; falls back to per-panel fns if it errors. No existing endpoint removed.
+- Reuses existing tables. No migrations.
 
-## Sequencing & Approval
-Each wave ends with: typecheck, targeted smoke via Playwright on `/admin/finance-commander`, and a status note. If any wave surfaces an issue in existing behavior, I stop and repair before proceeding.
+### Self-healing
+- Add lightweight `finance-canonical-state` trigger call after any of: manual upload success, Stripe receipt ingest, bank txn import, supplier invoice arrival — already-existing edge fns are invoked in a fixed order (OCR → extraction → VAT classify → supplier learn → reconcile → refund estimate). No new schedules.
 
-Reply **"go D1"** (or D1+D2, or all) to start. If you want reordering — e.g. Belastingdienst Readiness before Supplier 2.0 — say so and I'll revise before writing code.
+### Enterprise validation
+- `src/lib/finance/state/__tests__/contradictionDetector.test.ts` — vitest asserting each invariant.
+- CI-runnable script `scripts/finance-consistency-check.mjs` invoking `finance-canonical-state` and failing on any contradiction.
+
+## Invariants enforced by detector
+1. `belastingdienst.status = Verified` ⇒ `missing_invoices = 0 ∧ missing_receipts = 0 ∧ unmatched_payments = 0 ∧ evidence_confidence = 100`.
+2. `tax_readiness_pct ≤ finance_readiness_pct`.
+3. `vat_refund.confidence ≤ evidence.confidence`.
+4. `supplier.confidence ≤ document.confidence`.
+5. KPI Strip counts ≡ Tax Readiness counts ≡ Health Signals counts (same field, one source).
+6. No metric may show `Verified` while its source `status ∈ {Needs Review, Missing Evidence, Pending, Waiting Evidence}`.
+
+## Mobile
+`ResponsiveTable` uses `md:` breakpoint — desktop table, mobile stacked card per row with label/value pairs and an expandable "Details" accordion. Applied to Open Tasks, Forensic Documents, Supplier Profiles/Intelligence, Reconciliation, Imports, Exports, Developer diagnostics.
+
+## Out of scope
+Schemas, other subsystems, checkout, Stripe, CJ, Pinterest, GA4, Analytics, Growth. No API removals; only additive endpoint `finance-canonical-state`.
+
+## Success criteria
+- One `FinanceState`; every panel imports from the provider.
+- Zero panels compute their own status or counts.
+- Contradiction Detector returns `[]` on the current dataset; if not, a banner explains what is inconsistent and blocks any `Verified` badge.
+- All list panels usable on 375px width with no horizontal scroll.
+- Typecheck clean; existing edge fns untouched; no schema migration.
