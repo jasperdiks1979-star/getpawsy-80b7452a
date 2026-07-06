@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GitMerge, PlayCircle, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { humanizeReconciliationReasoning, humanizeReconciliationSignals, formatMoneyMinor } from "@/lib/finance/format";
 
 type Match = {
   id: string; invoice_document_id: string | null; payment_id: string | null;
@@ -82,7 +83,7 @@ export function ReconciliationCenterPanel({ entityId }: { entityId: string | nul
                 <th className="py-1 pr-3 text-right">Confidence</th>
                 <th className="py-1 pr-3 text-right">Δ amount</th>
                 <th className="py-1 pr-3 text-right">Δ days</th>
-                <th className="py-1 pr-3">Reasoning</th>
+                <th className="py-1 pr-3">Why</th>
                 <th className="py-1"></th>
               </tr></thead>
               <tbody>{rows.map(r => (
@@ -90,9 +91,26 @@ export function ReconciliationCenterPanel({ entityId }: { entityId: string | nul
                   <td className="py-1 pr-3">{r.match_type}</td>
                   <td className="py-1 pr-3"><Badge variant={badgeFor(r.match_status)}>{r.match_status}</Badge></td>
                   <td className="py-1 pr-3 text-right">{Number(r.confidence).toFixed(0)}</td>
-                  <td className="py-1 pr-3 text-right">{r.amount_delta_minor != null ? (r.amount_delta_minor / 100).toFixed(2) : "—"}</td>
+                  <td className="py-1 pr-3 text-right">{r.amount_delta_minor != null ? formatMoneyMinor(r.amount_delta_minor) : "—"}</td>
                   <td className="py-1 pr-3 text-right">{r.date_delta_days ?? "—"}</td>
-                  <td className="py-1 pr-3 text-xs text-muted-foreground max-w-[420px]">{r.reasoning ?? "—"}</td>
+                  <td className="py-1 pr-3 text-xs text-muted-foreground max-w-[420px]">
+                    {(() => {
+                      const h = humanizeReconciliationReasoning(r.reasoning);
+                      const bullets = h.bullets.length > 0 ? h.bullets : humanizeReconciliationSignals(r.match_signals);
+                      return (
+                        <div className="space-y-1">
+                          <div>{h.summary}</div>
+                          {bullets.length > 0 && (
+                            <ul className="list-none space-y-0.5">
+                              {bullets.slice(0, 6).map((b, i) => (
+                                <li key={i} className="tabular-nums">{b}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="py-1 whitespace-nowrap">
                     {r.match_status === "proposed" && (
                       <>
