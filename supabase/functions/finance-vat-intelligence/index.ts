@@ -76,12 +76,12 @@ Deno.serve(async (req) => {
     const potentialReasons: Record<string, number> = {};
     const blockedReasons: Record<string, number> = {};
 
-    for (const d of docList) {
+    const isFinancial = (d: Doc) =>
+      d.document_type === "invoice" || d.document_type === "receipt" ||
+      d.category === "invoice" || d.category === "receipt";
+    const finDocs = docList.filter(isFinancial);
+    for (const d of finDocs) {
       const c = clsByDoc.get(d.id);
-      const isFinancial =
-        d.category === "invoice" || d.category === "receipt" ||
-        d.document_type === "invoice" || d.document_type === "receipt";
-      if (!isFinancial) continue;
 
       // Missing Evidence: financial doc with no VAT figure and no classification.
       if (!c && d.vat_minor == null) {
@@ -129,8 +129,9 @@ Deno.serve(async (req) => {
       missing_evidence_minor: missing,
     };
     const total = recoverable + potential + blocked + missing;
-    const coverage = docList.length === 0 ? 0
-      : Math.round(100 * clsList.length / docList.filter((d) => d.category === "invoice" || d.category === "receipt").length || 0);
+    const finDocCount = finDocs.length;
+    const classifiedFin = finDocs.filter((d) => clsByDoc.has(d.id)).length;
+    const coverage = finDocCount === 0 ? 0 : Math.round((100 * classifiedFin) / finDocCount);
 
     return new Response(JSON.stringify({
       ok: true,
@@ -139,8 +140,8 @@ Deno.serve(async (req) => {
       total_minor: total,
       classification_coverage_pct: Number.isFinite(coverage) ? coverage : 0,
       counts: {
-        financial_documents: docList.filter((d) => d.category === "invoice" || d.category === "receipt").length,
-        classified: clsList.length,
+        financial_documents: finDocCount,
+        classified: classifiedFin,
         missing_evidence_documents: missingDocs.length,
       },
       reasons: { potential: potentialReasons, blocked: blockedReasons },
