@@ -24,8 +24,7 @@ type Kpi = {
   period: { year: number; quarter: number };
 };
 
-const fmt = (m: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(m / 100);
+type FinanceStatusVariant = "default" | "secondary" | "destructive" | "outline";
 
 export function FinanceKpiStripPanel({ entityId: _ }: { entityId: string | null }) {
   const [k, setK] = useState<Kpi | null>(null);
@@ -91,8 +90,6 @@ export function FinanceKpiStripPanel({ entityId: _ }: { entityId: string | null 
           : { label: "Pending", tone: "outline" };
     }
   };
-
-  type FinanceStatusVariant = "default" | "secondary" | "destructive" | "outline";
 
   return (
     <Card>
