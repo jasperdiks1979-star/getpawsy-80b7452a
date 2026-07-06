@@ -221,58 +221,24 @@ export default function FinanceCommanderPage() {
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />
 
-      {/* Wave D1: Forensic Document Understanding */}
-      <ForensicDocumentsPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D2: Supplier Profiles 2.0 */}
-      <SupplierProfilesPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D2: Reconciliation Center */}
-      <ReconciliationCenterPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D2: Subscription Intelligence */}
-      <SubscriptionIntelligencePanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D2: Open Finance Tasks */}
-      <OpenFinanceTasksPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D3: Finance KPI Strip */}
+      {/* CFO flow: KPI → Belastingdienst → Missing Evidence → Forensic → Reconciliation → Suppliers → Subs → VAT Refund → CFO Insights → Imports → Exports → Learning → Developer */}
       <FinanceKpiStripPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D3: Belastingdienst Readiness */}
       <BelastingdienstReadinessPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D3: VAT Refund Estimator */}
-      <VatRefundEstimatorPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D3: CFO Insights */}
-      <CFOInsightsPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D3: Anomaly Learning Monitor */}
-      <AnomalyLearningMonitorPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D4: Accountant Export Center */}
-      <AccountantExportCenterPanel entityId={entityId === "all" ? null : entityId} />
-
-      {/* Wave D4: Corrections Log */}
-      <CorrectionsLogPanel />
-
-      {/* Wave D4: Import Queue Monitor */}
-      <ImportQueueMonitorPanel />
-
-      {/* Wave D4: Learning Rules Center */}
-      <LearningRulesCenterPanel />
-
-      {/* Wave B: CFO Dashboard */}
-      <CFODashboardPanel entityId={entityId} />
-
-      {/* Wave B: Channel Cost Intelligence */}
-      <ChannelCostIntelligencePanel entityId={entityId} />
-
-      {/* Wave B: Supplier Intelligence */}
+      <OpenFinanceTasksPanel entityId={entityId === "all" ? null : entityId} />
+      <ForensicDocumentsPanel entityId={entityId === "all" ? null : entityId} />
+      <ReconciliationCenterPanel entityId={entityId === "all" ? null : entityId} />
+      <SupplierProfilesPanel entityId={entityId === "all" ? null : entityId} />
       <SupplierIntelligencePanel entityId={entityId} />
-
-      {/* Wave B: Finance AI Monitors */}
+      <SubscriptionIntelligencePanel entityId={entityId === "all" ? null : entityId} />
+      <VatRefundEstimatorPanel entityId={entityId === "all" ? null : entityId} />
+      <CFOInsightsPanel entityId={entityId === "all" ? null : entityId} />
+      <CFODashboardPanel entityId={entityId} />
+      <ChannelCostIntelligencePanel entityId={entityId} />
+      <AccountantExportCenterPanel entityId={entityId === "all" ? null : entityId} />
+      <AnomalyLearningMonitorPanel entityId={entityId === "all" ? null : entityId} />
+      <CorrectionsLogPanel />
+      <LearningRulesCenterPanel />
+      <ImportQueueMonitorPanel />
       <FinanceMonitorsPanel entityId={entityId} />
 
       {/* Alerts + Quick links */}
