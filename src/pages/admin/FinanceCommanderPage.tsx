@@ -27,6 +27,10 @@ import { VatRefundEstimatorPanel } from "@/components/admin/finance/VatRefundEst
 import { CFOInsightsPanel } from "@/components/admin/finance/CFOInsightsPanel";
 import { FinanceKpiStripPanel } from "@/components/admin/finance/FinanceKpiStripPanel";
 import { AnomalyLearningMonitorPanel } from "@/components/admin/finance/AnomalyLearningMonitorPanel";
+import { AccountantExportCenterPanel } from "@/components/admin/finance/AccountantExportCenterPanel";
+import { CorrectionsLogPanel } from "@/components/admin/finance/CorrectionsLogPanel";
+import { ImportQueueMonitorPanel } from "@/components/admin/finance/ImportQueueMonitorPanel";
+import { LearningRulesCenterPanel } from "@/components/admin/finance/LearningRulesCenterPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -246,6 +250,18 @@ export default function FinanceCommanderPage() {
 
       {/* Wave D3: Anomaly Learning Monitor */}
       <AnomalyLearningMonitorPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D4: Accountant Export Center */}
+      <AccountantExportCenterPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D4: Corrections Log */}
+      <CorrectionsLogPanel />
+
+      {/* Wave D4: Import Queue Monitor */}
+      <ImportQueueMonitorPanel />
+
+      {/* Wave D4: Learning Rules Center */}
+      <LearningRulesCenterPanel />
 
       {/* Wave B: CFO Dashboard */}
       <CFODashboardPanel entityId={entityId} />
