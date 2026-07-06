@@ -185,9 +185,14 @@ function FinanceCommanderInner({
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{health?.score_value ?? "—"}<span className="text-base text-muted-foreground">/100</span></div>
+            <div className="text-3xl font-semibold">
+              {health?.score_value ?? canonical.finance_readiness.value ?? "—"}
+              <span className="text-base text-muted-foreground">/100</span>
+            </div>
             <div className="text-xs text-muted-foreground truncate">
-              {health?.score_name ?? "no snapshot yet"}{health?.score_grade ? ` · grade ${health.score_grade}` : ""}
+              {health?.score_name ??
+                (canonical.loading ? "Loading canonical state…" : "Finance readiness (canonical)")}
+              {health?.score_grade ? ` · grade ${health.score_grade}` : ""}
             </div>
           </CardContent>
         </Card>
