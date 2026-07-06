@@ -1,7 +1,12 @@
 // finance-reconcile-payments — Wave D2
-// Matches invoices ↔ payments using amount, currency, ±14-day window,
-// supplier, invoice_number and bank_txn_reference. Never overwrites accepted matches.
-// Creates finance_import_tasks for gaps and finance_anomalies for duplicates / low-confidence.
+// Phase 5 upgrade: probabilistic reconciliation + Phase 10 self-healing invoice discovery.
+// - Deterministic reference-equality gate (payment.bank_txn_reference == invoice.invoice_number,
+//   either direction, case-insensitive) short-circuits to Verified when currency + amount agree.
+// - When a reference-exact + amount-exact + currency match is Verified, we self-heal by writing
+//   evidence_payments.invoice_document_id (only when previously NULL) so future runs and downstream
+//   reports converge without duplicating rows.
+// - Preserves ALL human-accepted / human-rejected matches (never overwrites reviewed_at IS NOT NULL).
+// - Never fabricates payments, invoices or VAT.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -51,9 +56,12 @@ function score(inv: Invoice, pay: Payment): { conf: number; signals: Record<stri
 
   if (inv.supplier_id && pay.supplier_id && inv.supplier_id === pay.supplier_id) { s += 15; signals.supplier = "match"; }
 
-  if (inv.invoice_number && pay.bank_txn_reference &&
-      pay.bank_txn_reference.toLowerCase().includes(inv.invoice_number.toLowerCase())) {
-    s += 20; signals.invoice_number_in_reference = true;
+  // Reference matching, symmetric + exact-equality gate.
+  const invNum = (inv.invoice_number ?? "").trim().toLowerCase();
+  const payRef = (pay.bank_txn_reference ?? "").trim().toLowerCase();
+  if (invNum && payRef) {
+    if (invNum === payRef) { s += 40; signals.reference_exact = true; }
+    else if (payRef.includes(invNum) || invNum.includes(payRef)) { s += 20; signals.invoice_number_in_reference = true; }
   }
   return { conf: Math.min(100, s), signals, amountDelta, dateDelta };
 }
@@ -93,6 +101,7 @@ Deno.serve(async (req) => {
     const existingKeys = new Set((existing ?? []).map((r: any) => `${r.invoice_document_id}::${r.payment_id}`));
 
     let proposed = 0, autoAccepted = 0, duplicates = 0, lowConf = 0;
+    let selfHealedLinks = 0;
 
     // seed: payments that already have invoice_document_id → accepted, if not already recorded
     for (const p of pays) {
@@ -135,23 +144,42 @@ Deno.serve(async (req) => {
       const key = `${inv.id}::${top.p.id}`;
       if (existingKeys.has(key)) continue;
 
-      const autoAccept = top.conf >= 90 && candidates.filter(c => c.conf >= 90).length === 1;
+      // Auto-accept when (a) deterministic reference match with matching currency+amount, OR
+      // (b) score ≥90 with a single dominant candidate.
+      const refExactWin =
+        top.signals.reference_exact === true &&
+        top.signals.currency === "match" &&
+        (top.signals.amount === "exact" || top.signals.amount === "near");
+      const autoAccept = refExactWin || (top.conf >= 90 && candidates.filter(c => c.conf >= 90).length === 1);
       await sb.from("finance_reconciliation_matches").insert({
         invoice_document_id: inv.id,
         payment_id: top.p.id,
         supplier_id: inv.supplier_id ?? top.p.supplier_id,
         entity_id: inv.entity_id ?? top.p.entity_id,
-        match_type: autoAccept ? "exact" : "fuzzy",
+        match_type: refExactWin ? "exact" : autoAccept ? "exact" : "fuzzy",
         match_status: autoAccept ? "accepted" : "proposed",
         confidence: top.conf,
         amount_delta_minor: top.amountDelta,
         date_delta_days: top.dateDelta,
-        match_signals: top.signals,
-        reasoning: `Score ${top.conf}. Signals: ${JSON.stringify(top.signals)}. ${candidates.length} candidates.`,
+        match_signals: { ...top.signals, candidates_evaluated: candidates.length },
+        reasoning: refExactWin
+          ? `Deterministic reference match: invoice_number == bank_txn_reference, currency ${top.signals.currency}, amount ${top.signals.amount}.`
+          : `Score ${top.conf}. Signals: ${JSON.stringify(top.signals)}. ${candidates.length} candidates.`,
         created_by: "reconciler",
       });
-      if (autoAccept) { autoAccepted++; acceptedInv.add(inv.id); acceptedPay.add(top.p.id); }
-      else { proposed++; lowConf++; }
+      if (autoAccept) {
+        autoAccepted++;
+        acceptedInv.add(inv.id);
+        acceptedPay.add(top.p.id);
+        // Phase 10 self-heal: link evidence_payments -> invoice, but ONLY when it was NULL.
+        if (refExactWin && !top.p.invoice_document_id) {
+          const { error: healErr } = await sb.from("evidence_payments")
+            .update({ invoice_document_id: inv.id })
+            .eq("id", top.p.id)
+            .is("invoice_document_id", null);
+          if (!healErr) selfHealedLinks++;
+        }
+      } else { proposed++; lowConf++; }
 
       // duplicate candidates (multiple ≥85) → anomaly
       const dupes = candidates.filter(c => c.conf >= 85);
@@ -213,6 +241,7 @@ Deno.serve(async (req) => {
       invoices: invs.length,
       payments: pays.length,
       proposed, autoAccepted, duplicates, lowConf,
+      selfHealedLinks,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {

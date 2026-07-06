@@ -35,6 +35,7 @@ import { FinanceStateProvider, useFinanceState } from "@/lib/finance/state/Finan
 import { ContradictionBanner } from "@/components/admin/finance/shared/ContradictionBanner";
 import { ConnectorHealthPanel } from "@/components/admin/finance/ConnectorHealthPanel";
 import { UnknownEvidencePanel } from "@/components/admin/finance/UnknownEvidencePanel";
+import { VatIntelligencePanel } from "@/components/admin/finance/VatIntelligencePanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -269,6 +270,7 @@ function FinanceCommanderInner({
       <SupplierIntelligencePanel entityId={entityId} />
       <SubscriptionIntelligencePanel entityId={entityId === "all" ? null : entityId} />
       <VatRefundEstimatorPanel entityId={entityId === "all" ? null : entityId} />
+      <VatIntelligencePanel entityId={entityId === "all" ? null : entityId} />
       <CFOInsightsPanel entityId={entityId === "all" ? null : entityId} />
       <CFODashboardPanel entityId={entityId} />
       <ChannelCostIntelligencePanel entityId={entityId} />
