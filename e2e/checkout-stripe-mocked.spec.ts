@@ -26,6 +26,7 @@ test("anonymous visitor triggers a valid create-checkout invocation and consumes
   const consoleLines: string[] = [];
   page.on("console", (msg) => consoleLines.push(`[${msg.type()}] ${msg.text()}`));
   page.on("pageerror", (err) => consoleLines.push(`[pageerror] ${err.message}`));
+  // ^ retained so a future failure prints the checkout debug trail on demand.
   // 1. Fetch a live in-stock product so the cart payload is realistic.
   const productsRes = await page.request.get(
     "https://nojvgfbcjgipjxpfatmm.supabase.co/rest/v1/products_public?select=id,slug,name,price,image_url,stock&limit=25",
@@ -191,18 +192,6 @@ test("anonymous visitor triggers a valid create-checkout invocation and consumes
   // Dispatch a native click directly on the button element — bypasses any
   // remaining overlay hit-testing without giving up correctness (the same
   // React onClick handler runs).
-  const preClickState = await page.evaluate(() => {
-    const btn = document.querySelector('[data-testid="checkout-cta-desktop"]') as HTMLButtonElement | null;
-    const email = (document.querySelector("#email") as HTMLInputElement | null)?.value ?? "";
-    const terms = document.getElementById("terms");
-    return {
-      btnDisabled: btn?.disabled ?? null,
-      btnText: btn?.innerText ?? null,
-      email,
-      termsState: terms?.getAttribute("data-state") ?? terms?.getAttribute("aria-checked") ?? null,
-    };
-  });
-  console.log("preClickState", preClickState);
   const handle = await stripeBtn.elementHandle();
   await handle?.evaluate((el) => (el as HTMLButtonElement).click());
   await page.waitForTimeout(500);
