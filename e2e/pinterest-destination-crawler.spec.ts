@@ -121,14 +121,19 @@ test("Pinterest destination URLs resolve to live canonical routes", async ({ req
       FROM pinterest_pin_audit
       WHERE destination_url IS NOT NULL
         AND created_at > now() - interval '90 days'
-        AND NOT EXISTS (
-          SELECT 1 FROM pinterest_pin_queue q
-          WHERE q.destination_link = pinterest_pin_audit.destination_url
-            AND q.status IN ('paused','rejected','skipped','blocked_legacy_source','failed')
-        )
-        AND EXISTS (
-          SELECT 1 FROM pinterest_pin_queue q2
-          WHERE q2.destination_link = pinterest_pin_audit.destination_url
+        -- Skip URLs whose every matching queue row is archived/dequeued
+        -- (paused, rejected, skipped, blocked_legacy_source, failed). If a URL
+        -- has no matching queue row, keep it — historical / external.
+        AND NOT (
+          EXISTS (
+            SELECT 1 FROM pinterest_pin_queue q
+            WHERE q.destination_link = pinterest_pin_audit.destination_url
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM pinterest_pin_queue q
+            WHERE q.destination_link = pinterest_pin_audit.destination_url
+              AND q.status NOT IN ('paused','rejected','skipped','blocked_legacy_source','failed')
+          )
         )
       UNION
       SELECT destination_url AS url
