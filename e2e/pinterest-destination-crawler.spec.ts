@@ -55,15 +55,16 @@ interface Row {
   slugKnown: boolean;
 }
 
-function psqlJson<T>(sql: string): T {
-  const raw = execSync(`psql -tAc ${JSON.stringify(`COPY (${sql}) TO STDOUT`)}`, {
+function psqlLines(sql: string): string[] {
+  const raw = execSync("psql -tA -v ON_ERROR_STOP=1", {
+    input: sql,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
   });
   return raw
     .split("\n")
-    .filter(Boolean)
-    .map((l) => l.trim()) as unknown as T;
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 function loadSitemapPaths(): Set<string> {
