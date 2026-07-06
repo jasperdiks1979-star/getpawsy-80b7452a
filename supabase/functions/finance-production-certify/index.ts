@@ -148,15 +148,49 @@ Deno.serve(async (req) => {
       { dry_run: true, export_type: "audit_package" },
       { "x-internal-secret": SERVICE_KEY },
     );
+    // Enterprise Stabilization: enforce Export Completeness. Compare row_counts
+    // returned by the export against canonical DB counts. Any array that is
+    // empty while the underlying table has verified rows is a FAIL.
+    const [dCount, pCount, sCount, subCount, tCount, vCount, mCount] = await Promise.all([
+      admin.from("evidence_documents").select("id", { count: "exact", head: true }),
+      admin.from("evidence_payments").select("id", { count: "exact", head: true }),
+      admin.from("evidence_suppliers").select("id", { count: "exact", head: true }),
+      admin.from("finance_subscriptions").select("id", { count: "exact", head: true }),
+      admin.from("finance_import_tasks").select("id", { count: "exact", head: true }).eq("status", "open"),
+      admin.from("finance_vat_classifications").select("id", { count: "exact", head: true }),
+      admin.from("finance_reconciliation_matches").select("id", { count: "exact", head: true }),
+    ]);
+    const canonical = {
+      invoices: dCount.count ?? 0,
+      payments: pCount.count ?? 0,
+      suppliers: sCount.count ?? 0,
+      subscriptions: subCount.count ?? 0,
+      open_tasks: tCount.count ?? 0,
+      vat: vCount.count ?? 0,
+      matches: mCount.count ?? 0,
+    };
+    const exported = exp.body?.row_counts ?? {};
+    const mismatches: string[] = [];
+    for (const k of Object.keys(canonical) as Array<keyof typeof canonical>) {
+      const c = canonical[k]; const e = Number((exported as any)[k] ?? 0);
+      if (c > 0 && e === 0) mismatches.push(`${k}: export empty but DB has ${c}`);
+      else if (c !== e) mismatches.push(`${k}: export=${e} vs DB=${c}`);
+    }
+    const totalCanonical = Object.values(canonical).reduce((a, b) => a + b, 0);
+    const totalExported = Object.values(canonical).reduce((a, k) => a + Number((exported as any)[k as any] ?? 0), 0);
+    const completenessPct = totalCanonical === 0 ? 100 : Math.round((totalExported / totalCanonical) * 100);
     categories.push({
       name: "Accountant Export Pipeline",
-      verdict: !exp.ok ? "FAIL" : "PASS",
-      score: exp.ok ? 100 : 0,
+      verdict: !exp.ok ? "FAIL" : mismatches.length ? "FAIL" : "PASS",
+      score: exp.ok ? (mismatches.length ? Math.max(0, completenessPct) : 100) : 0,
       evidence: {
         bundle_files: exp.body?.files?.length ?? exp.body?.file_count ?? null,
         period: exp.body?.period ?? null,
+        canonical_counts: canonical,
+        exported_counts: exported,
+        export_completeness_pct: completenessPct,
       },
-      remaining_manual_actions: exp.body?.missing ?? [],
+      remaining_manual_actions: mismatches.length ? mismatches : (exp.body?.missing ?? []),
     });
 
     // 8. AI Copilot Briefing (deterministic, zero credits)

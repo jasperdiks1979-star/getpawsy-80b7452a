@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       const candidates = pays
         .filter(p => !acceptedPay.has(p.id))
         .map(p => ({ p, ...score(inv, p) }))
-        .filter(c => c.conf >= 50)
+        .filter(c => c.conf >= 80)
         .sort((a, b) => b.conf - a.conf);
 
       if (candidates.length === 0) continue;
@@ -150,7 +150,10 @@ Deno.serve(async (req) => {
         top.signals.reference_exact === true &&
         top.signals.currency === "match" &&
         (top.signals.amount === "exact" || top.signals.amount === "near");
-      const autoAccept = refExactWin || (top.conf >= 90 && candidates.filter(c => c.conf >= 90).length === 1);
+      // Enterprise Stabilization: auto-accept ONLY when confidence ≥95% AND
+      // the top candidate is unambiguously dominant. Deterministic reference
+      // matches remain auto-accepted regardless of score.
+      const autoAccept = refExactWin || (top.conf >= 95 && candidates.filter(c => c.conf >= 95).length === 1);
       await sb.from("finance_reconciliation_matches").insert({
         invoice_document_id: inv.id,
         payment_id: top.p.id,
