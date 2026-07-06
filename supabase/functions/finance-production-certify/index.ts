@@ -148,6 +148,7 @@ Deno.serve(async (req) => {
       { dry_run: true, export_type: "audit_package" },
       { "x-internal-secret": SERVICE_KEY },
     );
+    console.log("[certify] accountant-export", exp.status, JSON.stringify(exp.body).slice(0, 500));
     categories.push({
       name: "Accountant Export Pipeline",
       verdict: !exp.ok ? "FAIL" : "PASS",
