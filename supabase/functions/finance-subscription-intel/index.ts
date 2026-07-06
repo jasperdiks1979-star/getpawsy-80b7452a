@@ -93,7 +93,9 @@ Deno.serve(async (req) => {
         confidence_score: confidence,
         reasoning,
         intel_last_computed_at: new Date().toISOString(),
-        unused_since: daysSinceSeen != null && daysSinceSeen > 180 ? new Date(now - daysSinceSeen * 86400000).toISOString().slice(0, 10) : s['unused_since' as keyof Sub] as any ?? null,
+        unused_since: daysSinceSeen != null && daysSinceSeen > 180
+          ? new Date(now - daysSinceSeen * 86400000).toISOString().slice(0, 10)
+          : null,
       }).eq("id", s.id);
       updated++;
     }
