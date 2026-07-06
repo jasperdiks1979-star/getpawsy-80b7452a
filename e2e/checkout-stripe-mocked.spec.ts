@@ -146,15 +146,27 @@ test("anonymous visitor triggers a valid create-checkout invocation and consumes
   await emailInput.waitFor({ state: "visible", timeout: 10_000 });
   await emailInput.fill("forensic-e2e@example.test");
 
-  // Terms checkbox (Radix). The handler back-syncs from data-state, so
-  // clicking the visible control is enough.
-  const termsToggle = page.locator("#terms").first();
-  if (await termsToggle.count()) {
-    await termsToggle.click();
-  } else {
-    // Fallback: label click
-    await page.getByText(/terms of service/i).first().click();
+  // Terms checkbox — Radix. Try role-based check first; fall back to
+  // dispatching a native click on the trigger.
+  const termsBox = page.getByRole("checkbox", { name: /terms|accept/i }).first();
+  try {
+    await termsBox.check({ timeout: 3_000 });
+  } catch {
+    const t = page.locator("#terms").first();
+    const h = await t.elementHandle();
+    await h?.evaluate((el) => (el as HTMLElement).click());
   }
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            document.getElementById("terms")?.getAttribute("data-state") ??
+            document.getElementById("terms")?.getAttribute("aria-checked"),
+        ),
+      { timeout: 5_000, message: "terms checkbox must reach checked state" },
+    )
+    .toMatch(/checked|true/);
 
   // 7. Click the Stripe checkout button — testids are the stable contract.
   //    Try desktop first, fall back to mobile (viewport-dependent visibility).
