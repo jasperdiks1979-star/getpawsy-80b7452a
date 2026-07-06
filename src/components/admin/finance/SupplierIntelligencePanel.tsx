@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, RefreshCw, Search } from "lucide-react";
+import { formatMoneyMinor, displaySupplier, STATUS_VARIANT, type FinanceStatus } from "@/lib/finance/format";
 
 type Supplier = {
   id: string;
@@ -23,14 +24,14 @@ type Supplier = {
 };
 
 const fmtMinor = (m: number | null | undefined, cur = "EUR") =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: cur }).format(m / 100);
+  formatMoneyMinor(m, cur, "No spend recorded");
 
-function label(s: Supplier): { text: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+function label(s: Supplier): { text: FinanceStatus } {
   const comp = s.invoice_completeness_pct ?? 0;
-  if (s.invoice_count === 0) return { text: "Missing Evidence", variant: "destructive" };
-  if (comp >= 95) return { text: "Verified", variant: "default" };
-  if (comp >= 70) return { text: "Needs Review", variant: "secondary" };
-  return { text: "Missing Evidence", variant: "destructive" };
+  if (s.invoice_count === 0) return { text: "Pending" };
+  if (comp >= 95) return { text: "Verified" };
+  if (comp >= 70) return { text: "Needs Review" };
+  return { text: "Missing Evidence" };
 }
 
 export function SupplierIntelligencePanel({ entityId }: { entityId: string | null }) {
@@ -93,13 +94,13 @@ export function SupplierIntelligencePanel({ entityId }: { entityId: string | nul
                   const lab = label(r);
                   return (
                     <tr key={r.id} className="border-t">
-                      <td className="py-1 pr-3 font-medium">{r.name}</td>
-                      <td className="py-1 pr-3 text-muted-foreground">{r.category ?? "—"}</td>
+                      <td className="py-1 pr-3 font-medium">{displaySupplier({ name: r.name, slug: r.slug, hasEvidence: r.invoice_count > 0 })}</td>
+                      <td className="py-1 pr-3 text-muted-foreground">{r.category ?? "Waiting supplier learning"}</td>
                       <td className="py-1 pr-3 text-right">{r.invoice_count}</td>
-                      <td className="py-1 pr-3 text-right">{r.invoice_completeness_pct == null ? "—" : `${Math.round(r.invoice_completeness_pct)}%`}</td>
+                      <td className="py-1 pr-3 text-right">{r.invoice_completeness_pct == null ? "Pending" : `${Math.round(r.invoice_completeness_pct)}%`}</td>
                       <td className="py-1 pr-3 text-right">{fmtMinor(r.total_paid_minor, r.currency ?? "EUR")}</td>
-                      <td className="py-1 pr-3 text-xs">{r.latest_invoice_at ? new Date(r.latest_invoice_at).toLocaleDateString() : "—"}</td>
-                      <td className="py-1"><Badge variant={lab.variant}>{lab.text}</Badge></td>
+                      <td className="py-1 pr-3 text-xs">{r.latest_invoice_at ? new Date(r.latest_invoice_at).toLocaleDateString() : "No invoices yet"}</td>
+                      <td className="py-1"><Badge variant={STATUS_VARIANT[lab.text]}>{lab.text}</Badge></td>
                     </tr>
                   );
                 })}
