@@ -271,8 +271,8 @@ const Cart = () => {
               </div>
             ))}
             
-            {/* Upsell Section */}
-            <div className="mt-8">
+            {/* Upsell Section — height reserved to prevent CLS during async load */}
+            <div className="mt-8 min-h-[520px] md:min-h-[300px]">
               <CartUpsell currentItemIds={items.map(item => item.id)} />
             </div>
           </div>
