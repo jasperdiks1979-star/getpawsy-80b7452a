@@ -1,156 +1,86 @@
-import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * Tax Readiness Center — pure view over canonical FinanceState.
+ * Counts, %, and status are guaranteed to match Belastingdienst + KPI Strip
+ * because every panel reads the same reconciled object.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Landmark, RefreshCw, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Landmark, RefreshCw } from "lucide-react";
+import { useFinanceState } from "@/lib/finance/state/FinanceStateProvider";
+import { StatusBadge } from "./shared/StatusBadge";
+import { ExplainPopover } from "./shared/ExplainPopover";
+import { formatMoneyMinor } from "@/lib/finance/format";
 
-type Light = "green" | "amber" | "red";
-
-type Readiness = {
-  ok: boolean;
-  period: { year: number; quarter: number; start: string; end: string };
-  invoices_imported: number;
-  invoices_matched: number;
-  receipts_imported: number;
-  transactions_imported: number;
-  transactions_matched: number;
-  vat: {
-    recoverable_minor: number;
-    reverse_charge_minor: number;
-    import_vat_minor: number;
-    non_deductible_minor: number;
-    potential_minor: number;
-    missing_vat_docs: number;
-  };
-  missing_invoices: number;
-  missing_receipts: number;
-  confidence_score: number;
-  readiness_pct: number;
-  traffic_lights: Record<string, Light>;
-};
-
-const fmtEUR = (m: number | null | undefined) =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(m / 100);
-
-const lightClass = (l: Light | undefined) =>
-  l === "green" ? "bg-emerald-500" : l === "amber" ? "bg-amber-500" : l === "red" ? "bg-red-500" : "bg-slate-400";
-
-const statusLabel = (readiness: number) =>
-  readiness >= 90 ? { label: "Verified", tone: "text-emerald-600", Icon: CheckCircle2 }
-  : readiness >= 70 ? { label: "Needs Review", tone: "text-amber-600", Icon: Info }
-  : { label: "Missing Evidence", tone: "text-red-600", Icon: AlertTriangle };
-
-export function TaxReadinessPanel({ entityId }: { entityId: string | null }) {
-  const [data, setData] = useState<Readiness | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true); setErr(null);
-    const { data, error } = await supabase.functions.invoke("finance-tax-readiness", {
-      body: { entity_id: entityId && entityId !== "all" ? entityId : null },
-    });
-    if (error) setErr(error.message);
-    else setData(data as Readiness);
-    setLoading(false);
-  }, [entityId]);
-
-  useEffect(() => { void load(); }, [load]);
-
-  const p = data?.period;
-  const st = data ? statusLabel(data.readiness_pct) : null;
-  const StIcon = st?.Icon;
+export function TaxReadinessPanel(_props: { entityId?: string | null }) {
+  const { state, refresh } = useFinanceState();
+  const t = state.tax_readiness;
 
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Landmark className="h-4 w-4" /> Tax Readiness Center
-          </CardTitle>
-          {p && <Badge variant="outline">{p.year} · Q{p.quarter}</Badge>}
-          {st && StIcon && (
-            <span className={`inline-flex items-center gap-1 text-xs font-medium ${st.tone}`}>
-              <StIcon className="h-3 w-3" /> {st.label}
-            </span>
-          )}
-        </div>
-        <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
+        <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+          <Landmark className="h-4 w-4" /> Tax Readiness Center
+          <Badge variant="outline">{state.period.label}</Badge>
+          <StatusBadge status={t.status} />
+          <ExplainPopover title="Tax readiness" explanation={t.explanation} bullets={t.sources.map((s) => `Source: ${s}`)} />
+        </CardTitle>
+        <Button size="sm" variant="ghost" onClick={() => void refresh()} disabled={state.loading}>
+          <RefreshCw className={`h-3 w-3 mr-1 ${state.loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {err && <div className="text-sm text-red-600">{err}</div>}
+        <div>
+          <div className="flex items-center justify-between text-sm mb-1">
+            <span className="text-muted-foreground">Overall readiness</span>
+            <span className="font-semibold tabular-nums">{t.value}%</span>
+          </div>
+          <Progress value={t.value} className="h-2" />
+        </div>
 
-        {data && (
-          <>
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-muted-foreground">Overall readiness</span>
-                <span className="font-semibold">{data.readiness_pct}%</span>
-              </div>
-              <Progress value={data.readiness_pct} className="h-2" />
-            </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <Cell label="Missing invoices" value={String(state.missing_invoices.value)} status={state.missing_invoices.status} explanation={state.missing_invoices.explanation} />
+          <Cell label="Missing receipts" value={String(state.missing_receipts.value)} status={state.missing_receipts.status} explanation={state.missing_receipts.explanation} />
+          <Cell label="Unmatched payments" value={String(state.unmatched_payments.value)} status={state.unmatched_payments.status} explanation={state.unmatched_payments.explanation} />
+          <Cell label="Evidence confidence" value={`${state.evidence_confidence.value}%`} status={state.evidence_confidence.status} explanation={state.evidence_confidence.explanation} />
+        </div>
 
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-              <TrafficCell label="Invoices matched" light={data.traffic_lights.invoices_matched}
-                value={`${data.invoices_matched}/${data.invoices_imported}`} />
-              <TrafficCell label="Transactions matched" light={data.traffic_lights.transactions_matched}
-                value={`${data.transactions_matched}/${data.transactions_imported}`} />
-              <TrafficCell label="VAT completeness" light={data.traffic_lights.vat_completeness}
-                value={data.vat.missing_vat_docs === 0 ? "Complete" : `${data.vat.missing_vat_docs} missing`} />
-              <TrafficCell label="Evidence confidence" light={data.traffic_lights.evidence_confidence}
-                value={`${data.confidence_score}%`} />
-            </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+          <VatRow label="Recoverable VAT" value={formatMoneyMinor(state.vat.recoverable_minor.value)} />
+          <VatRow label="Reverse-charge VAT" value={formatMoneyMinor(state.vat.reverse_charge_minor.value)} />
+          <VatRow label="Import VAT" value={formatMoneyMinor(state.vat.import_vat_minor.value)} />
+          <VatRow label="Non-deductible VAT" value={formatMoneyMinor(state.vat.non_deductible_minor.value)} />
+          <VatRow label="Potential VAT" value={formatMoneyMinor(state.vat.potential_minor.value)} />
+          <VatRow label="Refund estimate" value={formatMoneyMinor(state.vat.refund_estimate_minor.value)} />
+        </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
-              <VatRow label="Recoverable VAT" value={fmtEUR(data.vat.recoverable_minor)} />
-              <VatRow label="Reverse-charge VAT" value={fmtEUR(data.vat.reverse_charge_minor)} />
-              <VatRow label="Import VAT" value={fmtEUR(data.vat.import_vat_minor)} />
-              <VatRow label="Non-deductible VAT" value={fmtEUR(data.vat.non_deductible_minor)} />
-              <VatRow label="Potential VAT" value={fmtEUR(data.vat.potential_minor)} />
-              <VatRow label="Docs missing VAT" value={String(data.vat.missing_vat_docs)}
-                tone={data.vat.missing_vat_docs > 0 ? "text-amber-600" : undefined} />
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant={data.missing_invoices ? "destructive" : "outline"}>
-                {data.missing_invoices} missing invoices
-              </Badge>
-              <Badge variant={data.missing_receipts ? "destructive" : "outline"}>
-                {data.missing_receipts} missing receipts
-              </Badge>
-              <Badge variant="secondary">Prepares bookkeeping — never files returns automatically</Badge>
-            </div>
-          </>
-        )}
-        {!data && !loading && !err && (
-          <div className="text-sm text-muted-foreground">No data yet.</div>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Finance Commander prepares bookkeeping — it never files returns automatically.
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function TrafficCell({ label, value, light }: { label: string; value: string; light: Light }) {
+function Cell({ label, value, status, explanation }: { label: string; value: string; status: string; explanation: string }) {
   return (
     <div className="rounded-md border p-3">
-      <div className="flex items-center gap-2">
-        <span className={`inline-block h-2.5 w-2.5 rounded-full ${lightClass(light)}`} />
-        <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="text-xs text-muted-foreground flex items-center gap-1">
+        {label}
+        <ExplainPopover title={label} explanation={explanation} />
       </div>
       <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-1"><StatusBadge status={status as any} className="text-[10px]" /></div>
     </div>
   );
 }
 
-function VatRow({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function VatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between rounded border px-3 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`font-medium tabular-nums ${tone ?? ""}`}>{value}</span>
+      <span className="font-medium tabular-nums">{value}</span>
     </div>
   );
 }
