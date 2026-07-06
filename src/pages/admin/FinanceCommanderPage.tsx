@@ -232,7 +232,9 @@ function FinanceCommanderInner({
               <div key={s.key} className="rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">{s.label}</span>
-                  <Badge variant={s.score < 60 ? "destructive" : s.score < 80 ? "secondary" : "outline"}>{s.score}</Badge>
+                  <Badge variant={s.score < 60 ? "destructive" : s.score < 80 ? "secondary" : "outline"}>
+                    {s.score}/100
+                  </Badge>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.reason}</div>
                 {s.action && <div className="mt-1 text-xs text-primary line-clamp-2">→ {s.action}</div>}
@@ -241,6 +243,9 @@ function FinanceCommanderInner({
           </CardContent>
         </Card>
       )}
+
+      {/* Canonical contradiction detector */}
+      <ContradictionBanner />
 
       {/* Tax Readiness */}
       <TaxReadinessPanel entityId={entityId} />
