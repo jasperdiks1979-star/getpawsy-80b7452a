@@ -22,6 +22,11 @@ import { SupplierProfilesPanel } from "@/components/admin/finance/SupplierProfil
 import { ReconciliationCenterPanel } from "@/components/admin/finance/ReconciliationCenterPanel";
 import { SubscriptionIntelligencePanel } from "@/components/admin/finance/SubscriptionIntelligencePanel";
 import { OpenFinanceTasksPanel } from "@/components/admin/finance/OpenFinanceTasksPanel";
+import { BelastingdienstReadinessPanel } from "@/components/admin/finance/BelastingdienstReadinessPanel";
+import { VatRefundEstimatorPanel } from "@/components/admin/finance/VatRefundEstimatorPanel";
+import { CFOInsightsPanel } from "@/components/admin/finance/CFOInsightsPanel";
+import { FinanceKpiStripPanel } from "@/components/admin/finance/FinanceKpiStripPanel";
+import { AnomalyLearningMonitorPanel } from "@/components/admin/finance/AnomalyLearningMonitorPanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -226,6 +231,21 @@ export default function FinanceCommanderPage() {
 
       {/* Wave D2: Open Finance Tasks */}
       <OpenFinanceTasksPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D3: Finance KPI Strip */}
+      <FinanceKpiStripPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D3: Belastingdienst Readiness */}
+      <BelastingdienstReadinessPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D3: VAT Refund Estimator */}
+      <VatRefundEstimatorPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D3: CFO Insights */}
+      <CFOInsightsPanel entityId={entityId === "all" ? null : entityId} />
+
+      {/* Wave D3: Anomaly Learning Monitor */}
+      <AnomalyLearningMonitorPanel entityId={entityId === "all" ? null : entityId} />
 
       {/* Wave B: CFO Dashboard */}
       <CFODashboardPanel entityId={entityId} />
