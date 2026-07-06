@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calculator, RefreshCw } from "lucide-react";
+import { formatMoneyMinor, STATUS_VARIANT, type FinanceStatus } from "@/lib/finance/format";
 
 type Period = {
   label: string;
@@ -16,11 +17,14 @@ type Period = {
   status: "Verified" | "Estimated" | "Needs Review" | "Missing Evidence";
 };
 
-const fmt = (m: number) =>
-  new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(m / 100);
+const fmt = (m: number) => formatMoneyMinor(m, "EUR", "No amount recorded");
 
-const variantFor = (s: Period["status"]) =>
-  s === "Verified" ? "default" : s === "Estimated" ? "secondary" : s === "Needs Review" ? "secondary" : "destructive";
+function effectiveStatus(p: Period): FinanceStatus {
+  // If we have no confidence and no recoverable amount, this is Waiting Evidence, not a status.
+  if ((p.confidence ?? 0) <= 0 && p.recoverable_minor === 0 && p.potential_minor === 0) return "Pending";
+  if (p.status === "Missing Evidence") return "Missing Evidence";
+  return p.status as FinanceStatus;
+}
 
 export function VatRefundEstimatorPanel({ entityId }: { entityId: string | null }) {
   const [data, setData] = useState<{ current: Period; previous: Period; ytd: Period; projection: Period } | null>(null);
@@ -51,11 +55,16 @@ export function VatRefundEstimatorPanel({ entityId }: { entityId: string | null 
           <div key={p.label} className="rounded-md border p-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="font-semibold">{p.label}</div>
-              <Badge variant={variantFor(p.status)}>{p.status}</Badge>
+              {(() => { const s = effectiveStatus(p); return <Badge variant={STATUS_VARIANT[s]}>{s === "Pending" ? "Waiting Evidence" : s}</Badge>; })()}
             </div>
             <div className="text-2xl font-semibold tabular-nums">{fmt(p.recoverable_minor)}</div>
             <div className="text-xs text-muted-foreground">Potential {fmt(p.potential_minor)} · Missing impact {fmt(p.missing_evidence_impact_minor)}</div>
-            <div className="text-xs">Confidence: <span className="font-medium">{Math.round(p.confidence * 100)}%</span></div>
+            <div className="text-xs">
+              Confidence:{" "}
+              <span className="font-medium">
+                {(p.confidence ?? 0) > 0 ? `${Math.round(p.confidence * 100)}%` : "Waiting evidence"}
+              </span>
+            </div>
             <details className="text-xs text-muted-foreground">
               <summary className="cursor-pointer">Calculation & assumptions</summary>
               <div className="mt-1"><strong>Formula:</strong> {p.calculation}</div>
