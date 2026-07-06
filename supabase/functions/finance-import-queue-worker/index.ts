@@ -75,9 +75,11 @@ Deno.serve(async (req) => {
         // just record a timeline event so operators see progress.
         if (item.document_id) {
           await admin.from("evidence_timeline").insert({
-            document_id: item.document_id,
+            evidence_id: item.document_id,
+            event_at: new Date().toISOString(),
             event_type: "queue_processed",
-            payload: { batch_id: item.batch_id, source: item.source, filename: item.source_filename },
+            title: `Import queue processed: ${item.source_filename ?? item.source}`,
+            metadata: { batch_id: item.batch_id, source: item.source, filename: item.source_filename },
           });
         }
         await admin.from("finance_import_queue").update({
