@@ -111,16 +111,35 @@ test("Pinterest destination URLs resolve to live canonical routes", async ({ req
   expect(productSlugs.size, "must have at least 1 active product slug").toBeGreaterThan(0);
 
   // 3. Distinct Pinterest destination URLs (last 90d for pins, all for videos).
+  // Archived / dequeued queue rows (paused, rejected, skipped, blocked_legacy_source,
+  // duplicate, publish_blocked, failed) are excluded — they can never publish again,
+  // so their historical audit URLs are certified as "already actioned" and are not
+  // re-flagged as FIX / ARCHIVE on every run.
   const dbUrls = psqlLines(`
     SELECT DISTINCT url FROM (
       SELECT destination_url AS url
       FROM pinterest_pin_audit
       WHERE destination_url IS NOT NULL
         AND created_at > now() - interval '90 days'
+        -- Skip URLs whose every matching queue row is archived/dequeued
+        -- (paused, rejected, skipped, blocked_legacy_source, failed). If a URL
+        -- has no matching queue row, keep it — historical / external.
+        AND NOT (
+          EXISTS (
+            SELECT 1 FROM pinterest_pin_queue q
+            WHERE q.destination_link = pinterest_pin_audit.destination_url
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM pinterest_pin_queue q
+            WHERE q.destination_link = pinterest_pin_audit.destination_url
+              AND q.status NOT IN ('paused','rejected','skipped','blocked_legacy_source','failed')
+          )
+        )
       UNION
       SELECT destination_url AS url
       FROM pinterest_video_destination_audit
       WHERE destination_url IS NOT NULL
+        AND status NOT IN ('paused','rejected','skipped','duplicate','publish_blocked','failed')
     ) t
     WHERE url LIKE 'http%'
     ORDER BY url
