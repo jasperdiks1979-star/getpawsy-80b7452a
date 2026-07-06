@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Helmet } from 'react-helmet-async';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star, Compass } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star, Compass, Lock } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -363,10 +363,21 @@ const Cart = () => {
                       : 'w-full gap-2 shadow-lg hover:shadow-xl transition-shadow'
                   }
                 >
-                  Proceed to Checkout
+                  <Lock className="w-4 h-4" aria-hidden="true" />
+                  Secure Checkout
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
+
+              {/* Payment methods surfaced at the decision moment — reassures
+                  shoppers that Apple Pay / Google Pay / Shop Pay / cards are
+                  accepted before they tap through to Stripe. */}
+              <PaymentBadges
+                variant="dark"
+                showLabel={false}
+                methods={['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay', 'PayPal']}
+                className="mt-3 justify-center"
+              />
 
               <Link to="/products" className="block mt-3">
                 <Button variant="outline" size="lg" className={premium ? 'w-full rounded-full' : 'w-full'}>
