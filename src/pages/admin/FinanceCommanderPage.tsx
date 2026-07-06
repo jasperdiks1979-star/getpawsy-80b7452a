@@ -31,6 +31,8 @@ import { AccountantExportCenterPanel } from "@/components/admin/finance/Accounta
 import { CorrectionsLogPanel } from "@/components/admin/finance/CorrectionsLogPanel";
 import { ImportQueueMonitorPanel } from "@/components/admin/finance/ImportQueueMonitorPanel";
 import { LearningRulesCenterPanel } from "@/components/admin/finance/LearningRulesCenterPanel";
+import { FinanceStateProvider, useFinanceState } from "@/lib/finance/state/FinanceStateProvider";
+import { ContradictionBanner } from "@/components/admin/finance/shared/ContradictionBanner";
 
 type HealthScore = {
   score_name: string | null;
@@ -63,6 +65,28 @@ const quickLinks = [
 export default function FinanceCommanderPage() {
   const { isLoading } = useAuth();
   const [entityId, setEntityId] = useState<string>("all");
+  const canonicalEntity = entityId && entityId !== "all" ? entityId : null;
+  return (
+    <FinanceStateProvider entityId={canonicalEntity}>
+      <FinanceCommanderInner
+        isLoading={isLoading}
+        entityId={entityId}
+        setEntityId={setEntityId}
+      />
+    </FinanceStateProvider>
+  );
+}
+
+function FinanceCommanderInner({
+  isLoading,
+  entityId,
+  setEntityId,
+}: {
+  isLoading: boolean;
+  entityId: string;
+  setEntityId: (v: string) => void;
+}) {
+  const { state: canonical } = useFinanceState();
   const [health, setHealth] = useState<HealthScore | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [vat, setVat] = useState<VatSummary | null>(null);
