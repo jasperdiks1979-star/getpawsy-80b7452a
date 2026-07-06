@@ -111,7 +111,7 @@ test("Pinterest destination URLs resolve to live canonical routes", async ({ req
   expect(productSlugs.size, "must have at least 1 active product slug").toBeGreaterThan(0);
 
   // 3. Distinct Pinterest destination URLs (last 90d for pins, all for videos).
-  const dbUrls = psqlJson<string[]>(`
+  const dbUrls = psqlLines(`
     SELECT DISTINCT url FROM (
       SELECT destination_url AS url
       FROM pinterest_pin_audit
@@ -125,7 +125,7 @@ test("Pinterest destination URLs resolve to live canonical routes", async ({ req
     WHERE url LIKE 'http%'
     ORDER BY url
     LIMIT ${MAX_URLS}
-  `);
+  ;`);
   expect(dbUrls.length, "no Pinterest destination URLs found — DB access broken").toBeGreaterThan(0);
 
   // 4. Classify + live-check each URL in parallel batches.
