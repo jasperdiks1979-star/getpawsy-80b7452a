@@ -28,7 +28,7 @@ type Category = {
   remaining_manual_actions: string[];
 };
 
-async function callInternal(name: string, body: unknown): Promise<any> {
+async function callInternal(name: string, body: unknown, extraHeaders: Record<string, string> = {}): Promise<any> {
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
       method: "POST",
@@ -36,6 +36,7 @@ async function callInternal(name: string, body: unknown): Promise<any> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SERVICE_KEY}`,
         apikey: SERVICE_KEY,
+        ...extraHeaders,
       },
       body: JSON.stringify(body ?? {}),
     });
@@ -140,8 +141,13 @@ Deno.serve(async (req) => {
       remaining_manual_actions: bel.body?.blockers ?? [],
     });
 
-    // 7. Accountant Export (dry-run; does not commit files)
-    const exp = await callInternal("finance-accountant-export", { dry_run: true });
+    // 7. Accountant Export (internal dry-run; bypasses interactive admin guard
+    // via x-internal-secret. Never writes a job. Never emits payload bytes.)
+    const exp = await callInternal(
+      "finance-accountant-export",
+      { dry_run: true, export_type: "audit_package" },
+      { "x-internal-secret": SERVICE_KEY },
+    );
     categories.push({
       name: "Accountant Export Pipeline",
       verdict: !exp.ok ? "FAIL" : "PASS",

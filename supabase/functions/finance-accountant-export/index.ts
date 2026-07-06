@@ -22,29 +22,43 @@ function toCsv(rows: Record<string, unknown>[]): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return new Response(JSON.stringify({ error: "no auth" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const body = await req.json().catch(() => ({}));
+    const dryRun: boolean = body?.dry_run === true;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    const { data: userData } = await admin.auth.getUser(token);
-    const user = userData?.user;
-    if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const { data: access } = await admin.rpc("has_finance_access", { _user_id: user.id });
-    if (!access) return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const body = await req.json().catch(() => ({}));
+    // Internal certification path: dry_run + valid internal secret (service role
+    // key sent via x-internal-secret) bypasses the interactive admin guard but
+    // never writes a job, never emits a payload, and never returns file bytes.
+    const internalSecret = req.headers.get("x-internal-secret") ?? "";
+    const isInternalCert = dryRun && internalSecret && internalSecret === SERVICE_KEY;
+
+    let user: { id: string; email?: string | null } | null = null;
+    if (!isInternalCert) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.replace(/^Bearer\s+/i, "");
+      if (!token) return new Response(JSON.stringify({ error: "no auth" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: userData } = await admin.auth.getUser(token);
+      user = userData?.user ?? null;
+      if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: access } = await admin.rpc("has_finance_access", { _user_id: user.id });
+      if (!access) return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const exportType: ExportType = body.export_type ?? "audit_package";
     const entityId: string | null = body.entity_id ?? null;
     const year: number | null = body.period_year ?? null;
     const quarter: number | null = body.period_quarter ?? null;
 
-    // Register job
-    const { data: job } = await admin.from("finance_export_jobs").insert({
-      export_type: exportType, entity_id: entityId, period_year: year, period_quarter: quarter,
-      status: "running", requested_by: user.id,
-    }).select().single();
-    const jobId = job?.id as string;
+    // Register job (skipped in internal dry-run to avoid noise in finance_export_jobs)
+    let jobId: string | null = null;
+    if (!isInternalCert) {
+      const { data: job } = await admin.from("finance_export_jobs").insert({
+        export_type: exportType, entity_id: entityId, period_year: year, period_quarter: quarter,
+        status: "running", requested_by: user!.id,
+      }).select().single();
+      jobId = (job?.id as string) ?? null;
+    }
 
     // Load canonical bundle used by every export
     const filterEntity = (q: any) => (entityId ? q.eq("entity_id", entityId) : q);
@@ -60,7 +74,7 @@ Deno.serve(async (req) => {
 
     const bundle = {
       generated_at: new Date().toISOString(),
-      generated_by: user.email ?? user.id,
+      generated_by: isInternalCert ? "internal:finance-production-certify" : (user!.email ?? user!.id),
       export_type: exportType,
       scope: { entity_id: entityId, period_year: year, period_quarter: quarter },
       assumptions: [
@@ -143,9 +157,19 @@ Deno.serve(async (req) => {
       subscriptions: bundle.subscriptions.length,
       open_tasks: bundle.open_finance_tasks.length,
     };
-    await admin.from("finance_export_jobs").update({
-      status: "success", payload: payload as any, row_counts, completed_at: new Date().toISOString(),
-    }).eq("id", jobId);
+    if (jobId) {
+      await admin.from("finance_export_jobs").update({
+        status: "success", payload: payload as any, row_counts, completed_at: new Date().toISOString(),
+      }).eq("id", jobId);
+    }
+
+    if (isInternalCert) {
+      // Internal certification: return only metadata, never the payload.
+      return new Response(JSON.stringify({
+        ok: true, dry_run: true, filename, mime, row_counts,
+        file_count: 1, period: { year, quarter },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     return new Response(JSON.stringify({ ok: true, job_id: jobId, filename, mime, row_counts, payload }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
