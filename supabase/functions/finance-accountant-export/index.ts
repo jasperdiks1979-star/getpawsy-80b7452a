@@ -22,6 +22,7 @@ function toCsv(rows: Record<string, unknown>[]): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
+    console.log("[accountant-export] hit", req.headers.get("x-internal-secret") ? "internal-secret-present" : "no-internal-secret");
     const body = await req.json().catch(() => ({}));
     const dryRun: boolean = body?.dry_run === true;
 
