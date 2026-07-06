@@ -25,7 +25,22 @@ interface HealingReport {
 const ARRAY_KEYS = ['recentlyViewed', 'wishlist'];
 
 // Keys that should be objects with specific structures
-const OBJECT_KEYS = ['cart'];
+const OBJECT_KEYS = ['cart', 'pawsy-cart'];
+
+// Canonical allow-list. DataHealer will ONLY touch these keys. Everything
+// else (attribution, visitor identity, consent, timestamps, UTM strings)
+// is stored by other subsystems as raw scalars and must be left alone.
+// Historical bug (2026-07): the pre-allow-list version JSON.parsed EVERY
+// key and `removeItem`-ed anything that wasn't valid JSON, wiping
+// `first_utm_source`, `gp_visitor_id`, `gp_cookie_consent`, `first_seen_at`
+// etc. on every page load. That silently broke Pinterest attribution
+// (808 real visitors → 17 canonical sessions) and re-triggered the
+// consent banner on every visit, blocking pixels. Do not re-widen this
+// list without a matching JSON-serialization contract.
+const OWNED_KEYS = new Set<string>([
+  ...ARRAY_KEYS,
+  ...OBJECT_KEYS,
+]);
 
 // Keys to skip (system keys)
 const SKIP_KEYS = ['supabase.auth.token', 'sb-', 'debug'];
@@ -151,7 +166,11 @@ const healArrayData = (data: unknown): { healed: unknown; wasCorrupted: boolean 
  * Check if a key should be skipped
  */
 const shouldSkipKey = (key: string): boolean => {
-  return SKIP_KEYS.some((skip) => key.startsWith(skip));
+  if (SKIP_KEYS.some((skip) => key.startsWith(skip))) return true;
+  // Only touch keys we explicitly own. Any other key (attribution,
+  // visitor id, consent, UTM, timestamps) is stored by another
+  // subsystem in its own format and must never be parsed/removed here.
+  return !OWNED_KEYS.has(key);
 };
 
 /**
@@ -172,16 +191,24 @@ const healKey = (key: string): HealingResult => {
     try {
       parsed = JSON.parse(rawValue);
     } catch {
-      // Invalid JSON - remove it
-      localStorage.removeItem(key);
-      result.wasCorrupted = true;
-      result.fixed = true;
-      result.details = 'Invalid JSON removed';
+      // Non-JSON scalar for an owned key: reset only the known
+      // structured keys to a safe empty container. Never blanket-remove.
+      if (key === 'cart' || key === 'pawsy-cart') {
+        localStorage.setItem(key, JSON.stringify({ items: [] }));
+        result.wasCorrupted = true;
+        result.fixed = true;
+        result.details = 'Reset non-JSON cart to empty';
+      } else if (ARRAY_KEYS.includes(key)) {
+        localStorage.setItem(key, JSON.stringify([]));
+        result.wasCorrupted = true;
+        result.fixed = true;
+        result.details = 'Reset non-JSON array to []';
+      }
       return result;
     }
     
     // Handle specific key types
-    if (key === 'cart') {
+    if (key === 'cart' || key === 'pawsy-cart') {
       const { healed, wasCorrupted } = healCartData(parsed);
       if (wasCorrupted) {
         localStorage.setItem(key, JSON.stringify(healed));
@@ -197,17 +224,8 @@ const healKey = (key: string): HealingResult => {
         result.fixed = true;
         result.details = 'Array data sanitized';
       }
-    } else {
-      // General sanitization for other keys
-      const sanitized = sanitizeValue(parsed);
-      const sanitizedStr = JSON.stringify(sanitized);
-      if (sanitizedStr !== rawValue) {
-        localStorage.setItem(key, sanitizedStr);
-        result.wasCorrupted = true;
-        result.fixed = true;
-        result.details = 'General sanitization applied';
-      }
     }
+    // Unowned keys never reach here (shouldSkipKey filters them out).
   } catch (error) {
     result.details = `Error: ${error instanceof Error ? error.message : 'Unknown'}`;
   }
@@ -286,15 +304,17 @@ export const initDataHealer = (): void => {
     runDataHealing();
   }, 1000); // Slight delay to not block initial render
   
-  // Run periodically (every 5 minutes)
+  // Run periodically (every 60 minutes). The 5-minute cadence used to
+  // race with mid-session attribution writes and wipe them; hourly is
+  // more than enough for the two cart/array keys we still touch.
   setInterval(() => {
     runDataHealing();
-  }, 5 * 60 * 1000);
-  
-  // Run before page unload to catch any last-minute corruption
-  window.addEventListener('beforeunload', () => {
-    runDataHealing();
-  });
+  }, 60 * 60 * 1000);
+
+  // NOTE: the previous `beforeunload` handler wiped localStorage right
+  // before the browser navigated to /checkout, which nuked cart state
+  // and first-touch UTMs mid-funnel. Do not re-add without a full
+  // regression on the ATC → checkout path.
   
   // Listen for storage events (changes from other tabs)
   window.addEventListener('storage', (event) => {
