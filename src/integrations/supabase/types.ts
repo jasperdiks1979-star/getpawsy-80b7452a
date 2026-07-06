@@ -22223,6 +22223,81 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_corrections_log: {
+        Row: {
+          applied_at: string | null
+          applied_to_memory: boolean
+          confidence_after: number | null
+          confidence_before: number | null
+          corrected_by: string | null
+          created_at: string
+          document_id: string | null
+          entity_id: string | null
+          entity_type: string
+          field: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+          reverted: boolean
+          reverted_at: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_to_memory?: boolean
+          confidence_after?: number | null
+          confidence_before?: number | null
+          corrected_by?: string | null
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          entity_type: string
+          field: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          reverted?: boolean
+          reverted_at?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          applied_to_memory?: boolean
+          confidence_after?: number | null
+          confidence_before?: number | null
+          corrected_by?: string | null
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          field?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          reverted?: boolean
+          reverted_at?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_corrections_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_corrections_log_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_credit_ledger: {
         Row: {
           cost_minor: number
@@ -22396,6 +22471,54 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_export_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          entity_id: string | null
+          error: string | null
+          export_type: string
+          id: string
+          payload: Json | null
+          period_quarter: number | null
+          period_year: number | null
+          requested_by: string | null
+          row_counts: Json
+          status: string
+          storage_path: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          export_type: string
+          id?: string
+          payload?: Json | null
+          period_quarter?: number | null
+          period_year?: number | null
+          requested_by?: string | null
+          row_counts?: Json
+          status?: string
+          storage_path?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          entity_id?: string | null
+          error?: string | null
+          export_type?: string
+          id?: string
+          payload?: Json | null
+          period_quarter?: number | null
+          period_year?: number | null
+          requested_by?: string | null
+          row_counts?: Json
+          status?: string
+          storage_path?: string | null
+        }
+        Relationships: []
+      }
       finance_health_history: {
         Row: {
           created_at: string
@@ -22458,6 +22581,74 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      finance_import_queue: {
+        Row: {
+          attempts: number
+          batch_id: string
+          content_sha256: string | null
+          created_at: string
+          document_id: string | null
+          entity_id: string | null
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          max_attempts: number
+          metadata: Json
+          queued_at: string
+          source: string
+          source_filename: string | null
+          source_uri: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          batch_id: string
+          content_sha256?: string | null
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          metadata?: Json
+          queued_at?: string
+          source: string
+          source_filename?: string | null
+          source_uri?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          batch_id?: string
+          content_sha256?: string | null
+          created_at?: string
+          document_id?: string | null
+          entity_id?: string | null
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          metadata?: Json
+          queued_at?: string
+          source?: string
+          source_filename?: string | null
+          source_uri?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_import_queue_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_import_tasks: {
         Row: {
