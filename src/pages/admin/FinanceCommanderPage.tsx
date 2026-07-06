@@ -33,6 +33,8 @@ import { ImportQueueMonitorPanel } from "@/components/admin/finance/ImportQueueM
 import { LearningRulesCenterPanel } from "@/components/admin/finance/LearningRulesCenterPanel";
 import { FinanceStateProvider, useFinanceState } from "@/lib/finance/state/FinanceStateProvider";
 import { ContradictionBanner } from "@/components/admin/finance/shared/ContradictionBanner";
+import { ConnectorHealthPanel } from "@/components/admin/finance/ConnectorHealthPanel";
+import { UnknownEvidencePanel } from "@/components/admin/finance/UnknownEvidencePanel";
 
 type HealthScore = {
   score_name: string | null;
@@ -258,6 +260,8 @@ function FinanceCommanderInner({
       {/* CFO flow: KPI → Belastingdienst → Missing Evidence → Forensic → Reconciliation → Suppliers → Subs → VAT Refund → CFO Insights → Imports → Exports → Learning → Developer */}
       <FinanceKpiStripPanel entityId={entityId === "all" ? null : entityId} />
       <BelastingdienstReadinessPanel entityId={entityId === "all" ? null : entityId} />
+      <ConnectorHealthPanel />
+      <UnknownEvidencePanel />
       <OpenFinanceTasksPanel entityId={entityId === "all" ? null : entityId} />
       <ForensicDocumentsPanel entityId={entityId === "all" ? null : entityId} />
       <ReconciliationCenterPanel entityId={entityId === "all" ? null : entityId} />
