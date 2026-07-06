@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ListChecks, Check, SkipForward } from "lucide-react";
+import { displaySupplier, formatMoneyMinor } from "@/lib/finance/format";
 
 type Task = {
   id: string; supplier_slug: string; period_label: string; expected_type: string;
@@ -12,7 +13,7 @@ type Task = {
 };
 
 const fmt = (m: number | null, cur = "EUR") =>
-  m == null ? "—" : new Intl.NumberFormat("nl-NL", { style: "currency", currency: cur }).format(m / 100);
+  formatMoneyMinor(m, cur, "Amount pending");
 
 export function OpenFinanceTasksPanel({ entityId }: { entityId: string | null }) {
   const [rows, setRows] = useState<Task[]>([]);
@@ -63,10 +64,10 @@ export function OpenFinanceTasksPanel({ entityId }: { entityId: string | null })
               <tbody>{rows.map(r => (
                 <tr key={r.id} className="border-t">
                   <td className="py-1 pr-3">{r.expected_type}</td>
-                  <td className="py-1 pr-3">{r.supplier_slug}</td>
-                  <td className="py-1 pr-3">{r.period_label}</td>
+                  <td className="py-1 pr-3">{displaySupplier({ slug: r.supplier_slug, hasEvidence: true })}</td>
+                  <td className="py-1 pr-3">{r.period_label || "Pending"}</td>
                   <td className="py-1 pr-3 text-right">{fmt(r.expected_amount_minor, r.currency ?? "EUR")}</td>
-                  <td className="py-1 pr-3 text-xs text-muted-foreground max-w-[420px]">{r.instructions ?? "—"}</td>
+                  <td className="py-1 pr-3 text-xs text-muted-foreground max-w-[420px]">{r.instructions ?? "Follow up with supplier"}</td>
                   <td className="py-1"><Badge variant={r.status === "open" ? "secondary" : "outline"}>{r.status}</Badge></td>
                   <td className="py-1 whitespace-nowrap">
                     <Button size="sm" variant="ghost" onClick={() => mark(r.id, "processed")}><Check className="h-3 w-3" /></Button>
