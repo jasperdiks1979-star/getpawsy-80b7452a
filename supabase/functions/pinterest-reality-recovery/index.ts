@@ -502,6 +502,87 @@ async function phaseCertify(sb: any, runId: string) {
   return { result, live_after: l.length, coverage_pct: coverage, dupTitles: dupTitles.size, dupUrls: dupUrls.size, products: products.size };
 }
 
+// Resolve duplicate live titles and duplicate live destination URLs.
+// Strategy: within each duplicate group, keep the newest published row
+// (highest updated_at, then highest pin_id); DELETE the older duplicates
+// on Pinterest and mark the local row status='duplicate_retired'.
+// Preserves rate limits (throttled) and never touches non-duplicates.
+async function phaseDedup(sb: any, token: string, runId: string) {
+  await patchRun(sb, runId, { phase_current: "dedup" });
+  const { data: live } = await sb.from("pinterest_pin_performance")
+    .select("pin_id,pin_title,product_url,product_id,updated_at")
+    .eq("status", "published");
+  const rows = (live ?? []).filter((r: any) => r.pin_id);
+
+  const byTitle: Record<string, any[]> = {};
+  const byUrl: Record<string, any[]> = {};
+  for (const r of rows) {
+    if (r.pin_title) {
+      const k = r.pin_title.trim().toLowerCase();
+      (byTitle[k] = byTitle[k] || []).push(r);
+    }
+    if (r.product_url) {
+      const k = r.product_url.trim().toLowerCase();
+      (byUrl[k] = byUrl[k] || []).push(r);
+    }
+  }
+
+  const toRetire = new Map<string, { row: any; reason: string }>();
+  const rank = (r: any) => `${r.updated_at || ""}|${r.pin_id}`;
+  for (const [k, grp] of Object.entries(byTitle)) {
+    if (grp.length < 2) continue;
+    const sorted = [...grp].sort((a, b) => rank(b).localeCompare(rank(a)));
+    for (const r of sorted.slice(1)) {
+      if (!toRetire.has(r.pin_id)) toRetire.set(r.pin_id, { row: r, reason: `duplicate_title:${k.slice(0, 60)}` });
+    }
+  }
+  for (const [k, grp] of Object.entries(byUrl)) {
+    if (grp.length < 2) continue;
+    const sorted = [...grp].sort((a, b) => rank(b).localeCompare(rank(a)));
+    for (const r of sorted.slice(1)) {
+      if (!toRetire.has(r.pin_id)) toRetire.set(r.pin_id, { row: r, reason: `duplicate_url:${k.slice(0, 80)}` });
+    }
+  }
+
+  let retired = 0, failed = 0;
+  for (const [pinId, { row, reason }] of toRetire) {
+    const del = await pFetch(`/pins/${pinId}`, token, { method: "DELETE" });
+    const removed = del.status === 200 || del.status === 204 || del.status === 404 || del.status === 410;
+    if (!removed) {
+      failed++;
+      await ev(sb, runId, {
+        phase: "dedup", action: "dedup_delete_failed",
+        pin_id: pinId, product_id: row.product_id, http_status: del.status,
+        before_snapshot: row, reason, error: del.err,
+      });
+      await new Promise((r) => setTimeout(r, 800));
+      continue;
+    }
+    const { error: uErr } = await sb.from("pinterest_pin_performance")
+      .update({ status: "duplicate_retired" }).eq("pin_id", pinId);
+    if (uErr) {
+      failed++;
+      await ev(sb, runId, {
+        phase: "dedup", action: "dedup_local_update_failed",
+        pin_id: pinId, product_id: row.product_id, before_snapshot: row, reason, error: uErr.message,
+      });
+      continue;
+    }
+    retired++;
+    await ev(sb, runId, {
+      phase: "dedup", action: "dedup_retired",
+      pin_id: pinId, product_id: row.product_id, http_status: del.status,
+      before_snapshot: row, after_snapshot: { status: "duplicate_retired" }, reason,
+    });
+    await new Promise((r) => setTimeout(r, 1200));
+  }
+
+  await patchRun(sb, runId, {
+    notes: { dedup_retired: retired, dedup_failed: failed, dedup_candidates: toRetire.size },
+  });
+  return { candidates: toRetire.size, retired, failed };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -557,6 +638,26 @@ Deno.serve(async (req) => {
       const v = await phaseVerify(sb, token!, runId);
       const c = await phaseCertify(sb, runId);
       return json({ ok: true, run_id: runId, phase, audit: a, ghosts: g, repair: rp, verify: v, certify: c });
+    }
+    if (phase === "dedup") {
+      if (!inRun) return json({ ok: false, message: "run_id required" }, 400);
+      const r = await phaseDedup(sb, token!, inRun);
+      return json({ ok: true, run_id: inRun, phase, ...r });
+    }
+    if (phase === "full") {
+      // Full production recovery WITH republish + dedup. Requires confirm.
+      if (!confirm) return json({ ok: false, message: "full requires confirm: true" }, 428);
+      const runId = await ensureRun(sb, inRun, auth.who,
+        ["audit", "ghosts", "repair", "dedup", "republish", "verify", "certify"]);
+      const a = await phaseAudit(sb, token!, runId);
+      const g = await phaseGhosts(sb, runId);
+      const rp = await phaseRepair(sb, token!, runId);
+      const d = await phaseDedup(sb, token!, runId);
+      const pub = await phaseRepublish(sb, token!, runId);
+      const v = await phaseVerify(sb, token!, runId);
+      const c = await phaseCertify(sb, runId);
+      return json({ ok: true, run_id: runId, phase,
+        audit: a, ghosts: g, repair: rp, dedup: d, republish: pub, verify: v, certify: c });
     }
     return json({ ok: false, message: `unknown phase: ${phase}` }, 400);
   } catch (e) {
