@@ -420,6 +420,16 @@ const ProductDetail = () => {
 
   // Redirect to canonical product if this is a duplicate, or to slug URL if accessed via UUID
   useEffect(() => {
+    // Revenue guard: internal test SKUs must never be reachable by real
+    // visitors. Production evidence (14d) showed 5 real PDP views and 2
+    // add-to-cart attempts on `internal-stripe-production-test-do-not-index`
+    // — those visitors hit a test Stripe flow and cannot buy. Redirect any
+    // slug that starts with `internal-` or contains `do-not-index` to the
+    // homepage so intent is preserved on live inventory.
+    if (slug && (slug.startsWith('internal-') || slug.includes('do-not-index'))) {
+      navigate('/', { replace: true });
+      return;
+    }
     if (product?._redirect) {
       navigate(`/products/${product.slug || product.id}`, { replace: true });
       return;
