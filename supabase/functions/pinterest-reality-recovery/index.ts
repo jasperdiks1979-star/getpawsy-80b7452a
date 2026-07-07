@@ -659,6 +659,16 @@ Deno.serve(async (req) => {
       return json({ ok: true, run_id: runId, phase,
         audit: a, ghosts: g, repair: rp, dedup: d, republish: pub, verify: v, certify: c });
     }
+    if (phase === "republish_deleted_remote") {
+      if (!confirm) return json({ ok: false, message: "republish_deleted_remote requires confirm: true" }, 428);
+      const limit = Math.max(1, Math.min(MAX_REPUBLISH_PER_RUN, Number(body.limit) || MAX_REPUBLISH_PER_RUN));
+      const runId = await ensureRun(sb, inRun, auth.who,
+        ["republish_deleted_remote", "verify", "certify"]);
+      const r = await phaseRepublishDeletedRemote(sb, token!, runId, limit);
+      const v = await phaseVerify(sb, token!, runId);
+      const c = await phaseCertify(sb, runId);
+      return json({ ok: true, run_id: runId, phase, republish: r, verify: v, certify: c });
+    }
     return json({ ok: false, message: `unknown phase: ${phase}` }, 400);
   } catch (e) {
     return json({ ok: false, message: (e as Error).message }, 500);
