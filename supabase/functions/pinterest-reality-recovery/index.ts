@@ -257,8 +257,18 @@ async function phaseRepair(sb: any, token: string, runId: string) {
   return { drift: list.length, repaired, skipped };
 }
 
-async function phaseRepublish(sb: any, token: string, runId: string) {
+async function phaseRepublish(
+  sb: any,
+  token: string,
+  runId: string,
+  opts: { limit?: number; dryRun?: boolean } = {},
+) {
   await patchRun(sb, runId, { phase_current: "republish" });
+  const dryRun = opts.dryRun === true;
+  const limitReq = Number.isFinite(opts.limit as number) && (opts.limit as number) > 0
+    ? Math.floor(opts.limit as number)
+    : MAX_REPUBLISH_PER_RUN;
+  const effectiveLimit = Math.min(limitReq, MAX_REPUBLISH_PER_RUN);
 
   // Live corpus for uniqueness checks
   const { data: live } = await sb.from("pinterest_pin_performance")
@@ -268,18 +278,76 @@ async function phaseRepublish(sb: any, token: string, runId: string) {
   const liveUrls = new Set(liveList.map((r: any) => (r.product_url || "").toLowerCase()).filter(Boolean));
   const liveTitleSet = new Set(liveTitles.map((t: string) => t.trim().toLowerCase()).filter(Boolean));
 
-  // Ghost cohort marked THIS run
+  // Candidate source A: ghosts marked in THIS run
   const { data: ghostEvts } = await sb.from("pinterest_reality_recovery_events")
-    .select("pin_id, product_id").eq("run_id", runId).eq("action", "ghost_marked_deleted");
-  const ghosts = ghostEvts ?? [];
-  await patchRun(sb, runId, { republish_candidates: ghosts.length });
+    .select("pin_id, product_id")
+    .eq("run_id", runId).eq("action", "ghost_marked_deleted");
+  const sameRunGhosts = (ghostEvts ?? [])
+    .filter((g: any) => g.pin_id && g.product_id)
+    .map((g: any) => ({ pin_id: String(g.pin_id), product_id: String(g.product_id), candidate_source: "same_run_ghost" as const }));
+
+  // Candidate source B: historical rows already flipped to deleted_remote
+  // in prior runs. This is the correct universe for the
+  // `republish_deleted_remote` job phase.
+  const { data: histRows } = await sb.from("pinterest_pin_performance")
+    .select("pin_id, product_id")
+    .eq("status", "deleted_remote")
+    .not("pin_id", "is", null)
+    .not("product_id", "is", null)
+    .limit(2000);
+  const historical = (histRows ?? [])
+    .filter((r: any) => r.pin_id && r.product_id)
+    .map((r: any) => ({ pin_id: String(r.pin_id), product_id: String(r.product_id), candidate_source: "historical_deleted_remote" as const }));
+
+  // Dedup by pin_id (prefer same_run_ghost tag), then cap by limit.
+  const byPin = new Map<string, { pin_id: string; product_id: string; candidate_source: "same_run_ghost" | "historical_deleted_remote" }>();
+  for (const c of sameRunGhosts) byPin.set(c.pin_id, c);
+  for (const c of historical) if (!byPin.has(c.pin_id)) byPin.set(c.pin_id, c);
+  const allCandidates = Array.from(byPin.values());
+  const candidates = allCandidates.slice(0, effectiveLimit);
+  const historicalTotal = historical.length;
+  const sameRunTotal = sameRunGhosts.length;
+  await patchRun(sb, runId, { republish_candidates: candidates.length });
+  await ev(sb, runId, {
+    phase: "republish",
+    action: "republish_candidates_selected",
+    reason: dryRun ? "dry_run" : "live",
+    before_snapshot: {
+      historical_deleted_remote_candidates: historicalTotal,
+      same_run_ghost_candidates: sameRunTotal,
+      total_after_dedup: allCandidates.length,
+      limit_requested: limitReq,
+      effective_limit: effectiveLimit,
+      selected: candidates.length,
+    },
+  });
+
+  if (dryRun) {
+    for (const c of candidates) {
+      await ev(sb, runId, {
+        phase: "republish",
+        action: "republish_dry_run_candidate",
+        pin_id: c.pin_id,
+        product_id: c.product_id,
+        reason: c.candidate_source,
+      });
+    }
+    return {
+      dry_run: true,
+      historical_deleted_remote_candidates: historicalTotal,
+      same_run_ghost_candidates: sameRunTotal,
+      total_candidates: candidates.length,
+      attempted: 0, posted: 0, skipped: 0, failed: 0,
+    };
+  }
 
   const perProduct: Record<string, number> = {};
   const perBoard: Record<string, number> = {};
-  let posted = 0, skipped = 0, failed = 0;
+  let posted = 0, skipped = 0, failed = 0, attempted = 0;
 
-  for (const g of ghosts) {
-    if (posted >= MAX_REPUBLISH_PER_RUN) break;
+  for (const g of candidates) {
+    if (posted >= effectiveLimit) break;
+    attempted++;
     // Source material from queue: latest usable draft/published queue row for this product
     const { data: q } = await sb.from("pinterest_pin_queue")
       .select("id,product_id,product_slug,pin_title,pin_description,pin_image_url,destination_link,board_id,board_name,hashtags,pin_variant")
@@ -424,7 +492,13 @@ async function phaseRepublish(sb: any, token: string, runId: string) {
   await patchRun(sb, runId, {
     republished_ok: posted, republish_skipped_gates: skipped, republish_failed_api: failed,
   });
-  return { candidates: ghosts.length, posted, skipped, failed };
+  return {
+    dry_run: false,
+    historical_deleted_remote_candidates: historicalTotal,
+    same_run_ghost_candidates: sameRunTotal,
+    total_candidates: candidates.length,
+    attempted, posted, skipped, failed,
+  };
 }
 
 async function phaseVerify(sb: any, token: string, runId: string) {
@@ -616,7 +690,9 @@ Deno.serve(async (req) => {
     if (phase === "republish") {
       if (!inRun) return json({ ok: false, message: "run_id required" }, 400);
       if (!confirm) return json({ ok: false, message: "republish requires confirm: true in body" }, 428);
-      const r = await phaseRepublish(sb, token!, inRun);
+      const limit = typeof body.limit === "number" ? body.limit : undefined;
+      const dryRun = body.dry_run === true;
+      const r = await phaseRepublish(sb, token!, inRun, { limit, dryRun });
       return json({ ok: true, run_id: inRun, phase, ...r });
     }
     if (phase === "verify") {
