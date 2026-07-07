@@ -261,10 +261,11 @@ async function phaseRepublish(
   sb: any,
   token: string,
   runId: string,
-  opts: { limit?: number; dryRun?: boolean } = {},
+  opts: { limit?: number; dryRun?: boolean; useRegeneration?: boolean } = {},
 ) {
   await patchRun(sb, runId, { phase_current: "republish" });
   const dryRun = opts.dryRun === true;
+  const useRegeneration = opts.useRegeneration === true;
   const limitReq = Number.isFinite(opts.limit as number) && (opts.limit as number) > 0
     ? Math.floor(opts.limit as number)
     : MAX_REPUBLISH_PER_RUN;
@@ -319,25 +320,173 @@ async function phaseRepublish(
       limit_requested: limitReq,
       effective_limit: effectiveLimit,
       selected: candidates.length,
+      use_regeneration: useRegeneration,
     },
   });
 
+  // Optional regeneration pre-pass: classify each candidate and, when needed,
+  // substitute a UTM URL variant and/or template-based title. Uses the SAME
+  // gate helpers so anti-spam remains unchanged.
+  const regenMap = new Map<string, {
+    classification: string;
+    reason: string;
+    new_title: string | null;
+    new_url: string | null;
+    would_pass: boolean;
+  }>();
+  const regenCounters: Record<string, number> = {
+    ready_clean: 0, needs_title_rewrite: 0, needs_url_variant: 0,
+    needs_title_and_url: 0, insufficient_metadata: 0, retire_candidate: 0,
+  };
+
+  if (useRegeneration) {
+    // Pull originals + product metadata for regeneration decisions.
+    const pinIds = candidates.map((c) => c.pin_id);
+    const productIds = Array.from(new Set(candidates.map((c) => c.product_id)));
+    const { data: origRows } = pinIds.length
+      ? await sb.from("pinterest_pin_performance")
+          .select("pin_id,product_id,pin_title,product_url").in("pin_id", pinIds)
+      : { data: [] };
+    const origByPin = new Map<string, any>();
+    for (const r of origRows ?? []) origByPin.set(String(r.pin_id), r);
+    const { data: prods } = productIds.length
+      ? await sb.from("products").select("id,name,name_clean,slug,image_url,is_active,stock")
+          .in("id", productIds)
+      : { data: [] };
+    const prodById = new Map<string, any>();
+    for (const p of prods ?? []) prodById.set(String(p.id), p);
+
+    const proposedTitles = new Set<string>();
+    const proposedUrls = new Set<string>();
+
+    for (const c of candidates) {
+      const orig = origByPin.get(c.pin_id) || {};
+      const oldTitle = String(orig.pin_title || "").trim();
+      const oldUrl = String(orig.product_url || "").trim();
+      const prod = prodById.get(c.product_id);
+      const productName = (prod?.name_clean || prod?.name || "").trim();
+      const slug = prod?.slug || "";
+      const inStock = typeof prod?.stock === "number" ? prod.stock > 0 : true;
+      const isActive = prod?.is_active !== false;
+      const usable = !!prod && isActive && inStock && !!productName && !!slug && !!prod.image_url;
+
+      if (!usable) {
+        regenCounters.insufficient_metadata++;
+        regenMap.set(c.pin_id, {
+          classification: "insufficient_metadata",
+          reason: !prod ? "product_missing"
+            : !isActive ? "product_inactive"
+            : !inStock ? "product_oos"
+            : !productName ? "missing_product_name"
+            : !slug ? "missing_slug"
+            : "missing_image",
+          new_title: null, new_url: null, would_pass: false,
+        });
+        continue;
+      }
+
+      const origUrlOk = oldUrl.length > 0 &&
+        urlPassesUniqueness(oldUrl, liveUrls) &&
+        !proposedUrls.has(oldUrl.toLowerCase());
+      const origTitleOk = titlePassesContent(oldTitle) &&
+        titlePassesUniqueness(oldTitle, liveTitleSet, liveTitles) &&
+        !proposedTitles.has(oldTitle.trim().toLowerCase());
+
+      let classification = "ready_clean";
+      let reason = "original_passes_all_gates";
+      let newTitle: string | null = oldTitle || null;
+      let newUrl: string | null = oldUrl || null;
+
+      if (!(origTitleOk && origUrlOk)) {
+        if (!origUrlOk) {
+          const base = oldUrl || `https://getpawsy.pet/products/${slug}`;
+          newUrl = buildUtmVariant(base, c.pin_id);
+          if (!urlPassesUniqueness(newUrl, liveUrls) || proposedUrls.has(newUrl.toLowerCase())) {
+            newUrl = buildUtmVariant(base, `${c.pin_id}_${Date.now().toString(36)}`);
+          }
+        }
+        if (!origTitleOk) {
+          newTitle = null;
+          for (const tpl of TITLE_TEMPLATES) {
+            const cand = tpl(productName).slice(0, 100);
+            if (!titlePassesContent(cand)) continue;
+            if (!titlePassesUniqueness(cand, liveTitleSet, liveTitles)) continue;
+            if (proposedTitles.has(cand.trim().toLowerCase())) continue;
+            newTitle = cand;
+            break;
+          }
+        }
+        const titleFixed = !!newTitle;
+        const urlFixed = !!newUrl && urlPassesUniqueness(newUrl, liveUrls) &&
+          !proposedUrls.has(newUrl.toLowerCase());
+        const tBad = !origTitleOk, uBad = !origUrlOk;
+        if (tBad && uBad) {
+          if (titleFixed && urlFixed) { classification = "needs_title_and_url"; reason = "regenerated_both"; }
+          else { classification = "retire_candidate"; reason = `no_variant:title=${titleFixed} url=${urlFixed}`; }
+        } else if (tBad) {
+          if (titleFixed) { classification = "needs_title_rewrite"; reason = "regenerated_title"; }
+          else { classification = "retire_candidate"; reason = "no_title_variant"; }
+        } else {
+          if (urlFixed) { classification = "needs_url_variant"; reason = "regenerated_url"; }
+          else { classification = "retire_candidate"; reason = "no_url_variant"; }
+        }
+      }
+
+      const finalTitleOk = !!newTitle && titlePassesContent(newTitle) &&
+        titlePassesUniqueness(newTitle, liveTitleSet, liveTitles) &&
+        !proposedTitles.has(newTitle.trim().toLowerCase());
+      const finalUrlOk = !!newUrl &&
+        urlPassesUniqueness(newUrl, liveUrls) &&
+        !proposedUrls.has(newUrl.toLowerCase());
+      const wouldPass = classification !== "retire_candidate" &&
+        classification !== "insufficient_metadata" &&
+        finalTitleOk && finalUrlOk;
+
+      if (wouldPass) {
+        proposedTitles.add(newTitle!.trim().toLowerCase());
+        proposedUrls.add(newUrl!.toLowerCase());
+      } else if (classification !== "retire_candidate" && classification !== "insufficient_metadata") {
+        classification = "retire_candidate";
+        reason = `final_gate_failed:title=${finalTitleOk} url=${finalUrlOk}`;
+      }
+      regenCounters[classification] = (regenCounters[classification] || 0) + 1;
+      regenMap.set(c.pin_id, { classification, reason, new_title: newTitle, new_url: newUrl, would_pass: wouldPass });
+    }
+
+    await ev(sb, runId, {
+      phase: "republish",
+      action: "republish_regeneration_summary",
+      reason: dryRun ? "dry_run" : "live",
+      after_snapshot: { ...regenCounters, scanned: candidates.length },
+    });
+  }
+
   if (dryRun) {
     for (const c of candidates) {
+      const rg = regenMap.get(c.pin_id);
       await ev(sb, runId, {
         phase: "republish",
         action: "republish_dry_run_candidate",
         pin_id: c.pin_id,
         product_id: c.product_id,
         reason: c.candidate_source,
+        after_snapshot: useRegeneration ? {
+          classification: rg?.classification ?? null,
+          regen_reason: rg?.reason ?? null,
+          new_title: rg?.new_title ?? null,
+          new_url: rg?.new_url ?? null,
+          would_pass: rg?.would_pass ?? false,
+        } : { use_regeneration: false },
       });
     }
     return {
       dry_run: true,
+      use_regeneration: useRegeneration,
       historical_deleted_remote_candidates: historicalTotal,
       same_run_ghost_candidates: sameRunTotal,
       total_candidates: candidates.length,
       attempted: 0, posted: 0, skipped: 0, failed: 0,
+      ...(useRegeneration ? { regeneration: regenCounters } : {}),
     };
   }
 
@@ -348,6 +497,16 @@ async function phaseRepublish(
   for (const g of candidates) {
     if (posted >= effectiveLimit) break;
     attempted++;
+    const rg = useRegeneration ? regenMap.get(g.pin_id) : undefined;
+    if (useRegeneration && (!rg || !rg.would_pass)) {
+      skipped++;
+      await ev(sb, runId, {
+        phase: "republish", action: "republish_skipped",
+        pin_id: g.pin_id, product_id: g.product_id,
+        reason: `regeneration_${rg?.classification ?? "unknown"}:${rg?.reason ?? "no_map"}`,
+      });
+      continue;
+    }
     // Source material from queue: latest usable draft/published queue row for this product
     const { data: q } = await sb.from("pinterest_pin_queue")
       .select("id,product_id,product_slug,pin_title,pin_description,pin_image_url,destination_link,board_id,board_name,hashtags,pin_variant")
@@ -372,8 +531,10 @@ async function phaseRepublish(
     }
 
     // Anti-spam gates
-    const title = source.pin_title.trim();
-    const url = source.destination_link.trim();
+    // Regeneration override (when enabled): substitute title/URL BEFORE gates
+    // so the same anti-spam thresholds run against the values we will POST.
+    const title = (useRegeneration && rg?.new_title ? rg.new_title : source.pin_title).trim();
+    const url   = (useRegeneration && rg?.new_url   ? rg.new_url   : source.destination_link).trim();
     const board = source.board_id;
     if (TITLE_BLOCKLIST.some((rx) => rx.test(title))) {
       skipped++;
@@ -483,6 +644,7 @@ async function phaseRepublish(
       phase: "republish", action: "republish_posted",
       pin_id: g.pin_id, new_pin_id: newId, product_id: g.product_id, board_id: board,
       http_status: 201, before_snapshot: payload, after_snapshot: { id: newId },
+      reason: useRegeneration ? `${g.candidate_source}:${rg?.classification ?? "ready_clean"}` : g.candidate_source,
     });
 
     // Throttle 6–12s jitter
@@ -494,10 +656,12 @@ async function phaseRepublish(
   });
   return {
     dry_run: false,
+    use_regeneration: useRegeneration,
     historical_deleted_remote_candidates: historicalTotal,
     same_run_ghost_candidates: sameRunTotal,
     total_candidates: candidates.length,
     attempted, posted, skipped, failed,
+    ...(useRegeneration ? { regeneration: regenCounters } : {}),
   };
 }
 
