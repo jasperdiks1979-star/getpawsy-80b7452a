@@ -32,21 +32,38 @@ function json(b: unknown, s = 200) {
   });
 }
 
-// phase enqueued  →  { target function, body sent to that function }
-const PHASE_ROUTES: Record<string, { fn: string; buildBody: (params: any) => any }> = {
-  republish_deleted_remote: {
-    fn: "pinterest-reality-recovery",
-    buildBody: (params) => ({
-      phase: "republish",
-      confirm: true,
-      limit: Number.isFinite(params?.limit) ? Number(params.limit) : 30,
-      ...(params?.dry_run === true ? { dry_run: true } : {}),
-    }),
-  },
-};
+// Phases this worker knows how to dispatch. Each phase describes the
+// full multi-step contract with `pinterest-reality-recovery`.
+const ALLOWED_PHASES = new Set<string>(["republish_deleted_remote"]);
+function isAllowedPhase(phase: string): boolean {
+  return ALLOWED_PHASES.has(phase);
+}
 
-function isAllowedPhase(phase: string): phase is keyof typeof PHASE_ROUTES {
-  return Object.prototype.hasOwnProperty.call(PHASE_ROUTES, phase);
+const RECOVERY_FN = "pinterest-reality-recovery";
+
+async function callRecovery(
+  SUPABASE_URL: string,
+  SERVICE_ROLE: string,
+  body: Record<string, unknown>,
+): Promise<{ status: number; json: any; error: string | null }> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/${RECOVERY_FN}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        apikey: SERVICE_ROLE,
+      },
+      body: JSON.stringify(body),
+    });
+    const txt = await r.text();
+    let parsed: any = null;
+    try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
+    const err = r.ok && parsed?.ok !== false ? null : `dispatch_http_${r.status}`;
+    return { status: r.status, json: parsed, error: err };
+  } catch (e) {
+    return { status: 0, json: null, error: `dispatch_exception:${(e as Error).message}` };
+  }
 }
 
 Deno.serve(async (req) => {
