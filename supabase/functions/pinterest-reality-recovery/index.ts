@@ -582,7 +582,6 @@ async function phaseCertify(sb: any, runId: string) {
 // on Pinterest and mark the local row status='duplicate_retired'.
 // Preserves rate limits (throttled) and never touches non-duplicates.
 async function phaseDedup(sb: any, token: string, runId: string) {
-  // handled below (unchanged)
   await patchRun(sb, runId, { phase_current: "dedup" });
   const { data: live } = await sb.from("pinterest_pin_performance")
     .select("pin_id,pin_title,product_url,product_id,updated_at")
