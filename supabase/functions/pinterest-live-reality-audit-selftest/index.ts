@@ -67,24 +67,23 @@ Deno.serve(async (req) => {
     };
   }
 
-  // Find a non-admin user (if any) to construct a real user JWT via admin API.
+  // Mint an ephemeral non-admin user, sign in to get a real JWT, then delete
+  // the user after the probe. Nothing persists.
   let nonAdminUserJwt: string | null = null;
+  let ephemeralUserId: string | null = null;
   try {
-    const { data: users } = await sb.auth.admin.listUsers({ page: 1, perPage: 50 });
-    const { data: adminIds } = await sb.from("user_roles").select("user_id").eq("role", "admin");
-    const adminSet = new Set((adminIds ?? []).map((r: any) => r.user_id));
-    const cand = (users?.users ?? []).find((u: any) => !adminSet.has(u.id) && u.email);
-    if (cand?.email) {
-      const { data: link } = await sb.auth.admin.generateLink({
-        type: "magiclink",
-        email: cand.email,
-      });
-      // generateLink also returns a session? No — we need to actually sign in.
-      // Fallback: mint a token by signing in as this user is not possible without password.
-      // Instead, use admin.createUser -> impersonate is not available.
-      // Skip if we can't produce a JWT; the anon-key probe already proves anon rejection.
-      nonAdminUserJwt = null;
-      void link;
+    const email = `selftest+${crypto.randomUUID()}@getpawsy.internal`;
+    const password = crypto.randomUUID() + "Aa1!";
+    const { data: created, error: cErr } = await sb.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+    if (!cErr && created?.user?.id) {
+      ephemeralUserId = created.user.id;
+      const anonClient = createClient(SUPA_URL, ANON);
+      const { data: signIn } = await anonClient.auth.signInWithPassword({ email, password });
+      nonAdminUserJwt = signIn?.session?.access_token ?? null;
     }
   } catch (_) {
     nonAdminUserJwt = null;
@@ -114,7 +113,7 @@ Deno.serve(async (req) => {
       name: "non_admin_user_jwt",
       status: null,
       pass: null,
-      body: "skipped: could not mint a non-admin JWT server-side (requires user password/OTP)",
+      body: "skipped: could not mint ephemeral user",
     });
   }
 
@@ -137,5 +136,11 @@ Deno.serve(async (req) => {
   );
 
   const allPass = results.every((r) => r.pass === true || r.pass === null);
+
+  // Cleanup ephemeral user.
+  if (ephemeralUserId) {
+    try { await sb.auth.admin.deleteUser(ephemeralUserId); } catch (_) {}
+  }
+
   return json({ ok: allPass, results });
 });
