@@ -592,7 +592,7 @@ async function phaseRepublishDeletedRemote(sb: any, token: string, runId: string
   await patchRun(sb, runId, { phase_current: "republish_deleted_remote" });
 
   const { data: ghosts } = await sb.from("pinterest_pin_performance")
-    .select("pin_id, product_id, product_url, pin_title, updated_at")
+    .select("pin_id, product_id, product_url, pin_title, hook_angle, updated_at")
     .eq("status", "deleted_remote")
     .order("updated_at", { ascending: false })
     .limit(500);
@@ -655,9 +655,17 @@ async function phaseRepublishDeletedRemote(sb: any, token: string, runId: string
       continue;
     }
 
+    // Hook-angle guard (canonical row must have one to republish)
+    if (!g.hook_angle) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "missing_hook_angle" });
+      continue;
+    }
+
     // 3) Source material from queue — never regenerate creatives
     const { data: q } = await sb.from("pinterest_pin_queue")
-      .select("id,product_id,product_slug,pin_title,pin_description,pin_image_url,destination_link,board_id,board_name,hook_angle,visual_mismatch")
+      .select("id,product_id,pin_title,pin_description,pin_image_url,destination_link,board_id")
       .eq("product_id", g.product_id)
       .not("pin_image_url", "is", null)
       .not("board_id", "is", null)
@@ -667,8 +675,6 @@ async function phaseRepublishDeletedRemote(sb: any, token: string, runId: string
     const source = (q ?? []).find((r: any) =>
       r.pin_title &&
       r.pin_image_url?.startsWith("https://") &&
-      r.hook_angle &&
-      r.visual_mismatch !== true &&
       /\/products\//.test(r.destination_link || "") &&
       /utm_source=pinterest/.test(r.destination_link || "")
     );
