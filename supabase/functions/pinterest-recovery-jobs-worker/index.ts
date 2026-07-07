@@ -18,8 +18,6 @@
 // Auth: this function is invoked by pg_cron with the anon key OR by an
 // admin calling it directly. No caller can influence which job is leased.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -30,6 +28,69 @@ function json(b: unknown, s = 200) {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// ── Minimal PostgREST client (no supabase-js, no node polyfills) ────────
+// Avoids pulling @supabase/supabase-js which transitively loads
+// deno.land/std/node/_next_tick.ts and crashes with
+// `Deno.core.runMicrotasks() is not supported` on shutdown.
+function makeDb(SUPABASE_URL: string, SERVICE_ROLE: string) {
+  const base = `${SUPABASE_URL}/rest/v1`;
+  const baseHeaders = {
+    apikey: SERVICE_ROLE,
+    Authorization: `Bearer ${SERVICE_ROLE}`,
+    "Content-Type": "application/json",
+  };
+  return {
+    async rpc(fn: string, args: Record<string, unknown> = {}) {
+      const r = await fetch(`${base}/rpc/${fn}`, {
+        method: "POST",
+        headers: baseHeaders,
+        body: JSON.stringify(args),
+      });
+      const txt = await r.text();
+      let data: any = null;
+      try { data = txt ? JSON.parse(txt) : null; } catch { data = null; }
+      if (!r.ok) return { data: null, error: { status: r.status, message: txt } };
+      return { data, error: null };
+    },
+    async selectPendingCandidate() {
+      const url =
+        `${base}/pinterest_recovery_jobs` +
+        `?select=id,phase,params,attempts,max_attempts` +
+        `&status=eq.pending&order=priority.desc,created_at.asc&limit=1`;
+      const r = await fetch(url, { headers: baseHeaders });
+      if (!r.ok) return null;
+      const arr = await r.json().catch(() => []);
+      return Array.isArray(arr) && arr.length ? arr[0] : null;
+    },
+    async claim(id: string, attempts: number, nowIso: string) {
+      const r = await fetch(
+        `${base}/pinterest_recovery_jobs?id=eq.${id}&status=eq.pending`,
+        {
+          method: "PATCH",
+          headers: { ...baseHeaders, Prefer: "return=representation" },
+          body: JSON.stringify({
+            status: "running",
+            locked_at: nowIso,
+            started_at: nowIso,
+            attempts,
+            updated_at: nowIso,
+          }),
+        },
+      );
+      if (!r.ok) return null;
+      const arr = await r.json().catch(() => []);
+      return Array.isArray(arr) && arr.length ? arr[0] : null;
+    },
+    async patch(id: string, patch: Record<string, unknown>) {
+      await fetch(`${base}/pinterest_recovery_jobs?id=eq.${id}`, {
+        method: "PATCH",
+        headers: { ...baseHeaders, Prefer: "return=minimal" },
+        body: JSON.stringify(patch),
+      });
+    },
+  };
 }
 
 // Phases this worker knows how to dispatch. Each phase describes the
@@ -74,9 +135,7 @@ Deno.serve(async (req) => {
   if (!SUPABASE_URL || !SERVICE_ROLE) {
     return json({ ok: false, error: "missing_service_env" }, 500);
   }
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = makeDb(SUPABASE_URL, SERVICE_ROLE);
 
   // Optional body: { dry_run: true } short-circuits before any dispatch.
   let body: any = {};
@@ -91,30 +150,11 @@ Deno.serve(async (req) => {
   if (leaseErr) {
     // Fallback path: RPC not present. Use a select+update guarded by status.
     const nowIso = new Date().toISOString();
-    const { data: candidate } = await admin
-      .from("pinterest_recovery_jobs")
-      .select("id, phase, params, attempts, max_attempts")
-      .eq("status", "pending")
-      .order("priority", { ascending: false })
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    const candidate = await admin.selectPendingCandidate();
     if (!candidate) return json({ ok: true, idle: true, leased: null });
 
-    const { data: claimed, error: claimErr } = await admin
-      .from("pinterest_recovery_jobs")
-      .update({
-        status: "running",
-        locked_at: nowIso,
-        started_at: nowIso,
-        attempts: (candidate.attempts ?? 0) + 1,
-        updated_at: nowIso,
-      })
-      .eq("id", candidate.id)
-      .eq("status", "pending")
-      .select("id, phase, params, attempts, max_attempts")
-      .maybeSingle();
-    if (claimErr || !claimed) {
+    const claimed = await admin.claim(candidate.id, (candidate.attempts ?? 0) + 1, nowIso);
+    if (!claimed) {
       return json({ ok: true, idle: true, leased: null, note: "lost_race" });
     }
     return await runJob(admin, SUPABASE_URL, SERVICE_ROLE, claimed, dryRun);
@@ -134,10 +174,7 @@ async function runJob(
 ) {
   const finish = async (patch: Record<string, unknown>) => {
     const nowIso = new Date().toISOString();
-    await admin
-      .from("pinterest_recovery_jobs")
-      .update({ ...patch, updated_at: nowIso })
-      .eq("id", job.id);
+    await admin.patch(job.id, { ...patch, updated_at: nowIso });
   };
 
   if (!isAllowedPhase(job.phase)) {
