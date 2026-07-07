@@ -1161,7 +1161,8 @@ Deno.serve(async (req) => {
       if (!confirm) return json({ ok: false, message: "republish requires confirm: true in body" }, 428);
       const limit = typeof body.limit === "number" ? body.limit : undefined;
       const dryRun = body.dry_run === true;
-      const r = await phaseRepublish(sb, token!, inRun, { limit, dryRun });
+      const useRegeneration = body.use_regeneration === true;
+      const r = await phaseRepublish(sb, token!, inRun, { limit, dryRun, useRegeneration });
       return json({ ok: true, run_id: inRun, phase, ...r });
     }
     if (phase === "verify") {
