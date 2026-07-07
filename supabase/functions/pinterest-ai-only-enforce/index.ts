@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
   try {
     if (mode === "enforce") {
       // A. Backfill
-      await sb.rpc("noop_placeholder").catch(() => {});
       const backfill = await sb
         .from("pinterest_pin_queue")
         .select("id, meta")
