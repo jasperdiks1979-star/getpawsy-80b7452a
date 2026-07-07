@@ -583,6 +583,239 @@ async function phaseDedup(sb: any, token: string, runId: string) {
   return { candidates: toRetire.size, retired, failed };
 }
 
+// Eligibility bridge: rebuild live inventory from rows previously
+// marked status='deleted_remote'. Applies the same anti-spam and
+// integrity gates as phaseRepublish, plus product-level eligibility
+// (products.is_active, stock>0, pinterest_disabled=false). Never
+// regenerates creatives — reuses the newest usable pinterest_pin_queue row.
+async function phaseRepublishDeletedRemote(sb: any, token: string, runId: string, limit: number) {
+  await patchRun(sb, runId, { phase_current: "republish_deleted_remote" });
+
+  const { data: ghosts } = await sb.from("pinterest_pin_performance")
+    .select("pin_id, product_id, product_url, pin_title, hook_angle, updated_at")
+    .eq("status", "deleted_remote")
+    .order("updated_at", { ascending: false })
+    .limit(500);
+  const cohort = ghosts ?? [];
+
+  const { data: live } = await sb.from("pinterest_pin_performance")
+    .select("pin_id,pin_title,product_url,product_id").eq("status", "published");
+  const liveList = live ?? [];
+  const liveTitles = liveList.map((r: any) => r.pin_title || "");
+  const liveTitleSet = new Set(liveTitles.map((t: string) => t.trim().toLowerCase()).filter(Boolean));
+  const liveUrls = new Set(liveList.map((r: any) => (r.product_url || "").toLowerCase()).filter(Boolean));
+  const liveProductCount: Record<string, number> = {};
+  for (const r of liveList) {
+    if (r.product_id) liveProductCount[r.product_id] = (liveProductCount[r.product_id] || 0) + 1;
+  }
+
+  const perProduct: Record<string, number> = {};
+  const perBoard: Record<string, number> = {};
+  let eligible = 0, posted = 0, skipped = 0, failed = 0;
+  const apiErrors: any[] = [];
+
+  for (const g of cohort) {
+    if (posted >= limit) break;
+
+    // 1) Product eligibility (single-source-of-truth: products table)
+    const { data: prod } = await sb.from("products")
+      .select("id, slug, is_active, stock, pinterest_disabled")
+      .eq("id", g.product_id).maybeSingle();
+    if (!prod) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "product_not_found" });
+      continue;
+    }
+    if (!prod.is_active) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "product_inactive" });
+      continue;
+    }
+    if (!(Number(prod.stock) > 0)) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "product_out_of_stock" });
+      continue;
+    }
+    if (prod.pinterest_disabled === true) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "pinterest_disabled" });
+      continue;
+    }
+
+    // 2) Product cap vs the CURRENT live set (existing + newly posted this run)
+    const currentCount = (liveProductCount[g.product_id] || 0) + (perProduct[g.product_id] || 0);
+    if (currentCount >= MAX_REPUBLISH_PER_PRODUCT) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "product_cap" });
+      continue;
+    }
+
+    // Hook-angle guard (canonical row must have one to republish)
+    if (!g.hook_angle) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "missing_hook_angle" });
+      continue;
+    }
+
+    // 3) Source material from queue — never regenerate creatives
+    const { data: q } = await sb.from("pinterest_pin_queue")
+      .select("id,product_id,pin_title,pin_description,pin_image_url,destination_link,board_id")
+      .eq("product_id", g.product_id)
+      .not("pin_image_url", "is", null)
+      .not("board_id", "is", null)
+      .not("destination_link", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    const source = (q ?? []).find((r: any) =>
+      r.pin_title &&
+      r.pin_image_url?.startsWith("https://") &&
+      /\/products\//.test(r.destination_link || "") &&
+      /utm_source=pinterest/.test(r.destination_link || "")
+    );
+    if (!source) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "no_valid_queue_source" });
+      continue;
+    }
+
+    const title = source.pin_title.trim();
+    const url = source.destination_link.trim();
+    const board = source.board_id;
+
+    // 4) Anti-spam & uniqueness gates
+    if (TITLE_BLOCKLIST.some((rx) => rx.test(title))) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "title_blocklist" });
+      continue;
+    }
+    if (liveUrls.has(url.toLowerCase())) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "duplicate_url_live" });
+      continue;
+    }
+    if (liveTitleSet.has(title.toLowerCase())) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: "duplicate_title_live" });
+      continue;
+    }
+    let simBlock = false;
+    for (const lt of liveTitles) {
+      if (jaccard(title, lt) >= TITLE_SIM_MAX) { simBlock = true; break; }
+    }
+    if (simBlock) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, reason: `title_similarity_>=${TITLE_SIM_MAX}` });
+      continue;
+    }
+    perBoard[board] = perBoard[board] || 0;
+    if (perBoard[board] >= MAX_REPUBLISH_PER_BOARD) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, board_id: board, reason: "board_cap" });
+      continue;
+    }
+
+    // 5) Destination must resolve 200
+    let destStatus = 0;
+    try {
+      const dr = await fetch(url, { method: "HEAD", redirect: "follow" });
+      destStatus = dr.status;
+      if (destStatus === 405 || destStatus === 403) {
+        const gr = await fetch(url, { method: "GET" });
+        destStatus = gr.status;
+      }
+    } catch { /* stays 0 */ }
+    if (destStatus !== 200) {
+      skipped++;
+      await ev(sb, runId, { phase: "republish_deleted_remote", action: "skipped",
+        pin_id: g.pin_id, product_id: g.product_id, http_status: destStatus, reason: "destination_not_200" });
+      continue;
+    }
+
+    eligible++;
+
+    // 6) POST to Pinterest (with retry on 429/5xx)
+    const payload = {
+      board_id: board,
+      title: title.slice(0, 100),
+      description: (source.pin_description || "").slice(0, 500),
+      link: url,
+      media_source: { source_type: "image_url", url: source.pin_image_url },
+    };
+    let attempt = 0, ok = false, lastStatus = 0, lastErr = "", newId: string | null = null;
+    while (attempt < 3 && !ok) {
+      attempt++;
+      const res = await pFetch(`/pins`, token, { method: "POST", body: JSON.stringify(payload) });
+      lastStatus = res.status; lastErr = res.err;
+      if (res.status === 201 && res.body?.id) { ok = true; newId = res.body.id; break; }
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      break;
+    }
+    if (!ok || !newId) {
+      failed++;
+      apiErrors.push({ pin_id: g.pin_id, product_id: g.product_id, http_status: lastStatus, error: lastErr });
+      await ev(sb, runId, {
+        phase: "republish_deleted_remote", action: "failed",
+        pin_id: g.pin_id, product_id: g.product_id, board_id: board,
+        http_status: lastStatus, before_snapshot: payload, error: lastErr,
+      });
+      await new Promise((r) => setTimeout(r, 3000));
+      continue;
+    }
+
+    // 7) Insert new published row (preserve deleted_remote row for audit)
+    const { error: iErr } = await sb.from("pinterest_pin_performance").insert({
+      pin_id: newId, product_id: g.product_id, product_url: url,
+      pin_title: title, pin_description: source.pin_description || "",
+      status: "published", generation_batch: "reality_recovery_bridge_v1",
+    });
+    if (iErr) {
+      await ev(sb, runId, {
+        phase: "republish_deleted_remote", action: "row_insert_failed",
+        pin_id: g.pin_id, new_pin_id: newId, product_id: g.product_id, board_id: board,
+        error: iErr.message,
+      });
+    }
+    posted++;
+    perProduct[g.product_id] = (perProduct[g.product_id] || 0) + 1;
+    perBoard[board]++;
+    liveTitles.push(title);
+    liveTitleSet.add(title.toLowerCase());
+    liveUrls.add(url.toLowerCase());
+
+    // Use republish_posted action so phaseVerify picks it up
+    await ev(sb, runId, {
+      phase: "republish_deleted_remote", action: "republish_posted",
+      pin_id: g.pin_id, new_pin_id: newId, product_id: g.product_id, board_id: board,
+      http_status: 201, before_snapshot: payload, after_snapshot: { id: newId },
+    });
+
+    await new Promise((r) => setTimeout(r, 6000 + Math.floor(Math.random() * 6000)));
+  }
+
+  await patchRun(sb, runId, {
+    republish_candidates: cohort.length,
+    republished_ok: posted,
+    republish_skipped_gates: skipped,
+    republish_failed_api: failed,
+  });
+  return { cohort_size: cohort.length, eligible, posted, skipped, failed, api_errors: apiErrors.slice(0, 20) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -658,6 +891,16 @@ Deno.serve(async (req) => {
       const c = await phaseCertify(sb, runId);
       return json({ ok: true, run_id: runId, phase,
         audit: a, ghosts: g, repair: rp, dedup: d, republish: pub, verify: v, certify: c });
+    }
+    if (phase === "republish_deleted_remote") {
+      if (!confirm) return json({ ok: false, message: "republish_deleted_remote requires confirm: true" }, 428);
+      const limit = Math.max(1, Math.min(MAX_REPUBLISH_PER_RUN, Number(body.limit) || MAX_REPUBLISH_PER_RUN));
+      const runId = await ensureRun(sb, inRun, auth.who,
+        ["republish_deleted_remote", "verify", "certify"]);
+      const r = await phaseRepublishDeletedRemote(sb, token!, runId, limit);
+      const v = await phaseVerify(sb, token!, runId);
+      const c = await phaseCertify(sb, runId);
+      return json({ ok: true, run_id: runId, phase, republish: r, verify: v, certify: c });
     }
     return json({ ok: false, message: `unknown phase: ${phase}` }, 400);
   } catch (e) {
