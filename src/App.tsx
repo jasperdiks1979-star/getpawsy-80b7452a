@@ -1783,6 +1783,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="customer-behaviour-engine"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CustomerBehaviourEnginePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="conversion-intelligence"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
