@@ -657,6 +657,311 @@ async function phaseDedup(sb: any, token: string, runId: string) {
   return { candidates: toRetire.size, retired, failed };
 }
 
+// ---------------- REGENERATE PREVIEW (read-only) ----------------
+// Safe pre-publish regeneration layer for deleted_remote rows.
+// - NO Pinterest API publish call
+// - NO status update on pinterest_pin_performance
+// - NO bypass of anti-spam gates
+// Produces a classification + proposed (title, url) that would pass gates.
+//
+// Classifications:
+//   ready_clean            — original title+url already pass all gates
+//   needs_url_variant      — url dup only; UTM variant produced
+//   needs_title_rewrite    — title dup/similarity only; alt title produced
+//   needs_title_and_url    — both blocked; both regenerated
+//   insufficient_metadata  — no usable product name / image / slug
+//   retire_candidate       — no regeneration variant passes gates
+
+function stripTrackingParams(u: string): string {
+  try {
+    const url = new URL(u);
+    for (const k of Array.from(url.searchParams.keys())) {
+      if (k.toLowerCase().startsWith("utm_")) url.searchParams.delete(k);
+    }
+    return url.toString();
+  } catch { return u; }
+}
+
+function buildUtmVariant(baseUrl: string, oldPinId: string): string {
+  try {
+    const url = new URL(baseUrl);
+    // Reset UTMs to canonical recovery attribution.
+    for (const k of Array.from(url.searchParams.keys())) {
+      if (k.toLowerCase().startsWith("utm_")) url.searchParams.delete(k);
+    }
+    url.searchParams.set("utm_source", "pinterest");
+    url.searchParams.set("utm_medium", "organic");
+    url.searchParams.set("utm_campaign", "recovery");
+    url.searchParams.set("utm_content", `r_${oldPinId}`);
+    return url.toString();
+  } catch { return baseUrl; }
+}
+
+const TITLE_TEMPLATES = [
+  (n: string) => `${n} — Pet Parent Pick`,
+  (n: string) => `${n} · Everyday Essential`,
+  (n: string) => `Meet the ${n}`,
+  (n: string) => `${n} for Modern Homes`,
+  (n: string) => `Why We Love the ${n}`,
+  (n: string) => `${n} — Small Upgrade, Big Difference`,
+  (n: string) => `${n} · Made for Busy Pet Parents`,
+  (n: string) => `${n} — Calm, Clean, Consistent`,
+  (n: string) => `${n} · Designed Around Your Pet`,
+  (n: string) => `${n} — A Simple Daily Win`,
+];
+
+const CLICKBAIT_RX = /(shocking|unbelievable|you won.?t believe|miracle|magic|secret hack|doctors hate|weird trick)/i;
+const FAKE_CLAIM_RX = /(#1 best|guaranteed|cure|100% effective|clinically proven|vet approved)/i;
+
+function titlePassesContent(t: string): boolean {
+  if (!t || t.trim().length < 10) return false;
+  if (t.length > 100) return false;
+  if (CLICKBAIT_RX.test(t)) return false;
+  if (FAKE_CLAIM_RX.test(t)) return false;
+  if (TITLE_BLOCKLIST.some((rx) => rx.test(t))) return false;
+  return true;
+}
+
+function titlePassesUniqueness(
+  t: string,
+  liveTitleSet: Set<string>,
+  liveTitles: string[],
+): boolean {
+  const norm = t.trim().toLowerCase();
+  if (liveTitleSet.has(norm)) return false;
+  for (const lt of liveTitles) {
+    if (jaccard(t, lt) >= TITLE_SIM_MAX) return false;
+  }
+  return true;
+}
+
+function urlPassesUniqueness(u: string, liveUrls: Set<string>): boolean {
+  return !liveUrls.has(u.toLowerCase());
+}
+
+async function phaseRegeneratePreview(
+  sb: any,
+  runId: string,
+  opts: { limit?: number } = {},
+) {
+  await patchRun(sb, runId, { phase_current: "regenerate_preview" });
+  const limit = Math.max(1, Math.min(200, Math.floor(opts.limit ?? 30)));
+
+  // Live corpus (uniqueness baseline)
+  const { data: live } = await sb.from("pinterest_pin_performance")
+    .select("pin_id,pin_title,product_url,product_id").eq("status", "published");
+  const liveList = live ?? [];
+  const liveTitles = liveList.map((r: any) => r.pin_title || "").filter(Boolean);
+  const liveTitleSet = new Set(liveTitles.map((t: string) => t.trim().toLowerCase()));
+  const liveUrls = new Set(
+    liveList.map((r: any) => (r.product_url || "").toLowerCase()).filter(Boolean),
+  );
+
+  // Candidates: historical deleted_remote rows
+  const { data: rows } = await sb.from("pinterest_pin_performance")
+    .select("pin_id,product_id,pin_title,product_url")
+    .eq("status", "deleted_remote")
+    .not("pin_id", "is", null)
+    .not("product_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  const candidates = rows ?? [];
+
+  // Product metadata (name_clean, name, slug)
+  const productIds = Array.from(new Set(candidates.map((c: any) => c.product_id)));
+  const { data: prods } = productIds.length
+    ? await sb.from("products").select("id,name,name_clean,slug,image_url,is_active,stock")
+        .in("id", productIds)
+    : { data: [] };
+  const prodById = new Map<string, any>();
+  for (const p of prods ?? []) prodById.set(String(p.id), p);
+
+  const counters: Record<string, number> = {
+    ready_clean: 0, needs_title_rewrite: 0, needs_url_variant: 0,
+    needs_title_and_url: 0, insufficient_metadata: 0, retire_candidate: 0,
+  };
+  let would_pass_after_regen = 0;
+  let still_blocked = 0;
+  const preview: any[] = [];
+
+  // Track proposed titles/urls to avoid intra-batch collisions
+  const proposedTitles = new Set<string>();
+  const proposedUrls = new Set<string>();
+
+  for (const c of candidates) {
+    const pinId = String(c.pin_id);
+    const productId = String(c.product_id);
+    const oldTitle = (c.pin_title || "").trim();
+    const oldUrl = (c.product_url || "").trim();
+    const prod = prodById.get(productId);
+    const productName = (prod?.name_clean || prod?.name || "").trim();
+    const slug = prod?.slug || "";
+    const inStock = typeof prod?.stock === "number" ? prod.stock > 0 : true;
+    const isActive = prod?.is_active !== false;
+    const usable =
+      !!prod && isActive && inStock &&
+      !!productName && !!slug && !!(prod.image_url);
+
+    if (!usable) {
+      counters.insufficient_metadata++;
+      still_blocked++;
+      preview.push({
+        old_pin_id: pinId, product_id: productId,
+        old_title: oldTitle, new_title: null,
+        old_url: oldUrl, new_url: null,
+        classification: "insufficient_metadata",
+        reason: !prod ? "product_missing"
+          : !isActive ? "product_inactive"
+          : !inStock ? "product_oos"
+          : !productName ? "missing_product_name"
+          : !slug ? "missing_slug"
+          : "missing_image",
+        gate_result: "blocked",
+      });
+      continue;
+    }
+
+    // Gate checks on ORIGINAL
+    const origUrlOk = oldUrl.length > 0 &&
+      urlPassesUniqueness(oldUrl, liveUrls) &&
+      !proposedUrls.has(oldUrl.toLowerCase());
+    const origTitleOk = titlePassesContent(oldTitle) &&
+      titlePassesUniqueness(oldTitle, liveTitleSet, liveTitles) &&
+      !proposedTitles.has(oldTitle.trim().toLowerCase());
+
+    let classification: string;
+    let newTitle: string | null = oldTitle || null;
+    let newUrl: string | null = oldUrl || null;
+    let reason = "";
+
+    if (origTitleOk && origUrlOk) {
+      classification = "ready_clean";
+      reason = "original_passes_all_gates";
+    } else {
+      // Try URL variant if URL blocked
+      if (!origUrlOk) {
+        const base = oldUrl || `https://getpawsy.pet/products/${slug}`;
+        newUrl = buildUtmVariant(base, pinId);
+        if (!urlPassesUniqueness(newUrl, liveUrls) || proposedUrls.has(newUrl.toLowerCase())) {
+          // add extra jitter
+          newUrl = buildUtmVariant(base, `${pinId}_${Date.now().toString(36)}`);
+        }
+      }
+      // Try title alternatives if title blocked
+      if (!origTitleOk) {
+        newTitle = null;
+        for (const tpl of TITLE_TEMPLATES) {
+          const cand = tpl(productName).slice(0, 100);
+          if (!titlePassesContent(cand)) continue;
+          if (!titlePassesUniqueness(cand, liveTitleSet, liveTitles)) continue;
+          if (proposedTitles.has(cand.trim().toLowerCase())) continue;
+          newTitle = cand;
+          break;
+        }
+      }
+
+      const titleFixed = !!newTitle;
+      const urlFixed = !!newUrl && urlPassesUniqueness(newUrl, liveUrls) &&
+        !proposedUrls.has(newUrl.toLowerCase());
+
+      const titleWasBad = !origTitleOk;
+      const urlWasBad = !origUrlOk;
+
+      if (titleWasBad && urlWasBad) {
+        if (titleFixed && urlFixed) {
+          classification = "needs_title_and_url";
+          reason = "regenerated_both";
+        } else {
+          classification = "retire_candidate";
+          reason = `no_variant_passes:title=${titleFixed} url=${urlFixed}`;
+        }
+      } else if (titleWasBad) {
+        if (titleFixed) {
+          classification = "needs_title_rewrite";
+          reason = "regenerated_title";
+        } else {
+          classification = "retire_candidate";
+          reason = "no_title_variant_passes";
+        }
+      } else {
+        if (urlFixed) {
+          classification = "needs_url_variant";
+          reason = "regenerated_url";
+        } else {
+          classification = "retire_candidate";
+          reason = "no_url_variant_passes";
+        }
+      }
+    }
+
+    // Final gate simulation
+    const finalTitleOk = !!newTitle && titlePassesContent(newTitle) &&
+      titlePassesUniqueness(newTitle, liveTitleSet, liveTitles) &&
+      !proposedTitles.has(newTitle.trim().toLowerCase());
+    const finalUrlOk = !!newUrl &&
+      urlPassesUniqueness(newUrl, liveUrls) &&
+      !proposedUrls.has(newUrl.toLowerCase());
+    const wouldPass = classification !== "retire_candidate" &&
+      classification !== "insufficient_metadata" &&
+      finalTitleOk && finalUrlOk;
+
+    if (wouldPass) {
+      would_pass_after_regen++;
+      proposedTitles.add(newTitle!.trim().toLowerCase());
+      proposedUrls.add(newUrl!.toLowerCase());
+    } else if (classification === "retire_candidate" || classification === "insufficient_metadata") {
+      still_blocked++;
+    } else {
+      // classification says fixed but final gate failed → downgrade
+      classification = "retire_candidate";
+      reason = `final_gate_failed:title=${finalTitleOk} url=${finalUrlOk}`;
+      still_blocked++;
+    }
+
+    counters[classification] = (counters[classification] || 0) + 1;
+
+    const previewRow = {
+      old_pin_id: pinId,
+      product_id: productId,
+      old_title: oldTitle,
+      new_title: newTitle,
+      old_url: oldUrl,
+      new_url: newUrl,
+      classification,
+      reason,
+      gate_result: wouldPass ? "would_pass" : "blocked",
+    };
+    preview.push(previewRow);
+
+    await ev(sb, runId, {
+      phase: "regenerate_preview",
+      action: "regenerate_preview_row",
+      pin_id: pinId,
+      product_id: productId,
+      reason: `${classification}:${reason}`,
+      before_snapshot: { title: oldTitle, url: oldUrl },
+      after_snapshot: { title: newTitle, url: newUrl, would_pass: wouldPass },
+    });
+  }
+
+  await ev(sb, runId, {
+    phase: "regenerate_preview",
+    action: "regenerate_preview_summary",
+    reason: "dry_run_only_no_publish",
+    after_snapshot: { ...counters, would_pass_after_regen, still_blocked, scanned: candidates.length },
+  });
+
+  return {
+    dry_run: true,
+    publish_called: false,
+    scanned: candidates.length,
+    ...counters,
+    would_pass_after_regen,
+    still_blocked,
+    preview,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -719,6 +1024,12 @@ Deno.serve(async (req) => {
       if (!inRun) return json({ ok: false, message: "run_id required" }, 400);
       const r = await phaseDedup(sb, token!, inRun);
       return json({ ok: true, run_id: inRun, phase, ...r });
+    }
+    if (phase === "regenerate_preview") {
+      const runId = await ensureRun(sb, inRun, auth.who, ["regenerate_preview"]);
+      const limit = typeof body.limit === "number" ? body.limit : 30;
+      const r = await phaseRegeneratePreview(sb, runId, { limit });
+      return json({ ok: true, run_id: runId, phase, ...r });
     }
     if (phase === "full") {
       // Full production recovery WITH republish + dedup. Requires confirm.
