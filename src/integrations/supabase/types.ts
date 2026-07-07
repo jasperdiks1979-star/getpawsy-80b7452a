@@ -73474,6 +73474,16 @@ export type Database = {
         Returns: string
       }
       pinterest_publish_health: { Args: never; Returns: Json }
+      pinterest_recovery_jobs_lease_one: {
+        Args: never
+        Returns: {
+          attempts: number
+          id: string
+          max_attempts: number
+          params: Json
+          phase: string
+        }[]
+      }
       pinterest_scheduler_health: { Args: never; Returns: Json }
       pinterest_success_probability: {
         Args: { _product_id: string }
