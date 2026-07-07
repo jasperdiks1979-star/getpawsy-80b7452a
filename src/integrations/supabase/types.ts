@@ -56708,15 +56708,23 @@ export type Database = {
       pinterest_recovery_jobs: {
         Row: {
           attempts: number
+          audit_http_status: number | null
+          audit_response: Json | null
+          audit_run_id: string | null
           completed_at: string | null
           created_at: string
+          dispatch_steps: Json | null
+          dispatched_at: string | null
           error: string | null
           id: string
+          last_error_stage: string | null
           locked_at: string | null
           max_attempts: number
           params: Json
           phase: string
           priority: number
+          republish_http_status: number | null
+          republish_response: Json | null
           requested_by: string | null
           result: Json | null
           run_id: string | null
@@ -56726,15 +56734,23 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          audit_http_status?: number | null
+          audit_response?: Json | null
+          audit_run_id?: string | null
           completed_at?: string | null
           created_at?: string
+          dispatch_steps?: Json | null
+          dispatched_at?: string | null
           error?: string | null
           id?: string
+          last_error_stage?: string | null
           locked_at?: string | null
           max_attempts?: number
           params?: Json
           phase: string
           priority?: number
+          republish_http_status?: number | null
+          republish_response?: Json | null
           requested_by?: string | null
           result?: Json | null
           run_id?: string | null
@@ -56744,15 +56760,23 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          audit_http_status?: number | null
+          audit_response?: Json | null
+          audit_run_id?: string | null
           completed_at?: string | null
           created_at?: string
+          dispatch_steps?: Json | null
+          dispatched_at?: string | null
           error?: string | null
           id?: string
+          last_error_stage?: string | null
           locked_at?: string | null
           max_attempts?: number
           params?: Json
           phase?: string
           priority?: number
+          republish_http_status?: number | null
+          republish_response?: Json | null
           requested_by?: string | null
           result?: Json | null
           run_id?: string | null
