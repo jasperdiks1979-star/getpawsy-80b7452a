@@ -99,20 +99,45 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // Admin gate
+  // Auth: admin JWT (original gate) OR service-role bearer (server-only bypass).
+  // Anon keys and unprivileged user JWTs are explicitly rejected.
   const authHeader = req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return json({ ok: false, message: "unauthorized" }, 401);
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-  const uid = claims?.claims?.sub;
-  if (!uid) return json({ ok: false, message: "unauthorized" }, 401);
-  const { data: roleRow } = await sb
-    .from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
-  if (!roleRow) return json({ ok: false, message: "admin only" }, 403);
+  const bearer = authHeader.slice("Bearer ".length).trim();
+  if (!bearer) return json({ ok: false, message: "unauthorized" }, 401);
+
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+  // Constant-time compare to avoid timing side-channels.
+  function ctEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let r = 0;
+    for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return r === 0;
+  }
+
+  // Explicitly reject the anon key even if presented as a bearer.
+  if (anonKey && ctEqual(bearer, anonKey)) {
+    return json({ ok: false, message: "anon key not accepted" }, 403);
+  }
+
+  const isServiceRole = !!serviceRoleKey && ctEqual(bearer, serviceRoleKey);
+
+  if (!isServiceRole) {
+    // Original admin JWT gate — unchanged behavior for browser callers.
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      anonKey,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await userClient.auth.getClaims(bearer);
+    const uid = claims?.claims?.sub;
+    if (!uid) return json({ ok: false, message: "unauthorized" }, 401);
+    const { data: roleRow } = await sb
+      .from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json({ ok: false, message: "admin only" }, 403);
+  }
 
   const body: any = await req.json().catch(() => ({}));
   const includeAnalytics = body?.analytics !== false;
