@@ -9,51 +9,89 @@ interface TrafficStats {
   browsing: number;
   cart: number;
   checkout: number;
+  purchases: number;
   campaigns: { name: string; count: number }[];
 }
 
+/**
+ * Pinterest Traffic — canonical-only source.
+ *
+ * Reads exclusively from `canonical_sessions` + `canonical_events`, the same
+ * truth layer Visitor World Map uses. Legacy paths (`visitor_activity`,
+ * `pinterest_attribution_health`, `pinterest_funnel_events` SUMs) are
+ * forbidden — see `src/test/pinterest-traffic-widget-canonical-source.test.ts`.
+ *
+ * Formulas match `pinterest-attribution-canonical-parity.test.ts`:
+ *   visitors  = distinct canonical_sessions in window (utm_source/referrer=pinterest)
+ *   cart      = COUNT(CANONICAL_ADD_TO_CART)  in those sessions
+ *   checkout  = COUNT(CANONICAL_CHECKOUT)     in those sessions
+ *   purchases = COUNT(CANONICAL_PURCHASE)     in those sessions
+ *   cvr       = purchases / visitors * 100
+ */
 export const PinterestTrafficWidget = () => {
   const { data: stats, isLoading, error } = useQuery({
-    queryKey: ["pinterest-traffic-stats"],
+    queryKey: ["pinterest-traffic-stats", "canonical", "30d"],
     queryFn: async (): Promise<TrafficStats> => {
-      // Get Pinterest traffic from last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const { data, error } = await supabase
-        .from("visitor_activity")
-        .select("activity_type, utm_campaign, referrer, utm_source")
-        .or(`utm_source.ilike.%pinterest%,referrer.ilike.%pinterest%,referrer.ilike.%pin.it%`)
-        .gte("created_at", thirtyDaysAgo.toISOString());
-      
-      if (error) throw error;
-      
-      const activities = data || [];
-      
-      // Count by activity type
-      const browsing = activities.filter(a => a.activity_type === "browsing").length;
-      const cart = activities.filter(a => a.activity_type === "cart").length;
-      const checkout = activities.filter(a => a.activity_type === "checkout").length;
-      
-      // Group by campaign
+      const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+
+      // 1. Pinterest-attributed canonical sessions in the 30d window.
+      //    Uses first_utm_source / first_referrer (locked attribution) with
+      //    fallback to live utm_source / referrer, matching Visitor World Map.
+      const { data: sessionRows, error: sErr } = await supabase
+        .from("canonical_sessions")
+        .select("session_id, first_utm_source, utm_source, first_utm_campaign, utm_campaign, first_referrer, referrer")
+        .gte("first_seen_at", since)
+        .or(
+          "utm_source.ilike.%pinterest%,first_utm_source.ilike.%pinterest%,referrer.ilike.%pinterest%,first_referrer.ilike.%pinterest%,referrer.ilike.%pin.it%,first_referrer.ilike.%pin.it%",
+        )
+        .limit(10000);
+      if (sErr) throw sErr;
+
+      const sessions = sessionRows ?? [];
+      const sessionIds = sessions.map((s) => s.session_id).filter(Boolean) as string[];
+
+      let cart = 0;
+      let checkout = 0;
+      let purchases = 0;
+
+      if (sessionIds.length > 0) {
+        // Chunk to stay under URL length limits.
+        const chunkSize = 500;
+        for (let i = 0; i < sessionIds.length; i += chunkSize) {
+          const chunk = sessionIds.slice(i, i + chunkSize);
+          const { data: evRows, error: eErr } = await supabase
+            .from("canonical_events")
+            .select("canonical_name")
+            .in("session_id", chunk)
+            .in("canonical_name", [
+              "CANONICAL_ADD_TO_CART",
+              "CANONICAL_CHECKOUT",
+              "CANONICAL_PURCHASE",
+            ])
+            .gte("occurred_at", since);
+          if (eErr) throw eErr;
+          for (const r of evRows ?? []) {
+            if (r.canonical_name === "CANONICAL_ADD_TO_CART") cart++;
+            else if (r.canonical_name === "CANONICAL_CHECKOUT") checkout++;
+            else if (r.canonical_name === "CANONICAL_PURCHASE") purchases++;
+          }
+        }
+      }
+
+      // Distinct sessions = "visitors" for the Pinterest lens.
+      const browsing = sessions.length;
+
       const campaignCounts: Record<string, number> = {};
-      activities.forEach(a => {
-        const campaign = a.utm_campaign || "Direct / Organic";
-        campaignCounts[campaign] = (campaignCounts[campaign] || 0) + 1;
-      });
-      
+      for (const s of sessions) {
+        const camp = s.first_utm_campaign || s.utm_campaign || "Direct / Organic";
+        campaignCounts[camp] = (campaignCounts[camp] || 0) + 1;
+      }
       const campaigns = Object.entries(campaignCounts)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
-      
-      return {
-        total: activities.length,
-        browsing,
-        cart,
-        checkout,
-        campaigns,
-      };
+
+      return { total: browsing, browsing, cart, checkout, purchases, campaigns };
     },
     refetchInterval: 60000, // Refresh every minute
   });
@@ -94,8 +132,9 @@ export const PinterestTrafficWidget = () => {
     );
   }
 
-  const conversionRate = stats && stats.browsing > 0 
-    ? ((stats.checkout / stats.browsing) * 100).toFixed(1) 
+  // Purchase-based CVR = purchases / visitors * 100 (matches canonical parity test).
+  const conversionRate = stats && stats.browsing > 0
+    ? ((stats.purchases / stats.browsing) * 100).toFixed(2)
     : "0";
 
   return (
