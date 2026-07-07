@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
   const phase = String(body?.phase ?? "").toLowerCase().trim();
   const confirm = body?.confirm === true;
   const limit = body?.limit == null ? null : Number(body.limit);
+  const useRegeneration = body?.use_regeneration === true;
 
   if (!phase) return json({ ok: false, error: "bad_request", reason: "phase_required" }, 400);
   if (!ALLOWED_PHASES.has(phase)) {
@@ -112,6 +113,7 @@ Deno.serve(async (req) => {
 
   const params: Record<string, unknown> = { confirm };
   if (limit != null) params.limit = Math.floor(limit);
+  if (useRegeneration) params.use_regeneration = true;
 
   // ── Dedup: reject if a pending/running job for the same phase exists ──────
   const { data: existing, error: existErr } = await admin
