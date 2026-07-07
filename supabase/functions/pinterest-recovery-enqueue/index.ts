@@ -1,113 +1,164 @@
-// pinterest-recovery-enqueue — ADMIN-ONLY entry point.
-// Inserts a job into public.pinterest_recovery_jobs and returns immediately.
-// The pinterest-recovery-worker (server-side, service-role) picks it up and
-// executes it detached from any browser/preview session.
-//
-// Auth: requires an admin JWT (bearer). Anon key rejected. Service role bypass
-// allowed for internal callers.
+// pinterest-recovery-enqueue
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin-gated writer for the server-side recovery queue.
+// Inserts exactly ONE row into `pinterest_recovery_jobs` and returns.
+// Does NOT run recovery inline. Does NOT touch Pinterest. Does NOT depend on
+// preview cookies after the enqueue call returns — the row is picked up by
+// the backend worker (cron-driven), completely detached from any browser
+// session.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), {
-    status: s,
+// Phases that write to Pinterest or mutate canonical rows. Require confirm:true.
+const DESTRUCTIVE_PHASES = new Set([
+  "republish",
+  "republish_deleted_remote",
+  "dedup",
+  "full",
+  "repair",
+]);
+
+// Whitelist of phases the enqueuer will accept. The worker is responsible for
+// dispatching each phase to `pinterest-reality-recovery`.
+const ALLOWED_PHASES = new Set([
+  "audit",
+  "ghosts",
+  "repair",
+  "republish",
+  "republish_deleted_remote",
+  "verify",
+  "certify",
+  "dedup",
+  "all",
+  "full",
+]);
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
-function ctEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return r === 0;
-}
-
-const ALLOWED_PHASES = new Set([
-  "audit", "ghosts", "repair", "republish", "verify", "certify",
-  "dedup", "all", "full", "republish_deleted_remote",
-]);
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, message: "POST only" }, 405);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const ANON = Deno.env.get("SUPABASE_ANON_KEY") || "";
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+  // ── AuthN: bearer JWT required ────────────────────────────────────────────
   const authHeader = req.headers.get("authorization") || "";
-  if (!authHeader.startsWith("Bearer ")) return json({ ok: false, message: "unauthorized" }, 401);
+  if (!authHeader.toLowerCase().startsWith("bearer ")) {
+    return json({ ok: false, error: "unauthorized", reason: "missing_bearer" }, 401);
+  }
   const bearer = authHeader.slice(7).trim();
-  if (!bearer) return json({ ok: false, message: "unauthorized" }, 401);
-  if (ANON && ctEqual(bearer, ANON)) return json({ ok: false, message: "anon key not accepted" }, 403);
-
-  let requestedBy: string | null = null;
-  if (ctEqual(bearer, SERVICE_ROLE)) {
-    // Internal / server-side caller. requested_by stays null.
-  } else {
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: claims } = await userClient.auth.getClaims(bearer);
-    const uid = claims?.claims?.sub;
-    if (!uid) return json({ ok: false, message: "unauthorized" }, 401);
-    const { data: role } = await admin.from("user_roles")
-      .select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
-    if (!role) return json({ ok: false, message: "admin only" }, 403);
-    requestedBy = uid;
+  if (!bearer) return json({ ok: false, error: "unauthorized", reason: "empty_bearer" }, 401);
+  // Reject the anon key outright — the enqueue endpoint is admin-only.
+  if (bearer === ANON_KEY) {
+    return json({ ok: false, error: "forbidden", reason: "anon_key_not_accepted" }, 403);
   }
 
-  const body: any = await req.json().catch(() => ({}));
-  const phase = String(body.phase || "").toLowerCase();
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+  const { data: userRes, error: userErr } = await userClient.auth.getUser(bearer);
+  const uid = userRes?.user?.id;
+  if (userErr || !uid) {
+    return json({ ok: false, error: "unauthorized", reason: "invalid_jwt" }, 401);
+  }
+
+  // ── AuthZ: has_role(uid, 'admin') via service role ────────────────────────
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { data: roleRow, error: roleErr } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", uid)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (roleErr) return json({ ok: false, error: "role_lookup_failed", detail: roleErr.message }, 500);
+  if (!roleRow) return json({ ok: false, error: "forbidden", reason: "admin_only" }, 403);
+
+  // ── Body validation ───────────────────────────────────────────────────────
+  let body: any = {};
+  try { body = await req.json(); } catch { /* empty body */ }
+
+  const phase = String(body?.phase ?? "").toLowerCase().trim();
+  const confirm = body?.confirm === true;
+  const limit = body?.limit == null ? null : Number(body.limit);
+
+  if (!phase) return json({ ok: false, error: "bad_request", reason: "phase_required" }, 400);
   if (!ALLOWED_PHASES.has(phase)) {
-    return json({ ok: false, message: `unknown phase: ${phase}` }, 400);
+    return json({ ok: false, error: "bad_request", reason: `unknown_phase:${phase}` }, 400);
+  }
+  if (DESTRUCTIVE_PHASES.has(phase) && !confirm) {
+    return json({
+      ok: false,
+      error: "confirmation_required",
+      reason: `phase '${phase}' is destructive; body.confirm must be true`,
+    }, 428);
+  }
+  if (limit != null && (!Number.isFinite(limit) || limit <= 0 || limit > 500)) {
+    return json({ ok: false, error: "bad_request", reason: "limit must be 1..500" }, 400);
   }
 
-  const params: Record<string, unknown> = {};
-  if (body.confirm === true) params.confirm = true;
-  if (typeof body.limit === "number" && body.limit > 0) params.limit = Math.min(body.limit, 500);
-  if (typeof body.run_id === "string") params.run_id = body.run_id;
+  const params: Record<string, unknown> = { confirm };
+  if (limit != null) params.limit = Math.floor(limit);
 
-  // Reject destructive phases without confirm at enqueue time — same posture
-  // as the recovery function itself, so bad requests never sit in the queue.
-  if ((phase === "full" || phase === "republish" ||
-       phase === "republish_deleted_remote" || phase === "dedup") &&
-      params.confirm !== true) {
-    return json({ ok: false, message: `${phase} requires confirm: true` }, 428);
+  // ── Dedup: reject if a pending/running job for the same phase exists ──────
+  const { data: existing, error: existErr } = await admin
+    .from("pinterest_recovery_jobs")
+    .select("id, status, phase, params, created_at")
+    .eq("phase", phase)
+    .in("status", ["pending", "running"])
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (existErr) {
+    return json({ ok: false, error: "dedup_lookup_failed", detail: existErr.message }, 500);
+  }
+  if (existing && existing.length > 0) {
+    const row = existing[0];
+    return json({
+      ok: true,
+      deduplicated: true,
+      job_id: row.id,
+      status: row.status,
+      phase: row.phase,
+      params: row.params,
+      message: `existing ${row.status} job for phase '${phase}' reused`,
+    }, 200);
   }
 
-  // Prevent piling up duplicate pending jobs of the same phase.
-  const { data: existing } = await admin.from("pinterest_recovery_jobs")
-    .select("id").eq("phase", phase).in("status", ["pending", "running"]).limit(1).maybeSingle();
-  if (existing) {
-    return json({ ok: true, deduped: true, job_id: existing.id, message: `already ${phase} in flight` });
+  // ── Insert exactly one job row ────────────────────────────────────────────
+  const { data: inserted, error: insErr } = await admin
+    .from("pinterest_recovery_jobs")
+    .insert({
+      phase,
+      params,
+      status: "pending",
+      requested_by: uid,
+    })
+    .select("id, status, phase, params, created_at")
+    .single();
+  if (insErr || !inserted) {
+    return json({ ok: false, error: "insert_failed", detail: insErr?.message }, 500);
   }
 
-  const insertRow: Record<string, unknown> = {
-    phase, params, status: "pending", requested_by: requestedBy,
-  };
-  const { data: job, error } = await admin.from("pinterest_recovery_jobs")
-    .insert(insertRow).select("id, phase, status, created_at").single();
-  if (error) return json({ ok: false, message: error.message }, 500);
-
-  // Best-effort kick: fire-and-forget to advance immediately without waiting
-  // for the cron tick. If it fails, cron will still pick it up.
-  try {
-    fetch(`${SUPABASE_URL}/functions/v1/pinterest-recovery-worker`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${SERVICE_ROLE}`,
-      },
-      body: JSON.stringify({ trigger: "enqueue_kick", job_id: job.id }),
-    }).catch(() => {});
-  } catch { /* ignore */ }
-
-  return json({ ok: true, job_id: job.id, phase: job.phase, status: job.status });
+  return json({
+    ok: true,
+    deduplicated: false,
+    job_id: inserted.id,
+    status: inserted.status,
+    phase: inserted.phase,
+    params: inserted.params,
+    created_at: inserted.created_at,
+  }, 201);
 });
