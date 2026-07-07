@@ -53999,6 +53999,72 @@ export type Database = {
           },
         ]
       }
+      pinterest_live_reality_audit: {
+        Row: {
+          analytics_http_status: number | null
+          classification: string
+          error: string | null
+          fetched_at: string
+          http_status: number | null
+          id: string
+          impressions_30d: number | null
+          live_board_id: string | null
+          live_created_at: string | null
+          live_description: string | null
+          live_link: string | null
+          live_title: string | null
+          outbound_clicks_30d: number | null
+          pin_clicks_30d: number | null
+          pin_id: string
+          raw_analytics: Json | null
+          raw_response: Json | null
+          run_id: string
+          saves_30d: number | null
+        }
+        Insert: {
+          analytics_http_status?: number | null
+          classification: string
+          error?: string | null
+          fetched_at?: string
+          http_status?: number | null
+          id?: string
+          impressions_30d?: number | null
+          live_board_id?: string | null
+          live_created_at?: string | null
+          live_description?: string | null
+          live_link?: string | null
+          live_title?: string | null
+          outbound_clicks_30d?: number | null
+          pin_clicks_30d?: number | null
+          pin_id: string
+          raw_analytics?: Json | null
+          raw_response?: Json | null
+          run_id: string
+          saves_30d?: number | null
+        }
+        Update: {
+          analytics_http_status?: number | null
+          classification?: string
+          error?: string | null
+          fetched_at?: string
+          http_status?: number | null
+          id?: string
+          impressions_30d?: number | null
+          live_board_id?: string | null
+          live_created_at?: string | null
+          live_description?: string | null
+          live_link?: string | null
+          live_title?: string | null
+          outbound_clicks_30d?: number | null
+          pin_clicks_30d?: number | null
+          pin_id?: string
+          raw_analytics?: Json | null
+          raw_response?: Json | null
+          run_id?: string
+          saves_30d?: number | null
+        }
+        Relationships: []
+      }
       pinterest_loser_blocklist: {
         Row: {
           asset_id: string | null
