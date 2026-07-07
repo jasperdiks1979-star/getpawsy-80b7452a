@@ -56544,6 +56544,167 @@ export type Database = {
           },
         ]
       }
+      pinterest_reality_recovery_events: {
+        Row: {
+          action: string
+          after_snapshot: Json | null
+          before_snapshot: Json | null
+          board_id: string | null
+          confidence: number | null
+          created_at: string
+          error: string | null
+          http_status: number | null
+          id: string
+          new_pin_id: string | null
+          phase: string
+          pin_id: string | null
+          product_id: string | null
+          reason: string | null
+          run_id: string
+        }
+        Insert: {
+          action: string
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          board_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          new_pin_id?: string | null
+          phase: string
+          pin_id?: string | null
+          product_id?: string | null
+          reason?: string | null
+          run_id: string
+        }
+        Update: {
+          action?: string
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          board_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          new_pin_id?: string | null
+          phase?: string
+          pin_id?: string | null
+          product_id?: string | null
+          reason?: string | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_reality_recovery_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_reality_recovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_reality_recovery_runs: {
+        Row: {
+          boards_used: number | null
+          canonical_published: number | null
+          coverage_pct: number | null
+          created_at: string
+          drift_detected: number | null
+          drift_repaired_high_conf: number | null
+          drift_skipped_low_conf: number | null
+          duplicate_titles_live: number | null
+          duplicate_urls_live: number | null
+          finished_at: string | null
+          ghosts_detected: number | null
+          ghosts_marked_deleted: number | null
+          id: string
+          live_after: number | null
+          live_before: number | null
+          notes: Json
+          phase_current: string | null
+          phases_requested: string[]
+          products_represented: number | null
+          republish_candidates: number | null
+          republish_failed_api: number | null
+          republish_skipped_gates: number | null
+          republished_ok: number | null
+          result: string | null
+          started_at: string
+          status: string
+          triggered_by: string | null
+          updated_at: string
+          verified_ok: number | null
+          verify_failed: number | null
+        }
+        Insert: {
+          boards_used?: number | null
+          canonical_published?: number | null
+          coverage_pct?: number | null
+          created_at?: string
+          drift_detected?: number | null
+          drift_repaired_high_conf?: number | null
+          drift_skipped_low_conf?: number | null
+          duplicate_titles_live?: number | null
+          duplicate_urls_live?: number | null
+          finished_at?: string | null
+          ghosts_detected?: number | null
+          ghosts_marked_deleted?: number | null
+          id?: string
+          live_after?: number | null
+          live_before?: number | null
+          notes?: Json
+          phase_current?: string | null
+          phases_requested?: string[]
+          products_represented?: number | null
+          republish_candidates?: number | null
+          republish_failed_api?: number | null
+          republish_skipped_gates?: number | null
+          republished_ok?: number | null
+          result?: string | null
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+          verified_ok?: number | null
+          verify_failed?: number | null
+        }
+        Update: {
+          boards_used?: number | null
+          canonical_published?: number | null
+          coverage_pct?: number | null
+          created_at?: string
+          drift_detected?: number | null
+          drift_repaired_high_conf?: number | null
+          drift_skipped_low_conf?: number | null
+          duplicate_titles_live?: number | null
+          duplicate_urls_live?: number | null
+          finished_at?: string | null
+          ghosts_detected?: number | null
+          ghosts_marked_deleted?: number | null
+          id?: string
+          live_after?: number | null
+          live_before?: number | null
+          notes?: Json
+          phase_current?: string | null
+          phases_requested?: string[]
+          products_represented?: number | null
+          republish_candidates?: number | null
+          republish_failed_api?: number | null
+          republish_skipped_gates?: number | null
+          republished_ok?: number | null
+          result?: string | null
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          updated_at?: string
+          verified_ok?: number | null
+          verify_failed?: number | null
+        }
+        Relationships: []
+      }
       pinterest_recovery_pin_audit: {
         Row: {
           board: string | null
