@@ -130,7 +130,7 @@ function ProductIntelligence() {
   if (signals.error) return <ErrorState msg={`agp_signals_daily: ${signals.error}`} />;
   if (health.loading || signals.loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
 
-  const totals = signals.data.reduce((a, r) => ({
+  const totals = signals.data.reduce<{sessions:number;atc:number;checkouts:number;purchases:number;revenue:number}>((a, r) => ({
     sessions: a.sessions + Number(r.ga_sessions ?? 0),
     atc: a.atc + Number(r.ga_atc ?? 0),
     checkouts: a.checkouts + Number(r.ga_checkouts ?? 0),
@@ -141,14 +141,14 @@ function ProductIntelligence() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {[
-          ["Sessions (7d)", totals.sessions],
-          ["ATC", totals.atc],
-          ["Checkouts", totals.checkouts],
-          ["Purchases", totals.purchases],
+        {([
+          ["Sessions (7d)", String(totals.sessions)],
+          ["ATC", String(totals.atc)],
+          ["Checkouts", String(totals.checkouts)],
+          ["Purchases", String(totals.purchases)],
           ["Revenue", `$${(totals.revenue / 100).toFixed(2)}`],
-        ].map(([label, v]) => (
-          <Card key={String(label)}>
+        ] as Array<[string, string]>).map(([label, v]) => (
+          <Card key={label}>
             <CardHeader className="pb-1"><CardTitle className="text-xs font-medium text-muted-foreground">{label}</CardTitle></CardHeader>
             <CardContent className="pt-0 text-xl font-semibold tabular-nums">{String(v)}</CardContent>
           </Card>
