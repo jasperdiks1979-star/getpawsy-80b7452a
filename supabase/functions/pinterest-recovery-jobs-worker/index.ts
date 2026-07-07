@@ -161,36 +161,56 @@ async function runJob(
     return json({ ok: true, job_id: job.id, phase: job.phase, dry_run: true, dispatched: false });
   }
 
-  const route = PHASE_ROUTES[job.phase];
-  const dispatchBody = route.buildBody(job.params ?? {});
-  let resStatus = 0;
-  let resJson: any = null;
-  let resError: string | null = null;
-  try {
-    const r = await fetch(`${SUPABASE_URL}/functions/v1/${route.fn}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${SERVICE_ROLE}`,
-        apikey: SERVICE_ROLE,
-      },
-      body: JSON.stringify(dispatchBody),
+  // Only phase supported today: republish_deleted_remote.
+  //
+  // Contract with pinterest-reality-recovery:
+  //   1) POST { phase:"audit" }                → returns { ok, run_id, ... }
+  //   2) POST { phase:"republish", confirm:true, limit, run_id }
+  //
+  // Any failure at step 1 or step 2 marks the job as failed and stops.
+  // The worker never dispatches verify/certify by itself and never uses run_all.
+  const params = job.params ?? {};
+  const limit = Number.isFinite(params?.limit) ? Math.max(0, Math.floor(Number(params.limit))) : 30;
+  const steps: Array<Record<string, unknown>> = [];
+
+  // ── Step 1: audit ───────────────────────────────────────────────────────
+  const auditBody = { phase: "audit" as const };
+  const audit = await callRecovery(SUPABASE_URL, SERVICE_ROLE, auditBody);
+  steps.push({ step: "audit", request: auditBody, http_status: audit.status, body: audit.json, error: audit.error });
+  const runId: string | null = audit.json?.run_id ?? audit.json?.runId ?? null;
+
+  if (audit.error || !runId) {
+    await finish({
+      status: "failed",
+      result: { dispatched_to: RECOVERY_FN, steps },
+      error: audit.error ?? "audit_missing_run_id",
+      run_id: runId,
+      completed_at: new Date().toISOString(),
     });
-    resStatus = r.status;
-    const txt = await r.text();
-    try { resJson = JSON.parse(txt); } catch { resJson = { raw: txt }; }
-    if (!r.ok) resError = `dispatch_http_${r.status}`;
-  } catch (e) {
-    resError = `dispatch_exception:${(e as Error).message}`;
+    return json({
+      ok: false, job_id: job.id, phase: job.phase,
+      dispatched_to: RECOVERY_FN, stage: "audit",
+      http_status: audit.status, run_id: runId,
+      error: audit.error ?? "audit_missing_run_id",
+    });
   }
 
-  const runId = resJson?.run_id ?? resJson?.runId ?? null;
-  const success = !resError && resJson?.ok !== false;
+  // ── Step 2: republish with captured run_id ──────────────────────────────
+  const republishBody = {
+    phase: "republish" as const,
+    confirm: true,
+    limit,
+    run_id: runId,
+    ...(params?.dry_run === true ? { dry_run: true } : {}),
+  };
+  const republish = await callRecovery(SUPABASE_URL, SERVICE_ROLE, republishBody);
+  steps.push({ step: "republish", request: republishBody, http_status: republish.status, body: republish.json, error: republish.error });
 
+  const success = !republish.error;
   await finish({
     status: success ? "completed" : "failed",
-    result: { http_status: resStatus, body: resJson, dispatched_to: route.fn, dispatch_body: dispatchBody },
-    error: success ? null : resError ?? "dispatch_reported_failure",
+    result: { dispatched_to: RECOVERY_FN, run_id: runId, limit, steps },
+    error: success ? null : republish.error ?? "republish_reported_failure",
     run_id: runId,
     completed_at: new Date().toISOString(),
   });
@@ -199,8 +219,10 @@ async function runJob(
     ok: success,
     job_id: job.id,
     phase: job.phase,
-    dispatched_to: route.fn,
-    http_status: resStatus,
+    dispatched_to: RECOVERY_FN,
     run_id: runId,
+    audit_http_status: audit.status,
+    republish_http_status: republish.status,
+    limit,
   });
 }
