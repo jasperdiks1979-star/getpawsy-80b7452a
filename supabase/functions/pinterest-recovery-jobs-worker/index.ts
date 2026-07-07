@@ -244,6 +244,7 @@ async function runJob(
     confirm: true,
     limit,
     run_id: runId,
+    ...(params?.use_regeneration === true ? { use_regeneration: true } : {}),
     ...(params?.dry_run === true ? { dry_run: true } : {}),
   };
   const republish = await callRecovery(SUPABASE_URL, SERVICE_ROLE, republishBody);
