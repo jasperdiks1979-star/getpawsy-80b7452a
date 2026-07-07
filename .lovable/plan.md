@@ -1,79 +1,95 @@
-# Finance Commander — Canonical State Engine Refactor
+## Pinterest Reality Recovery V1 — Execution Plan
 
-Goal: eliminate every remaining contradiction (Tax Readiness 67% vs Belastingdienst 100%; KPI 29 missing vs Tax 18 missing; supplier confidence 29% vs 100%; raw reconciliation JSON; desktop tables on mobile) by making every Finance panel a pure view over one canonical state object.
+Canonical published = 212. Live = 32 (28 drifted). Ghosts = 180. Goal: make LIVE == canonical, with evidence, no fabrication.
 
-Strictly scoped to Finance Commander. No changes to Pinterest, Creative Factory, Analytics, GA4, Sales Commander, Organic Intelligence, Growth Lab, Checkout, Stripe flow, CJ, or DB schemas.
+All work happens in **one new admin-gated edge function** `pinterest-reality-recovery` (dual auth: admin JWT OR `SUPABASE_SERVICE_ROLE_KEY`, same pattern as `pinterest-live-reality-audit`). Uses existing `pinterest_connection.access_token`. No new secrets. No schema changes to protected tables. No touching checkout / GA4 / canonical_events / analytics / OAuth / tracking.
 
-## Architecture
+### Storage (single new scratch table, additive only)
+
+`public.pinterest_reality_recovery_runs` — one row per run with phase counters, plus JSONB arrays of before/after snapshots per pin. Admin-only RLS + service_role. No changes to `pinterest_pin_performance` schema; only column writes already present (`status`, `rejection_reason`, `updated_at`, existing metadata columns). Uses existing `deleted_at` / `remote_status` if present; otherwise stores the delete audit in the new run table only (never destructive).
+
+### Phase flow (single function, `?phase=` param, resumable)
 
 ```text
-edge fns (finance-kpi-strip, finance-tax-readiness,
-finance-belastingdienst, finance-health-signals,
-finance-supplier-*, finance-reconcile-*, …)
-                │
-                ▼
-   useCanonicalFinanceState()  ◄── single React hook
-                │  (merges + reconciles all sources,
-                │   runs Contradiction Detector,
-                │   produces one FinanceState object)
-                ▼
-   FinanceStateProvider (Context)
-                │
-   ┌────────────┼─────────────┬─────────────┬────────────┐
-   ▼            ▼             ▼             ▼            ▼
- KPI Strip  Tax Readiness  Belasting-   Health       Supplier
-                           dienst       Signals      panels
-   (pure presentation — no fetches, no math, no status logic)
+phase=audit      → re-fetch live state for all 212 canonical published pins
+                   classify: LIVE_MATCH | LIVE_DRIFT | GHOST_404 | API_ERROR
+phase=ghosts     → for GHOST_404: UPDATE pinterest_pin_performance
+                   SET status='deleted_remote', rejection_reason='ghost_404',
+                       updated_at=now()
+                   snapshot before/after into run table
+phase=repair     → for LIVE_DRIFT: compute per-field confidence
+                   PATCH /v5/pins/{id} only when confidence >= 0.99
+                   fields: title, description, link, alt_text, board_id
+                   store before/after; below threshold → skip + log reason
+phase=republish  → for GHOSTS whose product still passes ALL gates:
+                   product.active, in_stock, pinterest_enabled,
+                   destination HEAD == 200, slug valid, image URL valid,
+                   hook_angle present, title+desc+URL unique vs live set,
+                   integrity guard passes (existing verifyPinIntegrity)
+                   anti-spam: per-product cap (max 6), per-board cap (max 8/run),
+                              title-similarity < 0.85 vs live corpus,
+                              no duplicate destination on live board
+                   throttle: 1 pin every 6–12s, jittered, max 30/run
+                   POST /v5/pins → on success insert new row w/ live pin_id
+                   on 429/5xx → exponential backoff, max 2 retries, then skip
+phase=verify     → GET each newly created pin, assert title/link/board match
+                   assert analytics endpoint returns 200 (or documented empty)
+                   any mismatch → mark row status='verify_failed'
+phase=certify    → emit factual counters (no estimates)
 ```
 
-## Deliverables
+Each phase is idempotent and can be re-invoked. Every phase writes to the same run row.
 
-### New files
-- `src/lib/finance/state/types.ts` — `FinanceState`, `FinanceStatus` union (`Verified | Estimated | Needs Review | Missing Evidence | Pending | Waiting Evidence | No Activity | Not Applicable | Unknown`), metric envelopes `{value, status, explanation, sources[]}`.
-- `src/lib/finance/state/statusEngine.ts` — single `resolveStatus(metric, ctx)` function. Only place status is computed.
-- `src/lib/finance/state/reconcile.ts` — merges raw edge-fn payloads into one canonical object. Picks the **single** authoritative source per metric (e.g. `missing_invoices` = tax-readiness result; KPI + Health + Belastingdienst all consume that number). Downgrades any dependent metric that outranks its base (Belastingdienst ≤ Tax Readiness; VAT-refund confidence ≤ evidence confidence; supplier confidence ≤ doc confidence).
-- `src/lib/finance/state/contradictionDetector.ts` — asserts invariants; returns `Contradiction[]`. Verified is blocked whenever any invariant fails.
-- `src/lib/finance/state/useCanonicalFinanceState.ts` + `FinanceStateProvider.tsx` — one fetcher, one context. All panels consume via `useFinanceState()` / selectors.
-- `src/lib/finance/state/explain.ts` — turns raw signals (recon scores, supplier learning inputs) into CFO-readable bullet lists.
-- `src/components/admin/finance/shared/ResponsiveTable.tsx` — table on desktop, stacked cards on mobile. Used by every list panel.
-- `src/components/admin/finance/shared/StatusBadge.tsx`, `MetricCell.tsx`, `ExplainPopover.tsx`.
-- `src/components/admin/finance/shared/ContradictionBanner.tsx` — surfaces detector output at top of Finance Commander page.
+### Anti-spam guardrails (hard-coded, not tunable via UI)
 
-### Edits (presentation-only, no local math)
-- `FinanceCommanderPage.tsx` — wrap in `FinanceStateProvider`; render `ContradictionBanner`.
-- `FinanceKpiStripPanel.tsx`, `TaxReadinessPanel.tsx`, `BelastingdienstReadinessPanel.tsx`, `OpenFinanceTasksPanel.tsx`, `ForensicDocumentsPanel.tsx`, `SupplierProfilesPanel.tsx`, `SupplierIntelligencePanel.tsx`, `ReconciliationCenterPanel.tsx`, `VatRefundEstimatorPanel.tsx`, plus Health Signals / Imports / Exports / Developer panels — strip local fetches + status logic, read from `useFinanceState()`, adopt `ResponsiveTable` + `StatusBadge` + `MetricCell`.
-- Reconciliation panel — hide raw JSON/scores; show `Exact Match / Strong Match / Needs Review` + ticked criteria + "N candidates evaluated".
-- Supplier Intelligence — every % has an `ExplainPopover` listing the inputs (invoices analysed, extraction quality, classification confidence, learning progress).
-- Document rows — show pipeline stage badge (`Uploaded → OCR → Extraction → VAT → Supplier → Verified`) instead of bare "Invoice date missing".
+- max 6 pins per product per recovery run
+- max 8 new pins per board per run
+- title Jaccard similarity ≥ 0.85 vs any live pin → blocked
+- destination URL must be unique across the entire live set
+- Multi-Cat Cleanliness title family explicitly blocklisted for this run
 
-### Backend (backward-compatible only, no schema change)
-- New edge fn `finance-canonical-state` that fan-outs to existing fns server-side, applies the same reconcile logic, and returns one payload. Frontend prefers this; falls back to per-panel fns if it errors. No existing endpoint removed.
-- Reuses existing tables. No migrations.
+### Certification output (real numbers only)
 
-### Self-healing
-- Add lightweight `finance-canonical-state` trigger call after any of: manual upload success, Stripe receipt ingest, bank txn import, supplier invoice arrival — already-existing edge fns are invoked in a fixed order (OCR → extraction → VAT classify → supplier learn → reconcile → refund estimate). No new schedules.
+```text
+canonical_published:        212
+live_before:                32
+ghosts_detected:            <n>
+ghosts_marked_deleted:      <n>
+drift_detected:             <n>
+drift_repaired_high_conf:   <n>
+drift_skipped_low_conf:     <n>
+republish_candidates:       <n>
+republished_ok:             <n>
+republish_skipped_gates:    <n>
+republish_failed_api:       <n>
+verified_ok:                <n>
+verify_failed:              <n>
+live_after:                 <n>
+duplicate_titles_live:      <n>
+duplicate_urls_live:        <n>
+boards_used:                <n>
+products_represented:       <n>
+coverage_pct:               live_after / canonical_published
+result:                     PASS | FAIL  (PASS requires all success criteria)
+```
 
-### Enterprise validation
-- `src/lib/finance/state/__tests__/contradictionDetector.test.ts` — vitest asserting each invariant.
-- CI-runnable script `scripts/finance-consistency-check.mjs` invoking `finance-canonical-state` and failing on any contradiction.
+### Explicitly NOT doing
 
-## Invariants enforced by detector
-1. `belastingdienst.status = Verified` ⇒ `missing_invoices = 0 ∧ missing_receipts = 0 ∧ unmatched_payments = 0 ∧ evidence_confidence = 100`.
-2. `tax_readiness_pct ≤ finance_readiness_pct`.
-3. `vat_refund.confidence ≤ evidence.confidence`.
-4. `supplier.confidence ≤ document.confidence`.
-5. KPI Strip counts ≡ Tax Readiness counts ≡ Health Signals counts (same field, one source).
-6. No metric may show `Verified` while its source `status ∈ {Needs Review, Missing Evidence, Pending, Waiting Evidence}`.
+- No creative regeneration, no AI image gen
+- No schema migrations on `pinterest_pin_performance` or any protected table
+- No deletion of Pinterest boards or products
+- No touching checkout / GA4 / canonical_* / attribution / tracking / OAuth / secrets
+- No overriding integrity guard
+- No optimistic reporting — every count comes from the run table
 
-## Mobile
-`ResponsiveTable` uses `md:` breakpoint — desktop table, mobile stacked card per row with label/value pairs and an expandable "Details" accordion. Applied to Open Tasks, Forensic Documents, Supplier Profiles/Intelligence, Reconciliation, Imports, Exports, Developer diagnostics.
+### Admin trigger
 
-## Out of scope
-Schemas, other subsystems, checkout, Stripe, CJ, Pinterest, GA4, Analytics, Growth. No API removals; only additive endpoint `finance-canonical-state`.
+Small button in existing Pinterest admin panel: "Run Reality Recovery" → invokes `pinterest-reality-recovery?phase=all` and streams the run row. Phases can also be invoked individually for safety.
 
-## Success criteria
-- One `FinanceState`; every panel imports from the provider.
-- Zero panels compute their own status or counts.
-- Contradiction Detector returns `[]` on the current dataset; if not, a banner explains what is inconsistent and blocks any `Verified` badge.
-- All list panels usable on 375px width with no horizontal scroll.
-- Typecheck clean; existing edge fns untouched; no schema migration.
+### Approval gate before publish phase
+
+`phase=republish` requires an explicit `confirm=true` body param. Ghost-marking and drift-repair run first so you can inspect the run row before authorizing new pin creation.
+
+---
+
+Approve to proceed. On approval I will (1) create the scratch table migration, (2) implement `supabase/functions/pinterest-reality-recovery/index.ts`, (3) add the admin trigger button, (4) run phases audit → ghosts → repair → verify and report counts before requesting republish confirmation.
