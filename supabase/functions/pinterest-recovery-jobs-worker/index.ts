@@ -18,7 +18,7 @@
 // Auth: this function is invoked by pg_cron with the anon key OR by an
 // admin calling it directly. No caller can influence which job is leased.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
