@@ -70,9 +70,9 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
   });
-  const { data: claimsRes, error: claimsErr } = await userClient.auth.getClaims(bearer);
-  const uid = claimsRes?.claims?.sub as string | undefined;
-  if (claimsErr || !uid) {
+  const { data: userRes, error: userErr } = await userClient.auth.getUser(bearer);
+  const uid = userRes?.user?.id;
+  if (userErr || !uid) {
     return json({ ok: false, error: "unauthorized", reason: "invalid_jwt" }, 401);
   }
 
