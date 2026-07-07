@@ -1,320 +1,159 @@
-// Pinterest Recovery Worker
-// ─────────────────────────────────────────────────────────────────────────────
-// Reprocesses entries from `pinterest_recovery_queue` by REUSING the existing
-// pin_image_url (no AI image render). Generates new headline/overlay/CTA from
-// the deterministic board templates and the DiversityGuard pool, then inserts
-// the recovered pin into `pinterest_pin_queue` as status='queued' so the
-// normal publish cadence picks it up immediately.
+// pinterest-recovery-worker — SERVER-SIDE executor.
 //
-// Zero image-render credits. Text-only.
+// Runs completely detached from any browser / preview session. Uses the
+// service role to invoke the existing pinterest-reality-recovery function,
+// which already accepts SUPABASE_SERVICE_ROLE_KEY as a valid caller.
+//
+// Trigger sources (all server-side):
+//   1. pg_cron (every minute) via pg_net.http_post
+//   2. Best-effort kick from pinterest-recovery-enqueue after INSERT
+//   3. Manual admin trigger from the admin dashboard (still service-role auth
+//      on the recovery function itself)
+//
+// One job per invocation. Uses SELECT ... FOR UPDATE SKIP LOCKED semantics
+// through a dedicated claim step so parallel workers cannot double-execute.
+//
+// NOTE: this function does not require an incoming JWT — it is protected by
+// its own logic (it only acts on rows in pinterest_recovery_jobs and only
+// calls the recovery function using SERVICE_ROLE). It never trusts the
+// caller's identity for authorization.
 
-import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { buildPinCopy, validatePinCopy } from "../_shared/pinterest-board-templates.ts";
-import { DiversityGuard, normaliseCategoryKey } from "../_shared/pinterest-diversity-guard.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const BASE_URL = "https://getpawsy.pet";
-
-const BLOCKED_HOSTS = [
-  "cjdropshipping",
-  "cf.cjdropshipping",
-  "oss-cf.cjdropshipping",
-  "aliexpress",
-  "alicdn",
-];
-
-function isBlockedHost(url: string | null | undefined): boolean {
-  if (!url) return true;
-  const u = url.toLowerCase();
-  return BLOCKED_HOSTS.some((h) => u.includes(h));
+function json(b: unknown, s = 200) {
+  return new Response(JSON.stringify(b), {
+    status: s,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
-function nicheFromCategory(category: string | null | undefined, slug: string): string {
-  const c = (category || slug || "").toLowerCase();
-  if (c.includes("litter")) return "cat_litter";
-  if (c.includes("tree") || c.includes("climb") || c.includes("tower")) return "cat_tree";
-  if (c.includes("bed")) return "cat_bed";
-  if (c.includes("carrier")) return "carriers";
-  if (c.includes("fountain") || c.includes("feeder") || c.includes("bowl")) return "feeder";
-  if (c.includes("toy")) return "toys";
-  return "cat_furniture";
+// A single-phase invocation cannot exceed the edge gateway wall clock.
+// The recovery function itself has 150s. We add a small safety window
+// and let the phase complete or timeout server-side.
+const RECOVERY_TIMEOUT_MS = 150_000;
+
+async function claimNextJob(admin: any): Promise<any | null> {
+  // Fetch oldest pending job, then compare-and-swap to 'running'.
+  // updated_at check ensures we don't clobber a competing worker.
+  const { data: candidate } = await admin
+    .from("pinterest_recovery_jobs")
+    .select("id, updated_at")
+    .eq("status", "pending")
+    .order("priority", { ascending: true })
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!candidate) return null;
+
+  const { data: claimed, error } = await admin
+    .from("pinterest_recovery_jobs")
+    .update({
+      status: "running",
+      locked_at: new Date().toISOString(),
+      started_at: new Date().toISOString(),
+      attempts: 1,
+    })
+    .eq("id", candidate.id)
+    .eq("status", "pending")             // guard against races
+    .eq("updated_at", candidate.updated_at)
+    .select("id, phase, params, attempts, max_attempts, requested_by")
+    .maybeSingle();
+  if (error || !claimed) return null;
+  return claimed;
+}
+
+async function invokeRecovery(
+  supabaseUrl: string,
+  serviceRole: string,
+  phase: string,
+  params: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number; body: any }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RECOVERY_TIMEOUT_MS);
+  try {
+    const r = await fetch(`${supabaseUrl}/functions/v1/pinterest-reality-recovery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceRole}`,
+      },
+      body: JSON.stringify({ phase, ...params }),
+      signal: controller.signal,
+    });
+    const body = await r.json().catch(() => ({}));
+    return { ok: r.ok && body?.ok !== false, status: r.status, body };
+  } catch (e) {
+    return {
+      ok: false, status: 0,
+      body: { message: (e as Error).message, aborted: (e as Error).name === "AbortError" },
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const startedAt = Date.now();
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  let body: any = {};
-  try { body = await req.json(); } catch { /* empty body ok */ }
-  const batchSize = Math.max(1, Math.min(300, Number(body?.batchSize ?? 250)));
-  const maxVariantsPerRow = Math.max(1, Math.min(4, Number(body?.maxVariants ?? 3)));
+  const started = Date.now();
+  const trace = crypto.randomUUID().slice(0, 8);
 
-  // ── Snapshot counters
-  const { count: queueSize } = await sb
-    .from("pinterest_recovery_queue").select("id", { count: "exact", head: true })
-    .eq("status", "pending");
+  // Recover any 'running' jobs abandoned by a previous invocation
+  // (edge timeout / cold-start crash). Anything running > 3 min is stale.
+  await admin.from("pinterest_recovery_jobs")
+    .update({
+      status: "failed",
+      error: "worker_timeout_before_completion",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("status", "running")
+    .lt("locked_at", new Date(Date.now() - 3 * 60_000).toISOString());
 
-  // ── Load loser-blocklist (active) and image-blocklist (hashes + urls)
-  const nowIso = new Date().toISOString();
-  const [loserRes, imgBlockRes] = await Promise.all([
-    sb.from("pinterest_loser_blocklist").select("product_slug, blocked_until").gt("blocked_until", nowIso),
-    sb.from("pinterest_image_blocklist").select("image_url, image_hash"),
-  ]);
-  const blockedSlugs = new Set((loserRes.data ?? []).map((r: any) => String(r.product_slug)));
-  const blockedImageUrls = new Set((imgBlockRes.data ?? []).map((r: any) => String(r.image_url || "")));
-
-  // ── Load DiversityGuard
-  // Recovery mode tolerates exact-overlay repeats inside the last-25 window
-  // because we are reusing existing images (no new image render). The per-90
-  // headline/cta/overlay caps still apply, which keeps real variety enforced.
-  const guard = new DiversityGuard({ windowLast25Exact: false });
-  await guard.load(sb);
-
-  // ── Pull pending recovery rows
-  const { data: rows, error: rowErr } = await sb
-    .from("pinterest_recovery_queue")
-    .select("id, source_pin_id, product_slug, board_id, board_name, pin_image_url, pin_image_phash, external_url, attempts")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(batchSize);
-  if (rowErr) {
-    return new Response(JSON.stringify({ ok: false, error: rowErr.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const job = await claimNextJob(admin);
+  if (!job) {
+    return json({ ok: true, trace, idle: true, elapsed_ms: Date.now() - started });
   }
 
-  const candidateRows = rows ?? [];
+  const phase = String(job.phase);
+  const params = (job.params || {}) as Record<string, unknown>;
+  console.log(`[recovery-worker ${trace}] executing job=${job.id} phase=${phase}`);
 
-  // ── Bulk-load products for the slugs we care about
-  const slugs = Array.from(new Set(candidateRows.map((r: any) => String(r.product_slug)).filter(Boolean)));
-  const productMap = new Map<string, any>();
-  if (slugs.length) {
-    // Chunk to keep PostgREST URL length under ~6KB; long product slugs blow
-    // past the limit with a single .in() call and silently return zero rows.
-    const CHUNK = 40;
-    for (let i = 0; i < slugs.length; i += CHUNK) {
-      const chunk = slugs.slice(i, i + CHUNK);
-      const { data: products, error: pErr } = await sb
-        .from("products")
-        .select("id, slug, name, category, price, benefit_angle, is_active, availability, stock, image_url")
-        .in("slug", chunk);
-      if (pErr) console.warn("[recovery-worker] product chunk error", pErr.message);
-      for (const p of products ?? []) productMap.set(String(p.slug), p);
-    }
+  const res = await invokeRecovery(SUPABASE_URL, SERVICE_ROLE, phase, params);
+  const durationMs = Date.now() - started;
+
+  const runId: string | null =
+    (res.body && typeof res.body === "object" && (res.body as any).run_id) || null;
+
+  if (res.ok) {
+    await admin.from("pinterest_recovery_jobs")
+      .update({
+        status: "completed",
+        result: { http_status: res.status, body: res.body, duration_ms: durationMs },
+        run_id: runId,
+        error: null,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+    return json({ ok: true, trace, job_id: job.id, phase, run_id: runId, duration_ms: durationMs });
   }
 
-  let recovered = 0;
-  let skippedBlocked = 0, skippedOOS = 0, skippedBadImage = 0, skippedDiversity = 0;
-  let skippedNoProduct = 0, skippedValidation = 0, skippedInsertErr = 0;
-  const breakdown: Record<string, number> = {};
-  const recoveredIds: string[] = [];
-
-  // Stagger publish times so the publisher cron picks them up over the cadence window
-  let scheduleOffsetSec = 0;
-
-  for (const r of candidateRows) {
-    const slug = String(r.product_slug || "");
-    const product = productMap.get(slug);
-
-    if (!product) {
-      skippedNoProduct++;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "skipped", last_error: "product_not_found", processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    if (blockedSlugs.has(slug)) {
-      skippedBlocked++;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "skipped", last_error: "loser_blocked", processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    const availability = String(product.availability || "").toLowerCase();
-    const isInStock = product.is_active !== false &&
-      (availability === "in stock" || availability === "in_stock" || availability === "" || availability === "available") &&
-      (product.stock == null || Number(product.stock) > 0);
-    if (!isInStock) {
-      skippedOOS++;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "skipped", last_error: "product_oos", processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    const pinImageUrl = String(r.pin_image_url || "");
-    if (!pinImageUrl || isBlockedHost(pinImageUrl) || blockedImageUrls.has(pinImageUrl)) {
-      skippedBadImage++;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "skipped", last_error: "blocked_source_or_image", processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    const niche = nicheFromCategory(product.category, slug);
-    const categoryKey = normaliseCategoryKey(niche);
-
-    // ── Try up to N text variants through DiversityGuard
-    let accepted: { copy: any; evalReasons: string[] } | null = null;
-    const allReasons: string[] = [];
-    for (let v = 0; v < maxVariantsPerRow; v++) {
-      const variantIdx = ((r.attempts || 0) * maxVariantsPerRow + v) % 4;
-      const copy = buildPinCopy({
-        name: product.name,
-        benefit: product.benefit_angle ?? null,
-        category: product.category ?? null,
-        price: product.price ?? null,
-        niche,
-      }, variantIdx);
-
-      // Validate copy first
-      const overlayBlock = `${copy.overlay} • ${copy.cta}`;
-      const valid = validatePinCopy({
-        title: copy.title, description: copy.description,
-        overlay: copy.overlay, overlayBlock, brandWordmark: copy.brandWordmark,
-      });
-      if (!valid.valid) { allReasons.push(`validation:${valid.errors.join(",")}`); continue; }
-
-      const evalRes = guard.evaluate({
-        headline: copy.overlay,
-        cta: copy.cta,
-        hook: niche,
-      }, categoryKey);
-
-      if (evalRes.ok) {
-        // Apply any pool swaps to the final copy fields
-        if (evalRes.replacedFromPool.headline) copy.overlay = evalRes.final.headline;
-        if (evalRes.replacedFromPool.cta) copy.cta = evalRes.final.cta;
-        guard.register(evalRes.final, categoryKey);
-        accepted = { copy, evalReasons: [] };
-        break;
-      }
-      allReasons.push(...evalRes.reasons);
-    }
-
-    if (!accepted) {
-      skippedDiversity++;
-      const reason = allReasons[0] || "diversity_blocked";
-      breakdown[reason] = (breakdown[reason] || 0) + 1;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "skipped",
-        attempts: (r.attempts || 0) + 1,
-        last_error: reason.slice(0, 240),
-        processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    const copy = accepted.copy;
-    const hookParam = encodeURIComponent(copy.overlay.slice(0, 40));
-    const destination = `${BASE_URL}/products/${slug}?utm_source=pinterest&utm_medium=social&utm_campaign=recovery&utm_content=${niche}&hook=${hookParam}`;
-    // DB trigger `enforce_pin_copy_rules` rejects `|` or `•` inside
-    // overlay_text. Store ONLY the short benefit overlay; the CTA lives in
-    // meta.cta and is rendered separately by the publisher.
-    const overlayFinal = copy.overlay
-      .replace(/[|•\r\n]/g, " ").replace(/\s+/g, " ").trim().slice(0, 32);
-
-    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
-    const variant = `recovery_${niche}_${stamp}_${String(r.id).slice(-6)}`;
-
-    scheduleOffsetSec += 30;
-    const scheduledAt = new Date(Date.now() + scheduleOffsetSec * 1000).toISOString();
-
-    const insertRow: any = {
-      product_id: product.id,
-      product_slug: slug,
-      product_name: product.name,
-      pin_variant: variant,
-      pin_title: copy.title,
-      pin_description: copy.description,
-      pin_image_url: pinImageUrl,
-      pin_image_phash: r.pin_image_phash ?? null,
-      destination_link: r.external_url || destination,
-      priority: "high",
-      status: "queued",
-      scheduled_at: scheduledAt,
-      approved_at: nowIso,
-      hook_group: niche,
-      category_key: niche,
-      board_name: r.board_name || null,
-      board_id: r.board_id || null,
-      overlay_text: overlayFinal,
-      content_type: "product",
-      recovery_mode_publish: true,
-      meta: {
-        creative_source: "creative_director_v2",
-        ai_generated: false,
-        generator: "pinterest-recovery-worker",
-        quality_tier: "recovered",
-        publish_allowed: true,
-        pin_type: "recovered",
-        cta: copy.cta,
-        recovery: {
-          source_pin_id: r.source_pin_id,
-          recovery_queue_id: r.id,
-          reused_image_url: true,
-        },
-      },
-    };
-
-    const ins = await sb.from("pinterest_pin_queue").insert(insertRow).select("id").single();
-    if (ins.error) {
-      skippedInsertErr++;
-      await sb.from("pinterest_recovery_queue").update({
-        status: "failed", attempts: (r.attempts || 0) + 1,
-        last_error: `insert:${ins.error.message}`.slice(0, 240),
-        processed_at: nowIso,
-      }).eq("id", r.id);
-      continue;
-    }
-
-    recovered++;
-    recoveredIds.push(String(ins.data!.id));
-    await sb.from("pinterest_recovery_queue").update({
-      status: "recovered", attempts: (r.attempts || 0) + 1,
-      processed_at: nowIso,
-      last_error: null,
-    }).eq("id", r.id);
-  }
-
-  const { count: remaining } = await sb
-    .from("pinterest_recovery_queue").select("id", { count: "exact", head: true })
-    .eq("status", "pending");
-
-  const result = {
-    ok: true,
-    recovery_queue_size_before: queueSize ?? null,
-    processed_rows: candidateRows.length,
-    recovered_pins_created: recovered,
-    approved_pins: recovered, // recovered pins are auto-approved (status=queued, approved_at=now)
-    queued_for_publish: recovered,
-    skipped: {
-      loser_blocked: skippedBlocked,
-      out_of_stock: skippedOOS,
-      blocked_image_source: skippedBadImage,
-      diversity_blocked: skippedDiversity,
-      product_not_found: skippedNoProduct,
-      copy_validation: skippedValidation,
-      insert_error: skippedInsertErr,
-    },
-    top_diversity_reasons: Object.entries(breakdown).sort((a, b) => b[1] - a[1]).slice(0, 10),
-    remaining_recovery_candidates: remaining ?? null,
-    image_render_credits_consumed: 0,
-    recovered_pin_queue_ids: recoveredIds.slice(0, 20),
-    duration_ms: Date.now() - startedAt,
-  };
-
-  return new Response(JSON.stringify(result, null, 2), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  await admin.from("pinterest_recovery_jobs")
+    .update({
+      status: "failed",
+      result: { http_status: res.status, body: res.body, duration_ms: durationMs },
+      run_id: runId,
+      error: (res.body && ((res.body as any).message || JSON.stringify(res.body).slice(0, 500))) || `http ${res.status}`,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", job.id);
+  return json({ ok: false, trace, job_id: job.id, phase, run_id: runId, http_status: res.status, body: res.body }, 200);
 });
