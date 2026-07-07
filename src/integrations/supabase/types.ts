@@ -56705,6 +56705,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_recovery_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          locked_at: string | null
+          max_attempts: number
+          params: Json
+          phase: string
+          priority: number
+          requested_by: string | null
+          result: Json | null
+          run_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          locked_at?: string | null
+          max_attempts?: number
+          params?: Json
+          phase: string
+          priority?: number
+          requested_by?: string | null
+          result?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          locked_at?: string | null
+          max_attempts?: number
+          params?: Json
+          phase?: string
+          priority?: number
+          requested_by?: string | null
+          result?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_recovery_pin_audit: {
         Row: {
           board: string | null
