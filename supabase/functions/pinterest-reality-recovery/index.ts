@@ -770,7 +770,7 @@ async function phaseRegeneratePreview(
   // Product metadata (name_clean, name, slug)
   const productIds = Array.from(new Set(candidates.map((c: any) => c.product_id)));
   const { data: prods } = productIds.length
-    ? await sb.from("products").select("id,name,name_clean,slug,image_url,active,in_stock")
+    ? await sb.from("products").select("id,name,name_clean,slug,image_url,is_active,stock")
         .in("id", productIds)
     : { data: [] };
   const prodById = new Map<string, any>();
@@ -796,8 +796,10 @@ async function phaseRegeneratePreview(
     const prod = prodById.get(productId);
     const productName = (prod?.name_clean || prod?.name || "").trim();
     const slug = prod?.slug || "";
+    const inStock = typeof prod?.stock === "number" ? prod.stock > 0 : true;
+    const isActive = prod?.is_active !== false;
     const usable =
-      !!prod && prod.active !== false && prod.in_stock !== false &&
+      !!prod && isActive && inStock &&
       !!productName && !!slug && !!(prod.image_url);
 
     if (!usable) {
@@ -809,8 +811,8 @@ async function phaseRegeneratePreview(
         old_url: oldUrl, new_url: null,
         classification: "insufficient_metadata",
         reason: !prod ? "product_missing"
-          : prod.active === false ? "product_inactive"
-          : prod.in_stock === false ? "product_oos"
+          : !isActive ? "product_inactive"
+          : !inStock ? "product_oos"
           : !productName ? "missing_product_name"
           : !slug ? "missing_slug"
           : "missing_image",
