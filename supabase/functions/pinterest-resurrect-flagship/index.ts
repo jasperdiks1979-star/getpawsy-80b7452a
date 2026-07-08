@@ -1,0 +1,359 @@
+// Pinterest Resurrection Engine — flagship proof.
+//
+// Scope (immutable, hard-coded for the flagship proof):
+//   product_slug = 'automatic-cat-litter-box-self-cleaning-app-control'
+//
+// What it does:
+//   1. Loads every historically rejected pinterest_pin_queue row for the flagship.
+//   2. Groups them into resurrectable buckets (title / banned / image_regen).
+//   3. Loads ALL historical titles for the product to build the dedup universe.
+//   4. Asks Lovable AI (openai/gpt-5.5) for 30 fresh candidate titles.
+//   5. Scores each candidate for:
+//        - US audience score (computeUsAudienceScore, canonical helper)
+//        - Duplicate risk vs history (token Jaccard)
+//        - Banned-phrase collision (enforce_pin_copy_rules parity)
+//   6. Composite confidence = 0.5*us + 0.3*(1-dup) + 0.2*intent_bonus.
+//   7. Keeps confidence >= 0.80.
+//   8. Writes to pinterest_resurrection_candidates as status='draft'.
+//
+// This function NEVER writes to pinterest_pin_queue, NEVER publishes,
+// NEVER modifies the recovery pipeline, cron, workers, or gates.
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { computeUsAudienceScore, hasUSIntentKeyword } from "../_shared/pinterest-copy.ts";
+
+const FLAGSHIP_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";
+
+// Mirror of enforce_pin_copy_rules banned list (kept in sync manually).
+const BANNED_PHRASES = [
+  "stop scooping","large space, no pressure","a box that manages itself",
+  "shop the upgrade","discover why","save for later","tired of litter",
+  "no more plastic bag","plush, warm, easy to wash","plush warm easy to wash",
+  "shop the viral find","explore the trend","see it in action","see the setup",
+  "clean with ease","automate it","tired of litter box chores","tired of",
+  "read reviews","see how",
+];
+
+const TARGET_BOARDS: Array<{ id: string; name: string; weight: number }> = [
+  { id: "1117103951261719235", name: "Smart Self-Cleaning Cat Litter Box", weight: 3 }, // niche, underused
+  { id: "1117103951261719234", name: "Smart Pet Gadgets", weight: 2 },
+  { id: "1117103951261719232", name: "Pet Parent Hacks", weight: 1 },
+];
+
+const RESURRECTABLE = new Set([
+  "duplicate_headline_archived",
+  "content_refresh_banned_phrase_2026_06_12",
+  "quality-reset-pre-layout-engine",
+  "creative_mismatch",
+]);
+
+function bucketFor(reason: string | null): string | null {
+  if (!reason) return null;
+  if (reason === "duplicate_headline_archived") return "title_rewrite";
+  if (reason === "content_refresh_banned_phrase_2026_06_12") return "banned_phrase_rewrite";
+  if (reason === "quality-reset-pre-layout-engine") return "image_regen_legacy";
+  if (reason === "creative_mismatch") return "image_regen_mismatch";
+  return null;
+}
+
+function tokens(s: string): Set<string> {
+  return new Set(
+    (s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 3),
+  );
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 0;
+  let inter = 0;
+  for (const t of a) if (b.has(t)) inter++;
+  const uni = a.size + b.size - inter;
+  return uni === 0 ? 0 : inter / uni;
+}
+
+function bannedHit(s: string): string | null {
+  const hay = s.toLowerCase();
+  for (const p of BANNED_PHRASES) if (hay.includes(p)) return p;
+  return null;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+  // Auth: require admin
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: userRes } = await userClient.auth.getUser();
+  if (!userRes?.user) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const admin = createClient(supabaseUrl, serviceKey);
+  const { data: roleRow } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userRes.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!roleRow) {
+    return new Response(JSON.stringify({ error: "forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!lovableKey) {
+    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // 1. Load flagship + rejected inventory + full title history
+  const { data: product } = await admin
+    .from("products")
+    .select("id, slug, name, price, primary_species")
+    .eq("slug", FLAGSHIP_SLUG)
+    .maybeSingle();
+  if (!product) {
+    return new Response(JSON.stringify({ error: "flagship product not found" }), {
+      status: 404,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const { data: rejected } = await admin
+    .from("pinterest_pin_queue")
+    .select("id, pin_title, pin_image_url, rejection_reason, board_id")
+    .eq("product_id", product.id)
+    .eq("status", "rejected");
+
+  const resurrectable = (rejected ?? []).filter((r) =>
+    RESURRECTABLE.has(r.rejection_reason as string),
+  );
+
+  const { data: allTitles } = await admin
+    .from("pinterest_pin_queue")
+    .select("pin_title")
+    .eq("product_id", product.id);
+  const historyTitleTokens = (allTitles ?? [])
+    .map((r) => (r.pin_title || "").trim())
+    .filter((t) => t.length > 0)
+    .map(tokens);
+
+  // 2. Ask Lovable AI for 30 fresh candidate titles
+  const prompt = `Generate 30 fresh Pinterest pin titles for this product:
+
+Product: ${product.name}
+Slug: ${product.slug}
+Price: $${product.price}
+Target audience: US pet parents, indoor cat households, apartment dwellers, busy professionals.
+
+HARD RULES (any violation = title unusable):
+- 5 to 12 words each. No emojis.
+- US English spelling only ("color" not "colour").
+- Natural language, high click-intent, no clickbait, no ALL CAPS.
+- MUST NOT contain any of these banned phrases (case-insensitive substring):
+  ${BANNED_PHRASES.map((p) => JSON.stringify(p)).join(", ")}
+- MUST NOT repeat the phrase "GetPawsy Automatic Cat Litter Box" verbatim.
+- Every title must be lexically distinct from the others (no near-duplicates).
+- Emphasize different angles across the set: convenience, health/odor,
+  app control, apartment life, gift, comparison, savings, US shipping.
+
+Return a JSON array of 30 strings. No prose, no wrapper object, just the array.`;
+
+  let candidates: string[] = [];
+  try {
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": lovableKey,
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5.5",
+        messages: [
+          { role: "system", content: "You are a Pinterest US pet-commerce copywriter. You output ONLY valid JSON arrays of strings." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!aiResp.ok) {
+      const body = await aiResp.text();
+      return new Response(
+        JSON.stringify({ error: "ai_gateway_error", status: aiResp.status, body }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const ai = await aiResp.json();
+    const content = ai?.choices?.[0]?.message?.content ?? "[]";
+    // model may wrap as {"titles":[...]} or return bare array
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) candidates = parsed as string[];
+    else if (Array.isArray(parsed?.titles)) candidates = parsed.titles;
+    else if (Array.isArray(parsed?.result)) candidates = parsed.result;
+    else candidates = Object.values(parsed).flat().filter((x) => typeof x === "string") as string[];
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: "ai_parse_error", message: String(e) }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // 3. Score each candidate
+  type Scored = {
+    title: string;
+    us_audience_score: number;
+    duplicate_risk: number;
+    banned_phrase_hit: string | null;
+    confidence: number;
+    intent_bonus: number;
+  };
+  const scored: Scored[] = [];
+  const seenTokenSets: Set<string>[] = [];
+  for (const raw of candidates) {
+    const title = String(raw || "").trim();
+    if (!title) continue;
+    const wc = title.split(/\s+/).length;
+    if (wc < 5 || wc > 12) continue;
+    const banned = bannedHit(title);
+    const tk = tokens(title);
+    // duplicate risk = max Jaccard vs history + already-accepted candidates
+    let dup = 0;
+    for (const h of historyTitleTokens) dup = Math.max(dup, jaccard(tk, h));
+    for (const s of seenTokenSets) dup = Math.max(dup, jaccard(tk, s));
+    const us = computeUsAudienceScore({
+      product_slug: product.slug,
+      product_name: product.name,
+      pin_title: title,
+      pin_description: null,
+      category_key: "cat_care",
+      content_type: "product",
+    });
+    const intentBonus = hasUSIntentKeyword(title.toLowerCase()) ? 1 : 0.5;
+    const confidence = Math.round((0.5 * us + 0.3 * (1 - dup) + 0.2 * intentBonus) * 1000) / 1000;
+    scored.push({
+      title,
+      us_audience_score: us,
+      duplicate_risk: Math.round(dup * 1000) / 1000,
+      banned_phrase_hit: banned,
+      confidence,
+      intent_bonus: intentBonus,
+    });
+    if (!banned && dup < 0.6) seenTokenSets.push(tk);
+  }
+
+  const survivors = scored
+    .filter((s) => !s.banned_phrase_hit && s.confidence >= 0.8 && s.duplicate_risk < 0.6)
+    .sort((a, b) => b.confidence - a.confidence);
+
+  // 4. Pair survivors with rejected pins across resurrectable buckets
+  const batchId = crypto.randomUUID();
+  const rows: any[] = [];
+  const boardsRR = TARGET_BOARDS.flatMap((b) => Array(b.weight).fill(b)); // weighted round-robin
+  let boardIdx = 0;
+
+  // priority order: banned_phrase (has image) > image_regen_legacy (has image) > title_rewrite (needs image later) > image_regen_mismatch
+  const priority = ["banned_phrase_rewrite", "image_regen_legacy", "title_rewrite", "image_regen_mismatch"];
+  const byBucket: Record<string, any[]> = {};
+  for (const p of priority) byBucket[p] = [];
+  for (const r of resurrectable) {
+    const b = bucketFor(r.rejection_reason as string);
+    if (b && byBucket[b]) byBucket[b].push(r);
+  }
+
+  const flat: Array<{ src: any; bucket: string }> = [];
+  for (const p of priority) for (const src of byBucket[p]) flat.push({ src, bucket: p });
+
+  const pairCount = Math.min(flat.length, survivors.length);
+  for (let i = 0; i < pairCount; i++) {
+    const cand = survivors[i];
+    const { src, bucket } = flat[i];
+    const board = boardsRR[boardIdx++ % boardsRR.length];
+    const needsBrief = bucket === "image_regen_legacy" || bucket === "image_regen_mismatch" || bucket === "title_rewrite";
+    const brief = needsBrief
+      ? {
+          scene: "modern US apartment, soft daylight, neutral palette",
+          subject: "self-cleaning cat litter box in a stylish living-room corner",
+          overlay_hint: cand.title.length <= 32 ? cand.title : cand.title.split(" ").slice(0, 5).join(" "),
+          aspect: "2:3",
+          style: "clean lifestyle product, photorealistic, Pinterest-friendly",
+          negative: "no text collage, no supplier watermark, no cluttered background",
+        }
+      : null;
+    // Simple predictions (heuristic — flagged as predictions in the UI)
+    const ctrPred = Math.round((0.008 + 0.006 * cand.us_audience_score) * 10000) / 10000;
+    const revPred = Math.round(ctrPred * 0.023 * Number(product.price) * 1000) / 1000; // per impression EV
+    rows.push({
+      source_queue_id: src.id,
+      product_id: product.id,
+      product_slug: product.slug,
+      bucket,
+      proposed_title: cand.title,
+      proposed_description: null,
+      proposed_image_brief: brief,
+      proposed_board_id: board.id,
+      proposed_board_name: board.name,
+      us_audience_score: cand.us_audience_score,
+      duplicate_risk: cand.duplicate_risk,
+      banned_phrase_hit: null,
+      confidence_score: cand.confidence,
+      ctr_prediction: ctrPred,
+      revenue_prediction: revPred,
+      status: "draft",
+      batch_id: batchId,
+    });
+  }
+
+  // 5. Persist (idempotent per batch)
+  let inserted = 0;
+  if (rows.length > 0) {
+    const { error, count } = await admin
+      .from("pinterest_resurrection_candidates")
+      .insert(rows, { count: "exact" });
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: "insert_failed", message: error.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    inserted = count ?? rows.length;
+  }
+
+  const bucketCounts: Record<string, number> = {};
+  for (const r of resurrectable) {
+    const b = bucketFor(r.rejection_reason as string) ?? "other";
+    bucketCounts[b] = (bucketCounts[b] ?? 0) + 1;
+  }
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      batch_id: batchId,
+      product_slug: product.slug,
+      original_rejected: rejected?.length ?? 0,
+      resurrectable_pool: resurrectable.length,
+      bucket_counts: bucketCounts,
+      candidates_generated: scored.length,
+      candidates_surviving: survivors.length,
+      candidates_written: inserted,
+      ai_model: "openai/gpt-5.5",
+      confidence_threshold: 0.8,
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+});
