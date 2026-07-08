@@ -94,24 +94,51 @@ Deno.serve(async (req) => {
     if (poolErr) throw new Error(`pool_query_failed:${poolErr.message}`);
     const pool = (poolRaw ?? []).filter((c: any) => activeSet.has(String(c.product_id)));
 
-    const perProduct = new Map<string, number>();
+    // Tightened selection: cap max 1 candidate per (product_id, proposed_board_id)
+    // per wave to prevent pcie2_pq_idempotency_uidx collisions.
+    const perPair = new Set<string>();
     const perBoard = new Map<string, number>();
     const chosen: any[] = [];
     for (const c of pool ?? []) {
       const p = String(c.product_id);
       const b = String(c.proposed_board_id ?? "");
-      if ((perProduct.get(p) ?? 0) >= 2) continue;
+      const pair = `${p}::${b}`;
+      if (perPair.has(pair)) continue;
       if ((perBoard.get(b) ?? 0) >= 6) continue;
       chosen.push(c);
-      perProduct.set(p, (perProduct.get(p) ?? 0) + 1);
+      perPair.add(pair);
       perBoard.set(b, (perBoard.get(b) ?? 0) + 1);
       if (chosen.length >= limit) break;
+    }
+
+    // Pre-check pcie2_publish_queue for active rows on the same (product_id, board_id)
+    // — the unique idempotency index is (product_id, board_id, md5(image_url)) filtered to
+    // status in (ready|queued|pending|publishing). If any active row exists for the pair,
+    // skip the candidate up front so we don't burn a render call on a guaranteed collision.
+    const collisionSkips: any[] = [];
+    const filtered: any[] = [];
+    for (const c of chosen) {
+      const boardId = String(c.proposed_board_id ?? "");
+      const { data: existing, error: exErr } = await sb
+        .from("pcie2_publish_queue")
+        .select("id, image_url, status")
+        .eq("product_id", c.product_id)
+        .eq("board_id", boardId)
+        .in("status", ["ready", "queued", "pending", "publishing"])
+        .limit(1);
+      if (exErr) throw new Error(`precheck_failed:${exErr.message}`);
+      if ((existing ?? []).length > 0) {
+        collisionSkips.push({ cid: c.id, status: "skipped_collision", queue_id: existing![0].id });
+        continue;
+      }
+      filtered.push(c);
     }
 
     const results: any[] = [];
     let bridged = 0, failed = 0, rendered = 0, reused = 0;
 
-    for (const c of chosen) {
+    let skipped_collision = collisionSkips.length;
+    for (const c of filtered) {
       const cid = c.id as string;
       try {
         // Verify product still active + confirm board is whitelisted
@@ -223,9 +250,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       ok: true,
       selected: chosen.length,
-      bridged, failed, rendered, reused,
+      attempted: filtered.length,
+      bridged, failed, rendered, reused, skipped_collision,
       elapsed_ms: Date.now() - started,
-      results,
+      results: [...collisionSkips, ...results],
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String((e as Error).message ?? e) }), {
