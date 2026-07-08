@@ -11,6 +11,7 @@ import { ttTrackPurchase } from '@/lib/tiktok-pixel';
 import { trackVisitorEvent } from '@/hooks/useVisitorTracking';
 import { fireMarketingAsync } from '@/lib/marketingClient';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
 import { firePaymentSuccess } from '@/lib/funnelEvents';
 import { trackCci } from '@/lib/cci';
