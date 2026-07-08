@@ -2056,6 +2056,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-resurrection"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestResurrectionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="traffic-command-center"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
