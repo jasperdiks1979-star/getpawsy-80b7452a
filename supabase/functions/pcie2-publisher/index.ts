@@ -363,12 +363,22 @@ async function queueDrain(sb: any, opts: DrainOpts) {
   // 1. Global gates
   const pcie2On = await appConfig(sb, "pcie2_publish_enabled");
   const globalStop = await appConfig(sb, "pinterest_publishing_global_stop");
-  const token = Deno.env.get("PINTEREST_ACCESS_TOKEN");
+  // Token source of truth: pinterest_connection.access_token (matches account/boards snapshot).
+  // Env secret PINTEREST_ACCESS_TOKEN is intentionally NOT read here — it drifts on rotation.
+  const { data: connRow } = await sb
+    .from("pinterest_connection")
+    .select("access_token,status,last_account_status,last_boards_status,token_expires_at")
+    .eq("status", "connected")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const token = connRow?.access_token ?? null;
+  const tokenSource = token ? "pinterest_connection.access_token" : "missing";
 
   if (!opts.dryRun) {
     if (pcie2On !== true) return json({ ok: false, mode: "queue_drain", blocker: "pcie2_publish_enabled != true" }, 412);
     if (globalStop === true) return json({ ok: false, mode: "queue_drain", blocker: "pinterest_publishing_global_stop" }, 412);
-    if (!token) return json({ ok: false, mode: "queue_drain", blocker: "PINTEREST_ACCESS_TOKEN missing" }, 412);
+    if (!token) return json({ ok: false, mode: "queue_drain", blocker: "pinterest_connection.access_token missing (status!=connected or row absent)" }, 412);
   }
 
   // 2. Whitelist boards
@@ -436,7 +446,7 @@ async function queueDrain(sb: any, opts: DrainOpts) {
       board_distribution: boardDist,
       product_distribution: productDist,
       selected_ids: selected.map(s => s.id),
-      config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token },
+      config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token, token_source: tokenSource, connection_status: connRow?.status ?? null, last_account_status: connRow?.last_account_status ?? null, last_boards_status: connRow?.last_boards_status ?? null },
       started_at: startedAt,
     });
   }
