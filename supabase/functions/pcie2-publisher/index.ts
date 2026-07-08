@@ -446,7 +446,7 @@ async function queueDrain(sb: any, opts: DrainOpts) {
       board_distribution: boardDist,
       product_distribution: productDist,
       selected_ids: selected.map(s => s.id),
-      config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token },
+      config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token, token_source: tokenSource, connection_status: connRow?.status ?? null, last_account_status: connRow?.last_account_status ?? null, last_boards_status: connRow?.last_boards_status ?? null },
       started_at: startedAt,
     });
   }
