@@ -518,11 +518,12 @@ const Checkout = () => {
       try {
         const utm = (() => {
           try {
+            const p = getPersistedUtm();
             return {
-              utm_source: sessionStorage.getItem('gp_utm_utm_source') ?? undefined,
-              utm_medium: sessionStorage.getItem('gp_utm_utm_medium') ?? undefined,
-              utm_campaign: sessionStorage.getItem('gp_utm_utm_campaign') ?? undefined,
-              utm_content: sessionStorage.getItem('gp_utm_utm_content') ?? undefined,
+              utm_source: p.utm_source ?? undefined,
+              utm_medium: p.utm_medium ?? undefined,
+              utm_campaign: p.utm_campaign ?? undefined,
+              utm_content: p.utm_content ?? undefined,
             };
           } catch {
             return {};
