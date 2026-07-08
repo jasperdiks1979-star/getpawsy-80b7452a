@@ -303,6 +303,24 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  // ================================================================
+  // Queue-Drain Mode — the ONLY certified live Pinterest publish path.
+  // Reads already-bridged, CI-passed rows from pcie2_publish_queue and
+  // either dry-runs the selection or performs live v5 POSTs.
+  // Legacy queues (pinterest_pin_queue, pinterest-publish-now,
+  // pinterest-cron-worker) are NOT touched.
+  // ================================================================
+  if (body?.mode === "queue_drain") {
+    return await queueDrain(sb, {
+      dryRun: body?.dry_run !== false && !body?.live,
+      limit: Math.min(Number(body?.limit ?? 30), 30),
+      productCap: Number(body?.product_cap ?? 3),
+      boardCap: Number(body?.board_cap ?? 10),
+      minCiScore: Number(body?.min_ci_score ?? 75),
+    });
+  }
+
   const productIds: string[] = Array.isArray(body?.product_ids) ? body.product_ids :
                                body?.product_id ? [body.product_id] : [];
   const forceLive = !!body?.force_live;
@@ -327,3 +345,223 @@ Deno.serve(async (req) => {
     results,
   });
 });
+
+// ---------------------------------------------------------------
+// Queue-Drain Implementation
+// ---------------------------------------------------------------
+interface DrainOpts {
+  dryRun: boolean;
+  limit: number;
+  productCap: number;
+  boardCap: number;
+  minCiScore: number;
+}
+
+async function queueDrain(sb: any, opts: DrainOpts) {
+  const startedAt = new Date().toISOString();
+
+  // 1. Global gates
+  const pcie2On = await appConfig(sb, "pcie2_publish_enabled");
+  const globalStop = await appConfig(sb, "pinterest_publishing_global_stop");
+  const token = Deno.env.get("PINTEREST_ACCESS_TOKEN");
+
+  if (!opts.dryRun) {
+    if (pcie2On !== true) return json({ ok: false, mode: "queue_drain", blocker: "pcie2_publish_enabled != true" }, 412);
+    if (globalStop === true) return json({ ok: false, mode: "queue_drain", blocker: "pinterest_publishing_global_stop" }, 412);
+    if (!token) return json({ ok: false, mode: "queue_drain", blocker: "PINTEREST_ACCESS_TOKEN missing" }, 412);
+  }
+
+  // 2. Whitelist boards
+  const { data: boardsRaw } = await sb.from("pinterest_boards")
+    .select("id,name,is_blacklisted,production_verified");
+  const whitelist = new Map<string, string>();
+  for (const b of boardsRaw ?? []) {
+    if (b.is_blacklisted !== true && b.production_verified === true) whitelist.set(b.id, b.name);
+  }
+
+  // 3. Pull eligible ready rows (order by ci_score desc, oldest first as tiebreaker)
+  const { data: rows, error: rowsErr } = await sb.from("pcie2_publish_queue")
+    .select("id,product_id,product_slug,headline,hook,image_url,board_id,destination_url,ci_score,ci_passed_at,pinterest_pin_id,status")
+    .eq("status", "ready")
+    .order("ci_score", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(500);
+  if (rowsErr) return json({ ok: false, mode: "queue_drain", error: rowsErr.message }, 500);
+
+  // 4. Gate + cap
+  const selected: any[] = [];
+  const skipped: any[] = [];
+  const productCount = new Map<string, number>();
+  const boardCount = new Map<string, number>();
+  for (const r of rows ?? []) {
+    if (selected.length >= opts.limit) break;
+    const reasons: string[] = [];
+    if (!whitelist.has(r.board_id)) reasons.push("board_not_whitelisted");
+    if (!r.image_url) reasons.push("missing_image");
+    if (!r.destination_url) reasons.push("missing_destination_url");
+    if (!r.headline) reasons.push("missing_headline");
+    if (Number(r.ci_score ?? 0) < opts.minCiScore) reasons.push("ci_score_below_min");
+    if (!r.ci_passed_at) reasons.push("missing_ci_passed_at");
+    if (r.pinterest_pin_id) reasons.push("already_published");
+    if ((productCount.get(r.product_id) ?? 0) >= opts.productCap) reasons.push("product_cap");
+    if ((boardCount.get(r.board_id) ?? 0) >= opts.boardCap) reasons.push("board_cap");
+    if (reasons.length) { skipped.push({ id: r.id, reasons }); continue; }
+    selected.push(r);
+    productCount.set(r.product_id, (productCount.get(r.product_id) ?? 0) + 1);
+    boardCount.set(r.board_id, (boardCount.get(r.board_id) ?? 0) + 1);
+  }
+
+  const boardDist: Record<string, number> = {};
+  const productDist: Record<string, number> = {};
+  for (const r of selected) {
+    const bn = whitelist.get(r.board_id) ?? r.board_id;
+    boardDist[bn] = (boardDist[bn] ?? 0) + 1;
+    productDist[r.product_slug ?? r.product_id] = (productDist[r.product_slug ?? r.product_id] ?? 0) + 1;
+  }
+
+  // 5. Dry run — return selection only, no DB writes, no POSTs
+  if (opts.dryRun) {
+    return json({
+      ok: true,
+      mode: "queue_drain",
+      dry_run: true,
+      selected_count: selected.length,
+      would_post: selected.length,
+      skipped_count: skipped.length,
+      invalid_board: skipped.filter(s => s.reasons.includes("board_not_whitelisted")).length,
+      missing_image: skipped.filter(s => s.reasons.includes("missing_image")).length,
+      missing_url: skipped.filter(s => s.reasons.includes("missing_destination_url")).length,
+      duplicate: skipped.filter(s => s.reasons.includes("already_published")).length,
+      legacy_path: 0,
+      board_distribution: boardDist,
+      product_distribution: productDist,
+      selected_ids: selected.map(s => s.id),
+      config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token },
+      started_at: startedAt,
+    });
+  }
+
+  // 6. Guardian gate (single check for the whole wave)
+  let guardianAllow = false;
+  let guardianReason = "not_checked";
+  try {
+    const { data: gate } = await sb.functions.invoke("guardian-publish-gate", {
+      body: { pipeline: "pcie2-publisher", context: { mode: "queue_drain", wave: 1, count: selected.length } },
+    });
+    guardianAllow = !!(gate as any)?.allow;
+    guardianReason = (gate as any)?.reason ?? "no_reason";
+  } catch (e) {
+    guardianReason = `gate_invoke_failed:${String(e).slice(0, 120)}`;
+  }
+  if (!guardianAllow) {
+    return json({ ok: false, mode: "queue_drain", blocker: "guardian_gate", guardian_reason: guardianReason }, 412);
+  }
+
+  // 7. Live POST loop
+  const published: any[] = [];
+  const failed: any[] = [];
+  const apiErrors: any[] = [];
+  let rateLimitedAt: string | null = null;
+
+  for (const r of selected) {
+    // Defense-in-depth: never duplicate.
+    const { data: fresh } = await sb.from("pcie2_publish_queue")
+      .select("status,pinterest_pin_id").eq("id", r.id).maybeSingle();
+    if (!fresh || fresh.status !== "ready" || fresh.pinterest_pin_id) {
+      failed.push({ id: r.id, error: "row_no_longer_ready_or_already_published" });
+      continue;
+    }
+
+    const title = String(r.headline ?? "").slice(0, 100);
+    const description = String(r.hook ?? r.headline ?? "").slice(0, 500);
+    const payload = {
+      board_id: r.board_id,
+      title,
+      description,
+      link: r.destination_url,
+      media_source: { source_type: "image_url", url: r.image_url },
+    };
+
+    let resp: Response;
+    try {
+      resp = await fetch("https://api.pinterest.com/v5/pins", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      const err = `network:${String(e).slice(0, 200)}`;
+      failed.push({ id: r.id, error: err });
+      await sb.from("pcie2_publish_queue").update({
+        status: "failed", reject_detail: err, updated_at: new Date().toISOString(),
+      }).eq("id", r.id);
+      continue;
+    }
+
+    const bodyText = await resp.text();
+    let bodyJson: any = null;
+    try { bodyJson = JSON.parse(bodyText); } catch { /* keep as text */ }
+
+    if (resp.status === 429) {
+      rateLimitedAt = new Date().toISOString();
+      apiErrors.push({ id: r.id, status: 429, body: bodyJson ?? bodyText });
+      failed.push({ id: r.id, error: "rate_limited" });
+      await sb.from("pcie2_publish_queue").update({
+        status: "ready", reject_detail: "rate_limited_deferred", updated_at: new Date().toISOString(),
+      }).eq("id", r.id);
+      break; // stop the wave — do not burn more attempts
+    }
+
+    if (!resp.ok || !bodyJson?.id) {
+      const err = `pinterest_${resp.status}:${String(bodyJson?.message ?? bodyText).slice(0, 240)}`;
+      apiErrors.push({ id: r.id, status: resp.status, body: bodyJson ?? bodyText });
+      failed.push({ id: r.id, error: err });
+      // Non-transient: 4xx that isn't 429 → mark failed, don't retry.
+      await sb.from("pcie2_publish_queue").update({
+        status: "failed", reject_detail: err, updated_at: new Date().toISOString(),
+      }).eq("id", r.id);
+      continue;
+    }
+
+    const pinId: string = bodyJson.id;
+    const publishedAt = new Date().toISOString();
+
+    const { error: updErr } = await sb.from("pcie2_publish_queue").update({
+      status: "published",
+      pinterest_pin_id: pinId,
+      published_at: publishedAt,
+      updated_at: publishedAt,
+    }).eq("id", r.id);
+
+    if (updErr) {
+      // The pin exists remotely but we could not persist. Record for reconciliation.
+      apiErrors.push({ id: r.id, pin_id: pinId, error: `db_update_failed:${updErr.message}` });
+    }
+    published.push({
+      queue_id: r.id, product_id: r.product_id, product_slug: r.product_slug,
+      board_id: r.board_id, pin_id: pinId, published_at: publishedAt,
+    });
+  }
+
+  return json({
+    ok: true,
+    mode: "queue_drain",
+    dry_run: false,
+    selected: selected.length,
+    published: published.length,
+    failed: failed.length,
+    skipped: skipped.length,
+    pinterest_pin_ids: published.map(p => p.pin_id),
+    board_distribution: boardDist,
+    product_distribution: productDist,
+    api_errors: apiErrors,
+    rate_limited_at: rateLimitedAt,
+    canonical_sync: "pcie2_publish_queue.pinterest_pin_id + published_at set for each pin",
+    guardian_reason: guardianReason,
+    started_at: startedAt,
+    finished_at: new Date().toISOString(),
+  });
+}
