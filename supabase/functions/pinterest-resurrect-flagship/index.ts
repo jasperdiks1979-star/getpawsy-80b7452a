@@ -365,7 +365,8 @@ no commentary, no trailing text — just the JSON object.`;
   // 4. Pair survivors with rejected pins across resurrectable buckets
   const batchId = crypto.randomUUID();
   const rows: any[] = [];
-  const boardsRR = TARGET_BOARDS.flatMap((b) => Array(b.weight).fill(b)); // weighted round-robin
+  const targetBoards = boardsForProduct({ slug: product.slug, category: (product as any).category });
+  const boardsRR = targetBoards.flatMap((b) => Array(b.weight).fill(b)); // weighted round-robin
   let boardIdx = 0;
 
   // priority order: banned_phrase (has image) > image_regen_legacy (has image) > title_rewrite (needs image later) > image_regen_mismatch
