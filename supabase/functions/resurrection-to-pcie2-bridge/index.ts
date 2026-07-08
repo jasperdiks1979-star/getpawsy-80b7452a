@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
   const dryRun = body.dry_run !== false; // default TRUE for safety
   const limit = Math.min(Math.max(Number(body.limit ?? 5), 1), 50);
   const maxPerProduct = Math.min(Math.max(Number(body.max_per_product ?? 2), 1), 5);
+  const bucketFilter = typeof body.bucket === "string" && body.bucket.length > 0 ? String(body.bucket) : null;
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
   // ELITE gate: same certified thresholds used in Phase 4/5. Over-fetch 10x
   // so in-loop filtering for inactive products + diversity caps still yields
   // `limit` successful bridges.
-  const { data: candidates, error: cErr } = await sb
+  const q = sb
     .from("pinterest_resurrection_candidates")
     .select("id,source_queue_id,product_id,product_slug,bucket,proposed_title,proposed_description,proposed_image_brief,proposed_board_id,confidence_score,us_audience_score,duplicate_risk,banned_phrase_hit")
     .eq("status", "draft")
@@ -156,6 +157,8 @@ Deno.serve(async (req) => {
     .lte("duplicate_risk", 0.25)
     .order("confidence_score", { ascending: false })
     .limit(Math.min(limit * 10, 500));
+  if (bucketFilter) q.eq("bucket", bucketFilter);
+  const { data: candidates, error: cErr } = await q;
   if (cErr) return new Response(JSON.stringify({ ok: false, error: cErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   const perProduct = new Map<string, number>();
