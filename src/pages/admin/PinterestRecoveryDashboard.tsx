@@ -256,6 +256,56 @@ export default function PinterestRecoveryDashboard() {
         </CardContent>
       </Card>
 
+      <Card className="border-sky-500/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Next Republish — one-click (LIMIT 10)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="grid md:grid-cols-4 gap-3">
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last posted</div>
+              <div className="text-2xl font-semibold">{lastRepublish?.posted ?? "—"}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last attempted</div>
+              <div className="text-2xl font-semibold">{lastRepublish?.attempted ?? "—"}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last skipped / failed</div>
+              <div className="text-2xl font-semibold">
+                {lastRepublish?.skipped ?? "—"} / {lastRepublish?.failed ?? "—"}
+              </div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last job</div>
+              <div className="text-xs font-mono truncate">{lastRepublish?.id?.slice(0, 8) ?? "—"}</div>
+              <div className="text-xs text-muted-foreground">
+                {lastRepublish?.completed_at ? new Date(lastRepublish.completed_at).toLocaleString() : "—"}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Enqueues exactly one <code>republish_deleted_remote</code> job with
+              <code> limit=10</code>, <code>confirm=true</code>, <code>use_regeneration=true</code>.
+              Deduplicated server-side against any pending/running job.
+            </p>
+            <Button
+              size="sm"
+              onClick={enqueueNextRepublish10}
+              disabled={enqueueBusy || !!pendingRepublish}
+            >
+              {enqueueBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {pendingRepublish
+                ? `Job ${pendingRepublish.status} (${pendingRepublish.id.slice(0, 8)})`
+                : "Enqueue next republish (LIMIT 10)"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-emerald-500/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
