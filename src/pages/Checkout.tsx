@@ -21,6 +21,7 @@ import { trackCci } from '@/lib/cci';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
 import { supabase } from '@/integrations/supabase/client';
 import { mirrorLpFunnelEvent } from '@/lib/lpFunnelMirror';
+import { getPersistedUtm } from '@/lib/utmNormalizer';
 import { CartUpsell } from '@/components/cart/CartUpsell';
 import { CheckoutTrustBlock } from '@/components/checkout/CheckoutTrustBlock';
 import { CheckoutSocialProof } from '@/components/checkout/CheckoutSocialProof';
