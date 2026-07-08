@@ -375,6 +375,24 @@ async function queueDrain(sb: any, opts: DrainOpts) {
   const token = connRow?.access_token ?? null;
   const tokenSource = token ? "pinterest_connection.access_token" : "missing";
 
+  // ---- Token diagnostic: compare DB token vs env secret so 401s are attributable.
+  // We hash (SHA-256) both, expose length + first4/last4 + fp12. Never log the raw token.
+  const envToken = Deno.env.get("PINTEREST_ACCESS_TOKEN") ?? null;
+  const tokenDiagnostic = {
+    used_source: tokenSource,          // what queue_drain will actually send
+    used_fp: await tokenFingerprint(token),
+    db: await tokenFingerprint(connRow?.access_token ?? null),
+    env: await tokenFingerprint(envToken),
+    env_present: !!envToken,
+    db_matches_env:
+      !!token && !!envToken && token === envToken,
+    connection_status: connRow?.status ?? null,
+    last_account_status: connRow?.last_account_status ?? null,
+    last_boards_status: connRow?.last_boards_status ?? null,
+    token_expires_at: connRow?.token_expires_at ?? null,
+  };
+  console.log("[pcie2-publisher] token_diagnostic", JSON.stringify(tokenDiagnostic));
+
   if (!opts.dryRun) {
     if (pcie2On !== true) return json({ ok: false, mode: "queue_drain", blocker: "pcie2_publish_enabled != true" }, 412);
     if (globalStop === true) return json({ ok: false, mode: "queue_drain", blocker: "pinterest_publishing_global_stop" }, 412);
@@ -447,6 +465,7 @@ async function queueDrain(sb: any, opts: DrainOpts) {
       product_distribution: productDist,
       selected_ids: selected.map(s => s.id),
       config: { pcie2_publish_enabled: pcie2On, global_stop: globalStop, token_present: !!token, token_source: tokenSource, connection_status: connRow?.status ?? null, last_account_status: connRow?.last_account_status ?? null, last_boards_status: connRow?.last_boards_status ?? null },
+      token_diagnostic: tokenDiagnostic,
       started_at: startedAt,
     });
   }
@@ -571,7 +590,23 @@ async function queueDrain(sb: any, opts: DrainOpts) {
     rate_limited_at: rateLimitedAt,
     canonical_sync: "pcie2_publish_queue.pinterest_pin_id + published_at set for each pin",
     guardian_reason: guardianReason,
+    token_diagnostic: tokenDiagnostic,
     started_at: startedAt,
     finished_at: new Date().toISOString(),
   });
+}
+
+// SHA-256 fingerprint helper — never returns the raw token.
+async function tokenFingerprint(tok: string | null | undefined): Promise<any> {
+  if (!tok) return { present: false };
+  const bytes = new TextEncoder().encode(tok);
+  const hash = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return {
+    present: true,
+    length: tok.length,
+    first4: tok.slice(0, 4),
+    last4: tok.slice(-4),
+    fp12: hex.slice(0, 12),
+  };
 }
