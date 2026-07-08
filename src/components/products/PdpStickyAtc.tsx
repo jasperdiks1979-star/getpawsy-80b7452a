@@ -36,6 +36,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
   const lastY = useRef(0);
   const haptic = useHaptic();
   const v2 = getConversionFlag('premiumPdpV2');
+  const showPayMarks = getConversionFlag('pdpStickyPaymentMarks');
 
   useEffect(() => {
     const buy = document.getElementById('pdp-buy-box');
@@ -101,13 +102,14 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
           'md:hidden fixed inset-x-0 bottom-0 z-40',
           'border-t border-border/40 bg-background/95 backdrop-blur-md',
           'supports-[backdrop-filter]:bg-background/80',
-          'px-3 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]',
+          'px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]',
           'shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]',
           'transition-transform duration-300 ease-out',
           hiddenByScroll ? 'translate-y-full' : 'translate-y-0',
         ].join(' ')}
         style={{ contain: 'layout' }}
       >
+        {showPayMarks && <PaymentMarksRow />}
         <div className="flex items-center gap-3">
           <div className="flex flex-col leading-tight min-w-0">
             <span className="text-[15px] font-semibold tracking-tight text-foreground tabular-nums">
@@ -137,6 +139,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
       className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.25)]"
       style={{ contain: 'layout' }}
     >
+      {showPayMarks && <PaymentMarksRow />}
       <div className="flex items-center gap-3">
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-base font-bold text-foreground">${price.toFixed(2)}</span>
