@@ -175,29 +175,34 @@ Deno.serve(async (req) => {
   }
   const targetSlug = requestedSlug ?? FLAGSHIP_SLUG;
 
-  // Auth: require admin
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const { data: userRes } = await userClient.auth.getUser();
-  if (!userRes?.user) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Auth: admin JWT OR shared rollout token (server-triggered rollouts).
+  const rolloutToken = req.headers.get("x-rollout-token") ?? "";
+  const expectedToken = Deno.env.get("PINTEREST_ROLLOUT_TOKEN") ?? "";
   const admin = createClient(supabaseUrl, serviceKey);
-  const { data: roleRow } = await admin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userRes.user.id)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (!roleRow) {
-    return new Response(JSON.stringify({ error: "forbidden" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+  const tokenAuthed = expectedToken.length > 0 && rolloutToken === expectedToken;
+  if (!tokenAuthed) {
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
+    const { data: userRes } = await userClient.auth.getUser();
+    if (!userRes?.user) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userRes.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 
   if (!lovableKey) {
