@@ -72,7 +72,9 @@ const TrackerInner = () => {
       trackCheckout();
       try { sessionQualitySignals.checkout(); } catch {}
       try { recordFunnelStep('begin_checkout'); } catch {}
-      try { trackCci('checkout_loaded', { funnel_stage: 'begin_checkout' }); } catch {}
+      // NOTE: `checkout_loaded` CCI event is owned by Checkout.tsx to avoid
+      // double-firing (route-change + component-mount would emit twice and
+      // inflate CANONICAL_CHECKOUT). Do not re-add here.
     } else if (path === '/cart') {
       trackViewCart();
       try { sessionQualitySignals.cart(); } catch {}
