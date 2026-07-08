@@ -305,8 +305,26 @@ no commentary, no trailing text — just the JSON object.`;
     if (b && byBucket[b]) byBucket[b].push(r);
   }
 
+  // Bucket Round Robin Scheduler (V2):
+  // Instead of draining survivors into the highest-priority bucket first,
+  // take one candidate from each non-empty bucket per cycle. Priority order
+  // is preserved only as the tie-breaker inside a single cycle.
   const flat: Array<{ src: any; bucket: string }> = [];
-  for (const p of priority) for (const src of byBucket[p]) flat.push({ src, bucket: p });
+  const cursors: Record<string, number> = {};
+  for (const p of priority) cursors[p] = 0;
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const p of priority) {
+      const list = byBucket[p];
+      const idx = cursors[p];
+      if (idx < list.length) {
+        flat.push({ src: list[idx], bucket: p });
+        cursors[p] = idx + 1;
+        progress = true;
+      }
+    }
+  }
 
   const pairCount = Math.min(flat.length, survivors.length);
   for (let i = 0; i < pairCount; i++) {
