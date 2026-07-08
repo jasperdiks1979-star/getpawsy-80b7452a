@@ -796,11 +796,33 @@ Deno.serve(async (req) => {
     // US-audience score filter — drop pins below threshold (compute on the fly
     // for legacy rows that never got scored at insert time).
     const beforeFilter = pins.length;
+    const backfillIds: string[] = [];
+    const backfillScores: Record<string, number> = {};
     for (const p of pins as any[]) {
       if (p.us_audience_score == null) {
         // Prefer computed score; fall back to 1.0 so legacy NULL rows aren't filtered out.
         const computed = computeUsAudienceScore(p);
-        p.us_audience_score = Number.isFinite(computed) && computed > 0 ? computed : 1.0;
+        const resolved = Number.isFinite(computed) && computed > 0 ? computed : 1.0;
+        p.us_audience_score = resolved;
+        if (p.id) {
+          backfillIds.push(p.id);
+          backfillScores[p.id] = resolved;
+        }
+      }
+    }
+    // Persist computed scores back to the row so audits/dashboards no longer see
+    // NULL for pins the gate has already evaluated. In-memory gate behavior is
+    // unchanged; this is a write-through of the same value we just used to filter.
+    if (backfillIds.length > 0) {
+      try {
+        await Promise.all(
+          backfillIds.map((id) =>
+            sb.from("pinterest_pin_queue").update({ us_audience_score: backfillScores[id] }).eq("id", id),
+          ),
+        );
+        console.log(`[cron] Backfilled us_audience_score on ${backfillIds.length} legacy rows.`);
+      } catch (e) {
+        console.warn(`[cron] us_audience_score backfill non-fatal error:`, (e as Error)?.message);
       }
     }
     const filteredPins = (pins as any[]).filter((p) => Number(p.us_audience_score) >= usScoreThreshold);
