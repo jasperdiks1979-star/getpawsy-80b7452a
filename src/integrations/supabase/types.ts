@@ -57315,12 +57315,16 @@ export type Database = {
         Row: {
           banned_phrase_hit: string | null
           batch_id: string | null
+          bridge_error: string | null
+          bridge_status: string | null
           bucket: string
+          ci_passed_at: string | null
           confidence_score: number | null
           created_at: string
           ctr_prediction: number | null
           duplicate_risk: number | null
           id: string
+          pcie2_queue_id: string | null
           product_id: string
           product_slug: string
           proposed_board_id: number | null
@@ -57328,6 +57332,7 @@ export type Database = {
           proposed_description: string | null
           proposed_image_brief: Json | null
           proposed_title: string
+          rendered_image_url: string | null
           revenue_prediction: number | null
           review_notes: string | null
           reviewed_at: string | null
@@ -57340,12 +57345,16 @@ export type Database = {
         Insert: {
           banned_phrase_hit?: string | null
           batch_id?: string | null
+          bridge_error?: string | null
+          bridge_status?: string | null
           bucket: string
+          ci_passed_at?: string | null
           confidence_score?: number | null
           created_at?: string
           ctr_prediction?: number | null
           duplicate_risk?: number | null
           id?: string
+          pcie2_queue_id?: string | null
           product_id: string
           product_slug: string
           proposed_board_id?: number | null
@@ -57353,6 +57362,7 @@ export type Database = {
           proposed_description?: string | null
           proposed_image_brief?: Json | null
           proposed_title: string
+          rendered_image_url?: string | null
           revenue_prediction?: number | null
           review_notes?: string | null
           reviewed_at?: string | null
@@ -57365,12 +57375,16 @@ export type Database = {
         Update: {
           banned_phrase_hit?: string | null
           batch_id?: string | null
+          bridge_error?: string | null
+          bridge_status?: string | null
           bucket?: string
+          ci_passed_at?: string | null
           confidence_score?: number | null
           created_at?: string
           ctr_prediction?: number | null
           duplicate_risk?: number | null
           id?: string
+          pcie2_queue_id?: string | null
           product_id?: string
           product_slug?: string
           proposed_board_id?: number | null
@@ -57378,6 +57392,7 @@ export type Database = {
           proposed_description?: string | null
           proposed_image_brief?: Json | null
           proposed_title?: string
+          rendered_image_url?: string | null
           revenue_prediction?: number | null
           review_notes?: string | null
           reviewed_at?: string | null
@@ -57387,7 +57402,15 @@ export type Database = {
           updated_at?: string
           us_audience_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_resurrection_candidates_pcie2_queue_id_fkey"
+            columns: ["pcie2_queue_id"]
+            isOneToOne: false
+            referencedRelation: "pcie2_publish_queue"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pinterest_revenue_attribution_v3: {
         Row: {
