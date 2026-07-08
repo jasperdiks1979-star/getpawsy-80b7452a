@@ -126,6 +126,7 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         utm_source: e.source,
         utm_medium: e.medium,
         utm_campaign: e.campaign,
+        utm_content: (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ?? null,
         country: e.country,
         device: e.device,
         meta: e.meta ?? {},
