@@ -57311,6 +57311,84 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_resurrection_candidates: {
+        Row: {
+          banned_phrase_hit: string | null
+          batch_id: string | null
+          bucket: string
+          confidence_score: number | null
+          created_at: string
+          ctr_prediction: number | null
+          duplicate_risk: number | null
+          id: string
+          product_id: string
+          product_slug: string
+          proposed_board_id: number | null
+          proposed_board_name: string | null
+          proposed_description: string | null
+          proposed_image_brief: Json | null
+          proposed_title: string
+          revenue_prediction: number | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_queue_id: string | null
+          status: string
+          updated_at: string
+          us_audience_score: number | null
+        }
+        Insert: {
+          banned_phrase_hit?: string | null
+          batch_id?: string | null
+          bucket: string
+          confidence_score?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          duplicate_risk?: number | null
+          id?: string
+          product_id: string
+          product_slug: string
+          proposed_board_id?: number | null
+          proposed_board_name?: string | null
+          proposed_description?: string | null
+          proposed_image_brief?: Json | null
+          proposed_title: string
+          revenue_prediction?: number | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_queue_id?: string | null
+          status?: string
+          updated_at?: string
+          us_audience_score?: number | null
+        }
+        Update: {
+          banned_phrase_hit?: string | null
+          batch_id?: string | null
+          bucket?: string
+          confidence_score?: number | null
+          created_at?: string
+          ctr_prediction?: number | null
+          duplicate_risk?: number | null
+          id?: string
+          product_id?: string
+          product_slug?: string
+          proposed_board_id?: number | null
+          proposed_board_name?: string | null
+          proposed_description?: string | null
+          proposed_image_brief?: Json | null
+          proposed_title?: string
+          revenue_prediction?: number | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_queue_id?: string | null
+          status?: string
+          updated_at?: string
+          us_audience_score?: number | null
+        }
+        Relationships: []
+      }
       pinterest_revenue_attribution_v3: {
         Row: {
           add_to_carts: number
