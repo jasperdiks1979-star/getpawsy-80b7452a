@@ -136,15 +136,16 @@ Deno.serve(async (req) => {
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Pre-fetch active-product ids so we never process resurrection rows whose
-  // underlying product has been retired. Filtering upstream lets `limit`
-  // reflect the true target-bridged count.
+  // Pre-fetch active-product ids (kept as a Set — we cannot use .in() with
+  // 150+ UUIDs because PostgREST would exceed the URL length limit).
   const { data: activeProducts, error: apErr } = await sb
     .from("products").select("id").eq("is_active", true);
   if (apErr) return new Response(JSON.stringify({ ok: false, error: apErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  const activeIds = (activeProducts ?? []).map(r => r.id as string);
+  const activeSet = new Set((activeProducts ?? []).map(r => r.id as string));
 
-  // ELITE gate: same certified thresholds used in Phase 4/5.
+  // ELITE gate: same certified thresholds used in Phase 4/5. Over-fetch 10x
+  // so in-loop filtering for inactive products + diversity caps still yields
+  // `limit` successful bridges.
   const { data: candidates, error: cErr } = await sb
     .from("pinterest_resurrection_candidates")
     .select("id,source_queue_id,product_id,product_slug,bucket,proposed_title,proposed_description,proposed_image_brief,proposed_board_id,confidence_score,us_audience_score,duplicate_risk,banned_phrase_hit")
@@ -153,9 +154,8 @@ Deno.serve(async (req) => {
     .gte("confidence_score", 0.84)
     .gte("us_audience_score", 0.80)
     .lte("duplicate_risk", 0.25)
-    .in("product_id", activeIds)
     .order("confidence_score", { ascending: false })
-    .limit(limit * 4); // over-fetch to allow diversity filtering
+    .limit(Math.min(limit * 10, 500));
   if (cErr) return new Response(JSON.stringify({ ok: false, error: cErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   const perProduct = new Map<string, number>();
@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
 
   for (const c of candidates ?? []) {
     if (bridged + held + failed >= limit) break;
+    if (!activeSet.has(c.product_id)) { skipped++; results.push({ id: c.id, verdict: "SKIP", reason: "product_inactive" }); continue; }
     const pc = perProduct.get(c.product_id) ?? 0;
     if (pc >= maxPerProduct) { skipped++; results.push({ id: c.id, verdict: "SKIP", reason: "per_product_cap" }); continue; }
 
