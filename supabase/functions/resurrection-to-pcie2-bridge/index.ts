@@ -250,9 +250,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       ok: true,
       selected: chosen.length,
-      bridged, failed, rendered, reused,
+      attempted: filtered.length,
+      bridged, failed, rendered, reused, skipped_collision,
       elapsed_ms: Date.now() - started,
-      results,
+      results: [...collisionSkips, ...results],
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String((e as Error).message ?? e) }), {
