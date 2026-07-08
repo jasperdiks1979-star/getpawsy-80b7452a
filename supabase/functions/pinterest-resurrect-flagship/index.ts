@@ -35,11 +35,83 @@ const BANNED_PHRASES = [
   "read reviews","see how",
 ];
 
-const TARGET_BOARDS: Array<{ id: string; name: string; weight: number }> = [
-  { id: "1117103951261719235", name: "Smart Self-Cleaning Cat Litter Box", weight: 3 }, // niche, underused
-  { id: "1117103951261719234", name: "Smart Pet Gadgets", weight: 2 },
-  { id: "1117103951261719232", name: "Pet Parent Hacks", weight: 1 },
-];
+// Category-aware routing per certified pinterest-board-routing-map-v3.
+// Selection is category/slug driven; all board IDs are from the allowed
+// production whitelist (see mem://marketing/pinterest-board-routing-map-v3).
+type Board = { id: string; name: string; weight: number };
+const BOARD = {
+  SSCLB:            { id: "1117103951261719235", name: "Smart Self-Cleaning Cat Litter Box" },
+  SMART_PET:        { id: "1117103951261719234", name: "Smart Pet Gadgets" },
+  PET_PARENT_HACKS: { id: "1117103951261719232", name: "Pet Parent Hacks" },
+  BEST_CAT_TREES:   { id: "1117103951261719219", name: "Best Cat Trees 2026" },
+  INDOOR_CAT_SETUP: { id: "1117103951261719230", name: "Indoor Cat Setup" },
+  CAT_FURNITURE:    { id: "1117103951261719222", name: "Cat Furniture" },
+  LUXURY_PET_BEDS:  { id: "1117103951261719231", name: "Luxury Pet Beds" },
+  DOG_WALKING:      { id: "1117103951261719227", name: "Dog Walking Essentials" },
+  DOG_TRAVEL:       { id: "1117103951261719226", name: "Dog Travel Accessories" },
+} as const;
+
+function boardsForProduct(p: { slug?: string | null; category?: string | null }): Board[] {
+  const slug = (p.slug || "").toLowerCase();
+  const cat = (p.category || "").toLowerCase();
+
+  // Cat Trees & Condos
+  if (cat.includes("cat tree") || cat.includes("condo") || /cat[-_ ]?tree|cat[-_ ]?tower|cat[-_ ]?climb/.test(slug)) {
+    return [
+      { ...BOARD.BEST_CAT_TREES,   weight: 3 },
+      { ...BOARD.INDOOR_CAT_SETUP, weight: 2 },
+      { ...BOARD.CAT_FURNITURE,    weight: 1 },
+    ];
+  }
+  // Cat Litter Boxes
+  if (cat.includes("litter") || /litter[-_ ]?box|self[-_ ]?cleaning/.test(slug)) {
+    return [
+      { ...BOARD.SSCLB,            weight: 3 },
+      { ...BOARD.SMART_PET,        weight: 2 },
+      { ...BOARD.PET_PARENT_HACKS, weight: 1 },
+    ];
+  }
+  // Dog Walking
+  if (/dog[-_ ]?(leash|harness|walk)/.test(slug)) {
+    return [
+      { ...BOARD.DOG_WALKING,      weight: 3 },
+      { ...BOARD.PET_PARENT_HACKS, weight: 1 },
+    ];
+  }
+  // Dog Travel
+  if (/dog[-_ ]?(travel|car|car[-_ ]?seat)/.test(slug)) {
+    return [
+      { ...BOARD.DOG_TRAVEL,       weight: 3 },
+      { ...BOARD.PET_PARENT_HACKS, weight: 1 },
+    ];
+  }
+  // Beds
+  if (cat.includes("bed") || /(^|[-_ ])bed([-_ ]|$)/.test(slug)) {
+    return [
+      { ...BOARD.LUXURY_PET_BEDS,  weight: 3 },
+      { ...BOARD.PET_PARENT_HACKS, weight: 1 },
+    ];
+  }
+  // Cat furniture / enclosure
+  if (/enclosure|cat[-_ ]?furniture/.test(slug)) {
+    return [
+      { ...BOARD.CAT_FURNITURE,    weight: 3 },
+      { ...BOARD.INDOOR_CAT_SETUP, weight: 1 },
+    ];
+  }
+  // Smart/gadget catch-all
+  if (/smart|auto|gadget|app[-_ ]?control/.test(slug)) {
+    return [
+      { ...BOARD.SMART_PET,        weight: 3 },
+      { ...BOARD.PET_PARENT_HACKS, weight: 1 },
+    ];
+  }
+  // Default
+  return [
+    { ...BOARD.PET_PARENT_HACKS, weight: 2 },
+    { ...BOARD.SMART_PET,        weight: 1 },
+  ];
+}
 
 const RESURRECTABLE = new Set([
   "duplicate_headline_archived",
