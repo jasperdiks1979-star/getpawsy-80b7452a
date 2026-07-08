@@ -161,3 +161,35 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
 }
 
 export default PdpStickyAtc;
+
+/**
+ * PaymentMarksRow — hairline text-only row of accepted payment methods.
+ * No images, no external requests, no CLS. Renders in-line above the ATC
+ * bar as a subtle trust signal for first-time mobile visitors (Pinterest
+ * cohort is 85% mobile with zero cart activity — the missing signal is
+ * "can I trust this checkout?"). Copy is static and matches the express
+ * payment options the Checkout page already exposes via Stripe.
+ */
+function PaymentMarksRow() {
+  const marks = ['Apple Pay', 'Google Pay', 'Visa', 'Mastercard', 'Amex'];
+  return (
+    <div
+      aria-label="Accepted payment methods"
+      className="flex items-center justify-center gap-1.5 pb-1.5"
+    >
+      {marks.map((m, i) => (
+        <span key={m} className="flex items-center gap-1.5">
+          {i > 0 && (
+            <span
+              aria-hidden
+              className="inline-block h-[3px] w-[3px] rounded-full bg-foreground/25"
+            />
+          )}
+          <span className="text-[9px] font-semibold tracking-[0.08em] uppercase text-foreground/55 tabular-nums">
+            {m}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
