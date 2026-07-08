@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
   // 1. Load flagship + rejected inventory + full title history
   const { data: product } = await admin
     .from("products")
-    .select("id, slug, name, price, primary_species")
+    .select("id, slug, name, price, primary_species, category")
     .eq("slug", FLAGSHIP_SLUG)
     .maybeSingle();
   if (!product) {
