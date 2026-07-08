@@ -368,6 +368,7 @@ const ProductWinnerDiscoveryPage = lazyWithRetry(() => import("./pages/admin/Pro
 const PinterestScalingPage = lazyWithRetry(() => import("./pages/admin/PinterestScalingPage"));
 const RevenueCommandCenterPage = lazyWithRetry(() => import("./pages/admin/RevenueCommandCenterPage"));
 const RevenueRecoveryPage = lazyWithRetry(() => import("./pages/admin/RevenueRecoveryPage"));
+const PinterestResurrectionPage = lazyWithRetry(() => import("./pages/admin/PinterestResurrectionPage"));
 const TrafficCommandCenter = lazyWithRetry(() => import("./pages/admin/TrafficCommandCenter"));
 const AdminPaymentsPage = lazyWithRetry(() => import("./pages/admin/AdminPaymentsPage"));
 const WebhookHealthPage = lazyWithRetry(() => import("./pages/admin/WebhookHealthPage"));
@@ -2051,6 +2052,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <RevenueRecoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-resurrection"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestResurrectionPage />
                                 </Suspense>
                               }
                             />
