@@ -162,6 +162,19 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
 
+  // Optional additive param: allow rollout across resurrectable products.
+  // No behavior change when omitted (defaults to FLAGSHIP_SLUG).
+  let requestedSlug: string | null = null;
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (body && typeof body.product_slug === "string" && body.product_slug.length > 0) {
+        requestedSlug = body.product_slug;
+      }
+    } catch (_) { /* no body */ }
+  }
+  const targetSlug = requestedSlug ?? FLAGSHIP_SLUG;
+
   // Auth: require admin
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
@@ -198,10 +211,10 @@ Deno.serve(async (req) => {
   const { data: product } = await admin
     .from("products")
     .select("id, slug, name, price, primary_species, category")
-    .eq("slug", FLAGSHIP_SLUG)
+    .eq("slug", targetSlug)
     .maybeSingle();
   if (!product) {
-    return new Response(JSON.stringify({ error: "flagship product not found" }), {
+    return new Response(JSON.stringify({ error: "product not found", slug: targetSlug }), {
       status: 404,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
