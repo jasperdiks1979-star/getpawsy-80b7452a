@@ -136,6 +136,14 @@ Deno.serve(async (req) => {
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+  // Pre-fetch active-product ids so we never process resurrection rows whose
+  // underlying product has been retired. Filtering upstream lets `limit`
+  // reflect the true target-bridged count.
+  const { data: activeProducts, error: apErr } = await sb
+    .from("products").select("id").eq("is_active", true);
+  if (apErr) return new Response(JSON.stringify({ ok: false, error: apErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  const activeIds = (activeProducts ?? []).map(r => r.id as string);
+
   // ELITE gate: same certified thresholds used in Phase 4/5.
   const { data: candidates, error: cErr } = await sb
     .from("pinterest_resurrection_candidates")
@@ -145,6 +153,7 @@ Deno.serve(async (req) => {
     .gte("confidence_score", 0.84)
     .gte("us_audience_score", 0.80)
     .lte("duplicate_risk", 0.25)
+    .in("product_id", activeIds)
     .order("confidence_score", { ascending: false })
     .limit(limit * 4); // over-fetch to allow diversity filtering
   if (cErr) return new Response(JSON.stringify({ ok: false, error: cErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
