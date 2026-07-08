@@ -104,8 +104,26 @@ function computeCi(title: string, qualityScore: number, banned: string | null): 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Auth: accept either the shared rollout token OR an authenticated admin JWT.
+  let authed = false;
   const token = req.headers.get("x-rollout-token") ?? "";
-  if (!ROLLOUT_TOKEN || token !== ROLLOUT_TOKEN) {
+  if (ROLLOUT_TOKEN && token === ROLLOUT_TOKEN) authed = true;
+  if (!authed) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (authHeader.startsWith("Bearer ")) {
+      const jwt = authHeader.slice(7);
+      const sbAuth = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+        global: { headers: { Authorization: `Bearer ${jwt}` } },
+      });
+      const { data: userRes } = await sbAuth.auth.getUser();
+      if (userRes?.user?.id) {
+        const sbSvc = createClient(SUPABASE_URL, SERVICE_ROLE);
+        const { data: isAdmin } = await sbSvc.rpc("has_role", { _user_id: userRes.user.id, _role: "admin" });
+        if (isAdmin === true) authed = true;
+      }
+    }
+  }
+  if (!authed) {
     return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
