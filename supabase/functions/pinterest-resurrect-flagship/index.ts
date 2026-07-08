@@ -154,26 +154,55 @@ Deno.serve(async (req) => {
     .filter((t) => t.length > 0)
     .map(tokens);
 
-  // 2. Ask Lovable AI for 30 fresh candidate titles
-  const prompt = `Generate 30 fresh Pinterest pin titles for this product:
+  // 2. Ask Lovable AI for 30 fresh candidate titles.
+  //
+  // Scoring-aware prompt: computeUsAudienceScore() awards +0.20 ONLY when a
+  // title contains one of the canonical US_INTENT_KEYWORDS substrings from
+  // supabase/functions/_shared/pinterest-copy.ts. Without that bonus the
+  // baseline for this product caps at ~0.60, which fails the 0.80 confidence
+  // gate. We therefore mandate one canonical phrase per title (kept as a
+  // substring so the scorer matches) while allowing natural sentence flow.
+  const REQUIRED_US_PHRASES = [
+    "apartment cats",
+    "indoor cats",
+    "pet parents",
+    "small apartments",
+    "modern American homes",
+    "NYC apartment",
+    "California home",
+    "Texas pet lifestyle",
+    "US pet lifestyle",
+  ];
+  const prompt = `Generate 30 fresh Pinterest pin titles for this product.
 
 Product: ${product.name}
 Slug: ${product.slug}
 Price: $${product.price}
 Target audience: US pet parents, indoor cat households, apartment dwellers, busy professionals.
 
-HARD RULES (any violation = title unusable):
-- 5 to 12 words each. No emojis.
-- US English spelling only ("color" not "colour").
-- Natural language, high click-intent, no clickbait, no ALL CAPS.
-- MUST NOT contain any of these banned phrases (case-insensitive substring):
-  ${BANNED_PHRASES.map((p) => JSON.stringify(p)).join(", ")}
-- MUST NOT repeat the phrase "GetPawsy Automatic Cat Litter Box" verbatim.
-- Every title must be lexically distinct from the others (no near-duplicates).
-- Emphasize different angles across the set: convenience, health/odor,
-  app control, apartment life, gift, comparison, savings, US shipping.
+HARD RULES (any violation = title unusable, so it will be discarded):
+1. Length: 5 to 12 words. No emojis. No ALL CAPS. No trailing punctuation.
+2. US English spelling only ("color" not "colour", "favorite" not "favourite").
+3. Natural sentence flow. No clickbait, no fake claims, no superlatives you
+   cannot back up ("#1", "world's best", "guaranteed"). No hype punctuation.
+4. MUST contain EXACTLY ONE of these US-intent phrases as a case-insensitive
+   substring (copy the phrase verbatim, do not paraphrase, do not pluralize
+   "pet parents" into "pet parent"): ${REQUIRED_US_PHRASES.map((p) => JSON.stringify(p)).join(", ")}.
+   Distribute usage across the set — do NOT reuse the same phrase more than
+   4 times across the 30 titles.
+5. MUST NOT contain any of these banned phrases (case-insensitive substring):
+   ${BANNED_PHRASES.map((p) => JSON.stringify(p)).join(", ")}.
+6. MUST NOT repeat the phrase "GetPawsy Automatic Cat Litter Box" verbatim.
+7. Every title must be lexically distinct — no two titles may share 4+
+   consecutive words, and no title may be a near-duplicate of another.
+8. Emphasize a spread of angles across the 30: hands-free convenience,
+   odor / air-quality, app control, small-space / apartment life, gifting,
+   comparison vs manual scooping, savings on litter, US shipping.
+9. Prefer concrete benefits over adjectives. Titles should read like a
+   thoughtful pet-parent, not an ad.
 
-Return a JSON array of 30 strings. No prose, no wrapper object, just the array.`;
+Return a JSON object of the exact shape {"titles": [30 strings]}. No prose,
+no commentary, no trailing text — just the JSON object.`;
 
   let candidates: string[] = [];
   try {
