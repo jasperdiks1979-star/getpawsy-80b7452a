@@ -86,7 +86,16 @@ function semanticDedupKey(input: {
   let anchor: string | null | undefined = null;
   if (canonical === "CANONICAL_ADD_TO_CART") { windowSec = 30; anchor = product_id; }
   else if (canonical === "CANONICAL_PRODUCT_VIEW") { anchor = product_id; }
-  else if (canonical === "CANONICAL_CHECKOUT") { anchor = stripe_session_id ?? null; }
+  else if (canonical === "CANONICAL_CHECKOUT") {
+    // Checkout dedup: one canonical checkout per (session, stripe_session_id) pair
+    // per 30-minute window. When stripe_session_id is still null (pre-redirect
+    // begin_checkout / checkout_loaded), collapse refreshes, back-nav and
+    // route re-mounts inside the same session so `CANONICAL_CHECKOUT` cannot
+    // exceed `CANONICAL_ADD_TO_CART`. Once Stripe issues a session id, that
+    // id becomes the anchor and a genuine second attempt still records.
+    anchor = stripe_session_id ?? null;
+    windowSec = 1800;
+  }
   else if (canonical === "CANONICAL_PAGE_VIEW") { anchor = page_path; }
   else if (canonical === "CANONICAL_ENGAGEMENT") { anchor = page_path; }
   return dedup([source, canonical, session_id, anchor, bucketISO(occurred_at, windowSec)]);
