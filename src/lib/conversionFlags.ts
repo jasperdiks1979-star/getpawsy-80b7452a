@@ -47,6 +47,7 @@ export type ConversionFlagKey =
   | 'premiumAuthV2'
   | 'premiumOrders'
   | 'premiumWishlist'
+  | 'pdpStickyPaymentMarks'
   | 'aiHomepage';
 
 const DEFAULTS: Record<ConversionFlagKey, boolean> = {
@@ -210,6 +211,11 @@ const DEFAULTS: Record<ConversionFlagKey, boolean> = {
   // state with micro-caps eyebrow. Pure presentation; wishlist storage,
   // add-to-cart, and sort/filter logic untouched.
   premiumWishlist: true,
+  // CV-001: hairline payment marks row above the mobile sticky ATC (Apple Pay,
+  // Google Pay, Visa, Mastercard, Amex — text-only, no images, no external
+  // dependencies). Frontend-only trust signal for Pinterest mobile visitors.
+  // Pure presentation; ATC handler, price math, and analytics untouched.
+  pdpStickyPaymentMarks: true,
   // CI-8: AI homepage personalization (winner routing + emotional angle).
   // Default OFF — flip in admin after QA. Engine failure always falls back
   // to the static premium hero / default block order, so this is safe to
