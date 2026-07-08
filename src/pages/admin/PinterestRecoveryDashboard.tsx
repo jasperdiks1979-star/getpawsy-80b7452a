@@ -42,6 +42,13 @@ export default function PinterestRecoveryDashboard() {
   const [draftStats, setDraftStats] = useState<{ total: number; with_headline: number }>({ total: 0, with_headline: 0 });
   const [rejected, setRejected] = useState<any[]>([]);
   const [showRejected, setShowRejected] = useState(false);
+  const [lastRepublish, setLastRepublish] = useState<{
+    id: string; status: string; params: any; posted: number | null;
+    attempted: number | null; skipped: number | null; failed: number | null;
+    created_at: string; completed_at: string | null;
+  } | null>(null);
+  const [pendingRepublish, setPendingRepublish] = useState<{ id: string; status: string } | null>(null);
+  const [enqueueBusy, setEnqueueBusy] = useState(false);
 
   async function load() {
     const { data: runs } = await supabase.from("pinterest_recovery_runs")
@@ -80,6 +87,34 @@ export default function PinterestRecoveryDashboard() {
     const { count: hl } = await supabase.from("pcie2_creatives")
       .select("id", { count: "exact", head: true }).eq("status", "draft").not("headline", "is", null);
     setDraftStats({ total: total ?? 0, with_headline: hl ?? 0 });
+
+    // ── Last republish_deleted_remote job + any pending/running one ──────────
+    const { data: repJobs } = await supabase
+      .from("pinterest_recovery_jobs")
+      .select("id,status,params,result,created_at,completed_at")
+      .eq("phase", "republish_deleted_remote")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    const pending = (repJobs ?? []).find((r: any) => r.status === "pending" || r.status === "running") ?? null;
+    setPendingRepublish(pending ? { id: pending.id, status: pending.status } : null);
+    const lastDone = (repJobs ?? []).find((r: any) => r.status === "completed") ?? null;
+    if (lastDone) {
+      const steps = ((lastDone as any).result?.steps ?? []) as any[];
+      const rep = steps.find((s) => s?.step === "republish")?.body ?? {};
+      setLastRepublish({
+        id: lastDone.id,
+        status: lastDone.status,
+        params: lastDone.params,
+        posted: rep.posted ?? null,
+        attempted: rep.attempted ?? null,
+        skipped: rep.skipped ?? null,
+        failed: rep.failed ?? null,
+        created_at: lastDone.created_at,
+        completed_at: (lastDone as any).completed_at ?? null,
+      });
+    } else {
+      setLastRepublish(null);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -130,6 +165,37 @@ export default function PinterestRecoveryDashboard() {
       .eq("run_id", asmRun.id).neq("verdict", "PASS").neq("verdict", "REPAIRED").limit(50);
     setRejected(data ?? []);
     setShowRejected(true);
+  }
+
+  async function enqueueNextRepublish10() {
+    if (pendingRepublish) {
+      toast.error(`A ${pendingRepublish.status} republish job already exists (${pendingRepublish.id.slice(0, 8)})`);
+      return;
+    }
+    setEnqueueBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-recovery-enqueue", {
+        body: {
+          phase: "republish_deleted_remote",
+          confirm: true,
+          limit: 10,
+          use_regeneration: true,
+        },
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res?.ok === false) throw new Error(res?.reason || res?.error || "enqueue_failed");
+      if (res?.deduplicated) {
+        toast.message(`Reused existing ${res.status} job ${String(res.job_id).slice(0, 8)}`);
+      } else {
+        toast.success(`Enqueued republish LIMIT 10 — job ${String(res.job_id).slice(0, 8)}`);
+      }
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Enqueue failed");
+    } finally {
+      setEnqueueBusy(false);
+    }
   }
 
   const nextAllowed = canaryMeta.last_at
@@ -187,6 +253,56 @@ export default function PinterestRecoveryDashboard() {
               <span className="text-muted-foreground">{k}</span><span className="font-semibold">{v}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="border-sky-500/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Next Republish — one-click (LIMIT 10)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="grid md:grid-cols-4 gap-3">
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last posted</div>
+              <div className="text-2xl font-semibold">{lastRepublish?.posted ?? "—"}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last attempted</div>
+              <div className="text-2xl font-semibold">{lastRepublish?.attempted ?? "—"}</div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last skipped / failed</div>
+              <div className="text-2xl font-semibold">
+                {lastRepublish?.skipped ?? "—"} / {lastRepublish?.failed ?? "—"}
+              </div>
+            </div>
+            <div className="rounded border p-3">
+              <div className="text-xs text-muted-foreground">Last job</div>
+              <div className="text-xs font-mono truncate">{lastRepublish?.id?.slice(0, 8) ?? "—"}</div>
+              <div className="text-xs text-muted-foreground">
+                {lastRepublish?.completed_at ? new Date(lastRepublish.completed_at).toLocaleString() : "—"}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Enqueues exactly one <code>republish_deleted_remote</code> job with
+              <code> limit=10</code>, <code>confirm=true</code>, <code>use_regeneration=true</code>.
+              Deduplicated server-side against any pending/running job.
+            </p>
+            <Button
+              size="sm"
+              onClick={enqueueNextRepublish10}
+              disabled={enqueueBusy || !!pendingRepublish}
+            >
+              {enqueueBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {pendingRepublish
+                ? `Job ${pendingRepublish.status} (${pendingRepublish.id.slice(0, 8)})`
+                : "Enqueue next republish (LIMIT 10)"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
