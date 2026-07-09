@@ -2695,6 +2695,65 @@ export const VisitorWorldMap = ({
           </span>
         </div>
 
+        {/* Source chip filter — mission-spec taxonomy. Purely presentational
+            layer on top of the canonical source resolver. */}
+        <div
+          className="mt-3 flex flex-wrap items-center gap-1.5"
+          data-testid="world-map-source-chips"
+          role="group"
+          aria-label="Filter markers by traffic source"
+        >
+          <span className="text-[11px] text-muted-foreground mr-1">Source:</span>
+          {MARKER_GROUP_CHIPS.map((chip) => {
+            const active = markerGroupFilter === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setMarkerGroupFilter(chip.key)}
+                data-testid={`world-map-source-chip-${chip.key}`}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background/70 text-foreground hover:bg-muted"
+                }`}
+              >
+                {chip.color && (
+                  <span
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{ backgroundColor: chip.color }}
+                  />
+                )}
+                <span>{chip.label}</span>
+                {chip.aggregate && <span className="opacity-60">·</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Source color legend — matches the mission palette. Marker BASE
+            color is source-driven; marker size / heatmap intensity are still
+            activity-driven. */}
+        <div
+          className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-muted-foreground"
+          data-testid="world-map-source-legend"
+          aria-label="Marker color legend"
+        >
+          <span className="font-medium text-foreground">Legend:</span>
+          {MARKER_LEGEND_ITEMS.map((item) => (
+            <span key={item.group} className="inline-flex items-center gap-1">
+              <span
+                className={`inline-block w-2.5 h-2.5 rounded-full ${item.group === "internal" ? "border border-dashed border-foreground" : ""}`}
+                style={{ backgroundColor: item.color }}
+                aria-hidden="true"
+              />
+              <span>{item.label}{item.note ? ` (${item.note})` : ""}</span>
+            </span>
+          ))}
+          <span className="opacity-70">· size / glow = activity intensity</span>
+        </div>
+
         {/* Stats Row */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
           {isLiveNow && (
