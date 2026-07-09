@@ -251,15 +251,68 @@ async function runCouncil(sb: any) {
       const dissenters: string[] = [];
       for (const [act, t] of actions.slice(1)) for (const s of t.supporters) if (!supporters.includes(s)) dissenters.push(`${s}:${act}`);
 
+      /* ---- Evidence Source Gate (soft) ---- */
+      const totalTagged = evSrcCounts.organic + evSrcCounts.paid + evSrcCounts.blended
+        + evSrcCounts.heuristic + evSrcCounts.insufficient_data;
+      const organicShare = totalTagged ? evSrcCounts.organic / totalTagged : 0;
+      const paidShare    = totalTagged ? evSrcCounts.paid    / totalTagged : 0;
+      const blendedShare = totalTagged ? evSrcCounts.blended / totalTagged : 0;
+      let decisionEvSrc: XaiEvidenceSource;
+      if (organicShare >= 0.6) decisionEvSrc = "organic";
+      else if (paidShare >= 0.6) decisionEvSrc = "paid";
+      else if (organicShare + blendedShare + paidShare >= 0.5) decisionEvSrc = "blended";
+      else if (evSrcCounts.insufficient_data > evSrcCounts.heuristic) decisionEvSrc = "insufficient_data";
+      else decisionEvSrc = "heuristic";
+
+      const promotingAction = /^(amplify|act|promote|scale|launch)/i.test(finalAction);
+      let gateAction: "allow" | "validate_only" | "block" | "flag_missing" = "allow";
+      let gateReason = "organic-first";
+      if (decisionEvSrc === "insufficient_data") {
+        gateAction = "block";
+        gateReason = "insufficient_data may not trigger automated promotion";
+      } else if (decisionEvSrc === "heuristic" && promotingAction) {
+        gateAction = "block";
+        gateReason = "heuristic evidence may not be treated as proven for promotion";
+      } else if (decisionEvSrc === "paid" && promotingAction) {
+        gateAction = "validate_only";
+        gateReason = "paid evidence is validation-only; requires organic corroboration";
+      } else if (decisionEvSrc === "blended" && promotingAction) {
+        gateAction = "validate_only";
+        gateReason = "blended evidence requires explicit organic majority";
+      } else if (untaggedVotes > 0) {
+        gateAction = "flag_missing";
+        gateReason = `${untaggedVotes} advisor vote(s) missing evidence_source`;
+      }
+      const effectiveAction = gateAction === "block" ? "defer" : finalAction;
+      const gateStatus = gateAction === "block"
+        ? "gate_blocked"
+        : (consensus === "conflict" && councilConf < 0.5 ? "deferred" : "approved");
+
+      gateLogs.push({
+        council_run_id: runId,
+        decision_type: sampleItem.decision_type || "general",
+        subject: sampleItem.subject_id ?? key,
+        top_evidence_source: decisionEvSrc,
+        action: gateAction,
+        reason: gateReason,
+        advisor_count: totalTagged,
+        organic_votes: evSrcCounts.organic,
+        paid_votes: evSrcCounts.paid,
+        blended_votes: evSrcCounts.blended,
+        heuristic_votes: evSrcCounts.heuristic,
+        insufficient_votes: evSrcCounts.insufficient_data,
+        untagged_votes: untaggedVotes,
+      });
+
       const dedupeKey = `aec:${runId}:${key}`.slice(0, 240);
-      const explanation = `Council ruled ${finalAction.toUpperCase()} on ${sampleItem.decision_type || "decision"}${sampleItem.subject_id ? ` for ${sampleItem.subject_id}` : ""}. ${supporters.length} advisor(s) supported (${supporters.join(", ")}); ${dissenters.length} dissented. Confidence ${(councilConf * 100).toFixed(0)}%, expected ROI ${(meanRoi * 100).toFixed(0)}%, risk ${(meanRisk * 100).toFixed(0)}%. Consensus: ${consensus}.`;
+      const explanation = `Council ruled ${effectiveAction.toUpperCase()} on ${sampleItem.decision_type || "decision"}${sampleItem.subject_id ? ` for ${sampleItem.subject_id}` : ""}. ${supporters.length} advisor(s) supported (${supporters.join(", ")}); ${dissenters.length} dissented. Evidence: ${decisionEvSrc} (gate=${gateAction}: ${gateReason}). Confidence ${(councilConf * 100).toFixed(0)}%, ROI ${(meanRoi * 100).toFixed(0)}%, risk ${(meanRisk * 100).toFixed(0)}%. Consensus: ${consensus}.`;
 
       decisionsToInsert.push({
         run_id: runId,
         decision_type: sampleItem.decision_type || "general",
         subject_kind: sampleItem.subject_kind,
         subject_id: sampleItem.subject_id,
-        final_action: finalAction,
+        final_action: effectiveAction,
         consensus,
         short_term_benefit: shortTerm,
         long_term_benefit: longTerm,
@@ -274,8 +327,11 @@ async function runCouncil(sb: any) {
         council_confidence: councilConf,
         explanation,
         reason_codes: supporters.map((s) => s.toUpperCase()),
-        status: consensus === "conflict" && councilConf < 0.5 ? "deferred" : "approved",
+        status: gateStatus,
         dedupe_key: dedupeKey,
+        evidence_source: decisionEvSrc,
+        evidence_source_gate: gateAction,
+        evidence_source_gate_reason: gateReason,
         _votes: localVotes,
       });
     }
@@ -294,6 +350,12 @@ async function runCouncil(sb: any) {
       for (const v of d._votes) votesToInsert.push({ ...v, run_id: runId, decision_id: decId });
     }
     if (votesToInsert.length) await sb.from("aec_advisor_votes").insert(votesToInsert);
+
+    // Persist evidence-source gate audit log (soft — never blocks the run)
+    if (gateLogs.length) {
+      try { await sb.from("aec_evidence_source_gate_log").insert(gateLogs); }
+      catch (e) { console.warn("[aec] gate log insert failed", (e as Error).message); }
+    }
 
     // Mark touched advisors
     for (const k of advisorsTouched) {
@@ -349,6 +411,7 @@ async function runCouncil(sb: any) {
         expectedLift: (d.expected_revenue_cents || 0) / 100000,
         risk: d.expected_risk,
         dedupeKey: `aec-council:${d.dedupe_key}`,
+        evidenceSource: (d.evidence_source ?? "heuristic") as XaiEvidenceSource,
       });
     }
 
