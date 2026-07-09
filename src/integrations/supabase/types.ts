@@ -27343,6 +27343,819 @@ export type Database = {
         }
         Relationships: []
       }
+      geip_ai_search_signals: {
+        Row: {
+          ai_overview_ready: boolean | null
+          captured_at: string
+          entity_coverage_score: number | null
+          has_article: boolean | null
+          has_breadcrumb: boolean | null
+          has_faq: boolean | null
+          has_howto: boolean | null
+          has_product: boolean | null
+          has_review: boolean | null
+          id: string
+          raw: Json | null
+          url: string
+        }
+        Insert: {
+          ai_overview_ready?: boolean | null
+          captured_at?: string
+          entity_coverage_score?: number | null
+          has_article?: boolean | null
+          has_breadcrumb?: boolean | null
+          has_faq?: boolean | null
+          has_howto?: boolean | null
+          has_product?: boolean | null
+          has_review?: boolean | null
+          id?: string
+          raw?: Json | null
+          url: string
+        }
+        Update: {
+          ai_overview_ready?: boolean | null
+          captured_at?: string
+          entity_coverage_score?: number | null
+          has_article?: boolean | null
+          has_breadcrumb?: boolean | null
+          has_faq?: boolean | null
+          has_howto?: boolean | null
+          has_product?: boolean | null
+          has_review?: boolean | null
+          id?: string
+          raw?: Json | null
+          url?: string
+        }
+        Relationships: []
+      }
+      geip_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          code: string
+          created_at: string
+          detail: string | null
+          evidence: Json | null
+          id: string
+          resolved_at: string | null
+          severity: string
+          source: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          code: string
+          created_at?: string
+          detail?: string | null
+          evidence?: Json | null
+          id?: string
+          resolved_at?: string | null
+          severity: string
+          source: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          code?: string
+          created_at?: string
+          detail?: string | null
+          evidence?: Json | null
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          source?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      geip_connections: {
+        Row: {
+          blocker: string | null
+          created_at: string
+          id: string
+          last_check_at: string | null
+          last_ok_at: string | null
+          metadata: Json | null
+          scopes: Json | null
+          status: string
+          surface: string
+          updated_at: string
+        }
+        Insert: {
+          blocker?: string | null
+          created_at?: string
+          id?: string
+          last_check_at?: string | null
+          last_ok_at?: string | null
+          metadata?: Json | null
+          scopes?: Json | null
+          status?: string
+          surface: string
+          updated_at?: string
+        }
+        Update: {
+          blocker?: string | null
+          created_at?: string
+          id?: string
+          last_check_at?: string | null
+          last_ok_at?: string | null
+          metadata?: Json | null
+          scopes?: Json | null
+          status?: string
+          surface?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      geip_copilot_answers: {
+        Row: {
+          answer: string
+          created_at: string
+          evidence_refs: Json | null
+          id: string
+          is_dormant: boolean
+          model: string | null
+          question: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          evidence_refs?: Json | null
+          id?: string
+          is_dormant?: boolean
+          model?: string | null
+          question: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          evidence_refs?: Json | null
+          id?: string
+          is_dormant?: boolean
+          model?: string | null
+          question?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      geip_crux_daily: {
+        Row: {
+          cls_p75: number | null
+          date: string
+          fcp_p75_ms: number | null
+          form_factor: string
+          id: string
+          identifier: string
+          inp_p75_ms: number | null
+          lcp_p75_ms: number | null
+          raw: Json | null
+          scope: string
+          ttfb_p75_ms: number | null
+        }
+        Insert: {
+          cls_p75?: number | null
+          date?: string
+          fcp_p75_ms?: number | null
+          form_factor?: string
+          id?: string
+          identifier: string
+          inp_p75_ms?: number | null
+          lcp_p75_ms?: number | null
+          raw?: Json | null
+          scope: string
+          ttfb_p75_ms?: number | null
+        }
+        Update: {
+          cls_p75?: number | null
+          date?: string
+          fcp_p75_ms?: number | null
+          form_factor?: string
+          id?: string
+          identifier?: string
+          inp_p75_ms?: number | null
+          lcp_p75_ms?: number | null
+          raw?: Json | null
+          scope?: string
+          ttfb_p75_ms?: number | null
+        }
+        Relationships: []
+      }
+      geip_ga4_daily: {
+        Row: {
+          channel_group: string
+          created_at: string
+          date: string
+          engaged_sessions: number
+          id: string
+          landing_page: string
+          medium: string
+          property_id: string
+          purchases: number
+          revenue_cents: number
+          sessions: number
+          source: string
+          users: number
+        }
+        Insert: {
+          channel_group?: string
+          created_at?: string
+          date: string
+          engaged_sessions?: number
+          id?: string
+          landing_page?: string
+          medium?: string
+          property_id: string
+          purchases?: number
+          revenue_cents?: number
+          sessions?: number
+          source?: string
+          users?: number
+        }
+        Update: {
+          channel_group?: string
+          created_at?: string
+          date?: string
+          engaged_sessions?: number
+          id?: string
+          landing_page?: string
+          medium?: string
+          property_id?: string
+          purchases?: number
+          revenue_cents?: number
+          sessions?: number
+          source?: string
+          users?: number
+        }
+        Relationships: []
+      }
+      geip_gsc_coverage: {
+        Row: {
+          bucket: string
+          captured_at: string
+          id: string
+          property_id: string
+          sample_urls: Json | null
+          url_count: number
+        }
+        Insert: {
+          bucket: string
+          captured_at?: string
+          id?: string
+          property_id: string
+          sample_urls?: Json | null
+          url_count?: number
+        }
+        Update: {
+          bucket?: string
+          captured_at?: string
+          id?: string
+          property_id?: string
+          sample_urls?: Json | null
+          url_count?: number
+        }
+        Relationships: []
+      }
+      geip_gsc_daily: {
+        Row: {
+          clicks: number
+          created_at: string
+          ctr: number
+          date: string
+          dimension: string
+          dimension_value: string
+          id: string
+          impressions: number
+          position: number
+          property_id: string
+        }
+        Insert: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          date: string
+          dimension: string
+          dimension_value?: string
+          id?: string
+          impressions?: number
+          position?: number
+          property_id: string
+        }
+        Update: {
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          date?: string
+          dimension?: string
+          dimension_value?: string
+          id?: string
+          impressions?: number
+          position?: number
+          property_id?: string
+        }
+        Relationships: []
+      }
+      geip_health_scores: {
+        Row: {
+          ai_search: number | null
+          captured_at: string
+          eeat: number | null
+          id: string
+          index_score: number | null
+          merchant: number | null
+          organic_growth: number | null
+          overall: number
+          pagespeed: number | null
+          schema_score: number | null
+          search_console: number | null
+          seo: number | null
+          trust: number | null
+          why: Json | null
+        }
+        Insert: {
+          ai_search?: number | null
+          captured_at?: string
+          eeat?: number | null
+          id?: string
+          index_score?: number | null
+          merchant?: number | null
+          organic_growth?: number | null
+          overall?: number
+          pagespeed?: number | null
+          schema_score?: number | null
+          search_console?: number | null
+          seo?: number | null
+          trust?: number | null
+          why?: Json | null
+        }
+        Update: {
+          ai_search?: number | null
+          captured_at?: string
+          eeat?: number | null
+          id?: string
+          index_score?: number | null
+          merchant?: number | null
+          organic_growth?: number | null
+          overall?: number
+          pagespeed?: number | null
+          schema_score?: number | null
+          search_console?: number | null
+          seo?: number | null
+          trust?: number | null
+          why?: Json | null
+        }
+        Relationships: []
+      }
+      geip_manual_actions: {
+        Row: {
+          action_type: string | null
+          affected: string | null
+          captured_at: string
+          id: string
+          message: string | null
+          property_id: string
+          raw: Json | null
+        }
+        Insert: {
+          action_type?: string | null
+          affected?: string | null
+          captured_at?: string
+          id?: string
+          message?: string | null
+          property_id: string
+          raw?: Json | null
+        }
+        Update: {
+          action_type?: string | null
+          affected?: string | null
+          captured_at?: string
+          id?: string
+          message?: string | null
+          property_id?: string
+          raw?: Json | null
+        }
+        Relationships: []
+      }
+      geip_merchant_issues: {
+        Row: {
+          affected_products: number | null
+          captured_at: string
+          description: string | null
+          documentation: string | null
+          id: string
+          issue_code: string | null
+          merchant_id: string
+          raw: Json | null
+          severity: string | null
+        }
+        Insert: {
+          affected_products?: number | null
+          captured_at?: string
+          description?: string | null
+          documentation?: string | null
+          id?: string
+          issue_code?: string | null
+          merchant_id: string
+          raw?: Json | null
+          severity?: string | null
+        }
+        Update: {
+          affected_products?: number | null
+          captured_at?: string
+          description?: string | null
+          documentation?: string | null
+          id?: string
+          issue_code?: string | null
+          merchant_id?: string
+          raw?: Json | null
+          severity?: string | null
+        }
+        Relationships: []
+      }
+      geip_merchant_products: {
+        Row: {
+          captured_at: string
+          destination: string | null
+          disapproval_reasons: Json | null
+          id: string
+          merchant_id: string
+          product_id: string
+          raw: Json | null
+          status: string | null
+          title: string | null
+          warnings: Json | null
+        }
+        Insert: {
+          captured_at?: string
+          destination?: string | null
+          disapproval_reasons?: Json | null
+          id?: string
+          merchant_id: string
+          product_id: string
+          raw?: Json | null
+          status?: string | null
+          title?: string | null
+          warnings?: Json | null
+        }
+        Update: {
+          captured_at?: string
+          destination?: string | null
+          disapproval_reasons?: Json | null
+          id?: string
+          merchant_id?: string
+          product_id?: string
+          raw?: Json | null
+          status?: string | null
+          title?: string | null
+          warnings?: Json | null
+        }
+        Relationships: []
+      }
+      geip_opportunities: {
+        Row: {
+          confidence: number
+          created_at: string
+          evidence: Json | null
+          expected_revenue_cents: number | null
+          expected_traffic_lift: number | null
+          id: string
+          is_active: boolean
+          kind: string
+          target_query: string | null
+          target_url: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json | null
+          expected_revenue_cents?: number | null
+          expected_traffic_lift?: number | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          target_query?: string | null
+          target_url?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          evidence?: Json | null
+          expected_revenue_cents?: number | null
+          expected_traffic_lift?: number | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          target_query?: string | null
+          target_url?: string | null
+        }
+        Relationships: []
+      }
+      geip_pagespeed_runs: {
+        Row: {
+          accessibility: number | null
+          best_practices: number | null
+          captured_at: string
+          cls: number | null
+          fcp_ms: number | null
+          id: string
+          inp_ms: number | null
+          lcp_ms: number | null
+          performance: number | null
+          raw: Json | null
+          seo: number | null
+          strategy: string
+          ttfb_ms: number | null
+          url: string
+        }
+        Insert: {
+          accessibility?: number | null
+          best_practices?: number | null
+          captured_at?: string
+          cls?: number | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          performance?: number | null
+          raw?: Json | null
+          seo?: number | null
+          strategy: string
+          ttfb_ms?: number | null
+          url: string
+        }
+        Update: {
+          accessibility?: number | null
+          best_practices?: number | null
+          captured_at?: string
+          cls?: number | null
+          fcp_ms?: number | null
+          id?: string
+          inp_ms?: number | null
+          lcp_ms?: number | null
+          performance?: number | null
+          raw?: Json | null
+          seo?: number | null
+          strategy?: string
+          ttfb_ms?: number | null
+          url?: string
+        }
+        Relationships: []
+      }
+      geip_properties: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          is_default: boolean
+          metadata: Json | null
+          property_id: string
+          surface: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json | null
+          property_id: string
+          surface: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json | null
+          property_id?: string
+          surface?: string
+        }
+        Relationships: []
+      }
+      geip_security_issues: {
+        Row: {
+          captured_at: string
+          id: string
+          issue_type: string | null
+          message: string | null
+          property_id: string
+          raw: Json | null
+          severity: string | null
+        }
+        Insert: {
+          captured_at?: string
+          id?: string
+          issue_type?: string | null
+          message?: string | null
+          property_id: string
+          raw?: Json | null
+          severity?: string | null
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          issue_type?: string | null
+          message?: string | null
+          property_id?: string
+          raw?: Json | null
+          severity?: string | null
+        }
+        Relationships: []
+      }
+      geip_sitemaps: {
+        Row: {
+          captured_at: string
+          contents: Json | null
+          errors: number | null
+          id: string
+          is_pending: boolean | null
+          last_downloaded: string | null
+          last_submitted: string | null
+          path: string
+          property_id: string
+          warnings: number | null
+        }
+        Insert: {
+          captured_at?: string
+          contents?: Json | null
+          errors?: number | null
+          id?: string
+          is_pending?: boolean | null
+          last_downloaded?: string | null
+          last_submitted?: string | null
+          path: string
+          property_id: string
+          warnings?: number | null
+        }
+        Update: {
+          captured_at?: string
+          contents?: Json | null
+          errors?: number | null
+          id?: string
+          is_pending?: boolean | null
+          last_downloaded?: string | null
+          last_submitted?: string | null
+          path?: string
+          property_id?: string
+          warnings?: number | null
+        }
+        Relationships: []
+      }
+      geip_sync_runs: {
+        Row: {
+          blocker: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          rows_ingested: number | null
+          source: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          blocker?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          rows_ingested?: number | null
+          source: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          blocker?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          rows_ingested?: number | null
+          source?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      geip_technical_seo: {
+        Row: {
+          broken_links: number | null
+          canonical_target: string | null
+          captured_at: string
+          description_len: number | null
+          has_canonical: boolean | null
+          has_description: boolean | null
+          has_hreflang: boolean | null
+          has_og: boolean | null
+          has_title: boolean | null
+          has_twitter: boolean | null
+          id: string
+          internal_links: number | null
+          is_disallowed: boolean | null
+          is_noindex: boolean | null
+          raw: Json | null
+          schema_types: Json | null
+          status_code: number | null
+          title_len: number | null
+          url: string
+        }
+        Insert: {
+          broken_links?: number | null
+          canonical_target?: string | null
+          captured_at?: string
+          description_len?: number | null
+          has_canonical?: boolean | null
+          has_description?: boolean | null
+          has_hreflang?: boolean | null
+          has_og?: boolean | null
+          has_title?: boolean | null
+          has_twitter?: boolean | null
+          id?: string
+          internal_links?: number | null
+          is_disallowed?: boolean | null
+          is_noindex?: boolean | null
+          raw?: Json | null
+          schema_types?: Json | null
+          status_code?: number | null
+          title_len?: number | null
+          url: string
+        }
+        Update: {
+          broken_links?: number | null
+          canonical_target?: string | null
+          captured_at?: string
+          description_len?: number | null
+          has_canonical?: boolean | null
+          has_description?: boolean | null
+          has_hreflang?: boolean | null
+          has_og?: boolean | null
+          has_title?: boolean | null
+          has_twitter?: boolean | null
+          id?: string
+          internal_links?: number | null
+          is_disallowed?: boolean | null
+          is_noindex?: boolean | null
+          raw?: Json | null
+          schema_types?: Json | null
+          status_code?: number | null
+          title_len?: number | null
+          url?: string
+        }
+        Relationships: []
+      }
+      geip_url_inspection: {
+        Row: {
+          canonical_url: string | null
+          coverage_state: string | null
+          id: string
+          indexing_state: string | null
+          inspected_at: string
+          last_crawl_time: string | null
+          mobile_usable: string | null
+          property_id: string
+          raw: Json | null
+          rich_results_state: string | null
+          robots_txt_state: string | null
+          url: string
+          verdict: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          coverage_state?: string | null
+          id?: string
+          indexing_state?: string | null
+          inspected_at?: string
+          last_crawl_time?: string | null
+          mobile_usable?: string | null
+          property_id: string
+          raw?: Json | null
+          rich_results_state?: string | null
+          robots_txt_state?: string | null
+          url: string
+          verdict?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          coverage_state?: string | null
+          id?: string
+          indexing_state?: string | null
+          inspected_at?: string
+          last_crawl_time?: string | null
+          mobile_usable?: string | null
+          property_id?: string
+          raw?: Json | null
+          rich_results_state?: string | null
+          robots_txt_state?: string | null
+          url?: string
+          verdict?: string | null
+        }
+        Relationships: []
+      }
       genesis_board_meetings: {
         Row: {
           agenda: string | null
@@ -74796,6 +75609,7 @@ export type Database = {
         }
         Returns: string
       }
+      geip_readiness: { Args: never; Returns: Json }
       generate_product_slug: { Args: { product_name: string }; Returns: string }
       get_active_organic_confidence_model: {
         Args: never
