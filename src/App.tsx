@@ -663,6 +663,7 @@ const PinterestRevenueEngineV2 = lazyWithRetry(() => import("./pages/admin/Pinte
 const PinterestDistributionMonitor = lazyWithRetry(() => import("./pages/admin/PinterestDistributionMonitor"));
 const PinterestCatalogIntelligence = lazyWithRetry(() => import("./pages/admin/PinterestCatalogIntelligence"));
 const PinterestWaveOpportunity = lazyWithRetry(() => import("./pages/admin/PinterestWaveOpportunity"));
+const PinterestExperiments = lazyWithRetry(() => import("./pages/admin/PinterestExperiments"));
 const PinterestRevenueV4 = lazyWithRetry(() => import("./pages/admin/PinterestRevenueV4"));
 const PinterestProfitCenter = lazyWithRetry(() => import("./pages/admin/PinterestProfitCenter"));
 const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
@@ -4290,6 +4291,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestWaveOpportunity />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-experiments"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestExperiments />
                                 </Suspense>
                               }
                             />
