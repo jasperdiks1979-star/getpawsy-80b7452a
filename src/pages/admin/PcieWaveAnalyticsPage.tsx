@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Download } from "lucide-react";
 
 type PublishedPin = {
   pinterest_pin_id: string;
@@ -147,6 +147,58 @@ export default function PcieWaveAnalyticsPage() {
     }
   }
 
+  function downloadCsv() {
+    const headers = [
+      "pin_id",
+      "product_slug",
+      "board_id",
+      "board_name",
+      "published_at",
+      "headline",
+      "ci_score",
+      "impressions",
+      "engagement_clicks",
+      "saves",
+      "outbound_clicks",
+      "measured_at",
+      "has_data",
+      "pinterest_url",
+    ];
+    const esc = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.join(",")];
+    for (const r of rows) {
+      lines.push([
+        r.pin_id,
+        r.product_slug,
+        r.board_id,
+        boardName(r.board_id),
+        r.published_at,
+        r.headline,
+        r.ci_score ?? "",
+        r.impressions,
+        r.clicks,
+        r.saves,
+        r.outbound_clicks,
+        r.measured_at ?? "",
+        r.has_data,
+        `https://www.pinterest.com/pin/${r.pin_id}/`,
+      ].map(esc).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `pcie2-wave-analytics-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   const rows: RowView[] = useMemo(() => {
     return pins.map((p) => {
       const perfRow = perf[p.pinterest_pin_id];
@@ -220,6 +272,9 @@ export default function PcieWaveAnalyticsPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Reload
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadCsv} disabled={loading || !rows.length}>
+            <Download className="h-4 w-4 mr-1" /> Download CSV
           </Button>
           <Button size="sm" onClick={() => void triggerSync()} disabled={syncing}>
             {syncing ? "Syncing…" : "Sync from Pinterest"}
