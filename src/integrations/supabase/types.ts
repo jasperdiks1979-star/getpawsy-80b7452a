@@ -54729,6 +54729,116 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_native_learnings: {
+        Row: {
+          actual_ci: number | null
+          actual_pre: number | null
+          attempt: number | null
+          created_at: string
+          guard_result: Json
+          guards_passed: boolean | null
+          id: string
+          job_id: string | null
+          notes: string | null
+          organic_revenue_cents: number | null
+          organic_sessions: number | null
+          pin_queue_id: string | null
+          pinterest_impressions: number | null
+          pinterest_outbound_clicks: number | null
+          pinterest_saves: number | null
+          prediction_id: string | null
+          product_slug: string | null
+        }
+        Insert: {
+          actual_ci?: number | null
+          actual_pre?: number | null
+          attempt?: number | null
+          created_at?: string
+          guard_result?: Json
+          guards_passed?: boolean | null
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          organic_revenue_cents?: number | null
+          organic_sessions?: number | null
+          pin_queue_id?: string | null
+          pinterest_impressions?: number | null
+          pinterest_outbound_clicks?: number | null
+          pinterest_saves?: number | null
+          prediction_id?: string | null
+          product_slug?: string | null
+        }
+        Update: {
+          actual_ci?: number | null
+          actual_pre?: number | null
+          attempt?: number | null
+          created_at?: string
+          guard_result?: Json
+          guards_passed?: boolean | null
+          id?: string
+          job_id?: string | null
+          notes?: string | null
+          organic_revenue_cents?: number | null
+          organic_sessions?: number | null
+          pin_queue_id?: string | null
+          pinterest_impressions?: number | null
+          pinterest_outbound_clicks?: number | null
+          pinterest_saves?: number | null
+          prediction_id?: string | null
+          product_slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_native_learnings_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_native_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_native_predictions: {
+        Row: {
+          attempt: number
+          attempt_strategy: string | null
+          created_at: string
+          id: string
+          job_id: string | null
+          pin_queue_id: string | null
+          prediction: Json
+          prior_failure_reason: string | null
+          product_slug: string | null
+          runners_up: Json
+          winner_concept: string | null
+        }
+        Insert: {
+          attempt?: number
+          attempt_strategy?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          pin_queue_id?: string | null
+          prediction?: Json
+          prior_failure_reason?: string | null
+          product_slug?: string | null
+          runners_up?: Json
+          winner_concept?: string | null
+        }
+        Update: {
+          attempt?: number
+          attempt_strategy?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          pin_queue_id?: string | null
+          prediction?: Json
+          prior_failure_reason?: string | null
+          product_slug?: string | null
+          runners_up?: Json
+          winner_concept?: string | null
+        }
+        Relationships: []
+      }
       pinterest_niche_coverage_snapshots: {
         Row: {
           created_at: string
