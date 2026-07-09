@@ -1067,6 +1067,23 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // downstream image model receives BOTH the existing creative direction and
     // the compiler's deterministic guardrails.
     prompt = `${prompt}\n\n[GOLDEN_DNA_COMPILER]\n${compiled.prompt}`;
+    // Pinterest Evolution Engine — additive learned-preferences bias.
+    // Reads active recommendations produced from REAL Pinterest performance
+    // (organic-primary) and appends them as soft creative preferences.
+    // Never lowers or bypasses any downstream certified guard.
+    try {
+      const bias = await loadEvolutionBias(sb as any, 8);
+      if (bias.block) {
+        prompt = `${prompt}\n\n${bias.block}`;
+        (metrics as any).pinterest_evolution_bias = {
+          applied: true,
+          directives: bias.count,
+          version_id: bias.version_id,
+        };
+      }
+    } catch (e) {
+      (metrics as any).pinterest_evolution_bias_error = String(e);
+    }
     // Pinterest Native Intelligence V2 — additive pre-render brain.
     // Runs only when explicitly opted-in via env or per-job flag. It never
     // modifies or bypasses any downstream certified guard; it only appends
