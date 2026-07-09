@@ -573,7 +573,7 @@ const ProductDetail = () => {
       if (!product?.id) return [];
       const { data, error } = await supabase
         .from("product_reviews")
-        .select("*")
+        .select("id, product_id, rating, title, content, created_at, helpful_count, is_verified_buyer, reviewer_name")
         .eq("product_id", product.id)
         .eq("is_approved", true)
         .order("created_at", { ascending: false });
