@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2,
   Compass, Globe2, Loader2, MapPinned, Radio, RefreshCw, Search,
