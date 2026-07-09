@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-06-27T19:06:10.632Z" total_products="350">
+<merchant_diagnostics generated="2026-07-09T09:14:34.250Z" total_products="349">
   <summary>
-    <missing_gtin>26</missing_gtin>
+    <missing_gtin>25</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>15</overlength_title>
     <short_title>10</short_title>
@@ -12,13 +12,13 @@
   </summary>
   <issues>
     <issue type="overlength_title" product_id="5362f3a5-6d93-4fda-86c3-eb533e0825ce" name="1Pc Dog Car Seat Cover For Back Seat Waterproof Oxford Cloth Seat Cover Hammo..." length="177" />
-    <issue type="short_title" product_id="30f5ce45-97be-4f15-ae6d-cb5527b479ce" name="Bubble Fish Cat Scratcher Sofa" length="30" />
-    <issue type="short_title" product_id="63c16e21-a2fd-4f7d-904b-a2aafcdba308" name="C Double-layer Cat Head 45" length="26" />
     <issue type="short_title" product_id="95f9aa0d-d40a-486e-8501-b7ffd6fb7e8a" name="Star Moon Cat Scratcher Sofa" length="28" />
-    <issue type="short_title" product_id="c59309f4-0e6e-4b90-8a27-4177f001a585" name="Versatile Accordion Cat Scratcher" length="33" />
-    <issue type="short_title" product_id="f87b5c9a-fa1f-4fa4-ab0e-84b849005743" name="Double-Layer Sisal Cat Scratcher" length="32" />
     <issue type="short_title" product_id="d1843b7b-4a5f-4a6e-8db7-42fd8d013f4d" name="C Sofa Bearded Cat 56" length="21" />
+    <issue type="short_title" product_id="63c16e21-a2fd-4f7d-904b-a2aafcdba308" name="C Double-layer Cat Head 45" length="26" />
+    <issue type="short_title" product_id="30f5ce45-97be-4f15-ae6d-cb5527b479ce" name="Bubble Fish Cat Scratcher Sofa" length="30" />
     <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
+    <issue type="short_title" product_id="f87b5c9a-fa1f-4fa4-ab0e-84b849005743" name="Double-Layer Sisal Cat Scratcher" length="32" />
+    <issue type="short_title" product_id="c59309f4-0e6e-4b90-8a27-4177f001a585" name="Versatile Accordion Cat Scratcher" length="33" />
     <issue type="overlength_title" product_id="8756d596-9fa5-49ed-8d84-b08098a41054" name="Laser Pointer Cat Toy, Red Dot LED Light Pointer Interactive Toys Indoor Cats..." length="200" />
     <issue type="short_title" product_id="b7820153-07c6-4f8e-a0be-be7540ee72cb" name="Smart Laser Cat Teaser Toy USB Charging" length="39" />
     <issue type="missing_gtin" product_id="5591787b-2d67-4916-94af-9d828b856447" name="Wall-Mounted Cat Climbing Frame – Modular DIY Cat Tree with Shelves &amp; Perches" />
@@ -28,7 +28,6 @@
     <issue type="missing_gtin" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." />
     <issue type="overlength_title" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." length="153" />
     <issue type="missing_gtin" product_id="d28d05a3-4069-4329-8a1c-941af9f21a15" name="The Same-style Dog Coat Is Durable Long-lasting And Cold-resistant" />
-    <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="516103ad-7294-4255-b29a-7bf2dae185ef" name="Elevated Dog Bowls With Storage, Two Stainless Steel Bowls For Large Dogs, Co..." />
     <issue type="missing_gtin" product_id="685f7faf-7809-4962-b408-c2ced99dd178" name="Automatic Pet Water Fountain – Cordless Smart Dispenser for Cats &amp; Dogs" />
     <issue type="missing_gtin" product_id="c882d898-5aaa-44eb-9d3e-d90d14f06ff0" name="Cat Litter Box – Extra Large Stainless Steel High-Sided Enclosure" />
@@ -54,15 +53,15 @@
     <issue type="overlength_title" product_id="2041764d-a50a-4f49-930e-63c710c5a27a" name="Blue-Yellow Color Options -- 1Pc Dog Water Fountain Multifunctional Automatic..." length="157" />
     <issue type="overlength_title" product_id="a94f47d0-4836-4283-8cab-a2ad96ae455d" name="PROKEl Shark Shaped Pet Toy, Interactive TwineToy Ball Dog Toy With Suction C..." length="156" />
     <issue type="overlength_title" product_id="42823f27-f3ec-4494-a081-73c7fbc029e0" name="2 In 1 Wireless Electric Dog Fence Waterproof Pet Shock Boundary Containment ..." length="160" />
-    <issue type="overlength_title" product_id="54e8ae20-0a7d-47b5-8eb9-1193cacb5263" name=" Fully Enclosed Cat Litter Box with Lid &amp; Drawer Design, Covered Litter Box A..." length="193" />
     <issue type="overlength_title" product_id="b7e7c3af-2ea9-4483-91e2-bc974b1d3b01" name=" Floor-to-Ceiling Cat Tree Cat Climbing Tower with Sisal-Covered Scratching P..." length="159" />
+    <issue type="overlength_title" product_id="54e8ae20-0a7d-47b5-8eb9-1193cacb5263" name=" Fully Enclosed Cat Litter Box with Lid &amp; Drawer Design, Covered Litter Box A..." length="193" />
     <issue type="overlength_title" product_id="8eea41d7-2e96-43fb-b7c7-da9f6f1318b6" name=" 6&quot; Height Small Puppy Dog Feeding Station for Messy Pets, Stainless Steel El..." length="161" />
+    <issue type="overlength_title" product_id="4b79fbbe-b07e-4530-9890-38836c534452" name="Cat Toys - Interactive Toy For Cat , Kitten Toys, Lightweight Resin Duck Shap..." length="156" />
     <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
     <issue type="overlength_title" product_id="41d9da7b-156b-4d22-a1ce-7b8c0c90d3ac" name="59in Large Tall Christmas Tree Cat Tower With 2 Cat Condos &amp; Scratching Post,..." length="171" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
-    <issue type="overlength_title" product_id="4b79fbbe-b07e-4530-9890-38836c534452" name="Cat Toys - Interactive Toy For Cat , Kitten Toys, Lightweight Resin Duck Shap..." length="156" />
     <issue type="overlength_title" product_id="c8a9adc6-fd11-4e5e-bac3-139982e767dc" name=" 85.5&quot; Cat Tree Height Adjustable Floor-to-Ceiling 4-Tier Kitty Climbing Acti..." length="171" />
-    <issue type="duplicate_title" product_ids="ebe7dc66-7f02-4897-a9db-e58c89c2c08a,39e9b068-c393-4b47-90b7-5e1fd5abb831,ceb05898-f029-44f2-b4a3-156356007034,0bfdc4cf-0631-4a35-8192-74451faa5444,9c2bf6ac-83ff-42c6-afd5-4120f104e941" count="5" />
+    <issue type="duplicate_title" product_ids="0bfdc4cf-0631-4a35-8192-74451faa5444,ebe7dc66-7f02-4897-a9db-e58c89c2c08a,9c2bf6ac-83ff-42c6-afd5-4120f104e941,ceb05898-f029-44f2-b4a3-156356007034,39e9b068-c393-4b47-90b7-5e1fd5abb831" count="5" />
     <issue type="duplicate_title" product_ids="3e16b666-187a-4a60-afe4-55adea8d06c4,6f44ee1c-251c-4895-b281-50f3320eb98b" count="2" />
     <issue type="duplicate_title" product_ids="c15e7914-ab30-4b05-a8bd-2b94a056e00f,d5046917-bdb3-49fd-88ac-850e639d283c" count="2" />
     <issue type="duplicate_title" product_ids="dd370d50-f6a9-4d8f-b44c-06295cb7cd1a,d20bbcc2-007b-486d-89c3-635e0ce7cda8" count="2" />
