@@ -331,6 +331,7 @@ function BestsellerSlugRedirect() {
 
 // Admin sub-pages (all lazy-loaded, admin-only)
 const DiagnosticsPage = lazyWithRetry(() => import("./pages/admin/DiagnosticsPage"));
+const GoogleEnterprisePage = lazyWithRetry(() => import("./pages/admin/GoogleEnterprisePage"));
 const TikTokConfigPage = lazyWithRetry(() => import("./pages/admin/TikTokConfigPage"));
 const TikTokPixelVerifyPage = lazyWithRetry(() => import("./pages/admin/TikTokPixelVerifyPage"));
 const TikTokServerEventsPage = lazyWithRetry(() => import("./pages/admin/TikTokServerEventsPage"));
@@ -1750,6 +1751,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <DiagnosticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="google-enterprise"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GoogleEnterprisePage />
                                 </Suspense>
                               }
                             />
