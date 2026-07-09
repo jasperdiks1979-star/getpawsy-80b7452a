@@ -33,6 +33,10 @@ import {
   naturalizeCopyForNative as _canonicalNaturalizeCopyForNative,
   type CanonicalClassification,
 } from "../_shared/pinterest-canonical-enrichment.ts";
+import {
+  formatWinnerAsDirectives,
+  runPinterestNativeIntelligence,
+} from "../_shared/pinterest-native-intelligence.ts";
 
 // Genesis V9.3 — re-export canonical helpers so callers keep working while
 // the source of truth lives in `_shared/pinterest-canonical-enrichment.ts`.
@@ -1062,6 +1066,53 @@ async function processJob(sb: Sb, job: any, settings: any) {
     // downstream image model receives BOTH the existing creative direction and
     // the compiler's deterministic guardrails.
     prompt = `${prompt}\n\n[GOLDEN_DNA_COMPILER]\n${compiled.prompt}`;
+    // Pinterest Native Intelligence V2 — additive pre-render brain.
+    // Runs only when explicitly opted-in via env or per-job flag. It never
+    // modifies or bypasses any downstream certified guard; it only appends
+    // a stronger, attempt-aware creative brief so first-attempt PRE/CI pass
+    // rate rises over time.
+    const niEnabled = Deno.env.get("PINTEREST_NATIVE_INTELLIGENCE") === "on" ||
+      (job as any)?.prompt?.native_intelligence === true;
+    let niResult: any = null;
+    if (niEnabled && LOVABLE_API_KEY) {
+      try {
+        niResult = await runPinterestNativeIntelligence({
+          productName: String(product?.name ?? product?.slug ?? "product"),
+          attempt: Number(job.attempt_count ?? 1),
+          priorFailureReason: (job as any)?.error_message ?? null,
+          apiKey: LOVABLE_API_KEY,
+        });
+        const niBlock = formatWinnerAsDirectives(niResult);
+        prompt = `${prompt}\n\n${niBlock}`;
+        (metrics as any).pinterest_native_intelligence = {
+          winner: niResult.winner.title,
+          predicted_pre: niResult.winner.prediction.expected_pre.score,
+          predicted_ci: niResult.winner.prediction.expected_ci.score,
+          pinterest_native_score: niResult.winner.prediction.pinterest_native.score,
+          passes_predictor: niResult.winner.prediction.passes_predictor,
+          blockers: niResult.winner.prediction.blockers,
+          attempt_strategy: niResult.attempt_strategy.focus,
+        };
+        try {
+          await sb.from("pinterest_native_predictions").insert({
+            job_id: job.id,
+            pin_queue_id: job.pin_queue_id ?? null,
+            product_slug: product?.slug ?? null,
+            attempt: Number(job.attempt_count ?? 1),
+            attempt_strategy: niResult.attempt_strategy.focus,
+            winner_concept: niResult.winner.title,
+            prediction: niResult.winner.prediction,
+            runners_up: niResult.runners_up.map((r: any) => ({
+              title: r.title,
+              pinterest_native: r.prediction.pinterest_native.score,
+            })),
+            prior_failure_reason: (job as any)?.error_message ?? null,
+          });
+        } catch (_e) { /* non-blocking */ }
+      } catch (e) {
+        (metrics as any).pinterest_native_intelligence_error = String(e);
+      }
+    }
     // Adaptive one-shot retry: allow a human/operator to inject exact PRE-blocker
     // fixes for a single job. Read from job.prompt.adaptive_retry_directives
     // (string). This does NOT lower any PRE gate — it only supplies extra
