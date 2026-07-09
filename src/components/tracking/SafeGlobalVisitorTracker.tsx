@@ -68,6 +68,18 @@ const TrackerInner = () => {
     }
 
     // Visitor tracking (internal analytics — always runs)
+    // Canonical page_view — fires on EVERY route change so every real
+    // visitor enters the canonical pipeline (cci_events → canonical_events
+    // → canonical_sessions → analytics-truth), regardless of which route
+    // they landed on. Without this, only /, /products/*, /products,
+    // /collections/* and /cart produced a CCI event, so visitors landing
+    // on /guides/*, /blog/*, /dashboard, /checkout, etc. never showed up
+    // in the "Last hour / 5h / 10h / 24h" dashboards even though
+    // visitor_activity + Live Presence recorded them.
+    // Dedup key = cci|CANONICAL_PAGE_VIEW|session_id|page_path|60s bucket,
+    // so overlap with homepage_view / collection_view / product_view on
+    // the same path collapses to a single canonical_events row.
+    try { trackCci('page_view', { funnel_stage: 'page' }); } catch {}
     if (path === '/checkout') {
       trackCheckout();
       try { sessionQualitySignals.checkout(); } catch {}

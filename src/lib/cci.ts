@@ -11,6 +11,7 @@ const UTM_FIRST_KEY = 'gp_utm_first';
 const LOCATION_KEY = 'visitor_location';
 
 export type CciEvent =
+  | 'page_view'
   | 'homepage_view' | 'collection_view' | 'product_card_click' | 'product_view'
   | 'product_image_view' | 'product_gallery_swipe' | 'product_price_visible'
   | 'shipping_info_visible' | 'returns_info_visible' | 'trust_badge_visible'
