@@ -25,8 +25,13 @@ const DRY_RUN_PARAMS = {
 type PublishResult = {
   published?: number;
   failed?: number;
+  failed_count?: number;
   skipped?: number;
+  skipped_count?: number;
   pin_ids?: string[];
+  selected_count?: number;
+  would_post?: number;
+  selected_ids?: string[];
   published_pins?: Array<{ pin_id?: string; board_id?: string; product_id?: string; category?: string }>;
   planned_pins?: Array<{ pin_id?: string; board_id?: string; product_id?: string; category?: string }>;
   board_distribution?: Record<string, number>;
