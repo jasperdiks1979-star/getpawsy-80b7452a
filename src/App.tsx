@@ -4026,6 +4026,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-evolution"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestEvolutionPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-spy"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
