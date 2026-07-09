@@ -146,9 +146,7 @@ async function runCouncil(sb: any) {
       const tally: Record<string, { weight: number; supporters: string[]; rois: number[]; confs: number[]; risks: number[] }> = {};
       const sampleItem = items[0];
       const localVotes: any[] = [];
-      const evSrcCounts: Record<XaiEvidenceSource, number> = {
-        organic: 0, paid: 0, blended: 0, heuristic: 0, insufficient_data: 0,
-      };
+      const evSrcCounts: EvidenceSourceCounts = emptyEvidenceSourceCounts();
       let untaggedVotes = 0;
 
       for (const d of items) {
@@ -233,38 +231,11 @@ async function runCouncil(sb: any) {
       const dissenters: string[] = [];
       for (const [act, t] of actions.slice(1)) for (const s of t.supporters) if (!supporters.includes(s)) dissenters.push(`${s}:${act}`);
 
-      /* ---- Evidence Source Gate (soft) ---- */
-      const totalTagged = evSrcCounts.organic + evSrcCounts.paid + evSrcCounts.blended
-        + evSrcCounts.heuristic + evSrcCounts.insufficient_data;
-      const organicShare = totalTagged ? evSrcCounts.organic / totalTagged : 0;
-      const paidShare    = totalTagged ? evSrcCounts.paid    / totalTagged : 0;
-      const blendedShare = totalTagged ? evSrcCounts.blended / totalTagged : 0;
-      let decisionEvSrc: XaiEvidenceSource;
-      if (organicShare >= 0.6) decisionEvSrc = "organic";
-      else if (paidShare >= 0.6) decisionEvSrc = "paid";
-      else if (organicShare + blendedShare + paidShare >= 0.5) decisionEvSrc = "blended";
-      else if (evSrcCounts.insufficient_data > evSrcCounts.heuristic) decisionEvSrc = "insufficient_data";
-      else decisionEvSrc = "heuristic";
-
-      const promotingAction = /^(amplify|act|promote|scale|launch)/i.test(finalAction);
-      let gateAction: "allow" | "validate_only" | "block" | "flag_missing" = "allow";
-      let gateReason = "organic-first";
-      if (decisionEvSrc === "insufficient_data") {
-        gateAction = "block";
-        gateReason = "insufficient_data may not trigger automated promotion";
-      } else if (decisionEvSrc === "heuristic" && promotingAction) {
-        gateAction = "block";
-        gateReason = "heuristic evidence may not be treated as proven for promotion";
-      } else if (decisionEvSrc === "paid" && promotingAction) {
-        gateAction = "validate_only";
-        gateReason = "paid evidence is validation-only; requires organic corroboration";
-      } else if (decisionEvSrc === "blended" && promotingAction) {
-        gateAction = "validate_only";
-        gateReason = "blended evidence requires explicit organic majority";
-      } else if (untaggedVotes > 0) {
-        gateAction = "flag_missing";
-        gateReason = `${untaggedVotes} advisor vote(s) missing evidence_source`;
-      }
+      /* ---- Evidence Source Gate (soft, shared logic) ---- */
+      const gate = classifyGate(evSrcCounts, finalAction, { untaggedVotes });
+      const decisionEvSrc = gate.decision_evidence_source;
+      const gateAction = gate.action;
+      const gateReason = gate.reason;
       const effectiveAction = gateAction === "block" ? "defer" : finalAction;
       const gateStatus = gateAction === "block"
         ? "gate_blocked"
@@ -277,7 +248,7 @@ async function runCouncil(sb: any) {
         top_evidence_source: decisionEvSrc,
         action: gateAction,
         reason: gateReason,
-        advisor_count: totalTagged,
+        advisor_count: gate.total_tagged,
         organic_votes: evSrcCounts.organic,
         paid_votes: evSrcCounts.paid,
         blended_votes: evSrcCounts.blended,
