@@ -1436,7 +1436,7 @@ export const VisitorWorldMap = ({
       markersRef.current.push(marker);
     });
     mapPerfMark("first-paint");
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
+  }, [domMarkerFeatures, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
 
   // ────────────────────────────────────────────────────────────────────────
   // Stage 5b — live-mode Mapbox integrations
