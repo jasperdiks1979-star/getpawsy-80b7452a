@@ -309,7 +309,7 @@ export default function OrganicGrowthIntelligencePage() {
                 <Card key={name} className="border-dashed">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize">{name.replaceAll("_", " ")}</span>
+                      <span className="text-sm font-medium capitalize">{name.replace(/_/g, " ")}</span>
                       <Badge variant="outline" className="text-xs">Not Connected</Badge>
                     </div>
                     {a.note && <p className="text-xs text-muted-foreground mt-1">{a.note}</p>}
