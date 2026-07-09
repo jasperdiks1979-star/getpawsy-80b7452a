@@ -1,5 +1,9 @@
 import { resolveCanonicalSource, type CanonicalSource } from "@/lib/canonicalSource";
 import type { TruthSession } from "@/hooks/useAnalyticsTruth";
+import {
+  resolveMarkerVisual,
+  MARKER_SOURCE_COLORS,
+} from "@/lib/visitorWorldMapMarkerColor";
 
 export type WorldMapActivityFilter = "all" | "browsing" | "cart" | "checkout";
 export type WorldMapSourceFilter = "all" | CanonicalSource;
@@ -176,23 +180,47 @@ export function markerFeaturesToGeoJsonWithCanonical(
 ): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
     type: "FeatureCollection",
-    features: features.map((feature) => ({
-      type: "Feature" as const,
-      properties: {
-        id: feature.id,
-        session_id: feature.session_id,
-        visitor_id: feature.visitor_id ?? "",
-        activity_type: feature.activity_type,
-        weight: feature.activity_type === "checkout" ? 3 : feature.activity_type === "cart" ? 2 : 1,
-        color: feature.activity_type === "checkout" ? "#22c55e" : feature.activity_type === "cart" ? "#f97316" : "#ef4444",
-        source: feature.source,
-        canonical: canonicalSessionIds ? canonicalSessionIds.has(feature.session_id) : true,
-      },
-      geometry: {
-        type: "Point" as const,
-        coordinates: [feature.longitude, feature.latitude],
-      },
-    })),
+    features: features.map((feature) => {
+      const visual = resolveMarkerVisual({
+        utm_source: feature.utm_source,
+        utm_medium: feature.utm_medium,
+        utm_campaign: feature.utm_campaign,
+        referrer: feature.referrer,
+        referrer_category: feature.referrer_category,
+        page_path: feature.page_path,
+        is_internal: feature.is_internal,
+      });
+      return {
+        type: "Feature" as const,
+        properties: {
+          id: feature.id,
+          session_id: feature.session_id,
+          visitor_id: feature.visitor_id ?? "",
+          activity_type: feature.activity_type,
+          weight: feature.activity_type === "checkout" ? 3 : feature.activity_type === "cart" ? 2 : 1,
+          // Marker base color is now driven by source (mission spec).
+          // Activity level still drives `weight` → marker size / heatmap intensity.
+          color: visual.color,
+          source: feature.source,
+          source_group: visual.group,
+          source_label: visual.label,
+          source_canonical: visual.canonical,
+          is_paid: visual.isPaid,
+          is_organic: visual.isOrganic,
+          is_internal: visual.isInternal,
+          country: feature.country,
+          city: feature.city,
+          page_path: feature.page_path,
+          last_seen_at: feature.last_seen_at ?? feature.created_at,
+          canonical: canonicalSessionIds ? canonicalSessionIds.has(feature.session_id) : true,
+          mode: "canonical",
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [feature.longitude, feature.latitude],
+        },
+      };
+    }),
   };
 }
 
@@ -410,28 +438,40 @@ export function buildLivePresenceModel(
 export function livePresenceMarkersToGeoJson(markers: LivePresenceMarker[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
     type: "FeatureCollection",
-    features: markers.map((m) => ({
-      type: "Feature" as const,
-      properties: {
-        id: m.session_id,
-        session_id: m.session_id,
-        visitor_id: m.visitor_id ?? "",
-        activity_type: m.activity_type,
-        weight: m.activity_type === "checkout" ? 3 : m.activity_type === "cart" ? 2 : 1,
-        color: m.activity_type === "checkout" ? "#22c55e" : m.activity_type === "cart" ? "#f97316" : "#ef4444",
-        source: m.source,
-        canonical: m.isCanonical,
-        mode: "live",
-        last_seen_at: m.last_seen_at,
-        country: m.country,
-        city: m.city,
-        page_path: m.page_path,
-      },
-      geometry: {
-        type: "Point" as const,
-        coordinates: [m.longitude, m.latitude],
-      },
-    })),
+    features: markers.map((m) => {
+      const visual = resolveMarkerVisual({
+        utm_source: m.source,
+        referrer: null,
+      });
+      return {
+        type: "Feature" as const,
+        properties: {
+          id: m.session_id,
+          session_id: m.session_id,
+          visitor_id: m.visitor_id ?? "",
+          activity_type: m.activity_type,
+          weight: m.activity_type === "checkout" ? 3 : m.activity_type === "cart" ? 2 : 1,
+          color: visual.color,
+          source: m.source,
+          source_group: visual.group,
+          source_label: visual.label,
+          source_canonical: visual.canonical,
+          is_paid: visual.isPaid,
+          is_organic: visual.isOrganic,
+          is_internal: false,
+          canonical: m.isCanonical,
+          mode: "live",
+          last_seen_at: m.last_seen_at,
+          country: m.country,
+          city: m.city,
+          page_path: m.page_path,
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [m.longitude, m.latitude],
+        },
+      };
+    }),
   };
 }
 
