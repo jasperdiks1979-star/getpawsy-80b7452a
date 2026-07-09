@@ -198,6 +198,21 @@ export function markerFeaturesToGeoJsonWithCanonical(
           // Marker base color is now driven by source (mission spec).
           // Activity level still drives `weight` → marker size / heatmap intensity.
           color: visual.color,
+          // Explicit source-* props are the CANONICAL fields the Mapbox
+          // paint expressions read. `color` is retained only for backward
+          // compat with legacy layers. Never let activity intensity drive
+          // these fields — they are source/platform truth.
+          sourceColor: visual.color,
+          sourcePlatform: visual.canonical,
+          sourceClass: visual.isPaid
+            ? "paid"
+            : visual.isInternal
+              ? "internal"
+              : visual.isBot
+                ? "bot"
+                : visual.isOrganic
+                  ? "organic"
+                  : "unclassified",
           source: feature.source,
           source_group: visual.group,
           source_label: visual.label,
