@@ -1304,11 +1304,36 @@ export const VisitorWorldMap = ({
       });
 
       // Create popup content with source info
+      // Rich per-visitor tooltip: source (group + canonical), traffic
+      // class (organic / paid / internal), landing page, last activity,
+      // activity count and whether the marker is canonical or live-only.
+      const primaryVisual = dominantVisual;
+      const primaryActivity = groupActivities[0] as VisitorActivity & { last_seen_at?: string };
+      const trafficClass = primaryVisual?.isPaid
+        ? "paid"
+        : primaryVisual?.isInternal
+          ? "internal"
+          : primaryVisual?.isOrganic
+            ? "organic"
+            : "unclassified";
+      const platformLabel = primaryVisual?.canonical ?? "unknown";
+      const landingPage = primaryActivity?.page_path ?? "—";
+      const lastActivityIso = primaryActivity?.last_seen_at ?? primaryActivity?.created_at;
+      const lastActivityLabel = lastActivityIso
+        ? new Date(lastActivityIso).toLocaleTimeString()
+        : "—";
+      const canonicalFlag = truth ? "canonical" : "live-presence only";
       const popupContent = `
         <div style="padding: 8px; min-width: 150px;">
           <strong>${groupActivities[0].city || groupActivities[0].country || "Onbekend"}</strong>
           <div style="margin-top: 4px; font-size: 12px;">
             ${count} bezoeker${count > 1 ? "s" : ""}
+          </div>
+          <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #444;">
+            <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${primaryVisual?.color ?? "#999"};margin-right:6px;vertical-align:middle;"></span><strong>${primaryVisual?.label ?? "Unknown"}</strong> · ${platformLabel}</div>
+            <div>class: <strong>${trafficClass}</strong> · ${canonicalFlag}</div>
+            <div>landing: <span style="font-family:monospace;">${landingPage}</span></div>
+            <div>last activity: ${lastActivityLabel} · ${count} event${count > 1 ? "s" : ""}</div>
           </div>
           <div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">
             ${Object.entries(ACTIVITY_COLORS).map(([type, c]) => {
