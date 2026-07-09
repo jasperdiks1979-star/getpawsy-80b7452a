@@ -772,6 +772,49 @@ export const VisitorWorldMap = ({
     });
   }, [filteredActivitiesRaw, markerGroupFilter]);
 
+  // ------------------------------------------------------------------
+  // Live-mode DOM marker parity: convert live presence markers into the
+  // same WorldMapMarkerFeature shape the DOM path already understands so
+  // "Live now" renders the actual heartbeat visitors (from visitor_activity)
+  // instead of the canonical historical set. Historical windows are
+  // unchanged and keep using `filteredActivities`.
+  // ------------------------------------------------------------------
+  const liveDomMarkerFeatures: WorldMapMarkerFeature[] | undefined = useMemo(() => {
+    if (!isLiveNow) return undefined;
+    const rows: WorldMapMarkerFeature[] = liveModel.markers.map((m) => ({
+      id: m.session_id,
+      session_id: m.session_id,
+      visitor_id: m.visitor_id,
+      activity_type: m.activity_type,
+      latitude: m.latitude,
+      longitude: m.longitude,
+      country: m.country,
+      city: m.city,
+      created_at: m.last_seen_at,
+      last_seen_at: m.last_seen_at,
+      referrer_category: null,
+      utm_source: m.source,
+      utm_medium: null,
+      utm_campaign: null,
+      referrer: null,
+      page_path: m.page_path,
+      source: m.source,
+      is_internal: false,
+    }));
+    if (markerGroupFilter === "all") return rows;
+    return rows.filter((a) => {
+      const visual = resolveMarkerVisual({
+        utm_source: a.utm_source,
+        referrer: a.referrer,
+      });
+      return markerMatchesGroupFilter(visual, markerGroupFilter);
+    });
+  }, [isLiveNow, liveModel.markers, markerGroupFilter]);
+
+  // Unified DOM marker source: live-mode uses live heartbeat features so the
+  // DOM overlay matches the Mapbox circle layer (also fed from liveModel).
+  const domMarkerFeatures = isLiveNow ? liveDomMarkerFeatures : filteredActivities;
+
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
     const channel = supabase
