@@ -285,6 +285,10 @@ export const VisitorWorldMap = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(initialSourceFilter ?? "all");
+  // Source-group chip filter (mission spec): All / Organic / Paid / Google /
+  // Pinterest / TikTok / Meta / Direct / Referral / Unknown. Purely
+  // presentational — layered on top of the canonical source resolver.
+  const [markerGroupFilter, setMarkerGroupFilter] = useState<MarkerGroupFilter>("all");
   const [showInactiveSources, setShowInactiveSources] = useState<boolean>(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
