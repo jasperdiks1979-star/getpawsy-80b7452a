@@ -135,6 +135,64 @@ Deno.serve(async (req) => {
     const uniquePublishedProducts = pinsPerProduct.size;
     const catalogCoveragePct = catalogTotal ? (uniquePublishedProducts / catalogTotal) * 100 : 0;
 
+    // 5b. Live signal sources — Success DNA, Seasonality, Visual uniqueness
+    // Success DNA: latest active organic DNA snapshot → similar_products
+    const dnaMatchByProduct = new Map<string, number>();
+    const dnaMatchByCategory = new Map<string, number>();
+    try {
+      const { data: dnaRow } = await supabase
+        .from("organic_success_dna")
+        .select("similar_products")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const sims = (dnaRow?.similar_products ?? []) as Array<{ id?: string; category?: string; similarity?: number }>;
+      for (const s of sims) {
+        const sim = typeof s?.similarity === "number" ? s.similarity : 0;
+        if (!sim) continue;
+        if (s.id) dnaMatchByProduct.set(String(s.id), Math.max(dnaMatchByProduct.get(String(s.id)) ?? 0, sim));
+        if (s.category) {
+          const k = String(s.category).toLowerCase();
+          dnaMatchByCategory.set(k, Math.max(dnaMatchByCategory.get(k) ?? 0, sim));
+        }
+      }
+    } catch { /* signal is optional */ }
+
+    // Seasonality: current + next 2 ISO weeks (US)
+    const nowDate = new Date(now);
+    const startOfYear = Date.UTC(nowDate.getUTCFullYear(), 0, 1);
+    const currentWeek = Math.max(1, Math.ceil(((now - startOfYear) / DAY + 1) / 7));
+    const seasonByCategory = new Map<string, { lift: number; confidence: number }>();
+    try {
+      const { data: seasonRows } = await supabase
+        .from("mi_seasonal_forecasts")
+        .select("category,expected_lift,confidence,week_of_year")
+        .eq("market", "US")
+        .in("week_of_year", [currentWeek, currentWeek + 1, currentWeek + 2]);
+      for (const s of (seasonRows ?? []) as Array<{ category: string; expected_lift: number | string; confidence: number | string }>) {
+        const key = String(s.category).toLowerCase();
+        const lift = Number(s.expected_lift) || 0;
+        const conf = Number(s.confidence) || 0;
+        const cur = seasonByCategory.get(key);
+        if (!cur || lift > cur.lift) seasonByCategory.set(key, { lift, confidence: conf });
+      }
+    } catch { /* signal is optional */ }
+
+    // Visual uniqueness: prior DNA fingerprints per product (fewer = more novel)
+    const fpCountByProduct = new Map<string, number>();
+    if (productIds.length > 0) {
+      try {
+        const { data: fpRows } = await supabase
+          .from("pcie2_dna_fingerprints")
+          .select("product_id")
+          .in("product_id", productIds);
+        for (const r of (fpRows ?? []) as Array<{ product_id: string | null }>) {
+          if (r.product_id) fpCountByProduct.set(r.product_id, (fpCountByProduct.get(r.product_id) ?? 0) + 1);
+        }
+      } catch { /* signal is optional */ }
+    }
+
     // 6. Score each candidate
     type Scored = {
       queue_id: string;
@@ -189,6 +247,46 @@ Deno.serve(async (req) => {
       if (ci >= 80) {
         components.high_ci = WEIGHTS.high_ci;
         reasons.push("high_ci");
+      }
+
+      // Organic Success DNA — product-level match wins; else category-level fallback.
+      if (row.product_id && dnaMatchByProduct.has(row.product_id)) {
+        const sim = dnaMatchByProduct.get(row.product_id)!;
+        const pts = Math.round(WEIGHTS.organic_dna * Math.min(1, sim));
+        if (pts > 0) {
+          components.organic_dna = pts;
+          reasons.push(`organic_dna_match:${sim.toFixed(2)}`);
+        }
+      } else {
+        const catSim = dnaMatchByCategory.get(category.toLowerCase());
+        if (catSim && catSim > 0) {
+          const pts = Math.round(WEIGHTS.organic_dna * 0.5 * Math.min(1, catSim));
+          if (pts > 0) {
+            components.organic_dna = pts;
+            reasons.push(`organic_dna_category:${catSim.toFixed(2)}`);
+          }
+        }
+      }
+
+      // Seasonality — US weekly forecast for this category (current + 2 weeks ahead).
+      const season = seasonByCategory.get(category.toLowerCase());
+      if (season && season.lift > 0) {
+        const strength = Math.min(1, season.lift / 20) * Math.min(1, Math.max(0, season.confidence));
+        const pts = Math.round(WEIGHTS.seasonality * strength);
+        if (pts > 0) {
+          components.seasonality = pts;
+          reasons.push(`seasonal_lift:+${Number(season.lift).toFixed(1)}%`);
+        }
+      }
+
+      // Visual uniqueness — fewer prior DNA fingerprints = fresher creative surface.
+      const fpCount = row.product_id ? (fpCountByProduct.get(row.product_id) ?? 0) : 0;
+      if (fpCount === 0) {
+        components.visual_unique = WEIGHTS.visual_unique;
+        reasons.push("no_prior_visual_dna");
+      } else if (fpCount <= 2) {
+        components.visual_unique = Math.round(WEIGHTS.visual_unique * 0.5);
+        reasons.push(`low_visual_variants:${fpCount}`);
       }
 
       if (product?.created_at) {
