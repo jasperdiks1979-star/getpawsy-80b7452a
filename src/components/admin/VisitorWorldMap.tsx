@@ -1196,7 +1196,9 @@ export const VisitorWorldMap = ({
       visuals.forEach((v) => groupCounts.set(v.group, (groupCounts.get(v.group) ?? 0) + 1));
       const dominantGroupEntry = Array.from(groupCounts.entries()).sort((a, b) => b[1] - a[1])[0];
       const dominantVisual = visuals.find((v) => v.group === dominantGroupEntry?.[0]) ?? visuals[0];
-      const color = dominantVisual?.color ?? ACTIVITY_COLORS[dominantType];
+      // Marker BASE color is source-driven only. Activity intensity drives
+      // size/glow further below — it must never overwrite the source color.
+      const color = dominantVisual?.color ?? MARKER_SOURCE_COLORS.unknown;
       const isInternalGroup = dominantVisual?.isInternal === true;
       const hasPinterest = visuals.some((v) => v.group === "pinterest");
       const pinterestCount = visuals.filter((v) => v.group === "pinterest").length;
