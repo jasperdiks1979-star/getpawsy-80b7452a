@@ -37,6 +37,7 @@ import {
   formatWinnerAsDirectives,
   runPinterestNativeIntelligence,
 } from "../_shared/pinterest-native-intelligence.ts";
+import { loadEvolutionBias } from "../_shared/pinterest-evolution-bias.ts";
 
 // Genesis V9.3 — re-export canonical helpers so callers keep working while
 // the source of truth lives in `_shared/pinterest-canonical-enrichment.ts`.
