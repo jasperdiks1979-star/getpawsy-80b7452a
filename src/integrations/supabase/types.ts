@@ -53186,6 +53186,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_evolution_attribute_effects: {
+        Row: {
+          attribute: string
+          baseline: number | null
+          cohort_size: number | null
+          confidence: number
+          created_at: string
+          effect: number
+          id: string
+          metric: string
+          sample_size: number
+          value: string
+          version_id: string | null
+        }
+        Insert: {
+          attribute: string
+          baseline?: number | null
+          cohort_size?: number | null
+          confidence?: number
+          created_at?: string
+          effect: number
+          id?: string
+          metric: string
+          sample_size: number
+          value: string
+          version_id?: string | null
+        }
+        Update: {
+          attribute?: string
+          baseline?: number | null
+          cohort_size?: number | null
+          confidence?: number
+          created_at?: string
+          effect?: number
+          id?: string
+          metric?: string
+          sample_size?: number
+          value?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_evolution_attribute_effects_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_evolution_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pinterest_evolution_log: {
         Row: {
           created_at: string
@@ -53219,6 +53269,202 @@ export type Database = {
           old_value?: Json | null
           rationale?: string | null
           target_dimension?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_evolution_memory: {
+        Row: {
+          confidence: number
+          first_seen: string
+          id: string
+          key: string
+          kind: string
+          last_updated: string
+          organic_clicks: number
+          organic_purchases: number
+          organic_revenue: number
+          organic_saves: number
+          sample_size: number
+          wins: number
+        }
+        Insert: {
+          confidence?: number
+          first_seen?: string
+          id?: string
+          key: string
+          kind: string
+          last_updated?: string
+          organic_clicks?: number
+          organic_purchases?: number
+          organic_revenue?: number
+          organic_saves?: number
+          sample_size?: number
+          wins?: number
+        }
+        Update: {
+          confidence?: number
+          first_seen?: string
+          id?: string
+          key?: string
+          kind?: string
+          last_updated?: string
+          organic_clicks?: number
+          organic_purchases?: number
+          organic_revenue?: number
+          organic_saves?: number
+          sample_size?: number
+          wins?: number
+        }
+        Relationships: []
+      }
+      pinterest_evolution_recommendations: {
+        Row: {
+          active: boolean
+          confidence: number
+          created_at: string
+          directive: string
+          effect: number
+          id: string
+          metric: string
+          priority: number
+          reason: string
+          sample_size: number
+          version_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          confidence: number
+          created_at?: string
+          directive: string
+          effect: number
+          id?: string
+          metric: string
+          priority?: number
+          reason: string
+          sample_size?: number
+          version_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          confidence?: number
+          created_at?: string
+          directive?: string
+          effect?: number
+          id?: string
+          metric?: string
+          priority?: number
+          reason?: string
+          sample_size?: number
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_evolution_recommendations_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_evolution_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_evolution_runs: {
+        Row: {
+          attributes_learned: number
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          memory_updated: number
+          pins_analyzed: number
+          recommendations_written: number
+          started_at: string
+          status: string
+          summary: Json
+          version_id: string | null
+        }
+        Insert: {
+          attributes_learned?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          memory_updated?: number
+          pins_analyzed?: number
+          recommendations_written?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          version_id?: string | null
+        }
+        Update: {
+          attributes_learned?: number
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          memory_updated?: number
+          pins_analyzed?: number
+          recommendations_written?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_evolution_runs_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_evolution_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_evolution_versions: {
+        Row: {
+          attributes_learned: number
+          created_at: string
+          first_pass_certification_rate: number | null
+          id: string
+          notes: string | null
+          organic_clicks_per_pin: number | null
+          organic_purchases_per_pin: number | null
+          organic_revenue_per_pin: number | null
+          organic_saves_per_pin: number | null
+          pins_analyzed: number
+          recovery_success_rate: number | null
+          summary: Json
+          version: number
+        }
+        Insert: {
+          attributes_learned?: number
+          created_at?: string
+          first_pass_certification_rate?: number | null
+          id?: string
+          notes?: string | null
+          organic_clicks_per_pin?: number | null
+          organic_purchases_per_pin?: number | null
+          organic_revenue_per_pin?: number | null
+          organic_saves_per_pin?: number | null
+          pins_analyzed?: number
+          recovery_success_rate?: number | null
+          summary?: Json
+          version: number
+        }
+        Update: {
+          attributes_learned?: number
+          created_at?: string
+          first_pass_certification_rate?: number | null
+          id?: string
+          notes?: string | null
+          organic_clicks_per_pin?: number | null
+          organic_purchases_per_pin?: number | null
+          organic_revenue_per_pin?: number | null
+          organic_saves_per_pin?: number | null
+          pins_analyzed?: number
+          recovery_success_rate?: number | null
+          summary?: Json
+          version?: number
         }
         Relationships: []
       }
