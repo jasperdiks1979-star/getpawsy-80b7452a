@@ -742,7 +742,7 @@ export const VisitorWorldMap = ({
   }, [truth, rawActivities]);
 
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
-  const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
+  const filteredActivitiesRaw: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
     if (!matchesSourceFilter(a)) return false;
     return true;
@@ -752,6 +752,25 @@ export const VisitorWorldMap = ({
     Number.isFinite(a.latitude) &&
     Number.isFinite(a.longitude)
   )).map((a) => ({ ...a, source: a.utm_source || a.referrer_category || "direct", is_internal: false }));
+
+  // Apply the source-group chip filter (UI-only). Empty result is fine —
+  // the map will simply render zero markers for the selected group.
+  const filteredActivities: WorldMapMarkerFeature[] | undefined = useMemo(() => {
+    if (!filteredActivitiesRaw) return filteredActivitiesRaw;
+    if (markerGroupFilter === "all") return filteredActivitiesRaw;
+    return filteredActivitiesRaw.filter((a) => {
+      const visual = resolveMarkerVisual({
+        utm_source: a.utm_source,
+        utm_medium: a.utm_medium,
+        utm_campaign: a.utm_campaign,
+        referrer: a.referrer,
+        referrer_category: a.referrer_category,
+        page_path: a.page_path,
+        is_internal: a.is_internal,
+      });
+      return markerMatchesGroupFilter(visual, markerGroupFilter);
+    });
+  }, [filteredActivitiesRaw, markerGroupFilter]);
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
