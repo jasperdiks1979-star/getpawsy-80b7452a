@@ -5,6 +5,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const ALLOWED = new Set([
+  'page_view',
   'homepage_view','collection_view','product_card_click','product_view',
   'product_image_view','product_gallery_swipe','product_price_visible',
   'shipping_info_visible','returns_info_visible','trust_badge_visible',

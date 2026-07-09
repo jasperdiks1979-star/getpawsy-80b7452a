@@ -22,6 +22,7 @@ type Canon =
   | "CANONICAL_ENGAGEMENT";
 
 const CCI_MAP: Record<string, Canon> = {
+  page_view: "CANONICAL_PAGE_VIEW",
   product_view: "CANONICAL_PRODUCT_VIEW",
   product_card_click: "CANONICAL_PRODUCT_VIEW",
   add_to_cart_click: "CANONICAL_ADD_TO_CART",
