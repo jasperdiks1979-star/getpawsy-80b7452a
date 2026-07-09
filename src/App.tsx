@@ -1774,6 +1774,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pcie2-wave-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PcieWaveAnalyticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pre-wave-live"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
