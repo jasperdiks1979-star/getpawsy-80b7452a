@@ -1315,7 +1315,8 @@ export const VisitorWorldMap = ({
             : `0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
         };
         animation: pulse 2s ease-in-out infinite;
-        display: ${showHeatmap ? "none" : "block"};
+        display: block;
+        opacity: ${showHeatmap ? "0.65" : "1"};
         position: relative;
         z-index: ${isSelectedGroup ? "5" : "1"};
       `;
