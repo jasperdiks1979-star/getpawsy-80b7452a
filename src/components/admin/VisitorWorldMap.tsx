@@ -26,6 +26,14 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
+import {
+  resolveMarkerVisual,
+  markerMatchesGroupFilter,
+  MARKER_GROUP_CHIPS,
+  MARKER_LEGEND_ITEMS,
+  MARKER_SOURCE_COLORS,
+  type MarkerGroupFilter,
+} from "@/lib/visitorWorldMapMarkerColor";
 import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
 import {
   assertWorldMapRenderInvariant,
