@@ -464,6 +464,17 @@ export function livePresenceMarkersToGeoJson(markers: LivePresenceMarker[]): Geo
           activity_type: m.activity_type,
           weight: m.activity_type === "checkout" ? 3 : m.activity_type === "cart" ? 2 : 1,
           color: visual.color,
+          sourceColor: visual.color,
+          sourcePlatform: visual.canonical,
+          sourceClass: visual.isPaid
+            ? "paid"
+            : visual.isInternal
+              ? "internal"
+              : visual.isBot
+                ? "bot"
+                : visual.isOrganic
+                  ? "organic"
+                  : "unclassified",
           source: m.source,
           source_group: visual.group,
           source_label: visual.label,
