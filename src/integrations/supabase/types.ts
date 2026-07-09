@@ -9142,6 +9142,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "bestsellers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       bhi_audit_log: {
@@ -13873,6 +13880,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "cinematic_v3_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       cinematic_v3_quality_audit: {
@@ -14696,6 +14710,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "cj_sync_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "cj_sync_items_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -14871,6 +14892,13 @@ export type Database = {
             columns: ["imported_product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "cj_us_winners_imported_product_id_fkey"
+            columns: ["imported_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -18852,6 +18880,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "dedupe_conflicts_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
             columns: ["duplicate_product_id"]
             isOneToOne: false
@@ -18905,6 +18940,13 @@ export type Database = {
             columns: ["duplicate_product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "dedupe_conflicts_duplicate_product_id_fkey"
+            columns: ["duplicate_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -35036,6 +35078,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "gv3_pi_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "gv3_pi_recommendations_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -35247,6 +35296,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "gv3_pi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "gv3_pi_scores_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -35356,6 +35412,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_recommendations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
           {
@@ -35510,6 +35573,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "gv3_pin_growth_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
           {
@@ -37443,6 +37513,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "loss_making_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       lp_funnel_events: {
@@ -38060,6 +38137,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "market_product_priority_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       market_product_scores: {
@@ -38626,6 +38710,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -49737,6 +49828,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "pin_product_classification_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       pin_product_intelligence: {
@@ -49909,6 +50007,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pin_product_understanding_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -52153,6 +52258,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "pinterest_creative_factory_jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       pinterest_creative_factory_settings: {
@@ -53672,6 +53784,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_keyword_bank_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -55891,6 +56010,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "pinterest_pins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       pinterest_pipeline_failures: {
@@ -56356,6 +56482,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -57986,6 +58119,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "pinterest_revenue_product_tiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       pinterest_revenue_scores: {
@@ -58526,6 +58666,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "pinterest_title_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -61146,6 +61293,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_aliases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_bundles: {
@@ -61270,6 +61424,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_creative_profiles: {
@@ -61349,6 +61510,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_creative_profiles_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -61808,6 +61976,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_matches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_media: {
@@ -61931,6 +62106,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_media_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_media_audit: {
@@ -62049,6 +62231,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_media_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -62331,6 +62520,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "product_replacement_candidates_candidate_product_id_fkey"
+            columns: ["candidate_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "product_replacement_candidates_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -62384,6 +62580,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_replacement_candidates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -62488,6 +62691,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_slug_history: {
@@ -62570,6 +62780,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_slug_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -62717,6 +62934,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_supplier_mappings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
           {
@@ -63404,6 +63628,13 @@ export type Database = {
             columns: ["canonical_product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -66205,6 +66436,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "saved_google_ads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       scraped_content: {
@@ -67583,6 +67821,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "shopping_optimizations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       shopping_winners: {
@@ -67689,6 +67934,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: true
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "shopping_winners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -68740,6 +68992,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "stock_notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       stock_refresh_monitor_attempts: {
@@ -69374,6 +69633,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "tiktok_post_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -70347,6 +70613,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       warehouse_revenue_log: {
@@ -70949,6 +71222,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "visitor_activity_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -71923,6 +72203,13 @@ export type Database = {
             referencedRelation: "v_pinterest_product_potential"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       products_public: {
@@ -72074,6 +72361,13 @@ export type Database = {
             columns: ["canonical_product_id"]
             isOneToOne: false
             referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_canonical_product_id_fkey"
+            columns: ["canonical_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_pinterest_wave_opportunity"
             referencedColumns: ["product_id"]
           },
         ]
@@ -72906,6 +73200,41 @@ export type Database = {
           s_us_demand: number | null
           s_visual_richness: number | null
           times_published: number | null
+        }
+        Relationships: []
+      }
+      v_pinterest_wave_opportunity: {
+        Row: {
+          category: string | null
+          ever_published: boolean | null
+          image_count: number | null
+          image_url: string | null
+          margin: number | null
+          n_board: number | null
+          n_headroom: number | null
+          n_margin: number | null
+          n_potential: number | null
+          n_untapped: number | null
+          pinterest_class: string | null
+          pinterest_potential_score: number | null
+          price: number | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          s_board_compat: number | null
+          s_category_headroom: number | null
+          s_emotional: number | null
+          s_lifestyle: number | null
+          s_margin: number | null
+          s_price_band: number | null
+          s_seasonal: number | null
+          s_uniqueness: number | null
+          s_us_demand: number | null
+          s_visual_richness: number | null
+          times_published: number | null
+          wave_bucket: string | null
+          wave_rank: number | null
+          wave_score: number | null
         }
         Relationships: []
       }
