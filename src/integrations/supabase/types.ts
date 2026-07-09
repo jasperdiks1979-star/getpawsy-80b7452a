@@ -21040,6 +21040,78 @@ export type Database = {
         }
         Relationships: []
       }
+      enterprise_decisions: {
+        Row: {
+          action_type: string
+          actual_revenue_uplift_usd: number | null
+          actual_traffic_uplift_pct: number | null
+          affected_boards: Json
+          affected_products: Json
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          decision_date: string
+          effort: string | null
+          evidence: Json
+          expected_revenue_uplift_usd: number | null
+          expected_traffic_uplift_pct: number | null
+          id: string
+          outcome: Json | null
+          rank: number
+          rationale: string
+          reviewed_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          actual_revenue_uplift_usd?: number | null
+          actual_traffic_uplift_pct?: number | null
+          affected_boards?: Json
+          affected_products?: Json
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          decision_date?: string
+          effort?: string | null
+          evidence?: Json
+          expected_revenue_uplift_usd?: number | null
+          expected_traffic_uplift_pct?: number | null
+          id?: string
+          outcome?: Json | null
+          rank: number
+          rationale: string
+          reviewed_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          actual_revenue_uplift_usd?: number | null
+          actual_traffic_uplift_pct?: number | null
+          affected_boards?: Json
+          affected_products?: Json
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          decision_date?: string
+          effort?: string | null
+          evidence?: Json
+          expected_revenue_uplift_usd?: number | null
+          expected_traffic_uplift_pct?: number | null
+          id?: string
+          outcome?: Json | null
+          rank?: number
+          rationale?: string
+          reviewed_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evidence_backup_checks: {
         Row: {
           broken_links: number
