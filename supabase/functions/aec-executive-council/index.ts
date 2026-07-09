@@ -93,7 +93,7 @@ async function gatherRecentXaiDecisions(sb: any, hours = 30) {
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const { data } = await sb
     .from("pcie2_xai_decisions")
-    .select("id, source_engine, decision_type, subject_kind, subject_id, summary, plain_english, reason_codes, confidence, expected_lift, risk, explainability_score, evidence, status, created_at")
+    .select("id, source_engine, decision_type, subject_kind, subject_id, summary, plain_english, reason_codes, confidence, expected_lift, risk, explainability_score, evidence, evidence_source, status, created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -157,12 +157,17 @@ async function runCouncil(sb: any) {
     const advisorsTouched = new Set<string>();
     const decisionsToInsert: any[] = [];
     const votesToInsert: any[] = [];
+    const gateLogs: any[] = [];
 
     for (const [key, items] of groups) {
       // Tally weighted action votes
       const tally: Record<string, { weight: number; supporters: string[]; rois: number[]; confs: number[]; risks: number[] }> = {};
       const sampleItem = items[0];
       const localVotes: any[] = [];
+      const evSrcCounts: Record<XaiEvidenceSource, number> = {
+        organic: 0, paid: 0, blended: 0, heuristic: 0, insufficient_data: 0,
+      };
+      let untaggedVotes = 0;
 
       for (const d of items) {
         const advisorKey = ENGINE_TO_ADVISOR[d.source_engine] ?? null;
@@ -176,7 +181,16 @@ async function runCouncil(sb: any) {
         const risk = Number(d.risk ?? 0.3);
         const roi = expectedRoi(d);
         const evq = evidenceQuality(d);
-        const w = Number(advisor.current_weight ?? 1) * (0.5 + 0.5 * conf) * (0.5 + 0.5 * evq);
+        const evSrc = normalizeEvSrc(d.evidence_source);
+        if (d.evidence_source == null) untaggedVotes++;
+        evSrcCounts[evSrc]++;
+        const evSrcMult = EVIDENCE_SOURCE_WEIGHT[evSrc];
+        // Evidence-source gate: paid / heuristic / insufficient_data
+        // votes are down-weighted so they cannot outvote organic proof.
+        const w = Number(advisor.current_weight ?? 1)
+          * (0.5 + 0.5 * conf)
+          * (0.5 + 0.5 * evq)
+          * evSrcMult;
         const horizon = timeHorizon(d.reason_codes ?? []);
 
         const t = tally[action] ?? { weight: 0, supporters: [], rois: [], confs: [], risks: [] };
@@ -197,11 +211,14 @@ async function runCouncil(sb: any) {
           time_horizon: horizon,
           weight: w,
           vote_score: w * (1 + roi) * (1 - risk * 0.5),
+          evidence_source: evSrc,
           payload: {
             xai_id: d.id,
             engine: d.source_engine,
             summary: d.summary,
             reason_codes: d.reason_codes,
+            evidence_source: evSrc,
+            evidence_source_weight: evSrcMult,
           },
         });
       }
