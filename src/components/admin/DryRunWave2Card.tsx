@@ -73,12 +73,12 @@ export function DryRunWave2Card() {
       if (fnError) throw new Error(fnError.message);
       const r = (data ?? {}) as PublishResult;
 
-      // Dry runs may return planned_pins instead of published_pins.
-      const pins = (r.published_pins ?? r.planned_pins ?? []) as Array<Record<string, unknown>>;
+      // Dry runs return selected_count / would_post / selected_ids, not published / planned_pins.
+      const pins = (r.published_pins ?? r.planned_pins ?? r.selected_ids?.map((id) => ({ pin_id: id })) ?? []) as Array<Record<string, unknown>>;
       const board_distribution = r.board_distribution ?? tally(pins, "board_id");
       const product_distribution = r.product_distribution ?? tally(pins, "product_id");
       const category_distribution = r.category_distribution ?? tally(pins, "category");
-      const pin_ids = r.pin_ids ?? (pins.map((p) => p.pin_id).filter(Boolean) as string[]);
+      const pin_ids = r.selected_ids ?? r.pin_ids ?? (pins.map((p) => p.pin_id).filter(Boolean) as string[]);
 
       const enriched: PublishResult = {
         ...r,
@@ -91,12 +91,13 @@ export function DryRunWave2Card() {
       setResult(enriched);
 
       // Dry-run PASS: publisher reports 10 eligible/planned with no failures.
-      const planned = Number(enriched.published ?? pins.length ?? 0);
-      const failed = Number(enriched.failed ?? 0);
+      const planned = Number(r.would_post ?? r.selected_count ?? pins.length ?? 0);
+      const failed = Number(r.failed_count ?? r.failed ?? 0);
+      const skipped = Number(r.skipped_count ?? r.skipped ?? 0);
       const pass = planned === 10 && failed === 0;
       setVerdict(pass ? "PASS" : "FAIL");
       if (pass) toast.success("Dry-run PASS — 10 pins would publish, 0 failed");
-      else toast.error(`Dry-run FAIL — planned=${planned}, failed=${failed}`);
+      else toast.error(`Dry-run FAIL — planned=${planned}, failed=${failed}, skipped=${skipped}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
