@@ -108,9 +108,9 @@ export function DryRunWave2Card() {
     }
   }
 
-  const planned = Number(result?.published ?? 0);
-  const failed = Number(result?.failed ?? 0);
-  const skipped = Number(result?.skipped ?? 0);
+  const planned = Number(result?.would_post ?? result?.selected_count ?? 0);
+  const failed = Number(result?.failed_count ?? result?.failed ?? 0);
+  const skipped = Number(result?.skipped_count ?? result?.skipped ?? 0);
 
   return (
     <Card className="border-muted-foreground/30 bg-muted/20">
