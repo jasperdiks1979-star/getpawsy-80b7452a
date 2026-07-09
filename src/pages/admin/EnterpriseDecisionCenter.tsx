@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { AlertTriangle, TrendingUp, Target, Activity, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { RunWave2Card } from "@/components/admin/RunWave2Card";
 
 type ActionType =
   | "publish_new"
@@ -378,6 +379,9 @@ export default function EnterpriseDecisionCenter() {
         <Kpi icon={<CheckCircle2 className="h-4 w-4" />} label="Growth Confidence" value={`${(growthConfidence * 100).toFixed(0)}%`} />
         <Kpi icon={<AlertTriangle className="h-4 w-4" />} label="Enterprise Health" value={`${(health?.health_score ?? 0).toFixed(0)}/100`} />
       </div>
+
+      {/* Certified PCIE2 Wave 2 — manual admin action, no auto-run */}
+      <RunWave2Card />
 
       {/* Top 3 */}
       <Card>
