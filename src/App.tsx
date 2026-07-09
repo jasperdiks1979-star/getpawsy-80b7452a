@@ -4241,6 +4241,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pcie2-wave-analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PcieWaveAnalyticsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-enterprise-control-center"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
