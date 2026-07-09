@@ -661,6 +661,7 @@ const PinterestConversionMonitor = lazyWithRetry(() => import("./pages/admin/Pin
 const PinterestCleanup = lazyWithRetry(() => import("./pages/admin/PinterestCleanup"));
 const PinterestRevenueEngineV2 = lazyWithRetry(() => import("./pages/admin/PinterestRevenueEngineV2"));
 const PinterestDistributionMonitor = lazyWithRetry(() => import("./pages/admin/PinterestDistributionMonitor"));
+const PinterestCatalogIntelligence = lazyWithRetry(() => import("./pages/admin/PinterestCatalogIntelligence"));
 const PinterestRevenueV4 = lazyWithRetry(() => import("./pages/admin/PinterestRevenueV4"));
 const PinterestProfitCenter = lazyWithRetry(() => import("./pages/admin/PinterestProfitCenter"));
 const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
@@ -4272,6 +4273,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestDistributionMonitor />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-catalog-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCatalogIntelligence />
                                 </Suspense>
                               }
                             />
