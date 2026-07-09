@@ -3983,6 +3983,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="organic-growth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <OrganicGrowthIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="organic-confidence-config"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
