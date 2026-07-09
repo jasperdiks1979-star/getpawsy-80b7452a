@@ -1043,9 +1043,26 @@ export const VisitorWorldMap = ({
 
       // Live mode renders visitor_activity heartbeat features (presence);
       // canonical mode renders analytics-canonical features (business truth).
-      const geojsonData = isLiveNow
+      const geojsonRaw = isLiveNow
         ? livePresenceMarkersToGeoJson(liveModel.markers)
         : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
+      // Apply the source-group chip filter to the Mapbox layer too, so the
+      // chip parity holds for both DOM and circle-layer markers.
+      const geojsonData: GeoJSON.FeatureCollection<GeoJSON.Point> =
+        markerGroupFilter === "all"
+          ? geojsonRaw
+          : {
+              type: "FeatureCollection",
+              features: geojsonRaw.features.filter((f) => {
+                const p = (f.properties ?? {}) as Record<string, unknown>;
+                const visual = {
+                  group: (p.source_group ?? "unknown") as never,
+                  isPaid: !!p.is_paid,
+                  isOrganic: !!p.is_organic,
+                };
+                return markerMatchesGroupFilter(visual, markerGroupFilter);
+              }),
+            };
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
@@ -1089,7 +1106,9 @@ export const VisitorWorldMap = ({
           id: "visitor-markers",
           type: "circle",
           source: "visitor-map-source",
-          layout: { visibility: showHeatmap ? "none" : "visible" },
+          // Source-colored markers stay visible above the heatmap so
+          // source/platform provenance is always readable.
+          layout: { visibility: "visible" },
           paint: {
             // Source-based base color — activity intensity ONLY drives
             // radius/opacity, never overrides marker color. `sourceColor`
@@ -1123,9 +1142,20 @@ export const VisitorWorldMap = ({
       }
 
       mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
-      mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
+      // Markers stay visible; when heatmap is on, DOM markers dim slightly so
+      // the density gradient reads underneath, but source colors remain.
+      mapInstance.setLayoutProperty("visitor-markers", "visibility", "visible");
+      mapInstance.setPaintProperty(
+        "visitor-markers",
+        "circle-opacity",
+        showHeatmap
+          ? ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85]
+          : ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+      );
       markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = showHeatmap ? "none" : "block";
+        const elStyle = (marker.getElement() as HTMLElement).style;
+        elStyle.display = "block";
+        elStyle.opacity = showHeatmap ? "0.65" : "1";
       });
 
       setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
@@ -1144,7 +1174,7 @@ export const VisitorWorldMap = ({
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel]);
+  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
