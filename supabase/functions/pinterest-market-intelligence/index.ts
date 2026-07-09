@@ -438,6 +438,11 @@ async function runNightly() {
       expectedLift: liftPct,
       risk: 1 - o.confidence,
       dedupeKey: `pinterest-market-intel:${o.signal_key}:${new Date().toISOString().slice(0, 10)}`,
+      // Market Intelligence pulls external trend/keyword/competitor
+      // signals — never proof of our own organic conversion. Council
+      // must treat this as heuristic (external market prior), and
+      // low-confidence signals as insufficient_data.
+      evidenceSource: o.confidence < 0.5 ? "insufficient_data" : "heuristic",
     });
     if (ok) xai++;
   }
