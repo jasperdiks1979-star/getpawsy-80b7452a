@@ -18,6 +18,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { fetchOrganicPinRanking } from "../_shared/organic-ranking.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -155,12 +156,16 @@ async function score(sb: ReturnType<typeof admin>) {
     cur.closeups += Number((r as any).closeups || 0);
     revMap.set((r as any).pin_id, cur);
   }
+  // Organic-first Layer-1 signals per pin (canonical_sessions_traffic_class).
+  const orgRows = await fetchOrganicPinRanking(sb, pinIds).catch(() => []);
+  const orgMap = new Map(orgRows.map((r) => [r.pin_id, r]));
 
   const outcomes: any[] = [];
   const now = new Date().toISOString();
   for (const e of active) {
     const perf = perfMap.get(e.pin_id);
     const r = revMap.get(e.pin_id) ?? { revenue: 0, purchases: 0, closeups: 0 };
+    const org = orgMap.get(e.pin_id);
     const imp = Number(perf?.impressions || 0);
     const clk = Number(perf?.clicks || 0);
     const sav = Number(perf?.saves || 0);
@@ -173,9 +178,19 @@ async function score(sb: ReturnType<typeof admin>) {
       closeups: r.closeups,
       outbound_clicks: clk,
       ctr: imp > 0 ? clk / imp : 0,
-      conversions: r.purchases,
-      revenue: r.revenue / 100,
+      // Organic-first: Layer-1 conversions from canonical Sessions are the source of truth.
+      // Blended funnel numbers are retained on the row as validation only.
+      conversions: org?.organic_purchases ?? 0,
+      revenue: (org?.organic_revenue_cents ?? 0) / 100,
       verdict: "running",
+      // paid/blended validation only — MUST NOT drive winner/loser promotion
+      // (see promote() gate below).
+      paid_validation: {
+        blended_purchases: r.purchases,
+        blended_revenue: r.revenue / 100,
+        organic_sessions: org?.organic_sessions ?? 0,
+        organic_add_to_cart: org?.organic_add_to_cart ?? 0,
+      },
     });
   }
   // Replace previous "running" outcomes (keep one per experiment).
@@ -218,7 +233,13 @@ async function promote(sb: ReturnType<typeof admin>) {
       bot._out.impressions,
     );
     const liftPct = bot._out.ctr > 0 ? (top._out.ctr - bot._out.ctr) / bot._out.ctr : 1;
-    if (p < P_VALUE_THRESHOLD && liftPct >= MIN_LIFT_PCT) {
+    // Organic-first guardrail: never crown a winner unless the leader has at least one
+    // organic-attributed conversion OR strictly more organic conversions than the loser.
+    // Paid conversions may only VALIDATE — never promote alone.
+    const topOrg = Number(top._out.conversions || 0);
+    const botOrg = Number(bot._out.conversions || 0);
+    const organicGate = topOrg > botOrg || (topOrg > 0 && botOrg === 0);
+    if (p < P_VALUE_THRESHOLD && liftPct >= MIN_LIFT_PCT && organicGate) {
       await sb.from("pin_ab_experiments").update({ status: "winner" }).eq("id", top.id);
       await sb.from("pin_ab_experiments").update({ status: "loser", retired_at: new Date().toISOString() }).eq("id", bot.id);
       await sb.from("pin_ab_outcomes").update({ verdict: "winner" }).eq("experiment_id", top.id);

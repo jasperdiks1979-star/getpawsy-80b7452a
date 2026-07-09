@@ -3,6 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { fetchOrganicHealth, fetchOrganicProductRanking, fetchOrganicPinRanking } from "../_shared/organic-ranking.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -42,7 +43,24 @@ async function dnaSnapshot() {
     supabase.from("gmd_modules").select("key,name,avg_confidence,concept_count").limit(20),
     supabase.from("gcp_modules").select("key,name,avg_confidence,concept_count").limit(20),
   ]);
-  return { business: gbd.data ?? [], product: gpd.data ?? [], market: gmd.data ?? [], customer: gcp.data ?? [] };
+  // Organic-First Layer-1 truth attached to every board briefing.
+  const [health, topProducts, topPins] = await Promise.all([
+    fetchOrganicHealth(supabase).catch(() => null),
+    fetchOrganicProductRanking(supabase).then((r) => r.slice(0, 20)).catch(() => []),
+    fetchOrganicPinRanking(supabase).then((r) => r.slice(0, 20)).catch(() => []),
+  ]);
+  return {
+    business: gbd.data ?? [],
+    product: gpd.data ?? [],
+    market: gmd.data ?? [],
+    customer: gcp.data ?? [],
+    organic_first: {
+      principle: "Organic conversions > ATC > product views > sessions. Paid = validation only.",
+      health,
+      top_organic_products: topProducts,
+      top_organic_pins: topPins,
+    },
+  };
 }
 
 const handlers: Record<string, (p: any) => Promise<any>> = {
@@ -313,6 +331,32 @@ const handlers: Record<string, (p: any) => Promise<any>> = {
     const { data, error } = await supabase.rpc("ede_recalc_weights");
     if (error) throw error;
     return data;
+  },
+
+  async organicFirstSnapshot() {
+    const [health, products, pins] = await Promise.all([
+      fetchOrganicHealth(supabase),
+      fetchOrganicProductRanking(supabase),
+      fetchOrganicPinRanking(supabase),
+    ]);
+    return {
+      layer: "Layer 1 — Organic Truth",
+      views_consumed: [
+        "v_organic_product_ranking_30d",
+        "v_organic_pin_ranking_30d",
+        "v_organic_ranking_health",
+      ],
+      hierarchy: [
+        "1. organic_purchases",
+        "2. organic_add_to_cart",
+        "3. organic_product_views",
+        "4. organic_sessions",
+        "5. paid = validation only",
+      ],
+      health,
+      top_products: products.slice(0, 50),
+      top_pins: pins.slice(0, 50),
+    };
   },
 };
 
