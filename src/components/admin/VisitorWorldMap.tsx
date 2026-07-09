@@ -31,6 +31,7 @@ import {
   markerMatchesGroupFilter,
   MARKER_GROUP_CHIPS,
   MARKER_LEGEND_ITEMS,
+  MARKER_SOURCE_COLORS,
   type MarkerGroupFilter,
 } from "@/lib/visitorWorldMapMarkerColor";
 import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
