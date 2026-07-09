@@ -356,6 +356,16 @@ Deno.serve(async (req) => {
               if_unchanged: { expected_metric: "revenue_cents_30d", expected_value: acc.revenueCents, note: "Continuing current allocation" },
             },
             dedupeKey: `gd:${run.id}:${d.category}:${d.target_ref ?? d.title}`,
+            // Growth Director consumes organic-first ranking (organic
+            // pin/product performance from pcie2_pin_performance). If
+            // sample size is missing or confidence < 0.4 we downgrade
+            // to insufficient_data so the Council will not auto-promote.
+            evidenceSource: (
+              (d.confidence ?? 0) < 0.4 ||
+              !d.evidence?.product?.pins_30d
+            )
+              ? "insufficient_data"
+              : "organic",
           });
         }
       }
