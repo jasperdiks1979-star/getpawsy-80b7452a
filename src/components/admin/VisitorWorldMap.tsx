@@ -31,6 +31,7 @@ import {
   markerMatchesGroupFilter,
   MARKER_GROUP_CHIPS,
   MARKER_LEGEND_ITEMS,
+  MARKER_SOURCE_COLORS,
   type MarkerGroupFilter,
 } from "@/lib/visitorWorldMapMarkerColor";
 import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
@@ -1047,10 +1048,30 @@ export const VisitorWorldMap = ({
           source: "visitor-map-source",
           layout: { visibility: showHeatmap ? "none" : "visible" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 2, 8, 6, 14],
-            "circle-color": ["get", "color"],
-            "circle-opacity": 0.95,
-            "circle-stroke-color": "#ffffff",
+            // Source-based base color — activity intensity ONLY drives
+            // radius/opacity, never overrides marker color. `sourceColor`
+            // is populated for every feature (canonical + live) by the
+            // shared resolveMarkerVisual() helper.
+            "circle-color": [
+              "case",
+              ["has", "sourceColor"], ["get", "sourceColor"],
+              ["has", "color"], ["get", "color"],
+              "#9CA3AF",
+            ],
+            "circle-radius": [
+              "interpolate", ["linear"], ["zoom"],
+              0, ["+", 4, ["*", ["coalesce", ["get", "weight"], 1], 1.5]],
+              6, ["+", 8, ["*", ["coalesce", ["get", "weight"], 1], 3]],
+            ],
+            "circle-opacity": [
+              "interpolate", ["linear"], ["coalesce", ["get", "weight"], 1],
+              1, 0.75, 2, 0.9, 3, 1,
+            ],
+            "circle-stroke-color": [
+              "match", ["coalesce", ["get", "sourceClass"], "unclassified"],
+              "internal", "#f8fafc",
+              "#ffffff",
+            ],
             "circle-stroke-width": 2,
             "circle-stroke-opacity": 0.9,
             "circle-blur": 0.05,
@@ -1176,7 +1197,9 @@ export const VisitorWorldMap = ({
       visuals.forEach((v) => groupCounts.set(v.group, (groupCounts.get(v.group) ?? 0) + 1));
       const dominantGroupEntry = Array.from(groupCounts.entries()).sort((a, b) => b[1] - a[1])[0];
       const dominantVisual = visuals.find((v) => v.group === dominantGroupEntry?.[0]) ?? visuals[0];
-      const color = dominantVisual?.color ?? ACTIVITY_COLORS[dominantType];
+      // Marker BASE color is source-driven only. Activity intensity drives
+      // size/glow further below — it must never overwrite the source color.
+      const color = dominantVisual?.color ?? MARKER_SOURCE_COLORS.unknown;
       const isInternalGroup = dominantVisual?.isInternal === true;
       const hasPinterest = visuals.some((v) => v.group === "pinterest");
       const pinterestCount = visuals.filter((v) => v.group === "pinterest").length;
