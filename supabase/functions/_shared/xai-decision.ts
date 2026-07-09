@@ -10,6 +10,44 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+/**
+ * Evidence source taxonomy — Phase 1 (soft rollout).
+ *
+ *   organic           — evidence comes from verified organic behaviour
+ *                       (organic sessions, verified organic orders,
+ *                        organic ranking views, first-party UGC).
+ *   paid              — evidence comes from paid channels
+ *                       (ads spend, Meta/TikTok/Google Ads, promoted pins).
+ *                       Council MUST treat paid as validation-only.
+ *   blended           — signal mixes organic + paid; MUST be labelled.
+ *   heuristic         — rule-based / template / static assumption.
+ *                       Never counted as proven.
+ *   insufficient_data — signal exists but sample size / freshness fails
+ *                       the minimum bar; must NEVER trigger automated
+ *                       promotion.
+ *
+ * Phase 1 keeps this soft (nullable in DB, warned in the emitter).
+ * Phase 2 will add a CHECK constraint once coverage is 100% for several days.
+ */
+export type XaiEvidenceSource =
+  | "organic"
+  | "paid"
+  | "blended"
+  | "heuristic"
+  | "insufficient_data";
+
+export const XAI_EVIDENCE_SOURCES: readonly XaiEvidenceSource[] = [
+  "organic",
+  "paid",
+  "blended",
+  "heuristic",
+  "insufficient_data",
+] as const;
+
+export function isValidEvidenceSource(v: unknown): v is XaiEvidenceSource {
+  return typeof v === "string" && (XAI_EVIDENCE_SOURCES as readonly string[]).includes(v);
+}
+
 export type XaiReasonCode =
   | "HIGH_CTR" | "HIGH_SAVE_RATE" | "HIGH_PURCHASE_RATE"
   | "SEASONAL_MATCH" | "BOARD_RELEVANCE" | "LOW_COMPETITION"
@@ -57,6 +95,13 @@ export interface EmitXaiDecisionInput {
   expectedMetric?: string;
   dedupeKey?: string;
   linkedDecisionId?: string;
+  /**
+   * REQUIRED in Phase 1 (soft-enforced). If a caller omits it we still
+   * persist the row (so we do not break the calling engine), but we
+   * default to `heuristic` and log a warning tagged for the coverage
+   * dashboard. Phase 2 will refuse to persist untagged emissions.
+   */
+  evidenceSource: XaiEvidenceSource;
 }
 
 function buildPlainEnglish(input: EmitXaiDecisionInput): string {
@@ -102,6 +147,18 @@ export async function emitXaiDecision(
     if (!url || !key) return { id: null };
     const sb = createClient(url, key);
 
+    // Soft-enforce evidenceSource. Missing / invalid -> default heuristic,
+    // log a warning that the coverage view picks up.
+    let evidenceSource: XaiEvidenceSource;
+    if (isValidEvidenceSource(input.evidenceSource)) {
+      evidenceSource = input.evidenceSource;
+    } else {
+      evidenceSource = "heuristic";
+      console.warn(
+        `[xai] MISSING evidence_source (defaulted to 'heuristic') engine=${input.sourceEngine} type=${input.decisionType} subject=${input.subjectId ?? "-"}`,
+      );
+    }
+
     const row = {
       source_engine: input.sourceEngine,
       decision_type: input.decisionType,
@@ -125,6 +182,7 @@ export async function emitXaiDecision(
       status: "pending",
       linked_decision_id: input.linkedDecisionId ?? null,
       dedupe_key: input.dedupeKey ?? null,
+      evidence_source: evidenceSource,
     };
 
     const { data, error } = await sb
