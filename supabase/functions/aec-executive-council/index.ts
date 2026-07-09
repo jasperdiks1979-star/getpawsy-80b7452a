@@ -17,6 +17,32 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { emitXaiDecision } from "../_shared/xai-decision.ts";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import type { XaiEvidenceSource } from "../_shared/xai-decision.ts";
+import { isValidEvidenceSource } from "../_shared/xai-decision.ts";
+
+/* ---------------- EVIDENCE SOURCE GATE (Phase 1, soft) ----------------
+ * Rules (from mem://architecture/organic-first-intelligence):
+ *   organic           -> may drive promotion (full weight)
+ *   paid              -> validation-only  (weight * 0.25)
+ *   blended           -> allow, but labelled            (weight * 0.75)
+ *   heuristic         -> may not be treated as proven  (weight * 0.35)
+ *   insufficient_data -> MUST NOT trigger promotion    (weight * 0.05)
+ *
+ * Untagged emissions default to `heuristic` in the emitter, so we never
+ * treat an untagged advisor as organic proof. The gate result is written
+ * to aec_evidence_source_gate_log for the coverage dashboard.
+ */
+const EVIDENCE_SOURCE_WEIGHT: Record<XaiEvidenceSource, number> = {
+  organic: 1.0,
+  blended: 0.75,
+  paid: 0.25,
+  heuristic: 0.35,
+  insufficient_data: 0.05,
+};
+
+function normalizeEvSrc(v: unknown): XaiEvidenceSource {
+  return isValidEvidenceSource(v) ? v : "heuristic";
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
