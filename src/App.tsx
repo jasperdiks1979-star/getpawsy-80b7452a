@@ -4268,6 +4268,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-distribution-monitor"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestDistributionMonitor />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-revenue-v4"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
