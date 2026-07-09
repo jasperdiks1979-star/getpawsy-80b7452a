@@ -1192,7 +1192,7 @@ export const VisitorWorldMap = ({
 
   // Update markers when activities change
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities) return;
+    if (!map.current || !mapLoaded || !domMarkerFeatures) return;
 
     // Remove existing markers
     markersRef.current.forEach((marker) => marker.remove());
@@ -1200,14 +1200,14 @@ export const VisitorWorldMap = ({
 
     // Group activities by location (rounded to 1 decimal for clustering)
     const locationGroups = new Map<string, VisitorActivity[]>();
-    
-    filteredActivities.forEach((activity) => {
+
+    domMarkerFeatures.forEach((activity) => {
       if (activity.latitude && activity.longitude) {
         const key = `${activity.latitude.toFixed(1)},${activity.longitude.toFixed(1)}`;
         if (!locationGroups.has(key)) {
           locationGroups.set(key, []);
         }
-        locationGroups.get(key)!.push(activity);
+        locationGroups.get(key)!.push(activity as unknown as VisitorActivity);
       }
     });
 
