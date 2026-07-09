@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart3, CheckCircle2,
   Compass, Globe2, Loader2, MapPinned, Radio, RefreshCw, Search,
@@ -594,6 +595,11 @@ export default function GrowthCommanderPage() {
             />
           </div>
         </section>
+
+        {/* Organic / Paid / Total — canonical business KPIs (excludes internal & bot).
+            AI intelligence layers must prioritise Organic; Paid is displayed
+            for validation but never dominates rankings. */}
+        <TrafficClassSplitPanel />
 
         {/* Composite KPI strip */}
         <Card>
