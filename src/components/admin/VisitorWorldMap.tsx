@@ -772,6 +772,49 @@ export const VisitorWorldMap = ({
     });
   }, [filteredActivitiesRaw, markerGroupFilter]);
 
+  // ------------------------------------------------------------------
+  // Live-mode DOM marker parity: convert live presence markers into the
+  // same WorldMapMarkerFeature shape the DOM path already understands so
+  // "Live now" renders the actual heartbeat visitors (from visitor_activity)
+  // instead of the canonical historical set. Historical windows are
+  // unchanged and keep using `filteredActivities`.
+  // ------------------------------------------------------------------
+  const liveDomMarkerFeatures: WorldMapMarkerFeature[] | undefined = useMemo(() => {
+    if (!isLiveNow) return undefined;
+    const rows: WorldMapMarkerFeature[] = liveModel.markers.map((m) => ({
+      id: m.session_id,
+      session_id: m.session_id,
+      visitor_id: m.visitor_id,
+      activity_type: m.activity_type,
+      latitude: m.latitude,
+      longitude: m.longitude,
+      country: m.country,
+      city: m.city,
+      created_at: m.last_seen_at,
+      last_seen_at: m.last_seen_at,
+      referrer_category: null,
+      utm_source: m.source,
+      utm_medium: null,
+      utm_campaign: null,
+      referrer: null,
+      page_path: m.page_path,
+      source: m.source,
+      is_internal: false,
+    }));
+    if (markerGroupFilter === "all") return rows;
+    return rows.filter((a) => {
+      const visual = resolveMarkerVisual({
+        utm_source: a.utm_source,
+        referrer: a.referrer,
+      });
+      return markerMatchesGroupFilter(visual, markerGroupFilter);
+    });
+  }, [isLiveNow, liveModel.markers, markerGroupFilter]);
+
+  // Unified DOM marker source: live-mode uses live heartbeat features so the
+  // DOM overlay matches the Mapbox circle layer (also fed from liveModel).
+  const domMarkerFeatures = isLiveNow ? liveDomMarkerFeatures : filteredActivities;
+
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
     const channel = supabase
@@ -1000,9 +1043,26 @@ export const VisitorWorldMap = ({
 
       // Live mode renders visitor_activity heartbeat features (presence);
       // canonical mode renders analytics-canonical features (business truth).
-      const geojsonData = isLiveNow
+      const geojsonRaw = isLiveNow
         ? livePresenceMarkersToGeoJson(liveModel.markers)
         : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
+      // Apply the source-group chip filter to the Mapbox layer too, so the
+      // chip parity holds for both DOM and circle-layer markers.
+      const geojsonData: GeoJSON.FeatureCollection<GeoJSON.Point> =
+        markerGroupFilter === "all"
+          ? geojsonRaw
+          : {
+              type: "FeatureCollection",
+              features: geojsonRaw.features.filter((f) => {
+                const p = (f.properties ?? {}) as Record<string, unknown>;
+                const visual = {
+                  group: (p.source_group ?? "unknown") as never,
+                  isPaid: !!p.is_paid,
+                  isOrganic: !!p.is_organic,
+                };
+                return markerMatchesGroupFilter(visual, markerGroupFilter);
+              }),
+            };
       const existingSource = mapInstance.getSource("visitor-map-source") as mapboxgl.GeoJSONSource | undefined;
 
       if (existingSource) {
@@ -1046,7 +1106,9 @@ export const VisitorWorldMap = ({
           id: "visitor-markers",
           type: "circle",
           source: "visitor-map-source",
-          layout: { visibility: showHeatmap ? "none" : "visible" },
+          // Source-colored markers stay visible above the heatmap so
+          // source/platform provenance is always readable.
+          layout: { visibility: "visible" },
           paint: {
             // Source-based base color — activity intensity ONLY drives
             // radius/opacity, never overrides marker color. `sourceColor`
@@ -1080,9 +1142,20 @@ export const VisitorWorldMap = ({
       }
 
       mapInstance.setLayoutProperty("visitor-heatmap", "visibility", showHeatmap ? "visible" : "none");
-      mapInstance.setLayoutProperty("visitor-markers", "visibility", showHeatmap ? "none" : "visible");
+      // Markers stay visible; when heatmap is on, DOM markers dim slightly so
+      // the density gradient reads underneath, but source colors remain.
+      mapInstance.setLayoutProperty("visitor-markers", "visibility", "visible");
+      mapInstance.setPaintProperty(
+        "visitor-markers",
+        "circle-opacity",
+        showHeatmap
+          ? ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85]
+          : ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+      );
       markersRef.current.forEach((marker) => {
-        marker.getElement().style.display = showHeatmap ? "none" : "block";
+        const elStyle = (marker.getElement() as HTMLElement).style;
+        elStyle.display = "block";
+        elStyle.opacity = showHeatmap ? "0.65" : "1";
       });
 
       setRenderedMapboxSourceFeatureCount(geojsonData.features.length);
@@ -1101,7 +1174,7 @@ export const VisitorWorldMap = ({
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel]);
+  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
@@ -1149,7 +1222,7 @@ export const VisitorWorldMap = ({
 
   // Update markers when activities change
   useEffect(() => {
-    if (!map.current || !mapLoaded || !filteredActivities) return;
+    if (!map.current || !mapLoaded || !domMarkerFeatures) return;
 
     // Remove existing markers
     markersRef.current.forEach((marker) => marker.remove());
@@ -1157,14 +1230,14 @@ export const VisitorWorldMap = ({
 
     // Group activities by location (rounded to 1 decimal for clustering)
     const locationGroups = new Map<string, VisitorActivity[]>();
-    
-    filteredActivities.forEach((activity) => {
+
+    domMarkerFeatures.forEach((activity) => {
       if (activity.latitude && activity.longitude) {
         const key = `${activity.latitude.toFixed(1)},${activity.longitude.toFixed(1)}`;
         if (!locationGroups.has(key)) {
           locationGroups.set(key, []);
         }
-        locationGroups.get(key)!.push(activity);
+        locationGroups.get(key)!.push(activity as unknown as VisitorActivity);
       }
     });
 
@@ -1242,7 +1315,8 @@ export const VisitorWorldMap = ({
             : `0 0 ${size}px ${color}80, 0 0 ${size * 2}px ${color}40`
         };
         animation: pulse 2s ease-in-out infinite;
-        display: ${showHeatmap ? "none" : "block"};
+        display: block;
+        opacity: ${showHeatmap ? "0.65" : "1"};
         position: relative;
         z-index: ${isSelectedGroup ? "5" : "1"};
       `;
@@ -1393,7 +1467,7 @@ export const VisitorWorldMap = ({
       markersRef.current.push(marker);
     });
     mapPerfMark("first-paint");
-  }, [filteredActivities, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
+  }, [domMarkerFeatures, mapLoaded, showHeatmap, activityFilter, sourceFilter, selectedLiveSessionId, onLiveVisitorSelect]);
 
   // ────────────────────────────────────────────────────────────────────────
   // Stage 5b — live-mode Mapbox integrations
