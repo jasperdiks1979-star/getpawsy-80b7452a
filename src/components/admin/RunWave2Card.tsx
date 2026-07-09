@@ -54,14 +54,54 @@ export function RunWave2Card() {
   const [result, setResult] = useState<PublishResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<"PASS" | "FAIL" | null>(null);
+  const [preflight, setPreflight] = useState<string | null>(null);
+
+  // Ask Guardian if the publish gate is open. Returns { allow, reason, guardian }.
+  async function checkGuardian(): Promise<{ allow: boolean; reason?: string; guardian?: any }> {
+    const { data, error: e } = await supabase.functions.invoke("guardian-publish-gate", {
+      body: { context: { source: "run_wave_2_preflight" } },
+    });
+    if (e) throw new Error(`guardian-publish-gate: ${e.message}`);
+    return (data ?? { allow: false, reason: "no_response" }) as any;
+  }
 
   async function runWave() {
     setRunning(true);
     setError(null);
     setResult(null);
     setVerdict(null);
+    setPreflight(null);
     const started = performance.now();
     try {
+      // Preflight: automate the manual Guardian refresh.
+      setPreflight("Checking Guardian…");
+      let gate = await checkGuardian();
+      if (!gate.allow) {
+        const reason = gate.reason ?? "unknown";
+        const isStale = /stale/i.test(reason) || /missing/i.test(reason);
+        const gateClosed = /gate_closed/i.test(reason);
+        const notGreen = /not_green/i.test(reason);
+
+        // Only auto-refresh for staleness. Do NOT bypass a closed gate or a red Guardian.
+        if (gateClosed || notGreen) {
+          throw new Error(`Guardian blocker (no auto-refresh allowed): ${reason}`);
+        }
+        if (!isStale) {
+          throw new Error(`Guardian blocker: ${reason}`);
+        }
+
+        setPreflight(`Guardian ${reason} — refreshing via guardian-sentinel-run…`);
+        const { error: sErr } = await supabase.functions.invoke("guardian-sentinel-run", { body: {} });
+        if (sErr) throw new Error(`guardian-sentinel-run failed: ${sErr.message}`);
+
+        setPreflight("Re-checking Guardian…");
+        gate = await checkGuardian();
+        if (!gate.allow) {
+          throw new Error(`Guardian still blocking after refresh: ${gate.reason ?? "unknown"}`);
+        }
+      }
+      setPreflight("Guardian green — draining queue…");
+
       const { data, error: fnError } = await supabase.functions.invoke("pcie2-publisher", {
         body: WAVE_PARAMS,
       });
@@ -98,6 +138,7 @@ export function RunWave2Card() {
       toast.error("Wave 2 blocker", { description: msg });
     } finally {
       setRunning(false);
+      setPreflight(null);
     }
   }
 
@@ -144,6 +185,7 @@ export function RunWave2Card() {
                   <ul className="list-disc pl-5 text-xs text-muted-foreground">
                     <li>1 pin per product · max 3 pins per board · CI ≥ 75</li>
                     <li>Guardian, CI, board/product/quality gates enforced</li>
+                    <li>Preflight auto-refreshes Guardian if stale (never bypasses red / closed gate)</li>
                     <li>No content regeneration, no image generation</li>
                   </ul>
                 </div>
@@ -155,6 +197,12 @@ export function RunWave2Card() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {running && preflight && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {preflight}
+          </div>
+        )}
 
         {verdict && (
           <div className={`rounded-md border p-3 flex items-center gap-2 ${verdict === "PASS" ? "border-emerald-500/40 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"}`}>
