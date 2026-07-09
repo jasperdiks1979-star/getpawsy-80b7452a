@@ -3992,6 +3992,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="executive-growth"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ExecutiveGrowthIntelligencePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="organic-confidence-config"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
