@@ -4277,6 +4277,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-catalog-intelligence"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCatalogIntelligence />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-revenue-v4"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
