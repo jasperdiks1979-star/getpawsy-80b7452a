@@ -71414,6 +71414,74 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_sessions_traffic_class: {
+        Row: {
+          attribution_confidence: number | null
+          bot_flag: boolean | null
+          classification_reason: string | null
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          internal_flag: boolean | null
+          last_seen_at: string | null
+          organic_flag: boolean | null
+          paid_flag: boolean | null
+          session_id: string | null
+          traffic_channel: string | null
+          traffic_class: string | null
+          traffic_medium: string | null
+          traffic_platform: string | null
+          traffic_source: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          attribution_confidence?: never
+          bot_flag?: never
+          classification_reason?: never
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          internal_flag?: never
+          last_seen_at?: string | null
+          organic_flag?: never
+          paid_flag?: never
+          session_id?: string | null
+          traffic_channel?: string | null
+          traffic_class?: never
+          traffic_medium?: string | null
+          traffic_platform?: never
+          traffic_source?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          attribution_confidence?: never
+          bot_flag?: never
+          classification_reason?: never
+          country?: string | null
+          device?: string | null
+          first_seen_at?: string | null
+          internal_flag?: never
+          last_seen_at?: string | null
+          organic_flag?: never
+          paid_flag?: never
+          session_id?: string | null
+          traffic_channel?: string | null
+          traffic_class?: never
+          traffic_medium?: string | null
+          traffic_platform?: never
+          traffic_source?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      canonical_sessions_traffic_class_summary_7d: {
+        Row: {
+          sessions: number | null
+          traffic_class: string | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
       canonical_sources: {
         Row: {
           day: string | null
@@ -74091,6 +74159,7 @@ export type Database = {
           vo_url: string
         }[]
       }
+      classify_traffic_class: { Args: { p_channel: string }; Returns: string }
       classify_traffic_source: {
         Args: {
           p_click_ids?: Json
@@ -75163,6 +75232,7 @@ export type Database = {
         Args: { p_prefix: string }
         Returns: Json
       }
+      traffic_platform_of: { Args: { p_channel: string }; Returns: string }
       update_session_heartbeat: {
         Args: { p_session_id: string }
         Returns: undefined
