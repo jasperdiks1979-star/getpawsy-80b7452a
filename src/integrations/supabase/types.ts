@@ -71492,6 +71492,21 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_traffic_class_funnel_24h: {
+        Row: {
+          add_to_cart: number | null
+          avg_attribution_confidence: number | null
+          checkout_started: number | null
+          page_views: number | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+          traffic_class: string | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
       ceo_kill_switch_public: {
         Row: {
           status: string | null
