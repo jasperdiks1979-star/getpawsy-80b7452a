@@ -1,118 +1,77 @@
 
-# Pinterest Enterprise Distribution Monitor
+# Organic Growth Intelligence Center
 
-Purpose: measure whether PCIE2-published pins are actually being distributed by Pinterest. Pure observation layer — no writes to publishing, queues, PCIE2, Guardian, recovery, routing, or analytics.
+A single enterprise dashboard at `/admin/organic-growth` that becomes the **Layer-1 truth** for organic growth. Reads only canonical sources — never re-classifies, never re-attributes, never fabricates.
 
-## Scope guardrails (non-negotiable)
+Before I build, I need a few decisions from you so I don't waste a pass. Reply with answers (or "defaults") and I'll ship it end-to-end.
 
-- No changes to: publishing, PCIE2, Guardian, queues, recovery, routing, `canonical_*`, `pinterest_video_*` cadence, tracking events.
-- No cron mutations. Read-only over existing tables.
-- No new writes except a single admin-only snapshot table for score history (optional, gated behind a feature toggle in the code — off by default).
+---
 
-## Data sources (existing, read-only)
+## Decisions I need
 
-- `pcie2_publish_queue` (status='published') → source of truth for "PCIE2 published pin"
-- `pcie2_pin_performance` → per-pin daily impressions/saves/clicks/ctr
-- `pinterest_video_metrics` → fallback per-pin metrics (voice/scene/board/category linkage)
-- `pinterest_analytics_daily` → account-level daily aggregates (baselines/averages)
-- `pinterest_category_benchmarks` → per-category CTR/save averages
-- `pinterest_boards` → board names
-- `products` → product name/category
-- `pcie2_creatives` → creative_id → product/board resolution
+1. **Route + navigation slot**
+   - Default: new page `/admin/organic-growth` ("Organic Growth Intelligence"), added to the admin sidebar under Analytics, above the existing `/admin/organic-first` audit page. Keep `/admin/organic-first` (compliance audit) and `/admin/organic-intelligence` (Success DNA loop) untouched — this new page is the aggregate command center that links out to both.
+   - Alternative: replace `/admin/organic-first` and absorb it. Say the word and I'll fold it in.
 
-## Deliverables
+2. **Data windows on the KPI strip**
+   - Default: primary window = last 24h, with deltas vs Yesterday / 7d / 30d computed from `canonical_sessions_traffic_class` daily rollups.
+   - Alternative: primary = last 7d. Pick one.
 
-### 1. Database (additive only)
+3. **Backend surface**
+   - Default: one new edge function `organic-growth-intelligence` that fans out to the canonical views in parallel and returns a single typed envelope (KPIs, channel breakdown, paid validation, leaderboards, funnel, attribution, SEO health, Pinterest organic, Google organic, insights, recommendations). Frontend consumes it through one `useOrganicGrowthIntelligence` hook. This is what keeps the page <500ms and prevents N+1.
+   - No new tables. No new classifiers. Insights and recommendations are generated **inside** the edge function from the canonical rows returned in the same call — no separate AI call on page load (evidence-backed rules only; anything below the min sample size is suppressed, not fabricated).
 
-One migration, no destructive changes:
+4. **Adapters (Search Console, Merchant Center, Ads, Clarity, Bing WMT)**
+   - Default: render the panels as **"Not Connected"** placeholders with a `Connect` CTA that opens the existing connector flow. No fake numbers. Confirm this is what you want (vs hiding the panels entirely until connected).
 
-- **View** `v_pcie2_pin_distribution` — one row per published PCIE2 pin joining queue → performance → boards → products, with derived:
-  - `age_hours`, `impressions_24h/72h/7d`, `saves_24h/7d`, `outbound_24h/7d`, `pin_clicks_7d`
-  - `ctr_7d`, `save_rate_7d`, `engagement_score` (blend: CTR·0.30 + save_rate·0.35 + outbound_rate·0.35, normalized 0–100)
-  - `impression_velocity` (imps/hr rolling), `save_velocity`, `click_velocity`
-  - `distribution_status` — computed via CASE:
-    - `NEW` age<6h
-    - `INDEXING` age 6–24h AND imps=0
-    - `DORMANT` age>72h AND imps=0
-    - `STALLED` age>24h AND imps<10
-    - `DISTRIBUTING` imps≥10 AND velocity flat
-    - `GROWING` velocity > 1.2× 24h avg
-    - `VIRAL` imps>1000 AND ctr≥1.5×category_avg AND save_rate≥1.5×category_avg
-  - `flags[]` text array: `zero_imps_24h`, `zero_imps_72h`, `ctr_below_avg`, `imps_accelerating`, `saves_accelerating`, `board_underperforming`, `product_underperforming`
+---
 
-- **View** `v_pcie2_distribution_board_rollup`, `v_pcie2_distribution_product_rollup`, `v_pcie2_distribution_category_rollup` — aggregations for the dashboard cards.
+## Scope (once decisions are locked)
 
-- **View** `v_pcie2_distribution_health` — single-row enterprise health score (0–100) blending:
-  - % pins with imps in first 24h (weight 0.25)
-  - median CTR vs category avg (0.20)
-  - % pins DISTRIBUTING/GROWING/VIRAL (0.25)
-  - % pins DORMANT/STALLED (negative, 0.15)
-  - publishing cadence steadiness (0.15)
+### Edge function `organic-growth-intelligence`
+Reads, in parallel, ONLY from:
+- `canonical_sessions_traffic_class`
+- `canonical_events`
+- `canonical_sessions`
+- `canonical_traffic_class_funnel_24h`
+- `v_organic_product_ranking_30d`
+- `v_organic_pin_ranking_30d`
 
-- GRANT SELECT on all views to `authenticated`; admin-read enforced client-side via `has_role`.
+Returns a single typed envelope with every section below. Bots + internal excluded via the same predicates canonical uses.
 
-- **No new tables** in phase 1. If the user later wants score history, add `pcie2_distribution_health_snapshots` behind a separate migration.
+### Frontend page `/admin/organic-growth`
 
-### 2. Admin page
+Sections, in order:
+1. **KPI strip** — Organic Sessions / Visitors / Product Views / ATC / Checkout / Purchases / Revenue / CVR / avg attribution confidence, each with Δ vs Yesterday / 7d / 30d.
+2. **Organic channel breakdown** — one card per source (Google, Pinterest, TikTok, Facebook, Instagram, Reddit, LinkedIn, YouTube, Bing, DuckDuckGo, Yahoo, Referral, Direct, Unknown). Sessions, visitors, PV, ATC, checkout, purchases, revenue, CVR, avg duration, bounce, trend sparkline, share of organic.
+3. **Paid Validation panel** — clearly labelled "VALIDATION ONLY — AI never promotes products from paid data alone." One row per paid channel with sessions/revenue/CVR (+ ROAS/cost only if canonical exposes them; otherwise "—").
+4. **Organic Leaderboard** — Top Landing Pages, Top Products (from `v_organic_product_ranking_30d`), Top Pinterest Pins (from `v_organic_pin_ranking_30d`), Top Google Landing Pages. Search Queries card shown as "Not Connected" until GSC is wired.
+5. **Organic Growth Map** — reuses the Visitor World Map component in a source-color-only mode (Google green, Pinterest red, TikTok purple, Meta blue, Direct gray, Referral teal, Unknown light gray, Paid amber). Marker color is locked to source; size = activity; glow = engagement.
+6. **Attribution panel** — first / last / assisted / multi-touch counts + confidence + evidence source distribution (organic / paid / blended / heuristic / insufficient_data).
+7. **SEO Health** — indexable pages, indexed products/collections/guides/blog, missing metadata/schema/canonical/OG, missing sitemap entries, robots exclusions, pages without internal links / impressions. Sourced from existing SEO scanner tables; anything not yet tracked shows "Not tracked" instead of a fabricated number.
+8. **Pinterest Organic** — impressions, outbound clicks, CTR, saves, top boards, top pins, pin age, velocity, saturation. All from canonical + existing `pinterest_analytics_daily`.
+9. **Google Organic** — top URLs / entry / exit pages, conversions, revenue from canonical. GSC-only fields ("Top Search Queries", "Impressions", "Avg Position") shown as "Not Connected" until GSC is wired.
+10. **Organic Funnel** — Landing → PV → ATC → Checkout → Purchase with drop-off %.
+11. **AI Insights** — rule-based, evidence-backed, generated from the same envelope. Suppresses any insight where `sample_size < min` or `confidence < 0.7`.
+12. **Recommendations** — every card shows Evidence Source / Confidence / Sample Size / Freshness. Nothing rendered without all four.
 
-Route: `/admin/pinterest-distribution-monitor` (new file, no existing route touched).
+### Guarantees
+- No new classifier, no new attribution logic, no new ranking algo.
+- Zero writes. Read-only page.
+- No fabricated adapter data — every unconnected integration renders "Not Connected".
+- Loads under 500 ms once the edge function's per-envelope response is cached at the CDN edge for 30s (same pattern as `analytics-canonical`).
+- Regression surface: none — existing `/admin/organic-first`, `/admin/organic-intelligence`, Visitor World Map, and analytics-canonical remain byte-identical.
 
-Sections:
-- Header KPI strip: Enterprise Health Score, pins tracked, % distributing, % dormant, median CTR vs benchmark.
-- Distribution status donut (NEW/INDEXING/DISTRIBUTING/GROWING/VIRAL/STALLED/DORMANT).
-- Impression velocity over time (line, last 14d, from `pinterest_analytics_daily`).
-- Daily publishing cadence bar (from `pcie2_publish_queue.published_at`).
-- Top / Worst pins table (sortable, filter by status/flag).
-- Top boards, top products, top categories tables.
-- Editorial winners: pins with `VIRAL` status or `imps_accelerating` flag.
-- Flag inbox: grouped by flag type with pin drill-down.
+---
 
-All data via direct `supabase.from('v_...')` reads. No edge functions required.
+## What I'll return after build
 
-### 3. Files added
+- PASS/FAIL per section
+- Files changed (edge function, hook, page, component list)
+- Views consumed (list — no views created)
+- Playwright screenshot of the loaded dashboard
+- Timing measurement (edge function TTFB + client render)
+- Regression check: `analytics-truth-parity` test + visitor world map tests still pass
+- Enterprise certification score against the requirements list
 
-```text
-supabase/migrations/<ts>_pcie2_distribution_monitor_views.sql
-src/pages/admin/PinterestDistributionMonitor.tsx
-src/components/admin/distribution-monitor/
-  HealthScoreCard.tsx
-  StatusDonut.tsx
-  VelocityChart.tsx
-  CadenceChart.tsx
-  PinTable.tsx
-  RollupTable.tsx
-  FlagInbox.tsx
-src/hooks/useDistributionMonitor.ts
-```
-
-Route registered in the existing admin router entry only (single-line append).
-
-## Regression analysis
-
-- No existing table/column/policy altered.
-- No existing view/function/trigger replaced.
-- No cron added or modified.
-- No edge function deployed.
-- No `pcie2_*`, `pinterest_video_*`, `canonical_*` write path touched.
-- Views are `SECURITY INVOKER` (default) so RLS on base tables continues to apply.
-- Client bundle grows by one lazy-loaded admin page (~15 KB gz est.).
-- DB overhead: 4 views executed only on admin page open; each is a straight join + aggregate over already-indexed columns. Expected p95 < 250 ms per view at current pin volume (~300 pins).
-
-## Verification checklist (post-migration)
-
-1. `SELECT count(*) FROM v_pcie2_pin_distribution` matches `pcie2_publish_queue WHERE status='published'`.
-2. Every distribution_status value appears at least once OR is verifiably empty by data.
-3. Health score renders between 0–100.
-4. No error in `postgres_logs` after 30 min.
-5. Publishing pipeline unaffected: `pcie2_publish_queue` insert rate unchanged over 24h window before/after.
-
-## Result contract
-
-Returns: PASS/FAIL · Screens created · Queries added · Expected overhead · Regression analysis — as required by the mission.
-
-## Out of scope (explicitly)
-
-- No auto-remediation.
-- No pin republish / archive triggers.
-- No modification to `pinterest_loser_blocklist` or winner detector.
-- No changes to Pinterest API calls or metrics sync cadence.
+Reply with answers to the 4 decisions (or "defaults") and I'll build.
