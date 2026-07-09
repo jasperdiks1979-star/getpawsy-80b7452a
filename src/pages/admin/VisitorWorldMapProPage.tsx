@@ -13,6 +13,7 @@ import { ProKpiHeader } from "@/components/admin/visitor-world-map-v2/ProKpiHead
 import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVisitorFeed";
 import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
+import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
 import { useLivePresence } from "@/hooks/useLivePresence";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
@@ -171,6 +172,11 @@ export default function VisitorWorldMapProPage() {
 
           <div className="mb-4">
             <ProKpiHeader state={state} />
+          </div>
+
+          {/* Organic / Paid / Total split — canonical, excludes internal & bot */}
+          <div className="mb-4">
+            <TrafficClassSplitPanel />
           </div>
 
           {/* Desktop grid: left filters | map | right feed.
