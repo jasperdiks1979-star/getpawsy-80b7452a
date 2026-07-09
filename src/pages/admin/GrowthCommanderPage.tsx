@@ -596,6 +596,11 @@ export default function GrowthCommanderPage() {
           </div>
         </section>
 
+        {/* Organic / Paid / Total — canonical business KPIs (excludes internal & bot).
+            AI intelligence layers must prioritise Organic; Paid is displayed
+            for validation but never dominates rankings. */}
+        <TrafficClassSplitPanel />
+
         {/* Composite KPI strip */}
         <Card>
           <CardHeader>
