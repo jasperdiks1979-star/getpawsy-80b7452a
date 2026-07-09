@@ -44782,6 +44782,13 @@ export type Database = {
             referencedRelation: "pcie2_publish_queue"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pcie2_ci_scores_queue_row_id_fkey"
+            columns: ["queue_row_id"]
+            isOneToOne: false
+            referencedRelation: "v_pcie2_pin_distribution"
+            referencedColumns: ["queue_id"]
+          },
         ]
       }
       pcie2_concept_graph: {
@@ -57409,6 +57416,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pcie2_publish_queue"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinterest_resurrection_candidates_pcie2_queue_id_fkey"
+            columns: ["pcie2_queue_id"]
+            isOneToOne: false
+            referencedRelation: "v_pcie2_pin_distribution"
+            referencedColumns: ["queue_id"]
           },
         ]
       }
@@ -72424,6 +72438,111 @@ export type Database = {
           revenue_cents: number | null
           sessions: number | null
           unique_visitors: number | null
+        }
+        Relationships: []
+      }
+      v_pcie2_distribution_board_rollup: {
+        Row: {
+          avg_ctr_7d_pct: number | null
+          avg_engagement_score: number | null
+          board_id: string | null
+          board_name: string | null
+          impressions_7d: number | null
+          outbound_7d: number | null
+          pins: number | null
+          saves_7d: number | null
+          underperforming_pins: number | null
+          winning_pins: number | null
+        }
+        Relationships: []
+      }
+      v_pcie2_distribution_category_rollup: {
+        Row: {
+          avg_ctr_7d_pct: number | null
+          avg_engagement_score: number | null
+          category: string | null
+          impressions_7d: number | null
+          outbound_7d: number | null
+          pins: number | null
+          saves_7d: number | null
+          underperforming_pins: number | null
+          winning_pins: number | null
+        }
+        Relationships: []
+      }
+      v_pcie2_distribution_health: {
+        Row: {
+          account_avg_ctr_pct: number | null
+          enterprise_health_score: number | null
+          mature_pins: number | null
+          mature_with_imps: number | null
+          median_ctr_7d_pct: number | null
+          pins_distributing: number | null
+          pins_dormant: number | null
+          pins_growing: number | null
+          pins_indexing: number | null
+          pins_new: number | null
+          pins_stalled: number | null
+          pins_total: number | null
+          pins_viral: number | null
+          published_7d: number | null
+        }
+        Relationships: []
+      }
+      v_pcie2_distribution_product_rollup: {
+        Row: {
+          avg_ctr_7d_pct: number | null
+          avg_engagement_score: number | null
+          impressions_7d: number | null
+          outbound_7d: number | null
+          pins: number | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          saves_7d: number | null
+          underperforming_pins: number | null
+          winning_pins: number | null
+        }
+        Relationships: []
+      }
+      v_pcie2_pin_distribution: {
+        Row: {
+          account_avg_ctr: number | null
+          account_avg_save_rate: number | null
+          age_hours: number | null
+          board_id: string | null
+          board_name: string | null
+          category: string | null
+          click_velocity_hr: number | null
+          ctr_7d_pct: number | null
+          ctr_latest: number | null
+          distribution_status: string | null
+          engagement_score: number | null
+          flags: string[] | null
+          headline: string | null
+          image_url: string | null
+          impression_velocity_hr: number | null
+          impressions_24h: number | null
+          impressions_72h: number | null
+          impressions_7d: number | null
+          impressions_total: number | null
+          outbound_24h: number | null
+          outbound_7d: number | null
+          outbound_total: number | null
+          pin_clicks_7d: number | null
+          pin_clicks_total: number | null
+          pin_id: string | null
+          product_category: string | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
+          published_at: string | null
+          queue_id: string | null
+          save_rate_7d_pct: number | null
+          save_velocity_hr: number | null
+          saves_24h: number | null
+          saves_7d: number | null
+          saves_total: number | null
         }
         Relationships: []
       }
