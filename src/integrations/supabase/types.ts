@@ -63867,6 +63867,323 @@ export type Database = {
         }
         Relationships: []
       }
+      pxe_assignments: {
+        Row: {
+          assigned_at: string
+          experiment_id: string
+          id: string
+          pin_id: string | null
+          product_id: string | null
+          variant_id: string
+          wave_code: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          experiment_id: string
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          variant_id: string
+          wave_code?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          experiment_id?: string
+          id?: string
+          pin_id?: string | null
+          product_id?: string | null
+          variant_id?: string
+          wave_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pxe_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["experiment_id"]
+          },
+          {
+            foreignKeyName: "pxe_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      pxe_experiments: {
+        Row: {
+          allocation_pct: number
+          code: string
+          confidence_target: number
+          created_at: string
+          created_by: string | null
+          dimension: string
+          end_at: string | null
+          hypothesis: string
+          id: string
+          metric: string
+          notes: string | null
+          result_summary: string | null
+          sample_target: number
+          start_at: string | null
+          status: string
+          updated_at: string
+          winner_variant: string | null
+        }
+        Insert: {
+          allocation_pct?: number
+          code: string
+          confidence_target?: number
+          created_at?: string
+          created_by?: string | null
+          dimension: string
+          end_at?: string | null
+          hypothesis: string
+          id?: string
+          metric?: string
+          notes?: string | null
+          result_summary?: string | null
+          sample_target?: number
+          start_at?: string | null
+          status?: string
+          updated_at?: string
+          winner_variant?: string | null
+        }
+        Update: {
+          allocation_pct?: number
+          code?: string
+          confidence_target?: number
+          created_at?: string
+          created_by?: string | null
+          dimension?: string
+          end_at?: string | null
+          hypothesis?: string
+          id?: string
+          metric?: string
+          notes?: string | null
+          result_summary?: string | null
+          sample_target?: number
+          start_at?: string | null
+          status?: string
+          updated_at?: string
+          winner_variant?: string | null
+        }
+        Relationships: []
+      }
+      pxe_observations: {
+        Row: {
+          clicks: number
+          experiment_id: string
+          id: string
+          impressions: number
+          observed_at: string
+          pins: number
+          revenue_cents: number
+          saves: number
+          sessions: number
+          variant_id: string
+        }
+        Insert: {
+          clicks?: number
+          experiment_id: string
+          id?: string
+          impressions?: number
+          observed_at?: string
+          pins?: number
+          revenue_cents?: number
+          saves?: number
+          sessions?: number
+          variant_id: string
+        }
+        Update: {
+          clicks?: number
+          experiment_id?: string
+          id?: string
+          impressions?: number
+          observed_at?: string
+          pins?: number
+          revenue_cents?: number
+          saves?: number
+          sessions?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pxe_observations_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_observations_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["experiment_id"]
+          },
+          {
+            foreignKeyName: "pxe_observations_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_observations_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      pxe_results: {
+        Row: {
+          business_impact: string | null
+          computed_at: string
+          confidence: number | null
+          decision: string
+          expected_revenue_uplift_cents: number | null
+          expected_traffic_uplift_pct: number | null
+          experiment_id: string
+          id: string
+          lift_pct: number | null
+          loser_variant: string | null
+          p_value: number | null
+          winner_variant: string | null
+        }
+        Insert: {
+          business_impact?: string | null
+          computed_at?: string
+          confidence?: number | null
+          decision?: string
+          expected_revenue_uplift_cents?: number | null
+          expected_traffic_uplift_pct?: number | null
+          experiment_id: string
+          id?: string
+          lift_pct?: number | null
+          loser_variant?: string | null
+          p_value?: number | null
+          winner_variant?: string | null
+        }
+        Update: {
+          business_impact?: string | null
+          computed_at?: string
+          confidence?: number | null
+          decision?: string
+          expected_revenue_uplift_cents?: number | null
+          expected_traffic_uplift_pct?: number | null
+          experiment_id?: string
+          id?: string
+          lift_pct?: number | null
+          loser_variant?: string | null
+          p_value?: number | null
+          winner_variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pxe_results_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_results_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["experiment_id"]
+          },
+          {
+            foreignKeyName: "pxe_results_loser_variant_fkey"
+            columns: ["loser_variant"]
+            isOneToOne: false
+            referencedRelation: "pxe_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_results_loser_variant_fkey"
+            columns: ["loser_variant"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["variant_id"]
+          },
+          {
+            foreignKeyName: "pxe_results_winner_variant_fkey"
+            columns: ["winner_variant"]
+            isOneToOne: false
+            referencedRelation: "pxe_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_results_winner_variant_fkey"
+            columns: ["winner_variant"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["variant_id"]
+          },
+        ]
+      }
+      pxe_variants: {
+        Row: {
+          created_at: string
+          definition: Json
+          experiment_id: string
+          id: string
+          is_control: boolean
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          definition?: Json
+          experiment_id: string
+          id?: string
+          is_control?: boolean
+          label: string
+        }
+        Update: {
+          created_at?: string
+          definition?: Json
+          experiment_id?: string
+          id?: string
+          is_control?: boolean
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pxe_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "pxe_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pxe_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "v_pxe_dashboard"
+            referencedColumns: ["experiment_id"]
+          },
+        ]
+      }
       ranking_defense: {
         Row: {
           auto_response_taken: string | null
@@ -73266,6 +73583,36 @@ export type Database = {
           revenue_cents: number | null
           unique_viewers: number | null
           views: number | null
+        }
+        Relationships: []
+      }
+      v_pxe_dashboard: {
+        Row: {
+          allocation_pct: number | null
+          assigned_pins: number | null
+          clicks: number | null
+          code: string | null
+          confidence_target: number | null
+          ctr_pct: number | null
+          dimension: string | null
+          end_at: string | null
+          experiment_id: string | null
+          hypothesis: string | null
+          impressions: number | null
+          is_control: boolean | null
+          metric: string | null
+          pins: number | null
+          result_summary: string | null
+          revenue_cents: number | null
+          sample_target: number | null
+          save_rate_pct: number | null
+          saves: number | null
+          sessions: number | null
+          start_at: string | null
+          status: string | null
+          variant_id: string | null
+          variant_label: string | null
+          winner_variant: string | null
         }
         Relationships: []
       }
