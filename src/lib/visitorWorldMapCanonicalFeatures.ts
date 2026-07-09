@@ -1,9 +1,6 @@
 import { resolveCanonicalSource, type CanonicalSource } from "@/lib/canonicalSource";
 import type { TruthSession } from "@/hooks/useAnalyticsTruth";
-import {
-  resolveMarkerVisual,
-  MARKER_SOURCE_COLORS,
-} from "@/lib/visitorWorldMapMarkerColor";
+import { resolveMarkerVisual } from "@/lib/visitorWorldMapMarkerColor";
 
 export type WorldMapActivityFilter = "all" | "browsing" | "cart" | "checkout";
 export type WorldMapSourceFilter = "all" | CanonicalSource;
