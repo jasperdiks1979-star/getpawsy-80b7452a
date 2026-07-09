@@ -26,6 +26,13 @@ import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from 
 import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as AuditRow } from "@/lib/sourceAuditBreakdown";
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
+import {
+  resolveMarkerVisual,
+  markerMatchesGroupFilter,
+  MARKER_GROUP_CHIPS,
+  MARKER_LEGEND_ITEMS,
+  type MarkerGroupFilter,
+} from "@/lib/visitorWorldMapMarkerColor";
 import { useAnalyticsTruth, countersFromSessions } from "@/hooks/useAnalyticsTruth";
 import {
   assertWorldMapRenderInvariant,
@@ -277,6 +284,10 @@ export const VisitorWorldMap = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenMinimal, setFullscreenMinimal] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(initialSourceFilter ?? "all");
+  // Source-group chip filter (mission spec): All / Organic / Paid / Google /
+  // Pinterest / TikTok / Meta / Direct / Referral / Unknown. Purely
+  // presentational — layered on top of the canonical source resolver.
+  const [markerGroupFilter, setMarkerGroupFilter] = useState<MarkerGroupFilter>("all");
   const [showInactiveSources, setShowInactiveSources] = useState<boolean>(false);
   const [autoRotate, setAutoRotate] = useState(() => {
     const saved = localStorage.getItem("map-auto-rotate");
@@ -730,7 +741,7 @@ export const VisitorWorldMap = ({
   }, [truth, rawActivities]);
 
   const truthCounters = useMemo(() => countersFromSessions(truthSessions), [truthSessions]);
-  const filteredActivities: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
+  const filteredActivitiesRaw: WorldMapMarkerFeature[] | undefined = truth ? markerFeatures : displayActivities?.filter((a) => {
     if (!(activityFilter === "all" || a.activity_type === activityFilter)) return false;
     if (!matchesSourceFilter(a)) return false;
     return true;
@@ -740,6 +751,25 @@ export const VisitorWorldMap = ({
     Number.isFinite(a.latitude) &&
     Number.isFinite(a.longitude)
   )).map((a) => ({ ...a, source: a.utm_source || a.referrer_category || "direct", is_internal: false }));
+
+  // Apply the source-group chip filter (UI-only). Empty result is fine —
+  // the map will simply render zero markers for the selected group.
+  const filteredActivities: WorldMapMarkerFeature[] | undefined = useMemo(() => {
+    if (!filteredActivitiesRaw) return filteredActivitiesRaw;
+    if (markerGroupFilter === "all") return filteredActivitiesRaw;
+    return filteredActivitiesRaw.filter((a) => {
+      const visual = resolveMarkerVisual({
+        utm_source: a.utm_source,
+        utm_medium: a.utm_medium,
+        utm_campaign: a.utm_campaign,
+        referrer: a.referrer,
+        referrer_category: a.referrer_category,
+        page_path: a.page_path,
+        is_internal: a.is_internal,
+      });
+      return markerMatchesGroupFilter(visual, markerGroupFilter);
+    });
+  }, [filteredActivitiesRaw, markerGroupFilter]);
 
   // Subscribe to realtime updates with checkout notifications
   useEffect(() => {
@@ -1129,20 +1159,27 @@ export const VisitorWorldMap = ({
         dominantType = "cart";
       }
 
-      // Check if any activity is from Pinterest
-      const hasPinterest = groupActivities.some(a => 
-        a.utm_source === "pinterest" || 
-        (a.referrer_category === "social" && !a.utm_source)
-      );
-      const pinterestCount = groupActivities.filter(a => 
-        a.utm_source === "pinterest" || 
-        (a.referrer_category === "social" && !a.utm_source)
-      ).length;
-
-      // Determine marker color - use source color if filtering by source, otherwise activity color
-      const color = sourceFilter !== "all" 
-        ? (SOURCE_COLORS[sourceFilter] || ACTIVITY_COLORS[dominantType])
-        : ACTIVITY_COLORS[dominantType];
+      // Resolve mission-spec source visuals for every activity in the group,
+      // then pick the dominant one (most frequent group). Marker BASE color
+      // is driven by traffic source; activity level still drives marker
+      // size and heatmap intensity below.
+      const visuals = groupActivities.map((a) => resolveMarkerVisual({
+        utm_source: (a as VisitorActivity).utm_source,
+        utm_medium: (a as VisitorActivity).utm_medium,
+        utm_campaign: (a as VisitorActivity).utm_campaign,
+        referrer: (a as VisitorActivity).referrer,
+        referrer_category: (a as VisitorActivity).referrer_category,
+        page_path: (a as VisitorActivity).page_path,
+        is_internal: (a as WorldMapMarkerFeature).is_internal ?? false,
+      }));
+      const groupCounts = new Map<string, number>();
+      visuals.forEach((v) => groupCounts.set(v.group, (groupCounts.get(v.group) ?? 0) + 1));
+      const dominantGroupEntry = Array.from(groupCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+      const dominantVisual = visuals.find((v) => v.group === dominantGroupEntry?.[0]) ?? visuals[0];
+      const color = dominantVisual?.color ?? ACTIVITY_COLORS[dominantType];
+      const isInternalGroup = dominantVisual?.isInternal === true;
+      const hasPinterest = visuals.some((v) => v.group === "pinterest");
+      const pinterestCount = visuals.filter((v) => v.group === "pinterest").length;
       const count = groupActivities.length;
       const size = Math.min(12 + count * 2, 30);
 
@@ -1167,7 +1204,7 @@ export const VisitorWorldMap = ({
         width: ${size}px;
         height: ${size}px;
         background-color: ${color};
-        border: ${isSelectedGroup ? "3px" : "2px"} solid ${
+        border: ${isSelectedGroup ? "3px" : "2px"} ${isInternalGroup ? "dashed" : "solid"} ${
           isSelectedGroup
             ? "#3b82f6"
             : hasPinterest && sourceFilter === "all"
@@ -1266,11 +1303,36 @@ export const VisitorWorldMap = ({
       });
 
       // Create popup content with source info
+      // Rich per-visitor tooltip: source (group + canonical), traffic
+      // class (organic / paid / internal), landing page, last activity,
+      // activity count and whether the marker is canonical or live-only.
+      const primaryVisual = dominantVisual;
+      const primaryActivity = groupActivities[0] as VisitorActivity & { last_seen_at?: string };
+      const trafficClass = primaryVisual?.isPaid
+        ? "paid"
+        : primaryVisual?.isInternal
+          ? "internal"
+          : primaryVisual?.isOrganic
+            ? "organic"
+            : "unclassified";
+      const platformLabel = primaryVisual?.canonical ?? "unknown";
+      const landingPage = primaryActivity?.page_path ?? "—";
+      const lastActivityIso = primaryActivity?.last_seen_at ?? primaryActivity?.created_at;
+      const lastActivityLabel = lastActivityIso
+        ? new Date(lastActivityIso).toLocaleTimeString()
+        : "—";
+      const canonicalFlag = truth ? "canonical" : "live-presence only";
       const popupContent = `
         <div style="padding: 8px; min-width: 150px;">
           <strong>${groupActivities[0].city || groupActivities[0].country || "Onbekend"}</strong>
           <div style="margin-top: 4px; font-size: 12px;">
             ${count} bezoeker${count > 1 ? "s" : ""}
+          </div>
+          <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #444;">
+            <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${primaryVisual?.color ?? "#999"};margin-right:6px;vertical-align:middle;"></span><strong>${primaryVisual?.label ?? "Unknown"}</strong> · ${platformLabel}</div>
+            <div>class: <strong>${trafficClass}</strong> · ${canonicalFlag}</div>
+            <div>landing: <span style="font-family:monospace;">${landingPage}</span></div>
+            <div>last activity: ${lastActivityLabel} · ${count} event${count > 1 ? "s" : ""}</div>
           </div>
           <div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">
             ${Object.entries(ACTIVITY_COLORS).map(([type, c]) => {
@@ -2630,6 +2692,65 @@ export const VisitorWorldMap = ({
           <span className="text-[11px] text-muted-foreground">
             Defaults ON. Toggle OFF to see global / raw traffic for debugging.
           </span>
+        </div>
+
+        {/* Source chip filter — mission-spec taxonomy. Purely presentational
+            layer on top of the canonical source resolver. */}
+        <div
+          className="mt-3 flex flex-wrap items-center gap-1.5"
+          data-testid="world-map-source-chips"
+          role="group"
+          aria-label="Filter markers by traffic source"
+        >
+          <span className="text-[11px] text-muted-foreground mr-1">Source:</span>
+          {MARKER_GROUP_CHIPS.map((chip) => {
+            const active = markerGroupFilter === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setMarkerGroupFilter(chip.key)}
+                data-testid={`world-map-source-chip-${chip.key}`}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background/70 text-foreground hover:bg-muted"
+                }`}
+              >
+                {chip.color && (
+                  <span
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{ backgroundColor: chip.color }}
+                  />
+                )}
+                <span>{chip.label}</span>
+                {chip.aggregate && <span className="opacity-60">·</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Source color legend — matches the mission palette. Marker BASE
+            color is source-driven; marker size / heatmap intensity are still
+            activity-driven. */}
+        <div
+          className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-muted-foreground"
+          data-testid="world-map-source-legend"
+          aria-label="Marker color legend"
+        >
+          <span className="font-medium text-foreground">Legend:</span>
+          {MARKER_LEGEND_ITEMS.map((item) => (
+            <span key={item.group} className="inline-flex items-center gap-1">
+              <span
+                className={`inline-block w-2.5 h-2.5 rounded-full ${item.group === "internal" ? "border border-dashed border-foreground" : ""}`}
+                style={{ backgroundColor: item.color }}
+                aria-hidden="true"
+              />
+              <span>{item.label}{item.note ? ` (${item.note})` : ""}</span>
+            </span>
+          ))}
+          <span className="opacity-70">· size / glow = activity intensity</span>
         </div>
 
         {/* Stats Row */}
