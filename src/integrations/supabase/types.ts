@@ -53077,6 +53077,8 @@ export type Database = {
           product_slug: string | null
           prompt: Json
           quality: Json
+          recovery_generation: number
+          recovery_wave_id: string | null
           source: string
           stage: string
           status: string
@@ -53101,6 +53103,8 @@ export type Database = {
           product_slug?: string | null
           prompt?: Json
           quality?: Json
+          recovery_generation?: number
+          recovery_wave_id?: string | null
           source?: string
           stage?: string
           status?: string
@@ -53125,6 +53129,8 @@ export type Database = {
           product_slug?: string | null
           prompt?: Json
           quality?: Json
+          recovery_generation?: number
+          recovery_wave_id?: string | null
           source?: string
           stage?: string
           status?: string
@@ -56916,8 +56922,10 @@ export type Database = {
           publish_attempts: number
           publishing_started_at: string | null
           qa_reasons: string[]
+          recovery_generation: number
           recovery_mode_publish: boolean
           recovery_trace: Json | null
+          recovery_wave_id: string | null
           rejection_reason: string | null
           repair_strategy: string | null
           repaired_at: string | null
@@ -56989,8 +56997,10 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_generation?: number
           recovery_mode_publish?: boolean
           recovery_trace?: Json | null
+          recovery_wave_id?: string | null
           rejection_reason?: string | null
           repair_strategy?: string | null
           repaired_at?: string | null
@@ -57062,8 +57072,10 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_generation?: number
           recovery_mode_publish?: boolean
           recovery_trace?: Json | null
+          recovery_wave_id?: string | null
           rejection_reason?: string | null
           repair_strategy?: string | null
           repaired_at?: string | null
@@ -61328,6 +61340,160 @@ export type Database = {
           source_pin_id?: string | null
           updated_at?: string
           uses_count?: number | null
+        }
+        Relationships: []
+      }
+      pinterest_wow_recovery_audit: {
+        Row: {
+          adaptive_directives: string | null
+          after_state: Json | null
+          before_state: Json | null
+          category_key: string | null
+          created_at: string
+          failure_category: string | null
+          id: string
+          new_headline: string | null
+          new_overlay: string | null
+          original_failure: string | null
+          product_slug: string | null
+          recovery_generation: number
+          strategy: string
+          target_id: string
+          target_type: string
+          wave_id: string
+        }
+        Insert: {
+          adaptive_directives?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          category_key?: string | null
+          created_at?: string
+          failure_category?: string | null
+          id?: string
+          new_headline?: string | null
+          new_overlay?: string | null
+          original_failure?: string | null
+          product_slug?: string | null
+          recovery_generation: number
+          strategy: string
+          target_id: string
+          target_type: string
+          wave_id: string
+        }
+        Update: {
+          adaptive_directives?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          category_key?: string | null
+          created_at?: string
+          failure_category?: string | null
+          id?: string
+          new_headline?: string | null
+          new_overlay?: string | null
+          original_failure?: string | null
+          product_slug?: string | null
+          recovery_generation?: number
+          strategy?: string
+          target_id?: string
+          target_type?: string
+          wave_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_wow_recovery_audit_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_wow_recovery_waves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_wow_recovery_learnings: {
+        Row: {
+          banned_pattern: string | null
+          banned_pattern_type: string
+          category_key: string | null
+          created_at: string
+          failure_category: string
+          id: string
+          last_seen_at: string
+          occurrences: number
+          wave_id: string | null
+        }
+        Insert: {
+          banned_pattern?: string | null
+          banned_pattern_type: string
+          category_key?: string | null
+          created_at?: string
+          failure_category: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          wave_id?: string | null
+        }
+        Update: {
+          banned_pattern?: string | null
+          banned_pattern_type?: string
+          category_key?: string | null
+          created_at?: string
+          failure_category?: string
+          id?: string
+          last_seen_at?: string
+          occurrences?: number
+          wave_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_wow_recovery_learnings_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_wow_recovery_waves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinterest_wow_recovery_waves: {
+        Row: {
+          created_at: string
+          errors: Json
+          finished_at: string | null
+          id: string
+          jobs_regenerated: number
+          jobs_scanned: number
+          queue_regenerated: number
+          scope: Json
+          status: string
+          summary: Json
+          triggered_by: string | null
+          wave_label: string
+        }
+        Insert: {
+          created_at?: string
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          jobs_regenerated?: number
+          jobs_scanned?: number
+          queue_regenerated?: number
+          scope?: Json
+          status?: string
+          summary?: Json
+          triggered_by?: string | null
+          wave_label: string
+        }
+        Update: {
+          created_at?: string
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          jobs_regenerated?: number
+          jobs_scanned?: number
+          queue_regenerated?: number
+          scope?: Json
+          status?: string
+          summary?: Json
+          triggered_by?: string | null
+          wave_label?: string
         }
         Relationships: []
       }
