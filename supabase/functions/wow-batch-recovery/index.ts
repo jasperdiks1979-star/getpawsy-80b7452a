@@ -102,15 +102,15 @@ function generateDiverseHeadline(
     `Rethinking the ${primaryVocab} — ${productName}`,
   ];
   const overlayTemplates: Record<string, string[]> = {
-    cat_tree:       ["Climb-friendly. Room-friendly.", "A cat tree that earns its floor space.", "Sisal, wood, and calm design."],
-    cat_scratcher:  ["Scratch-tested. Room-approved.", "Sisal that lasts, style that stays.", "Built to spare your sofa."],
-    cat_enclosure:  ["Fresh air, zero escape risk.", "A safer window on the world.", "Room-sized freedom for indoor cats."],
-    cat_litter:     ["Contained. Odor-quiet.", "No scatter. No splash.", "The litter box you stop noticing."],
-    dog_bed:        ["Joint-kind support.", "Deep-sleep comfort.", "A bed dogs actually settle into."],
-    outdoor_house:  ["Weatherproof from day one.", "Insulated, dry, ventilated.", "Backyard shelter, built to last."],
-    interactive_toy:["Engagement that lasts past unboxing.", "Chew-tested. Squeak-approved.", "Made for real play sessions."],
+    cat_tree:       ["Climb-friendly.", "Calm design.", "Sisal + wood."],
+    cat_scratcher:  ["Scratch-tested.", "Sisal that lasts.", "Spares the sofa."],
+    cat_enclosure:  ["Fresh air, safe.", "Safer window.", "Indoor freedom."],
+    cat_litter:     ["Contained.", "No scatter.", "Odor-quiet."],
+    dog_bed:        ["Joint-kind.", "Deep-sleep.", "Real comfort."],
+    outdoor_house:  ["Weatherproof.", "Insulated + dry.", "Built to last."],
+    interactive_toy:["Chew-tested.", "Squeak-approved.", "Real play."],
   };
-  const overlays = overlayTemplates[categoryKey || ""] || ["Real product. Real US homes.", "Made for everyday pet life."];
+  const overlays = overlayTemplates[categoryKey || ""] || ["Real US homes.", "Everyday pets."];
   return {
     title: titleTemplates[seedNum % titleTemplates.length].slice(0, 100),
     overlay: overlays[seedNum % overlays.length].slice(0, 60),
