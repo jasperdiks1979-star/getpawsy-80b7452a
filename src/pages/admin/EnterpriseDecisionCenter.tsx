@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { AlertTriangle, TrendingUp, Target, Activity, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { RunWave2Card } from "@/components/admin/RunWave2Card";
+import { DryRunWave2Card } from "@/components/admin/DryRunWave2Card";
 
 type ActionType =
   | "publish_new"
@@ -382,6 +383,7 @@ export default function EnterpriseDecisionCenter() {
 
       {/* Certified PCIE2 Wave 2 — manual admin action, no auto-run */}
       <RunWave2Card />
+      <DryRunWave2Card />
 
       {/* Top 3 */}
       <Card>
