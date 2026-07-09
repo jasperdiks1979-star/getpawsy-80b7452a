@@ -1205,7 +1205,7 @@ export const VisitorWorldMap = ({
         width: ${size}px;
         height: ${size}px;
         background-color: ${color};
-        border: ${isSelectedGroup ? "3px" : "2px"} solid ${
+        border: ${isSelectedGroup ? "3px" : "2px"} ${isInternalGroup ? "dashed" : "solid"} ${
           isSelectedGroup
             ? "#3b82f6"
             : hasPinterest && sourceFilter === "all"
