@@ -600,6 +600,7 @@ const OrganicIntelligencePage = lazyWithRetry(() => import("./pages/admin/Organi
 const OrganicIntelligenceEnginePage = lazyWithRetry(() => import("./pages/admin/OrganicIntelligenceEnginePage"));
 const OrganicDominationPage = lazyWithRetry(() => import("./pages/admin/OrganicDominationPage"));
 const OrganicFirstPage = lazyWithRetry(() => import("./pages/admin/OrganicFirstPage"));
+const OrganicGrowthIntelligencePage = lazyWithRetry(() => import("./pages/admin/OrganicGrowthIntelligencePage"));
 const OrganicConfidenceConfigPage = lazyWithRetry(() => import("./pages/admin/OrganicConfidenceConfigPage"));
 const PinterestBrainPage = lazyWithRetry(() => import("./pages/admin/PinterestBrainPage"));
 const PinterestSpyPage = lazyWithRetry(() => import("./pages/admin/PinterestSpyPage"));
