@@ -53064,12 +53064,15 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          last_recovered_at: string | null
+          last_recovered_failure_fingerprint: string | null
           lease_owner: string | null
           leased_until: string | null
           max_attempts: number
           media_hash: string | null
           media_url: string | null
           metrics: Json
+          next_recovery_eligible_at: string | null
           pin_queue_id: string | null
           priority: number
           product_id: string | null
@@ -53077,12 +53080,16 @@ export type Database = {
           product_slug: string | null
           prompt: Json
           quality: Json
+          recovery_failure_fingerprint: string | null
           recovery_generation: number
+          recovery_idempotency_key: string | null
+          recovery_status: string
           recovery_wave_id: string | null
           source: string
           stage: string
           status: string
           updated_at: string
+          wow_batch_id: string | null
         }
         Insert: {
           attempt_count?: number
@@ -53090,12 +53097,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_recovered_at?: string | null
+          last_recovered_failure_fingerprint?: string | null
           lease_owner?: string | null
           leased_until?: string | null
           max_attempts?: number
           media_hash?: string | null
           media_url?: string | null
           metrics?: Json
+          next_recovery_eligible_at?: string | null
           pin_queue_id?: string | null
           priority?: number
           product_id?: string | null
@@ -53103,12 +53113,16 @@ export type Database = {
           product_slug?: string | null
           prompt?: Json
           quality?: Json
+          recovery_failure_fingerprint?: string | null
           recovery_generation?: number
+          recovery_idempotency_key?: string | null
+          recovery_status?: string
           recovery_wave_id?: string | null
           source?: string
           stage?: string
           status?: string
           updated_at?: string
+          wow_batch_id?: string | null
         }
         Update: {
           attempt_count?: number
@@ -53116,12 +53130,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_recovered_at?: string | null
+          last_recovered_failure_fingerprint?: string | null
           lease_owner?: string | null
           leased_until?: string | null
           max_attempts?: number
           media_hash?: string | null
           media_url?: string | null
           metrics?: Json
+          next_recovery_eligible_at?: string | null
           pin_queue_id?: string | null
           priority?: number
           product_id?: string | null
@@ -53129,12 +53146,16 @@ export type Database = {
           product_slug?: string | null
           prompt?: Json
           quality?: Json
+          recovery_failure_fingerprint?: string | null
           recovery_generation?: number
+          recovery_idempotency_key?: string | null
+          recovery_status?: string
           recovery_wave_id?: string | null
           source?: string
           stage?: string
           status?: string
           updated_at?: string
+          wow_batch_id?: string | null
         }
         Relationships: [
           {
@@ -56892,6 +56913,8 @@ export type Database = {
           image_hash: string | null
           image_match_score: number | null
           last_publish_error: string | null
+          last_recovered_at: string | null
+          last_recovered_failure_fingerprint: string | null
           last_validated_at: string | null
           last_validation_error: string | null
           last_verified_at: string | null
@@ -56900,6 +56923,7 @@ export type Database = {
           legacy_supplier_reason: string | null
           live_pin_verified_at: string | null
           meta: Json | null
+          next_recovery_eligible_at: string | null
           overlay_text: string | null
           pcie2_creative_id: string | null
           pin_description: string
@@ -56922,8 +56946,11 @@ export type Database = {
           publish_attempts: number
           publishing_started_at: string | null
           qa_reasons: string[]
+          recovery_failure_fingerprint: string | null
           recovery_generation: number
+          recovery_idempotency_key: string | null
           recovery_mode_publish: boolean
+          recovery_status: string
           recovery_trace: Json | null
           recovery_wave_id: string | null
           rejection_reason: string | null
@@ -56942,6 +56969,7 @@ export type Database = {
           verification_failure_reason: string | null
           verification_score: number | null
           verification_state: string | null
+          wow_batch_id: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -56967,6 +56995,8 @@ export type Database = {
           image_hash?: string | null
           image_match_score?: number | null
           last_publish_error?: string | null
+          last_recovered_at?: string | null
+          last_recovered_failure_fingerprint?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
           last_verified_at?: string | null
@@ -56975,6 +57005,7 @@ export type Database = {
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
           meta?: Json | null
+          next_recovery_eligible_at?: string | null
           overlay_text?: string | null
           pcie2_creative_id?: string | null
           pin_description: string
@@ -56997,8 +57028,11 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_failure_fingerprint?: string | null
           recovery_generation?: number
+          recovery_idempotency_key?: string | null
           recovery_mode_publish?: boolean
+          recovery_status?: string
           recovery_trace?: Json | null
           recovery_wave_id?: string | null
           rejection_reason?: string | null
@@ -57017,6 +57051,7 @@ export type Database = {
           verification_failure_reason?: string | null
           verification_score?: number | null
           verification_state?: string | null
+          wow_batch_id?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -57042,6 +57077,8 @@ export type Database = {
           image_hash?: string | null
           image_match_score?: number | null
           last_publish_error?: string | null
+          last_recovered_at?: string | null
+          last_recovered_failure_fingerprint?: string | null
           last_validated_at?: string | null
           last_validation_error?: string | null
           last_verified_at?: string | null
@@ -57050,6 +57087,7 @@ export type Database = {
           legacy_supplier_reason?: string | null
           live_pin_verified_at?: string | null
           meta?: Json | null
+          next_recovery_eligible_at?: string | null
           overlay_text?: string | null
           pcie2_creative_id?: string | null
           pin_description?: string
@@ -57072,8 +57110,11 @@ export type Database = {
           publish_attempts?: number
           publishing_started_at?: string | null
           qa_reasons?: string[]
+          recovery_failure_fingerprint?: string | null
           recovery_generation?: number
+          recovery_idempotency_key?: string | null
           recovery_mode_publish?: boolean
+          recovery_status?: string
           recovery_trace?: Json | null
           recovery_wave_id?: string | null
           rejection_reason?: string | null
@@ -57092,6 +57133,7 @@ export type Database = {
           verification_failure_reason?: string | null
           verification_score?: number | null
           verification_state?: string | null
+          wow_batch_id?: string | null
         }
         Relationships: [
           {
@@ -61349,17 +61391,23 @@ export type Database = {
           after_state: Json | null
           before_state: Json | null
           category_key: string | null
+          cooldown_until: string | null
           created_at: string
           failure_category: string | null
+          failure_fingerprint: string | null
           id: string
           new_headline: string | null
           new_overlay: string | null
           original_failure: string | null
           product_slug: string | null
+          reason_selected: string | null
+          reason_skipped: string | null
           recovery_generation: number
+          recovery_idempotency_key: string | null
           strategy: string
           target_id: string
           target_type: string
+          terminal_reason: string | null
           wave_id: string
         }
         Insert: {
@@ -61367,17 +61415,23 @@ export type Database = {
           after_state?: Json | null
           before_state?: Json | null
           category_key?: string | null
+          cooldown_until?: string | null
           created_at?: string
           failure_category?: string | null
+          failure_fingerprint?: string | null
           id?: string
           new_headline?: string | null
           new_overlay?: string | null
           original_failure?: string | null
           product_slug?: string | null
+          reason_selected?: string | null
+          reason_skipped?: string | null
           recovery_generation: number
+          recovery_idempotency_key?: string | null
           strategy: string
           target_id: string
           target_type: string
+          terminal_reason?: string | null
           wave_id: string
         }
         Update: {
@@ -61385,17 +61439,23 @@ export type Database = {
           after_state?: Json | null
           before_state?: Json | null
           category_key?: string | null
+          cooldown_until?: string | null
           created_at?: string
           failure_category?: string | null
+          failure_fingerprint?: string | null
           id?: string
           new_headline?: string | null
           new_overlay?: string | null
           original_failure?: string | null
           product_slug?: string | null
+          reason_selected?: string | null
+          reason_skipped?: string | null
           recovery_generation?: number
+          recovery_idempotency_key?: string | null
           strategy?: string
           target_id?: string
           target_type?: string
+          terminal_reason?: string | null
           wave_id?: string
         }
         Relationships: [
@@ -61454,46 +61514,79 @@ export type Database = {
       }
       pinterest_wow_recovery_waves: {
         Row: {
+          candidate_counts: Json
           created_at: string
+          downstream_invoked: boolean
+          duration_ms: number | null
           errors: Json
+          estimated_render_exposure: number
           finished_at: string | null
           id: string
+          idempotency_conflicts: number
           jobs_regenerated: number
           jobs_scanned: number
+          lock_acquired: boolean | null
+          mode: string
+          overlap_skipped: boolean
           queue_regenerated: number
           scope: Json
+          skipped_counts: Json
           status: string
           summary: Json
+          terminalized_counts: Json
           triggered_by: string | null
           wave_label: string
+          wow_batch_id: string | null
         }
         Insert: {
+          candidate_counts?: Json
           created_at?: string
+          downstream_invoked?: boolean
+          duration_ms?: number | null
           errors?: Json
+          estimated_render_exposure?: number
           finished_at?: string | null
           id?: string
+          idempotency_conflicts?: number
           jobs_regenerated?: number
           jobs_scanned?: number
+          lock_acquired?: boolean | null
+          mode?: string
+          overlap_skipped?: boolean
           queue_regenerated?: number
           scope?: Json
+          skipped_counts?: Json
           status?: string
           summary?: Json
+          terminalized_counts?: Json
           triggered_by?: string | null
           wave_label: string
+          wow_batch_id?: string | null
         }
         Update: {
+          candidate_counts?: Json
           created_at?: string
+          downstream_invoked?: boolean
+          duration_ms?: number | null
           errors?: Json
+          estimated_render_exposure?: number
           finished_at?: string | null
           id?: string
+          idempotency_conflicts?: number
           jobs_regenerated?: number
           jobs_scanned?: number
+          lock_acquired?: boolean | null
+          mode?: string
+          overlap_skipped?: boolean
           queue_regenerated?: number
           scope?: Json
+          skipped_counts?: Json
           status?: string
           summary?: Json
+          terminalized_counts?: Json
           triggered_by?: string | null
           wave_label?: string
+          wow_batch_id?: string | null
         }
         Relationships: []
       }
@@ -76376,6 +76469,7 @@ export type Database = {
         Args: { dest: string; slug: string }
         Returns: boolean
       }
+      release_wow_recovery_lock: { Args: { _batch: string }; Returns: boolean }
       reset_cinematic_ad_job_to_queued: {
         Args: { p_job_id: string }
         Returns: {
@@ -76710,6 +76804,7 @@ export type Database = {
         Returns: Json
       }
       traffic_platform_of: { Args: { p_channel: string }; Returns: string }
+      try_wow_recovery_lock: { Args: { _batch: string }; Returns: boolean }
       update_session_heartbeat: {
         Args: { p_session_id: string }
         Returns: undefined
