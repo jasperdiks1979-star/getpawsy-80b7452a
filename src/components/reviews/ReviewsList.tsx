@@ -9,7 +9,7 @@ import { getConversionFlag } from '@/lib/conversionFlags';
 
 interface Review {
   id: string;
-  user_id: string;
+  user_id?: string;
   rating: number;
   title: string;
   content: string | null;
