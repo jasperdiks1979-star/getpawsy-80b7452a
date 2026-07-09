@@ -37,6 +37,12 @@ type ProductRow = {
     | "Low Priority"
     | "Not Pinterest Suitable";
   publish_priority: number;
+  // Organic-First Layer 1 signals (canonical_sessions_traffic_class)
+  organic_purchases?: number;
+  organic_add_to_cart?: number;
+  organic_product_views?: number;
+  organic_sessions?: number;
+  organic_rank_score?: number;
 };
 
 type CategoryRow = {
@@ -112,12 +118,29 @@ export default function PinterestCatalogIntelligence() {
     setLoading(true);
     setError(null);
     try {
-      const [p, c] = await Promise.all([
+      const [p, c, org] = await Promise.all([
         supabase.from("v_pinterest_product_potential").select("*").order("publish_priority", { ascending: false }).limit(1000),
         supabase.from("v_pinterest_category_potential").select("*").order("avg_score", { ascending: false }),
+        supabase.from("v_organic_product_ranking_30d" as never).select("*"),
       ]);
       if (p.error) throw p.error;
-      setRows((p.data ?? []) as ProductRow[]);
+      const orgById = new Map<string, any>((org.data ?? []).map((r: any) => [String(r.product_id), r]));
+      const merged = ((p.data ?? []) as ProductRow[]).map((r) => {
+        const o = orgById.get(String(r.product_id));
+        return o
+          ? {
+              ...r,
+              organic_purchases: Number(o.organic_purchases ?? 0),
+              organic_add_to_cart: Number(o.organic_add_to_cart ?? 0),
+              organic_product_views: Number(o.organic_product_views ?? 0),
+              organic_sessions: Number(o.organic_sessions ?? 0),
+              organic_rank_score: Number(o.organic_rank_score ?? 0),
+            }
+          : r;
+      });
+      // Organic-First re-rank: Layer-1 organic proof beats heuristic score.
+      merged.sort((a, b) => (b.organic_rank_score ?? 0) - (a.organic_rank_score ?? 0) || b.publish_priority - a.publish_priority);
+      setRows(merged);
       setCats((c.data ?? []) as CategoryRow[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -344,6 +367,7 @@ function ScoredTable({
             </>
           )}
           <th className="py-1 pr-2">Status</th>
+          <th className="py-1 pr-2 text-right" title="Organic-First Layer 1 rank score (canonical_sessions_traffic_class)">Org L1</th>
         </tr>
       </thead>
       <tbody>
@@ -375,6 +399,15 @@ function ScoredTable({
                 <Badge variant="outline" className="text-[10px]">published ×{r.times_published}</Badge>
               ) : (
                 <Badge className="text-[10px] bg-emerald-500/20 text-emerald-300 border-emerald-500/30">untapped</Badge>
+              )}
+            </td>
+            <td className="py-1 pr-2 text-right tabular-nums">
+              {r.organic_rank_score && r.organic_rank_score > 0 ? (
+                <span className="text-emerald-400 font-semibold" title={`purch ${r.organic_purchases} · atc ${r.organic_add_to_cart} · pv ${r.organic_product_views} · sess ${r.organic_sessions}`}>
+                  {Math.round(r.organic_rank_score)}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
               )}
             </td>
           </tr>

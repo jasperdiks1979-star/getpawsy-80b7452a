@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { filterOrganicOrders, fetchOrganicProductRanking } from "../_shared/organic-ranking.ts";
 
 // Organic Intelligence Loop — 10-step learning cycle for verified ORGANIC sales.
 // Hard rule: paid traffic is NEVER used as evidence. Only organic Pinterest / direct /
@@ -146,12 +147,16 @@ async function runLoop(supabase: any, body: any) {
     .select("id,total_amount,items,created_at,customer_email,status")
     .in("status", ["paid", "completed", "succeeded", "complete"])
     .order("created_at", { ascending: true });
-  const verifiedOrganic = (paidOrders || []).filter((o: any) => {
+  // Layer-1 gate: only orders whose originating session is organic (canonical_sessions_traffic_class).
+  const candidateOrders = (paidOrders || []).filter((o: any) => {
     const it = Array.isArray(o.items) ? o.items : [];
     const firstId = it[0]?.id || "";
     // exclude test payments
     return !String(firstId).startsWith("TEST-") && Number(o.total_amount) > 1;
   });
+  const organicOrderIds = await filterOrganicOrders(supabase, candidateOrders.map((o: any) => o.id));
+  const verifiedOrganic = candidateOrders.filter((o: any) => organicOrderIds.has(o.id));
+  const paidValidationCount = candidateOrders.length - verifiedOrganic.length;
   // join with sessions (best-effort) — count categories / boards / headlines
   const counters: Record<string, Record<string, number>> = {
     category: {}, board: {}, hook: {}, headline: {}, landing_page: {}, device: {}, country: {},
@@ -208,10 +213,13 @@ async function runLoop(supabase: any, body: any) {
       confidenceUpdated = true;
     } catch (_e) { /* table may differ; skip */ }
   }
-  await stepDone("update_organic_confidence", { confidence_updated: confidenceUpdated, sample_size: verifiedOrganic.length });
+  await stepDone("update_organic_confidence", { confidence_updated: confidenceUpdated, sample_size: verifiedOrganic.length, paid_validation_orders: paidValidationCount });
 
   // STEP 7 — Search catalogue for products that resemble the Success DNA
   const targetCategories = dna.top_categories.map((c) => c.value).filter(Boolean);
+  // Organic-first bias: pull Layer-1 organic ranking so candidates are already proven organic.
+  const organicProdRanking = await fetchOrganicProductRanking(supabase).catch(() => []);
+  const organicById = new Map(organicProdRanking.map((r) => [r.product_id, r]));
   let similarProducts: any[] = [];
   if (targetCategories.length) {
     const { data: catalog } = await supabase
@@ -222,7 +230,16 @@ async function runLoop(supabase: any, body: any) {
     similarProducts = (catalog || []).map((p: any) => ({
       ...p,
       similarity: targetCategories.includes(p.category) ? 0.8 : 0.2,
-    })).sort((a, b) => b.similarity - a.similarity).slice(0, 25);
+      organic_signals: organicById.get(String(p.id)) ?? null,
+    }))
+      .sort((a, b) => {
+        // Organic proof beats category similarity (Layer 1 > Layer 3 heuristics).
+        const oa = a.organic_signals?.organic_rank_score ?? 0;
+        const ob = b.organic_signals?.organic_rank_score ?? 0;
+        if (ob !== oa) return ob - oa;
+        return b.similarity - a.similarity;
+      })
+      .slice(0, 25);
   }
   await stepDone("similar_products", { count: similarProducts.length });
 

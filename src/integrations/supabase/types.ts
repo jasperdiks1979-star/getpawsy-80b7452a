@@ -73501,6 +73501,44 @@ export type Database = {
         }
         Relationships: []
       }
+      v_organic_pin_ranking_30d: {
+        Row: {
+          organic_add_to_cart: number | null
+          organic_product_views: number | null
+          organic_purchases: number | null
+          organic_rank_score: number | null
+          organic_revenue_cents: number | null
+          organic_sessions: number | null
+          pin_id: string | null
+        }
+        Relationships: []
+      }
+      v_organic_product_ranking_30d: {
+        Row: {
+          organic_add_to_cart: number | null
+          organic_checkout_started: number | null
+          organic_product_views: number | null
+          organic_purchases: number | null
+          organic_rank_score: number | null
+          organic_revenue_cents: number | null
+          organic_sessions: number | null
+          product_id: string | null
+        }
+        Relationships: []
+      }
+      v_organic_ranking_health: {
+        Row: {
+          bot_sessions_30d: number | null
+          computed_at: string | null
+          internal_sessions_30d: number | null
+          low_confidence_excluded_30d: number | null
+          organic_sessions_30d: number | null
+          paid_sessions_30d: number | null
+          ranked_pins: number | null
+          ranked_products: number | null
+        }
+        Relationships: []
+      }
       v_pcie2_distribution_board_rollup: {
         Row: {
           avg_ctr_7d_pct: number | null

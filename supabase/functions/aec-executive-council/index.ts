@@ -395,6 +395,14 @@ async function buildBriefing(sb: any) {
   const { data: decisions } = await sb.from("aec_decisions").select("*").eq("run_id", lastRun.id);
   const { data: priorities } = await sb.from("aec_priorities").select("*").eq("run_id", lastRun.id);
 
+  // Organic-First Layer-1 guardrail attached to every board briefing.
+  const { data: orgHealth } = await sb.from("v_organic_ranking_health").select("*").maybeSingle();
+  const { data: topOrganicProducts } = await sb
+    .from("v_organic_product_ranking_30d")
+    .select("product_id,organic_purchases,organic_add_to_cart,organic_sessions,organic_rank_score")
+    .order("organic_rank_score", { ascending: false })
+    .limit(5);
+
   const topOpp = (priorities ?? []).filter((p: any) => p.kind === "opportunity").sort((a: any, b: any) => a.rank - b.rank)[0];
   const topRisk = (priorities ?? []).filter((p: any) => p.kind === "risk").sort((a: any, b: any) => a.rank - b.rank)[0];
   const topRoiDecision = (decisions ?? []).slice().sort((a: any, b: any) => (b.expected_revenue_cents || 0) - (a.expected_revenue_cents || 0))[0];
@@ -417,6 +425,11 @@ async function buildBriefing(sb: any) {
   bullets.push(`Advisors active last 30h: ${lastRun.advisors_polled ?? 0}/13.`);
   bullets.push(`Conflicts requiring weighted resolution: ${conflicts}.`);
   bullets.push(`Required founder action: ${founderAction}`);
+  if (orgHealth) {
+    bullets.push(
+      `Organic-First Layer 1: ${orgHealth.organic_sessions_30d} organic sessions · ${orgHealth.ranked_products} products · ${orgHealth.ranked_pins} pins ranked. Paid=${orgHealth.paid_sessions_30d} (validation only), bots/internal excluded.`,
+    );
+  }
 
   const briefing = {
     for_date: today,
@@ -426,6 +439,15 @@ async function buildBriefing(sb: any) {
       revenue_cents: yesterdayRevCents,
       conflicts,
       consensus: lastRun.council_consensus,
+      organic_first: {
+        health: orgHealth ?? null,
+        top_organic_products: topOrganicProducts ?? [],
+        views_consumed: [
+          "v_organic_product_ranking_30d",
+          "v_organic_pin_ranking_30d",
+          "v_organic_ranking_health",
+        ],
+      },
     },
     bullets: bullets.slice(0, 10),
     highest_roi: topRoiDecision ? `${topRoiDecision.decision_type} → ${topRoiDecision.final_action}` : null,
