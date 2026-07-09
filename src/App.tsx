@@ -664,6 +664,7 @@ const PinterestDistributionMonitor = lazyWithRetry(() => import("./pages/admin/P
 const PinterestCatalogIntelligence = lazyWithRetry(() => import("./pages/admin/PinterestCatalogIntelligence"));
 const PinterestWaveOpportunity = lazyWithRetry(() => import("./pages/admin/PinterestWaveOpportunity"));
 const PinterestExperiments = lazyWithRetry(() => import("./pages/admin/PinterestExperiments"));
+const EnterpriseDecisionCenter = lazyWithRetry(() => import("./pages/admin/EnterpriseDecisionCenter"));
 const PinterestRevenueV4 = lazyWithRetry(() => import("./pages/admin/PinterestRevenueV4"));
 const PinterestProfitCenter = lazyWithRetry(() => import("./pages/admin/PinterestProfitCenter"));
 const PinterestProducts = lazyWithRetry(() => import("./pages/admin/PinterestProducts"));
