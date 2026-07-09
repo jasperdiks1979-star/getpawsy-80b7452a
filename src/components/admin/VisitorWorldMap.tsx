@@ -1160,20 +1160,27 @@ export const VisitorWorldMap = ({
         dominantType = "cart";
       }
 
-      // Check if any activity is from Pinterest
-      const hasPinterest = groupActivities.some(a => 
-        a.utm_source === "pinterest" || 
-        (a.referrer_category === "social" && !a.utm_source)
-      );
-      const pinterestCount = groupActivities.filter(a => 
-        a.utm_source === "pinterest" || 
-        (a.referrer_category === "social" && !a.utm_source)
-      ).length;
-
-      // Determine marker color - use source color if filtering by source, otherwise activity color
-      const color = sourceFilter !== "all" 
-        ? (SOURCE_COLORS[sourceFilter] || ACTIVITY_COLORS[dominantType])
-        : ACTIVITY_COLORS[dominantType];
+      // Resolve mission-spec source visuals for every activity in the group,
+      // then pick the dominant one (most frequent group). Marker BASE color
+      // is driven by traffic source; activity level still drives marker
+      // size and heatmap intensity below.
+      const visuals = groupActivities.map((a) => resolveMarkerVisual({
+        utm_source: (a as VisitorActivity).utm_source,
+        utm_medium: (a as VisitorActivity).utm_medium,
+        utm_campaign: (a as VisitorActivity).utm_campaign,
+        referrer: (a as VisitorActivity).referrer,
+        referrer_category: (a as VisitorActivity).referrer_category,
+        page_path: (a as VisitorActivity).page_path,
+        is_internal: (a as WorldMapMarkerFeature).is_internal ?? false,
+      }));
+      const groupCounts = new Map<string, number>();
+      visuals.forEach((v) => groupCounts.set(v.group, (groupCounts.get(v.group) ?? 0) + 1));
+      const dominantGroupEntry = Array.from(groupCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+      const dominantVisual = visuals.find((v) => v.group === dominantGroupEntry?.[0]) ?? visuals[0];
+      const color = dominantVisual?.color ?? ACTIVITY_COLORS[dominantType];
+      const isInternalGroup = dominantVisual?.isInternal === true;
+      const hasPinterest = visuals.some((v) => v.group === "pinterest");
+      const pinterestCount = visuals.filter((v) => v.group === "pinterest").length;
       const count = groupActivities.length;
       const size = Math.min(12 + count * 2, 30);
 
