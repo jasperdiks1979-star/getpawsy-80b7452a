@@ -17,6 +17,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { emitXaiDecision } from "../_shared/xai-decision.ts";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import {
+  EVIDENCE_SOURCE_WEIGHT,
+  classifyGate,
+  emptyEvidenceSourceCounts,
+  normalizeEvidenceSource as normalizeEvSrc,
+  type EvidenceSourceCounts,
+  type XaiEvidenceSource,
+} from "../_shared/evidence-source.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -67,7 +75,7 @@ async function gatherRecentXaiDecisions(sb: any, hours = 30) {
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const { data } = await sb
     .from("pcie2_xai_decisions")
-    .select("id, source_engine, decision_type, subject_kind, subject_id, summary, plain_english, reason_codes, confidence, expected_lift, risk, explainability_score, evidence, status, created_at")
+    .select("id, source_engine, decision_type, subject_kind, subject_id, summary, plain_english, reason_codes, confidence, expected_lift, risk, explainability_score, evidence, evidence_source, status, created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -131,12 +139,15 @@ async function runCouncil(sb: any) {
     const advisorsTouched = new Set<string>();
     const decisionsToInsert: any[] = [];
     const votesToInsert: any[] = [];
+    const gateLogs: any[] = [];
 
     for (const [key, items] of groups) {
       // Tally weighted action votes
       const tally: Record<string, { weight: number; supporters: string[]; rois: number[]; confs: number[]; risks: number[] }> = {};
       const sampleItem = items[0];
       const localVotes: any[] = [];
+      const evSrcCounts: EvidenceSourceCounts = emptyEvidenceSourceCounts();
+      let untaggedVotes = 0;
 
       for (const d of items) {
         const advisorKey = ENGINE_TO_ADVISOR[d.source_engine] ?? null;
@@ -150,7 +161,16 @@ async function runCouncil(sb: any) {
         const risk = Number(d.risk ?? 0.3);
         const roi = expectedRoi(d);
         const evq = evidenceQuality(d);
-        const w = Number(advisor.current_weight ?? 1) * (0.5 + 0.5 * conf) * (0.5 + 0.5 * evq);
+        const evSrc = normalizeEvSrc(d.evidence_source);
+        if (d.evidence_source == null) untaggedVotes++;
+        evSrcCounts[evSrc]++;
+        const evSrcMult = EVIDENCE_SOURCE_WEIGHT[evSrc];
+        // Evidence-source gate: paid / heuristic / insufficient_data
+        // votes are down-weighted so they cannot outvote organic proof.
+        const w = Number(advisor.current_weight ?? 1)
+          * (0.5 + 0.5 * conf)
+          * (0.5 + 0.5 * evq)
+          * evSrcMult;
         const horizon = timeHorizon(d.reason_codes ?? []);
 
         const t = tally[action] ?? { weight: 0, supporters: [], rois: [], confs: [], risks: [] };
@@ -171,11 +191,14 @@ async function runCouncil(sb: any) {
           time_horizon: horizon,
           weight: w,
           vote_score: w * (1 + roi) * (1 - risk * 0.5),
+          evidence_source: evSrc,
           payload: {
             xai_id: d.id,
             engine: d.source_engine,
             summary: d.summary,
             reason_codes: d.reason_codes,
+            evidence_source: evSrc,
+            evidence_source_weight: evSrcMult,
           },
         });
       }
@@ -208,15 +231,41 @@ async function runCouncil(sb: any) {
       const dissenters: string[] = [];
       for (const [act, t] of actions.slice(1)) for (const s of t.supporters) if (!supporters.includes(s)) dissenters.push(`${s}:${act}`);
 
+      /* ---- Evidence Source Gate (soft, shared logic) ---- */
+      const gate = classifyGate(evSrcCounts, finalAction, { untaggedVotes });
+      const decisionEvSrc = gate.decision_evidence_source;
+      const gateAction = gate.action;
+      const gateReason = gate.reason;
+      const effectiveAction = gateAction === "block" ? "defer" : finalAction;
+      const gateStatus = gateAction === "block"
+        ? "gate_blocked"
+        : (consensus === "conflict" && councilConf < 0.5 ? "deferred" : "approved");
+
+      gateLogs.push({
+        council_run_id: runId,
+        decision_type: sampleItem.decision_type || "general",
+        subject: sampleItem.subject_id ?? key,
+        top_evidence_source: decisionEvSrc,
+        action: gateAction,
+        reason: gateReason,
+        advisor_count: gate.total_tagged,
+        organic_votes: evSrcCounts.organic,
+        paid_votes: evSrcCounts.paid,
+        blended_votes: evSrcCounts.blended,
+        heuristic_votes: evSrcCounts.heuristic,
+        insufficient_votes: evSrcCounts.insufficient_data,
+        untagged_votes: untaggedVotes,
+      });
+
       const dedupeKey = `aec:${runId}:${key}`.slice(0, 240);
-      const explanation = `Council ruled ${finalAction.toUpperCase()} on ${sampleItem.decision_type || "decision"}${sampleItem.subject_id ? ` for ${sampleItem.subject_id}` : ""}. ${supporters.length} advisor(s) supported (${supporters.join(", ")}); ${dissenters.length} dissented. Confidence ${(councilConf * 100).toFixed(0)}%, expected ROI ${(meanRoi * 100).toFixed(0)}%, risk ${(meanRisk * 100).toFixed(0)}%. Consensus: ${consensus}.`;
+      const explanation = `Council ruled ${effectiveAction.toUpperCase()} on ${sampleItem.decision_type || "decision"}${sampleItem.subject_id ? ` for ${sampleItem.subject_id}` : ""}. ${supporters.length} advisor(s) supported (${supporters.join(", ")}); ${dissenters.length} dissented. Evidence: ${decisionEvSrc} (gate=${gateAction}: ${gateReason}). Confidence ${(councilConf * 100).toFixed(0)}%, ROI ${(meanRoi * 100).toFixed(0)}%, risk ${(meanRisk * 100).toFixed(0)}%. Consensus: ${consensus}.`;
 
       decisionsToInsert.push({
         run_id: runId,
         decision_type: sampleItem.decision_type || "general",
         subject_kind: sampleItem.subject_kind,
         subject_id: sampleItem.subject_id,
-        final_action: finalAction,
+        final_action: effectiveAction,
         consensus,
         short_term_benefit: shortTerm,
         long_term_benefit: longTerm,
@@ -231,8 +280,11 @@ async function runCouncil(sb: any) {
         council_confidence: councilConf,
         explanation,
         reason_codes: supporters.map((s) => s.toUpperCase()),
-        status: consensus === "conflict" && councilConf < 0.5 ? "deferred" : "approved",
+        status: gateStatus,
         dedupe_key: dedupeKey,
+        evidence_source: decisionEvSrc,
+        evidence_source_gate: gateAction,
+        evidence_source_gate_reason: gateReason,
         _votes: localVotes,
       });
     }
@@ -251,6 +303,12 @@ async function runCouncil(sb: any) {
       for (const v of d._votes) votesToInsert.push({ ...v, run_id: runId, decision_id: decId });
     }
     if (votesToInsert.length) await sb.from("aec_advisor_votes").insert(votesToInsert);
+
+    // Persist evidence-source gate audit log (soft — never blocks the run)
+    if (gateLogs.length) {
+      try { await sb.from("aec_evidence_source_gate_log").insert(gateLogs); }
+      catch (e) { console.warn("[aec] gate log insert failed", (e as Error).message); }
+    }
 
     // Mark touched advisors
     for (const k of advisorsTouched) {
@@ -306,6 +364,7 @@ async function runCouncil(sb: any) {
         expectedLift: (d.expected_revenue_cents || 0) / 100000,
         risk: d.expected_risk,
         dedupeKey: `aec-council:${d.dedupe_key}`,
+        evidenceSource: (d.evidence_source ?? "heuristic") as XaiEvidenceSource,
       });
     }
 

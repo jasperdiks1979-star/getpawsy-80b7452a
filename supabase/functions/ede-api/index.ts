@@ -66,6 +66,13 @@ async function dnaSnapshot() {
 const handlers: Record<string, (p: any) => Promise<any>> = {
   async proposeDecision(p) {
     if (!p.proposal_type || !p.title || !p.summary) throw new Error("proposal_type,title,summary required");
+    // Phase 1 evidence-source tag on every proposal. Soft-enforce:
+    // default to 'heuristic' when the caller doesn't supply one.
+    const allowedEv = new Set(["organic", "paid", "blended", "heuristic", "insufficient_data"]);
+    const evidence_source = allowedEv.has(p.evidence_source) ? p.evidence_source : "heuristic";
+    if (!allowedEv.has(p.evidence_source)) {
+      console.warn(`[ede-api] proposal missing evidence_source (defaulted to heuristic) type=${p.proposal_type} title=${p.title}`);
+    }
     const { data, error } = await supabase.from("ede_proposals").insert({
       proposal_type: p.proposal_type,
       title: p.title,
@@ -79,6 +86,7 @@ const handlers: Record<string, (p: any) => Promise<any>> = {
       estimated_impact_usd: p.estimated_impact_usd ?? null,
       status: "draft",
       requires_human: !!p.requires_human,
+      evidence_source,
     }).select().single();
     if (error) throw error;
     return data;

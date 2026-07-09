@@ -2091,6 +2091,7 @@ export type Database = {
           created_at: string
           decision_id: string | null
           evidence_quality: number | null
+          evidence_source: string | null
           expected_roi: number | null
           id: string
           payload: Json
@@ -2107,6 +2108,7 @@ export type Database = {
           created_at?: string
           decision_id?: string | null
           evidence_quality?: number | null
+          evidence_source?: string | null
           expected_roi?: number | null
           id?: string
           payload?: Json
@@ -2123,6 +2125,7 @@ export type Database = {
           created_at?: string
           decision_id?: string | null
           evidence_quality?: number | null
+          evidence_source?: string | null
           expected_roi?: number | null
           id?: string
           payload?: Json
@@ -2298,6 +2301,9 @@ export type Database = {
           decision_type: string
           dedupe_key: string | null
           evaluated_at: string | null
+          evidence_source: string | null
+          evidence_source_gate: string | null
+          evidence_source_gate_reason: string | null
           expected_learning_value: number | null
           expected_maintenance_cost: number | null
           expected_revenue_cents: number | null
@@ -2326,6 +2332,9 @@ export type Database = {
           decision_type: string
           dedupe_key?: string | null
           evaluated_at?: string | null
+          evidence_source?: string | null
+          evidence_source_gate?: string | null
+          evidence_source_gate_reason?: string | null
           expected_learning_value?: number | null
           expected_maintenance_cost?: number | null
           expected_revenue_cents?: number | null
@@ -2354,6 +2363,9 @@ export type Database = {
           decision_type?: string
           dedupe_key?: string | null
           evaluated_at?: string | null
+          evidence_source?: string | null
+          evidence_source_gate?: string | null
+          evidence_source_gate_reason?: string | null
           expected_learning_value?: number | null
           expected_maintenance_cost?: number | null
           expected_revenue_cents?: number | null
@@ -2383,6 +2395,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      aec_evidence_source_gate_log: {
+        Row: {
+          action: string
+          advisor_count: number | null
+          blended_votes: number | null
+          council_run_id: string | null
+          created_at: string
+          decision_type: string | null
+          heuristic_votes: number | null
+          id: string
+          insufficient_votes: number | null
+          organic_votes: number | null
+          paid_votes: number | null
+          reason: string | null
+          subject: string | null
+          top_evidence_source: string | null
+          untagged_votes: number | null
+        }
+        Insert: {
+          action: string
+          advisor_count?: number | null
+          blended_votes?: number | null
+          council_run_id?: string | null
+          created_at?: string
+          decision_type?: string | null
+          heuristic_votes?: number | null
+          id?: string
+          insufficient_votes?: number | null
+          organic_votes?: number | null
+          paid_votes?: number | null
+          reason?: string | null
+          subject?: string | null
+          top_evidence_source?: string | null
+          untagged_votes?: number | null
+        }
+        Update: {
+          action?: string
+          advisor_count?: number | null
+          blended_votes?: number | null
+          council_run_id?: string | null
+          created_at?: string
+          decision_type?: string | null
+          heuristic_votes?: number | null
+          id?: string
+          insufficient_votes?: number | null
+          organic_votes?: number | null
+          paid_votes?: number | null
+          reason?: string | null
+          subject?: string | null
+          top_evidence_source?: string | null
+          untagged_votes?: number | null
+        }
+        Relationships: []
       }
       aec_priorities: {
         Row: {
@@ -19670,6 +19736,7 @@ export type Database = {
           decided_at: string | null
           estimated_impact_usd: number | null
           evidence: Json
+          evidence_source: string | null
           executed_at: string | null
           id: string
           intervention: Json
@@ -19689,6 +19756,7 @@ export type Database = {
           decided_at?: string | null
           estimated_impact_usd?: number | null
           evidence?: Json
+          evidence_source?: string | null
           executed_at?: string | null
           id?: string
           intervention?: Json
@@ -19708,6 +19776,7 @@ export type Database = {
           decided_at?: string | null
           estimated_impact_usd?: number | null
           evidence?: Json
+          evidence_source?: string | null
           executed_at?: string | null
           id?: string
           intervention?: Json
@@ -46881,6 +46950,7 @@ export type Database = {
           evidence: Json
           evidence_freshness_days: number | null
           evidence_sample_size: number | null
+          evidence_source: string | null
           evidence_strength: number | null
           expected_lift: number | null
           expected_metric: string | null
@@ -46909,6 +46979,7 @@ export type Database = {
           evidence?: Json
           evidence_freshness_days?: number | null
           evidence_sample_size?: number | null
+          evidence_source?: string | null
           evidence_strength?: number | null
           expected_lift?: number | null
           expected_metric?: string | null
@@ -46937,6 +47008,7 @@ export type Database = {
           evidence?: Json
           evidence_freshness_days?: number | null
           evidence_sample_size?: number | null
+          evidence_source?: string | null
           evidence_strength?: number | null
           expected_lift?: number | null
           expected_metric?: string | null
@@ -74017,6 +74089,22 @@ export type Database = {
           total_7d: number | null
           total_today: number | null
           zero_waste_v2_shadow: boolean | null
+        }
+        Relationships: []
+      }
+      xai_evidence_source_coverage_7d: {
+        Row: {
+          blended: number | null
+          day: string | null
+          heuristic: number | null
+          insufficient_data: number | null
+          organic: number | null
+          paid: number | null
+          source_engine: string | null
+          tagged: number | null
+          tagged_pct: number | null
+          total: number | null
+          untagged: number | null
         }
         Relationships: []
       }
