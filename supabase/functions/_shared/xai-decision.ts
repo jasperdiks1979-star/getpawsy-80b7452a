@@ -9,44 +9,14 @@
  * the calling engine.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  isValidEvidenceSource,
+  XAI_EVIDENCE_SOURCES,
+  type XaiEvidenceSource,
+} from "./evidence-source.ts";
 
-/**
- * Evidence source taxonomy — Phase 1 (soft rollout).
- *
- *   organic           — evidence comes from verified organic behaviour
- *                       (organic sessions, verified organic orders,
- *                        organic ranking views, first-party UGC).
- *   paid              — evidence comes from paid channels
- *                       (ads spend, Meta/TikTok/Google Ads, promoted pins).
- *                       Council MUST treat paid as validation-only.
- *   blended           — signal mixes organic + paid; MUST be labelled.
- *   heuristic         — rule-based / template / static assumption.
- *                       Never counted as proven.
- *   insufficient_data — signal exists but sample size / freshness fails
- *                       the minimum bar; must NEVER trigger automated
- *                       promotion.
- *
- * Phase 1 keeps this soft (nullable in DB, warned in the emitter).
- * Phase 2 will add a CHECK constraint once coverage is 100% for several days.
- */
-export type XaiEvidenceSource =
-  | "organic"
-  | "paid"
-  | "blended"
-  | "heuristic"
-  | "insufficient_data";
-
-export const XAI_EVIDENCE_SOURCES: readonly XaiEvidenceSource[] = [
-  "organic",
-  "paid",
-  "blended",
-  "heuristic",
-  "insufficient_data",
-] as const;
-
-export function isValidEvidenceSource(v: unknown): v is XaiEvidenceSource {
-  return typeof v === "string" && (XAI_EVIDENCE_SOURCES as readonly string[]).includes(v);
-}
+export { XAI_EVIDENCE_SOURCES, isValidEvidenceSource };
+export type { XaiEvidenceSource };
 
 export type XaiReasonCode =
   | "HIGH_CTR" | "HIGH_SAVE_RATE" | "HIGH_PURCHASE_RATE"
