@@ -4001,6 +4001,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pcie3-planner"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <Pcie3PlannerPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="organic-confidence-config"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
