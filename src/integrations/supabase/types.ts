@@ -69715,6 +69715,63 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_collection_map: {
+        Row: {
+          collection_type: string
+          created_at: string
+          error: string | null
+          handle: string
+          id: string
+          member_product_ids: string[]
+          membership_count: number
+          seo_description: string | null
+          seo_title: string | null
+          shopify_collection_gid: string | null
+          source_id: string
+          source_name: string | null
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collection_type?: string
+          created_at?: string
+          error?: string | null
+          handle: string
+          id?: string
+          member_product_ids?: string[]
+          membership_count?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          shopify_collection_gid?: string | null
+          source_id: string
+          source_name?: string | null
+          source_type: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collection_type?: string
+          created_at?: string
+          error?: string | null
+          handle?: string
+          id?: string
+          member_product_ids?: string[]
+          membership_count?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          shopify_collection_gid?: string | null
+          source_id?: string
+          source_name?: string | null
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shopify_field_mapping: {
         Row: {
           created_at: string
@@ -69805,6 +69862,108 @@ export type Database = {
           status?: string
           updated_at?: string
           wave?: string
+        }
+        Relationships: []
+      }
+      shopify_media_map: {
+        Row: {
+          alt_text: string | null
+          attempts: number
+          content_hash: string | null
+          created_at: string
+          error: string | null
+          id: string
+          last_attempt_at: string | null
+          shopify_media_id: string | null
+          shopify_product_gid: string
+          sort_order: number
+          source_product_id: string
+          source_url: string
+          status: string
+          updated_at: string
+          variant_key: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          attempts?: number
+          content_hash?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          shopify_media_id?: string | null
+          shopify_product_gid: string
+          sort_order?: number
+          source_product_id: string
+          source_url: string
+          status?: string
+          updated_at?: string
+          variant_key?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          attempts?: number
+          content_hash?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          shopify_media_id?: string | null
+          shopify_product_gid?: string
+          sort_order?: number
+          source_product_id?: string
+          source_url?: string
+          status?: string
+          updated_at?: string
+          variant_key?: string | null
+        }
+        Relationships: []
+      }
+      shopify_metafield_map: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          key: string
+          last_attempt_at: string | null
+          namespace: string
+          shopify_metafield_id: string | null
+          shopify_product_gid: string
+          source_product_id: string
+          status: string
+          updated_at: string
+          value: string | null
+          value_type: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          key: string
+          last_attempt_at?: string | null
+          namespace: string
+          shopify_metafield_id?: string | null
+          shopify_product_gid: string
+          source_product_id: string
+          status?: string
+          updated_at?: string
+          value?: string | null
+          value_type: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          key?: string
+          last_attempt_at?: string | null
+          namespace?: string
+          shopify_metafield_id?: string | null
+          shopify_product_gid?: string
+          source_product_id?: string
+          status?: string
+          updated_at?: string
+          value?: string | null
+          value_type?: string
         }
         Relationships: []
       }
@@ -69964,6 +70123,96 @@ export type Database = {
           title?: string
           updated_at?: string
           wave?: string
+        }
+        Relationships: []
+      }
+      shopify_reconciliation: {
+        Row: {
+          created_at: string
+          id: string
+          mismatches: Json
+          reconciled_at: string | null
+          shopify_gid: string
+          shopify_handle: string | null
+          shopify_snapshot: Json | null
+          source_product_id: string
+          source_slug: string | null
+          source_snapshot: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mismatches?: Json
+          reconciled_at?: string | null
+          shopify_gid: string
+          shopify_handle?: string | null
+          shopify_snapshot?: Json | null
+          source_product_id: string
+          source_slug?: string | null
+          source_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mismatches?: Json
+          reconciled_at?: string | null
+          shopify_gid?: string
+          shopify_handle?: string | null
+          shopify_snapshot?: Json | null
+          source_product_id?: string
+          source_slug?: string | null
+          source_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopify_redirect_plan: {
+        Row: {
+          actual_handle: string | null
+          created_at: string
+          exact_match: boolean
+          id: string
+          intended_handle: string | null
+          new_url: string | null
+          old_url: string | null
+          pinterest_reference_count: number
+          redirect_required: boolean
+          source_product_id: string
+          source_slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_handle?: string | null
+          created_at?: string
+          exact_match?: boolean
+          id?: string
+          intended_handle?: string | null
+          new_url?: string | null
+          old_url?: string | null
+          pinterest_reference_count?: number
+          redirect_required?: boolean
+          source_product_id: string
+          source_slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_handle?: string | null
+          created_at?: string
+          exact_match?: boolean
+          id?: string
+          intended_handle?: string | null
+          new_url?: string | null
+          old_url?: string | null
+          pinterest_reference_count?: number
+          redirect_required?: boolean
+          source_product_id?: string
+          source_slug?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
