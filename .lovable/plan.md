@@ -25,9 +25,24 @@ Delivered in this wave:
 - Read-only audit edge function: `shopify-migration-audit`
 - Admin dashboard: `/admin/shopify-migration`
 
-Awaiting owner approval before secrets:
-- `SHOPIFY_STORE_DOMAIN` (e.g. `getpawsy-dev.myshopify.com`)
-- `SHOPIFY_ADMIN_ACCESS_TOKEN` (custom-app token from Shopify admin)
-- `SHOPIFY_API_VERSION` (default `2025-01`)
+### Authentication mode: `client_credentials` (Shopify Dev Dashboard app `getpawsy-enterprise-2`)
+
+The Dev Dashboard app does NOT use a manually copied `shpat_` token.
+Server-side token provider lives at `supabase/functions/_shared/shopify-token-provider.ts`
+and exchanges `client_credentials` at `POST https://{shop}/admin/oauth/access_token`.
+
+Required Lovable Cloud secrets (server-side only, never exposed to frontend/logs/DB):
+- `SHOPIFY_STORE_DOMAIN` — e.g. `getpawsy-dev.myshopify.com`
+- `SHOPIFY_CLIENT_ID`
+- `SHOPIFY_CLIENT_SECRET`
+- `SHOPIFY_API_VERSION` — `2026-07`
+- `SHOPIFY_AUTH_MODE` — `client_credentials`
+
+Legacy `SHOPIFY_ADMIN_ACCESS_TOKEN` is NOT required for this connector and
+has been removed from onboarding, environment validation, health checks,
+connection diagnostics, and Wave 2 prerequisites. Legacy `shpat_` support for
+other unrelated systems is not affected.
+
+Diagnostics endpoint: `shopify-connection-diagnostics` (read-only).
 
 ## Waves 2-14 — see admin dashboard for live status.

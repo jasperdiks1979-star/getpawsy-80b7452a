@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       conflicts: { unresolved: unresolved.length, blockers: blockers.length },
       framework_ready: frameworkReady,
       next_action: frameworkReady
-        ? "Awaiting owner approval to add Shopify secrets (SHOPIFY_STORE_DOMAIN, SHOPIFY_ADMIN_ACCESS_TOKEN, SHOPIFY_API_VERSION) and begin Wave 2 dry-run."
+        ? "Awaiting client_credentials secrets (SHOPIFY_STORE_DOMAIN, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, SHOPIFY_API_VERSION=2026-07, SHOPIFY_AUTH_MODE=client_credentials). Run shopify-connection-diagnostics after submission. Do NOT begin Wave 2 automatically."
         : `Blocked: missing entities=[${requiredMissing.join(",")}], blockers=${blockers.length}`,
     };
 
