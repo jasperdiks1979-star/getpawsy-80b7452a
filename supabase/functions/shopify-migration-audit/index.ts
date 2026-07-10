@@ -22,12 +22,14 @@ interface AuditReport {
 
 const REQUIRED_ENTITIES = [
   "products",
-  "product_variants",
   "collections",
   "guides",
   "blog_posts",
   "static_pages",
 ];
+// NOTE: `product_variants` is intentionally excluded from Wave-1 required entities.
+// Variants live inside `products.variants` (jsonb) — there is no source table.
+// Wave 2 must certify jsonb→Shopify option1/2/3 mapping before product creation.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
