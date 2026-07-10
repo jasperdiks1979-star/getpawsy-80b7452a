@@ -44,13 +44,31 @@ async function audit(event: string, payload: Record<string, unknown>) {
 async function repairFailingRedirect() {
   const { data: row, error } = await admin
     .from("shopify_redirect_plan")
-    .select("id, old_url, new_url, intended_handle, actual_handle")
+    .select("id, old_url, new_url, intended_handle, actual_handle, source_product_id")
     .eq("id", FAILING_REDIRECT_ID)
     .maybeSingle();
   if (error || !row) return { fixed: false, reason: "plan row missing" };
 
   const sourcePath = new URL(row.old_url).pathname; // /products/...-pet-ball
-  const targetPath = `/products/${row.actual_handle}`; // /products/...-pet-ball-3
+
+  // Resolve the CANONICAL live handle from Shopify (not from the plan's
+  // cached `actual_handle`, which may itself now be a redirect source if the
+  // product handle rotated after Wave 2 creation). This is the fix for the
+  // "Target can't redirect to another redirect" chain.
+  const { data: prodMap } = await admin
+    .from("shopify_id_map")
+    .select("shopify_gid")
+    .eq("source_type", "product").eq("source_id", row.source_product_id)
+    .maybeSingle();
+  const productGid = prodMap?.shopify_gid;
+  if (!productGid) return { fixed: false, reason: "product gid missing in shopify_id_map" };
+
+  const live = await shopifyAdminFetch<{ product: { handle: string } | null }>(
+    `query($id:ID!){ product(id:$id){ handle } }`, { id: productGid },
+  );
+  const liveHandle = live.data?.product?.handle;
+  if (!liveHandle) return { fixed: false, reason: "live product handle not resolvable" };
+  const targetPath = `/products/${liveHandle}`;
 
   // Look up the existing redirect at this path.
   const lookup = await shopifyAdminFetch<{ urlRedirects: { edges: Array<{ node: { id: string; path: string; target: string } }> } }>(
@@ -58,6 +76,22 @@ async function repairFailingRedirect() {
     { q: `path:${sourcePath}` },
   );
   const existing = lookup.data?.urlRedirects?.edges?.[0]?.node ?? null;
+
+  // Also check that the TARGET path is not itself a redirect source. If a
+  // stale auto-redirect sits at the canonical product handle, delete it so
+  // this new 301 is a single hop and SEO equity flows to the live product.
+  const targetOccupier = await shopifyAdminFetch<{ urlRedirects: { edges: Array<{ node: { id: string; path: string; target: string } }> } }>(
+    `query($q:String!){ urlRedirects(first:5, query:$q){ edges { node { id path target } } } }`,
+    { q: `path:${targetPath}` },
+  );
+  const stale = targetOccupier.data?.urlRedirects?.edges?.find((e) => e.node.path === targetPath);
+  if (stale) {
+    await shopifyAdminFetch(
+      `mutation($id:ID!){ urlRedirectDelete(id:$id){ deletedUrlRedirectId userErrors{ message } } }`,
+      { id: stale.node.id },
+    );
+    await audit("stale_redirect_deleted", { id: stale.node.id, path: targetPath });
+  }
 
   let action: "updated" | "created" | "noop" = "noop";
   let shopifyId: string | null = null;
@@ -101,22 +135,22 @@ async function repairFailingRedirect() {
     }, { onConflict: "source_type,source_id" });
   }
 
-  await audit("redirect_repair", { id: FAILING_REDIRECT_ID, action, sourcePath, targetPath, shopifyId });
-  return { fixed: true, action, sourcePath, targetPath, shopifyId };
+  await audit("redirect_repair", { id: FAILING_REDIRECT_ID, action, sourcePath, targetPath, liveHandle, shopifyId });
+  return { fixed: true, action, sourcePath, targetPath, liveHandle, shopifyId };
 }
 
 // ── PHASE 1: PAYMENTS ──────────────────────────────────────────────────────
 async function certifyPayments() {
-  const q = `{
-    shop { name currencyCode primaryDomain { url } enabledPresentmentCurrencies }
-    paymentSettings { supportedDigitalWallets acceptedCardBrands }
-    shopLocales { locale primary published }
-    deliveryProfiles(first: 5) { edges { node { id name default } } }
-  }`;
-  const res = await shopifyAdminFetch<any>(q);
-  const shop = res.data?.shop ?? null;
-  const ps = res.data?.paymentSettings ?? null;
-  const deliveryCount = res.data?.deliveryProfiles?.edges?.length ?? 0;
+  // Split into small queries so a single missing field doesn't null the whole
+  // response. Payments introspection scopes are minimal — treat each independently.
+  const shopRes = await shopifyAdminFetch<any>(
+    `{ shop { name currencyCode enabledPresentmentCurrencies primaryDomain { url } } }`,
+  );
+  const deliveryRes = await shopifyAdminFetch<any>(
+    `{ deliveryProfiles(first: 5) { edges { node { id name default } } } }`,
+  );
+  const shop = shopRes.data?.shop ?? null;
+  const deliveryCount = deliveryRes.data?.deliveryProfiles?.edges?.length ?? 0;
 
   // Markets (may 403 without read_markets scope — degrade gracefully).
   const marketsRes = await shopifyAdminFetch<any>(
@@ -132,10 +166,14 @@ async function certifyPayments() {
     verdict: "DEFERRED_ACTIVATION",
     reason: "Shopify Payments live activation is explicitly forbidden this wave.",
     shop,
-    payment_settings: ps,
     shipping_profiles: deliveryCount,
     markets,
     markets_scope_available: markets.length > 0 || !marketsRes.errors,
+    graphql_errors: {
+      shop: shopRes.errors ?? null,
+      delivery: deliveryRes.errors ?? null,
+      markets: marketsRes.errors ?? null,
+    },
   };
 }
 
