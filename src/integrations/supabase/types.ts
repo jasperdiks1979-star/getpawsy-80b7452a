@@ -69715,6 +69715,258 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_field_mapping: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          required: boolean
+          shopify_entity: string
+          shopify_field: string
+          source_entity: string
+          source_field: string
+          transformer: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          required?: boolean
+          shopify_entity: string
+          shopify_field: string
+          source_entity: string
+          source_field: string
+          transformer?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          required?: boolean
+          shopify_entity?: string
+          shopify_field?: string
+          source_entity?: string
+          source_field?: string
+          transformer?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopify_id_map: {
+        Row: {
+          checksum: string | null
+          created_at: string
+          error: string | null
+          id: string
+          last_synced_at: string | null
+          metadata: Json
+          shopify_gid: string | null
+          shopify_handle: string | null
+          shopify_numeric_id: number | null
+          source_handle: string | null
+          source_id: string
+          source_type: string
+          status: string
+          updated_at: string
+          wave: string
+        }
+        Insert: {
+          checksum?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          shopify_gid?: string | null
+          shopify_handle?: string | null
+          shopify_numeric_id?: number | null
+          source_handle?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+          updated_at?: string
+          wave?: string
+        }
+        Update: {
+          checksum?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          shopify_gid?: string | null
+          shopify_handle?: string | null
+          shopify_numeric_id?: number | null
+          source_handle?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+          wave?: string
+        }
+        Relationships: []
+      }
+      shopify_migration_audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          dry_run: boolean
+          duration_ms: number | null
+          entity_id: string | null
+          entity_type: string | null
+          error: string | null
+          http_status: number | null
+          id: number
+          ok: boolean
+          request_payload: Json | null
+          response_payload: Json | null
+          wave: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          dry_run?: boolean
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: number
+          ok?: boolean
+          request_payload?: Json | null
+          response_payload?: Json | null
+          wave: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          dry_run?: boolean
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error?: string | null
+          http_status?: number | null
+          id?: number
+          ok?: boolean
+          request_payload?: Json | null
+          response_payload?: Json | null
+          wave?: string
+        }
+        Relationships: []
+      }
+      shopify_migration_conflicts: {
+        Row: {
+          conflict_type: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          notes: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          source_value: Json | null
+          target_value: Json | null
+          updated_at: string
+          wave: string
+        }
+        Insert: {
+          conflict_type: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          notes?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source_value?: Json | null
+          target_value?: Json | null
+          updated_at?: string
+          wave: string
+        }
+        Update: {
+          conflict_type?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          notes?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source_value?: Json | null
+          target_value?: Json | null
+          updated_at?: string
+          wave?: string
+        }
+        Relationships: []
+      }
+      shopify_migration_waves: {
+        Row: {
+          approved_by: string | null
+          blockers: Json
+          completed_at: string | null
+          created_at: string
+          dry_run: boolean
+          failure_count: number
+          id: string
+          item_count: number
+          notes: string | null
+          planned_at: string | null
+          started_at: string | null
+          status: string
+          success_count: number
+          title: string
+          updated_at: string
+          wave: string
+        }
+        Insert: {
+          approved_by?: string | null
+          blockers?: Json
+          completed_at?: string | null
+          created_at?: string
+          dry_run?: boolean
+          failure_count?: number
+          id?: string
+          item_count?: number
+          notes?: string | null
+          planned_at?: string | null
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          title: string
+          updated_at?: string
+          wave: string
+        }
+        Update: {
+          approved_by?: string | null
+          blockers?: Json
+          completed_at?: string | null
+          created_at?: string
+          dry_run?: boolean
+          failure_count?: number
+          id?: string
+          item_count?: number
+          notes?: string | null
+          planned_at?: string | null
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          title?: string
+          updated_at?: string
+          wave?: string
+        }
+        Relationships: []
+      }
       shopping_optimizations: {
         Row: {
           applied_at: string | null
