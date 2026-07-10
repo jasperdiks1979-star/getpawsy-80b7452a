@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can insert tracking events" ON public.email_campaign_events;
