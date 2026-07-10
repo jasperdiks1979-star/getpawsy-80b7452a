@@ -168,30 +168,31 @@ async function buildMainMenuItems() {
     .select("handle, title, shopify_collection_gid").eq("status", "created").limit(12);
 
   const items: any[] = [
-    { title: "Shop All", type: "COLLECTION", url: "/collections/all" },
+    { title: "Shop All", type: "HTTP", url: "/collections/all" },
   ];
   for (const c of collections ?? []) {
     if (!c.handle) continue;
     items.push({
-      title: c.title, type: "COLLECTION",
-      url: `/collections/${c.handle}`,
+      title: c.title,
+      type: "COLLECTION",
+      resourceId: c.shopify_collection_gid,
     });
   }
-  items.push({ title: "Guides", type: "PAGE", url: "/pages/guides" });
-  items.push({ title: "Blog", type: "PAGE", url: "/pages/blog" });
-  items.push({ title: "Contact", type: "PAGE", url: "/pages/contact" });
+  items.push({ title: "Guides", type: "HTTP", url: "/pages/guides" });
+  items.push({ title: "Blog", type: "HTTP", url: "/pages/blog" });
+  items.push({ title: "Contact", type: "HTTP", url: "/pages/contact" });
   return items;
 }
 
 function footerMenuItems() {
   return [
-    { title: "About", type: "PAGE", url: "/pages/about" },
-    { title: "FAQ", type: "PAGE", url: "/pages/faq" },
-    { title: "Shipping", type: "PAGE", url: "/pages/shipping" },
-    { title: "Returns", type: "PAGE", url: "/pages/returns" },
-    { title: "Privacy Policy", type: "PAGE", url: "/pages/privacy-policy" },
-    { title: "Terms of Service", type: "PAGE", url: "/pages/terms-of-service" },
-    { title: "Contact", type: "PAGE", url: "/pages/contact" },
+    { title: "About", type: "HTTP", url: "/pages/about" },
+    { title: "FAQ", type: "HTTP", url: "/pages/faq" },
+    { title: "Shipping", type: "HTTP", url: "/pages/shipping" },
+    { title: "Returns", type: "HTTP", url: "/pages/returns" },
+    { title: "Privacy Policy", type: "HTTP", url: "/pages/privacy-policy" },
+    { title: "Terms of Service", type: "HTTP", url: "/pages/terms-of-service" },
+    { title: "Contact", type: "HTTP", url: "/pages/contact" },
   ];
 }
 
