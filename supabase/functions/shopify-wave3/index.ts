@@ -404,10 +404,18 @@ const COLLECTION_CREATE = /* GraphQL */ `
   }
 `;
 
+const COLLECTION_ADD_PRODUCTS = /* GraphQL */ `
+  mutation W3AddProducts($id: ID!, $productIds: [ID!]!) {
+    collectionAddProductsV2(id: $id, productIds: $productIds) {
+      userErrors { field message code }
+    }
+  }
+`;
+
 async function phaseRunCollections(s: SupabaseClient, limit: number) {
   const { data: pending } = await s.from("shopify_collection_map")
     .select("id, handle, title, seo_title, seo_description, member_product_ids, source_type, source_id")
-    .eq("status","proposed").limit(limit);
+    .in("status",["proposed","failed"]).limit(limit);
   const rows = pending ?? [];
   let created = 0, failed = 0;
   for (const r of rows) {
@@ -418,19 +426,24 @@ async function phaseRunCollections(s: SupabaseClient, limit: number) {
     const input = {
       title: r.title, handle: r.handle,
       seo: { title: r.seo_title ?? r.title, description: r.seo_description ?? r.title },
-      products: productGids.slice(0, 250), // page 1; remaining pages via collectionAddProductsV2 if >250
     };
     const res = await shopifyAdminFetch<any>(COLLECTION_CREATE, { input });
     const errs = res.data?.collectionCreate?.userErrors ?? [];
     if (res.status >= 200 && res.status < 300 && errs.length === 0 && res.data?.collectionCreate?.collection) {
+      const cid = res.data.collectionCreate.collection.id;
+      // Attach products via v2 mutation in batches of 250
+      for (let i = 0; i < productGids.length; i += 250) {
+        await shopifyAdminFetch<any>(COLLECTION_ADD_PRODUCTS, { id: cid, productIds: productGids.slice(i, i + 250) });
+        await sleep(PACE_MS);
+      }
       await s.from("shopify_collection_map").update({
-        shopify_collection_gid: res.data.collectionCreate.collection.id,
+        shopify_collection_gid: cid,
         status: "created", error: null, updated_at: new Date().toISOString(),
       }).eq("id", r.id);
       created++;
-      await audit(s, "collectionCreate", "collection", r.handle, true, { title: r.title, members: productGids.length }, { id: res.data.collectionCreate.collection.id }, null, res.status, Date.now() - t0);
+      await audit(s, "collectionCreate", "collection", r.handle, true, { title: r.title, members: productGids.length }, { id: cid }, null, res.status, Date.now() - t0);
     } else {
-      const errText = JSON.stringify({ status: res.status, errs }).slice(0, 3900);
+      const errText = JSON.stringify({ status: res.status, errs, gql: (res as any).errors, data: res.data }).slice(0, 3900);
       await s.from("shopify_collection_map").update({
         status: "failed", error: errText, updated_at: new Date().toISOString(),
       }).eq("id", r.id);
