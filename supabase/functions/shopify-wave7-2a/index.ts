@@ -437,7 +437,7 @@ async function repairRedirectChains(dry_run: boolean) {
       dry_run,
       async () => {
         const r = await gql(
-          `mutation($id:ID!,$redirect:UrlRedirectUpdateInput!){ urlRedirectUpdate(id:$id, urlRedirect:$redirect){ userErrors{ field message } urlRedirect{ id path target } } }`,
+          `mutation($id:ID!,$redirect:UrlRedirectInput!){ urlRedirectUpdate(id:$id, urlRedirect:$redirect){ userErrors{ field message } urlRedirect{ id path target } } }`,
           { id: c.head.id, redirect: { path: c.head.path, target: c.final_target } },
         );
         const ue = (r.data as any)?.urlRedirectUpdate?.userErrors;
