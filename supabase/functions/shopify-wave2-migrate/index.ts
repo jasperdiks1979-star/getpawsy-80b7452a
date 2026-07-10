@@ -102,7 +102,6 @@ function buildProductSetInput(p: DBProduct): Record<string, unknown> {
 
   return {
     title: p.name ?? "Untitled",
-    handle: p.slug ?? undefined,
     vendor: p.brand ?? "GetPawsy",
     productType: p.product_type ?? "General",
     status: "DRAFT",
