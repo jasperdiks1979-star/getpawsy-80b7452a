@@ -2564,6 +2564,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="shopify-migration"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <ShopifyMigrationDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="vault"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
