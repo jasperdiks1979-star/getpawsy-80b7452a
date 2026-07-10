@@ -399,7 +399,7 @@ const COLLECTION_CREATE = /* GraphQL */ `
   mutation W3CollectionCreate($input: CollectionInput!) {
     collectionCreate(input: $input) {
       collection { id handle title }
-      userErrors { field message code }
+      userErrors { field message }
     }
   }
 `;
@@ -407,7 +407,7 @@ const COLLECTION_CREATE = /* GraphQL */ `
 const COLLECTION_ADD_PRODUCTS = /* GraphQL */ `
   mutation W3AddProducts($id: ID!, $productIds: [ID!]!) {
     collectionAddProductsV2(id: $id, productIds: $productIds) {
-      userErrors { field message code }
+      userErrors { field message }
     }
   }
 `;
