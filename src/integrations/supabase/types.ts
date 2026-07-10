@@ -61468,6 +61468,123 @@ export type Database = {
           },
         ]
       }
+      pinterest_wow_recovery_batch_registry: {
+        Row: {
+          automation_enabled: boolean
+          batch_status: string
+          consecutive_failures: number
+          created_at: string
+          id: string
+          last_dispatched_at: string | null
+          last_result: Json
+          maximum_batch_age_hours: number
+          maximum_recovery_generations: number
+          notes: string | null
+          recovery_expires_at: string
+          recovery_started_at: string
+          updated_at: string
+          wow_batch_id: string
+        }
+        Insert: {
+          automation_enabled?: boolean
+          batch_status?: string
+          consecutive_failures?: number
+          created_at?: string
+          id?: string
+          last_dispatched_at?: string | null
+          last_result?: Json
+          maximum_batch_age_hours?: number
+          maximum_recovery_generations?: number
+          notes?: string | null
+          recovery_expires_at?: string
+          recovery_started_at?: string
+          updated_at?: string
+          wow_batch_id: string
+        }
+        Update: {
+          automation_enabled?: boolean
+          batch_status?: string
+          consecutive_failures?: number
+          created_at?: string
+          id?: string
+          last_dispatched_at?: string | null
+          last_result?: Json
+          maximum_batch_age_hours?: number
+          maximum_recovery_generations?: number
+          notes?: string | null
+          recovery_expires_at?: string
+          recovery_started_at?: string
+          updated_at?: string
+          wow_batch_id?: string
+        }
+        Relationships: []
+      }
+      pinterest_wow_recovery_dispatcher_runs: {
+        Row: {
+          active_batches_found: number
+          batches_invoked: number
+          batches_skipped: number
+          created_at: string
+          cron_job_id: number | null
+          details: Json
+          duration_ms: number | null
+          errors: Json
+          finished_at: string | null
+          id: string
+          mode: string
+          overlap_locks: number
+          started_at: string
+          status: string
+          terminalized_entities: number
+          total_candidates: number
+          total_mutations: number
+          total_selected: number
+          zero_work_batches: number
+        }
+        Insert: {
+          active_batches_found?: number
+          batches_invoked?: number
+          batches_skipped?: number
+          created_at?: string
+          cron_job_id?: number | null
+          details?: Json
+          duration_ms?: number | null
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          overlap_locks?: number
+          started_at?: string
+          status?: string
+          terminalized_entities?: number
+          total_candidates?: number
+          total_mutations?: number
+          total_selected?: number
+          zero_work_batches?: number
+        }
+        Update: {
+          active_batches_found?: number
+          batches_invoked?: number
+          batches_skipped?: number
+          created_at?: string
+          cron_job_id?: number | null
+          details?: Json
+          duration_ms?: number | null
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          overlap_locks?: number
+          started_at?: string
+          status?: string
+          terminalized_entities?: number
+          total_candidates?: number
+          total_mutations?: number
+          total_selected?: number
+          zero_work_batches?: number
+        }
+        Relationships: []
+      }
       pinterest_wow_recovery_learnings: {
         Row: {
           banned_pattern: string | null
