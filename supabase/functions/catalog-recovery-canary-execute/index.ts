@@ -322,6 +322,7 @@ Deno.serve(async (req) => {
         inventoryItemId: CANARY.inventoryItemId,
         locationId: CANARY.locationId,
         quantity: CANARY.targetAvailable,
+        changeFromQuantity: targetLevel?.onHand ?? 0,
       }],
     };
     const mut = await shopifyAdminFetch<any>(SET_M, { input: mutInput });
@@ -397,6 +398,7 @@ Deno.serve(async (req) => {
             inventoryItemId: CANARY.inventoryItemId,
             locationId: CANARY.locationId,
             quantity: CANARY.rollbackAvailable,
+            changeFromQuantity: CANARY.targetAvailable,
           }],
         },
       });
