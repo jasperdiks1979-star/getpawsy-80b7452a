@@ -2573,6 +2573,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="catalog-recovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CatalogRecoveryDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="vault"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
