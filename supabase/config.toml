@@ -1,5 +1,14 @@
 project_id = "nojvgfbcjgipjxpfatmm"
 
+[functions.catalog-recovery-scan]
+verify_jwt = false
+
+[functions.catalog-recovery-tick]
+verify_jwt = false
+
+[functions.catalog-recovery-report]
+verify_jwt = false
+
 [functions.admin-stripe-test-checkout]
 verify_jwt = false
 
