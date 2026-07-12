@@ -115,8 +115,8 @@ query Agg($cursor: String) {
 }`;
 
 const SET_M = `
-mutation Set($input: InventorySetOnHandQuantitiesInput!) {
-  inventorySetOnHandQuantities(input: $input) {
+mutation Set($input: InventorySetOnHandQuantitiesInput!, $key: String!) {
+  inventorySetOnHandQuantities(input: $input) @idempotent(uniqueKey: $key) {
     inventoryAdjustmentGroup {
       createdAt reason referenceDocumentUri
       changes { name delta quantityAfterChange item { id } location { id } }
@@ -325,7 +325,10 @@ Deno.serve(async (req) => {
         changeFromQuantity: targetLevel?.onHand ?? 0,
       }],
     };
-    const mut = await shopifyAdminFetch<any>(SET_M, { input: mutInput });
+    const mut = await shopifyAdminFetch<any>(SET_M, {
+      input: mutInput,
+      key: `canary-${CANARY.sku}-${Date.now()}-set`,
+    });
     report.counters.shopify_mutations_performed = 1;
     const userErrors = mut.data?.inventorySetOnHandQuantities?.userErrors ?? [];
     const changes = mut.data?.inventorySetOnHandQuantities?.inventoryAdjustmentGroup?.changes ?? [];
@@ -391,6 +394,7 @@ Deno.serve(async (req) => {
     const needRollback = mutationFailed || !readbackOk || !aggregateOk || !controlsUnchanged;
     if (needRollback) {
       const rbMut = await shopifyAdminFetch<any>(SET_M, {
+        key: `canary-${CANARY.sku}-${Date.now()}-rollback`,
         input: {
           reason: "correction",
           referenceDocumentUri: CANARY.referenceUri + "#rollback",
