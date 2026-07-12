@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.catalog-recovery-policy-dryrun]
 verify_jwt = false
 
+[functions.catalog-recovery-batch-execute]
+verify_jwt = false
+
 [functions.admin-stripe-test-checkout]
 verify_jwt = false
 
