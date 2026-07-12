@@ -58,24 +58,23 @@ function json(payload: unknown, status = 200) {
   });
 }
 
-async function cjGet(path: string, token: string) {
-  // Retry once on 429 with backoff.
-  for (let attempt = 0; attempt < 3; attempt++) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function cjGet(path: string, token: string, retryOn429 = true) {
+  const doFetch = async () => {
     const res = await fetch(`${CJ_API_BASE}${path}`, {
       headers: { "CJ-Access-Token": token, "Content-Type": "application/json" },
     });
     const body = await res.json().catch(() => ({}));
-    if (res.status !== 429 && body?.code !== 1600200) return { status: res.status, body };
-    await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+    return { status: res.status, body };
+  };
+  let r = await doFetch();
+  if (retryOn429 && (r.status === 429 || r.body?.code === 1600200)) {
+    await sleep(1500);
+    r = await doFetch();
   }
-  const res = await fetch(`${CJ_API_BASE}${path}`, {
-    headers: { "CJ-Access-Token": token, "Content-Type": "application/json" },
-  });
-  const body = await res.json().catch(() => ({}));
-  return { status: res.status, body };
+  return r;
 }
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -135,11 +134,11 @@ Deno.serve(async (req) => {
       variantSku: string; variantAttrs: unknown;
     }> = [];
     const candidateVariantsChecked = { count: 0 };
-    const candidatePidsList = Array.from(candidatePids).slice(0, 25); // cap
+    const candidatePidsList = Array.from(candidatePids).slice(0, 12); // cap for rate-limit budget
     const productReads: Array<{ pid: string; status: number; code: unknown; variants: number }> = [];
 
     for (const pid of candidatePidsList) {
-      await sleep(700); // CJ product/query is rate-limited (~1 req/sec)
+      await sleep(1100); // CJ product/query is rate-limited (~1 req/sec)
       const p = await cjGet(`/product/query?pid=${encodeURIComponent(pid)}`, token);
       http_statuses[`product/query:${pid}`] = p.status;
       const productData = p.body?.data;
