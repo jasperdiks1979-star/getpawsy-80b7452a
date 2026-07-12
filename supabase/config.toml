@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.catalog-recovery-report]
 verify_jwt = false
 
+[functions.catalog-recovery-canary-execute]
+verify_jwt = false
+
 [functions.admin-stripe-test-checkout]
 verify_jwt = false
 
