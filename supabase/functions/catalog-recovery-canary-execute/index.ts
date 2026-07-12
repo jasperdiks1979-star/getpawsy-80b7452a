@@ -277,8 +277,8 @@ Deno.serve(async (req) => {
     const stockTotal = stockAreas.reduce((a, w) => a + Number(w?.totalInventoryNum ?? 0), 0);
     const cjChecks = {
       auth_ok: cjAuthStatus === 200,
-      product_query_status: cjProd.status,
-      stock_query_status: cjStock.status,
+      product_query_ok: cjProd.status === 200,
+      stock_query_ok: cjStock.status === 200,
       pid_match: String(pd?.pid ?? "") === CANARY.cjPid,
       vid_match: !!cjMatch,
       variant_sku_byte_equal: String(cjMatch?.variantSku ?? "") === CANARY.sku,
