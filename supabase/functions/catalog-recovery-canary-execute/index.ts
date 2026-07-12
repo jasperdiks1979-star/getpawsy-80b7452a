@@ -115,8 +115,8 @@ query Agg($cursor: String) {
 }`;
 
 const SET_M = `
-mutation Set($input: InventorySetQuantitiesInput!) {
-  inventorySetQuantities(input: $input) {
+mutation Set($input: InventorySetOnHandQuantitiesInput!) {
+  inventorySetOnHandQuantities(input: $input) {
     inventoryAdjustmentGroup {
       createdAt reason referenceDocumentUri
       changes { name delta quantityAfterChange item { id } location { id } }
@@ -315,22 +315,19 @@ Deno.serve(async (req) => {
     report.phases.controls_pre = controlsPre;
 
     // ── FASE 3: SINGLE Shopify mutation ──────────────────────────────────
-    const previousAvailable = targetLevel?.available ?? 0;
     const mutInput = {
       reason: "correction",
-      name: "available",
       referenceDocumentUri: CANARY.referenceUri,
-      quantities: [{
+      setQuantities: [{
         inventoryItemId: CANARY.inventoryItemId,
         locationId: CANARY.locationId,
         quantity: CANARY.targetAvailable,
-        compareQuantity: previousAvailable,
       }],
     };
     const mut = await shopifyAdminFetch<any>(SET_M, { input: mutInput });
     report.counters.shopify_mutations_performed = 1;
-    const userErrors = mut.data?.inventorySetQuantities?.userErrors ?? [];
-    const changes = mut.data?.inventorySetQuantities?.inventoryAdjustmentGroup?.changes ?? [];
+    const userErrors = mut.data?.inventorySetOnHandQuantities?.userErrors ?? [];
+    const changes = mut.data?.inventorySetOnHandQuantities?.inventoryAdjustmentGroup?.changes ?? [];
     report.phases.mutation = {
       at: nowIso(),
       http_status: mut.status,
@@ -392,24 +389,19 @@ Deno.serve(async (req) => {
     // ── FASE 6: rollback decisioning ─────────────────────────────────────
     const needRollback = mutationFailed || !readbackOk || !aggregateOk || !controlsUnchanged;
     if (needRollback) {
-      // Best-effort read to obtain the current compareQuantity for rollback.
-      const preRb = await readVariant(CANARY.variantId);
-      const preRbLevel = preRb.snap?.levels.find(matchesLevel) ?? null;
       const rbMut = await shopifyAdminFetch<any>(SET_M, {
         input: {
           reason: "correction",
-          name: "available",
           referenceDocumentUri: CANARY.referenceUri + "#rollback",
-          quantities: [{
+          setQuantities: [{
             inventoryItemId: CANARY.inventoryItemId,
             locationId: CANARY.locationId,
             quantity: CANARY.rollbackAvailable,
-            compareQuantity: preRbLevel?.available ?? CANARY.targetAvailable,
           }],
         },
       });
       report.counters.shopify_mutations_performed += 1;
-      const rbErrors = rbMut.data?.inventorySetQuantities?.userErrors ?? [];
+      const rbErrors = rbMut.data?.inventorySetOnHandQuantities?.userErrors ?? [];
       await sleep(1500);
       const verify = await readVariant(CANARY.variantId);
       const verifyLevel = verify.snap?.levels.find(matchesLevel) ?? null;
