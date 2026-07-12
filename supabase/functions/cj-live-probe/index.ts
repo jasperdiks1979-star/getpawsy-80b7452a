@@ -140,6 +140,10 @@ Deno.serve(async (req) => {
         lookup: listJson?.code ?? null,
         lookup_message: listJson?.message ?? null,
       },
+      _debug: body?.debug ? {
+        stock_raw: stockJson,
+        list_first: listRows.slice(0, 2),
+      } : undefined,
       elapsed_ms: Date.now() - started,
       writes_performed: 0,
     });
