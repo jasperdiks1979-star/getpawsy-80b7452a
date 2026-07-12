@@ -151,7 +151,7 @@ interface CJExactMatch {
   pid: string; vid: string; productName: string | null; variantName: string | null;
   variantSku: string; productStatus: string | null; attrs: unknown;
 }
-async function resolveSku(v: ShopVariant, token: string, budget: { reqs: number; max: number }) {
+async function resolveSku(v: ShopVariant, token: string, budget: { reqs: number; max: number }, opts?: { maxPids?: number }) {
   const http: Record<string, number> = {};
   const codes: Record<string, unknown> = {};
   const exact: CJExactMatch[] = [];
@@ -176,7 +176,7 @@ async function resolveSku(v: ShopVariant, token: string, budget: { reqs: number;
     }
   }
 
-  const pids = Array.from(candidatePids).slice(0, 8);
+  const pids = Array.from(candidatePids).slice(0, opts?.maxPids ?? 8);
   const skuNorm = v.sku.trim().toLowerCase();
   for (const pid of pids) {
     if (budget.reqs >= budget.max) break;
@@ -234,7 +234,9 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const targetConfirmed: number = Math.max(1, Math.min(5, Number(body?.target_confirmed ?? 3)));
-    const maxCjReqs: number = Math.max(10, Math.min(200, Number(body?.max_cj_requests ?? 90)));
+    const maxCjReqs: number = Math.max(10, Math.min(200, Number(body?.max_cj_requests ?? 40)));
+    const maxProbes: number = Math.max(1, Math.min(50, Number(body?.max_probes ?? 6)));
+    const maxPidsPerSku: number = Math.max(1, Math.min(8, Number(body?.max_pids_per_sku ?? 3)));
     const excludeSkus: Set<string> = new Set((body?.exclude_skus ?? []).map((s: string) => String(s).trim().toLowerCase()));
 
     // ── FASE 1: Shopify sweep
@@ -285,11 +287,14 @@ Deno.serve(async (req) => {
     const probes: Probe[] = [];
     const confirmed: Probe[] = [];
 
+    let probesRun = 0;
     for (const v of candidates) {
       if (budget.reqs >= budget.max) { classifications.skipped_budget += 1; continue; }
       if (confirmed.length >= targetConfirmed) break;
+      if (probesRun >= maxProbes) break;
+      probesRun += 1;
 
-      const r = await resolveSku(v, token, budget);
+      const r = await resolveSku(v, token, budget, { maxPids: maxPidsPerSku });
       if (r.skipped) { classifications.skipped_budget += 1; continue; }
 
       let classification: string;
