@@ -45,6 +45,10 @@ const CANARY = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const nowIso = () => new Date().toISOString();
+const stripSuffix = (gid: string) => gid.split("?")[0];
+const matchesLevel = (l: { levelId: string; locationId: string }) =>
+  stripSuffix(l.levelId) === stripSuffix(CANARY.inventoryLevelId) &&
+  l.locationId === CANARY.locationId;
 
 // ─── CJ helpers (read-only) ────────────────────────────────────────────────
 async function cjToken(): Promise<{ token: string; status: number }> {
@@ -234,13 +238,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(report), { headers: corsHeaders, status: 200 });
     }
     const s = preShop.snap;
-    // Shopify returns InventoryLevel IDs with a "?inventory_item_id=..." suffix;
-    // compare on the stable path portion only.
-    const stripSuffix = (gid: string) => gid.split("?")[0];
-    const targetLevel = s.levels.find(
-      (l) => stripSuffix(l.levelId) === stripSuffix(CANARY.inventoryLevelId)
-        && l.locationId === CANARY.locationId,
-    );
+    const targetLevel = s.levels.find(matchesLevel);
     const identityChecks = {
       product_id: s.productId === CANARY.productId,
       variant_id: s.variantId === CANARY.variantId,
@@ -317,15 +315,16 @@ Deno.serve(async (req) => {
     report.phases.controls_pre = controlsPre;
 
     // ── FASE 3: SINGLE Shopify mutation ──────────────────────────────────
+    const previousAvailable = targetLevel?.available ?? 0;
     const mutInput = {
       reason: "correction",
       name: "available",
       referenceDocumentUri: CANARY.referenceUri,
-      ignoreCompareQuantity: true,
       quantities: [{
         inventoryItemId: CANARY.inventoryItemId,
         locationId: CANARY.locationId,
         quantity: CANARY.targetAvailable,
+        compareQuantity: previousAvailable,
       }],
     };
     const mut = await shopifyAdminFetch<any>(SET_M, { input: mutInput });
@@ -350,8 +349,8 @@ Deno.serve(async (req) => {
     const rb1 = await readVariant(CANARY.variantId);
     await sleep(1500);
     const rb2 = await readVariant(CANARY.variantId);
-    const rbLevel1 = rb1.snap?.levels.find((l) => l.levelId === CANARY.inventoryLevelId) ?? null;
-    const rbLevel2 = rb2.snap?.levels.find((l) => l.levelId === CANARY.inventoryLevelId) ?? null;
+    const rbLevel1 = rb1.snap?.levels.find(matchesLevel) ?? null;
+    const rbLevel2 = rb2.snap?.levels.find(matchesLevel) ?? null;
     report.phases.readback_1 = { at: nowIso(), snapshot: rb1.snap, target_level: rbLevel1 };
     report.phases.readback_2 = { at: nowIso(), snapshot: rb2.snap, target_level: rbLevel2 };
 
@@ -393,16 +392,19 @@ Deno.serve(async (req) => {
     // ── FASE 6: rollback decisioning ─────────────────────────────────────
     const needRollback = mutationFailed || !readbackOk || !aggregateOk || !controlsUnchanged;
     if (needRollback) {
+      // Best-effort read to obtain the current compareQuantity for rollback.
+      const preRb = await readVariant(CANARY.variantId);
+      const preRbLevel = preRb.snap?.levels.find(matchesLevel) ?? null;
       const rbMut = await shopifyAdminFetch<any>(SET_M, {
         input: {
           reason: "correction",
           name: "available",
           referenceDocumentUri: CANARY.referenceUri + "#rollback",
-          ignoreCompareQuantity: true,
           quantities: [{
             inventoryItemId: CANARY.inventoryItemId,
             locationId: CANARY.locationId,
             quantity: CANARY.rollbackAvailable,
+            compareQuantity: preRbLevel?.available ?? CANARY.targetAvailable,
           }],
         },
       });
@@ -410,7 +412,7 @@ Deno.serve(async (req) => {
       const rbErrors = rbMut.data?.inventorySetQuantities?.userErrors ?? [];
       await sleep(1500);
       const verify = await readVariant(CANARY.variantId);
-      const verifyLevel = verify.snap?.levels.find((l) => l.levelId === CANARY.inventoryLevelId) ?? null;
+      const verifyLevel = verify.snap?.levels.find(matchesLevel) ?? null;
       const verifyAgg = await catalogueAggregate();
       const rollbackVerified =
         rbMut.status === 200 && rbErrors.length === 0 &&
