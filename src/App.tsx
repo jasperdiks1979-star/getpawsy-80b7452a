@@ -435,6 +435,7 @@ const ClusterDominance = lazyWithRetry(() => import("./pages/admin/ClusterDomina
 const AnalyticsTrafficDocs = lazyWithRetry(() => import("./pages/admin/AnalyticsTrafficDocs"));
 const AdminReportsPage = lazyWithRetry(() => import("./pages/admin/AdminReportsPage"));
 const ShopifyMigrationDashboard = lazyWithRetry(() => import("./pages/admin/ShopifyMigrationDashboard"));
+const CatalogRecoveryDashboard = lazyWithRetry(() => import("./pages/admin/CatalogRecoveryDashboard"));
 const GenesisVaultPage = lazyWithRetry(() => import("./pages/admin/GenesisVaultPage"));
 const EvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/EvidenceVaultPage"));
 const FinancialEvidenceVaultPage = lazyWithRetry(() => import("./pages/admin/FinancialEvidenceVaultPage"));
@@ -2568,6 +2569,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ShopifyMigrationDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="catalog-recovery"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CatalogRecoveryDashboard />
                                 </Suspense>
                               }
                             />
