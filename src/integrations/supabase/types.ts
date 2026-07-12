@@ -9830,6 +9830,237 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_recovery_batches: {
+        Row: {
+          created_at: string
+          cursor: number
+          finished_at: string | null
+          id: string
+          size: number
+          started_at: string | null
+          stats: Json
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          cursor: number
+          finished_at?: string | null
+          id?: string
+          size?: number
+          started_at?: string | null
+          stats?: Json
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          cursor?: number
+          finished_at?: string | null
+          id?: string
+          size?: number
+          started_at?: string | null
+          stats?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      catalog_recovery_events: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          event: string
+          id: string
+          level: string
+          payload: Json
+          shopify_variant_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          level?: string
+          payload?: Json
+          shopify_variant_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          level?: string
+          payload?: Json
+          shopify_variant_id?: string | null
+        }
+        Relationships: []
+      }
+      catalog_recovery_index: {
+        Row: {
+          barcode: string | null
+          current_inventory: number | null
+          current_location: string | null
+          first_seen: string
+          handle: string | null
+          id: string
+          inventory_item_id: string | null
+          last_seen: string
+          product_type: string | null
+          scan_hash: string | null
+          shopify_product_id: string
+          shopify_variant_id: string
+          sku: string | null
+          title: string | null
+          variant_title: string | null
+          vendor: string | null
+        }
+        Insert: {
+          barcode?: string | null
+          current_inventory?: number | null
+          current_location?: string | null
+          first_seen?: string
+          handle?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          last_seen?: string
+          product_type?: string | null
+          scan_hash?: string | null
+          shopify_product_id: string
+          shopify_variant_id: string
+          sku?: string | null
+          title?: string | null
+          variant_title?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          barcode?: string | null
+          current_inventory?: number | null
+          current_location?: string | null
+          first_seen?: string
+          handle?: string | null
+          id?: string
+          inventory_item_id?: string | null
+          last_seen?: string
+          product_type?: string | null
+          scan_hash?: string | null
+          shopify_product_id?: string
+          shopify_variant_id?: string
+          sku?: string | null
+          title?: string | null
+          variant_title?: string | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
+      catalog_recovery_mappings: {
+        Row: {
+          cj_pid: string | null
+          cj_sku: string | null
+          cj_vid: string | null
+          confidence: number
+          created_at: string
+          evidence: Json
+          id: string
+          inventory_qty: number | null
+          inventory_synced_at: string | null
+          method: string
+          shopify_product_id: string
+          shopify_variant_id: string
+          updated_at: string
+          warehouse: string | null
+        }
+        Insert: {
+          cj_pid?: string | null
+          cj_sku?: string | null
+          cj_vid?: string | null
+          confidence: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          inventory_qty?: number | null
+          inventory_synced_at?: string | null
+          method: string
+          shopify_product_id: string
+          shopify_variant_id: string
+          updated_at?: string
+          warehouse?: string | null
+        }
+        Update: {
+          cj_pid?: string | null
+          cj_sku?: string | null
+          cj_vid?: string | null
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          inventory_qty?: number | null
+          inventory_synced_at?: string | null
+          method?: string
+          shopify_product_id?: string
+          shopify_variant_id?: string
+          updated_at?: string
+          warehouse?: string | null
+        }
+        Relationships: []
+      }
+      catalog_recovery_memory: {
+        Row: {
+          cj_hint: Json
+          cj_supplier_id: string | null
+          confidence_boost: number
+          created_at: string
+          hit_count: number
+          id: string
+          last_used: string
+          pattern_key: string
+          pattern_type: string
+        }
+        Insert: {
+          cj_hint?: Json
+          cj_supplier_id?: string | null
+          confidence_boost?: number
+          created_at?: string
+          hit_count?: number
+          id?: string
+          last_used?: string
+          pattern_key: string
+          pattern_type: string
+        }
+        Update: {
+          cj_hint?: Json
+          cj_supplier_id?: string | null
+          confidence_boost?: number
+          created_at?: string
+          hit_count?: number
+          id?: string
+          last_used?: string
+          pattern_key?: string
+          pattern_type?: string
+        }
+        Relationships: []
+      }
+      catalog_recovery_sku_issues: {
+        Row: {
+          created_at: string
+          detail: Json
+          id: string
+          issue_type: string
+          shopify_variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          issue_type: string
+          shopify_variant_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          id?: string
+          issue_type?: string
+          shopify_variant_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
