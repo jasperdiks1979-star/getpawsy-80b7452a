@@ -116,7 +116,7 @@ query Agg($cursor: String) {
 
 const SET_M = `
 mutation Set($input: InventorySetOnHandQuantitiesInput!, $key: String!) {
-  inventorySetOnHandQuantities(input: $input) @idempotent(uniqueKey: $key) {
+  inventorySetOnHandQuantities(input: $input) @idempotent(key: $key) {
     inventoryAdjustmentGroup {
       createdAt reason referenceDocumentUri
       changes { name delta quantityAfterChange item { id } location { id } }
