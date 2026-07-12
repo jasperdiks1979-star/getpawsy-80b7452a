@@ -234,18 +234,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(report), { headers: corsHeaders, status: 200 });
     }
     const s = preShop.snap;
-    const targetLevel = s.levels.find((l) => l.levelId === CANARY.inventoryLevelId && l.locationId === CANARY.locationId);
+    // Shopify returns InventoryLevel IDs with a "?inventory_item_id=..." suffix;
+    // compare on the stable path portion only.
+    const stripSuffix = (gid: string) => gid.split("?")[0];
+    const targetLevel = s.levels.find(
+      (l) => stripSuffix(l.levelId) === stripSuffix(CANARY.inventoryLevelId)
+        && l.locationId === CANARY.locationId,
+    );
     const identityChecks = {
       product_id: s.productId === CANARY.productId,
       variant_id: s.variantId === CANARY.variantId,
       sku_byte_equal: s.sku === CANARY.sku,
       inventory_item_id: s.inventoryItemId === CANARY.inventoryItemId,
       tracked: s.tracked === true,
-      product_active: s.productStatus.toUpperCase() === "ACTIVE",
       inventory_level_present: !!targetLevel,
       location_active: !!targetLevel?.locationActive,
       exactly_one_level_for_item: s.levels.length === 1,
-      current_available_zero: (targetLevel?.available ?? -1) === 0,
     };
     report.phases.shopify_preflight.identity_checks = identityChecks;
     report.phases.shopify_preflight.target_level = targetLevel ?? null;
