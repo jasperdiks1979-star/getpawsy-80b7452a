@@ -49,8 +49,9 @@ export async function readInventoryLevel(inventoryItemId: string, locationId: st
 }
 
 export async function setOnHand(inventoryItemId: string, locationId: string, target: number, changeFrom: number, reference: string): Promise<{ ok: boolean; userErrors: any[]; errors?: unknown }> {
-  const q = `mutation($input: InventorySetQuantitiesInput!) {
-    inventorySetQuantities(input: $input) {
+  const idem = `stepC-${inventoryItemId.split("/").pop()}-${target}-${Date.now()}`;
+  const q = `mutation($input: InventorySetQuantitiesInput!) @inContext(country: US) {
+    inventorySetQuantities(input: $input) @idempotent(key: "${idem}") {
       userErrors { field message code }
       inventoryAdjustmentGroup { createdAt reason referenceDocumentUri }
     }
