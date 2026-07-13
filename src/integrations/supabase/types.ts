@@ -76835,6 +76835,7 @@ export type Database = {
           source: string
         }[]
       }
+      cron_unschedule_by_id: { Args: { p_job_id: number }; Returns: undefined }
       cta_ab_test_results: {
         Args: never
         Returns: {
