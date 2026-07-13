@@ -10282,6 +10282,257 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_exception_items: {
+        Row: {
+          activated: boolean
+          applied_on_hand: number | null
+          block_reason: string | null
+          canonical_product_id: string | null
+          cart_ok: boolean | null
+          checkout_ok: boolean | null
+          cj_pid: string | null
+          cj_status_live: string | null
+          cj_us_stock_live: number | null
+          cj_variant_sku: string | null
+          cj_vid: string | null
+          created_at: string
+          current_sku: string | null
+          duplicate_group_key: string | null
+          duplicate_role: string | null
+          final_classification: string | null
+          handle: string | null
+          id: string
+          idempotency_key: string | null
+          inventory_item_id: string | null
+          last_error: string | null
+          location_id: string | null
+          previous_on_hand: number | null
+          previous_published: boolean | null
+          previous_sku: string | null
+          previous_status: string | null
+          processed_at: string | null
+          product_id: string | null
+          product_title: string | null
+          proposed_sku: string | null
+          published: boolean
+          readback1: Json | null
+          readback2: Json | null
+          retries: number
+          rollback_state: string | null
+          run_id: string
+          source_classification: string | null
+          source_kind: string
+          status: string
+          storefront_ok: boolean | null
+          target_on_hand: number | null
+          updated_at: string
+          variant_id: string
+          wave: number
+        }
+        Insert: {
+          activated?: boolean
+          applied_on_hand?: number | null
+          block_reason?: string | null
+          canonical_product_id?: string | null
+          cart_ok?: boolean | null
+          checkout_ok?: boolean | null
+          cj_pid?: string | null
+          cj_status_live?: string | null
+          cj_us_stock_live?: number | null
+          cj_variant_sku?: string | null
+          cj_vid?: string | null
+          created_at?: string
+          current_sku?: string | null
+          duplicate_group_key?: string | null
+          duplicate_role?: string | null
+          final_classification?: string | null
+          handle?: string | null
+          id?: string
+          idempotency_key?: string | null
+          inventory_item_id?: string | null
+          last_error?: string | null
+          location_id?: string | null
+          previous_on_hand?: number | null
+          previous_published?: boolean | null
+          previous_sku?: string | null
+          previous_status?: string | null
+          processed_at?: string | null
+          product_id?: string | null
+          product_title?: string | null
+          proposed_sku?: string | null
+          published?: boolean
+          readback1?: Json | null
+          readback2?: Json | null
+          retries?: number
+          rollback_state?: string | null
+          run_id: string
+          source_classification?: string | null
+          source_kind: string
+          status?: string
+          storefront_ok?: boolean | null
+          target_on_hand?: number | null
+          updated_at?: string
+          variant_id: string
+          wave?: number
+        }
+        Update: {
+          activated?: boolean
+          applied_on_hand?: number | null
+          block_reason?: string | null
+          canonical_product_id?: string | null
+          cart_ok?: boolean | null
+          checkout_ok?: boolean | null
+          cj_pid?: string | null
+          cj_status_live?: string | null
+          cj_us_stock_live?: number | null
+          cj_variant_sku?: string | null
+          cj_vid?: string | null
+          created_at?: string
+          current_sku?: string | null
+          duplicate_group_key?: string | null
+          duplicate_role?: string | null
+          final_classification?: string | null
+          handle?: string | null
+          id?: string
+          idempotency_key?: string | null
+          inventory_item_id?: string | null
+          last_error?: string | null
+          location_id?: string | null
+          previous_on_hand?: number | null
+          previous_published?: boolean | null
+          previous_sku?: string | null
+          previous_status?: string | null
+          processed_at?: string | null
+          product_id?: string | null
+          product_title?: string | null
+          proposed_sku?: string | null
+          published?: boolean
+          readback1?: Json | null
+          readback2?: Json | null
+          retries?: number
+          rollback_state?: string | null
+          run_id?: string
+          source_classification?: string | null
+          source_kind?: string
+          status?: string
+          storefront_ok?: boolean | null
+          target_on_hand?: number | null
+          updated_at?: string
+          variant_id?: string
+          wave?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_exception_items_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_exception_runs"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      catalog_exception_runs: {
+        Row: {
+          activations: number
+          cart_tests: number
+          checkout_tests: number
+          circuit_breaker_triggered: boolean
+          cj_requests: number
+          completed_at: string | null
+          cron_active: boolean
+          cron_job_id: number | null
+          current_wave: number
+          duplicates_archived: number
+          duplicates_canonicalized: number
+          final_report: Json | null
+          id: string
+          identity_drift_recovered: number
+          inventory_failed: number
+          inventory_success: number
+          items_done: number
+          items_total: number
+          malformed_repaired: number
+          non_us_sellable: number
+          not_found_recovered: number
+          phase: string
+          publications: number
+          rollbacks: number
+          run_id: string
+          shopify_mutations: number
+          source_step_b_run: string
+          source_step_c_run: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activations?: number
+          cart_tests?: number
+          checkout_tests?: number
+          circuit_breaker_triggered?: boolean
+          cj_requests?: number
+          completed_at?: string | null
+          cron_active?: boolean
+          cron_job_id?: number | null
+          current_wave?: number
+          duplicates_archived?: number
+          duplicates_canonicalized?: number
+          final_report?: Json | null
+          id?: string
+          identity_drift_recovered?: number
+          inventory_failed?: number
+          inventory_success?: number
+          items_done?: number
+          items_total?: number
+          malformed_repaired?: number
+          non_us_sellable?: number
+          not_found_recovered?: number
+          phase?: string
+          publications?: number
+          rollbacks?: number
+          run_id: string
+          shopify_mutations?: number
+          source_step_b_run: string
+          source_step_c_run: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activations?: number
+          cart_tests?: number
+          checkout_tests?: number
+          circuit_breaker_triggered?: boolean
+          cj_requests?: number
+          completed_at?: string | null
+          cron_active?: boolean
+          cron_job_id?: number | null
+          current_wave?: number
+          duplicates_archived?: number
+          duplicates_canonicalized?: number
+          final_report?: Json | null
+          id?: string
+          identity_drift_recovered?: number
+          inventory_failed?: number
+          inventory_success?: number
+          items_done?: number
+          items_total?: number
+          malformed_repaired?: number
+          non_us_sellable?: number
+          not_found_recovered?: number
+          phase?: string
+          publications?: number
+          rollbacks?: number
+          run_id?: string
+          shopify_mutations?: number
+          source_step_b_run?: string
+          source_step_c_run?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       catalog_recovery_batches: {
         Row: {
           created_at: string
