@@ -9830,6 +9830,237 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_classification_runs: {
+        Row: {
+          classified_variants: number | null
+          completed_at: string | null
+          cron_active: boolean | null
+          cron_job_id: number | null
+          current_cursor: string | null
+          errors_count: number | null
+          final_report: Json | null
+          id: string
+          phase: string | null
+          requests_used: number | null
+          resolver_version: string | null
+          retries_used: number | null
+          run_id: string
+          shop_domain: string | null
+          snapshot_variants: number | null
+          started_at: string | null
+          status: string
+          stop_reason: string | null
+          total_products: number | null
+          total_variants: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          classified_variants?: number | null
+          completed_at?: string | null
+          cron_active?: boolean | null
+          cron_job_id?: number | null
+          current_cursor?: string | null
+          errors_count?: number | null
+          final_report?: Json | null
+          id?: string
+          phase?: string | null
+          requests_used?: number | null
+          resolver_version?: string | null
+          retries_used?: number | null
+          run_id: string
+          shop_domain?: string | null
+          snapshot_variants?: number | null
+          started_at?: string | null
+          status?: string
+          stop_reason?: string | null
+          total_products?: number | null
+          total_variants?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          classified_variants?: number | null
+          completed_at?: string | null
+          cron_active?: boolean | null
+          cron_job_id?: number | null
+          current_cursor?: string | null
+          errors_count?: number | null
+          final_report?: Json | null
+          id?: string
+          phase?: string | null
+          requests_used?: number | null
+          resolver_version?: string | null
+          retries_used?: number | null
+          run_id?: string
+          shop_domain?: string | null
+          snapshot_variants?: number | null
+          started_at?: string | null
+          status?: string
+          stop_reason?: string | null
+          total_products?: number | null
+          total_variants?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      catalog_classification_variants: {
+        Row: {
+          block_reason: string | null
+          cj_pid: string | null
+          cj_product_status: string | null
+          cj_variant_sku: string | null
+          cj_vid: string | null
+          classified_at: string | null
+          cn_stock: number | null
+          compare_at_price: number | null
+          created_at: string | null
+          current_available: number | null
+          current_on_hand: number | null
+          duplicate_classification: string | null
+          duplicate_group_key: string | null
+          final_classification: string | null
+          future_activation_eligible: boolean | null
+          future_mutation_eligible: boolean | null
+          handle: string | null
+          id: string
+          image_present: boolean | null
+          inventory_item_id: string | null
+          inventory_level_id: string | null
+          last_error: string | null
+          location_id: string | null
+          malformed_reason: string | null
+          other_stock: number | null
+          preclassification: string | null
+          price: number | null
+          product_id: string | null
+          product_status: string | null
+          product_title: string | null
+          proposed_canonical_product_id: string | null
+          proposed_delta: number | null
+          proposed_sku_auto_safe: boolean | null
+          proposed_sku_correction: string | null
+          proposed_target_available: number | null
+          published_to_online_store: boolean | null
+          requires_shipping: boolean | null
+          resolver_requests: number | null
+          retry_count: number | null
+          run_id: string
+          semantic_match: boolean | null
+          sku: string | null
+          sku_occurrence_count: number | null
+          tracked: boolean | null
+          updated_at: string | null
+          us_stock: number | null
+          variant_id: string
+          variant_title: string | null
+          weight: number | null
+          weight_unit: string | null
+        }
+        Insert: {
+          block_reason?: string | null
+          cj_pid?: string | null
+          cj_product_status?: string | null
+          cj_variant_sku?: string | null
+          cj_vid?: string | null
+          classified_at?: string | null
+          cn_stock?: number | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          current_available?: number | null
+          current_on_hand?: number | null
+          duplicate_classification?: string | null
+          duplicate_group_key?: string | null
+          final_classification?: string | null
+          future_activation_eligible?: boolean | null
+          future_mutation_eligible?: boolean | null
+          handle?: string | null
+          id?: string
+          image_present?: boolean | null
+          inventory_item_id?: string | null
+          inventory_level_id?: string | null
+          last_error?: string | null
+          location_id?: string | null
+          malformed_reason?: string | null
+          other_stock?: number | null
+          preclassification?: string | null
+          price?: number | null
+          product_id?: string | null
+          product_status?: string | null
+          product_title?: string | null
+          proposed_canonical_product_id?: string | null
+          proposed_delta?: number | null
+          proposed_sku_auto_safe?: boolean | null
+          proposed_sku_correction?: string | null
+          proposed_target_available?: number | null
+          published_to_online_store?: boolean | null
+          requires_shipping?: boolean | null
+          resolver_requests?: number | null
+          retry_count?: number | null
+          run_id: string
+          semantic_match?: boolean | null
+          sku?: string | null
+          sku_occurrence_count?: number | null
+          tracked?: boolean | null
+          updated_at?: string | null
+          us_stock?: number | null
+          variant_id: string
+          variant_title?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Update: {
+          block_reason?: string | null
+          cj_pid?: string | null
+          cj_product_status?: string | null
+          cj_variant_sku?: string | null
+          cj_vid?: string | null
+          classified_at?: string | null
+          cn_stock?: number | null
+          compare_at_price?: number | null
+          created_at?: string | null
+          current_available?: number | null
+          current_on_hand?: number | null
+          duplicate_classification?: string | null
+          duplicate_group_key?: string | null
+          final_classification?: string | null
+          future_activation_eligible?: boolean | null
+          future_mutation_eligible?: boolean | null
+          handle?: string | null
+          id?: string
+          image_present?: boolean | null
+          inventory_item_id?: string | null
+          inventory_level_id?: string | null
+          last_error?: string | null
+          location_id?: string | null
+          malformed_reason?: string | null
+          other_stock?: number | null
+          preclassification?: string | null
+          price?: number | null
+          product_id?: string | null
+          product_status?: string | null
+          product_title?: string | null
+          proposed_canonical_product_id?: string | null
+          proposed_delta?: number | null
+          proposed_sku_auto_safe?: boolean | null
+          proposed_sku_correction?: string | null
+          proposed_target_available?: number | null
+          published_to_online_store?: boolean | null
+          requires_shipping?: boolean | null
+          resolver_requests?: number | null
+          retry_count?: number | null
+          run_id?: string
+          semantic_match?: boolean | null
+          sku?: string | null
+          sku_occurrence_count?: number | null
+          tracked?: boolean | null
+          updated_at?: string | null
+          us_stock?: number | null
+          variant_id?: string
+          variant_title?: string | null
+          weight?: number | null
+          weight_unit?: string | null
+        }
+        Relationships: []
+      }
       catalog_recovery_batches: {
         Row: {
           created_at: string
