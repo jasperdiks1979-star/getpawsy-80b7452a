@@ -59,7 +59,7 @@ export async function setOnHand(inventoryItemId: string, locationId: string, tar
     reason: "correction",
     name: "on_hand",
     referenceDocumentUri: reference,
-    quantities: [{ inventoryItemId, locationId, quantity: target }],
+    quantities: [{ inventoryItemId, locationId, quantity: target, changeFromQuantity: changeFrom }],
   };
   const r = await shopifyAdminFetch<any>(q, { input });
   const ue = r.data?.inventorySetQuantities?.userErrors ?? [];
