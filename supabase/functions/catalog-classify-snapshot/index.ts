@@ -27,12 +27,10 @@ query V($cursor: String) {
       image { id }
       product {
         id title handle status
-        publishedOnCurrentPublication
         featuredImage { id }
       }
       inventoryItem {
         id tracked requiresShipping
-        measurement { weight { value unit } }
         inventoryLevels(first: 10) {
           edges { node {
             id
@@ -152,7 +150,7 @@ Deno.serve(async (req) => {
         variant_title: n?.title ?? null,
         handle: n?.product?.handle ?? null,
         product_status: n?.product?.status ?? null,
-        published_to_online_store: !!n?.product?.publishedOnCurrentPublication,
+        published_to_online_store: n?.product?.status === "ACTIVE" ? null : false,
         sku,
         sku_occurrence_count: skuOcc,
         price,
@@ -162,8 +160,8 @@ Deno.serve(async (req) => {
         current_available: avail,
         current_on_hand: onHand,
         requires_shipping: !!n?.inventoryItem?.requiresShipping,
-        weight: n?.inventoryItem?.measurement?.weight?.value ?? null,
-        weight_unit: n?.inventoryItem?.measurement?.weight?.unit ?? null,
+        weight: null,
+        weight_unit: null,
         preclassification: pre,
         final_classification: block ? pre : null,
         block_reason: block,
