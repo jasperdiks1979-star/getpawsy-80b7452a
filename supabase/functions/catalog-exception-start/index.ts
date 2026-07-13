@@ -108,44 +108,13 @@ Deno.serve(async (req) => {
     .update({ items_total: rows.length, phase: "wave1", status: "running", updated_at: new Date().toISOString() })
     .eq("run_id", runId);
 
-  // Schedule pg_cron ticker every 2 minutes
   const tickUrl = `${SUPABASE_URL}/functions/v1/catalog-exception-tick`;
-  const cronName = `catalog-exception-tick-${runId}`;
-  const scheduleSql = `select cron.schedule($1, '*/2 * * * *', $$
-    select net.http_post(
-      url:='${tickUrl}',
-      headers:='{"Content-Type":"application/json","apikey":"${ANON_KEY}","Authorization":"Bearer ${ANON_KEY}"}'::jsonb,
-      body:='{"triggered_by":"cron"}'::jsonb
-    );
-  $$)`;
-  let jobId: number | null = null;
-  try {
-    const r = await supabase.rpc("exec_sql", { sql: scheduleSql, args: [cronName] });
-    jobId = (r.data as any)?.[0]?.schedule ?? null;
-  } catch { /* fall back to direct SQL via net */ }
-  // Fallback: raw insert-style via RPC unavailable — call rest sql endpoint
-  if (jobId === null) {
-    try {
-      const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/schedule_cron_generic`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
-        body: JSON.stringify({ p_name: cronName, p_schedule: "*/2 * * * *", p_url: tickUrl }),
-      });
-      const j = await rr.json().catch(() => null);
-      jobId = (j?.job_id as number) ?? null;
-    } catch { /* noop */ }
-  }
-
-  await supabase.from("catalog_exception_runs")
-    .update({ cron_active: true, cron_job_id: jobId, updated_at: new Date().toISOString() })
-    .eq("run_id", runId);
-
-  // Kick first tick immediately (fire-and-forget)
+  // Kick first tick immediately (fire-and-forget); cron is scheduled externally by mission operator.
   fetch(tickUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
     body: JSON.stringify({ triggered_by: "start" }),
   }).catch(() => {});
 
-  return new Response(JSON.stringify({ ok: true, run_id: runId, seeded: rows.length, cron_name: cronName, cron_job_id: jobId }), { headers: cors });
+  return new Response(JSON.stringify({ ok: true, run_id: runId, seeded: rows.length }), { headers: cors });
 });
