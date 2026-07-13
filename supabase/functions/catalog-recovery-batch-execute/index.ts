@@ -14,7 +14,6 @@
 //   - Never issues any CJ mutation. Never writes to Shopify catalogue fields.
 //   - Max 10 mutations. Aborts the batch on the first anomaly.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 import {
   CJ_RESOLVER_VERSION,
