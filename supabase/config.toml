@@ -532,4 +532,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.catalog-commerce-report]
+
+[functions.catalog-commerce-proof]
+verify_jwt = false
 verify_jwt = false
