@@ -21,6 +21,15 @@ verify_jwt = false
 [functions.cj-resolver-parity-test]
 verify_jwt = false
 
+[functions.catalog-classify-snapshot]
+verify_jwt = false
+
+[functions.catalog-classify-tick]
+verify_jwt = false
+
+[functions.catalog-classify-report]
+verify_jwt = false
+
 [functions.admin-stripe-test-checkout]
 verify_jwt = false
 
