@@ -16,16 +16,18 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import {
+  CJ_RESOLVER_VERSION,
+  getCjAccessToken,
+  resolveCjVariant,
+  type CjBudget,
+} from "../_shared/cj-resolver.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/json",
 };
-
-const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const REQUIRED_LOCATION_ID = "gid://shopify/Location/123641200972";
 const CANARY_ANCHOR_SKU = "CJBC254137101AZ";
@@ -52,37 +54,7 @@ function targetFromUsStock(us: number): number {
   return Math.min(TARGET_CAP, Math.max(0, Math.floor(us * 0.5) - 5));
 }
 
-// ─── CJ helpers (read-only) ────────────────────────────────────────────────
-async function cjToken(): Promise<{ token: string; status: number }> {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data: cached } = await supabase
-    .from("cj_token_cache").select("access_token, token_expiry").eq("id", "singleton").single();
-  if (cached && new Date(cached.token_expiry).getTime() > Date.now()) {
-    return { token: cached.access_token, status: 200 };
-  }
-  const apiKey = Deno.env.get("CJ_API_KEY");
-  if (!apiKey) throw new Error("CJ_API_KEY not configured");
-  const res = await fetch(`${CJ_API_BASE}/authentication/getAccessToken`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apiKey }),
-  });
-  const data = await res.json();
-  if (!data?.result) throw new Error(`CJ auth failed status=${res.status}`);
-  const expiry = new Date(new Date(data.data.accessTokenExpiryDate).getTime() - 5 * 60_000);
-  await supabase.from("cj_token_cache").upsert({
-    id: "singleton", access_token: data.data.accessToken,
-    token_expiry: expiry.toISOString(), updated_at: new Date().toISOString(),
-  });
-  return { token: data.data.accessToken, status: res.status };
-}
-
-async function cjGet(path: string, token: string) {
-  const res = await fetch(`${CJ_API_BASE}${path}`, {
-    headers: { "CJ-Access-Token": token, "Content-Type": "application/json" },
-  });
-  const body = await res.json().catch(() => ({}));
-  return { status: res.status, body };
-}
+// CJ helpers now come from _shared/cj-resolver.ts (canonical resolver ladder).
 
 // ─── Shopify queries ───────────────────────────────────────────────────────
 const VARIANT_LIST_Q = `
