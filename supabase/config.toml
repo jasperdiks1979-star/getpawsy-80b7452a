@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.catalog-recovery-batch-execute]
 verify_jwt = false
 
+[functions.cj-resolver-parity-test]
+verify_jwt = false
+
 [functions.admin-stripe-test-checkout]
 verify_jwt = false
 
