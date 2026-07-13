@@ -298,7 +298,7 @@ Deno.serve(async (req) => {
     let token = "";
     let cjAuthStatus = 0;
     try {
-      const t = await cjToken();
+      const t = await getCjAccessToken();
       token = t.token; cjAuthStatus = t.status;
     } catch (e) {
       report.phases.cj_auth = { at: nowIso(), error: String((e as Error).message ?? e) };
@@ -312,6 +312,7 @@ Deno.serve(async (req) => {
     let cjRequests = 0;
     let probes = 0;
     const eligible: Row[] = [];
+    const cjBudget: CjBudget = { reqs: 0, max: MAX_CJ_PROBES * 4 };
 
     for (const row of candidates) {
       if (probes >= MAX_CJ_PROBES) break;
@@ -319,71 +320,36 @@ Deno.serve(async (req) => {
       probes += 1;
       const sku = row.snap.sku;
 
-      // Step 1: queryBySku for stock (also validates existence).
-      const stockRes = await cjGet(`/product/stock/queryBySku?sku=${encodeURIComponent(sku)}`, token);
-      cjRequests += 1;
-      const stockAreas: any[] = Array.isArray(stockRes.body?.data) ? stockRes.body.data : [];
-      const usArea = stockAreas.find((a) =>
-        String(a?.countryCode ?? "").toUpperCase() === "US" ||
-        /united states|^us$|america/i.test(String(a?.areaEn ?? a?.countryNameEn ?? ""))
-      );
-      const usStock = Number(usArea?.totalInventoryNum ?? 0);
-      const otherStock = stockAreas
-        .filter((a) => a !== usArea)
-        .map((a) => ({ area: String(a?.areaEn ?? a?.countryNameEn ?? a?.countryCode ?? "?"), stock: Number(a?.totalInventoryNum ?? 0) }));
+      // Canonical resolver ladder (shared with cj-canary-discovery).
+      const res = await resolveCjVariant(sku, token, cjBudget, { maxPids: 6, readStock: true });
+      cjRequests = cjBudget.reqs;
+      const usStock = res.usStock;
+      const otherStock = res.warehouses
+        .filter((w) => (w.country_code ?? "").toString().toUpperCase() !== "US")
+        .map((w) => ({ area: w.warehouse_name || w.country_code || "?", stock: w.stock }));
 
-      if (stockRes.status !== 200) {
+      if (res.classification === "UPSTREAM_ERROR") {
         row.classification = "BLOCKED_API_ERROR";
-        row.cj = { usStock, otherStock, probeError: `stock http ${stockRes.status}` };
+        row.cj = { usStock, otherStock, probeError: "cj_upstream_error" };
         continue;
       }
-      if (stockAreas.length === 0) {
-        row.classification = "BLOCKED_CJ_NOT_FOUND";
-        row.cj = { usStock: 0, otherStock: [] };
-        continue;
-      }
-
-      // Step 2: resolve pid + vid via queryByVariantSku (or product query).
-      const varRes = await cjGet(`/product/variant/queryByVariantSku?variantSku=${encodeURIComponent(sku)}`, token);
-      cjRequests += 1;
-      const vlist: any[] = Array.isArray(varRes.body?.data) ? varRes.body.data
-        : varRes.body?.data ? [varRes.body.data] : [];
-      const exact = vlist.filter((v) => String(v?.variantSku ?? "") === sku);
-      if (varRes.status !== 200) {
-        row.classification = "BLOCKED_API_ERROR";
-        row.cj = { usStock, otherStock, probeError: `variant http ${varRes.status}` };
-        continue;
-      }
-      if (exact.length === 0) {
+      if (res.classification === "NOT_FOUND") {
         row.classification = "BLOCKED_CJ_NOT_FOUND";
         row.cj = { usStock, otherStock };
         continue;
       }
-      if (exact.length > 1) {
+      if (res.classification === "EXACT_MULTIPLE") {
         row.classification = "BLOCKED_MULTIPLE_CJ_MATCHES";
         row.cj = { usStock, otherStock };
         continue;
       }
-      const v = exact[0];
-      const pid = String(v?.pid ?? "");
-      const vid = String(v?.vid ?? "");
-      const variantSku = String(v?.variantSku ?? "");
-      if (!pid || !vid) {
-        row.classification = "BLOCKED_MASTER_SKU_ONLY";
-        row.cj = { usStock, otherStock, variantSku };
-        continue;
-      }
-
-      // Step 3: product query for status + semantic labels.
-      const prodRes = await cjGet(`/product/query?pid=${encodeURIComponent(pid)}`, token);
-      cjRequests += 1;
-      const pd = prodRes.body?.data;
-      const productStatusRaw = String(pd?.status ?? pd?.productStatus ?? "");
+      // EXACT_UNIQUE_CONFIRMED
+      const m = res.exact[0];
+      const pid = m.pid, vid = m.vid, variantSku = m.variantSku;
+      const productStatusRaw = String(m.productStatus ?? "");
       const activeLike = /(3|active|上架|on ?sale|onsell)/i.test(productStatusRaw);
-      const productName = pd?.productNameEn ?? pd?.productName ?? "";
-      const variantsList: any[] = Array.isArray(pd?.variants) ? pd.variants : [];
-      const cjVariant = variantsList.find((x) => String(x?.vid ?? "") === vid);
-      const variantName = cjVariant?.variantNameEn ?? cjVariant?.variantName ?? "";
+      const productName = m.productName ?? "";
+      const variantName = m.variantName ?? "";
 
       // Semantic match: overlap between Shopify product title and CJ product name tokens.
       const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((t) => t.length >= 4);
@@ -415,6 +381,7 @@ Deno.serve(async (req) => {
     }
 
     report.counters.cj_requests = cjRequests;
+    report.phases.resolver = { version: CJ_RESOLVER_VERSION };
 
     // For rows we never probed, keep classification "" → mark as SKIPPED_UNSCANNED.
     for (const r of rows) if (r.classification === "") r.classification = "SKIP_UNPROBED_DRAFT";
