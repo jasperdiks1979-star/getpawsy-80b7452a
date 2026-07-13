@@ -524,3 +524,12 @@ verify_jwt = false
 
 [functions.qa-purchase-e2e]
 verify_jwt = false
+
+[functions.catalog-commerce-start]
+verify_jwt = false
+
+[functions.catalog-commerce-tick]
+verify_jwt = false
+
+[functions.catalog-commerce-report]
+verify_jwt = false
