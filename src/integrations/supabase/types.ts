@@ -75560,19 +75560,6 @@ export type Database = {
           },
         ]
       }
-      product_stock_audit: {
-        Row: {
-          active_products: number | null
-          atc_enabled_out_of_stock_products: number | null
-          computed_at: string | null
-          feed_out_of_stock_products: number | null
-          in_stock_products: number | null
-          out_of_stock_products: number | null
-          total_products: number | null
-          visible_out_of_stock_products: number | null
-        }
-        Relationships: []
-      }
       products_detail: {
         Row: {
           availability: string | null
@@ -75752,6 +75739,7 @@ export type Database = {
           is_duplicate: boolean | null
           last_stock_sync_at: string | null
           name: string | null
+          name_clean: string | null
           price: number | null
           primary_intent: string | null
           primary_species: string | null
@@ -75783,6 +75771,7 @@ export type Database = {
           is_duplicate?: boolean | null
           last_stock_sync_at?: string | null
           name?: string | null
+          name_clean?: string | null
           price?: number | null
           primary_intent?: string | null
           primary_species?: string | null
@@ -75814,6 +75803,7 @@ export type Database = {
           is_duplicate?: boolean | null
           last_stock_sync_at?: string | null
           name?: string | null
+          name_clean?: string | null
           price?: number | null
           primary_intent?: string | null
           primary_species?: string | null
