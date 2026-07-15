@@ -2,6 +2,7 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -59,6 +60,9 @@ function evaluate(doc: any, vatClass: any | null, dupCount: number, paymentLinke
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const { document_id, document_ids } = await req.json().catch(() => ({}));
     const ids: string[] = document_id ? [document_id] : Array.isArray(document_ids) ? document_ids : [];

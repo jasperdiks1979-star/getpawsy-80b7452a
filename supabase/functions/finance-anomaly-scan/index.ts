@@ -1,5 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -188,6 +189,9 @@ function fingerprint(f: Finding): string {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const { data: docs, error: docErr } = await supabase
       .from('evidence_documents')

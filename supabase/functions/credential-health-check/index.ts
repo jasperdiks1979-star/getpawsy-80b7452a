@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 };
 
 // Test GSC API connectivity using stored service account credentials
@@ -172,6 +173,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // HARDENED: require internal-secret (cron) or admin JWT. Anon requests are rejected.
+  const gate = await requireInternalOrAdmin(req);
+  if (gate) return gate;
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -380,21 +385,29 @@ serve(async (req) => {
       .delete()
       .lt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-    console.log('[CREDENTIAL-HEALTH] Health check complete:', JSON.stringify(results));
+    console.log('[CREDENTIAL-HEALTH] Health check complete:', results.length, 'keys');
+
+    // HARDENED: minimal response — no per-account errors, credentials, project IDs
+    // or Google metadata leak out to the caller. Detail lives in the DB rows.
+    const healthy = results.filter(r => r.status === 'healthy').length;
+    const unhealthy = results.length - healthy;
+    const avgResponseMs = results.length
+      ? Math.round(results.reduce((s, r) => s + (r.responseTimeMs || 0), 0) / results.length)
+      : 0;
 
     return new Response(JSON.stringify({
-      success: true,
-      checked: results.length,
-      results,
-      timestamp: new Date().toISOString(),
+      ok: true,
+      checked_count: results.length,
+      healthy_count: healthy,
+      unhealthy_count: unhealthy,
+      response_time_ms: avgResponseMs,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[CREDENTIAL-HEALTH] Error:', msg);
-    return new Response(JSON.stringify({ success: false, error: msg }), {
+    console.error('[CREDENTIAL-HEALTH] Error:', error instanceof Error ? error.message : error);
+    return new Response(JSON.stringify({ ok: false, error: 'internal_error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

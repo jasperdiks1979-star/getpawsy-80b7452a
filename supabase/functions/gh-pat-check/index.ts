@@ -1,101 +1,89 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
+/**
+ * gh-pat-check — HARDENED (Wave 1 security remediation).
+ *
+ * BEFORE: Publicly reachable, echoed x-oauth-scopes, dispatched a real GitHub
+ * workflow on every call, and streamed arbitrary job logs to the caller.
+ *
+ * AFTER:
+ *  - requireInternalOrAdmin gate on every non-OPTIONS request.
+ *  - Workflow dispatch removed. If dispatch is ever needed, a separate
+ *    admin-only function `gh-workflow-dispatch` should be created with a
+ *    server-side allow-list of (repo, workflow, ref, inputs).
+ *  - No PAT scopes, no raw log bodies, no repo metadata in response.
+ *  - Optional run_id query param accepts integer only and returns status +
+ *    conclusion only, scoped to the server-configured workflow.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const gate = await requireInternalOrAdmin(req);
+  if (gate) return gate;
+
   const GH_PAT = Deno.env.get("GH_PAT") ?? "";
   const GH_REPO = Deno.env.get("GH_REPO") ?? "";
   const GH_REF = Deno.env.get("GH_REF") ?? "main";
   const WF = Deno.env.get("TRIM_WORKFLOW_FILE") ?? "trim-cinematic-ad.yml";
 
-  // Optional: inspect a specific run id (?run_id=...) to get job step details.
-  const url0 = new URL(req.url);
-  const inspectRunId = url0.searchParams.get("run_id");
-  if (inspectRunId) {
-    const stepLogsUrl = url0.searchParams.get("step");
-    if (stepLogsUrl) {
-      const logRes = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/jobs/${inspectRunId}/logs`, {
-        headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
-        redirect: "follow",
-      });
-      const txt = await logRes.text();
-      return new Response(txt.slice(0, 8000), { headers: { ...corsHeaders, "Content-Type": "text/plain" } });
+  const gh = (path: string) =>
+    fetch(`https://api.github.com${path}`, {
+      headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
+    });
+
+  try {
+    const url = new URL(req.url);
+    const rawRunId = url.searchParams.get("run_id");
+    if (rawRunId) {
+      if (!/^\d+$/.test(rawRunId)) {
+        return new Response(JSON.stringify({ ok: false, error: "invalid_run_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const runRes = await gh(`/repos/${GH_REPO}/actions/runs/${rawRunId}`);
+      if (!runRes.ok) {
+        return new Response(JSON.stringify({ ok: false, error: "run_not_found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const runJson = await runRes.json().catch(() => ({} as any));
+      const runWf = String(runJson?.path ?? "").split("/").pop() ?? "";
+      if (runWf !== WF) {
+        return new Response(JSON.stringify({ ok: false, error: "run_not_in_allowed_workflow" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({
+        ok: true,
+        run: { status: runJson.status ?? null, conclusion: runJson.conclusion ?? null },
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const jobsRes = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/runs/${inspectRunId}/jobs`,
-      { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
-    );
-    const jobsJson = await jobsRes.json().catch(() => ({}));
-    const runRes = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/actions/runs/${inspectRunId}`,
-      { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
-    );
-    const runJson = await runRes.json().catch(() => ({}));
-    return new Response(JSON.stringify({ run: { id: runJson.id, status: runJson.status, conclusion: runJson.conclusion, html_url: runJson.html_url }, jobs: (jobsJson.jobs ?? []).map((j: any) => ({ id: j.id, name: j.name, status: j.status, conclusion: j.conclusion, steps: (j.steps ?? []).map((s: any) => ({ name: s.name, status: s.status, conclusion: s.conclusion, number: s.number })) })) }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    // Healthcheck: verify PAT works + workflow file is reachable on ref.
+    // No dispatch. No scopes. No metadata leaks.
+    const [who, fileCheck] = await Promise.all([
+      gh("/user"),
+      gh(`/repos/${GH_REPO}/contents/.github/workflows/${WF}?ref=${GH_REF}`),
+    ]);
+    // Consume bodies to avoid resource leaks.
+    await who.text().catch(() => "");
+    await fileCheck.text().catch(() => "");
+
+    return new Response(JSON.stringify({
+      ok: true,
+      authenticated: who.status === 200,
+      repository_accessible: who.status === 200,
+      workflow_accessible: fileCheck.status === 200,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (e) {
+    console.error("[gh-pat-check] error", (e as Error)?.message ?? e);
+    return new Response(JSON.stringify({ ok: false, error: "internal_error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-
-  // 1. Identity check — confirms token is valid + lists scopes for classic PATs.
-  const who = await fetch("https://api.github.com/user", {
-    headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
-  });
-  const whoBody = await who.text();
-  const scopes = who.headers.get("x-oauth-scopes");
-
-  // 2. Dispatch check — uses a clearly-fake job_id so the trim job preflight aborts.
-  const dispatchUrl = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/dispatches`;
-  const disp = await fetch(dispatchUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${GH_PAT}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ref: GH_REF,
-      inputs: {
-        job_id: "00000000-0000-0000-0000-000000000000",
-        mp4_url: "https://example.com/none.mp4",
-        target_seconds: "15",
-        render_token: "diagnostic",
-      },
-    }),
-  });
-  const dispBody = await disp.text();
-
-  // 3. List latest runs for this workflow to surface the run id we just created.
-  const runs = await fetch(
-    `https://api.github.com/repos/${GH_REPO}/actions/workflows/${WF}/runs?per_page=3`,
-    { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
-  );
-  const runsJson = await runs.json().catch(() => ({}));
-
-  // 4. Repo metadata + file presence on GH_REF
-  const repoMeta = await fetch(`https://api.github.com/repos/${GH_REPO}`, {
-    headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" },
-  }).then(r => r.json()).catch(() => ({}));
-  const fileCheck = await fetch(
-    `https://api.github.com/repos/${GH_REPO}/contents/.github/workflows/${WF}?ref=${GH_REF}`,
-    { headers: { Authorization: `Bearer ${GH_PAT}`, Accept: "application/vnd.github+json" } },
-  );
-  const fileBody = await fileCheck.text();
-
-  return new Response(
-    JSON.stringify(
-      {
-        gh_repo: GH_REPO,
-        workflow: WF,
-        user_check: { status: who.status, scopes, body: whoBody.slice(0, 200) },
-        dispatch_check: { status: disp.status, body: dispBody.slice(0, 400) },
-        latest_runs: (runsJson.workflow_runs ?? []).slice(0, 3).map((r: any) => ({
-          id: r.id, status: r.status, conclusion: r.conclusion, created_at: r.created_at, html_url: r.html_url,
-        })),
-        ref_used: GH_REF,
-        default_branch: repoMeta?.default_branch,
-        file_on_ref: { status: fileCheck.status, body: fileBody.slice(0, 300) },
-      },
-      null,
-      2,
-    ),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-  );
 });

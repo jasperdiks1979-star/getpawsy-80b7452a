@@ -6,6 +6,7 @@
 // safe to call repeatedly. Never fabricates figures: every number comes from a
 // row-level count or the latest persisted score snapshot.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,9 @@ type Action = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
 
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
