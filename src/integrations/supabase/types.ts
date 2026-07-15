@@ -75577,6 +75577,7 @@ export type Database = {
           is_duplicate: boolean | null
           last_stock_sync_at: string | null
           name: string | null
+          name_clean: string | null
           price: number | null
           primary_intent: string | null
           primary_species: string | null
@@ -75609,6 +75610,7 @@ export type Database = {
           is_duplicate?: boolean | null
           last_stock_sync_at?: string | null
           name?: string | null
+          name_clean?: string | null
           price?: number | null
           primary_intent?: string | null
           primary_species?: string | null
@@ -75641,6 +75643,7 @@ export type Database = {
           is_duplicate?: boolean | null
           last_stock_sync_at?: string | null
           name?: string | null
+          name_clean?: string | null
           price?: number | null
           primary_intent?: string | null
           primary_species?: string | null
