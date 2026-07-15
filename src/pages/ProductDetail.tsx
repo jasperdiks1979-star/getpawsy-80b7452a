@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
+import { displayName as productDisplayName } from "@/lib/displayName";
 import { splitKlarnaInstallments, formatKlarnaInstallment } from "@/lib/klarna";
 import { trackCheckoutFunnel } from "@/lib/checkoutFunnel";
 import { ensureGeoClassified, getCachedGeoCountry } from "@/lib/geoClassify";
@@ -1207,7 +1208,7 @@ const ProductDetail = () => {
               )}
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="max-w-[200px] truncate">{safeString(product.name)}</BreadcrumbPage>
+                <BreadcrumbPage className="max-w-[200px] truncate">{safeString(productDisplayName(product))}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -1242,7 +1243,7 @@ const ProductDetail = () => {
                     </p>
                   )}
                   <h1 className="text-2xl font-display font-bold text-foreground leading-tight break-words">
-                    {safeString(product.name)}
+                    {safeString(productDisplayName(product))}
                   </h1>
                 </div>
                 <SwipeBenefitChips
@@ -1332,7 +1333,7 @@ const ProductDetail = () => {
               )}
               {!isMobile && (
                 <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                  {safeString(product.name)}
+                  {safeString(productDisplayName(product))}
                 </h1>
               )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
