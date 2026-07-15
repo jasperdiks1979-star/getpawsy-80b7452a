@@ -9,6 +9,7 @@
 // - Never fabricates payments, invoices or VAT.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -68,6 +69,9 @@ function score(inv: Invoice, pay: Payment): { conf: number; signals: Record<stri
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
     const body = await req.json().catch(() => ({}));
