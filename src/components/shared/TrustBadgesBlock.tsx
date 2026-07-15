@@ -22,8 +22,8 @@ const BADGES = [
   },
   {
     icon: ShieldCheck,
-    title: 'Trusted by Pet Owners',
-    subtitle: 'Carefully selected quality products',
+    title: 'Quality Selection',
+    subtitle: 'Carefully selected products for pets',
   },
 ] as const;
 

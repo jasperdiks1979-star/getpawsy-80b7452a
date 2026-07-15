@@ -141,7 +141,6 @@ function generateContent(name: string, cat: string): ContentBlock {
         'Channels destructive energy into positive play',
         'Durable build withstands aggressive chewers',
         'Non-toxic, BPA-free materials',
-        'Trusted by pet owners and trainers',
         'Suitable for dogs and cats of all sizes',
       ],
     };

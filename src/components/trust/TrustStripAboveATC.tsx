@@ -29,11 +29,9 @@ interface TrustStripAboveATCProps {
 }
 
 const SIGNALS: Array<{ icon: string; label: string; ariaLabel: string }> = [
-  { icon: '🇺🇸', label: 'Ships from USA', ariaLabel: 'Ships from United States warehouse' },
-  { icon: '🚚', label: 'Delivery 3–5 business days', ariaLabel: 'Delivery in three to five business days' },
   { icon: '🔒', label: 'Secure Stripe checkout', ariaLabel: 'Secure checkout powered by Stripe' },
   { icon: '↩', label: '30-day money-back guarantee', ariaLabel: '30-day money back guarantee' },
-  { icon: '⭐', label: 'Loved by thousands of pet owners', ariaLabel: 'Loved by thousands of pet owners' },
+  { icon: '🚚', label: 'Shipping options shown at checkout', ariaLabel: 'Shipping options and estimated delivery shown at checkout' },
 ];
 
 export const TrustStripAboveATC = memo(({ className = '', compact = false }: TrustStripAboveATCProps) => {

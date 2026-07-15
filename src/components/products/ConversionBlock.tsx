@@ -4,7 +4,7 @@
  * Displayed between price and benefit bullets.
  */
 import { memo, useMemo } from 'react';
-import { Flame, Users, Truck, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
+import { Flame, Truck, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { getWinnerBadge } from '@/config/top-winners';
 
@@ -69,14 +69,6 @@ export const ConversionBlock = memo(function ConversionBlock({ productName, cate
         <p className="text-sm text-foreground">
           <span className="font-semibold">Best for:</span>{' '}
           {bestFor.join(' · ')}
-        </p>
-      </div>
-
-      {/* Social proof */}
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-primary flex-shrink-0" />
-        <p className="text-sm text-muted-foreground">
-          Trusted by pet owners across the United States
         </p>
       </div>
 

@@ -31,7 +31,7 @@ function resolveGuarantee(name: string, category: string): Guarantee {
   if (/cat\s*tree|cat\s*condo|scratching/i.test(hay)) {
     return {
       title: 'Stability promise',
-      detail: 'Designed to support adult cats safely. Wobble-free or refund.',
+      detail: 'Designed to support adult cats safely. 30-day return window applies.',
     };
   }
   if (/bed|cushion|mat/i.test(hay)) {

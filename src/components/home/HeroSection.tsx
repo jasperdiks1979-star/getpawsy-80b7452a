@@ -105,7 +105,7 @@ export function HeroSection() {
             <Star className="h-3.5 w-3.5 fill-current" />
             <Star className="h-3.5 w-3.5 fill-current" />
           </span>
-          <span>Trusted by 2,000+ US pet parents</span>
+          <span>Curated for US pet parents</span>
         </div>
 
         {/* H1 = the pain. Visitor self-identifies in <2 seconds. */}

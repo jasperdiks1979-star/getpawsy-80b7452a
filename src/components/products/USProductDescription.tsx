@@ -373,7 +373,7 @@ function extractWhyLoveIt(desc: string, name: string, type: string): string {
     mat: 'A versatile solution that works in any room of the house. Pet parents appreciate having a dedicated spot they can easily move around as needed.',
     fountain: 'Pets drink more water, and pet parents have peace of mind knowing hydration is taken care of. The quiet operation means it blends into the background of daily life.',
     food: 'Pet parents feel good about what they are feeding their furry family member. It is a reliable choice that fits into their pet care routine.',
-    accessory: 'This has become a trusted part of daily life with pets. It is the kind of practical item that pet parents recommend to friends and family.',
+    accessory: 'A practical everyday item designed to fit into your pet care routine.',
   };
   
   return whyLoveByType[type] || whyLoveByType.accessory;
