@@ -4,7 +4,7 @@
  * Displayed between price and benefit bullets.
  */
 import { memo, useMemo } from 'react';
-import { Flame, Users, Truck, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
+import { Flame, Truck, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { getWinnerBadge } from '@/config/top-winners';
 

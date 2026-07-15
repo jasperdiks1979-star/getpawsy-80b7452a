@@ -1,4 +1,4 @@
-import { Lock, Truck, RotateCcw, Star, Clock, Flame, ShieldCheck } from 'lucide-react';
+import { Lock, Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 
 /**
  * CheckoutTrustBlock — high-conversion reassurance shown directly above
