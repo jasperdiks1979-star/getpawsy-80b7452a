@@ -72,14 +72,6 @@ export const ConversionBlock = memo(function ConversionBlock({ productName, cate
         </p>
       </div>
 
-      {/* Social proof */}
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-primary flex-shrink-0" />
-        <p className="text-sm text-muted-foreground">
-          Trusted by pet owners across the United States
-        </p>
-      </div>
-
       {/* Shipping */}
       {!trustCompact && <div className="flex items-center gap-2">
         <Truck className="w-4 h-4 text-primary flex-shrink-0" />

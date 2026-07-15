@@ -112,7 +112,7 @@ export function HeroTrustStrip() {
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <StarRating rating={4.8} size="sm" />
               <span className="font-medium text-foreground">4.8</span>
-              <span className="hidden sm:inline">/ 5 · 2,000+ reviews</span>
+              <span className="hidden sm:inline">/ 5</span>
             </div>
           </div>
 

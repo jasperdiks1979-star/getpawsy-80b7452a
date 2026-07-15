@@ -191,16 +191,6 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
         </p>
       </div>
 
-      {/* COMPLIANT URGENCY — no fake stock numbers */}
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 md:p-6 text-center">
-        <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-          High demand product
-        </p>
-        <p className="mt-1 text-sm text-foreground">
-          Due to high demand, availability may be limited.
-        </p>
-      </div>
-
       {/* RISK REVERSAL */}
       <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 md:p-8 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/15 mb-3">
