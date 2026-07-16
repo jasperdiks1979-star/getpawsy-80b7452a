@@ -78,6 +78,15 @@ type PublishPayload = Record<string, unknown> & {
 // Static dog-category → board fallback. Live DB lookup runs first; this is
 // used only when the board table lookup returns nothing.
 import { resolveDogBoard } from "../_shared/pinterest-board-routing.ts";
+import {
+  buildAltText,
+  buildHashtags,
+  buildOverlay,
+  buildPinDescription,
+  buildPinSeoReport,
+  buildPinTitle,
+  planKeywords,
+} from "../_shared/pinterest-keyword-seo.ts";
 const CAT_FALLBACK = { id: "1117103951261719219", name: "Best Cat Trees 2026", category_key: "cat_general" };
 
 async function resolveBoard(
@@ -198,11 +207,32 @@ async function buildPublishPayload(
   const board = await resolveBoard(sb, product.category, product.name);
   const now = new Date().toISOString();
   const utm = `utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`;
-  const title = truncate(product.name, 100);
-  // Never pass raw supplier PDP copy through — it frequently contains phrases banned by
-  // enforce_pin_copy_rules (e.g. "tired of"). Build a safe factual description from name.
-  const safeBase = `${product.name} — designed for happy dogs. Loved by US pet parents. Built for daily use with your best friend. See details on getpawsy.pet.`;
-  const description = truncate(safeBase.replace(/\s+/g, " "), 495);
+  // Keyword-first SEO layer: pick primary keyword BEFORE building copy so title,
+  // description, overlay, hashtags, alt text and board hint all align to one
+  // proven search intent. Falls back to product name if no keyword passes.
+  const seoPlan = planKeywords({
+    name: product.name,
+    slug: product.slug,
+    description: product.description ?? null,
+    category: product.category ?? null,
+  });
+  const seoReport = buildPinSeoReport({
+    name: product.name,
+    slug: product.slug,
+    description: product.description ?? null,
+    category: product.category ?? null,
+  }, seoPlan);
+  const title = seoPlan.passes_thresholds
+    ? buildPinTitle(seoPlan, { name: product.name, slug: product.slug })
+    : truncate(product.name, 100);
+  const description = seoPlan.passes_thresholds
+    ? buildPinDescription(seoPlan, { name: product.name, slug: product.slug, description: product.description ?? null })
+    : truncate(`${product.name} — a practical pick for US dog parents. See details on getpawsy.pet.`, 495);
+  const overlay = seoPlan.passes_thresholds ? buildOverlay(seoPlan) : "Built for dog travel";
+  const hashtags = seoPlan.passes_thresholds ? buildHashtags(seoPlan) : ["#dogtravel", "#petcarrier"];
+  const altText = seoPlan.passes_thresholds
+    ? buildAltText(seoPlan, { name: product.name })
+    : `${product.name} — photo for US dog parents.`;
   const idempotency_key = `canary:${cfg.run_id}:${product.id}`;
   return {
     product_id: product.id,
@@ -214,12 +244,12 @@ async function buildPublishPayload(
     destination_link: `https://getpawsy.pet/products/${product.slug}?${utm}`,
     pin_title: title,
     pin_description: description,
-    overlay_text: "Built for dog travel", // 2–5 word overlay per gold-standard rule
+    overlay_text: overlay, // primary keyword-driven overlay, ≤6 words
     board_id: board.id,
     board_name: board.name,
     category_key: board.category_key,
     hook_group: "benefit",
-    hashtags: ["#dogtravel", "#petcarrier"],
+    hashtags,
     priority: "high", // column is text enum {high,medium,low}
     scheduled_at: now,
     approved_at: now, // canary is pre-approved by operator invocation
@@ -242,6 +272,8 @@ async function buildPublishPayload(
       species: (product.primary_species ?? "dog"),
       niche: "dog_travel",
       canary: true,
+      alt_text: altText,
+      seo: seoReport,
     },
   };
 }
