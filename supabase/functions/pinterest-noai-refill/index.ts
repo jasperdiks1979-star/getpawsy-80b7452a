@@ -358,6 +358,14 @@ Deno.serve(async (req) => {
   const forceCount: number | null = Number.isFinite(body?.count) ? Math.min(MAX_TOPUP_PER_RUN, Math.max(1, body.count)) : null;
   const dryRun = body?.dry_run === true;
 
+  try {
+    const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+    const guard = await assertIsolationAllows(supabase, body?.run_id ?? null, corsHeaders);
+    if (guard) return guard;
+  } catch (e) {
+    console.warn("[noai-refill] wave-isolation check failed (non-fatal):", e);
+  }
+
   // 1) Respect publishing pause
   const { data: state } = await supabase.from("pinterest_credit_state").select("publishing_paused").eq("id", 1).maybeSingle();
   if (state?.publishing_paused === true) {
