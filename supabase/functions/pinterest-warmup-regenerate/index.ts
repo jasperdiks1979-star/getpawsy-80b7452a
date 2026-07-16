@@ -66,6 +66,14 @@ Deno.serve(async (req) => {
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
+  try {
+    const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+    const guard = await assertIsolationAllows(sb, body?.run_id ?? null, corsHeaders);
+    if (guard) return guard;
+  } catch (e) {
+    console.warn("[warmup-regenerate] wave-isolation check failed (non-fatal):", e);
+  }
+
   // 1. Load warmup30 rows in scope.
   let q = sb
     .from("pinterest_pin_queue")
