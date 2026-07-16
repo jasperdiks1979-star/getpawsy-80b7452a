@@ -42,6 +42,8 @@ interface Item {
   board_name: string;
   category_key: string;
   utm_content: string;
+  // Optional: reuse a previously-rendered extended background (skips AI edit).
+  extended_image_url?: string;
 }
 
 async function fetchBytes(url: string): Promise<Uint8Array> {
@@ -150,7 +152,12 @@ async function runWave(
       if (!prod.stock || prod.stock <= 0) throw new Error("product_out_of_stock");
       if (!prod.image_url) throw new Error("no_product_image");
       rep.slug = prod.slug;
-      const extBytes = await editImage(LOVABLE_API_KEY, prod.image_url);
+      let extBytes: Uint8Array;
+      if (item.extended_image_url) {
+        extBytes = await fetchBytes(item.extended_image_url);
+      } else {
+        extBytes = await editImage(LOVABLE_API_KEY, prod.image_url);
+      }
       const finalBytes = await overlayText(extBytes, fontBytes, item.headline, item.cta);
       const path = `creative-factory/premium-wave/${prod.slug}/${Date.now()}.png`;
       const up = await sb.storage.from(BUCKET).upload(path, finalBytes, {
