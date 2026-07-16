@@ -351,6 +351,9 @@ async function processCandidate(
   candidate: {
     product_id: string;
     product_slug: string;
+    product_name?: string;
+    product_description?: string | null;
+    product_category?: string | null;
     pdp_hero_url: string;
     expected_species?: "dog" | "cat" | "small_pet";
     product_species?: "dog" | "cat" | "small_pet" | "unknown";
@@ -359,11 +362,13 @@ async function processCandidate(
   },
   opts: { dry_run: boolean },
 ): Promise<{
-  status: "queued" | "rejected_preflight" | "budget_exceeded" | "paused" | "retry_limit";
+  status: "queued" | "rejected_preflight" | "budget_exceeded" | "paused" | "retry_limit" | "payload_invalid";
   reason?: string;
   strategy?: string;
   model?: string | null;
   paid_credits_spent: number;
+  queue_id?: string;
+  missing_fields?: string[];
 }> {
   // Control 6/7: refuse to spend if the run is paused.
   try {
@@ -544,29 +549,65 @@ async function processCandidate(
   // In production the wave-runner would insert an approved draft into
   // pinterest_pin_queue with run_id set (backlog isolation). Skipped in dry_run.
   if (!opts.dry_run) {
-    // Deterministic composite path — publish-ready row goes straight to
-    // `queued` so the cron-worker (under wave_isolation_active_run_id) can
-    // pick it up. Non-deterministic paths still land as `wave_draft` and are
-    // promoted by pinterest-creative-director once it produces the final image.
+    // Deterministic path only. Non-deterministic paths must be promoted by
+    // pinterest-creative-director; the canary runs deterministic-first.
     const isDeterministic = decision.model === null;
-    const insertStatus = isDeterministic ? "queued" : "wave_draft";
-    const insertRow: Record<string, unknown> = {
-      product_id: candidate.product_id,
-      product_slug: candidate.product_slug,
-      status: insertStatus,
-      run_id: cfg.run_id,
-      hero_priority: candidate.hero_priority === true,
-      pdp_hero_hash: pre.pdp_hero_hash,
-      image_hash: pre.image_hash,
-      pin_image_url: candidate.pdp_hero_url,
-      destination_link: `https://getpawsy.pet/products/${candidate.product_slug}?utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`,
-      meta: {
-        creative_source: "canary_composite_photo_lock",
-        strategy: decision.strategy,
-        run_id: cfg.run_id,
-      },
+    if (!isDeterministic) {
+      return {
+        status: "payload_invalid",
+        reason: "non_deterministic_render_not_yet_wired_in_wave_runner",
+        paid_credits_spent: paid_credits,
+        missing_fields: ["rendered_composite_url"],
+      };
+    }
+    const product: ProductRow = {
+      id: candidate.product_id,
+      slug: candidate.product_slug,
+      name: candidate.product_name ?? candidate.product_slug,
+      description: candidate.product_description ?? null,
+      category: candidate.product_category ?? null,
+      image_url: candidate.pdp_hero_url,
+      primary_species: candidate.product_species ?? "unknown",
+      stock: 1,
+      is_active: true,
+      pinterest_eligible: true,
     };
-    await sb.from("pinterest_pin_queue").insert(insertRow);
+    const insertRow = await buildPublishPayload(
+      sb,
+      cfg,
+      product,
+      { image_hash: pre.image_hash, pdp_hero_hash: pre.pdp_hero_hash },
+      decision.strategy,
+      candidate.hero_priority === true,
+    );
+    const check = validatePublishPayload(insertRow);
+    if (!check.ok) {
+      return {
+        status: "payload_invalid",
+        reason: "missing_required_publish_fields",
+        paid_credits_spent: paid_credits,
+        missing_fields: check.missing,
+      };
+    }
+    const { data: inserted, error: insErr } = await sb
+      .from("pinterest_pin_queue")
+      .insert(insertRow)
+      .select("id")
+      .single();
+    if (insErr) {
+      return {
+        status: "payload_invalid",
+        reason: `insert_failed:${insErr.message}`,
+        paid_credits_spent: paid_credits,
+      };
+    }
+    return {
+      status: "queued",
+      strategy: decision.strategy,
+      model: decision.model,
+      paid_credits_spent: paid_credits,
+      queue_id: String((inserted as any)?.id ?? ""),
+    };
   }
 
   return {
