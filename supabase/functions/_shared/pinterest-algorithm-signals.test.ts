@@ -20,9 +20,9 @@ function makePin(overrides: Partial<PinCandidate> = {}): PinCandidate {
       primary_species: "dog",
     },
     primary_keyword: kw,
-    title: "Elevated Dog Bed for Cool Naps and Support",
+    title: "Elevated Dog Bed for Cool Naps and Everyday Joint Support",
     description:
-      "This elevated dog bed keeps your pup off hot floors. The raised mesh promotes airflow, supports joints, and fits large dogs. Explore the design and see how it fits your dog room.",
+      "This elevated dog bed keeps your pup off hot floors with a breathable raised mesh that promotes airflow and supports large dogs. The elevated frame fits neatly in a dog room, holds up to daily use, and pairs well with a washable cover. Explore the full elevated dog bed design and see how it fits your space.",
     overlay: "Elevated Dog Bed",
     alt_text: "Beige elevated dog bed in a bright living room",
     board_title: "Dog Beds & Comfort",
