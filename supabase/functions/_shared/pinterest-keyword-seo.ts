@@ -222,7 +222,15 @@ export function planKeywords(
     s.landing_match >= KEYWORD_THRESHOLDS.min_landing_match,
   );
 
-  const primary = passing[0] ?? scored[0];
+  // Prefer specificity: among passing candidates, pick the highest tier (most
+  // specific) first, then the highest score within that tier. Rule from the
+  // SEO layer contract: never target "dog accessories" when a more specific
+  // product term also passes.
+  const bySpecificity = [...passing].sort((a, b) => {
+    if (b.keyword.tier !== a.keyword.tier) return b.keyword.tier - a.keyword.tier;
+    return b.score - a.score;
+  });
+  const primary = bySpecificity[0] ?? scored[0];
   const passes = passing.length > 0;
 
   // Secondary / supporting: share intent family, still relevant, not the primary.
