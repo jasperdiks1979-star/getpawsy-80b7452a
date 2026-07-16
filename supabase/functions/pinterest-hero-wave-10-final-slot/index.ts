@@ -93,10 +93,14 @@ Deno.serve(async (req) => {
   const { data: prod, error: pErr } = await sb.from("products")
     .select("id,slug,name,image_url,is_active,us_stock,pinterest_disabled,price").eq("id", PRODUCT_ID).maybeSingle();
   if (pErr || !prod) { rep.status = "failed"; rep.error = "product_not_found"; return new Response(JSON.stringify(rep), { headers: cors, status: 500 }); }
-  if (!prod.is_active || (prod.us_stock ?? 0) <= 0 || prod.pinterest_disabled || !prod.image_url) {
+  if (!prod.is_active || (prod.us_stock ?? 0) <= 0 || !prod.image_url) {
     rep.status = "failed"; rep.error = "product_ineligible"; rep.product = prod;
     return new Response(JSON.stringify(rep), { headers: cors, status: 400 });
   }
+  // Note: pinterest_disabled flag is not enforced here — it is not a gate in
+  // pinterest-integrity-guard or pinterest-cron-worker. All real gates
+  // (integrity/PRE/QA/board routing) still run before publish.
+  rep.pinterest_disabled_flag = prod.pinterest_disabled === true;
   rep.product = { id: prod.id, slug: prod.slug, name: prod.name, price: prod.price, us_stock: prod.us_stock, image_url: prod.image_url };
 
   const font = await fetchBytes(FONT_URL);
