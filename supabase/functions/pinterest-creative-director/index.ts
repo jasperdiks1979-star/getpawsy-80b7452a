@@ -1539,6 +1539,17 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  // Wave isolation gate: when a canary/wave is running, refuse legacy paid
+  // calls unless the caller supplies the matching run_id. See
+  // _shared/pinterest-wave-isolation.ts.
+  try {
+    const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+    const guard = await assertIsolationAllows(supabase, body?.run_id ?? null, corsHeaders);
+    if (guard) return guard;
+  } catch (e) {
+    console.warn("[creative-director] wave-isolation check failed (non-fatal):", e);
+  }
+
   // Credit protection: short-circuit if AI gateway is paused due to exhausted credits.
   const guard = await isCreditPaused(supabase);
   if (guard.paused) {
