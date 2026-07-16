@@ -1,0 +1,1 @@
+UPDATE public.pinterest_run_config SET status='completed', paused_reason='partial_only_1_of_3_passed_source_preflight' WHERE run_id='3d372537-0d64-41d5-8003-0e3527ec9b28'; UPDATE public.pinterest_runtime_settings SET wave_isolation_active_run_id=NULL WHERE wave_isolation_active_run_id='3d372537-0d64-41d5-8003-0e3527ec9b28';
