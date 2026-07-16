@@ -229,7 +229,7 @@ async function buildPublishPayload(
     category_key: board.category_key,
     hook_group: "benefit",
     hashtags: ["#dogtravel", "#petcarrier"],
-    priority: 5,
+    priority: "high", // column is text enum {high,medium,low}
     scheduled_at: now,
     approved_at: now, // canary is pre-approved by operator invocation
     approved_by: null, // approved_by is a uuid FK; operator-driven canary leaves it null
