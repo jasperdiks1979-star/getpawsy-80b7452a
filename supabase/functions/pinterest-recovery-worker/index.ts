@@ -57,6 +57,14 @@ Deno.serve(async (req) => {
   const batchSize = Math.max(1, Math.min(300, Number(body?.batchSize ?? 250)));
   const maxVariantsPerRow = Math.max(1, Math.min(4, Number(body?.maxVariants ?? 3)));
 
+  try {
+    const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+    const guard = await assertIsolationAllows(sb, body?.run_id ?? null, corsHeaders);
+    if (guard) return guard;
+  } catch (e) {
+    console.warn("[recovery-worker] wave-isolation check failed (non-fatal):", e);
+  }
+
   // ── Snapshot counters
   const { count: queueSize } = await sb
     .from("pinterest_recovery_queue").select("id", { count: "exact", head: true })
