@@ -92,7 +92,9 @@ async function persistResult(sb: any, pin: any, result: any, attempts: number, r
       verification_failure_reason: result.failureReason,
       last_verified_at: new Date().toISOString(),
       pin_verified: result.state === "verified_success",
-      pin_verification_reason: result.failureReason ?? "verified_e2e",
+      pin_verification_reason: result.state === "verified_success"
+        ? (result.failureReason === "board_warning" ? "board_warning" : "verified_e2e")
+        : result.failureReason,
       pin_verified_at: new Date().toISOString(),
     })
     .eq("id", pin.id);
@@ -100,7 +102,7 @@ async function persistResult(sb: any, pin: any, result: any, attempts: number, r
   await sb.from("pinterest_post_logs").insert({
     pin_queue_id: pin.id,
     action: "verify_e2e",
-    status: result.state === "verified_success" ? "success" : "warning",
+    status: result.state === "verified_success" && result.failureReason !== "board_warning" ? "success" : "warning",
     error_message: result.failureReason,
     response_data: { score: result.score, attempts, recovery, checks: result.checks, payload: result.pinterestPayload },
   });
