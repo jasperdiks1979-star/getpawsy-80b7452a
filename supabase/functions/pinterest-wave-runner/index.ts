@@ -229,17 +229,18 @@ async function buildPublishPayload(
     category_key: board.category_key,
     hook_group: "benefit",
     hashtags: ["#dogtravel", "#petcarrier"],
-    priority: 5,
+    priority: "high", // column is text enum {high,medium,low}
     scheduled_at: now,
     approved_at: now, // canary is pre-approved by operator invocation
-    approved_by: "canary_wave_runner",
-    us_audience_score: 95,
-    content_type: "photo_lock_composite",
+    approved_by: null, // approved_by is a uuid FK; operator-driven canary leaves it null
+    us_audience_score: 0.95, // column is numeric(4,3): 0..1 fraction, not a 0..100 percent
+    content_type: "product", // must be in allowed check-constraint enum
     image_hash: pre.image_hash,
     pdp_hero_hash: pre.pdp_hero_hash,
     hero_priority: heroPriority,
     idempotency_key,
-    source_type: "canary_photo_lock",
+    source_type: "product_ai", // must be in {lifestyle_ai,product_ai,cinematic_ai}; tracking trigger silently drops other sources
+    pin_variant: `canary_photo_lock_${cfg.run_id.slice(0, 8)}`, // NOT NULL column
     retries: 0,
     meta: {
       creative_source: "creative_director_v2", // satisfies cron AI-only gate
