@@ -1,0 +1,5 @@
+UPDATE pinterest_pin_queue SET board_id='1117103951261719219', priority='high' WHERE id IN ('63e812ee-26f8-4290-a4a9-0099f07a3b67','272b84f9-2b4a-4a33-b8c6-c9719f0b944a','0e0ff754-3a0a-4abf-9485-51378104fa3f','b6845027-6e7b-49bc-ad85-3ca28d15834f');
+UPDATE pinterest_pin_queue SET board_id='1117103951261719222', priority='high' WHERE id = '3e56eb56-f955-43a9-849e-b65f0e0c2378';
+UPDATE pinterest_pin_queue SET board_id='1117103951261719235', priority='high' WHERE id IN ('418810af-0d0f-45ba-837f-f9bcea123ecc','c67b4f77-37e1-4280-9db9-8048ab483ce5');
+UPDATE pinterest_pin_queue SET board_id='1117103951261719232', priority='high' WHERE id IN ('b84af2cb-8b84-4ec7-92db-9eb3c6adab22','f17b5e91-5da9-4578-9f94-3180e6fc83d5','1f22afb4-ea32-4d92-8f8c-9d4aa094c5f7');
+UPDATE pinterest_pin_queue SET status='draft', rejection_reason=NULL, pin_image_url=NULL WHERE id IN ('272b84f9-2b4a-4a33-b8c6-c9719f0b944a','b6845027-6e7b-49bc-ad85-3ca28d15834f');
