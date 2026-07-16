@@ -1,0 +1,1 @@
+UPDATE public.pinterest_pin_queue SET status='queued', scheduled_at = now() - interval '1 minute', priority='high', updated_at = now() WHERE id = 'c67b4f77-37e1-4280-9db9-8048ab483ce5';
