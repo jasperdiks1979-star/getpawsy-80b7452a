@@ -183,7 +183,7 @@ async function runWave(
         hook_group: "premium_photo_lock",
         category_key: item.category_key,
         overlay_text: item.headline,
-        content_type: "image",
+        content_type: "lifestyle",
         idempotency_key: idempotencyKey,
         creative_source_tracked: "premium_wave_5_2026_07_16",
         batch_id: waveId,
