@@ -1522,6 +1522,28 @@ Deno.serve(async (req) => {
             if (newToken) {
               accessToken = newToken;
               // Retry this pin once
+              const retryPayload = {
+                title: pin.pin_title,
+                description: pin.pin_description,
+                board_id: boardId,
+                media_source: {
+                  source_type: "image_url",
+                  url: pin.pin_image_url,
+                },
+                link: destinationLink,
+              };
+              await sb.from("pinterest_post_logs").insert({
+                pin_queue_id: pin.id,
+                action: "create_pin_retry_request",
+                status: "success",
+                response_data: {
+                  queue_board_id: (pin as any).board_id ?? null,
+                  queue_board_name: pin.board_name ?? null,
+                  outgoing_board_id: retryPayload.board_id,
+                  endpoint: "/v5/pins",
+                  retry_reason: "token_refresh",
+                },
+              });
               const retryRes = await fetch(
                 `${apiBase}/pins`,
                 {
@@ -1530,27 +1552,39 @@ Deno.serve(async (req) => {
                     Authorization: `Bearer ${accessToken}`,
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify({
-                    title: pin.pin_title,
-                    description: pin.pin_description,
-                    board_id: boardId,
-                    media_source: {
-                      source_type: "image_url",
-                      url: pin.pin_image_url,
-                    },
-                    link: pin.destination_link,
-                  }),
+                  body: JSON.stringify(retryPayload),
                 },
               );
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
+                const retryResponseBoardId = retryData?.board_id ? String(retryData.board_id) : null;
+                const retryBoardMatch = retryResponseBoardId === String(boardId);
+                await sb.from("pinterest_post_logs").insert({
+                  pin_queue_id: pin.id,
+                  action: "create_pin_retry_response",
+                  status: retryBoardMatch ? "success" : "warning",
+                  error_message: retryBoardMatch ? null : "board_warning",
+                  response_data: {
+                    pinterest_pin_id: retryData.id,
+                    intended_board_id: boardId,
+                    response_board_id: retryResponseBoardId,
+                    board_match: retryBoardMatch,
+                  },
+                });
                 const externalUrlR = `https://www.pinterest.com/pin/${retryData.id}/`;
                 const verificationR = await validatePinterestExternalUrl(accessToken, apiBase, externalUrlR, retryData.id);
                 console.log("[pinterest] verify", { pin_id: retryData.id, ...verificationR });
                 await markPosted(sb, pin, retryData.id, verificationR);
+                if (!retryBoardMatch) {
+                  await sb.from("pinterest_pin_queue").update({
+                    pin_verified: true,
+                    pin_verification_reason: "board_warning",
+                    pin_verified_at: new Date().toISOString(),
+                  }).eq("id", pin.id);
+                }
                 results.push({
                   pinId: pin.id,
-                  status: "posted",
+                  status: retryBoardMatch ? "posted" : "posted_with_board_warning",
                   externalId: retryData.id,
                   pinVerified: verificationR.ok,
                 });
@@ -1763,6 +1797,167 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+type BoardResolution = {
+  id: string;
+  name: string | null;
+  source: string;
+  validated: boolean;
+  validation_reason?: string | null;
+  owner_username?: string | null;
+  active_override_ignored?: { id: string; name: string | null; reason: string } | null;
+  requested_specific_board?: string | null;
+  specific_board_unavailable?: boolean;
+};
+
+const DOG_BOARD_ROUTES: Array<{ name: string; test: RegExp }> = [
+  { name: "Dog Travel Accessories", test: /\b(car|rear seat|seat|vehicle|road trip|travel pad|dog car)\b/i },
+  { name: "Dog Feeding & Hydration", test: /\b(feed|feeding|bowl|bowls|feeder|water|hydration|dispenser|fountain|drink)\b/i },
+  { name: "Dog Home Essentials", test: /\b(ramp|stairs|step|home|sofa access|bed access|non[- ]slip)\b/i },
+  { name: "Dog Beds & Comfort", test: /\b(bed|sofa|couch|cot|mattress|comfort|cooling|orthopedic|calming)\b/i },
+  { name: "Dog Walking Essentials", test: /\b(harness|leash|lead|collar|walking|walk|traction rope)\b/i },
+  { name: "Dog Toys & Enrichment", test: /\b(toy|toys|snuffle|puzzle|chew|disc|tug|bells|enrichment|squeaky|plush)\b/i },
+];
+
+function dogRouteBoardName(pin: any): string | null {
+  const text = `${pin?.category_key ?? ""} ${pin?.niche_key ?? ""} ${pin?.product_slug ?? ""} ${pin?.product_name ?? ""} ${pin?.pin_title ?? ""}`;
+  const isDog = /\bdog\b|dog_|_dog|canine|puppy|harness|leash|snuffle|traction rope/i.test(text);
+  if (!isDog) return null;
+  for (const route of DOG_BOARD_ROUTES) {
+    if (route.test.test(text)) return route.name;
+  }
+  return "GetPawsy Products";
+}
+
+async function getDbBoardByName(sb: any, name: string): Promise<{ id: string; name: string } | null> {
+  const { data } = await sb
+    .from("pinterest_boards")
+    .select("id, name, is_blacklisted, is_sandbox, production_verified")
+    .eq("name", name)
+    .eq("is_blacklisted", false)
+    .eq("is_sandbox", false)
+    .maybeSingle();
+  return data?.id ? { id: String(data.id), name: String(data.name ?? name) } : null;
+}
+
+async function getDbBoardById(sb: any, id: string): Promise<{ id: string; name: string | null } | null> {
+  const { data } = await sb
+    .from("pinterest_boards")
+    .select("id, name, is_blacklisted, is_sandbox, production_verified")
+    .eq("id", id)
+    .eq("is_blacklisted", false)
+    .eq("is_sandbox", false)
+    .maybeSingle();
+  return data?.id ? { id: String(data.id), name: data.name ? String(data.name) : null } : null;
+}
+
+async function validateAndPersistBoard(
+  sb: any,
+  accessToken: string,
+  pin: any,
+  candidate: { id: string; name?: string | null },
+  source: string,
+  activeOverrideIgnored: BoardResolution["active_override_ignored"] = null,
+  requestedSpecificBoard: string | null = null,
+  specificBoardUnavailable = false,
+): Promise<BoardResolution> {
+  const validation = await validatePinterestBoardId(accessToken, candidate.id, PINTEREST_PRODUCTION_API_BASE);
+  if (!validation.ok) {
+    throw new Error(`board_validation_failed:${candidate.id}:${validation.reason ?? "unknown"}`);
+  }
+
+  const resolvedName = validation.name || candidate.name || pin.board_name || null;
+  await sb.from("pinterest_pin_queue").update({
+    board_id: validation.id,
+    board_name: resolvedName,
+    updated_at: new Date().toISOString(),
+  }).eq("id", pin.id);
+
+  return {
+    id: validation.id,
+    name: resolvedName,
+    source,
+    validated: true,
+    validation_reason: validation.reason ?? null,
+    owner_username: validation.ownerUsername ?? null,
+    active_override_ignored: activeOverrideIgnored,
+    requested_specific_board: requestedSpecificBoard,
+    specific_board_unavailable: specificBoardUnavailable,
+  };
+}
+
+async function resolveBoardForPublish(
+  sb: any,
+  accessToken: string,
+  pin: any,
+  activeBoardOverride: { id: string; name: string | null } | null,
+  boardIdCache: Map<string, string>,
+): Promise<BoardResolution> {
+  const activeOverrideIgnored = activeBoardOverride
+    ? { id: activeBoardOverride.id, name: activeBoardOverride.name, reason: "per_pin_board_id_takes_precedence" }
+    : null;
+
+  const existingBoardId = pin?.board_id ? String(pin.board_id).trim() : "";
+  if (existingBoardId) {
+    const dbBoard = await getDbBoardById(sb, existingBoardId);
+    if (!dbBoard) throw new Error(`board_validation_failed:${existingBoardId}:not_in_allowed_registry`);
+    const resolution = await validateAndPersistBoard(
+      sb,
+      accessToken,
+      pin,
+      { id: existingBoardId, name: dbBoard.name || pin.board_name || null },
+      "queue_board_id",
+      activeOverrideIgnored,
+    );
+    boardIdCache.set(resolution.name || existingBoardId, resolution.id);
+    boardIdCache.set(existingBoardId, resolution.id);
+    return resolution;
+  }
+
+  const requestedDogBoard = dogRouteBoardName(pin);
+  if (requestedDogBoard) {
+    const specific = requestedDogBoard === "GetPawsy Products" ? null : await getDbBoardByName(sb, requestedDogBoard);
+    if (specific) {
+      const resolution = await validateAndPersistBoard(
+        sb,
+        accessToken,
+        pin,
+        specific,
+        "dog_route_specific_board",
+        activeBoardOverride ? { id: activeBoardOverride.id, name: activeBoardOverride.name, reason: "dog_specific_route_takes_precedence" } : null,
+        requestedDogBoard,
+      );
+      boardIdCache.set(requestedDogBoard, resolution.id);
+      return resolution;
+    }
+
+    const general = await getDbBoardByName(sb, "GetPawsy Products");
+    if (general) {
+      return await validateAndPersistBoard(
+        sb,
+        accessToken,
+        pin,
+        general,
+        requestedDogBoard === "GetPawsy Products" ? "dog_route_general_board" : "dog_route_general_fallback_specific_missing",
+        activeBoardOverride ? { id: activeBoardOverride.id, name: activeBoardOverride.name, reason: "dog_route_resolved_before_global_override" } : null,
+        requestedDogBoard,
+        requestedDogBoard !== "GetPawsy Products",
+      );
+    }
+  }
+
+  if (activeBoardOverride?.id) {
+    const dbBoard = await getDbBoardById(sb, activeBoardOverride.id);
+    if (dbBoard) {
+      return await validateAndPersistBoard(sb, accessToken, pin, { id: activeBoardOverride.id, name: activeBoardOverride.name || dbBoard.name }, "active_board_fallback");
+    }
+  }
+
+  const general = await getDbBoardByName(sb, "GetPawsy Products") || await getDbBoardByName(sb, "Pet Parent Hacks");
+  if (general) return await validateAndPersistBoard(sb, accessToken, pin, general, "general_safe_fallback");
+
+  throw new Error("board_validation_failed:no_publishable_board_found");
+}
 
 /** Helper: mark a pin as posted and update product status */
 async function markPosted(
